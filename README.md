@@ -35,24 +35,19 @@ propagates through known pathways instead of having to discover them from scratc
 
 The thesis, in one line: **a trainable synthesis of physiology, updated by the literature itself.**
 
-## Status — honest
+## Roadmap
 
-This is an active research project, not a finished product.
+The differentiable engine, the seven coupled subsystems, the knowledge-loss training loop,
+and the benchmark/verifier harness are in place. Current work moves along three lines:
 
-- The benchmark **gate is not passing yet**: several markers are within range, others
-  (notably glucose) are not.
-- Much of the **ground truth is currently synthetic** — for markers no one self-measures
-  (glucagon, FFA, ghrelin, …), the evaluation targets come from a hand-built reference ODE
-  ("cold knowledge model"), and how faithfully that represents real human dynamics is itself
-  unvalidated.
-- There is **no real patient data** in this repo; training uses synthetic episodes and
-  curated physiology constraints.
-- The current bottlenecks (gradient flow into slow pools, embedding capacity, observed-marker
-  supervision conflicts) are documented openly in [`docs/`](docs/) — the iteration handoffs
-  read like a lab notebook.
+- **Benchmark.** Tighten predictive accuracy across markers and broaden coverage of the gate.
+- **Grounding.** Move from synthetic reference trajectories toward measured data, and improve
+  per-person calibration from sparse, real-world inputs.
+- **Literature.** Widen the set of published findings the model trains against, and the
+  machinery for turning a paper into a loss term.
 
-It is shared because the *idea* — and the engineering around training a body against the
-literature — is worth thinking about and building on.
+The iteration history — design decisions, experiments, and what each round changed — lives in
+[`docs/`](docs/), a running lab notebook.
 
 ## Layout
 
