@@ -1,0 +1,102 @@
+{
+  "episodes": [
+    {
+      "user_id": "user-123",
+      "duration_min": 720,
+      "initial_state": [
+        95,
+        10,
+        70,
+        0.5,
+        0.1,
+        1.0,
+        2.0,
+        100,
+        10,
+        10,
+        12,
+        30.0,
+        70,
+        40,
+        120,
+        80,
+        37,
+        15,
+        98,
+        100.0,
+        400.0,
+        1.0,
+        100.0
+      ],
+      "meals": [
+        {
+          "time": 60,
+          "carbs": 40
+        },
+        {
+          "time": 330,
+          "carbs": 60
+        }
+      ],
+      "calibration_check_ins": [
+        {
+          "time": 45,
+          "measurements": {
+            "glucose": 92,
+            "hr": 66,
+            "sbp": 118,
+            "dbp": 78,
+            "temp": 36.8
+          }
+        },
+        {
+          "time": 290,
+          "measurements": {
+            "glucose": 136,
+            "hr": 78,
+            "sbp": 123,
+            "dbp": 81,
+            "temp": 37.1
+          }
+        },
+        {
+          "time": 560,
+          "measurements": {
+            "glucose": 99,
+            "hr": 71,
+            "sbp": 119,
+            "dbp": 79,
+            "temp": 36.9
+          }
+        }
+      ],
+      "eval_measurements": [
+        {
+          "time": 120,
+          "marker_id": "glucose",
+          "value": 112
+        },
+        {
+          "time": 120,
+          "marker_id": "hr",
+          "value": 73
+        },
+        {
+          "time": 120,
+          "marker_id": "sbp",
+          "value": 121
+        },
+        {
+          "time": 120,
+          "marker_id": "dbp",
+          "value": 80
+        },
+        {
+          "time": 120,
+          "marker_id": "temp",
+          "value": 37.0
+        }
+      ]
+    }
+  ]
+}

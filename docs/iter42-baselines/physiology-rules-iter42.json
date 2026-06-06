@@ -1,0 +1,96 @@
+{
+  "checkpoint": "/tmp/pulse-iter42/iter42.pt",
+  "n_sample_patients": 4,
+  "rows": [
+    {
+      "name": "glucagon_falls_postprandial",
+      "source": "Unger & Orci (1981); M\u00fcller et al. (1970)",
+      "description": "Plasma glucagon decreases by \u2265 5 pg/mL within 60 min of a carbohydrate-containing meal (alpha-cell suppression by elevated glucose / insulin).",
+      "arm_label": "mixed_meal_postprandial",
+      "scale": 5.0,
+      "violation_mean": 5.00360107421875,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 0.0013241766125379557,
+        "metabolic": 0.01313839878565577,
+        "appetite": 0.0,
+        "stress": 0.001183848764444539,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "ffa_inverse_to_insulin_postprandial",
+      "source": "Frayn (2003) review; Boden (1996)",
+      "description": "Postprandial FFA is anti-correlated with insulin (antilipolysis): correlation \u2264 -0.3 over the 0\u2013180 min post-meal window.",
+      "arm_label": "mixed_meal_postprandial",
+      "scale": 0.5,
+      "violation_mean": 0.0,
+      "satisfied_fraction": 1.0,
+      "grad_norms": {
+        "gut": 0.0,
+        "metabolic": 0.0,
+        "appetite": 0.0,
+        "stress": 0.0,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "ghrelin_falls_after_meal",
+      "source": "Cummings et al. (2001)",
+      "description": "Plasma ghrelin drops by \u2265 30 pg/mL within 60 min of a meal (largest single hormonal correlate of pre/post-meal hunger).",
+      "arm_label": "mixed_meal_postprandial",
+      "scale": 30.0,
+      "violation_mean": 30.005874633789062,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 6.586925038798189e-05,
+        "metabolic": 0.00012978371724501331,
+        "appetite": 0.0019617773059630236,
+        "stress": 4.591565354771498e-06,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "bhb_rises_during_fast",
+      "source": "Cahill (2006); Owen et al. (1969)",
+      "description": "\u03b2-hydroxybutyrate rises by \u2265 0.05 mmol/L over an 8h\u219216h fast extension (onset of ketogenesis as hepatic glycogen depletes).",
+      "arm_label": "fast_8h_to_16h",
+      "scale": 0.05,
+      "violation_mean": 0.0,
+      "satisfied_fraction": 1.0,
+      "grad_norms": {
+        "gut": 0.0,
+        "metabolic": 0.0,
+        "appetite": 0.0,
+        "stress": 0.0,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "cortisol_morning_peak",
+      "source": "Czeisler et al. (1999); Weitzman et al. (1971)",
+      "description": "Plasma cortisol peaks between 06:00 and 09:00 in normally-entrained adults (cortisol awakening response on top of the circadian rise).",
+      "arm_label": "circadian_24h",
+      "scale": 120.0,
+      "violation_mean": 180.31298828125,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 0.0,
+        "metabolic": 0.10354105810396788,
+        "appetite": 0.0,
+        "stress": 3.6834693707243185,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    }
+  ]
+}

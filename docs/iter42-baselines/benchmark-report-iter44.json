@@ -1,0 +1,412 @@
+{
+  "episodes": 26,
+  "overall_weighted_mape": 0.11505817303107214,
+  "per_marker": {
+    "glucose": {
+      "samples": 181,
+      "mean_mape": 0.21385671860321445,
+      "median_mape": 0.13519280197424324,
+      "in_gate": true
+    },
+    "insulin": {
+      "samples": 21,
+      "mean_mape": 0.989719505292014,
+      "median_mape": 0.4735583882134153,
+      "in_gate": false
+    },
+    "glucagon": {
+      "samples": 21,
+      "mean_mape": 0.4440692203471946,
+      "median_mape": 0.4384526030305088,
+      "in_gate": false
+    },
+    "ffa": {
+      "samples": 21,
+      "mean_mape": 0.43198489103397514,
+      "median_mape": 0.4105430617587162,
+      "in_gate": false
+    },
+    "bhb": {
+      "samples": 21,
+      "mean_mape": 0.20559560532566604,
+      "median_mape": 0.20166994605404293,
+      "in_gate": false
+    },
+    "ghrelin": {
+      "samples": 21,
+      "mean_mape": 1.9285371121215231,
+      "median_mape": 1.726755774518751,
+      "in_gate": false
+    },
+    "leptin": {
+      "samples": 21,
+      "mean_mape": 0.026640976320491245,
+      "median_mape": 0.025897243471672955,
+      "in_gate": false
+    },
+    "glp1": {
+      "samples": 21,
+      "mean_mape": 0.27392264419843043,
+      "median_mape": 0.31781105681529703,
+      "in_gate": false
+    },
+    "cortisol": {
+      "samples": 21,
+      "mean_mape": 0.4360964451791408,
+      "median_mape": 0.33821899113657033,
+      "in_gate": false
+    },
+    "acth": {
+      "samples": 21,
+      "mean_mape": 0.501477536368999,
+      "median_mape": 0.525774174217743,
+      "in_gate": false
+    },
+    "hr": {
+      "samples": 180,
+      "mean_mape": 0.19356844526414013,
+      "median_mape": 0.18738002398830622,
+      "in_gate": true
+    },
+    "sbp": {
+      "samples": 169,
+      "mean_mape": 0.0832046101503527,
+      "median_mape": 0.07253910035125968,
+      "in_gate": true
+    },
+    "dbp": {
+      "samples": 168,
+      "mean_mape": 0.05666370572657501,
+      "median_mape": 0.04325483415043335,
+      "in_gate": true
+    },
+    "temp": {
+      "samples": 169,
+      "mean_mape": 0.015526438613836001,
+      "median_mape": 0.015445834300557081,
+      "in_gate": true
+    }
+  },
+  "verifier": {
+    "overall_score": 0.7718531638212061,
+    "category_mean": {
+      "meal": 0.5570345946106933,
+      "coupling": 0.8742530342358421,
+      "circadian": 0.7125234985385143,
+      "sanity": 0.9847178377594256,
+      "sleep": 0.9962997370988633
+    }
+  },
+  "textbook_mean_pass_rate": 0.7603174603174603,
+  "textbook_scenarios": [
+    {
+      "name": "OGTT",
+      "source": "Guyton & Hall, Medical Physiology (Ch. 79)",
+      "description": "75g oral glucose tolerance test \u2014 glucose peak/recovery, insulin response, glucagon suppression",
+      "pass_rate": 0.6,
+      "checks": [
+        {
+          "name": "glucose_rises",
+          "description": "Glucose should rise >20 mg/dL above baseline after 75g load",
+          "passed": false,
+          "value": 6.472198486328125,
+          "threshold": 20.0
+        },
+        {
+          "name": "glucose_peak_timing",
+          "description": "Glucose peak should occur 10-90 min after load (t=40-120)",
+          "passed": true,
+          "value": 40.0,
+          "threshold": 80.0
+        },
+        {
+          "name": "glucose_returns",
+          "description": "Glucose should return below 140 mg/dL by 150 min post-load (t=180)",
+          "passed": true,
+          "value": 110.14146423339844,
+          "threshold": 140.0
+        },
+        {
+          "name": "insulin_rises",
+          "description": "Insulin should rise meaningfully in response to glucose",
+          "passed": true,
+          "value": 11.123637199401855,
+          "threshold": 3.0
+        },
+        {
+          "name": "glucagon_suppressed",
+          "description": "Glucagon should be lower during glucose absorption than at baseline",
+          "passed": false,
+          "value": -0.01296234130859375,
+          "threshold": 0.0
+        }
+      ]
+    },
+    {
+      "name": "overnight_fast",
+      "source": "Cahill (2006); Guyton & Hall (Ch. 69-70)",
+      "description": "14-hour overnight fast \u2014 glucose maintenance, ketogenesis onset, hunger signaling",
+      "pass_rate": 0.8333333333333334,
+      "checks": [
+        {
+          "name": "glucose_stays_viable",
+          "description": "Glucose should remain above 60 mg/dL even after 14h fast",
+          "passed": true,
+          "value": 95.02885437011719,
+          "threshold": 60.0
+        },
+        {
+          "name": "glucose_declines",
+          "description": "Late-fast glucose should be lower than early post-meal",
+          "passed": true,
+          "value": 8.983070373535156,
+          "threshold": 0.0
+        },
+        {
+          "name": "insulin_low",
+          "description": "Insulin should be near basal (<15 \u03bcU/mL) by end of fast",
+          "passed": false,
+          "value": 19.0394287109375,
+          "threshold": 15.0
+        },
+        {
+          "name": "ffa_rises",
+          "description": "Free fatty acids should be higher at end of fast than postprandially",
+          "passed": true,
+          "value": 4.741549491882324e-05,
+          "threshold": 0.0
+        },
+        {
+          "name": "bhb_rises",
+          "description": "\u03b2-Hydroxybutyrate should rise as fat oxidation increases",
+          "passed": true,
+          "value": 0.060892194509506226,
+          "threshold": 0.0
+        },
+        {
+          "name": "ghrelin_rises",
+          "description": "Ghrelin (hunger) should increase during prolonged fast",
+          "passed": true,
+          "value": 0.1367950439453125,
+          "threshold": 0.0
+        }
+      ]
+    },
+    {
+      "name": "meal_dose_response",
+      "source": "Wolever & Bolognesi (1996)",
+      "description": "Carbohydrate dose-response: 30g vs 90g meal \u2014 glucose, insulin, GLP-1 scaling",
+      "pass_rate": 0.6666666666666666,
+      "checks": [
+        {
+          "name": "glucose_dose_response",
+          "description": "90g carb meal should produce higher glucose peak than 30g",
+          "passed": true,
+          "value": 5.206611633300781,
+          "threshold": 5.0
+        },
+        {
+          "name": "insulin_dose_response",
+          "description": "90g carb meal should produce higher insulin peak than 30g",
+          "passed": false,
+          "value": 1.9463977813720703,
+          "threshold": 2.0
+        },
+        {
+          "name": "glp1_dose_response",
+          "description": "Larger meal should produce higher GLP-1 response",
+          "passed": true,
+          "value": 0.07347393035888672,
+          "threshold": 0.0
+        }
+      ]
+    },
+    {
+      "name": "exercise_bout",
+      "source": "McArdle, Katch & Katch, Exercise Physiology",
+      "description": "30-minute moderate exercise bout \u2014 cardiovascular, metabolic, and thermal responses",
+      "pass_rate": 1.0,
+      "checks": [
+        {
+          "name": "hr_rises_during_exercise",
+          "description": "HR should increase >15 bpm during moderate exercise",
+          "passed": true,
+          "value": 36.194427490234375,
+          "threshold": 15.0
+        },
+        {
+          "name": "hr_recovers",
+          "description": "HR should recover substantially within 15 min post-exercise",
+          "passed": true,
+          "value": 77.63565063476562,
+          "threshold": 82.33222961425781
+        },
+        {
+          "name": "lactate_rises",
+          "description": "Lactate should increase during moderate exercise",
+          "passed": true,
+          "value": 1.6794167757034302,
+          "threshold": 0.3
+        },
+        {
+          "name": "temp_rises",
+          "description": "Core temperature should increase during exercise",
+          "passed": true,
+          "value": 0.5099411010742188,
+          "threshold": 0.1
+        },
+        {
+          "name": "rr_rises",
+          "description": "Respiratory rate should increase during exercise",
+          "passed": true,
+          "value": 21.861797332763672,
+          "threshold": 2.0
+        }
+      ]
+    },
+    {
+      "name": "sleep_wake_transition",
+      "source": "Somers et al. (1993); Borbely (1982)",
+      "description": "Sleep-wake transition \u2014 HR/BP dipping, temperature nadir, RR reduction",
+      "pass_rate": 1.0,
+      "checks": [
+        {
+          "name": "hr_dips_during_sleep",
+          "description": "HR should drop during sleep compared to evening",
+          "passed": true,
+          "value": 10.441558837890625,
+          "threshold": 5.0
+        },
+        {
+          "name": "sbp_dips_during_sleep",
+          "description": "SBP should dip during sleep",
+          "passed": true,
+          "value": 13.325233459472656,
+          "threshold": 3.0
+        },
+        {
+          "name": "temp_drops_at_night",
+          "description": "Core temperature should reach nadir during night",
+          "passed": true,
+          "value": 0.78472900390625,
+          "threshold": 0.1
+        },
+        {
+          "name": "rr_drops_during_sleep",
+          "description": "Respiratory rate should decrease during sleep",
+          "passed": true,
+          "value": 2.5473575592041016,
+          "threshold": 1.0
+        }
+      ]
+    },
+    {
+      "name": "cortisol_awakening_response",
+      "source": "Pruessner et al. (1997); Fries et al. (2009)",
+      "description": "Cortisol awakening response \u2014 post-wake cortisol surge, ACTH-cortisol timing",
+      "pass_rate": 0.6666666666666666,
+      "checks": [
+        {
+          "name": "cortisol_rises_after_waking",
+          "description": "Cortisol should rise substantially after waking",
+          "passed": false,
+          "value": 1.2808018875187217,
+          "threshold": 1.3
+        },
+        {
+          "name": "cortisol_morning_peak",
+          "description": "Cortisol should reach >15 \u03bcg/dL in the morning peak",
+          "passed": true,
+          "value": 17.294389724731445,
+          "threshold": 15.0
+        },
+        {
+          "name": "acth_precedes_cortisol",
+          "description": "ACTH peak should precede or coincide with cortisol peak",
+          "passed": true,
+          "value": 15.0,
+          "threshold": 0.0
+        }
+      ]
+    },
+    {
+      "name": "dietary_carbohydrate_meal_flow",
+      "source": "Pulse flow-story contract; neural trajectory with teacher gut appearance",
+      "description": "Dietary carbohydrate from a logged mixed meal: appearance, glycemic excursion, insulin/glucagon/FFA/ghrelin/GLP-1, DIT temperature, 8h glucose recovery",
+      "pass_rate": 0.5555555555555556,
+      "checks": [
+        {
+          "name": "glucose_rises_after_meal",
+          "description": "Plasma glucose should rise meaningfully after the carb-containing meal",
+          "passed": true,
+          "value": 23.420372009277344,
+          "threshold": 12.0
+        },
+        {
+          "name": "appearance_leads_glucose_peak",
+          "description": "Peak glucose appearance (gut output) should not trail the glucose peak by much",
+          "passed": true,
+          "value": 134.0,
+          "threshold": -50.0
+        },
+        {
+          "name": "insulin_peak_follows_glucose",
+          "description": "Insulin peak should occur with or after the glycemic peak (within 30 min)",
+          "passed": true,
+          "value": 20.0,
+          "threshold": -30.0
+        },
+        {
+          "name": "glucagon_suppressed_postprandial",
+          "description": "Mean glucagon after meal should stay below fasting mean",
+          "passed": false,
+          "value": -0.2833404541015625,
+          "threshold": 0.0
+        },
+        {
+          "name": "ffa_suppressed_antilipolysis",
+          "description": "Mean FFA mid-course should fall below pre-meal (insulin-mediated antilipolysis)",
+          "passed": false,
+          "value": -9.208917617797852e-06,
+          "threshold": 0.0
+        },
+        {
+          "name": "ghrelin_suppressed_after_feeding",
+          "description": "Ghrelin should be lower in the post-absorptive window than before the meal",
+          "passed": false,
+          "value": -0.01999664306640625,
+          "threshold": 0.0
+        },
+        {
+          "name": "glp1_incretin_pulse",
+          "description": "GLP-1 should show a clear post-meal pulse above fasting",
+          "passed": true,
+          "value": 7.276792526245117,
+          "threshold": 5.0
+        },
+        {
+          "name": "postprandial_warming",
+          "description": "Core temperature mean should rise slightly during the post-meal window",
+          "passed": true,
+          "value": 0.3158607482910156,
+          "threshold": 0.0
+        },
+        {
+          "name": "glucose_returns_near_baseline",
+          "description": "By late simulation, glucose mean should return near the pre-meal level",
+          "passed": false,
+          "value": 32.0001220703125,
+          "threshold": 8.0
+        }
+      ]
+    }
+  ],
+  "gate": {
+    "passed": false,
+    "failures": [
+      "glucose_mape=0.2139 > 0.2",
+      "hr_mape=0.1936 > 0.15",
+      "verifier_cat[meal]=0.5570 < 0.6500"
+    ]
+  }
+}

@@ -1,0 +1,1076 @@
+"""
+Benchmark evaluation for the modular physiology model.
+
+Evaluates model predictions against held-out measurements from
+benchmark episodes. Computes per-marker MAPE, verifier scores,
+calibration acceptance rates, and gate pass/fail.
+
+Supports two modes:
+  1. Standard benchmark: evaluate against a JSON dataset file
+  2. Calibration-under-sparsity: evaluate personalization from
+     sparse observations using synthetic user profiles
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import torch
+
+from .modules.gut import MealEvent
+from .model import ModularPhysiologyNetwork, integrate
+from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_SCALE, STATE_DIM
+from .verifier import evaluate_weak_checks
+
+# Gate-only calibration. Iter-36 investigation
+# (apps/pulse/docs/iter36-calibration-investigation.md) showed the prior
+# (32, 0.02, l2=0.1) setting was severely under-tuned: starting from a
+# zero embedding, 32 Adam steps couldn't navigate the loss landscape to
+# the embedding direction that lands HR baseline at the bench target.
+# A sweep on the iter-35 checkpoint showed monotonic improvement going
+# 32 → 512 steps + LR 0.05 + l2_weight 0.001 across every marker
+# (overall_weighted_mape 0.141 → 0.109, hr_mape 0.242 → 0.193).
+#
+# Iter-61: l2 0.001 → 0.003. Iter-60 doubled EMBEDDING_DIM (32→64) to
+# break the appetite-module bottleneck; the move worked on its target
+# (glp1 mape 2.12 → 0.43, overall 0.117 → 0.0875) but the spec-
+# pre-registered R1 fired: textbook_mean_pass_rate dropped 0.813 →
+# 0.717 while observed-marker mape improved. That asymmetry is the
+# overfit signature — the 64-dim per-episode MAP-fit has more
+# directions to absorb bench noise into the embedding code, and the
+# 0.001 L2 was calibrated against the 32-dim landscape. Tripling the
+# prior weight (per-dim equivalent of doubling, plus a margin for the
+# larger search space having more degenerate directions) is the
+# attribution-clean single-knob fix the spec named.
+#
+# Env-var overrides flow through ``ProcessPoolExecutor`` spawn cleanly
+# (child processes inherit env), letting ablations and smoke tests
+# tune calibration without editing the file.
+def _env_int(name: str, default: int) -> int:
+    v = os.environ.get(name)
+    return int(v) if v else default
+
+
+def _env_float(name: str, default: float) -> float:
+    v = os.environ.get(name)
+    return float(v) if v else default
+
+
+BENCHMARK_GATE_CALIBRATE_STEPS = _env_int("PULSE_BENCHMARK_CALIBRATE_STEPS", 512)
+BENCHMARK_GATE_CALIBRATE_LR = _env_float("PULSE_BENCHMARK_CALIBRATE_LR", 0.05)
+BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
+# Iter 61: when the checkpoint carries embedding_prior_{mean,std} (the
+# trained-table per-dim statistics), calibrate_embedding can switch from
+# the legacy isotropic L2 to a diagonal Gaussian prior matched to the
+# actual training distribution. PULSE_BENCHMARK_PRIOR_WEIGHT scales the
+# prior penalty `mean_d ((emb_d - mu_d) / sigma_d)^2` per step; 1.0 means
+# a one-sigma deviation per dim adds ~1/dim to the loss vs the per-obs
+# data MSE (NORM_SCALE-normalized) of order 0.1-1.0.
+#
+# Iter 64: default reverted to 0.0 (off). The iter-62/63 ablation on
+# iter 61's checkpoint showed PULSE_BENCHMARK_PRIOR_WEIGHT=1.0/0.5/0
+# gave overall_weighted_mape = 0.146 / 0.140 / 0.084 respectively —
+# the diag-Gauss prior at any non-zero weight is a net regression vs
+# the legacy iso-L2 path. The acth/insulin shortcut problem the prior
+# was meant to fix at EVAL is being addressed at TRAINING time instead
+# (iter-64 physiology rules: acth_precedes_cortisol_morning_peak,
+# insulin_rises_postprandial). Keep the plumbing in place for future
+# experiments — `PULSE_BENCHMARK_PRIOR_WEIGHT=1.0 bash
+# apps/pulse/scripts/benchmark-rerun.sh ...` reactivates it.
+BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
+
+
+@dataclass
+class MeasurementPoint:
+    time: int
+    marker_id: str
+    value: float
+
+
+@dataclass
+class BenchmarkEpisode:
+    user_id: str
+    duration_min: int
+    initial_state: np.ndarray
+    meals: list[MealEvent]
+    calibration_check_ins: list[dict[str, Any]]
+    eval_measurements: list[MeasurementPoint]
+    start_time_minutes: float | None = None  # minute-of-day at t=0 (UTC export); None → 360
+    sleep_wake: np.ndarray | None = None
+    activity: np.ndarray | None = None
+
+
+@dataclass
+class CalibrationResult:
+    embedding: torch.Tensor
+    final_loss: float
+    n_steps: int
+
+
+@dataclass
+class BayesianCalibrationResult:
+    """Laplace-approximation posterior over the user embedding.
+
+    The posterior is N(embedding_map, posterior_cov). ``posterior_samples``
+    are pre-drawn samples for downstream predictive-distribution computation
+    (one full integration per sample is the cost; we cache them here).
+
+    ``log_det_cov`` is the half-log-determinant of the covariance — a
+    scalar "how uncertain are we about this user" metric. Lower = more
+    constrained by the observations.
+    """
+
+    embedding_map: torch.Tensor
+    posterior_cov: torch.Tensor
+    posterior_chol: torch.Tensor
+    posterior_samples: torch.Tensor  # (K, EMBEDDING_DIM)
+    log_det_cov: float
+    map_loss: float
+
+
+def load_benchmark_dataset(path: str) -> list[BenchmarkEpisode]:
+    payload = json.loads(Path(path).read_text())
+    episodes_raw = payload.get("episodes", [])
+    episodes: list[BenchmarkEpisode] = []
+
+    for raw in episodes_raw:
+        user_id = str(raw.get("user_id", "")).strip()
+        if not user_id:
+            continue
+
+        duration_min = int(raw.get("duration_min", 12 * 60))
+        initial_state = np.array(raw.get("initial_state", []), dtype=np.float32)
+        if initial_state.shape[0] != len(MARKER_IDS):
+            continue
+
+        meals = [
+            MealEvent(
+                time=float(m.get("time", 0.0)),
+                carbs=max(0.0, float(m.get("carbs", 0.0))),
+                fats=max(0.0, float(m.get("fats", 0.0))),
+                proteins=max(0.0, float(m.get("proteins", 0.0))),
+            )
+            for m in raw.get("meals", [])
+            if isinstance(m, dict)
+        ]
+
+        calibration_check_ins = [
+            c for c in raw.get("calibration_check_ins", raw.get("check_ins", [])) if isinstance(c, dict)
+        ]
+
+        eval_measurements = parse_eval_measurements(raw, duration_min)
+        if not eval_measurements:
+            continue
+
+        st_raw = raw.get("start_time_minutes")
+        start_time_minutes: float | None = None
+        if isinstance(st_raw, (int, float)) and not isinstance(st_raw, bool):
+            start_time_minutes = float(st_raw) % 1440.0
+
+        sleep_wake: np.ndarray | None = None
+        sw_raw = raw.get("sleep_wake")
+        if isinstance(sw_raw, list) and len(sw_raw) == duration_min:
+            sleep_wake = np.array(sw_raw, dtype=np.float32)
+
+        activity: np.ndarray | None = None
+        act_raw = raw.get("activity")
+        if isinstance(act_raw, list) and len(act_raw) == duration_min:
+            activity = np.array(act_raw, dtype=np.float32)
+
+        episodes.append(BenchmarkEpisode(
+            user_id=user_id, duration_min=duration_min, initial_state=initial_state,
+            meals=meals, calibration_check_ins=calibration_check_ins,
+            eval_measurements=eval_measurements,
+            start_time_minutes=start_time_minutes,
+            sleep_wake=sleep_wake,
+            activity=activity,
+        ))
+
+    return episodes
+
+
+def describe_benchmark_dataset_load_failure(path: str) -> str:
+    """Human-readable reason when ``load_benchmark_dataset`` would return []."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        return f"cannot read file: {e}"
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as e:
+        return f"invalid JSON: {e}"
+
+    episodes_raw = payload.get("episodes")
+    if not isinstance(episodes_raw, list):
+        return "top-level 'episodes' is missing or not a list"
+    if len(episodes_raw) == 0:
+        return "'episodes' array is empty"
+
+    n_skip_user = 0
+    n_skip_state: dict[int, int] = {}
+    n_skip_eval = 0
+    n_skip_nondict = 0
+
+    for raw in episodes_raw:
+        if not isinstance(raw, dict):
+            n_skip_nondict += 1
+            continue
+        if not str(raw.get("user_id", "")).strip():
+            n_skip_user += 1
+            continue
+        duration_min = int(raw.get("duration_min", 12 * 60))
+        state_len = len(raw.get("initial_state", []))
+        if state_len != STATE_DIM:
+            n_skip_state[state_len] = n_skip_state.get(state_len, 0) + 1
+            continue
+        if not parse_eval_measurements(raw, duration_min):
+            n_skip_eval += 1
+            continue
+
+    parts = [
+        f"{len(episodes_raw)} raw episode(s) in file, none usable for benchmark "
+        f"(initial_state must have length {STATE_DIM} to match current markers)",
+    ]
+    if n_skip_state:
+        detail = ", ".join(f"{k}→{v} episode(s)" for k, v in sorted(n_skip_state.items()))
+        parts.append(f"skipped wrong initial_state length: {detail}")
+    if n_skip_eval:
+        parts.append(f"skipped no eval measurements: {n_skip_eval} episode(s)")
+    if n_skip_user:
+        parts.append(f"skipped missing user_id: {n_skip_user} episode(s)")
+    if n_skip_nondict:
+        parts.append(f"skipped non-object entries: {n_skip_nondict}")
+    return "; ".join(parts)
+
+
+def measurement_points_from_check_ins(
+    check_ins: list[dict[str, Any]], duration_min: int,
+) -> list[MeasurementPoint]:
+    points: list[MeasurementPoint] = []
+    for ci in check_ins:
+        if not isinstance(ci, dict):
+            continue
+        time_raw = ci.get("time")
+        if time_raw is None:
+            continue
+        time_idx = int(round(float(time_raw)))
+        if time_idx < 0 or time_idx >= duration_min:
+            continue
+        measurements = ci.get("measurements", {})
+        if not isinstance(measurements, dict):
+            continue
+        for marker_id in ("glucose", "hr", "sbp", "dbp", "temp"):
+            value = measurements.get(marker_id)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            points.append(MeasurementPoint(time=time_idx, marker_id=marker_id, value=float(value)))
+    return points
+
+
+def parse_eval_measurements(raw: dict[str, Any], duration_min: int) -> list[MeasurementPoint]:
+    direct = raw.get("eval_measurements")
+    if isinstance(direct, list):
+        points = _parse_points_list(direct, duration_min)
+        if points:
+            return points
+
+    check_ins = raw.get("check_ins", [])
+    if isinstance(check_ins, list):
+        return measurement_points_from_check_ins(
+            [c for c in check_ins if isinstance(c, dict)], duration_min,
+        )
+
+    return []
+
+
+def _parse_points_list(raw_points: list[Any], duration_min: int) -> list[MeasurementPoint]:
+    points: list[MeasurementPoint] = []
+    for item in raw_points:
+        if not isinstance(item, dict):
+            continue
+        marker_id = str(item.get("marker_id", "")).strip()
+        if marker_id not in MARKER_INDEX:
+            continue
+        value = item.get("value")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        time_idx = int(round(float(item.get("time", -1))))
+        if time_idx < 0 or time_idx >= duration_min:
+            continue
+        points.append(MeasurementPoint(time=time_idx, marker_id=marker_id, value=float(value)))
+    return points
+
+
+def _calibration_loss(
+    embedding: torch.Tensor,
+    *,
+    model: ModularPhysiologyNetwork,
+    obs_windows: list[tuple[int, list[MeasurementPoint]]],
+    initial_state: torch.Tensor,
+    meals: list[MealEvent],
+    duration_min: int,
+    start_time_minutes: float,
+    sleep_wake: torch.Tensor | None,
+    activity: torch.Tensor | None,
+    window_size: int,
+    l2_weight: float,
+    norm_scale: torch.Tensor,
+    prior_mean: torch.Tensor | None = None,
+    prior_std: torch.Tensor | None = None,
+    prior_weight: float = 1.0,
+) -> tuple[torch.Tensor, int]:
+    """Differentiable calibration loss in the embedding.
+
+    Mirrors what ``calibrate_embedding`` and ``bayesian_calibrate``
+    optimize: per-window integration, observation MSE in normalized
+    units, plus an L2 prior term on the embedding. Returns
+    ``(loss, n_obs)`` so the caller can detect "no observations
+    landed in any window" without doing a no-op step.
+    """
+    total_loss = torch.tensor(0.0)
+    n_obs = 0
+    for win_start, win_obs in obs_windows:
+        win_end = min(win_start + window_size, duration_min)
+        win_steps = win_end - win_start
+        win_time = (start_time_minutes + win_start) % 1440
+
+        win_initial = initial_state if win_start == 0 else torch.tensor(
+            initial_state.numpy(), dtype=torch.float32,
+        )
+        win_meals = [m for m in meals if win_start - 120 <= m.time < win_end]
+        sw = sleep_wake[win_start:win_end] if sleep_wake is not None else None
+        act = activity[win_start:win_end] if activity is not None else None
+
+        predicted = integrate(
+            model=model,
+            initial_state=win_initial,
+            embedding=embedding,
+            n_steps=win_steps,
+            dt=1.0,
+            start_time_minutes=win_time,
+            meals=win_meals,
+            sleep_wake=sw,
+            activity=act,
+        )
+
+        for obs in win_obs:
+            idx = MARKER_INDEX.get(obs.marker_id)
+            local_t = obs.time - win_start
+            if idx is None or local_t < 0 or local_t >= win_steps:
+                continue
+            pred_val = predicted[local_t, idx]
+            target_val = torch.tensor(obs.value, dtype=torch.float32)
+            total_loss = total_loss + ((pred_val - target_val) / norm_scale[idx]).pow(2)
+            n_obs += 1
+
+    if n_obs == 0:
+        return total_loss, 0
+    if prior_mean is not None and prior_std is not None and prior_weight > 0.0:
+        # Diagonal Gaussian prior matched to the trained-table per-dim
+        # std. `mean()` keeps dim-invariance and gives a per-dim scale
+        # for the prior_weight hyperparameter regardless of EMBEDDING_DIM.
+        prior_term = prior_weight * (
+            ((embedding - prior_mean) / (prior_std + 1e-6)).pow(2).mean()
+        )
+    else:
+        prior_term = l2_weight * embedding.pow(2).mean()
+    loss = total_loss / n_obs + prior_term
+    return loss, n_obs
+
+
+def calibrate_embedding(
+    model: ModularPhysiologyNetwork,
+    observations: list[MeasurementPoint],
+    initial_state: torch.Tensor,
+    meals: list[MealEvent],
+    duration_min: int,
+    start_time_minutes: float = 360.0,
+    n_steps: int = 100,
+    lr: float = 0.01,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
+    window_size: int = 240,
+    l2_weight: float = 0.1,
+    prior_mean: torch.Tensor | None = None,
+    prior_std: torch.Tensor | None = None,
+    prior_weight: float = 1.0,
+) -> CalibrationResult:
+    """Optimize embedding to best explain sparse observations.
+
+    Uses windowed integration around observation clusters rather than
+    integrating the full trajectory each step, for tractability.
+    L2 regularization prevents extreme embeddings that distort
+    unobserved markers while fitting observed ones.
+
+    Iter 61: when ``prior_mean`` and ``prior_std`` are supplied (the
+    trained-table per-dim mean/std saved on the checkpoint), the prior
+    becomes a diagonal Gaussian matched to the training distribution
+    instead of an isotropic L2. Init shifts to ``prior_mean`` so the
+    MAP-fit starts from the population-average of trained codes.
+    Without the prior args (legacy checkpoints), the old isotropic L2
+    behavior is preserved.
+    """
+    if prior_mean is not None:
+        embedding = prior_mean.detach().clone().requires_grad_(True)
+    else:
+        embedding = torch.zeros(EMBEDDING_DIM, requires_grad=True)
+    optimizer = torch.optim.Adam([embedding], lr=lr)
+    norm_scale = torch.tensor(NORM_SCALE, dtype=torch.float32)
+
+    model.eval()
+    final_loss = float("inf")
+
+    obs_windows = _build_observation_windows(observations, duration_min, window_size)
+
+    for step in range(n_steps):
+        optimizer.zero_grad()
+        with torch.enable_grad():
+            loss, n_obs = _calibration_loss(
+                embedding,
+                model=model, obs_windows=obs_windows,
+                initial_state=initial_state, meals=meals,
+                duration_min=duration_min,
+                start_time_minutes=start_time_minutes,
+                sleep_wake=sleep_wake, activity=activity,
+                window_size=window_size, l2_weight=l2_weight,
+                norm_scale=norm_scale,
+                prior_mean=prior_mean, prior_std=prior_std,
+                prior_weight=prior_weight,
+            )
+        if n_obs > 0:
+            loss.backward()
+            optimizer.step()
+            final_loss = loss.item()
+
+    return CalibrationResult(
+        embedding=embedding.detach(),
+        final_loss=final_loss,
+        n_steps=n_steps,
+    )
+
+
+def bayesian_calibrate(
+    model: ModularPhysiologyNetwork,
+    observations: list[MeasurementPoint],
+    initial_state: torch.Tensor,
+    meals: list[MealEvent],
+    duration_min: int,
+    *,
+    start_time_minutes: float = 360.0,
+    n_steps: int = 100,
+    lr: float = 0.01,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
+    window_size: int = 240,
+    l2_weight: float = 0.1,
+    n_samples: int = 20,
+    sigma_prior: float = 0.1,
+    rng_seed: int | None = None,
+) -> BayesianCalibrationResult:
+    """Laplace-approximation posterior over the user embedding.
+
+    Step 1: standard Adam → MAP estimate ``ε̂``.
+    Step 2: Hessian H of the (data) calibration loss at ε̂ via autograd.
+    Step 3: posterior precision = H + (1/σ_prior²)·I; covariance Σ is
+            its inverse, with negative-eigenvalue clipping to guard
+            against the indefinite-Hessian case (sparse obs → some
+            embedding dims unconstrained).
+    Step 4: K samples from N(ε̂, Σ).
+
+    ``sigma_prior`` is the prior std on each embedding dimension. The
+    training-time embedding initialiser uses std=0.1 (see
+    train.py:nn.init.normal_(embeddings.weight, std=0.1)), so the
+    default 0.1 keeps the Bayesian prior tight to the actual
+    population manifold the trained model expects. Larger σ would
+    let posteriors leak into embedding regions the model never saw
+    in training (predictions explode).
+
+    Note: ``l2_weight`` is the MAP-time regularizer; it is deliberately
+    independent of ``sigma_prior``. Calibration is stronger when the
+    data dominates during MAP (small l2_weight), and the posterior
+    correctly accounts for the prior afterwards.
+
+    Returns ε̂, posterior covariance, Cholesky factor, K samples,
+    and ½·log|Σ| as a calibration-quality scalar.
+    """
+    map_result = calibrate_embedding(
+        model=model, observations=observations, initial_state=initial_state,
+        meals=meals, duration_min=duration_min,
+        start_time_minutes=start_time_minutes,
+        n_steps=n_steps, lr=lr, sleep_wake=sleep_wake, activity=activity,
+        window_size=window_size, l2_weight=l2_weight,
+    )
+
+    norm_scale = torch.tensor(NORM_SCALE, dtype=torch.float32)
+    obs_windows = _build_observation_windows(observations, duration_min, window_size)
+
+    def loss_fn(eps: torch.Tensor) -> torch.Tensor:
+        loss, n_obs = _calibration_loss(
+            eps,
+            model=model, obs_windows=obs_windows,
+            initial_state=initial_state, meals=meals,
+            duration_min=duration_min,
+            start_time_minutes=start_time_minutes,
+            sleep_wake=sleep_wake, activity=activity,
+            window_size=window_size, l2_weight=l2_weight,
+            norm_scale=norm_scale,
+        )
+        # If no observations landed, return a degenerate loss anchored
+        # only by the prior — Hessian becomes (l2_weight/d)·I, which
+        # is well-conditioned and gives a posterior equal to the prior.
+        if n_obs == 0:
+            return l2_weight * eps.pow(2).mean()
+        return loss
+
+    eps_map = map_result.embedding.detach().clone().requires_grad_(True)
+    H = torch.autograd.functional.hessian(loss_fn, eps_map)
+    H = 0.5 * (H + H.T)  # numerical symmetrization
+
+    # The data-likelihood Hessian H is the second derivative of the per-obs
+    # MSE term — note the L2 prior term in ``loss_fn`` is calibration's
+    # (weak) MAP regularizer, not the posterior's prior. To get a
+    # well-calibrated posterior we add the *true* prior precision here:
+    # an isotropic Gaussian with std=σ_prior matched to the training-time
+    # embedding initialisation scale.
+    #
+    # Sparse observations leave many embedding dimensions unconstrained
+    # in H. Eigenvalue clipping forces those dims' precision to be
+    # exactly the prior precision — i.e. the posterior matches the prior
+    # in directions the data didn't constrain. This is the standard
+    # Laplace fix for "indefinite Hessian at MAP".
+    prior_precision = 1.0 / (sigma_prior ** 2)
+    eigvals, eigvecs = torch.linalg.eigh(H)
+    eigvals_clipped = torch.clamp(eigvals, min=0.0) + prior_precision
+    H_reg = (eigvecs * eigvals_clipped) @ eigvecs.T
+    H_reg = 0.5 * (H_reg + H_reg.T)
+
+    # Posterior covariance via spectral inverse (cheap because we already
+    # have the eigendecomposition).
+    cov = (eigvecs * (1.0 / eigvals_clipped)) @ eigvecs.T
+    cov = 0.5 * (cov + cov.T)
+
+    chol_cov = torch.linalg.cholesky(cov + 1e-9 * torch.eye(EMBEDDING_DIM))
+    # log|Σ| = -log|H_reg| = -sum(log eigvals_clipped)
+    log_det_cov = float(-eigvals_clipped.log().sum().item())
+
+    rng = torch.Generator()
+    if rng_seed is not None:
+        rng.manual_seed(rng_seed)
+    z = torch.randn(n_samples, EMBEDDING_DIM, generator=rng)
+    samples = eps_map.detach().unsqueeze(0) + (chol_cov @ z.T).T
+
+    return BayesianCalibrationResult(
+        embedding_map=eps_map.detach(),
+        posterior_cov=cov.detach(),
+        posterior_chol=chol_cov.detach(),
+        posterior_samples=samples.detach(),
+        log_det_cov=log_det_cov,
+        map_loss=map_result.final_loss,
+    )
+
+
+# Per-marker observation noise σ. The bench gate's MSE loss divides by
+# NORM_SCALE (the daily-variation envelope per marker), which implicitly
+# treats σ_obs ≈ NORM_SCALE — too generous for real predictive intervals.
+# These defaults reflect real-device measurement noise:
+#   CGM (Libre 3 / Dexcom): ~5–10 mg/dL  → σ_glucose = 8
+#   Oura HR (sleep): ~2–3 bpm            → σ_hr = 3
+#   Cuff BP: ~3–5 mmHg                   → σ_sbp/dbp = 4
+#   Skin temp: ~0.15 °C                  → σ_temp = 0.15
+# Markers without typical home-device measurement get a generous default
+# (40% of NORM_SCALE) — the user can tighten per their data source.
+_DEFAULT_SIGMA_OBS: dict[str, float] = {
+    "glucose": 8.0,
+    "hr": 3.0,
+    "sbp": 4.0,
+    "dbp": 4.0,
+    "temp": 0.15,
+}
+
+
+def predictive_distribution(
+    model: ModularPhysiologyNetwork,
+    samples: torch.Tensor,
+    initial_state: torch.Tensor,
+    meals: list[MealEvent],
+    duration_min: int,
+    *,
+    start_time_minutes: float = 360.0,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
+    sigma_obs: dict[str, float] | None = None,
+) -> dict[str, np.ndarray]:
+    """Run K integrations under K embedding samples; return predictive stats
+    that include both *epistemic* (embedding uncertainty) and *aleatoric*
+    (observation noise) variance.
+
+    The model is deterministic given an embedding, so without aleatoric
+    noise the predictive intervals collapse to whatever the K trajectories
+    span — usually too narrow for real-device data. ``sigma_obs`` is added
+    in quadrature with the across-sample std on the corresponding marker.
+
+    Output dict shape (duration_min, n_markers): ``mean``, ``std``,
+    ``epistemic_std``, ``p05``, ``p50``, ``p95``. ``mean`` and quantiles
+    are computed from samples + sampled noise so they include aleatoric
+    uncertainty; ``epistemic_std`` is the across-sample std alone (useful
+    for "how much do we know?" diagnostics).
+    """
+    sig = dict(_DEFAULT_SIGMA_OBS)
+    if sigma_obs:
+        sig.update(sigma_obs)
+
+    trajectories: list[np.ndarray] = []
+    model.eval()
+    for k in range(samples.shape[0]):
+        with torch.no_grad():
+            traj = integrate(
+                model=model,
+                initial_state=initial_state,
+                embedding=samples[k],
+                n_steps=duration_min,
+                dt=1.0,
+                start_time_minutes=start_time_minutes,
+                meals=meals,
+                sleep_wake=sleep_wake,
+                activity=activity,
+            ).numpy()
+        trajectories.append(traj)
+    arr = np.stack(trajectories, axis=0)  # (K, T, M)
+    epistemic_std = arr.std(axis=0)
+
+    # Per-marker aleatoric std as a (n_markers,) vector, broadcasting over time.
+    sigma_vec = np.array(
+        [sig.get(m, 0.4 * NORM_SCALE[i]) for i, m in enumerate(MARKER_IDS)],
+        dtype=np.float64,
+    )
+
+    # Add observation noise via Monte Carlo so quantiles reflect both
+    # sources without assuming Gaussianity of f(ε).
+    rng = np.random.default_rng(0)
+    noise = rng.normal(loc=0.0, scale=sigma_vec, size=arr.shape)
+    arr_noisy = arr + noise
+
+    total_std = np.sqrt(epistemic_std ** 2 + sigma_vec[None, :] ** 2)
+
+    return {
+        "mean": arr.mean(axis=0),
+        "std": total_std,
+        "epistemic_std": epistemic_std,
+        "p05": np.quantile(arr_noisy, 0.05, axis=0),
+        "p50": np.quantile(arr_noisy, 0.50, axis=0),
+        "p95": np.quantile(arr_noisy, 0.95, axis=0),
+    }
+
+
+def _build_observation_windows(
+    observations: list[MeasurementPoint],
+    duration_min: int,
+    window_size: int,
+) -> list[tuple[int, list[MeasurementPoint]]]:
+    """Group observations into non-overlapping windows."""
+    if not observations:
+        return []
+
+    sorted_obs = sorted(observations, key=lambda o: o.time)
+    windows: list[tuple[int, list[MeasurementPoint]]] = []
+    current_start = max(0, sorted_obs[0].time - window_size // 4)
+    current_obs: list[MeasurementPoint] = []
+
+    for obs in sorted_obs:
+        if obs.time >= current_start + window_size:
+            if current_obs:
+                windows.append((current_start, current_obs))
+            current_start = max(0, obs.time - window_size // 4)
+            current_obs = []
+        current_obs.append(obs)
+
+    if current_obs:
+        windows.append((current_start, current_obs))
+
+    return windows
+
+
+# Process-pool worker state. Set by _benchmark_worker_init at worker startup
+# so we don't re-pickle the model for every episode.
+_WORKER_MODEL: ModularPhysiologyNetwork | None = None
+
+
+def _benchmark_worker_init(model: ModularPhysiologyNetwork) -> None:
+    """Initialize a benchmark process-pool worker with a frozen-grad model.
+
+    The model is forwarded once at worker startup (one pickle per worker
+    instead of one per episode). We freeze parameter grads because
+    ``calibrate_embedding`` runs ``loss.backward()`` — without freezing,
+    autograd would compute (and write) grads on shared model params on
+    every Adam step, wasting CPU. The optimizer steps ``[embedding]``
+    only, so frozen model params don't change calibration semantics.
+
+    Each worker also pins torch to a single intra-op thread. By default
+    PyTorch uses all visible cores per process — with 8 workers each
+    spawning 8 threads on an 8-core box, you get 64 threads competing
+    for 8 cores and everything grinds. One thread per worker matches
+    the process-level parallelism we already get from the executor.
+    """
+    global _WORKER_MODEL
+    torch.set_num_threads(1)
+    try:
+        torch.set_num_interop_threads(1)
+    except RuntimeError:
+        # ``set_num_interop_threads`` errors if interop threads are
+        # already initialized (e.g. when a torch op ran in this process
+        # before this hook). Safe to ignore — a single intra-op thread
+        # is the dominant fix.
+        pass
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad_(False)
+    _WORKER_MODEL = model
+
+
+def _evaluate_one_episode(
+    model: ModularPhysiologyNetwork,
+    episode: BenchmarkEpisode,
+) -> dict[str, Any]:
+    """Per-episode benchmark work — calibrate, integrate, score.
+
+    Returns a flat dict the parent process aggregates: per-marker
+    (marker_id, mape) tuples plus the verifier overall + per-category
+    scores for this episode.
+    """
+    initial_state_t = torch.tensor(episode.initial_state, dtype=torch.float32)
+    t0 = (
+        float(episode.start_time_minutes) % 1440.0
+        if episode.start_time_minutes is not None
+        else 360.0
+    )
+    start_hour = t0 / 60.0
+
+    sw = None
+    act = None
+    if episode.sleep_wake is not None:
+        sw = torch.tensor(episode.sleep_wake[:episode.duration_min], dtype=torch.float32)
+    if episode.activity is not None:
+        act = torch.tensor(episode.activity[:episode.duration_min], dtype=torch.float32)
+
+    cal_obs = measurement_points_from_check_ins(
+        [c for c in episode.calibration_check_ins if isinstance(c, dict)],
+        episode.duration_min,
+    )
+    if cal_obs:
+        # Iter 61: pick up the trained-table prior stats if attached to
+        # the model (set by train.py at end-of-train and in the standalone
+        # --benchmark-only path). Absent on legacy checkpoints, in which
+        # case we fall through to the isotropic L2 path inside
+        # calibrate_embedding.
+        prior_mean = getattr(model, "_embedding_prior_mean", None)
+        prior_std = getattr(model, "_embedding_prior_std", None)
+        initial_embedding = calibrate_embedding(
+            model=model,
+            observations=cal_obs,
+            initial_state=initial_state_t,
+            meals=episode.meals,
+            duration_min=episode.duration_min,
+            start_time_minutes=t0,
+            n_steps=BENCHMARK_GATE_CALIBRATE_STEPS,
+            lr=BENCHMARK_GATE_CALIBRATE_LR,
+            l2_weight=BENCHMARK_GATE_CALIBRATE_L2,
+            sleep_wake=sw,
+            activity=act,
+            prior_mean=prior_mean,
+            prior_std=prior_std,
+            prior_weight=BENCHMARK_GATE_PRIOR_WEIGHT,
+        ).embedding
+    else:
+        initial_embedding = deterministic_user_embedding(episode.user_id)
+
+    with torch.no_grad():
+        predicted = integrate(
+            model=model,
+            initial_state=initial_state_t,
+            embedding=initial_embedding,
+            n_steps=episode.duration_min,
+            dt=1.0,
+            start_time_minutes=t0,
+            meals=episode.meals,
+            sleep_wake=sw,
+            activity=act,
+        ).numpy()
+
+    verifier_report = evaluate_weak_checks(
+        predicted, meals=episode.meals, start_hour=start_hour,
+    )
+
+    marker_errors: list[tuple[str, float]] = []
+    for point in episode.eval_measurements:
+        idx = MARKER_INDEX.get(point.marker_id)
+        if idx is None:
+            continue
+        pred = float(predicted[point.time, idx])
+        denom = max(abs(point.value), 1e-6)
+        marker_errors.append((point.marker_id, abs(pred - point.value) / denom))
+
+    cat_scores_raw = verifier_report.get("category_scores") or {}
+    cat_scores: dict[str, float] = {}
+    if isinstance(cat_scores_raw, dict):
+        for cat, sc in cat_scores_raw.items():
+            if isinstance(sc, (int, float)) and not isinstance(sc, bool):
+                cat_scores[str(cat)] = float(sc)
+
+    return {
+        "user_id": episode.user_id,
+        "marker_errors": marker_errors,
+        "verifier_overall": float(verifier_report["overall_score"]),
+        "verifier_categories": cat_scores,
+    }
+
+
+def _worker_eval_one(episode: BenchmarkEpisode) -> dict[str, Any]:
+    """Process-pool entry point: dispatches to ``_evaluate_one_episode`` using
+    the worker's pre-initialized model."""
+    if _WORKER_MODEL is None:  # pragma: no cover (defensive)
+        raise RuntimeError(
+            "benchmark worker invoked before _benchmark_worker_init",
+        )
+    return _evaluate_one_episode(_WORKER_MODEL, episode)
+
+
+def evaluate_model_against_benchmark(
+    model: ModularPhysiologyNetwork,
+    episodes: list[BenchmarkEpisode],
+    thresholds: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if thresholds is None:
+        thresholds = default_thresholds()
+    # Markers gated against marker_mape_max define which per-marker MAPEs roll
+    # into ``overall_weighted_mape``. Markers with eval points but no gate
+    # threshold (e.g. insulin / glucagon / cortisol added by the cohort
+    # episodes for unobserved-marker visibility) appear in ``per_marker`` for
+    # diagnostic reporting but are excluded from the overall — including them
+    # would change the gate's meaning since they're not part of what the gate
+    # is designed to enforce.
+    gate_marker_set: set[str] = set(
+        (thresholds.get("marker_mape_max") or {}).keys(),
+    )
+
+    marker_errors: dict[str, list[float]] = {m: [] for m in MARKER_IDS}
+    verifier_episode_scores: list[float] = []
+    verifier_category_episode_scores: dict[str, list[float]] = {}
+
+    # Per-episode calibration + integration is independent across episodes,
+    # so the loop is embarrassingly parallel. Default to up to 8 workers
+    # (matches Cloud Build's E2_HIGHCPU_8 used for cloudbuild-benchmark-only)
+    # capped by the episode count. ``PULSE_BENCHMARK_PARALLEL`` overrides;
+    # ``PULSE_BENCHMARK_PARALLEL=1`` forces serial (useful for debugging or
+    # when running inside a process that already manages its own pool).
+    n_workers_env = os.environ.get("PULSE_BENCHMARK_PARALLEL")
+    n_workers = (
+        int(n_workers_env) if n_workers_env
+        else max(1, min(8, len(episodes)))
+    )
+
+    n = len(episodes)
+    t_start = time.time()
+    # Surface which prior path is active so the bench log makes the
+    # iter-61 calibration regime self-evident from gcloud logs alone.
+    _has_learned_prior = (
+        getattr(model, "_embedding_prior_mean", None) is not None
+        and getattr(model, "_embedding_prior_std", None) is not None
+    )
+    if _has_learned_prior and BENCHMARK_GATE_PRIOR_WEIGHT > 0.0:
+        _prior_desc = f"prior=diag-gauss(w={BENCHMARK_GATE_PRIOR_WEIGHT})"
+    else:
+        _prior_desc = f"prior=iso-L2({BENCHMARK_GATE_CALIBRATE_L2})"
+    print(
+        f"[bench] {n} episodes, parallel={n_workers}, "
+        f"calibrate=(steps={BENCHMARK_GATE_CALIBRATE_STEPS} "
+        f"lr={BENCHMARK_GATE_CALIBRATE_LR} {_prior_desc})",
+        flush=True,
+    )
+
+    per_episode: list[dict[str, Any]] = []
+    if n_workers <= 1 or n <= 1:
+        for i, ep in enumerate(episodes, start=1):
+            t_ep = time.time()
+            per_episode.append(_evaluate_one_episode(model, ep))
+            print(
+                f"[bench] {i}/{n} done  user={ep.user_id}  "
+                f"ep_time={time.time() - t_ep:.0f}s  "
+                f"total={time.time() - t_start:.0f}s",
+                flush=True,
+            )
+    else:
+        with ProcessPoolExecutor(
+            max_workers=n_workers,
+            initializer=_benchmark_worker_init,
+            initargs=(model,),
+        ) as ex:
+            futures = {ex.submit(_worker_eval_one, ep): ep for ep in episodes}
+            for i, fut in enumerate(as_completed(futures), start=1):
+                ep = futures[fut]
+                try:
+                    res = fut.result()
+                except Exception as e:  # surface the first crashing episode
+                    raise RuntimeError(
+                        f"benchmark episode {ep.user_id} failed: {e}",
+                    ) from e
+                per_episode.append(res)
+                print(
+                    f"[bench] {i}/{n} done  user={ep.user_id}  "
+                    f"total={time.time() - t_start:.0f}s",
+                    flush=True,
+                )
+
+    for r in per_episode:
+        for marker_id, mape in r["marker_errors"]:
+            marker_errors[marker_id].append(mape)
+        verifier_episode_scores.append(r["verifier_overall"])
+        for cat, sc in r["verifier_categories"].items():
+            verifier_category_episode_scores.setdefault(cat, []).append(sc)
+
+    per_marker = {}
+    weighted_sum = 0.0
+    weighted_count = 0
+    for marker_id, values in marker_errors.items():
+        if not values:
+            continue
+        arr = np.array(values, dtype=np.float64)
+        mean_mape = float(arr.mean())
+        per_marker[marker_id] = {
+            "samples": int(arr.shape[0]),
+            "mean_mape": mean_mape,
+            "median_mape": float(np.median(arr)),
+            "in_gate": marker_id in gate_marker_set,
+        }
+        if marker_id in gate_marker_set:
+            weighted_sum += mean_mape * int(arr.shape[0])
+            weighted_count += int(arr.shape[0])
+
+    overall_weighted_mape = weighted_sum / max(weighted_count, 1)
+    verifier_overall = float(np.mean(verifier_episode_scores)) if verifier_episode_scores else 0.0
+
+    verifier_category_mean: dict[str, float] = {
+        cat: float(np.mean(vals))
+        for cat, vals in verifier_category_episode_scores.items()
+        if vals
+    }
+
+    return {
+        "episodes": len(episodes),
+        "overall_weighted_mape": overall_weighted_mape,
+        "per_marker": per_marker,
+        "verifier_overall": verifier_overall,
+        "verifier_category_mean": verifier_category_mean,
+    }
+
+
+def evaluate_calibration_sparsity(
+    model: ModularPhysiologyNetwork,
+    synthetic_users: list[dict],
+) -> dict[str, Any]:
+    """Evaluate personalization quality from sparse observations.
+
+    Each synthetic user has:
+      - ground_truth: (duration_min, STATE_DIM) dense trajectory
+      - sparse_observations: list[MeasurementPoint] — what a real user would log
+      - initial_state: state at t=0
+      - meals: list[MealEvent]
+      - profile_name: str
+    """
+    from .types import NORM_SCALE
+
+    results_per_user = []
+    norm_scale = np.array(NORM_SCALE, dtype=np.float64)
+
+    for user in synthetic_users:
+        profile = user["profile_name"]
+        initial_state = torch.tensor(user["initial_state"], dtype=torch.float32)
+        meals = user["meals"]
+        duration_min = user["duration_min"]
+        sparse_obs = user["sparse_observations"]
+        ground_truth = user["ground_truth"]
+        sw = user.get("sleep_wake")
+        act = user.get("activity")
+
+        sw_tensor = torch.tensor(sw, dtype=torch.float32) if sw is not None else None
+        act_tensor = torch.tensor(act, dtype=torch.float32) if act is not None else None
+
+        # Predict without calibration (generic embedding)
+        generic_emb = torch.zeros(EMBEDDING_DIM)
+        with torch.no_grad():
+            pred_generic = integrate(
+                model, initial_state, generic_emb, duration_min,
+                dt=1.0, start_time_minutes=360.0,
+                meals=meals, sleep_wake=sw_tensor, activity=act_tensor,
+            ).numpy()
+
+        # Calibrate
+        cal_result = calibrate_embedding(
+            model, sparse_obs, initial_state, meals, duration_min,
+            sleep_wake=sw_tensor, activity=act_tensor,
+        )
+
+        # Predict with calibrated embedding
+        with torch.no_grad():
+            pred_calibrated = integrate(
+                model, initial_state, cal_result.embedding, duration_min,
+                dt=1.0, start_time_minutes=360.0,
+                meals=meals, sleep_wake=sw_tensor, activity=act_tensor,
+            ).numpy()
+
+        # Per-marker MAPE comparison
+        per_marker = {}
+        for mid in MARKER_IDS:
+            idx = MARKER_INDEX[mid]
+            gt = ground_truth[:, idx]
+            denom = np.maximum(np.abs(gt), 1e-6)
+            mape_generic = float(np.mean(np.abs(pred_generic[:, idx] - gt) / denom))
+            mape_calibrated = float(np.mean(np.abs(pred_calibrated[:, idx] - gt) / denom))
+            per_marker[mid] = {
+                "mape_generic": mape_generic,
+                "mape_calibrated": mape_calibrated,
+                "improvement": mape_generic - mape_calibrated,
+            }
+
+        results_per_user.append({
+            "profile": profile,
+            "n_observations": len(sparse_obs),
+            "calibration_loss": cal_result.final_loss,
+            "per_marker": per_marker,
+        })
+
+    return {
+        "n_users": len(results_per_user),
+        "users": results_per_user,
+    }
+
+
+def default_thresholds() -> dict[str, Any]:
+    return {
+        "marker_mape_max": {"glucose": 0.20, "hr": 0.15, "sbp": 0.12, "dbp": 0.12, "temp": 0.02},
+        "overall_weighted_mape_max": 0.16,
+        "verifier_overall_min": 0.70,
+        "verifier_category_min": {
+            "meal": 0.65,
+            "coupling": 0.60,
+            "circadian": 0.55,
+            "sleep": 0.55,
+            "sanity": 0.85,
+        },
+        "textbook_mean_pass_rate_min": 0.0,
+    }
+
+
+def deterministic_user_embedding(user_id: str) -> torch.Tensor:
+    digest = hashlib.sha256(f"embedding:{user_id}".encode("utf-8")).hexdigest()
+    seed = int(digest[:8], 16)
+    rng = np.random.default_rng(seed)
+    vector = rng.normal(0, 0.1, size=EMBEDDING_DIM).astype(np.float32)
+    return torch.tensor(vector, dtype=torch.float32)

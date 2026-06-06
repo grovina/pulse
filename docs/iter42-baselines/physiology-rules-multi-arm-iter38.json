@@ -1,0 +1,114 @@
+{
+  "checkpoint": "/tmp/pulse-iter42/iter38.pt",
+  "n_sample_patients": 4,
+  "rows": [
+    {
+      "name": "glucagon_falls_postprandial",
+      "source": "Unger & Orci (1981); M\u00fcller et al. (1970)",
+      "description": "Plasma glucagon decreases by \u2265 5 pg/mL within 60 min of a carbohydrate-containing meal (alpha-cell suppression by elevated glucose / insulin). Required across mixed-meal and pure-carb (OGTT) and evening-meal arms.",
+      "arm_labels": [
+        "mixed_meal_breakfast",
+        "ogtt_75g",
+        "mixed_meal_dinner"
+      ],
+      "scale": 5.0,
+      "violation_mean": 5.001978397369385,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 0.0001775524516423189,
+        "metabolic": 0.004480236655333666,
+        "appetite": 0.0,
+        "stress": 0.00016190295281100513,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "ffa_inverse_to_insulin_postprandial",
+      "source": "Frayn (2003) review; Boden (1996)",
+      "description": "Postprandial FFA is anti-correlated with insulin (antilipolysis): correlation \u2264 -0.3 over the 0\u2013180 min post-meal window. Required across mixed-meal, OGTT, and evening-meal arms (kinetics differ; relationship shouldn't).",
+      "arm_labels": [
+        "mixed_meal_breakfast",
+        "ogtt_75g",
+        "mixed_meal_dinner"
+      ],
+      "scale": 0.5,
+      "violation_mean": 0.5329501628875732,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 8.247338472851414,
+        "metabolic": 12.777473494798844,
+        "appetite": 0.0,
+        "stress": 4.468142374642437,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "ghrelin_falls_after_meal",
+      "source": "Cummings et al. (2001)",
+      "description": "Plasma ghrelin drops by \u2265 30 pg/mL within 60 min of a meal (largest single hormonal correlate of pre/post-meal hunger). Required across mixed-meal and OGTT arms; the postprandial drop reflects nutrient sensing rather than carb-only effects.",
+      "arm_labels": [
+        "mixed_meal_breakfast",
+        "ogtt_75g",
+        "mixed_meal_dinner"
+      ],
+      "scale": 30.0,
+      "violation_mean": 30.005529403686523,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 1.4388289587318628e-05,
+        "metabolic": 8.955935293282679e-05,
+        "appetite": 0.0018264235714824451,
+        "stress": 2.2397501359637102e-06,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "bhb_rises_during_fast",
+      "source": "Cahill (2006); Owen et al. (1969)",
+      "description": "\u03b2-hydroxybutyrate rises by \u2265 0.05 mmol/L over an 8h\u219216h fast extension (onset of ketogenesis as hepatic glycogen depletes). Required across two fast-window arms \u2014 the monotone rise should hold over both 8h\u219216h and 12h\u219224h extensions.",
+      "arm_labels": [
+        "fast_8h_to_16h",
+        "fast_12h_to_24h"
+      ],
+      "scale": 0.05,
+      "violation_mean": 0.005856673698872328,
+      "satisfied_fraction": 0.5,
+      "grad_norms": {
+        "gut": 0.0,
+        "metabolic": 1.0337346742249587,
+        "appetite": 0.0,
+        "stress": 0.016904027964366217,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    },
+    {
+      "name": "cortisol_morning_peak",
+      "source": "Czeisler et al. (1999); Weitzman et al. (1971)",
+      "description": "Plasma cortisol peaks between 06:00 and 09:00 in normally-entrained adults (cortisol awakening response on top of the circadian rise). Required under both no-meal and realistic-meal conditions \u2014 the morning peak should not be drowned out by postprandial cortisol spikes.",
+      "arm_labels": [
+        "circadian_24h",
+        "circadian_24h_with_meals"
+      ],
+      "scale": 120.0,
+      "violation_mean": 183.20272827148438,
+      "satisfied_fraction": 0.0,
+      "grad_norms": {
+        "gut": 0.003307452993407216,
+        "metabolic": 0.09812545178053103,
+        "appetite": 0.0,
+        "stress": 3.956741287072684,
+        "cardiovascular": 0.0,
+        "thermoreg": 0.0,
+        "respiratory": 0.0
+      }
+    }
+  ]
+}

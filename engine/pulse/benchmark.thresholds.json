@@ -1,0 +1,20 @@
+{
+  "min_samples_per_marker": 50,
+  "marker_mape_max": {
+    "glucose": 0.2,
+    "hr": 0.15,
+    "sbp": 0.12,
+    "dbp": 0.12,
+    "temp": 0.02
+  },
+  "overall_weighted_mape_max": 0.16,
+  "verifier_overall_min": 0.7,
+  "verifier_category_min": {
+    "meal": 0.65,
+    "coupling": 0.6,
+    "circadian": 0.55,
+    "sleep": 0.55,
+    "sanity": 0.85
+  },
+  "textbook_mean_pass_rate_min": 0.45
+}

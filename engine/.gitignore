@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+demo_data.json
+*.pt
+*.pth
+
+# Local benchmark / training reports (not source of truth)
+pulse/benchmark.report*.json

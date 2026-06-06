@@ -1,0 +1,14 @@
+[project]
+name = "pulse-engine"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "numpy",
+    "fastapi",
+    "uvicorn",
+    "google-cloud-storage",
+]
+
+[tool.setuptools.packages.find]
+include = ["pulse*"]
