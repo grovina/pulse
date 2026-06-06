@@ -13,10 +13,19 @@ __pycache__/
 .env.*
 *.env
 
+# Build
+build/
+dist/
+
 # Model weights & data
 *.pt
+*.pth
 *.parquet
 *.csv
+demo_data.json
+
+# Local benchmark / training reports (not source of truth)
+pulse/benchmark.report*.json
 
 # OS
 .DS_Store

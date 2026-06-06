@@ -49,28 +49,27 @@ This is an active research project, not a finished product.
   curated physiology constraints.
 - The current bottlenecks (gradient flow into slow pools, embedding capacity, observed-marker
   supervision conflicts) are documented openly in [`docs/`](docs/) — the iteration handoffs
-  and `train/spec.json` read like a lab notebook.
+  read like a lab notebook.
 
 It is shared because the *idea* — and the engineering around training a body against the
 literature — is worth thinking about and building on.
 
 ## Layout
 
-- [`engine/`](engine/) — the model and its training/evaluation. `pulse/model.py`, the
-  subsystem `pulse/modules/`, the differentiable knowledge losses (`*_loss.py`),
-  `pulse/benchmark.py`, the `pulse/verifier.py`, and a FastAPI inference server
-  (`pulse/server.py`).
-- [`train/`](train/) — the training harness and run specs (`spec.json` documents each
-  iteration's hypothesis and expected effect).
+- [`pulse/`](pulse/) — the model and everything around it: `model.py`, the subsystem
+  `modules/`, the encoded `knowledge/`, the differentiable knowledge losses (`*_loss.py`),
+  the trainer (`train.py`), the `benchmark.py` and `verifier.py`, and a FastAPI inference
+  server (`server.py`).
 - [`docs/`](docs/) — the vision ([`docs/prd.md`](docs/prd.md)), design notes, and the full
-  iteration history.
+  iteration history (a running lab notebook).
+- [`tests/`](tests/), [`scripts/`](scripts/) — checks on the physiological signals and
+  utilities.
 
 ## Running it
 
-The engine uses [uv](https://docs.astral.sh/uv/):
+Uses [uv](https://docs.astral.sh/uv/):
 
 ```bash
-cd engine
 uv sync
 uv run python -m pulse.train       # train (synthetic episodes + knowledge losses)
 uv run python -m pulse.benchmark   # evaluate against the benchmark/gate
