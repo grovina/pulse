@@ -21,10 +21,18 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AR="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 
 echo "==> Building images (gcloud builds submit)"
+# Immutable per-build tag for traceability. The built-in $SHORT_SHA is empty for
+# source-upload builds, so we pass the short git SHA explicitly (falls back to
+# 'latest' outside a git tree). '-dirty' flags an uncommitted working tree.
+TAG="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo latest)"
+if [ "$TAG" != latest ] && ! git -C "$ROOT" diff --quiet 2>/dev/null; then
+  TAG="${TAG}-dirty"
+fi
+echo "    image tag: ${TAG}"
 gcloud builds submit "$ROOT" \
   --project "$PROJECT" \
   --config "$ROOT/deploy/cloudbuild.yaml" \
-  --substitutions "_REGION=${REGION},_REPO=${REPO}"
+  --substitutions "_REGION=${REGION},_REPO=${REPO},_TAG=${TAG}"
 
 echo "==> Deploying engine service"
 gcloud run deploy engine \

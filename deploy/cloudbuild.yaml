@@ -13,6 +13,11 @@ substitutions:
   _REGION: europe-west1
   _REPO: pulse
   _TORCH: cpu        # cpu (Cloud Run) | gpu — selects the PyTorch build
+  # Immutable per-build tag. The built-in $SHORT_SHA is only populated for
+  # git-triggered builds; `gcloud builds submit` (source upload, what deploy.sh
+  # uses) leaves it EMPTY, which produced an invalid `engine:` image ref and
+  # failed every manual deploy. deploy.sh passes the short git SHA here.
+  _TAG: latest
 
 steps:
   - id: build-engine
@@ -22,7 +27,7 @@ steps:
       - --target=server
       - --build-arg=TORCH=${_TORCH}
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:${_TAG}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:latest
       - .
@@ -35,16 +40,16 @@ steps:
       - --target=train
       - --build-arg=TORCH=${_TORCH}
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:${_TAG}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:latest
       - .
     env: ['DOCKER_BUILDKIT=1']
 
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:${_TAG}
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:latest
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:${_TAG}
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:latest
 
 options:
