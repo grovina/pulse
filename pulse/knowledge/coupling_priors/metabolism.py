@@ -44,6 +44,6 @@ COUPLING_PRIORS: list[CouplingPrior] = [
     # Holloszy (1967): trained mitochondrial / fat-oxidation capacity
     # raises the ceiling on FFA utilisation. Sign-only floor anchor for
     # the otherwise-unsupervised mitochondrial_capacity latent
-    # (apps/pulse/docs/physiology-coverage.md breadth floor).
+    # (docs/physiology-coverage.md breadth floor).
     _p("mitochondrial_capacity", "ffa", +1, (0.0005, 0.01)),
 ]

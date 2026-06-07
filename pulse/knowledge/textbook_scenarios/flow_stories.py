@@ -50,7 +50,7 @@ def dietary_carbohydrate_meal_flow_scenario(
     absorption[:,0] = glucose appearance). Typical use: neural model integrated with
     teacher gut outputs via ``make_dietary_carbohydrate_neural_trajectory_fn``.
 
-    See: apps/pulse/docs/flow-stories/dietary-carbohydrate.md
+    See: docs/flow-stories/dietary-carbohydrate.md
     """
     duration_min = DIETARY_CARB_FLOW_DURATION_MIN
     start_hour = DIETARY_CARB_FLOW_START_HOUR

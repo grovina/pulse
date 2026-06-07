@@ -8,7 +8,8 @@ iter 39 (marker vitality):
    uncertainty bands "for free"; we get a built-in calibration-quality
    metric ("how well do we know this user?").
 
-2. **Real CGM data ingestion** (`apps/caravel/tester/data/gabriel/GabrielRovina_glucose_11-7-2025.csv`):
+2. **Real CGM data ingestion** (a FreeStyle Libre 3 glucose export, ingested via
+   `scripts/ingest_real_data.py --source-dir …`):
    8018 readings, 28 days, FreeStyle Libre 3, glucose only. No labelled
    meals/insulin. Becomes a *validation* corpus for the Bayesian
    posteriors before we ever consider using it for training.
@@ -100,17 +101,17 @@ disentangle from any signal we measure. Validation first.
    returns `(eps_map, posterior_chol, posterior_samples)`.
 2. `predictive_distribution(model, samples, ...)` — runs K
    integrations, returns mean/std/quantiles per marker per time.
-3. `apps/pulse/engine/scripts/bayesian_demo.py` — runs Laplace on
+3. `scripts/bayesian_demo.py` — runs Laplace on
    iter-38 checkpoint over a bench episode, prints predictive
    intervals around eval points and the in-95%-PI coverage rate.
 
 **Workstream B — CGM ingestion** (~200 LOC, no retrain):
-1. `apps/pulse/engine/scripts/ingest_cgm.py` — reads the CSV,
+1. `scripts/ingest_cgm.py` — reads the CSV,
    normalizes timestamps + units (mmol/L → mg/dL), splits into
    continuous segments, writes a `cgm-validation-episodes.json` in
    the same shape as `benchmark.dataset.generated.json` (so all
    downstream tooling works unchanged).
-2. `apps/pulse/engine/scripts/cgm_validation.py` — runs Bayesian
+2. `scripts/cgm_validation.py` — runs Bayesian
    calibration on each CGM episode, computes per-episode coverage
    metrics.
 
@@ -267,7 +268,7 @@ revival mechanism.
 
 ### A — bench expansion for unobserved markers
 
-`apps/pulse/engine/pulse/knowledge/benchmark_extras.py`:
+`pulse/knowledge/benchmark_extras.py`:
 
 - Existing `cohort_sleep_48h_benchmark_episodes` adds 99 eval samples
   across 9 dead-pathway markers (insulin, glucagon, ffa, bhb, ghrelin,
@@ -277,7 +278,7 @@ revival mechanism.
   dynamics force insulin / glucagon / glp1 into observable regimes.
 - `all_cohort_benchmark_episodes` aggregator wired into `train.py`.
 
-`apps/pulse/engine/pulse/benchmark.py`:
+`pulse/benchmark.py`:
 
 - `evaluate_model_against_benchmark` now restricts `overall_weighted_mape`
   to gate-thresholded markers (glucose, hr, sbp, dbp, temp). The new
@@ -291,7 +292,7 @@ that iter 42+ thresholds can be sized against.
 
 ### β — re-add counter-regulatory NADIR landmarks
 
-`apps/pulse/engine/pulse/landmarks.py`:
+`pulse/landmarks.py`:
 
 - `DEFAULT_LANDMARK_SPECS` now `(HR PEAK, glucagon NADIR, ffa NADIR,
   ghrelin NADIR)` — re-instates the 3 specs that iter 34 narrowed
@@ -299,7 +300,7 @@ that iter 42+ thresholds can be sized against.
   iter-33 regressors; trajectory MSE + insulin-sweep already cover
   them).
 
-`apps/pulse/train/spec.json`:
+Training flags (`pulse.train`):
 
 - `--landmark-weight=0.20 → 0.40` so per-spec average lands at 0.10
   across the 4 specs. HR's effective weight halves (0.20 → 0.10),
@@ -382,9 +383,9 @@ actually move with meals; staying near 1.0 means revival failed
 - **Bayesian validation pipeline** shipped (commits `36044462`,
   `8ad68ed6`, `fd6e7c5a`). Reusable: `bayesian_calibrate` +
   `predictive_distribution` in `benchmark.py`, demo in
-  `apps/pulse/engine/scripts/bayesian_demo.py`, real-data
-  ingestion in `apps/pulse/engine/scripts/ingest_real_data.py`.
-- **HR-drift validation script** at `apps/pulse/engine/scripts/check_hr_drift.py`
+  `scripts/bayesian_demo.py`, real-data
+  ingestion in `scripts/ingest_real_data.py`.
+- **HR-drift validation script** at `scripts/check_hr_drift.py`
   — runs Bayesian calibration + drift slopes across 14 overnight
   episodes, compares against a saved baseline JSON. Iter-38 baseline
   at `/tmp/pulse-diag/hr_drift_iter38.json`, iter-40 at

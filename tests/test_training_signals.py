@@ -99,8 +99,9 @@ class TestColdModelDistillationSignal(unittest.TestCase):
             calib_steps=3, calib_warm_steps=2,
         )
         # Pool built at construction; each protocol carries a cold reference
-        # trajectory aligned to its duration.
-        self.assertEqual(len(sig._protocols), 8)
+        # trajectory aligned to its duration. The synthetic pool has 9 named
+        # protocols (see _build_protocol_pool).
+        self.assertEqual(len(sig._protocols), 9)
         for proto in sig._protocols:
             self.assertEqual(proto.reference.shape[0], proto.duration_min)
             self.assertEqual(proto.reference.shape[1], len(model.norm_center))

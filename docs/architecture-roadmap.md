@@ -320,7 +320,7 @@ projection per-head adapter, physiology rules 5→50).
   + relational ACTH-precedes rules don't fully resolve the diurnal
   shape (would require cold-ODE updates for the new latent state).
 - Move D (multi-timescale latent reservoirs) — still the north star
-  per `apps/pulse/docs/multi-timescale-plan.md`.
+  per `docs/multi-timescale-plan.md`.
 
 - **iter 65/66 produced no bench** (iter 65 NaN-crashed phase 2 ep 58
   via cold-distill embedding calibration without finiteness guards;
@@ -489,7 +489,7 @@ projection per-head adapter, physiology rules 5→50).
 
 **Update (2026-05-15): the multi-timescale work — Move D, "latent reservoirs"
 above — has been promoted from a single-line gesture to a full plan in
-`apps/pulse/docs/multi-timescale-plan.md`. That plan is now the north star:
+`docs/multi-timescale-plan.md`. That plan is now the north star:
 a new Adaptation module (`LearnedDynamicsModule`, same pattern as
 cardiovascular) carrying latent slow-timescale states (Si_chronic,
 RHR_chronic, glycogen_pool, autonomic_tone, cortisol_curve_health), all

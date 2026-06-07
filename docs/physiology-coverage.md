@@ -9,7 +9,7 @@ doc was first written). Every observable marker plus the internal-
 state markers has ≥1 rule; lactate, hepatic_output, HR, HRV, RR,
 SpO2, temp, and leptin moved from zero to 2–5 each. The matrix below
 remains the conceptual scorecard; **the live rule registry in
-`apps/pulse/engine/pulse/knowledge/physiology_rules.py` is the source
+`pulse/knowledge/physiology_rules.py` is the source
 of truth** for current coverage.
 
 Structural coverage updates since this doc was written:

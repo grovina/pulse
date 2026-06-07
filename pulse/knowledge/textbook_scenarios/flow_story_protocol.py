@@ -48,7 +48,7 @@ class _PhaseDef:
     end: float
 
 
-# One row per narrative band in apps/pulse/docs/flow-stories/dietary-carbohydrate.md
+# One row per narrative band in docs/flow-stories/dietary-carbohydrate.md
 _DIETARY_CARB_PHASE_DEFS: tuple[_PhaseDef, ...] = (
     _PhaseDef("baseline", "Baseline", "absolute", 0.0, float(DIETARY_CARB_PRE_MEAL_END)),
     _PhaseDef(

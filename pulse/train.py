@@ -989,8 +989,8 @@ def _run_benchmark(
     if not episodes:
         detail = describe_benchmark_dataset_load_failure(dataset_local)
         print(f"No benchmark episodes loaded — {detail}")
-        print("  (Regenerate or migrate the dataset: apps/pulse/backend benchmark:export, or "
-              "apps/pulse/engine scripts/migrate_benchmark_initial_state.py; then sync to GCS.)")
+        print("  (Migrate the dataset to the current STATE_DIM with "
+              "scripts/migrate_benchmark_initial_state.py, then sync to GCS.)")
         return 0
 
     from .knowledge.benchmark_extras import all_cohort_benchmark_episodes

@@ -338,12 +338,24 @@ Each stage builds on the stability established by the previous one. Applying all
 
 ### Training entry point
 
-Comparable checkpoints should use **`apps/pulse/scripts/train-submit.sh`** and **`apps/pulse/train/spec.json`** so hyperparameters stay aligned.
+`pulse.train` is the single entry point. Run it **locally**
+(`uv run python -m pulse.train …`, fine for small CPU runs) or as the
+**`trainer` Cloud Run job** for long runs — the job is the same image
+(`Dockerfile` `train` target), so the invocation is identical.
 
-- **Single script:** **`train-submit.sh`** — uploads **`spec.json`** + **`meta.json`** to GCS, runs **`./m app deploy pulse-train`** to refresh the trainer image + job spec (idempotent), then **`gcloud run jobs execute pulse-trainer --args=...`** (the image's `ENTRYPOINT` is `python -m pulse.train`; per-run inputs are flag overrides). Tails Cloud Logging while polling for completion; on success runs **`pulse.diagnostics compare`** vs the most recent prior job that has both a checkpoint and a benchmark report, and enforces the benchmark gate locally. Override the spec path with **`--spec`** (accepts **`gs://`**); skip the deploy step with **`--skip-deploy`** when iterating on the orchestrator and the image is already current. Benchmark dataset and thresholds URIs come from the spec (**`benchmarkDatasetUri`** / **`benchmarkThresholdsUri`** or **`infra.*`**) when set; otherwise **`gs://<bucket>/benchmarks/benchmark.dataset.generated.json`** and **`…/benchmark.thresholds.json`** with **`GCS_BUCKET`** (default **`grovina-pulse`**). Needs **`jq`**, **`gcloud`**, **`gsutil`**.
-- **Spec file:** **`apps/pulse/train/spec.json`** — the repo's default recipe (`hypothesis`, `params.trainArgs`, optional **`infra`** / top-level URIs for project, bucket, benchmarks). Each job stores **`spec.json`** and **`meta.json`** under **`gs://<bucket>/training/jobs/<jobId>/`**; **`meta.json`** records **`gitSha`**, **`gitClean`**, and **`specPath`**. **`spec.template.json`** is only a blank starter for local copies. **Reproducing a recipe:** check out the **`gitSha`** from meta (or use **`HEAD`** on a branch you trust) and run **`train-submit.sh`** with that tree's **`spec.json`** (or pass **`--spec`** to the exact file, including **`gs://…/training/jobs/<jobId>/spec.json`** to re-run the frozen JSON from a past job). **Reproducing a full run artifact-for-artifact** still needs the same **`jobId`** prefix (checkpoint, reports) and the same infra inputs (benchmark URIs, engine image); random seeds and data drift can differ unless you pin those explicitly.
-- **GCP (CI):** **`.github/workflows/pulse-train.yml`** — runs **`train-submit.sh`** when watched paths change and the commit message contains **`[pulse-train]`**. Secrets: **`PULSE_GCP_WORKLOAD_IDENTITY_PROVIDER`**, **`PULSE_GCP_SERVICE_ACCOUNT`**. The checked-out **`apps/pulse/train/spec.json`** is the spec; no repo-variable override.
-- **Engine + trainer deploys:** **`apps/pulse/engine/cloudbuild.yaml`** builds the engine image (server target) and updates the **`pulse-engine`** Cloud Run service. **`apps/pulse/train/cloudbuild.yaml`** builds the trainer image (train target) and updates the **`pulse-trainer`** Cloud Run job spec. Both are pure deploys (no execute step) — invoked via **`./m app deploy pulse`** or **`./m app deploy pulse-engine`** / **`pulse-train`**.
+- **Inputs are CLI flags** (`--n-patients`, `--n-epochs`, `--lr`,
+  `--landmark-weight`, …) — no spec file. Pass `--gcs-bucket` + `--gcs-object`
+  to upload the checkpoint and benchmark report to
+  `gs://<bucket>/training/jobs/<jobId>/`; omit them to keep a run fully local.
+  Evaluate any checkpoint against the gate with `python -m pulse.benchmark`.
+- **Deploy** (build images + create/update the Cloud Run service and job) is
+  `bash deploy/deploy.sh` (idempotent; `PROJECT`/`REGION`/`BUCKET` via env).
+  **Run** a cloud job with `gcloud run jobs execute trainer --region <region>
+  --args=--gcs-bucket=<bucket>,--gcs-object=training/jobs/<id>/model.pt`.
+- **Reproducibility:** commit before you launch — the trainer image is built
+  from your working tree, so a clean commit ties each `jobId` to an exact tree.
+  Reproducing artifact-for-artifact also needs the same seeds and benchmark
+  inputs, pinned explicitly. See `docs/training-runs.md` for the full workflow.
 
 ## Check-in signals
 

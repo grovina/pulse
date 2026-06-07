@@ -27,7 +27,7 @@ _N_EXTERNAL = 2
 # Indices 7-9 are slow internal states (unobserved, marker_type="internal"
 # in types.py) — physical pool size + protein turnover give them long τ
 # naturally under the same mass-action primitive. See
-# apps/pulse/docs/multi-timescale-plan.md.
+# docs/multi-timescale-plan.md.
 #
 # Iter 56: the iter-55 lumped glycogen_pool (500 g, one τ ≈ 10 d) could
 # not express a −60 g / 1-day fast delta. Split by tissue: liver pool

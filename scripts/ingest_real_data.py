@@ -1,7 +1,7 @@
 """
-Ingest Gabriel's real CGM + Oura HR + sleep data into bench-format episodes.
+Ingest real CGM + Oura HR + sleep data into bench-format episodes.
 
-Sources (all under apps/caravel/tester/data/gabriel/):
+Sources (all under the directory passed via ``--source-dir``):
 - ``GabrielRovina_glucose_11-7-2025.csv`` — FreeStyle Libre 3 (5-min,
   Aug 2024 - Jul 2025).
 - ``google_fit.zip``: per-marker JSONs from a Google Takeout export.
@@ -82,7 +82,6 @@ MIN_CGM_POINTS = 100  # ~8h at 5-min spacing
 MIN_HR_POINTS = 50    # Oura is dense during sleep; this requires ~4h of sleep coverage
 
 # Match types.MARKERS order so initial_state is shaped correctly.
-# (Mirrors the BASELINE block in apps/pulse/backend/src/scripts/export-benchmark.ts.)
 MARKER_ORDER = [
     "glucose", "insulin", "glucagon", "ffa", "bhb", "lactate", "hepatic_output",
     "ghrelin", "leptin", "glp1", "cortisol", "acth",
@@ -362,8 +361,8 @@ def build_episode(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--source-dir", type=Path,
-        default=Path("/Users/grovina/Projects/grovina/platform/apps/caravel/tester/data/gabriel"),
+        "--source-dir", type=Path, required=True,
+        help="Local directory holding the CGM CSV + Google Takeout zip.",
     )
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--user-id", default="gabriel")

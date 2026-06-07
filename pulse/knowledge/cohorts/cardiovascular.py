@@ -127,7 +127,7 @@ SLEEP_HR_DIP = CohortStatisticSpec(
     target=-8.0,
     sigma=4.0,
     # Iter 40: per-spec weight bumped 1.0 → 3.0 after Bayesian validation
-    # on Gabriel's real overnight CGM+Oura HR (apps/pulse/docs/bayesian-and-real-data.md)
+    # on Gabriel's real overnight CGM+Oura HR (docs/bayesian-and-real-data.md)
     # showed iter-38 over-predicts HR drift by +1.5 bpm/h across 14
     # overnight episodes. The base Somers spec exists but at default
     # weight 1.0 / cohort_statistic_weight 0.15 / 19 specs sharing

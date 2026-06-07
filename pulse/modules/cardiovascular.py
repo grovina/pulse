@@ -18,7 +18,7 @@ Iter 36 note (reverted): a per-user baseline head
 (``state_centered = state - tanh_bounded_offset(embedding)``) was added
 on the theory that calibration's shallow gradient through 12h of
 rate-of-change integration could be bypassed with a unit-slope gradient
-on baseline. Empirically (apps/pulse/docs/iter36-calibration-investigation.md):
+on baseline. Empirically (docs/iter36-calibration-investigation.md):
 hr_mape 0.193 → 0.264, sbp_mape 0.062 → 0.173, verifier_coupling
 0.876 → 0.541. The head competed with the existing dynamics pathway
 during training: the model learned to respond to glucose/insulin

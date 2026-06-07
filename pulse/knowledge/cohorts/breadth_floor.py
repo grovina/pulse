@@ -1,7 +1,7 @@
 """
 Cohort statistics: the iter-58 physiology breadth floor.
 
-Rationale: `apps/pulse/docs/physiology-coverage.md`. Twelve state
+Rationale: `docs/physiology-coverage.md`. Twelve state
 variables had zero population-level supervision; the embedding
 bottleneck freely reshuffled representational capacity between them
 (iter 57: ghrelin -0.40 while glp1 +0.66 in the same run, uncorrelated
@@ -306,7 +306,7 @@ LACTATE_EXERCISE_RISE = CohortStatisticSpec(
 # activity->muscle pathway (a coupling prior is impossible: `activity`
 # is a metabolic external, not a state marker). Real muscle dynamics
 # need the multi-week chronic-exercise protocol — explicitly the
-# iter-59+ depth campaign (apps/pulse/docs/physiology-coverage.md);
+# iter-59+ depth campaign (docs/physiology-coverage.md);
 # do NOT fight the deliberate slow tau with a large weight here.
 MUSCLE_GLYCOGEN_EXERCISE_DEPLETION = CohortStatisticSpec(
     name="muscle_glycogen_exercise_depletion",

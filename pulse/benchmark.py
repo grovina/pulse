@@ -31,7 +31,7 @@ from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_SCALE, STATE_DI
 from .verifier import evaluate_weak_checks
 
 # Gate-only calibration. Iter-36 investigation
-# (apps/pulse/docs/iter36-calibration-investigation.md) showed the prior
+# (docs/iter36-calibration-investigation.md) showed the prior
 # (32, 0.02, l2=0.1) setting was severely under-tuned: starting from a
 # zero embedding, 32 Adam steps couldn't navigate the loss landscape to
 # the embedding direction that lands HR baseline at the bench target.
@@ -83,8 +83,8 @@ BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
 # was meant to fix at EVAL is being addressed at TRAINING time instead
 # (iter-64 physiology rules: acth_precedes_cortisol_morning_peak,
 # insulin_rises_postprandial). Keep the plumbing in place for future
-# experiments — `PULSE_BENCHMARK_PRIOR_WEIGHT=1.0 bash
-# apps/pulse/scripts/benchmark-rerun.sh ...` reactivates it.
+# experiments — set `PULSE_BENCHMARK_PRIOR_WEIGHT=1.0` and re-run
+# `python -m pulse.benchmark` to reactivate it.
 BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
 
 

@@ -102,7 +102,7 @@ EXTENDED_FAST_BHB = CohortStatisticSpec(
 # zero-init SetpointHead would carry no gradient anyway). Muscle
 # preservation under a resting fast falls out of its slow τ + absence of
 # an exercise drive; its exercise supervision lands in iter 57 with the
-# chronic-block protocol. See apps/pulse/docs/multi-timescale-plan.md.
+# chronic-block protocol. See docs/multi-timescale-plan.md.
 EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
     name="extended_fast_liver_glycogen_overnight",
     source="Cahill (2006); Coppack et al. (1989) — hepatic glycogen turnover",
@@ -281,7 +281,7 @@ LARGE_MEAL_GLP1 = CohortStatisticSpec(
     # its ONLY cohort spec, at default weight, and the iter-57-ckpt
     # cohort-ablation showed it gradient-starved (g_met 0.30, pred ~0
     # vs target 12, z -2.0) — the exact pattern leptin had before its
-    # iter-58 weight=12 fix. Same remedy (apps/pulse/docs/physiology-
+    # iter-58 weight=12 fix. Same remedy (docs/physiology-
     # coverage.md "iter 58 RESULT"): bump weight so the peak anchor
     # bites, AND add the level anchor below (a peak-difference alone
     # does not pin the glp1 *level* the reshuffle moves).

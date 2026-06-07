@@ -36,10 +36,16 @@ reading propagates through real pathways instead of an entangled hidden state.
 Uses [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv sync
+uv sync                            # CPU PyTorch by default (macOS, CI, Cloud Run)
 uv run python -m pulse.train       # train against synthetic episodes + knowledge losses
 uv run python -m pulse.benchmark   # evaluate against the benchmark/gate
 uv run uvicorn pulse.server:app    # serve inference
+```
+
+On an NVIDIA host, opt into the CUDA build instead:
+
+```bash
+uv sync --no-default-groups --group gpu
 ```
 
 ## Layout
@@ -47,13 +53,19 @@ uv run uvicorn pulse.server:app    # serve inference
 - `pulse/` — the model: `model.py`, the subsystem `modules/`, the encoded `knowledge/`, the
   differentiable losses (`*_loss.py`), the trainer (`train.py`), `benchmark.py`, `verifier.py`, and
   a FastAPI `server.py`.
+- `scripts/` — standalone analysis + ingestion tools (run with `uv run`).
+- `deploy/` — Cloud Run deploy (`engine` service + `trainer` job): `setup-gcp.sh`,
+  `cloudbuild.yaml`, `deploy.sh`. Hardware/cloud-agnostic, parameterized via env.
 - `docs/` — design and history (below).
 
 ## Documents
 
 - [docs/prd.md](docs/prd.md) — the vision, prior art, and the philosophy of many weak constraints.
 - [docs/roadmap.md](docs/roadmap.md) — where it stands and where it's headed.
-- [docs/](docs/) — the iteration history, a running lab notebook.
+- [docs/training-runs.md](docs/training-runs.md) — how to launch local + Cloud Run training.
+- [docs/](docs/) — design notes plus the iteration history. The `iter<N>-handoff.md` files are a
+  running lab notebook; they predate this standalone repo, so their paths/commands reflect the
+  earlier monorepo layout.
 
 ## Prior art
 

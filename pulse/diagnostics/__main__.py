@@ -14,8 +14,8 @@ Four subcommands:
   on.
 
 All subcommands write structured JSON to ``--out`` if requested and
-always print a human-readable rendering to stdout. The shell wrapper at
-``apps/pulse/train/compare-runs.sh`` handles GCS download and invokes
+always print a human-readable rendering to stdout. To compare two runs,
+download their artifacts from GCS (``gcloud storage cp``) and invoke
 ``compare`` against the resulting local files.
 """
 

@@ -1,58 +1,43 @@
 # Pulse training runs
 
-How we launch GCP training jobs. The entrypoint is
-`apps/pulse/scripts/train-submit.sh`. There is no local-training mode —
-training always runs on Cloud Run, against the spec at
-`apps/pulse/train/spec.json`.
+`pulse.train` runs either **locally** (`uv run python -m pulse.train …`, fine
+for small CPU runs) or as the **`trainer` Cloud Run job** for long runs. Both
+use the same entry point and the same flags — the job is just the same image
+(`Dockerfile` `train` target) running in the cloud.
 
-The script splits cleanly into two phases:
+## Local
 
-1. **Deploy** (idempotent): `./m app deploy pulse-train` builds the
-   trainer image (`apps/pulse/train/cloudbuild.yaml`, `--target=train`)
-   and refreshes the `pulse-trainer` Cloud Run job spec. Fast no-op
-   when the image is already current.
-2. **Run** (ephemeral): `gcloud run jobs execute pulse-trainer --args=...`
-   invokes the deployed image with per-run flag overrides
-   (`--gcs-bucket`, `--gcs-object`, `--benchmark-*`, etc.) — same shape
-   as `python -m pulse.train --gcs-bucket=... --gcs-object=...` locally.
-   Cloud Logging is tailed live; on completion, `pulse.diagnostics
-   compare` runs against the most recent prior job that has both a
-   checkpoint and a benchmark report, and the local script enforces
-   the benchmark gate.
+```bash
+uv run python -m pulse.train --n-patients 20 --n-epochs 80   # + other flags
+uv run python -m pulse.benchmark                             # evaluate the gate
+```
 
-`--skip-deploy` short-circuits step 1 when iterating on the orchestrator
-itself.
+Pass `--gcs-bucket` + `--gcs-object` to upload the checkpoint and benchmark
+report to `gs://<bucket>/training/jobs/<id>/`; omit them to keep a run fully
+local.
 
-## Commit before submit
+## Cloud Run job
 
-**Commit the code and spec you intend to train before running
-`train-submit.sh`.** `meta.json` records `gitSha` and `gitClean`. A
-clean commit ties each job ID to an exact tree, makes diffs and rollback
-obvious, and avoids "which uncommitted edit was in that run?" confusion
-when comparing benchmarks or handoffs.
+1. **Deploy** (idempotent) — build the images and create/update the `trainer`
+   job: `bash deploy/deploy.sh`. Config via env (`PROJECT` / `REGION` /
+   `BUCKET`); see the script header.
+2. **Run** — execute with per-run flag overrides:
+   ```bash
+   gcloud run jobs execute trainer --region europe-west1 \
+     --args=--gcs-bucket=<bucket>,--gcs-object=training/jobs/<id>/model.pt
+   ```
+   Results land in `gs://<bucket>/training/jobs/<id>/`. List/inspect executions
+   with `gcloud run jobs executions list --job=trainer --region=europe-west1`;
+   logs stream to Cloud Logging. After a run, compare against a prior job with
+   `pulse.diagnostics compare` (download both jobs' artifacts from GCS first).
 
-Typical sequence:
+## Commit before you launch
 
-1. Implement the change and update `apps/pulse/train/spec.json` (and
-   the new `iter<N>-handoff.md` when applicable).
-2. Run tests: `cd apps/pulse/engine && .venv/bin/python -m pytest tests/`.
-3. `git add` / `git commit` with a message that states the iteration
-   and the main code change.
-4. `bash apps/pulse/scripts/train-submit.sh` from the repo root.
-
-CI-driven submits can pass `--git-sha` explicitly; otherwise commit-first
-keeps `meta.json` honest.
-
-The script blocks for the whole run (it does the post-run benchmark diff
-once training completes), so an agent calling it through a tool with a
-short timeout will see the wrapper killed long before the job finishes —
-even though the job *did* launch (`gcloud run jobs execute --async`). To
-stop that from leaking duplicate concurrent runs (iter 72 got
-triple-dispatched this way), `train-submit.sh` refuses to launch when a
-`pulse-trainer` execution is already running. Pass `--force` for the rare
-intentional concurrent run. To check / clean up runaway duplicates:
-`gcloud run jobs executions list --job=pulse-trainer --region=europe-west1`
-then `... executions cancel <name>`.
+Commit the code you intend to train before deploying — the trainer image is
+built from your working tree, so a clean commit ties each `jobId` to an exact
+tree and avoids "which uncommitted edit was in that run?" confusion when
+comparing benchmarks or handoffs. Run the tests first:
+`uv run --group dev pytest tests/`.
 
 ## Choosing the next iteration: structural over parametric
 
@@ -93,8 +78,6 @@ In practice:
 
 ## Further reading
 
-- Active structural thread: `apps/pulse/docs/dead-pathways.md`.
-- Latest iteration handoff: `apps/pulse/docs/iter<N>-handoff.md`.
-- Script usage: header comment in `apps/pulse/scripts/train-submit.sh`.
-- Trainer deploy yaml: `apps/pulse/train/cloudbuild.yaml` (pure deploy —
-  no execute step).
+- Active structural thread: `dead-pathways.md`.
+- Latest iteration handoff: `iter<N>-handoff.md` (historical lab notes).
+- Deploy mechanics: `deploy/deploy.sh` + `deploy/cloudbuild.yaml`.

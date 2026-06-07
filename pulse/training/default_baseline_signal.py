@@ -3,7 +3,7 @@ Default-baseline signal — pulls the trained model's zero-embedding output
 toward population-typical baselines for selected markers.
 
 Iter 36 calibration investigation
-(apps/pulse/docs/iter36-calibration-investigation.md) showed that
+(docs/iter36-calibration-investigation.md) showed that
 hr_mape ≈ 0.24 across iters 32-35 was a constant +15 bpm bias on every
 prediction: the trained model's "default patient" (zero embedding,
 fasting initial state) settled at ~88 bpm vs the bench eval mean of

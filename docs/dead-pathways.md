@@ -481,7 +481,7 @@ The answer to (2)/(3) decides everything:
   cold-distill weight much higher with the architectural-decouple to
   contain collateral.
 
-### Diagnostic result (2026-05-13, `apps/pulse/scripts/diagnose-dead-pathways.py`)
+### Diagnostic result (2026-05-13, `scripts/diagnose-dead-pathways.py`)
 
 Ran the diagnostic against the iter-46/48/49 checkpoints on
 `cohort_meal_postprandial`, calibrating each one's embedding the

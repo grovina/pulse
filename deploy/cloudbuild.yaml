@@ -12,6 +12,7 @@
 substitutions:
   _REGION: europe-west1
   _REPO: pulse
+  _TORCH: cpu        # cpu (Cloud Run) | gpu — selects the PyTorch build
 
 steps:
   - id: build-engine
@@ -19,6 +20,7 @@ steps:
     args:
       - build
       - --target=server
+      - --build-arg=TORCH=${_TORCH}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:$SHORT_SHA
       - -t
@@ -31,6 +33,7 @@ steps:
     args:
       - build
       - --target=train
+      - --build-arg=TORCH=${_TORCH}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:$SHORT_SHA
       - -t

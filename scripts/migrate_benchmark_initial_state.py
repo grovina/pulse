@@ -6,7 +6,7 @@ then rebuilds the unobserved internal-state tail (indices 19+, iter
 55+) from MARKERS typicals — robust to tail reshuffles, not just
 growth. Idempotent when already at STATE_DIM.
 
-Run from apps/pulse/engine:  uv run python scripts/migrate_benchmark_initial_state.py
+Run from the repo root:  uv run python scripts/migrate_benchmark_initial_state.py
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def migrate_episode_initial(state: list) -> list:
 def main() -> None:
     cwd = Path.cwd()
     if not (cwd / "pulse").is_dir():
-        print("Run from apps/pulse/engine (pulse/ directory missing)", file=sys.stderr)
+        print("Run from the repo root (pulse/ directory missing)", file=sys.stderr)
         sys.exit(1)
 
     for rel in FILES:

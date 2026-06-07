@@ -144,7 +144,7 @@ MARKERS = [
     # placed at end of MARKERS so other markers' indices are preserved.
     # marker_type="internal" signals to UI / scoring that these have no
     # ground truth and should be skipped in observation-driven losses.
-    # See apps/pulse/docs/multi-timescale-plan.md.
+    # See docs/multi-timescale-plan.md.
     #
     # Iter 56: the iter-55 lumped `glycogen_pool` (500 g, τ ≈ 10 d) could
     # not express a −60 g / 1-day fast delta — one cons_scale cannot

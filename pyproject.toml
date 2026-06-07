@@ -3,12 +3,52 @@ name = "pulse"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-    "torch",
     "numpy",
     "fastapi",
     "uvicorn",
     "google-cloud-storage",
 ]
 
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.packages.find]
 include = ["pulse*"]
+
+# --- PyTorch: CPU by default, GPU opt-in -----------------------------------
+# torch lives in two mutually-exclusive groups so the install is hardware-
+# agnostic. `uv sync` / `uv run` use CPU by default — correct for macOS, CI,
+# and Cloud Run (CPU). NVIDIA users opt in with:
+#
+#     uv sync --no-default-groups --group gpu
+#
+# The index pins below apply only on Linux/Windows (where PyPI's default torch
+# is a CUDA build); on macOS no pin matches, so torch resolves from PyPI — the
+# MPS-capable build. See https://docs.astral.sh/uv/guides/integration/pytorch/.
+[dependency-groups]
+cpu = ["torch"]
+gpu = ["torch"]
+dev = ["pytest"]
+
+[tool.uv]
+# `dev` is opt-in (kept out of the prod image): `uv sync --group dev` for the
+# test deps, or `uv run --group dev pytest tests/`.
+default-groups = ["cpu"]
+conflicts = [[{ group = "cpu" }, { group = "gpu" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { index = "pytorch-gpu", group = "gpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true

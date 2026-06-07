@@ -15,5 +15,5 @@
   "resources": { "cpus": 2, "memory": "4g" },
 
   "_derived": ".venv is a platform-specific build output (Linux wheels, incl. torch), so the box builds its own on a private volume — gents masks the host's mac-built .venv at <repo>/.venv. The fleet-shared uv cache (/cache/uv) downloads each wheel once across boxes. Training itself runs server-side as the `trainer` Cloud Run job, not in-box.",
-  "derived": { ".venv": "uv sync" }
+  "derived": { ".venv": "uv sync --group dev" }
 }
