@@ -40,6 +40,10 @@ ENV PYTHONUNBUFFERED=1 \
 
 COPY --from=deps /app/.venv /app/.venv
 COPY --from=deps /app/pulse /app/pulse
+# Iter recipes (committed training flag sets). The trainer loads one via
+# `--spec train/spec.json`, so the recipe must ship in the image; copied from
+# the build context (not the deps stage, which only carries pulse/).
+COPY train/ /app/train/
 
 # ===========================================================================
 # Stage 3a: Inference server (default target — used by the `engine` service)

@@ -138,6 +138,9 @@ def cohort_sleep_48h_benchmark_episodes() -> list[BenchmarkEpisode]:
         start_time_minutes=t0_min,
         sleep_wake=sw,
         activity=activity,
+        # Ground truth is the cold model the network also distils from —
+        # scoring against it measures distillation fidelity, not physiology.
+        source="teacher",
     )
     _sleep_episodes_cache = [ep]
     return _sleep_episodes_cache
@@ -219,6 +222,8 @@ def cohort_meal_postprandial_benchmark_episodes() -> list[BenchmarkEpisode]:
         start_time_minutes=t0_min,
         sleep_wake=sw,
         activity=activity,
+        # Cold-model ground truth — circular vs the distillation teacher.
+        source="teacher",
     )
     _meal_episodes_cache = [ep]
     return _meal_episodes_cache

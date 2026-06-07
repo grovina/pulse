@@ -204,6 +204,24 @@ def _load_contribution_weights_json(path: str | None) -> dict[str, float] | None
     return {str(k): float(v) for k, v in data.items()}
 
 
+def _load_spec_train_args(path: str) -> list[str]:
+    """Read a committed iter recipe (``spec.json``) and return its ``trainArgs``.
+
+    The recipe is the single source of truth for an iteration's full flag set
+    (40+ tuned flags). Before this loader the recipe lived only in an external
+    file that got dropped from the repo, so the numbers it produced were not
+    reproducible (iter-77). Now ``--spec path`` injects these args, and any
+    explicit CLI flag overrides the spec (the trainer's launch command passes
+    only ``--spec`` + the GCS in/out URIs).
+    """
+    data = json.loads(Path(path).read_text())
+    train_args = (data.get("params") or {}).get("trainArgs")
+    if not isinstance(train_args, list) or not all(isinstance(a, str) for a in train_args):
+        raise ValueError(f"spec {path}: params.trainArgs must be a list of strings")
+    # Drop any nested --spec to avoid recursion.
+    return [a for a in train_args if not a.startswith("--spec")]
+
+
 def _set_runtime(seed: int, *, deterministic: bool) -> None:
     """Initialize RNGs and PyTorch threading.
 
@@ -1039,7 +1057,9 @@ def _run_benchmark(
     report = {
         "episodes": results["episodes"],
         "overall_weighted_mape": results["overall_weighted_mape"],
+        "overall_weighted_mape_by_source": results.get("overall_weighted_mape_by_source", {}),
         "per_marker": results["per_marker"],
+        "per_marker_by_source": results.get("per_marker_by_source", {}),
         "verifier": {
             "overall_score": results["verifier_overall"],
             "category_mean": results.get("verifier_category_mean", {}),
@@ -1055,6 +1075,25 @@ def _run_benchmark(
     report_json = json.dumps(report, indent=2)
     print(f"\nBenchmark: gate.passed={gate_passed}")
     print(f"  overall_weighted_mape={results['overall_weighted_mape']:.4f}")
+    by_src = results.get("overall_weighted_mape_by_source", {})
+    if by_src:
+        print(
+            "  overall by source: "
+            + ", ".join(f"{s}={v:.4f}" for s, v in sorted(by_src.items())),
+        )
+    # Persistence skill on the measured (real) markers — the honest read the
+    # flat-window MAPE hides. <0 means worse than carrying the last reading.
+    real_pm = results.get("per_marker_by_source", {}).get("real", {})
+    skills = {
+        m: e["skill_vs_persistence"]
+        for m, e in real_pm.items()
+        if "skill_vs_persistence" in e
+    }
+    if skills:
+        print(
+            "  skill vs persistence (real): "
+            + ", ".join(f"{m}={skills[m]:+.2f}" for m in sorted(skills)),
+        )
     print(f"  verifier.overall_score={results['verifier_overall']:.4f}")
     print(f"  textbook_mean_pass_rate={textbook_block['textbook_mean_pass_rate']:.4f}")
     if failures:
@@ -1084,6 +1123,12 @@ def _run_benchmark(
 
 def main():
     parser = argparse.ArgumentParser(description="Train the modular physiology network")
+    parser.add_argument(
+        "--spec", type=str, default=None,
+        help="Path to an iter recipe JSON; its params.trainArgs are injected as "
+             "defaults (explicit CLI flags override). Keeps the full recipe in a "
+             "committed, reproducible file.",
+    )
     parser.add_argument("--n-patients", type=int, default=20)
     parser.add_argument("--n-epochs", type=int, default=80)
     parser.add_argument("--hidden-dim", type=int, default=48)
@@ -1555,7 +1600,14 @@ def main():
         ),
     )
 
-    args = parser.parse_args()
+    # Inject the recipe (if any) as defaults *before* the explicit CLI flags so
+    # an override on the command line still wins (argparse keeps the last value).
+    spec_pre, _ = parser.parse_known_args()
+    if spec_pre.spec:
+        spec_args = _load_spec_train_args(spec_pre.spec)
+        args = parser.parse_args(spec_args + sys.argv[1:])
+    else:
+        args = parser.parse_args()
 
     if args.benchmark_only:
         if not args.gcs_bucket or not args.gcs_object:

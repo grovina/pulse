@@ -1,0 +1,21 @@
+# Keep the Cloud Build source upload small + reproducible. The image installs
+# deps from pyproject.toml + uv.lock (not a copied .venv) and copies pulse/ +
+# train/ explicitly, so none of the below is needed in the build context.
+.venv/
+.venv-*/
+.git/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.gent/
+deploy/
+docs/
+tests/
+scripts/
+*.parquet
+*.csv
+demo_data.json
+.DS_Store
