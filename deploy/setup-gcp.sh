@@ -55,7 +55,8 @@ for role in \
   roles/cloudbuild.builds.editor \
   roles/artifactregistry.writer \
   roles/storage.admin \
-  roles/logging.viewer; do
+  roles/logging.viewer \
+  roles/logging.logWriter; do
   proj_bind "serviceAccount:${dev}" "$role"
 done
 
@@ -66,6 +67,9 @@ sa_user() { # actor, target_sa
 }
 sa_user "$dev" "$engine"
 sa_user "$dev" "$trainer"
+# Builds run AS dev@ (a user-managed SA — see the Cloud Build note below), so
+# dev@ must be able to actAs *itself*.
+sa_user "$dev" "$dev"
 
 # --- bucket-scoped roles for the runtime SAs --------------------------------
 gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
@@ -75,19 +79,12 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
   --member "serviceAccount:${trainer}" --role roles/storage.objectAdmin  --quiet >/dev/null || true
 
 # --- Cloud Build's build identity ------------------------------------------
-# `gcloud builds submit` runs as Cloud Build's SA. Ensure it exists and can
-# deploy to Cloud Run + push images + act as the runtime SAs.
-gcloud beta services identity create --service=cloudbuild.googleapis.com \
-  --project "$PROJECT" --quiet >/dev/null 2>&1 || true
-cb="${NUM}@cloudbuild.gserviceaccount.com"
-proj_bind "serviceAccount:${cb}" roles/run.developer
-proj_bind "serviceAccount:${cb}" roles/artifactregistry.writer
-sa_user "$cb" "$engine"
-sa_user "$cb" "$trainer"
-dev_user_on_cb() { # let dev@ trigger builds that run as the build SA
-  gcloud iam service-accounts add-iam-policy-binding "$cb" --project "$PROJECT" \
-    --member "serviceAccount:${dev}" --role roles/iam.serviceAccountUser --quiet >/dev/null 2>&1 || true
-}
-dev_user_on_cb
+# Modern `gcloud builds submit` no longer defaults to the legacy Google-managed
+# Cloud Build SA ({NUM}@cloudbuild) — it uses the Compute Engine default SA,
+# which dev@ is not granted actAs on (and the Google-managed Cloud Build SA
+# cannot be passed as a user-specified --service-account). So deploy.sh runs the
+# build AS dev@ itself (a user-managed SA dev@ can actAs, granted above), which
+# already holds artifactregistry.writer + storage.admin + logging.logWriter.
+# Nothing to provision here beyond those project bindings.
 
-echo "Done. SAs: $dev / $engine / $trainer"
+echo "Done. SAs: $dev / $engine / $trainer (builds run as $dev)"

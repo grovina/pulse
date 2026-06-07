@@ -29,9 +29,16 @@ if [ "$TAG" != latest ] && ! git -C "$ROOT" diff --quiet 2>/dev/null; then
   TAG="${TAG}-dirty"
 fi
 echo "    image tag: ${TAG}"
+# Run the build AS dev@ (a user-managed SA). Without this, `gcloud builds
+# submit` uses the Compute Engine default SA, which dev@ cannot actAs. dev@
+# holds artifactregistry.writer + storage.admin + logging.logWriter and can
+# actAs itself (granted by setup-gcp.sh). Requires non-default build logging,
+# satisfied by cloudbuild.yaml's CLOUD_LOGGING_ONLY.
+BUILD_SA="pulse-dev@${PROJECT}.iam.gserviceaccount.com"
 gcloud builds submit "$ROOT" \
   --project "$PROJECT" \
   --config "$ROOT/deploy/cloudbuild.yaml" \
+  --service-account "projects/${PROJECT}/serviceAccounts/${BUILD_SA}" \
   --substitutions "_REGION=${REGION},_REPO=${REPO},_TAG=${TAG}"
 
 echo "==> Deploying engine service"
