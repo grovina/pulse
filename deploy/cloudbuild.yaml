@@ -1,0 +1,48 @@
+# Build both Dockerfile targets and push to Artifact Registry.
+#   server target  -> the `engine` Cloud Run service image
+#   train target   -> the `trainer` Cloud Run job image
+#
+# Invoked by deploy/deploy.sh via `gcloud builds submit` (source-upload — no
+# GitHub connection needed). Images are tagged with both the build's short SHA
+# and :latest.
+#
+# Substitutions (deploy.sh passes them; defaults match the reference deployment):
+#   _REGION  europe-west1
+#   _REPO    pulse        (Artifact Registry repo)
+substitutions:
+  _REGION: europe-west1
+  _REPO: pulse
+
+steps:
+  - id: build-engine
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target=server
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:latest
+      - .
+    env: ['DOCKER_BUILDKIT=1']
+
+  - id: build-trainer
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target=train
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:latest
+      - .
+    env: ['DOCKER_BUILDKIT=1']
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/engine:latest
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/trainer:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

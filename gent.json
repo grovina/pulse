@@ -1,0 +1,19 @@
+{
+  "name": "pulse",
+  "summary": "Pulse — a differentiable model of human physiology, trained against the medical literature. Python + uv. `uv run python -m pulse.train` (train), `… -m pulse.benchmark` (eval), `uv run uvicorn pulse.server:app` (serve). State lives in GCS (bucket via --gcs-bucket / $PULSE_BUCKET); deploys to Cloud Run (service `engine`, job `trainer`) — see deploy/.",
+
+  "_doc": "Repo-side requirements (versioned with the code, public). The host (gents fleet.json) decides what's actually granted: it mounts a GCP SA key and injects the project/config env. This file names needs generically — no host-specific IDs — so the repo stays runs-anywhere.",
+
+  "needs": {
+    "secrets": [
+      { "name": "gcp", "why": "GCS read/write (models + training artifacts) and Cloud Run deploys via the box's dev SA" }
+    ],
+    "egress": ["*.googleapis.com", "pypi.org", "files.pythonhosted.org", "download.pytorch.org"],
+    "tools": ["python>=3.10", "uv"]
+  },
+
+  "resources": { "cpus": 2, "memory": "4g" },
+
+  "_derived": ".venv is a platform-specific build output (Linux wheels, incl. torch), so the box builds its own on a private volume — gents masks the host's mac-built .venv at <repo>/.venv. The fleet-shared uv cache (/cache/uv) downloads each wheel once across boxes. Training itself runs server-side as the `trainer` Cloud Run job, not in-box.",
+  "derived": { ".venv": "uv sync" }
+}
