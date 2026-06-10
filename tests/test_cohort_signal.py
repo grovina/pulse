@@ -18,7 +18,12 @@ from pulse.knowledge.cohort_types import (
     StatisticWindow,
 )
 from pulse.model import ModularPhysiologyNetwork
-from pulse.training import CohortStatisticSignal, SignalContext, WeightSchedule
+from pulse.training import (
+    CohortStatisticSignal,
+    SignalContext,
+    WeightSchedule,
+    joint_aux_step,
+)
 from pulse.types import EMBEDDING_DIM, NORM_CENTER
 
 
@@ -90,6 +95,8 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         )
         before = {n: p.detach().clone() for n, p in model.named_parameters()}
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         moved = any(
             float((p.detach() - before[n]).abs().sum()) > 0
             for n, p in model.named_parameters()
@@ -177,6 +184,8 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         )
         before = emb.weight.detach().clone()
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         after = emb.weight.detach().clone()
 
         self.assertEqual(result.n_units, 1)

@@ -23,7 +23,7 @@ from ..dose_response import (
     dose_response_epoch_loss,
 )
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -87,7 +87,7 @@ class DoseResponseSignal(TrainingSignal):
             "n_emb": float(len(emb_list)),
         }
         extra.update(diagnostics)
-        safe_step(w * loss, ctx, signal=self.name, extra=extra)
+        accumulate_grad(w * loss, ctx, signal=self.name, extra=extra)
         return SignalResult(
             loss_sum=float(loss.detach().item()),
             n_units=1,

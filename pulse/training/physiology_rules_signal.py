@@ -38,7 +38,7 @@ from ..physiology_rules_loss import (
 )
 from ..types import NORM_CENTER
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import NaNTrainingAbort, _grad_stats
+from .safe_step import finalize_aux_accumulation, grad_snapshot
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -208,7 +208,6 @@ class PhysiologyRulesSignal(TrainingSignal):
         )
         if not sample_emb_list:
             return SignalResult()
-        n_emb = len(sample_emb_list)
         del sample_emb_list  # rebuild fresh per rule below
 
         sampled_pids: np.ndarray | None = None
@@ -241,7 +240,14 @@ class PhysiologyRulesSignal(TrainingSignal):
             weight_sum += rw
         weight_sum = weight_sum or 1e-8
 
-        ctx.optimizer.zero_grad()
+        # iter 78: accumulate this signal's gradient (per-rule backward + graph
+        # drop to keep peak memory bounded — see the block comment above) WITHOUT
+        # a solo clip+step. The trainer applies one joint clip+step over every
+        # auxiliary signal so their weights compose instead of each taking a solo
+        # clipped step. ``snapshot`` (taken before the first backward) lets a
+        # non-finite contribution be rolled back and dropped rather than abort
+        # the run (isolation policy); a single non-finite rule is skipped.
+        snapshot = grad_snapshot(ctx)
         raw_weighted_sum = 0.0
         diags: dict[str, dict[str, float]] = {}
         for rule in self.rules:
@@ -264,49 +270,20 @@ class PhysiologyRulesSignal(TrainingSignal):
             # loss is identical to the old composite path.
             weighted = (w * rw / weight_sum) * loss_t
             if not torch.isfinite(weighted):
-                ctx.optimizer.zero_grad()
-                flat_extras: dict[str, float] = {
-                    "rule": 0.0,  # categorical; rule name lives in extra below
-                    "rule_name": float("nan"),
-                    "weight": float(w),
-                    "rule_weight": float(rw),
-                    "n_emb": float(n_emb),
-                    "n_rules": float(len(self.rules)),
-                    "adaptive": 1.0 if self.adaptive else 0.0,
-                }
-                for rname, d in diags.items():
-                    flat_extras[f"viol_{rname}"] = d["violation_mean"]
-                    flat_extras[f"sat_{rname}"] = d["satisfied_fraction"]
-                raise NaNTrainingAbort(
-                    signal=self.name,
-                    epoch=ctx.epoch,
-                    cause="loss",
-                    loss_value=float(weighted.detach().item()),
-                    extra={**flat_extras, "aborted_rule": rule.name},
+                print(
+                    f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                    f"cause=loss rule={rule.name} (rule dropped this epoch)",
+                    flush=True,
                 )
+                del loss_t, weighted, emb_list
+                continue
             weighted.backward()
             raw_weighted_sum += float(loss_t.detach().item()) * rw
             del loss_t, weighted, emb_list
 
         raw_avg = raw_weighted_sum / weight_sum
 
-        all_finite, gstats = _grad_stats(ctx.params)
-        if not all_finite:
-            ctx.optimizer.zero_grad()
-            merged: dict[str, float] = dict(gstats)
-            for rname, d in diags.items():
-                merged[f"viol_{rname}"] = d["violation_mean"]
-                merged[f"sat_{rname}"] = d["satisfied_fraction"]
-            raise NaNTrainingAbort(
-                signal=self.name,
-                epoch=ctx.epoch,
-                cause="grad",
-                loss_value=raw_avg,
-                extra=merged,
-            )
-        nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
-        ctx.optimizer.step()
-        ctx.optimizer.zero_grad()
+        finalize_aux_accumulation(ctx, snapshot, signal=self.name)
 
         if self.adaptive:
             self._update_violation_ema(diags)

@@ -29,6 +29,7 @@ from pulse.training import (
     GutDoseSweepSignal,
     SignalContext,
     WeightSchedule,
+    joint_aux_step,
 )
 from pulse.training.gut_dose_sweep_signal import _cold_target_for_dose
 from pulse.types import EMBEDDING_DIM, GUT_OUTPUT_DIM
@@ -151,6 +152,8 @@ class TestSignalGating(unittest.TestCase):
             n: p.detach().clone() for n, p in model.gut.named_parameters()
         }
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         moved = any(
             float((p.detach() - before[n]).abs().sum()) > 0
             for n, p in model.gut.named_parameters()
@@ -227,6 +230,11 @@ class TestGradientFlow(unittest.TestCase):
             n: p.detach().clone() for n, p in model.respiratory.named_parameters()
         }
         sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        # The respiratory module must still receive no gradient even when a step
+        # is taken over the accumulated gut-sweep gradient.
+        if ctx.aux_accumulated:
+            joint_aux_step(ctx)
         moved = any(
             float((p.detach() - before[n]).abs().sum()) > 0
             for n, p in model.respiratory.named_parameters()
@@ -259,6 +267,8 @@ class TestLearningSanity(unittest.TestCase):
                 device=device, optimizer=opt, params=params, grad_clip=10.0,
             )
             r = sig.compute(model, emb, ctx)
+            # iter 78: aux signals accumulate; the trainer applies the joint step.
+            joint_aux_step(ctx)
             losses.append(r.loss_sum)
         self.assertLess(losses[-1], losses[0],
                         f"loss did not decrease: {losses}")
@@ -514,6 +524,8 @@ class TestAucMatchingTerm(unittest.TestCase):
                 device=device, optimizer=opt, params=params, grad_clip=10.0,
             )
             sig.compute(model, emb, ctx)
+            # iter 78: aux signals accumulate; the trainer applies the joint step.
+            joint_aux_step(ctx)
         auc_end = auc_at_120()
 
         # The cold-target AUC at 120 g for this protocol; we expect the
@@ -566,6 +578,8 @@ class TestMonotonicityRegression(unittest.TestCase):
                 device=device, optimizer=opt, params=params, grad_clip=10.0,
             )
             sig.compute(model, emb, ctx)
+            # iter 78: aux signals accumulate; the trainer applies the joint step.
+            joint_aux_step(ctx)
 
         zero_emb = torch.zeros(EMBEDDING_DIM, device=device)
         emb_gut = model.embedding_projections["gut"](zero_emb)

@@ -38,7 +38,7 @@ from ..model import ModularPhysiologyNetwork
 from ..modules.gut import GUT_OUTPUT_SCALE, MealEvent
 from ..types import GUT_OUTPUT_DIM
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -300,7 +300,7 @@ class GutDoseSweepSignal(TrainingSignal):
         n_pairs = B * len(self.protocol.carb_doses_g)
         n_inv_zero_f = float(n_inv_zero) if self.include_default_embedding else 0.0
 
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,

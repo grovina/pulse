@@ -58,7 +58,7 @@ from ..types import (
     NORM_SCALE,
 )
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -466,7 +466,7 @@ class InsulinSweepSignal(TrainingSignal):
             len(self.protocol.glucose_sweep_mg_dL) + len(self.protocol.insulin_sweep_uU_mL)
         )
 
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,

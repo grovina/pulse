@@ -30,7 +30,7 @@ from ..knowledge.full_body import PatientParams
 from ..knowledge.textbook_scenarios.base import cold_model_trajectory
 from ..types import NORM_CENTER
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import NaNTrainingAbort, _grad_stats
+from .safe_step import finalize_aux_accumulation, grad_snapshot
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -233,13 +233,19 @@ class CohortStatisticSignal(TrainingSignal):
             (override.get(spec.name, spec.weight) if override else spec.weight)
             for spec in self.specs
         ) or 1e-8
-        ctx.optimizer.zero_grad()
+        # iter 78: accumulate this signal's gradient (per-spec backward + graph
+        # drop to keep peak memory bounded — see the block comment above) WITHOUT
+        # a solo clip+step. The trainer applies one joint clip+step over every
+        # auxiliary signal so their weights compose instead of each taking a solo
+        # clipped step. ``snapshot`` (taken before the first backward) lets a
+        # non-finite contribution be rolled back and dropped rather than abort
+        # the run (isolation policy); a single non-finite spec is skipped.
+        snapshot = grad_snapshot(ctx)
         raw_weighted_sum = 0.0
         z_by_spec: dict[str, float] = {}
         loss_by_spec: dict[str, float] = {}
         for spec in self.specs:
             emb_list = build_emb_list()
-            n_emb = len(emb_list)
             loss_t, _pred, z = cohort_statistic_loss_one_spec(
                 model, emb_list, spec, init_fn(spec),
             )
@@ -248,40 +254,20 @@ class CohortStatisticSignal(TrainingSignal):
             loss_by_spec[spec.name] = float(loss_t.detach().item())
             weighted = (w * sw / total_weight) * loss_t
             if not torch.isfinite(weighted):
-                ctx.optimizer.zero_grad()
-                raise NaNTrainingAbort(
-                    signal=self.name,
-                    epoch=ctx.epoch,
-                    cause="loss",
-                    loss_value=float(weighted.detach().item()),
-                    extra={
-                        "spec": spec.name,
-                        "weight": float(w),
-                        "n_emb": float(n_emb),
-                        **{f"z_{n}": float(zv) for n, zv in z_by_spec.items()},
-                    },
+                print(
+                    f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                    f"cause=loss spec={spec.name} (spec dropped this epoch)",
+                    flush=True,
                 )
+                del loss_t, weighted, _pred, emb_list
+                continue
             weighted.backward()
             raw_weighted_sum += loss_by_spec[spec.name] * sw
             del loss_t, weighted, _pred, emb_list  # release graph leaves promptly
 
         raw_avg = raw_weighted_sum / total_weight
 
-        all_finite, gstats = _grad_stats(ctx.params)
-        if not all_finite:
-            ctx.optimizer.zero_grad()
-            merged: dict[str, float] = dict(gstats)
-            merged.update({f"z_{n}": float(zv) for n, zv in z_by_spec.items()})
-            raise NaNTrainingAbort(
-                signal=self.name,
-                epoch=ctx.epoch,
-                cause="grad",
-                loss_value=raw_avg,
-                extra=merged,
-            )
-        nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
-        ctx.optimizer.step()
-        ctx.optimizer.zero_grad()
+        finalize_aux_accumulation(ctx, snapshot, signal=self.name)
 
         if self.adaptive:
             self._update_violation_ema(loss_by_spec)

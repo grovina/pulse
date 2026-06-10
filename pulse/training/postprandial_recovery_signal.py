@@ -36,7 +36,7 @@ import torch.nn as nn
 from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import MealEvent
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 # Match flow_story_protocol.py exactly so training and bench measure the same thing.
@@ -100,7 +100,7 @@ class PostprandialRecoverySignal(TrainingSignal):
         residual_norm = (recovery - baseline) / glc_scale
         loss = residual_norm.pow(2)
 
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,

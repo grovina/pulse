@@ -139,3 +139,140 @@ def safe_step(
     ctx.optimizer.step()
     ctx.optimizer.zero_grad()
     return float(loss.detach().item())
+
+
+# ---------------------------------------------------------------------------
+# Joint auxiliary-signal accumulation (iter 78).
+#
+# ``safe_step`` is per-signal: backward + clip_grad_norm_(grad_clip) + step. When
+# every auxiliary signal calls it, each takes a *solo* clipped step in sequence,
+# so (a) a signal's relative weight is erased whenever its grad-norm exceeds the
+# clip (30 iters of weight sweeps went byte-identical for exactly this reason),
+# and (b) one unstable signal can both fight the others and unilaterally abort
+# the run (iter 77 died at epoch 39 when ``postprandial_recovery``'s long rollout
+# ran away and its gradient went NaN — before phase 2 ever engaged).
+#
+# The fix: auxiliary signals ACCUMULATE their (already-weighted) gradient via
+# ``accumulate_grad`` / ``finalize_aux_accumulation`` without stepping, and the
+# trainer applies ONE ``joint_aux_step`` (clip + step) over the combined
+# gradient per epoch. Weights then compose (the joint clip scales the whole, so
+# relative magnitudes survive), signals stop fighting sequentially, and per-epoch
+# aux drift drops from ~10 clipped steps to one. The trajectory signal keeps its
+# own per-window SGD (the main data fit, ~84 steps/epoch) — folding it in would
+# cut its steps ~90x and be untrainable.
+#
+# Isolation policy: a single aux signal whose loss or gradient is non-finite has
+# its contribution rolled back and dropped (logged), not aborted — so it can
+# neither poison the joint gradient nor kill a run before it produces numbers.
+# Strict abort is preserved for the trajectory signal (its safe_step) and, as
+# defense-in-depth, for the combined gradient in ``joint_aux_step``.
+# ---------------------------------------------------------------------------
+
+
+def grad_snapshot(ctx: SignalContext) -> list[torch.Tensor | None]:
+    """Clone the current ``.grad`` buffers so one aux signal's contribution can
+    be rolled back if it turns out non-finite. The model is small (~0.2M params)
+    so the clone is cheap relative to a rollout."""
+    return [None if p.grad is None else p.grad.detach().clone() for p in ctx.params]
+
+
+def _rollback_grad(ctx: SignalContext, snapshot: list[torch.Tensor | None]) -> None:
+    """Restore ``.grad`` to a prior snapshot, undoing the most recent signal's
+    accumulation while preserving every earlier aux signal's contribution."""
+    for p, g0 in zip(ctx.params, snapshot):
+        if g0 is None:
+            p.grad = None
+        elif p.grad is None:
+            p.grad = g0.clone()
+        else:
+            p.grad.copy_(g0)
+
+
+def _log_skip(signal: str, ctx: SignalContext, cause: str, detail: str) -> None:
+    print(
+        f"[SKIP-NONFINITE] signal={signal} epoch={ctx.epoch} cause={cause} "
+        f"{detail} (contribution dropped this epoch)",
+        flush=True,
+    )
+
+
+def accumulate_grad(
+    loss: torch.Tensor,
+    ctx: SignalContext,
+    *,
+    signal: str,
+    extra: dict[str, Any] | None = None,  # noqa: ARG001 — accepted for safe_step parity
+) -> float:
+    """Backward-accumulate ONE single-tensor aux signal's (already weighted)
+    gradient into the shared buffers WITHOUT clipping/stepping/zeroing.
+
+    Per-signal isolation: if ``loss`` or the resulting gradient is non-finite,
+    this signal's contribution is rolled back and dropped (logged), and the run
+    continues. On success, marks ``ctx.aux_accumulated`` so the trainer applies
+    one joint step. Returns the detached loss value (always, for logging).
+    """
+    lv = float(loss.detach().item())
+    if not math.isfinite(lv):
+        _log_skip(signal, ctx, "loss", f"loss={lv!r}")
+        return lv
+    snapshot = grad_snapshot(ctx)
+    loss.backward()
+    all_finite, gstats = _grad_stats(ctx.params)
+    if not all_finite:
+        _rollback_grad(ctx, snapshot)
+        _log_skip(
+            signal, ctx, "grad",
+            f"n_nan={gstats['n_nan_params']:.0f} n_inf={gstats['n_inf_params']:.0f}",
+        )
+        return lv
+    ctx.aux_accumulated = True
+    return lv
+
+
+def finalize_aux_accumulation(
+    ctx: SignalContext,
+    snapshot: list[torch.Tensor | None],
+    *,
+    signal: str,
+) -> bool:
+    """Finalize an aux signal that accumulated gradient via several per-term
+    ``backward()`` calls (cohort, physiology_rules — they backward per spec/rule
+    and drop each graph to cap memory). ``snapshot`` must have been taken with
+    ``grad_snapshot`` before the signal's first backward. If the combined
+    gradient is non-finite, roll this signal's whole contribution back and drop
+    it (logged); otherwise mark the context accumulated. Returns whether it was
+    kept.
+    """
+    all_finite, gstats = _grad_stats(ctx.params)
+    if not all_finite:
+        _rollback_grad(ctx, snapshot)
+        _log_skip(
+            signal, ctx, "grad",
+            f"n_nan={gstats['n_nan_params']:.0f} n_inf={gstats['n_inf_params']:.0f}",
+        )
+        return False
+    ctx.aux_accumulated = True
+    return True
+
+
+def joint_aux_step(ctx: SignalContext, *, signal: str = "joint_aux") -> dict[str, float]:
+    """One clip + step + zero over the auxiliary signals' accumulated gradient.
+
+    Defense-in-depth strict abort: individual aux signals already isolate their
+    own NaNs, so a non-finite *combined* gradient here is unexpected and treated
+    as a real divergence (raises ``NaNTrainingAbort`` for the trainer to dump).
+    """
+    all_finite, gstats = _grad_stats(ctx.params)
+    if not all_finite:
+        ctx.optimizer.zero_grad()
+        raise NaNTrainingAbort(
+            signal=signal,
+            epoch=ctx.epoch,
+            cause="grad",
+            loss_value=float("nan"),
+            extra=gstats,
+        )
+    nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
+    ctx.optimizer.step()
+    ctx.optimizer.zero_grad()
+    return gstats

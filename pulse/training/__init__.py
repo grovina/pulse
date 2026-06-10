@@ -17,7 +17,14 @@ from .signals import (
     TrainingSignal,
     WeightSchedule,
 )
-from .safe_step import NaNTrainingAbort, safe_step
+from .safe_step import (
+    NaNTrainingAbort,
+    accumulate_grad,
+    finalize_aux_accumulation,
+    grad_snapshot,
+    joint_aux_step,
+    safe_step,
+)
 from .trajectory_signal import TrajectoryRolloutSignal
 from .cohort_signal import CohortStatisticSignal
 from .dose_response_signal import DoseResponseSignal
@@ -37,6 +44,10 @@ __all__ = [
     "WeightSchedule",
     "NaNTrainingAbort",
     "safe_step",
+    "accumulate_grad",
+    "finalize_aux_accumulation",
+    "grad_snapshot",
+    "joint_aux_step",
     "TrajectoryRolloutSignal",
     "CohortStatisticSignal",
     "DoseResponseSignal",

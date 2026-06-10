@@ -34,7 +34,7 @@ import torch.nn as nn
 
 from ..model import integrate
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 
@@ -81,7 +81,7 @@ class FastingStabilitySignal(TrainingSignal):
 
         drift = ((pred[:, glc_idx] - initial[glc_idx]) / glc_scale).pow(2).mean()
 
-        safe_step(
+        accumulate_grad(
             w * drift,
             ctx,
             signal=self.name,

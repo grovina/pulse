@@ -26,6 +26,7 @@ from pulse.training import (
     InsulinSweepSignal,
     SignalContext,
     WeightSchedule,
+    joint_aux_step,
 )
 from pulse.training.insulin_sweep_signal import _cold_metabolic_rates
 from pulse.types import EMBEDDING_DIM
@@ -115,6 +116,8 @@ class TestSignalGating(unittest.TestCase):
         )
         before = {n: p.detach().clone() for n, p in model.metabolic.named_parameters()}
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         moved = any(
             float((p.detach() - before[n]).abs().sum()) > 0
             for n, p in model.metabolic.named_parameters()
@@ -151,6 +154,10 @@ class TestGradientFlow(unittest.TestCase):
             )
         }
         sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        # Unrelated modules must still receive no gradient even when one is taken.
+        if ctx.aux_accumulated:
+            joint_aux_step(ctx)
         for mod_name, mod in (
             ("gut", model.gut),
             ("respiratory", model.respiratory),
@@ -229,6 +236,8 @@ class TestLearningSanity(unittest.TestCase):
                 device=device, optimizer=opt, params=params, grad_clip=10.0,
             )
             r = sig.compute(model, emb, ctx)
+            # iter 78: aux signals accumulate; the trainer applies the joint step.
+            joint_aux_step(ctx)
             losses.append(r.loss_sum)
         self.assertLess(losses[-1], losses[0],
                         f"loss did not decrease: {losses}")

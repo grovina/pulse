@@ -57,6 +57,11 @@ class SignalContext:
     optimizer: torch.optim.Optimizer
     params: list[torch.nn.Parameter]
     grad_clip: float
+    # iter 78: set True by ``accumulate_grad`` / ``finalize_aux_accumulation``
+    # when an auxiliary signal has backward-accumulated a finite gradient this
+    # epoch, so the trainer knows to apply one joint clip+step. Reset per epoch
+    # (a fresh SignalContext is built each epoch).
+    aux_accumulated: bool = False
 
 
 @dataclass

@@ -113,6 +113,7 @@ from .training import (
     InsulinSweepSignal,
     NaNTrainingAbort,
     SignalContext,
+    joint_aux_step,
     SignalResult,
     TrainingSignal,
     TrajectoryRolloutSignal,
@@ -635,6 +636,16 @@ def train(
                         f"elems_m={m['total_elems_m']:.2f} grad_elems_m={m['grad_elems_m']:.2f}",
                         flush=True,
                     )
+
+            # iter 78: one joint clip+step over the auxiliary signals' accumulated
+            # gradient. The trajectory signal already stepped per-window inside
+            # its compute (the main data fit, untouched); every other signal
+            # accumulated its weighted gradient via accumulate_grad /
+            # finalize_aux_accumulation without a solo step, so their weights
+            # compose instead of each taking a solo clipped step that erased its
+            # weight and let one unstable signal fight the rest or abort the run.
+            if ctx.aux_accumulated:
+                joint_aux_step(ctx)
 
             scheduler.step()
 

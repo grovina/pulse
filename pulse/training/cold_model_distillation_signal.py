@@ -83,7 +83,7 @@ from ..knowledge.full_body import (
 from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import MealEvent
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 # Markers distilled from the cold model. These are the unobserved-but-load-
@@ -949,7 +949,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         if self.mode == "anchored":
             sub_metrics["anchor_skips"] = float(self._n_anchor_skips)
 
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,

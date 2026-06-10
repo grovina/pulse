@@ -26,7 +26,12 @@ from pulse.dose_response import (
     predicted_slopes_batched,
 )
 from pulse.model import ModularPhysiologyNetwork
-from pulse.training import DoseResponseSignal, SignalContext, WeightSchedule
+from pulse.training import (
+    DoseResponseSignal,
+    SignalContext,
+    WeightSchedule,
+    joint_aux_step,
+)
 from pulse.types import EMBEDDING_DIM, NORM_CENTER
 
 
@@ -189,6 +194,8 @@ class TestDoseResponseSignalGating(unittest.TestCase):
         )
         before = emb.weight.detach().clone()
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         after = emb.weight.detach().clone()
 
         self.assertEqual(result.n_units, 1)
@@ -216,6 +223,8 @@ class TestDoseResponseSignalGating(unittest.TestCase):
         )
         before = {n: p.detach().clone() for n, p in model.named_parameters()}
         result = sig.compute(model, emb, ctx)
+        # iter 78: aux signals accumulate; the trainer applies the joint step.
+        joint_aux_step(ctx)
         moved = any(
             float((p.detach() - before[n]).abs().sum()) > 0
             for n, p in model.named_parameters()

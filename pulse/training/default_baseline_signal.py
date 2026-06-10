@@ -34,7 +34,7 @@ import torch.nn as nn
 
 from ..model import integrate, precompute_gut_outputs
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 # Default rollout window: 4h fasted morning, the regime the bench eval
@@ -118,7 +118,7 @@ class DefaultBaselineSignal(TrainingSignal):
         # with `weight` rather than with how many markers we picked.
         loss = torch.stack(loss_terms).mean()
 
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,

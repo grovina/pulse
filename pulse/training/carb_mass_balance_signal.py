@@ -46,7 +46,7 @@ from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import MealEvent
 from ..types import MARKER_INDEX, NORM_CENTER
 from .embedding_sampler import select_supervised_embeddings
-from .safe_step import safe_step
+from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 _LIVER = MARKER_INDEX["liver_glycogen"]
@@ -156,7 +156,7 @@ class CarbMassBalanceSignal(TrainingSignal):
         loss = over_loss + under_loss
 
         n_pairs = len(emb_list) * len(self.carb_doses_g)
-        safe_step(
+        accumulate_grad(
             w * loss,
             ctx,
             signal=self.name,
