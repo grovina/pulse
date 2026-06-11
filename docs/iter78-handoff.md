@@ -120,6 +120,63 @@ Operational fixes for the re-dispatch (no modeling change): (1) train.py now pin
 (~2× throughput); (2) the job `--task-timeout` is raised to 21600 s (6 h) for
 headroom. The benchmark numbers are expected from the re-run.
 
+## Second dispatch + the phase-2 scaling wall (execution trainer-km8qz, 3a4839d)
+
+The re-run **timed out again at 6 h**, and the per-signal cloud logs
+(`MEMPROF-SIG`) explain why — and reveal a second, independent problem unrelated
+to the optimizer change. One **phase-2 epoch is ~1.6 h** at the iter-77 config:
+
+| phase-2 signal | time/epoch |
+|---|---|
+| physiology_rules (61 rules × 4 patients) | ~2100 s |
+| cohort_statistic (31 specs × 6 patients) | 1754 s |
+| cold_model_distillation (4-protocol anchored calibration) | 1339 s |
+| trajectory_rollout (coupling+verifier+landmark now on) | 553 s |
+| all others combined | ~60 s |
+
+These three heavy signals are **gated off in phase 1** (`coh=0s`, `cold=0s`,
+`physiology=0s` in the phase-1 logs) and all fire at full sampling in phase 2, so
+≈1.6 h/epoch × 10 = ~16 h of phase 2. No timeout under 24 h-ish fits it on a
+4-vCPU Cloud Run box. This is **pre-existing config heaviness**, not the joint
+step — the optimizer change does not touch per-signal compute. (Also: the
+`torch_threads=4` pin from 3a4839d *slowed* the sequential trajectory rollout
+188→316 s/epoch and has been reverted — see the train.py comment.)
+
+## Decision (iter 78)
+
+**Phase-1 behaviour is taken as sufficient validation of the fix** (NaN gone,
+50/50 epochs stable, aux losses converged, weights compose). The honest
+benchmark baseline is **deferred** — it requires either a long full-config run or
+a lighter eval config, a research call for iter 79. The trainer job has been
+left ready for that run: image at the latest committed SHA, `--task-timeout`
+raised to **86400 s (24 h)**.
+
+### To get the benchmark numbers later (full config, ~19 h)
+
+```bash
+gcloud run jobs execute trainer --project grovina-pulse --region europe-west1 \
+  --args=--spec=train/spec.json,--gcs-bucket=grovina-pulse-data,\
+--gcs-object=training/jobs/iter78/model.pt,\
+--benchmark-dataset-uri=pulse/benchmark.dataset.generated.json
+```
+
+Watch for completion by polling for the artifact (the `succeededCount` field
+LIES — a timeout-kill exits 0 and ticks it; check the `Completed` condition or
+just wait for `benchmark-report.json` to appear):
+
+```bash
+gsutil ls gs://grovina-pulse-data/training/jobs/iter78/   # report appears only on true success
+```
+
+### Cheaper alternative for iter 79
+
+Lighten the three slow phase-2 signals to make a full run tractable (~4-5 h):
+`--cohort-sample-patients=1 --physiology-rules-sample-patients=1
+--cold-distill-protocols-per-epoch=1 --phase2-epochs=6`. Or, better, make the
+cohort/physiology per-spec/rule loops cheaper structurally (they are sequential
+Python loops over 31 specs / 61 rules) — that is the real lever and a clean
+iter-79 target now that the optimizer is honest.
+
 ## How to run
 
 ```bash
