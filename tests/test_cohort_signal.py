@@ -17,6 +17,7 @@ from pulse.knowledge.cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
+from pulse.cohort_loss import cohort_statistic_loss_one_spec
 from pulse.model import ModularPhysiologyNetwork
 from pulse.training import (
     CohortStatisticSignal,
@@ -310,6 +311,120 @@ class TestCohortStatisticSignalAdaptive(unittest.TestCase):
         result = sig.compute(model, emb, ctx)
         self.assertEqual(sig._violation_ema, {})
         self.assertFalse(any(k.startswith("w_") for k in result.sub_metrics))
+
+
+class TestCohortStatisticProtocolBatchingEquivalence(unittest.TestCase):
+    """iter 79: cross-spec protocol batching must be numerically identical to
+    the iter-68 per-spec path (same reported loss, same accumulated gradient
+    on every parameter) — only faster. The scenario covers the cases the
+    batching must get right: two specs SHARING an arm protocol but with
+    DISTINCT per-spec cold-init states (so the rollout must stack states, not
+    broadcast one), a singleton-protocol spec, and a 2-arm DELTA spec.
+    """
+
+    def test_protocol_batching_matches_per_spec_grad_and_loss(self) -> None:
+        device = torch.device("cpu")
+        torch.manual_seed(11)
+        model = _tiny_model()
+        emb = nn.Embedding(2, EMBEDDING_DIM)
+        nn.init.normal_(emb.weight, std=0.3)
+        params = list(model.parameters()) + list(emb.parameters())
+        opt = torch.optim.SGD(params, lr=0.0)  # never stepped; grads compared directly
+
+        meal = CohortArmSpec(
+            label="meal", duration_min=120, start_hour=8.0,
+            meals=((30.0, 60.0, 12.0, 18.0),),
+        )
+        fast = CohortArmSpec(label="fast", duration_min=120, start_hour=8.0, meals=())
+        fasted = CohortArmSpec(label="fasted", duration_min=120, start_hour=8.0, meals=())
+        fed = CohortArmSpec(
+            label="fed", duration_min=120, start_hour=8.0,
+            meals=((30.0, 60.0, 12.0, 18.0),),
+        )
+        win = StatisticWindow(start_min=60, end_min=110)
+
+        # a & b share ``(meal,)`` → one group; targets far off so z² is large.
+        spec_a = CohortStatisticSpec(
+            name="a", source="t", description="t", arms=(meal,),
+            marker_id="glucose", kind=StatisticKind.MEAN_IN_WINDOW,
+            window=win, target=200.0, sigma=10.0, weight=1.0,
+        )
+        spec_b = CohortStatisticSpec(
+            name="b", source="t", description="t", arms=(meal,),
+            marker_id="hr", kind=StatisticKind.PEAK_VALUE,
+            window=win, target=200.0, sigma=10.0, weight=2.0,
+        )
+        spec_c = CohortStatisticSpec(  # singleton protocol
+            name="c", source="t", description="t", arms=(fast,),
+            marker_id="glucose", kind=StatisticKind.MEAN_IN_WINDOW,
+            window=win, target=50.0, sigma=10.0, weight=0.5,
+        )
+        spec_d = CohortStatisticSpec(  # 2-arm delta
+            name="d", source="t", description="t", arms=(fasted, fed),
+            marker_id="glucose", kind=StatisticKind.DELTA_MEANS,
+            window=win, target=50.0, sigma=10.0, weight=1.5,
+        )
+        specs = [spec_a, spec_b, spec_c, spec_d]
+
+        sig = CohortStatisticSignal(
+            specs=specs, n_patients=2, sample_patients=2,
+            include_default_embedding=True, weight=WeightSchedule(0.5),
+        )
+        w = sig.weight_at(0)
+        total_weight = sum(s.weight for s in specs)
+        init_fn = sig._build_initial_state_fn(np.random.default_rng(0), device)
+
+        def fresh_emb_list() -> list[torch.Tensor]:
+            return [
+                emb(torch.tensor(0)), emb(torch.tensor(1)),
+                torch.zeros(EMBEDDING_DIM),
+            ]
+
+        # a & b really do land in the same group (the dedup actually fires).
+        groups: dict = {}
+        for s in specs:
+            groups.setdefault(s.arms, []).append(s)
+        self.assertIn(2, [len(g) for g in groups.values()])
+
+        # --- reference: iter-68 per-spec backward ---
+        opt.zero_grad(set_to_none=True)
+        ref_raw = 0.0
+        for spec in specs:
+            loss_t, _, _ = cohort_statistic_loss_one_spec(
+                model, fresh_emb_list(), spec, init_fn(spec),
+            )
+            ((w * spec.weight / total_weight) * loss_t).backward()
+            ref_raw += float(loss_t.detach()) * spec.weight
+        ref_raw /= total_weight
+        ref_grads = {
+            id(p): (None if p.grad is None else p.grad.detach().clone())
+            for p in params
+        }
+        ref_norm = sum(
+            float(p.grad.pow(2).sum()) for p in params if p.grad is not None
+        ) ** 0.5
+
+        # --- new: iter-79 grouped compute() ---
+        opt.zero_grad(set_to_none=True)
+        ctx = SignalContext(
+            epoch=0, total_epochs=1, rng=np.random.default_rng(0),
+            device=device, optimizer=opt, params=params, grad_clip=10.0,
+        )
+        result = sig.compute(model, emb, ctx)
+
+        self.assertGreater(ref_norm, 0.0, "test is trivial if no gradient flows")
+        self.assertAlmostEqual(
+            result.loss_sum, ref_raw, delta=abs(ref_raw) * 1e-5 + 1e-6,
+        )
+        for p in params:
+            ref_g = ref_grads[id(p)]
+            if ref_g is None:
+                self.assertTrue(p.grad is None or float(p.grad.abs().max()) < 1e-9)
+            else:
+                self.assertTrue(
+                    torch.allclose(p.grad, ref_g, atol=1e-6, rtol=1e-4),
+                    msg=f"gradient mismatch on param shape {tuple(p.shape)}",
+                )
 
 
 if __name__ == "__main__":

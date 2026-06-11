@@ -32,6 +32,7 @@ from .types import MARKER_INDEX, NORM_CENTER
 
 __all__ = [
     "cohort_statistic_epoch_loss",
+    "cohort_statistic_loss_group",
     "cohort_statistic_loss_one_spec",
     "norm_center_initial_state",
 ]
@@ -74,27 +75,31 @@ def _validate_window(spec_name: str, w: StatisticWindow, duration_min: int) -> N
         )
 
 
-def _rollout_arm_batched(
+def _rollout_arm_states(
     model: ModularPhysiologyNetwork,
     embeddings: torch.Tensor,
     arm: CohortArmSpec,
-    initial_state: torch.Tensor,
+    state_batch: torch.Tensor,
 ) -> torch.Tensor:
-    """Roll one arm forward for ``B`` embeddings in a single batched call.
+    """Roll one arm forward for ``N`` (embedding, initial-state) pairs.
 
-    ``embeddings`` is ``[B, EMB]``; the same protocol (meals, sleep/wake,
-    activity, initial_state) is applied to every batch member. Returns
-    ``[B, T, STATE_DIM]``. Gut outputs are precomputed once per arm so the
-    integrate hot loop runs without per-step Python overhead in the gut
-    module.
+    ``embeddings`` is ``[N, EMB]`` and ``state_batch`` is ``[N, STATE_DIM]``
+    — one starting state per batch row (unlike ``_rollout_arm_batched``,
+    which broadcasts a single state across all rows). The arm's protocol
+    (meals, sleep/wake, activity, duration) is shared across the batch, as
+    ``integrate`` requires. Returns ``[N, T, STATE_DIM]``.
+
+    This is the primitive behind cross-spec batching (iter 79): several
+    cohort specs sharing one arm protocol but each with its own cold-init
+    state are rolled in a single ``integrate`` call by stacking their states
+    here, collapsing N sequential rollouts of the same long protocol into one.
     """
     n_steps = arm.duration_min
     t0 = float(arm.start_hour * 60.0)
     meals = _meals_from_spec(arm.meals)
-    device = initial_state.device
+    device = state_batch.device
     sw = _optional_series_tensor(f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device)
     act = _optional_series_tensor(f"{arm.label}.activity", arm.activity, n_steps, device)
-    state_b = initial_state.unsqueeze(0).expand(int(embeddings.shape[0]), -1)
     gut = precompute_gut_outputs(
         model, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
@@ -111,12 +116,28 @@ def _rollout_arm_batched(
     # default checkpoint_segments=0 so prediction quality is unaffected.
     ckpt_segs = max(1, int(n_steps**0.5))
     return integrate(
-        model, state_b, embeddings, n_steps,
+        model, state_batch, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
         sleep_wake=sw, activity=act,
         gut_outputs=gut,
         checkpoint_segments=ckpt_segs,
     )
+
+
+def _rollout_arm_batched(
+    model: ModularPhysiologyNetwork,
+    embeddings: torch.Tensor,
+    arm: CohortArmSpec,
+    initial_state: torch.Tensor,
+) -> torch.Tensor:
+    """Roll one arm forward for ``B`` embeddings sharing one initial state.
+
+    ``embeddings`` is ``[B, EMB]``; the same protocol AND initial state are
+    applied to every batch member. Returns ``[B, T, STATE_DIM]``. Thin
+    wrapper over ``_rollout_arm_states`` that broadcasts the single state.
+    """
+    state_b = initial_state.unsqueeze(0).expand(int(embeddings.shape[0]), -1)
+    return _rollout_arm_states(model, embeddings, arm, state_b)
 
 
 def _arm_window(spec: CohortStatisticSpec, arm_idx: int) -> StatisticWindow:
@@ -194,6 +215,73 @@ def cohort_statistic_loss_one_spec(
     pred_mean = float(pred.detach().mean().item())
     z_mean = (pred_mean - spec.target) / spec.sigma
     return loss, pred_mean, z_mean
+
+
+def cohort_statistic_loss_group(
+    model: nn.Module,
+    embeddings_to_supervise: list[torch.Tensor],
+    specs: list[CohortStatisticSpec],
+    initial_states: list[torch.Tensor],
+) -> dict[str, tuple[torch.Tensor, float, float]]:
+    """Batched per-spec loss for specs that share one arm protocol (iter 79).
+
+    Every spec in ``specs`` must have identical ``arms`` (by value) — the
+    grouping condition the signal enforces. They may differ freely in
+    ``marker_id`` / ``window`` / ``kind`` / ``target`` / ``sigma`` and in
+    their ``initial_states`` (cold-init is seeded per spec). For each arm we
+    stack ``[S × B]`` rows (spec s's init state repeated across the B
+    supervised embeddings) and call ``integrate`` ONCE, instead of one
+    rollout per spec — collapsing e.g. the four 2880-step sleep specs or the
+    five 1440-step fast specs into a single long rollout each.
+
+    Returns ``{spec.name: (loss_tensor, predicted_mean, residual_z)}`` — the
+    same per-spec triple ``cohort_statistic_loss_one_spec`` returns. The loss
+    tensors share one autograd graph (the batched rollout), so the caller
+    sums the weighted per-spec losses and does ONE backward for the group:
+    gradient-identical to per-spec backward by linearity, with the per-spec
+    memory bound preserved (one group's graph live at a time).
+    """
+    if not embeddings_to_supervise or not specs:
+        return {}
+    arms = specs[0].arms
+    assert all(s.arms == arms for s in specs), "group specs must share arms"
+
+    embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
+    B = int(embs.shape[0])
+    S = len(specs)
+    # Row r = s*B + b → spec s's init state, embedding b.
+    emb_batch = embs.repeat(S, 1)  # [S*B, EMB]
+    init_stack = torch.stack(list(initial_states), dim=0)  # [S, STATE]
+    state_batch = init_stack.repeat_interleave(B, dim=0)  # [S*B, STATE]
+
+    arm_trajs: list[torch.Tensor] = [
+        _rollout_arm_states(model, emb_batch, arm, state_batch)  # [S*B, T, STATE]
+        for arm in arms
+    ]
+
+    out: dict[str, tuple[torch.Tensor, float, float]] = {}
+    for s_idx, spec in enumerate(specs):
+        mi = MARKER_INDEX[spec.marker_id]
+        rows = slice(s_idx * B, (s_idx + 1) * B)
+        per_arm: list[torch.Tensor] = []
+        for arm_idx, arm in enumerate(arms):
+            win = _arm_window(spec, arm_idx)
+            _validate_window(spec.name, win, arm.duration_min)
+            per_arm.append(
+                _arm_statistic_batched(
+                    arm_trajs[arm_idx][rows], mi, win, spec.kind, spec.softargmax_beta,
+                ),
+            )  # [B]
+        if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
+            pred = per_arm[1] - per_arm[0]
+        else:
+            pred = per_arm[0]
+        z = (pred - spec.target) / spec.sigma
+        loss = z.pow(2).mean()
+        pred_mean = float(pred.detach().mean().item())
+        z_mean = (pred_mean - spec.target) / spec.sigma
+        out[spec.name] = (loss, pred_mean, z_mean)
+    return out
 
 
 def cohort_statistic_epoch_loss(

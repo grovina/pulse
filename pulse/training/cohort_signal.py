@@ -22,7 +22,7 @@ from torch import nn
 
 from ..cohort_loss import (
     InitialStateFn,
-    cohort_statistic_loss_one_spec,
+    cohort_statistic_loss_group,
     norm_center_initial_state,
 )
 from ..knowledge.cohort_types import CohortStatisticSpec, InitMode
@@ -233,37 +233,62 @@ class CohortStatisticSignal(TrainingSignal):
             (override.get(spec.name, spec.weight) if override else spec.weight)
             for spec in self.specs
         ) or 1e-8
-        # iter 78: accumulate this signal's gradient (per-spec backward + graph
-        # drop to keep peak memory bounded — see the block comment above) WITHOUT
-        # a solo clip+step. The trainer applies one joint clip+step over every
-        # auxiliary signal so their weights compose instead of each taking a solo
-        # clipped step. ``snapshot`` (taken before the first backward) lets a
-        # non-finite contribution be rolled back and dropped rather than abort
-        # the run (isolation policy); a single non-finite spec is skipped.
+        # iter 79: CROSS-SPEC PROTOCOL BATCHING. The iter-68 loop rolled each
+        # spec's arm(s) one-at-a-time, but many specs share an identical arm
+        # protocol and differ only in marker/window/target (e.g. four
+        # 2880-step sleep specs, five 1440-step extended-fast specs, four
+        # 300-step OGTT specs). Group specs by their ``arms`` tuple (frozen +
+        # hashable, so value-equality IS the batchability condition) and roll
+        # each distinct protocol ONCE over the group's stacked per-spec
+        # cold-init states — collapsing the long shared rollouts. Singleton
+        # protocols fall through the same path with S=1 (no behavior change).
+        #
+        # GRADIENT-IDENTICAL to the per-spec path: the group's per-spec losses
+        # share one rollout graph; summing the weighted losses and doing ONE
+        # backward per group accumulates into .grad exactly as per-spec
+        # backward did (linearity — the same argument the iter-68 block above
+        # relies on). Memory bound preserved: one group's graph is live at a
+        # time (largest group ≈ 5 specs × B, vs the OOM-causing all-31 graph).
+        #
+        # ``emb_list`` rebuilt fresh per group (not per spec): within a group
+        # there is one backward, so the shared embeddings(pid) lookup is
+        # traversed once — the r5 shared-graph crash only bites across
+        # independent backwards, which now happen per group, not per spec.
+        # ``snapshot`` backs the isolation policy (non-finite spec dropped).
         snapshot = grad_snapshot(ctx)
+
+        groups: dict[tuple, list[CohortStatisticSpec]] = {}
+        for spec in self.specs:
+            groups.setdefault(spec.arms, []).append(spec)
+
         raw_weighted_sum = 0.0
         z_by_spec: dict[str, float] = {}
         loss_by_spec: dict[str, float] = {}
-        for spec in self.specs:
+        for group_specs in groups.values():
             emb_list = build_emb_list()
-            loss_t, _pred, z = cohort_statistic_loss_one_spec(
-                model, emb_list, spec, init_fn(spec),
+            init_states = [init_fn(spec) for spec in group_specs]
+            results = cohort_statistic_loss_group(
+                model, emb_list, group_specs, init_states,
             )
-            z_by_spec[spec.name] = z
-            sw = override.get(spec.name, spec.weight) if override else spec.weight
-            loss_by_spec[spec.name] = float(loss_t.detach().item())
-            weighted = (w * sw / total_weight) * loss_t
-            if not torch.isfinite(weighted):
-                print(
-                    f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
-                    f"cause=loss spec={spec.name} (spec dropped this epoch)",
-                    flush=True,
-                )
-                del loss_t, weighted, _pred, emb_list
-                continue
-            weighted.backward()
-            raw_weighted_sum += loss_by_spec[spec.name] * sw
-            del loss_t, weighted, _pred, emb_list  # release graph leaves promptly
+            group_loss = None
+            for spec in group_specs:
+                loss_t, _pred, z = results[spec.name]
+                z_by_spec[spec.name] = z
+                sw = override.get(spec.name, spec.weight) if override else spec.weight
+                loss_by_spec[spec.name] = float(loss_t.detach().item())
+                contrib = (w * sw / total_weight) * loss_t
+                if not torch.isfinite(contrib):
+                    print(
+                        f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                        f"cause=loss spec={spec.name} (spec dropped this epoch)",
+                        flush=True,
+                    )
+                    continue
+                group_loss = contrib if group_loss is None else group_loss + contrib
+                raw_weighted_sum += loss_by_spec[spec.name] * sw
+            if group_loss is not None:
+                group_loss.backward()
+            del results, group_loss, emb_list  # release graph leaves promptly
 
         raw_avg = raw_weighted_sum / total_weight
 

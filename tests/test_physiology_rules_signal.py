@@ -23,6 +23,7 @@ from pulse.knowledge.physiology_rules import (
     hinge_min_rise,
 )
 from pulse.model import ModularPhysiologyNetwork
+from pulse.physiology_rules_loss import physiology_rule_loss_one_rule
 from pulse.training import PhysiologyRulesSignal, SignalContext, WeightSchedule
 from pulse.types import EMBEDDING_DIM
 
@@ -158,6 +159,123 @@ class TestPhysiologyRulesSignalPerRuleBackward(unittest.TestCase):
             self.assertIn(f"w_{rname}", result.sub_metrics)
         # Adaptive mode should have populated the EMA from the first epoch.
         self.assertEqual(set(sig._violation_ema.keys()), {"ra", "rb"})
+
+
+class TestPhysiologyRulesArmMajorEquivalence(unittest.TestCase):
+    """iter 79: the arm-major rollout-dedup compute() must be numerically
+    identical to the iter-68 rule-major path (same reported loss, same
+    accumulated gradient on every parameter) — only faster. This is the
+    correctness guarantee that the honest baseline is unchanged.
+
+    Scenario deliberately exercises the two cases dedup must get right:
+    rules SHARING an arm (a, b, c all use ``meal``) and a MULTI-ARM rule
+    (c spans ``meal`` + ``fast``, so its loss is assembled across two
+    arm-groups). Cold init is used so the cold-rollout path is covered.
+    """
+
+    def test_arm_major_matches_per_rule_grad_and_loss(self) -> None:
+        device = torch.device("cpu")
+        torch.manual_seed(7)
+        model = _tiny_model()
+        emb = nn.Embedding(2, EMBEDDING_DIM)
+        nn.init.normal_(emb.weight, std=0.3)
+        params = list(model.parameters()) + list(emb.parameters())
+        opt = torch.optim.SGD(params, lr=0.0)  # never stepped; grads compared directly
+
+        arm_meal = CohortArmSpec(
+            label="meal", duration_min=120, start_hour=8.0,
+            meals=((30.0, 60.0, 12.0, 18.0),),
+        )
+        arm_fast = CohortArmSpec(
+            label="fast", duration_min=120, start_hour=8.0, meals=(),
+        )
+
+        def rises(min_rise: float):
+            return lambda traj, ctx: hinge_min_rise(
+                traj, ctx.col("glucose"),
+                pre=ctx.window(0.0, 30.0), post=ctx.window(30.0, 90.0),
+                min_rise=min_rise,
+            )
+
+        def falls(min_drop: float):
+            return lambda traj, ctx: hinge_min_drop(
+                traj, ctx.col("glucagon"),
+                pre=ctx.window(0.0, 30.0), post=ctx.window(30.0, 90.0),
+                min_drop=min_drop,
+            )
+
+        # Aggressive thresholds so the hinges are violated for the random init
+        # — guarantees non-zero gradient so the equivalence test is non-trivial.
+        rule_a = PhysiologyRule(
+            name="a", source="t", description="t", arms=(arm_meal,),
+            predicate=rises(80.0), scale=10.0, init_mode=InitMode.COLD, weight=1.0,
+        )
+        rule_b = PhysiologyRule(
+            name="b", source="t", description="t", arms=(arm_meal,),
+            predicate=falls(40.0), scale=5.0, init_mode=InitMode.COLD, weight=2.0,
+        )
+        rule_c = PhysiologyRule(
+            name="c", source="t", description="t", arms=(arm_meal, arm_fast),
+            predicate=rises(80.0), scale=8.0, init_mode=InitMode.COLD, weight=0.5,
+        )
+        rules = [rule_a, rule_b, rule_c]
+
+        sig = PhysiologyRulesSignal(
+            rules=rules, n_patients=2, sample_patients=2,
+            include_default_embedding=True, weight=WeightSchedule(0.5),
+        )
+        w = sig.weight_at(0)
+        weight_sum = sum(r.weight for r in rules)
+        init_fn = sig._initial_state_fn(device)
+
+        def fresh_emb_list() -> list[torch.Tensor]:
+            return [
+                emb(torch.tensor(0)), emb(torch.tensor(1)),
+                torch.zeros(EMBEDDING_DIM),
+            ]
+
+        # --- reference: the iter-68 rule-major per-rule backward ---
+        opt.zero_grad(set_to_none=True)
+        ref_raw = 0.0
+        for rule in rules:
+            init_for_arm = lambda arm, _r=rule: init_fn(_r, arm)
+            loss_t, _, _ = physiology_rule_loss_one_rule(
+                model, fresh_emb_list(), rule, init_for_arm,
+            )
+            ((w * rule.weight / weight_sum) * loss_t).backward()
+            ref_raw += float(loss_t.detach()) * rule.weight
+        ref_raw /= weight_sum
+        ref_grads = {
+            id(p): (None if p.grad is None else p.grad.detach().clone())
+            for p in params
+        }
+        ref_norm = sum(
+            float(p.grad.pow(2).sum()) for p in params if p.grad is not None
+        ) ** 0.5
+
+        # --- new: the iter-79 arm-major compute() ---
+        opt.zero_grad(set_to_none=True)
+        ctx = SignalContext(
+            epoch=0, total_epochs=1, rng=np.random.default_rng(0),
+            device=device, optimizer=opt, params=params, grad_clip=10.0,
+        )
+        result = sig.compute(model, emb, ctx)
+
+        self.assertGreater(ref_norm, 0.0, "test is trivial if no gradient flows")
+        # Relative tolerance: the two paths sum the same terms in a different
+        # order, so float32 reduction rounding (~1e-8 relative) is expected.
+        self.assertAlmostEqual(
+            result.loss_sum, ref_raw, delta=abs(ref_raw) * 1e-5 + 1e-6,
+        )
+        for p in params:
+            ref_g = ref_grads[id(p)]
+            if ref_g is None:
+                self.assertTrue(p.grad is None or float(p.grad.abs().max()) < 1e-9)
+            else:
+                self.assertTrue(
+                    torch.allclose(p.grad, ref_g, atol=1e-6, rtol=1e-4),
+                    msg=f"gradient mismatch on param shape {tuple(p.shape)}",
+                )
 
 
 if __name__ == "__main__":

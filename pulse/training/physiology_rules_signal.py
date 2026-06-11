@@ -32,9 +32,10 @@ from ..knowledge.cohort_types import InitMode
 from ..knowledge.full_body import PatientParams
 from ..knowledge.physiology_rules import PhysiologyRule
 from ..knowledge.textbook_scenarios.base import cold_model_trajectory
+from ..cohort_loss import _rollout_arm_batched
 from ..physiology_rules_loss import (
-    physiology_rule_loss_one_rule,
     physiology_rules_epoch_loss,  # noqa: F401 — kept for non-training callers / tests
+    rule_context_for_arm,
 )
 from ..types import NORM_CENTER
 from .embedding_sampler import select_supervised_embeddings
@@ -240,46 +241,101 @@ class PhysiologyRulesSignal(TrainingSignal):
             weight_sum += rw
         weight_sum = weight_sum or 1e-8
 
-        # iter 78: accumulate this signal's gradient (per-rule backward + graph
-        # drop to keep peak memory bounded — see the block comment above) WITHOUT
-        # a solo clip+step. The trainer applies one joint clip+step over every
-        # auxiliary signal so their weights compose instead of each taking a solo
-        # clipped step. ``snapshot`` (taken before the first backward) lets a
-        # non-finite contribution be rolled back and dropped rather than abort
-        # the run (isolation policy); a single non-finite rule is skipped.
+        # iter 79: ARM-MAJOR rollout dedup. The ~60 rules reference only ~10
+        # distinct arm protocols, but the iter-68 rule-major loop re-rolled each
+        # arm once PER RULE (~115 integrate() calls/epoch). Here we roll each
+        # distinct (arm.label, init_mode) ONCE and score every rule that uses it
+        # against the shared trajectory (~10 rollouts/epoch). This is
+        # GRADIENT-IDENTICAL to the per-rule path: a rule's loss is the mean
+        # over (arms × patients) of squared violations, and mean/sum are linear,
+        # so each arm contributes a separable partial loss; one backward per
+        # arm-group accumulates into .grad exactly as one backward per rule did
+        # (PyTorch additive-grad — the same linearity the iter-68 comment
+        # relies on). Peak memory is LOWER: one arm rollout graph is live at a
+        # time (vs a multi-arm rule's whole set before).
+        #
+        # ``emb_list`` is still rebuilt fresh per arm-group — sharing the
+        # embeddings(pid) lookup tensors across independent backwards is the r5
+        # shared-graph crash (the first backward frees the emb→weight subgraph).
+        # ``snapshot`` (pre-first-backward) backs the isolation policy: a
+        # non-finite contribution is rolled back + dropped, never aborts.
         snapshot = grad_snapshot(ctx)
-        raw_weighted_sum = 0.0
-        diags: dict[str, dict[str, float]] = {}
-        for rule in self.rules:
-            emb_list = build_emb_list()
-            rule_init_for_arm = lambda arm, _rule=rule: init_fn(_rule, arm)
-            loss_t, v_mean, satisfied = physiology_rule_loss_one_rule(
-                model, emb_list, rule, rule_init_for_arm,
-            )
+
+        # Number of supervised embeddings this epoch (constant across rules);
+        # a rule's reported loss averages over (its arms × B) violations.
+        B = len(build_emb_list())
+
+        def applied_weight(rule: PhysiologyRule) -> float:
             rw = rule.weight
             if override is not None and rule.name in override:
                 rw = float(override[rule.name])
+            return rw
+
+        # (arm.label, init_mode) -> [(rule, arm)]. Rules sharing a key share
+        # protocol AND init state by construction (cold init is keyed by
+        # arm.label; norm_center is arm-independent), so one rollout serves all.
+        groups: dict[tuple[str, InitMode], list[tuple[PhysiologyRule, object]]] = {}
+        for rule in self.rules:
+            for arm in rule.arms:
+                groups.setdefault((arm.label, rule.init_mode), []).append((rule, arm))
+
+        # Per-rule detached accumulators — reconstruct the exact per-rule
+        # reported loss + diagnostics from the arm-grouped passes.
+        n_units = {rule.name: len(rule.arms) * B for rule in self.rules}
+        sq_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
+        v_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
+        sat_count: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
+
+        for (label, _init_mode), members in groups.items():
+            rule_repr, arm_repr = members[0]
+            init_state = init_fn(rule_repr, arm_repr)
+            emb_list = build_emb_list()
+            embs = torch.stack(emb_list, dim=0)  # [B, EMB]
+            traj = _rollout_arm_batched(model, embs, arm_repr, init_state)  # [B, T, STATE]
+            rule_ctx = rule_context_for_arm(arm_repr)
+
+            arm_loss = None
+            for rule, _arm in members:
+                rw = applied_weight(rule)
+                n_R = n_units[rule.name]
+                vs = torch.stack(
+                    [rule.predicate(traj[b], rule_ctx) for b in range(B)], dim=0,
+                )  # [B]
+                # Partial contribution of THIS arm to the rule's signal-level
+                # loss: (w·rw/weight_sum) · (Σ_b (v/scale)²) / n_R. Summing
+                # across the rule's arms reconstructs (w·rw/weight_sum)·loss_R.
+                contrib = (w * rw / weight_sum) * (vs / rule.scale).pow(2).sum() / n_R
+                if not torch.isfinite(contrib):
+                    print(
+                        f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                        f"cause=loss rule={rule.name} arm={label} "
+                        f"(contribution dropped this epoch)",
+                        flush=True,
+                    )
+                    continue
+                arm_loss = contrib if arm_loss is None else arm_loss + contrib
+                vs_d = vs.detach()
+                sq_sum[rule.name] += float((vs_d / rule.scale).pow(2).sum().item())
+                v_sum[rule.name] += float(vs_d.sum().item())
+                sat_count[rule.name] += float((vs_d <= 0).float().sum().item())
+
+            if arm_loss is not None:
+                arm_loss.backward()
+            del traj, embs, emb_list, arm_loss
+
+        # Reconstruct per-rule reported loss + diagnostics from the accumulators.
+        raw_weighted_sum = 0.0
+        diags: dict[str, dict[str, float]] = {}
+        for rule in self.rules:
+            n_R = n_units[rule.name] or 1
+            loss_R = sq_sum[rule.name] / n_R
+            rw = applied_weight(rule)
+            raw_weighted_sum += loss_R * rw
             diags[rule.name] = {
-                "violation_mean": v_mean,
-                "satisfied_fraction": satisfied,
+                "violation_mean": v_sum[rule.name] / n_R,
+                "satisfied_fraction": sat_count[rule.name] / n_R,
                 "applied_weight": float(rw),
             }
-            # weighted-mean denominator matches physiology_rules_epoch_loss
-            # (raw_loss = sum(rw * loss_one_rule) / sum(rw)); divide by
-            # weight_sum here so the per-rule contribution to the signal-level
-            # loss is identical to the old composite path.
-            weighted = (w * rw / weight_sum) * loss_t
-            if not torch.isfinite(weighted):
-                print(
-                    f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
-                    f"cause=loss rule={rule.name} (rule dropped this epoch)",
-                    flush=True,
-                )
-                del loss_t, weighted, emb_list
-                continue
-            weighted.backward()
-            raw_weighted_sum += float(loss_t.detach().item()) * rw
-            del loss_t, weighted, emb_list
 
         raw_avg = raw_weighted_sum / weight_sum
 
