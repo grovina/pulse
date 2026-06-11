@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
-# Build + deploy Pulse to Cloud Run: the `engine` inference service and the
-# `trainer` job. Source-upload build (no GitHub connection required).
+# Build + deploy Pulse to Cloud Run: the `trainer` job and the `engine`
+# inference service. Source-upload build (no GitHub connection required).
 #
 # Run from the repo root, authenticated as dev@ (the gents box is). Idempotent:
 # `run deploy` updates in place; the job is created-or-updated.
 #
+# The trainer job is the critical path, so it is updated FIRST and pinned to the
+# immutable per-build SHA tag (not :latest) for run-to-SHA traceability. The
+# engine inference service is updated LAST and best-effort: it currently fails
+# to start on PORT=8080, and engine-first under `set -e` used to abort the
+# script before the trainer was ever pinned. Set DEPLOY_ENGINE=0 to skip it.
+#
 # Config via env (defaults match the reference grovina deployment):
-#   PROJECT  (default: grovina-pulse)
-#   REGION   (default: europe-west1)
-#   BUCKET   (default: grovina-pulse-data)
-#   REPO     (default: pulse)
+#   PROJECT       (default: grovina-pulse)
+#   REGION        (default: europe-west1)
+#   BUCKET        (default: grovina-pulse-data)
+#   REPO          (default: pulse)
+#   TASK_TIMEOUT  trainer task timeout, seconds (default: 86400 = 24h; the heavy
+#                 phase-2 runs need ~12h, so the old 4h default was too short)
+#   DEPLOY_ENGINE 1 to deploy the engine service, 0 to skip (default: 1)
 set -euo pipefail
 
 PROJECT="${PROJECT:-grovina-pulse}"
 REGION="${REGION:-europe-west1}"
 BUCKET="${BUCKET:-grovina-pulse-data}"
 REPO="${REPO:-pulse}"
+TASK_TIMEOUT="${TASK_TIMEOUT:-86400}"
+DEPLOY_ENGINE="${DEPLOY_ENGINE:-1}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AR="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
@@ -41,16 +52,7 @@ gcloud builds submit "$ROOT" \
   --service-account "projects/${PROJECT}/serviceAccounts/${BUILD_SA}" \
   --substitutions "_REGION=${REGION},_REPO=${REPO},_TAG=${TAG}"
 
-echo "==> Deploying engine service"
-gcloud run deploy engine \
-  --project "$PROJECT" --region "$REGION" \
-  --image "${AR}/engine:latest" \
-  --service-account "engine@${PROJECT}.iam.gserviceaccount.com" \
-  --set-env-vars "MODEL_URI=gs://${BUCKET}/models/prod.pt" \
-  --no-allow-unauthenticated \
-  --quiet
-
-echo "==> Creating/updating trainer job"
+echo "==> Creating/updating trainer job (pinned to ${AR}/trainer:${TAG})"
 # Per-run hyperparameters are passed at execute time:
 #   gcloud run jobs execute trainer --region "$REGION" \
 #     --args=--gcs-bucket="$BUCKET",--gcs-object=training/jobs/<id>/model.pt
@@ -61,10 +63,33 @@ else
 fi
 gcloud run jobs "$verb" trainer \
   --project "$PROJECT" --region "$REGION" \
-  --image "${AR}/trainer:latest" \
+  --image "${AR}/trainer:${TAG}" \
   --service-account "trainer@${PROJECT}.iam.gserviceaccount.com" \
   --cpu 4 --memory 16Gi \
-  --max-retries 0 --task-timeout 14400s \
+  --max-retries 0 --task-timeout "${TASK_TIMEOUT}s" \
   --quiet
+echo "    trainer pinned to :${TAG}, task-timeout ${TASK_TIMEOUT}s"
 
-echo "Done. Engine: $(gcloud run services describe engine --project "$PROJECT" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo '(describe failed)')"
+# Engine LAST and best-effort: a failed engine deploy (it currently does not
+# start on PORT=8080) must not undo or block the trainer update above. Disable
+# `set -e` for this block so a non-zero exit only warns.
+if [ "$DEPLOY_ENGINE" = 1 ]; then
+  echo "==> Deploying engine service (best-effort)"
+  set +e
+  gcloud run deploy engine \
+    --project "$PROJECT" --region "$REGION" \
+    --image "${AR}/engine:${TAG}" \
+    --service-account "engine@${PROJECT}.iam.gserviceaccount.com" \
+    --set-env-vars "MODEL_URI=gs://${BUCKET}/models/prod.pt" \
+    --no-allow-unauthenticated \
+    --quiet
+  engine_rc=$?
+  set -e
+  if [ "$engine_rc" -ne 0 ]; then
+    echo "    WARNING: engine deploy failed (rc=$engine_rc); trainer is unaffected." >&2
+  fi
+else
+  echo "==> Skipping engine service (DEPLOY_ENGINE=0)"
+fi
+
+echo "Done. Trainer job pinned to :${TAG}. Engine: $(gcloud run services describe engine --project "$PROJECT" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo '(not deployed / describe failed)')"
