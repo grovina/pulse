@@ -243,6 +243,19 @@ def _set_runtime(seed: int, *, deterministic: bool) -> None:
             torch.use_deterministic_algorithms(True, warn_only=True)
         except Exception:
             pass
+    else:
+        # PyTorch defaults intra-op threads to the *physical* core count. On a
+        # Cloud Run vCPU allotment (4 vCPU is typically 2 physical cores x 2
+        # hyperthreads) that picks 2 threads and leaves half the requested CPU
+        # idle — iter 78's first dispatch ran trajectory at 188s/epoch on
+        # torch_threads=2 and timed out in phase 2. Pin to the scheduled CPU
+        # count so the trainer uses what the job asked for (~2x throughput).
+        n_cpu = (
+            len(os.sched_getaffinity(0))
+            if hasattr(os, "sched_getaffinity")
+            else (os.cpu_count() or 1)
+        )
+        torch.set_num_threads(max(1, n_cpu))
     # One-shot diagnostic so we can confirm the trainer is actually using the
     # CPU it was scheduled on. Cloud Run / Vertex sometimes hand out fewer
     # cores than the wrapper requested (cgroup throttling), and the symptom

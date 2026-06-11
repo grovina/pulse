@@ -100,6 +100,26 @@ deliberate follow-up against that now-real baseline, not bundled here.
    *persistent* skips of one signal = that rollout still destabilizes and wants a
    targeted fix (e.g. a saturating postprandial residual loss) in iter 79.
 
+## First dispatch result (execution trainer-6tjzj, 1ee621e)
+
+The core hypothesis **validated**: training ran **all 50 phase-1 epochs without a
+NaN abort** (iter 77 died at epoch 39), and the auxiliary signals converged
+coherently under the joint step — `gut_sweep` 911k→0.39, `ins_sweep`→0.35,
+`fasting`→0.013, and crucially `postprandial_recovery` residual **303 mg/dL
+(iter 77 runaway) → −3.0 mg/dL** at epoch 49. Zero `[SKIP-NONFINITE]` lines. The
+joint accumulation + isolation did exactly what it was designed to do.
+
+But the run **hit the 14400 s (4 h) Cloud Run task timeout in phase 2** and never
+wrote a benchmark report (a timeout-kill leaves no chance to upload, so the GCS
+`iter78/` dir is empty). Cause: the runtime banner showed `torch_threads=2` on a
+4-vCPU job — PyTorch defaults intra-op threads to *physical* cores, so half the
+requested CPU sat idle and trajectory ran at ~188 s of each ~197 s epoch.
+
+Operational fixes for the re-dispatch (no modeling change): (1) train.py now pins
+`torch.set_num_threads` to the scheduled CPU count in non-deterministic mode
+(~2× throughput); (2) the job `--task-timeout` is raised to 21600 s (6 h) for
+headroom. The benchmark numbers are expected from the re-run.
+
 ## How to run
 
 ```bash
