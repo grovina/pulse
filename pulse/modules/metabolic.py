@@ -70,6 +70,9 @@ _MITO_IDX = 9
 _N_SPECIES = 10
 _GLUCOSE_APPEARANCE_X_IDX = _N_SPECIES + 0
 _ACTIVITY_X_IDX = _N_SPECIES + _N_COUPLING + 0
+# Index of the gut glucose-appearance channel within the `coupling` tensor
+# alone (model.py met_coupling = [gut_outputs(4), cortisol(1)], gut[0]=glucose).
+_GUT_GLUCOSE_COUPLING_IDX = 0
 
 
 class GlucoseGatedInsulinHead(nn.Module):
@@ -295,6 +298,28 @@ class MetabolicModule(MassActionModule):
         # Init: Sg ≈ 0.02 so that at G=Gb+30 mg/dL (norm=+1) this adds
         # ~0.02 clearance units/min — comparable to the base cons_scale.
         self.log_sg = nn.Parameter(torch.tensor(math.log(0.1)))
+        # Structural glucose rate-of-appearance: learned gain Ra on the gut
+        # glucose-appearance flux. Implements dG_extra = +Ra·appearance,
+        # mirroring the minimal-model Ra(t) source term (Dalla Man 2007) the
+        # teacher carries explicitly. coupling[..., 0] is the gut
+        # glucose-appearance channel (model.py met_coupling = [gut(4),
+        # cortisol]); it is ≥0 and ≈0 between meals, so this term is silent
+        # fasted (gate-safe) and fires only while nutrients are absorbed —
+        # exactly the postprandial-amplitude axis dose-response supervises.
+        #
+        # Iter 80: glucose was the one metabolic species still on a plain
+        # SpeciesHead, so the meal→glucose amplitude had to be discovered by
+        # an MLP that simultaneously holds the fasting equilibrium — the same
+        # softplus-saturation trap GlucoseGatedInsulinHead / BasalPlusGatedPeakHead
+        # were built to escape. Despite peak-mode dose-response at weight 0.40
+        # (target 0.7 mg/dL/g), the iter-79 model realised only ~0.16 mg/dL/g
+        # (a 60 g meal raised glucose ~14 mg/dL, not ~35). The amplitude was a
+        # parameter no strong gradient could reach; this term is the structural
+        # fix — a single scalar the existing dose-response gradient moves
+        # directly. Init Ra ≈ 0.55 (calibrated locally so 60 g lands ~0.5
+        # mg/dL/g at the iter-79 operating point) so the cold-start run begins
+        # near-physiological on amplitude and dose-response refines from there.
+        self.log_ra = nn.Parameter(torch.tensor(math.log(0.55)))
 
     def forward(
         self,
@@ -306,7 +331,15 @@ class MetabolicModule(MassActionModule):
     ) -> torch.Tensor:
         rates = super().forward(state, coupling, external, embedding, time_features)
         sg = nn.functional.softplus(self.log_sg)
-        # Subtract structural setpoint from glucose rate only.
+        ra = nn.functional.softplus(self.log_ra)
+        # gut glucose-appearance flux (≥0, ≈0 fasted).
+        gut_glucose_appearance = coupling[..., _GUT_GLUCOSE_COUPLING_IDX]
+        # Glucose rate = mass-action rate − structural clearance + structural
+        # rate-of-appearance. Both structural terms touch glucose only.
         rates_out = rates.clone()
-        rates_out[..., _GLUCOSE_IDX] = rates_out[..., _GLUCOSE_IDX] - sg * state[..., _GLUCOSE_IDX]
+        rates_out[..., _GLUCOSE_IDX] = (
+            rates_out[..., _GLUCOSE_IDX]
+            - sg * state[..., _GLUCOSE_IDX]
+            + ra * gut_glucose_appearance
+        )
         return rates_out

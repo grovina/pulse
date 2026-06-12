@@ -14,6 +14,50 @@ Pulse is differentiable end-to-end. This means every published finding — an RC
 
 ## Philosophy
 
+### Correctness in the Feynman sense
+
+Feynman's point about the laws of nature is the governing principle of Pulse's
+modeling, not a footnote to it. Every law we have is approximate, and we find
+the "wrong" version before the "right" one. A law is *true* only in the sense
+that an approximate form is reliable within stated bounds — and even a law that
+predicts well is, philosophically, *completely wrong* the moment a small
+discrepancy forces us to change the picture behind it. "Even a very small effect
+sometimes requires profound changes in our ideas."
+
+Three operational commitments follow:
+
+**The model is an approximate law, and we hold it as one.** The cold teacher,
+the learned network, every coupling sign and rate constant — all provisional. A
+good MAPE or a passing gate is evidence the approximation is useful *in the
+regime we tested*, never evidence it is true. We do not mistake goodness-of-fit
+for correctness. (This is why the benchmark gate is a floor, not the goal — see
+*Success criteria*.) Even the constraints we call "enforced in architecture" are
+approximations we hold provisionally: mass-action kinetics is the right shape for
+chemical species in equilibrium but the wrong shape for a hormone that must sit
+at baseline and spike on cue, and where it is wrong we relax it deliberately
+rather than fit against it.
+
+**Small persistent discrepancies are structural signals, not noise to tune
+away.** A marker that sits byte-identical across iterations, an amplitude that is
+systematically low while the shape is right, a fit that is good everywhere except
+one regime — that is the "very small effect" that should make us suspect the
+picture, not reach for a parameter. The repeated lesson across 30+ iterations is
+that such discrepancies are always under-supervision or wrong structure, and the
+remedy is always structural: change which gradient reaches which parameter,
+change the coordinates a head lives in, add the conservation law — not nudge a
+weight. Prefer the formulation that is *true by construction* over the one that
+merely fits.
+
+**We refine the law by overturning it — including the teacher.** The teacher is
+the current approximate law; the literature is the evidence that should be able
+to overturn it. When the teacher is wrong or incomplete — mass not conserved, a
+state padded with a constant, a cascade it cannot express — the correct move is
+to fix the teacher's *structure* so the truth holds by construction, not to fit
+harder against a teacher we already know is wrong. A learned model that
+reproduces an approximate teacher perfectly has inherited its errors. Correctness
+means being willing to change the structure behind the numbers whenever the
+evidence — even a small, stubborn discrepancy — asks for it.
+
 ### What we impose vs. what we learn
 
 Physiology is governed by physics and chemistry — conservation of mass, reaction kinetics, thermodynamics. These are nature's constraints. Everything else — parameter values, regulatory gains, coupling strengths, circadian amplitudes — varies between individuals and changes over time.
@@ -110,7 +154,7 @@ Each module:
 
 Two module architecture types, chosen by the nature of the state:
 
-**Mass-action modules** (for chemical species): enforce rate = production − consumption × concentration, where production and consumption are non-negative learned functions. This is fundamental chemistry — concentrations have non-negative production, and clearance is proportional to concentration.
+**Mass-action modules** (for chemical species): the default shape is rate = production − consumption × concentration, with production and consumption as non-negative learned functions — the right form for a species in chemical equilibrium. Consistent with *Correctness in the Feynman sense* above, this is a prior we hold provisionally and relax where physiology demands a different shape, not an inviolable enforcement. Three deliberate relaxations are in the architecture today: (a) hormones that must sit at baseline and *spike* on a stimulus (insulin, glucagon, FFA, GLP-1) use gated basal-plus-peak heads; (b) species whose equilibrium leaves "typical" (e.g. insulin-suppressed glucagon) use a setpoint head that permits *signed* production; (c) glucose carries explicit structural source/clearance terms — a rate-of-appearance flux from the gut and a setpoint clearance gain — mirroring the minimal-model Ra(t) and Sg the teacher uses, because burying meal→glucose amplitude in the production MLP left it unreachable by gradient. Where the constraint is the right shape (true conserved species, clearance proportional to concentration) it holds; where it is the wrong shape we change it by construction rather than fit against it.
 
 **Learned-dynamics modules** (for vital signs): the rate of change is a fully learned function of inputs. No single correct equation governs heart rate or temperature — the model discovers the regulatory feedback.
 

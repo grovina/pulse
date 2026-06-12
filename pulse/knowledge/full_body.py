@@ -90,6 +90,15 @@ class PatientParams:
     keto_max: float = 0.005
     IC50_keto: float = 15.0
     k_bhb: float = 0.005
+    # Iter 80: hepatic ketogenesis ramps as the liver glycogen pool empties —
+    # the prolonged-fast fuel switch (Cahill 2006: BHB ~1-2 mM by 24 h fast,
+    # the teacher previously plateaued ~0.25). Gated on liver-glycogen
+    # depletion (1 − glyco_avail), so it is exactly 0 at the fed calibration
+    # state (conservation-exact) and rises only as the liver empties. This is
+    # the marker that *actually moves* in fasting, so it gives the slow
+    # glycogen pool a strong, observable gradient — what the glucose-side
+    # coupling alone could not (glucose is homeostatically defended).
+    keto_glyc_gain: float = 22.0
 
     # Lactate
     Lac_b: float = 1.0
@@ -103,6 +112,18 @@ class PatientParams:
     gn_hep: float = 0.018
     hep_to_glucose: float = 0.038
     meal_suppress_hep: float = 0.38
+    # Hepatic-output split (iter 80). The lumped `Hep` is partitioned into a
+    # glycogenolytic share (scaled by liver-glycogen availability) and a
+    # gluconeogenic share. CONSERVATION-EXACT at the fed calibration state
+    # (LGly = LGly_b): the two shares sum to the old `Hep`, so fed/acute
+    # trajectories are byte-identical to iter 79. They diverge only as the
+    # liver pool depletes (~12 h+ fast): the glycogenolytic component falls
+    # with availability, gluconeogenesis partially compensates, and net
+    # hepatic glucose output declines — the Cahill-2006 prolonged-fast
+    # picture, and the edge that finally makes glucose *downstream of* the
+    # slow glycogen pool (so glucose's strong gradient reaches LGly).
+    hep_glyco_frac: float = 0.6   # glycogenolytic share of basal hepatic output (early fast)
+    hep_gng_comp: float = 0.5     # gluconeogenic compensation as the liver empties (0..1)
 
     # Ghrelin
     Ghr_b: float = 100.0
@@ -431,12 +452,31 @@ def simulate_full_body(
         ra_norm = Ra / (Ra + 0.35) if (Ra + 0.35) > 1e-9 else 0.0
         hep_target *= max(0.2, 1.0 - params.meal_suppress_hep * min(ra_norm, 1.0))
         hep_target = max(hep_target, 0.12)
+        # Iter-80 hepatic-output split. glyco_avail = 1 at the fed calibration
+        # state (LGly = LGly_b) and falls toward 0 as the liver depletes, so
+        # this partition is the IDENTITY until the pool empties (conservation-
+        # exact) and only then bends hepatic output downward.
+        phi_L = LGly / (LGly + params.glyc_K_L)
+        phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
+        glyco_avail = min(phi_L / phi_L0, 1.0)
+        hep_glyco = params.hep_glyco_frac * hep_target * glyco_avail
+        hep_gng = (
+            (1.0 - params.hep_glyco_frac) * hep_target
+            + params.hep_gng_comp * params.hep_glyco_frac * hep_target * (1.0 - glyco_avail)
+        )
+        hep_target = hep_glyco + hep_gng
         dHep = -params.k_hep * (Hep - hep_target)
 
         lipolysis = params.lip_max / (1 + I / params.IC50_lip)
         dFFA = lipolysis - params.k_ffa * FFA + 0.01 * Ra_fat
 
-        ketogenesis = params.keto_max * FFA / (1 + I / params.IC50_keto)
+        # glyco_depletion ∈ [0,1): 0 when the liver is full (fed calibration —
+        # ketosis unchanged), rising as it empties to drive the fuel switch.
+        glyco_depletion = max(0.0, 1.0 - glyco_avail)
+        ketogenesis = (
+            params.keto_max * FFA / (1 + I / params.IC50_keto)
+            * (1.0 + params.keto_glyc_gain * glyco_depletion)
+        )
         dBHB = ketogenesis - params.k_bhb * BHB
 
         dLac = -params.k_lac * (Lac - params.Lac_b) + act * 0.3
@@ -454,16 +494,16 @@ def simulate_full_body(
         #   muscle: drains ONLY during activity (no hepatic G6Pase — muscle
         #          glycogen is consumed locally, preserved in a resting fast:
         #          Coppack 1989), matching the head's activity-gated catabolism.
-        # ATTRIBUTION (deliberate): glycogen does NOT yet feed back into the
-        # glucose / hepatic-output / ketone equations — the 19 observed-marker
-        # ODE above is byte-identical to iter 75. The glycogenolytic glucose
-        # flux is still lumped inside `Hep`; splitting `Hep` into glycogenolytic
-        # + gluconeogenic components so liver depletion drives gluconeogenesis
-        # and ketosis (a mass-exact coupling that legitimately moves fasting
-        # glucose) is the next iter. This iter's single mechanism under test is
-        # whether the slow pools, given a real cold-distill trajectory, track
-        # physiological depletion / repletion at all (iters 55-57 never got the
-        # SetpointHead pools off `typical` — the teacher had no signal to give).
+        # COUPLING (iter 80): liver glycogen now feeds back into glucose via the
+        # hepatic-output split above (glyco_avail reads LGly). This closes the
+        # glycogen→glucose loop the iter-76 comment flagged as "the next iter":
+        # liver depletion lowers the glycogenolytic share of hepatic output, so
+        # the *strong* glucose gradient (real data + gate + dose-response) now
+        # reaches LGly through a conservation-exact edge instead of relying on
+        # the weak open-loop cold-distill trajectory alone (iters 55-57 never
+        # got the SetpointHead pools off `typical` — the teacher had no signal
+        # to give; now it does). The split is the IDENTITY at the fed
+        # calibration state, so the acute/fed observed-marker ODE is unchanged.
         ins_drive = max(I - params.Ib, 0.0) / (max(I - params.Ib, 0.0) + params.Ib)
         syn_L = (params.k_glyc_syn_L * Ra_carb * ins_drive
                  * max(0.0, 1.0 - LGly / params.LGly_max))
