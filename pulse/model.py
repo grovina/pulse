@@ -25,6 +25,7 @@ from .types import (
     STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM,
     MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES,
     NORM_CENTER, NORM_SCALE,
+    PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX,
 )
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
@@ -32,6 +33,16 @@ from .modules import (
 )
 from .modules.base import compute_time_features
 from .modules.gut import MealEvent
+
+# Hard physiological bounds applied to the integrated state each Euler step
+# (iter 81). A no-op for any in-distribution trajectory (state stays well inside
+# these extremes), this caps catastrophic off-manifold divergence — an
+# embedding driven off the trained manifold by weakly-leashed calibration can
+# explode the gut appearance kernel / a softplus production term and integrate a
+# marker to nonphysical magnitudes (glucose ~18,000 mg/dL observed). See
+# PHYSIOLOGICAL_MIN/MAX in types.py for the derivation and rationale.
+_PHYS_MIN = torch.tensor(PHYSIOLOGICAL_MIN, dtype=torch.float32)
+_PHYS_MAX = torch.tensor(PHYSIOLOGICAL_MAX, dtype=torch.float32)
 
 
 class ModularPhysiologyNetwork(nn.Module):
@@ -337,7 +348,15 @@ def integrate(
             sleep_wake=sw_step, activity=act_step,
             gut_override=gut_step,
         )
-        return state + rates * dt
+        # Hard physiological clamp (iter 81): a no-op in-distribution, it bounds
+        # off-manifold divergence so a runaway term cannot integrate a marker to
+        # nonphysical magnitudes. Applied to the post-step state every step.
+        new_state = state + rates * dt
+        return torch.clamp(
+            new_state,
+            _PHYS_MIN.to(new_state.device),
+            _PHYS_MAX.to(new_state.device),
+        )
 
     use_checkpointing = (
         checkpoint_segments > 0

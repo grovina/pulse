@@ -264,6 +264,45 @@ NORM_SCALE = [
     40.0,   # crh: ±40 pg/mL (typical=100; latent first stage of HPA cascade, circadian + stress amplitude)
 ]
 
+# Hard physiological bounds for the integrator's state clamp (iter 81).
+#
+# These are NOT the clinical-normal ranges — they are the "incompatible with
+# continued physiology / measurement saturation" extremes, used purely as a
+# catastrophe safety on the forward integration. The model integrates raw state
+# with plain forward Euler and no clamp (model.py), and every module input
+# includes the raw per-patient embedding. A calibrated embedding that wanders
+# off the trained manifold (benchmark calibration is only weakly leashed) can
+# drive an unbounded softplus production term or the gut appearance kernel to
+# nonphysical magnitudes — observed: gut glucose appearance ~500x typical →
+# glucose integrating to ~18,000 mg/dL. Clamping the integrated state to these
+# extremes makes such a trajectory bounded (and the prediction merely wrong, not
+# catastrophic) for every marker regardless of which internal term diverged.
+#
+# Anchored to the model's OWN scale (NORM_CENTER ± K·NORM_SCALE), floored at 0
+# (no marker is physically negative). K is deliberately large so the clamp is
+# INACTIVE in-distribution and only catches divergence. NOT anchored to the
+# clinical [min, max]: the internal/unobserved markers (liver_glycogen,
+# muscle_glycogen, …) carry no ground truth, so the model learned its own scale
+# for them that need not match the display range — measured, in-distribution
+# liver_glycogen reaches ~12 SD (NORM_SCALE underestimates its true swing),
+# which a clinical-range bound would wrongly clip. The model's z-score envelope
+# over the calibration-reachable region (||emb||≤3, fed + 24h-fast protocols)
+# peaks at ~12.5 SD; K=20 clears that with margin so nothing in-distribution is
+# touched, while still bounding a runaway (e.g. glucose to ≤95+20·30=695 mg/dL,
+# vs the ~18,000 observed unclamped). The real fix for off-manifold calibration
+# is the embedding leash in benchmark.py — this is defense-in-depth that also
+# keeps training rollouts from exploding.
+PHYSIOLOGICAL_LIMIT_K = 20.0
+
+PHYSIOLOGICAL_MIN = [
+    max(0.0, c - PHYSIOLOGICAL_LIMIT_K * s)
+    for c, s in zip(NORM_CENTER, NORM_SCALE)
+]
+PHYSIOLOGICAL_MAX = [
+    c + PHYSIOLOGICAL_LIMIT_K * s
+    for c, s in zip(NORM_CENTER, NORM_SCALE)
+]
+
 # Which markers belong to each module (as indices into the state vector)
 MODULE_MARKER_INDICES: dict[str, list[int]] = {}
 for system in System:

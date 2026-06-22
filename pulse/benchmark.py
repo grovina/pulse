@@ -87,6 +87,19 @@ BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
 # `python -m pulse.benchmark` to reactivate it.
 BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
 
+# Iter 81: hard leash on the calibrated embedding norm. Calibration is 512 Adam
+# steps at lr=0.05 with only a 0.003 iso-L2 penalty and (previously) no bound —
+# far too weak to hold the embedding near the trained manifold. Measured: on a
+# real episode the embedding walks ||emb|| 0.40 -> 10.76 (the trained table sits
+# at ||emb|| ~ 1.15), i.e. ~9x off-manifold, where the forward integration's
+# unbounded production / gut-appearance terms detonate (glucose -> ~18,000
+# mg/dL) and the episode's MAPE blows up — the dominant cause of the iter-80
+# benchmark regression (glucose_mape 1.45; see docs). Projecting the embedding
+# back to ||emb|| <= R after each Adam step keeps personalization on the stable
+# manifold (R = 3.0 is ~2.6x the trained norm — ample patient-specific freedom;
+# the meal stability probe shows zero blowups at ||emb|| <= 3). R <= 0 disables.
+BENCHMARK_GATE_CALIBRATE_MAX_NORM = _env_float("PULSE_BENCHMARK_CALIBRATE_MAX_NORM", 3.0)
+
 
 @dataclass
 class MeasurementPoint:
@@ -415,6 +428,7 @@ def calibrate_embedding(
     prior_mean: torch.Tensor | None = None,
     prior_std: torch.Tensor | None = None,
     prior_weight: float = 1.0,
+    max_norm: float = BENCHMARK_GATE_CALIBRATE_MAX_NORM,
 ) -> CalibrationResult:
     """Optimize embedding to best explain sparse observations.
 
@@ -462,6 +476,14 @@ def calibrate_embedding(
             loss.backward()
             optimizer.step()
             final_loss = loss.item()
+            # Iter 81: project back onto the ||emb|| <= max_norm ball so 512
+            # weakly-leashed Adam steps cannot walk the embedding off the
+            # trained manifold into the integrator's blow-up regime.
+            if max_norm > 0.0:
+                with torch.no_grad():
+                    norm = float(embedding.norm())
+                    if norm > max_norm:
+                        embedding.mul_(max_norm / norm)
 
     return CalibrationResult(
         embedding=embedding.detach(),
