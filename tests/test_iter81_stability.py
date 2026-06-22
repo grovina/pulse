@@ -112,6 +112,55 @@ class TestIntegratorClamp(unittest.TestCase):
         self.assertTrue((traj[1:] >= self.lo - 1e-3).all())
 
 
+class TestGlucoseBaseline(unittest.TestCase):
+    """Iter 81: per-patient fasting-glucose setpoint (embedding -> b_emb)."""
+
+    def setUp(self) -> None:
+        torch.manual_seed(0)
+        self.model = ModularPhysiologyNetwork()
+        self.model.eval()
+        self.init = torch.tensor(NORM_CENTER, dtype=torch.float32)
+        self.gi = MARKER_INDEX["glucose"]
+
+    def _fasting_eq(self, emb: torch.Tensor) -> float:
+        with torch.no_grad():
+            traj = integrate(self.model, self.init, emb, 400, dt=1.0,
+                             start_time_minutes=360.0, meals=[])
+        return float(traj[-1, self.gi])
+
+    def test_zero_init_offset_is_zero(self) -> None:
+        # Final layer zero-init => b_emb = 0 for any embedding at construction,
+        # so the fasting setpoint is unchanged (Gb = 95) vs pre-iter-81.
+        net = self.model.metabolic.glucose_baseline_net
+        for v in (torch.zeros(self.model.embedding_dim), torch.randn(self.model.embedding_dim)):
+            self.assertEqual(float(net(self.model.embedding_projections["metabolic"](v))), 0.0)
+
+    def test_offset_shifts_fasting_setpoint_monotonically(self) -> None:
+        # Forcing the baseline head to a negative vs positive constant must move
+        # the fasting glucose equilibrium down vs up (the embedding now has
+        # direct authority over the setpoint the SpeciesHead alone lacked).
+        net = self.model.metabolic.glucose_baseline_net
+        emb = torch.zeros(self.model.embedding_dim)
+        with torch.no_grad():
+            net[-1].weight.zero_(); net[-1].bias.fill_(-1.0)   # b_emb < 0 -> lower Gb
+        low = self._fasting_eq(emb)
+        with torch.no_grad():
+            net[-1].bias.fill_(1.0)                            # b_emb > 0 -> higher Gb
+        high = self._fasting_eq(emb)
+        self.assertLess(low, high - 5.0)
+
+    def test_gradient_reaches_baseline_net(self) -> None:
+        # The fasting glucose level must be differentiable w.r.t. the baseline
+        # head (so training can learn per-patient setpoints).
+        emb = torch.zeros(self.model.embedding_dim, requires_grad=True)
+        traj = integrate(self.model, self.init, emb, 60, dt=1.0,
+                         start_time_minutes=360.0, meals=[])
+        traj[-1, self.gi].backward()
+        grads = [p.grad for p in self.model.metabolic.glucose_baseline_net.parameters()
+                 if p.grad is not None]
+        self.assertTrue(grads and any(float(g.abs().sum()) > 0 for g in grads))
+
+
 class TestCalibrationLeash(unittest.TestCase):
     def setUp(self) -> None:
         torch.manual_seed(0)

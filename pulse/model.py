@@ -348,15 +348,21 @@ def integrate(
             sleep_wake=sw_step, activity=act_step,
             gut_override=gut_step,
         )
-        # Hard physiological clamp (iter 81): a no-op in-distribution, it bounds
+        # Physiological clamp (iter 81): a no-op in-distribution, it bounds
         # off-manifold divergence so a runaway term cannot integrate a marker to
-        # nonphysical magnitudes. Applied to the post-step state every step.
+        # nonphysical magnitudes. Straight-through: the FORWARD state is clamped
+        # (so a blow-up never propagates and the benchmark/no-grad path is hard-
+        # bounded), but the backward pass treats the clamp as the identity, so it
+        # never zeros the gradient at the boundary — early training (when random
+        # rollouts transiently hit the bounds) is not starved. In-distribution
+        # the clamp never binds, so this is exactly `state + rates*dt`.
         new_state = state + rates * dt
-        return torch.clamp(
+        clamped = torch.clamp(
             new_state,
             _PHYS_MIN.to(new_state.device),
             _PHYS_MAX.to(new_state.device),
         )
+        return new_state + (clamped - new_state).detach()
 
     use_checkpointing = (
         checkpoint_segments > 0

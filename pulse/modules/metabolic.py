@@ -46,6 +46,10 @@ _TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0]
 _CONS_SCALES = [0.02, 0.1, 0.03, 0.04, 0.03, 0.02, 0.04, 7e-4, 3.3e-5, 2.5e-5]
 _INSULIN_IDX = 1
 _GLUCOSE_IDX = 0
+# Iter 81: max per-patient fasting-glucose offset, z-score units. ±1.5 σ around
+# the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
+# the benchmark's 60-120 spread with margin.
+_GLUCOSE_BASELINE_MAX_Z = 1.5
 # Iter 51 dead-pathway species. The (prod, cons) parameterisation pins their
 # state at `typical` with a flat gradient surface — see docs/dead-pathways.md
 # and modules/base.py:SetpointHead.
@@ -320,6 +324,31 @@ class MetabolicModule(MassActionModule):
         # mg/dL/g at the iter-79 operating point) so the cold-start run begins
         # near-physiological on amplitude and dose-response refines from there.
         self.log_ra = nn.Parameter(torch.tensor(math.log(0.55)))
+        # Iter 81: patient-specific glucose baseline (fasting setpoint).
+        # The clearance term above pulls glucose toward a setpoint that was
+        # HARDCODED at Gb=95 mg/dL (normalised 0) — so the model could not
+        # represent the fasting-glucose spread of real patients. Measured on the
+        # iter-80 model: achievable fasting glucose over the calibration-reachable
+        # embedding region floored at ~98 mg/dL (downward authority ≈ 0), while
+        # the benchmark users span 60-120; ~2/3 of them were literally
+        # unrepresentable, which dominated the glucose_mape gate failure (the
+        # model also loses to persistence because its baseline is wrong, not just
+        # its dynamics). This small head emits a per-patient baseline offset b_emb
+        # (z-score units) from the embedding, so the clearance pulls toward
+        # Gb = 95 + NORM_SCALE_glucose·b_emb — giving the embedding DIRECT linear
+        # authority over the fasting setpoint (the SetpointHead philosophy applied
+        # surgically to the existing structural term, with no head swap — the
+        # iter-72 scar showed swapping metabolic heads wrecks the coupling graph).
+        # tanh-bounded to ±GLUCOSE_BASELINE_MAX_Z so Gb stays physiological
+        # (≈50-140 mg/dL); final layer zero-init so b_emb=0 at start (Gb=95,
+        # byte-identical to the pre-iter-81 fasting equilibrium).
+        _bh = max(8, hidden_dim // 4)
+        self.glucose_baseline_net = nn.Sequential(
+            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
+        )
+        with torch.no_grad():
+            self.glucose_baseline_net[-1].weight.zero_()
+            self.glucose_baseline_net[-1].bias.zero_()
 
     def forward(
         self,
@@ -332,14 +361,19 @@ class MetabolicModule(MassActionModule):
         rates = super().forward(state, coupling, external, embedding, time_features)
         sg = nn.functional.softplus(self.log_sg)
         ra = nn.functional.softplus(self.log_ra)
+        # Per-patient fasting setpoint offset (z-score units), bounded.
+        b_emb = _GLUCOSE_BASELINE_MAX_Z * torch.tanh(
+            self.glucose_baseline_net(embedding).squeeze(-1)
+        )
         # gut glucose-appearance flux (≥0, ≈0 fasted).
         gut_glucose_appearance = coupling[..., _GUT_GLUCOSE_COUPLING_IDX]
-        # Glucose rate = mass-action rate − structural clearance + structural
-        # rate-of-appearance. Both structural terms touch glucose only.
+        # Glucose rate = mass-action rate − structural clearance toward the
+        # PATIENT baseline (Gb = 95 + scale·b_emb) + structural rate-of-appearance.
+        # All structural terms touch glucose only.
         rates_out = rates.clone()
         rates_out[..., _GLUCOSE_IDX] = (
             rates_out[..., _GLUCOSE_IDX]
-            - sg * state[..., _GLUCOSE_IDX]
+            - sg * (state[..., _GLUCOSE_IDX] - b_emb)
             + ra * gut_glucose_appearance
         )
         return rates_out

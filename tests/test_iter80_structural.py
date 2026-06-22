@@ -26,6 +26,7 @@ import unittest
 import numpy as np
 import torch
 
+import pulse.model as model_mod
 from pulse.model import (
     ModularPhysiologyNetwork,
     integrate,
@@ -71,12 +72,24 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
     def test_amplitude_increases_with_gain(self) -> None:
         """A higher appearance gain must raise the postprandial glucose peak."""
         m = ModularPhysiologyNetwork()
-        with torch.no_grad():
-            m.metabolic.log_ra.copy_(torch.tensor(math.log(0.1)))
-        low = _glucose_peak(m, carbs=60.0)
-        with torch.no_grad():
-            m.metabolic.log_ra.copy_(torch.tensor(math.log(1.0)))
-        high = _glucose_peak(m, carbs=60.0)
+        # Isolate the Ra forward-amplitude mechanism from the iter-81 physiological
+        # clamp: an *untrained* random model explodes glucose to the clamp ceiling
+        # for any Ra, masking the effect. On a trained model glucose peaks ~140
+        # (far below the ceiling) so the clamp never binds here. Widen the bounds
+        # for the measurement so this tests the Ra term, not the catastrophe clamp.
+        save_lo, save_hi = model_mod._PHYS_MIN.clone(), model_mod._PHYS_MAX.clone()
+        try:
+            model_mod._PHYS_MIN.fill_(-1e30)
+            model_mod._PHYS_MAX.fill_(1e30)
+            with torch.no_grad():
+                m.metabolic.log_ra.copy_(torch.tensor(math.log(0.1)))
+            low = _glucose_peak(m, carbs=60.0)
+            with torch.no_grad():
+                m.metabolic.log_ra.copy_(torch.tensor(math.log(1.0)))
+            high = _glucose_peak(m, carbs=60.0)
+        finally:
+            model_mod._PHYS_MIN.copy_(save_lo)
+            model_mod._PHYS_MAX.copy_(save_hi)
         self.assertGreater(high, low + 1.0, "higher Ra gain must raise the 60 g glucose peak")
 
     def test_gradient_reaches_gain(self) -> None:
