@@ -50,10 +50,18 @@ _GLUCOSE_IDX = 0
 # the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
 # the benchmark's 60-120 spread with margin.
 _GLUCOSE_BASELINE_MAX_Z = 1.5
-# Iter 83: minimum glucose setpoint gain (floor on Sg). Below ~0.8 the setpoint
-# is too weak to overcome the mass-action anchor and reach low patient baselines
-# (see log_sg comment in MetabolicModule.__init__).
-_SG_MIN = 0.8
+# Iter 83/84: minimum glucose setpoint gain (floor on Sg). The setpoint must be
+# strong enough to overcome the mass-action anchor and reach low patient baselines
+# (see log_sg comment), but NOT so strong that the per-step relaxation
+# Sg*dt (+ mass-action clearance, dt=1) approaches the forward-Euler stability
+# limit of 1 over the long phase-2 rollouts. Iter 83 used 0.8 — combined clearance
+# ~0.96/step, marginally unstable: it NaN'd the phase-2 signal gradients
+# (joint_aux/cold_distill/physiology_rules) and ABORTED the run at epoch 51. Iter
+# 84 uses 0.5 — combined ~0.66/step (Euler coeff ~0.34, comfortably stable) — which
+# still reaches a fasting-glucose floor of ~65 mg/dL (Sg-sweep: 0.5->65, 0.6->63,
+# 0.8->61), enough to cover the benchmark's low users at an aggregate glucose_mape
+# ~0.015 (the lowest two users at 60/63 floor at ~65, negligible in the mean).
+_SG_MIN = 0.5
 # Iter 51 dead-pathway species. The (prod, cons) parameterisation pins their
 # state at `typical` with a flat gradient surface — see docs/dead-pathways.md
 # and modules/base.py:SetpointHead.
@@ -312,9 +320,12 @@ class MetabolicModule(MassActionModule):
         # 0.37 (the only remaining gate failure after iter-82 fixed HR). Training
         # will NOT raise Sg on its own (iter-82 kept 0.11 even with low-glucose
         # patients in the teacher). An sg-sweep showed the floor reachable scales
-        # with Sg: 0.11->85, 0.6->63, 0.8->~61, 1.0->59 mg/dL. _SG_MIN=0.8 lets
-        # the setpoint reach ~61 (covers the 60-118 benchmark span) while leaving
-        # headroom for training to raise it. Physiologically honest: glucose is
+        # with Sg: 0.11->85, 0.5->65, 0.6->63, 0.8->~61, 1.0->59 mg/dL. _SG_MIN=0.5
+        # lets the setpoint reach ~65 (covers the benchmark's low users at an
+        # aggregate glucose_mape ~0.015) while staying inside the forward-Euler
+        # stability margin (iter-83's 0.8 was marginally unstable: it NaN'd the
+        # phase-2 signal gradients and ABORTED — see _SG_MIN comment up top).
+        # Physiologically honest: glucose is
         # tightly defended by counter-regulation, so a strong restoring force
         # toward the patient setpoint (and fast post-meal return to baseline) is
         # correct, not a benchmark hack. The meal excursion is carried by the Ra
