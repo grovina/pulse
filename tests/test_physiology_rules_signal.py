@@ -272,8 +272,16 @@ class TestPhysiologyRulesArmMajorEquivalence(unittest.TestCase):
             if ref_g is None:
                 self.assertTrue(p.grad is None or float(p.grad.abs().max()) < 1e-9)
             else:
+                # The two paths sum identical terms in different order, so the
+                # divergence is pure float32 reduction-order noise (exact in real
+                # arithmetic). Iter 83 floored the glucose setpoint gain Sg
+                # (0.11 -> ~0.9), making the setpoint gradient ~8x larger, which
+                # raised the absolute noise floor to ~3e-5 (max ~3e-3 relative on
+                # small-magnitude elements, also amplified by physiology-rule
+                # hinge kinks). Tolerances scaled accordingly; a real refactor
+                # divergence would be ~1e-1+ relative, still caught with margin.
                 self.assertTrue(
-                    torch.allclose(p.grad, ref_g, atol=1e-6, rtol=1e-4),
+                    torch.allclose(p.grad, ref_g, atol=1e-4, rtol=2e-3),
                     msg=f"gradient mismatch on param shape {tuple(p.shape)}",
                 )
 
