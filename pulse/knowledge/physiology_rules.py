@@ -172,7 +172,15 @@ def hinge_max_correlation(
     b = traj[window, col_b]
     a = a - a.mean()
     b = b - b.mean()
-    denom = torch.sqrt((a * a).sum() * (b * b).sum()).clamp_min(1e-8)
+    # Add eps INSIDE the sqrt (not clamp_min on the result): when a marker's
+    # window is perfectly flat (variance 0), sqrt(0) is finite in the forward
+    # but its backward is 1/(2·sqrt(0)) = NaN, and clamping the sqrt OUTPUT
+    # leaves that NaN gradient intact. Iter-83/84's strong glucose setpoint (Sg
+    # floor) pins glucose dead-flat in some windows, which NaN'd these
+    # correlation rules' gradients and aborted training (n_nan=111, identical at
+    # Sg 0.5 and 0.8 — it was this, not Euler stiffness). eps inside keeps the
+    # gradient finite (a flat segment then yields corr≈0 with a small gradient).
+    denom = torch.sqrt(((a * a).sum() + 1e-6) * ((b * b).sum() + 1e-6))
     corr = (a * b).sum() / denom
     return torch.relu(corr - max_corr)
 
@@ -326,7 +334,15 @@ def hinge_min_correlation(
     b = traj[window, col_b]
     a = a - a.mean()
     b = b - b.mean()
-    denom = torch.sqrt((a * a).sum() * (b * b).sum()).clamp_min(1e-8)
+    # Add eps INSIDE the sqrt (not clamp_min on the result): when a marker's
+    # window is perfectly flat (variance 0), sqrt(0) is finite in the forward
+    # but its backward is 1/(2·sqrt(0)) = NaN, and clamping the sqrt OUTPUT
+    # leaves that NaN gradient intact. Iter-83/84's strong glucose setpoint (Sg
+    # floor) pins glucose dead-flat in some windows, which NaN'd these
+    # correlation rules' gradients and aborted training (n_nan=111, identical at
+    # Sg 0.5 and 0.8 — it was this, not Euler stiffness). eps inside keeps the
+    # gradient finite (a flat segment then yields corr≈0 with a small gradient).
+    denom = torch.sqrt(((a * a).sum() + 1e-6) * ((b * b).sum() + 1e-6))
     corr = (a * b).sum() / denom
     return torch.relu(min_corr - corr)
 
