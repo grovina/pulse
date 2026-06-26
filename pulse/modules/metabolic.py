@@ -50,18 +50,18 @@ _GLUCOSE_IDX = 0
 # the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
 # the benchmark's 60-120 spread with margin.
 _GLUCOSE_BASELINE_MAX_Z = 1.5
-# Iter 83/84/85: minimum glucose setpoint gain (floor on Sg), strong enough to
-# overcome the mass-action anchor and reach low patient baselines (see log_sg
-# comment). Sg-sweep of the reachable fasting-glucose floor: 0.5->65, 0.6->63,
-# 0.8->61 mg/dL. 0.5 reaches ~65, covering the benchmark's low users at an
-# aggregate glucose_mape ~0.015 (the lowest two users at 60/63 floor at ~65,
-# negligible in the mean). NOTE: iter-83 (0.8) and iter-84 (0.5) both ABORTED in
-# phase 2 with IDENTICAL NaN gradients — that was NOT Euler stiffness (it was
-# independent of Sg) but a latent bug in the correlation physiology rules
-# (knowledge/physiology_rules.py): a strong Sg pins glucose dead-flat in some
-# windows, and sqrt(0)'s backward is NaN. Fixed there in iter 85 (eps inside the
-# sqrt); Sg can be set purely for baseline reach now.
-_SG_MIN = 0.5
+# Iter 86: glucose is the pure minimal-model setpoint (full_body.py teacher form
+# dG = -(Sg + X)·(G - Gb) + Ra), so Sg only needs to be a GENTLE relaxation rate
+# — the equilibrium is Gb_emb for ANY Sg>0, not something Sg has to fight a
+# competing mass-action to reach. Sg is bounded to a gentle band so it can NEVER
+# become the brute-force clearance that iters 83-85 used (Sg~0.5-0.8), which
+# corrupted the coupled glycogen/hepatic dynamics (liver_glycogen blew up to
+# ~770 during a 24h fast → gradient NaN on the long rollout → 3 aborted runs).
+# Sg ∈ [_SG_MIN, _SG_MIN+_SG_RANGE] = [0.03, 0.30]: tight enough to settle glucose
+# to Gb_emb well within the fasting eval window (tc 1/Sg ≈ 3-33 min), gentle
+# enough to stay physiological and never corrupt.
+_SG_MIN = 0.03
+_SG_RANGE = 0.27
 # Iter 51 dead-pathway species. The (prod, cons) parameterisation pins their
 # state at `typical` with a flat gradient surface — see docs/dead-pathways.md
 # and modules/base.py:SetpointHead.
@@ -378,6 +378,12 @@ class MetabolicModule(MassActionModule):
         with torch.no_grad():
             self.glucose_baseline_net[-1].weight.zero_()
             self.glucose_baseline_net[-1].bias.zero_()
+        # Iter 86: insulin-action gain Si for the minimal-model clearance
+        # (Sg + X)·(G - Gb), X = Si·max(insulin_above_baseline, 0). This is the
+        # insulin->glucose suppression the dropped mass-action used to carry via
+        # cons(insulin); now it lives in the physically-correct place (the
+        # insulin-dependent glucose effectiveness of the Bergman minimal model).
+        self.log_si = nn.Parameter(torch.tensor(math.log(0.1)))
 
     def forward(
         self,
@@ -388,21 +394,32 @@ class MetabolicModule(MassActionModule):
         time_features: torch.Tensor,
     ) -> torch.Tensor:
         rates = super().forward(state, coupling, external, embedding, time_features)
-        sg = _SG_MIN + nn.functional.softplus(self.log_sg)
+        # Sg: gentle, bounded relaxation rate (never the brute-force clearance of
+        # iters 83-85). Equilibrium is Gb_emb regardless of Sg magnitude.
+        sg = _SG_MIN + _SG_RANGE * torch.sigmoid(self.log_sg)
         ra = nn.functional.softplus(self.log_ra)
-        # Per-patient fasting setpoint offset (z-score units), bounded.
+        # X: insulin action — extra glucose effectiveness when insulin is above
+        # baseline (state is z-scored, so 0 = baseline). ≥0; ≈0 fasted.
+        x_ins = nn.functional.softplus(self.log_si) * nn.functional.relu(
+            state[..., _INSULIN_IDX]
+        )
+        # Per-patient fasting setpoint Gb = 95 + NORM_SCALE·b_emb (z-score offset).
         b_emb = _GLUCOSE_BASELINE_MAX_Z * torch.tanh(
             self.glucose_baseline_net(embedding).squeeze(-1)
         )
         # gut glucose-appearance flux (≥0, ≈0 fasted).
         gut_glucose_appearance = coupling[..., _GUT_GLUCOSE_COUPLING_IDX]
-        # Glucose rate = mass-action rate − structural clearance toward the
-        # PATIENT baseline (Gb = 95 + scale·b_emb) + structural rate-of-appearance.
-        # All structural terms touch glucose only.
+        # Iter 86: glucose is the PURE minimal-model setpoint (teacher full_body
+        # form), REPLACING the mass-action SpeciesHead rate for glucose — no
+        # competing anchor toward ~95. dG = -(Sg + X)·(G - Gb_emb) + Ra·appearance.
+        # The fasting equilibrium IS the per-patient Gb_emb (reachable 50-140 mg/dL
+        # for ANY gentle Sg), true by construction; the meal excursion is Ra; the
+        # insulin-mediated clearance is X. (The glucose SpeciesHead's prod/cons are
+        # simply unused now — its dynamics were the wrong shape: a homeostatically
+        # defended setpoint, not a chemical species seeking prod/cons balance.)
         rates_out = rates.clone()
         rates_out[..., _GLUCOSE_IDX] = (
-            rates_out[..., _GLUCOSE_IDX]
-            - sg * (state[..., _GLUCOSE_IDX] - b_emb)
+            -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb)
             + ra * gut_glucose_appearance
         )
         return rates_out
