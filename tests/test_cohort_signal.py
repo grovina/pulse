@@ -226,15 +226,25 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
 class TestCohortStatisticSignalAdaptive(unittest.TestCase):
     """Iter 74: violation-proportional reweighting between specs."""
 
+    # These specs exist to exercise the *adaptive weighting* mechanism, not the
+    # physiology: "easy" must always be the well-matched spec and "hard" the
+    # badly-missed one, whatever statistic the toy model happens to emit. We key
+    # that off the tolerance (sigma), NOT the target — an earlier version set
+    # target=0 (easy) vs 1000 (hard) at equal sigma, which silently assumed the
+    # toy model's fed−fasted glucose delta sits near 0. The iter-87 gut-timing
+    # fix (meal absorption now lands inside the window instead of leaking in as a
+    # shifted tail) moved that delta to ~600, flipping which target was "closer"
+    # and inverting the intended easy/hard ordering. Defining easy/hard by sigma
+    # is robust to the model output magnitude.
     def _easy_spec(self) -> CohortStatisticSpec:
-        # target ≈ model output → small z² loss.
+        # Enormous tolerance → z² ≈ 0 for any physiological delta ⇒ well matched.
         from dataclasses import replace
-        return replace(_toy_glucose_spec(), name="easy", target=0.0, sigma=10.0)
+        return replace(_toy_glucose_spec(), name="easy", target=0.0, sigma=1.0e4)
 
     def _hard_spec(self) -> CohortStatisticSpec:
-        # target wildly off → large z² loss regardless of model init.
+        # Tight tolerance → any nonzero delta is a large z² miss ⇒ badly missed.
         from dataclasses import replace
-        return replace(_toy_glucose_spec(), name="hard", target=1000.0, sigma=10.0)
+        return replace(_toy_glucose_spec(), name="hard", target=0.0, sigma=1.0)
 
     def test_adaptive_populates_ema_and_emits_per_spec_weights(self) -> None:
         device = torch.device("cpu")

@@ -327,7 +327,27 @@ def integrate(
             gut_outputs = gut_outputs.unsqueeze(0)
 
     batch = int(initial_state.shape[0])
-    if batch > 1 and gut_outputs is None:
+    if gut_outputs is None and meals:
+        # Precompute the whole gut window here so BOTH the batched and the
+        # single-embedding paths take meal absorption on the window-offset
+        # clock (see precompute_gut_outputs). Previously batch==1 fell through
+        # to per-step ``model.forward`` gut calls that computed meal-dt from
+        # absolute minute-of-day, re-introducing the start_time_minutes meal
+        # shift on exactly the benchmark path (which calibrates then integrates
+        # a single embedding). Precomputing centralizes the correct timebase.
+        # Guarded on ``meals``: with no meals there is no absorption to compute,
+        # and skipping keeps gut-less stub models (used in integrator tests)
+        # and the trivial zero-gut path working unchanged.
+        gut_outputs = precompute_gut_outputs(
+            model, embedding, n_steps, dt=dt,
+            start_time_minutes=start_time_minutes, meals=meals,
+        )
+        if gut_outputs.dim() == 2:
+            gut_outputs = gut_outputs.unsqueeze(0)
+    elif batch > 1 and gut_outputs is None:
+        # Preserve the original contract: a heterogeneous batch cannot use the
+        # per-step gut path (gut depends on the embedding), so callers must
+        # precompute. Only reachable now for the no-meal batch>1 case.
         raise ValueError(
             "integrate at batch>1 requires precomputed gut_outputs; call "
             "precompute_gut_outputs(model, embedding, n_steps, ...) first.",
@@ -445,9 +465,21 @@ def precompute_gut_outputs(
     if meals is None:
         meals = []
     device = embedding.device
-    times = (
-        torch.arange(n_steps, dtype=torch.float32, device=device) * dt
-        + start_time_minutes
-    ) % 1440.0
+    # Gut absorption depends only on minutes-since-meal, and meal times are
+    # window OFFSETS (0-based, matching the teacher's simulate_full_body frame,
+    # the benchmark dataset, and the scenario/protocol generators). So the
+    # absorption clock must be the window-offset frame, NOT absolute
+    # minute-of-day. Adding start_time_minutes here (the behaviour through
+    # iter 86) shifted every meal's absorption curve start_time_minutes earlier
+    # than the window — e.g. an 08:00 start (480) pushed the whole absorption
+    # peak out of the window and left only the tail leaking in — which crushed
+    # the measured post-meal amplitude and was the real cause of the chronic
+    # verifier_cat[meal] failure (the amplitude machinery itself is fine: with
+    # meals on the correct clock the model already hits ~0.4-0.74 mg/dL/g). No
+    # %1440 wrap either: a meal offset does not recur on a daily cycle.
+    # ``start_time_minutes`` is retained for API compatibility (callers pass it
+    # for the circadian clock used elsewhere in the forward pass) but is not
+    # part of the absorption timebase.
+    times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     emb_gut = model.embedding_projections["gut"](embedding)
     return model.gut.forward_window(times, meals, emb_gut)
