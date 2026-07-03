@@ -50,6 +50,12 @@ _GLUCOSE_IDX = 0
 # the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
 # the benchmark's 60-120 spread with margin.
 _GLUCOSE_BASELINE_MAX_Z = 1.5
+# Iter 88: max per-patient meal-appearance (Ra) log-gain offset, pre-softplus
+# units. Ra = softplus(log_ra + ra_emb), ra_emb ∈ ±_RA_BASELINE_MAX_Z. With
+# log_ra init = log(0.55), ±1.0 gives Ra ∈ ~[0.18, 0.91] around the ~0.44 init —
+# a ~5× per-patient amplitude range, enough to cover the cohort's postprandial
+# spread without letting a single patient's excursion run away.
+_RA_BASELINE_MAX_Z = 1.0
 # Iter 86: glucose is the pure minimal-model setpoint (full_body.py teacher form
 # dG = -(Sg + X)·(G - Gb) + Ra), so Sg only needs to be a GENTLE relaxation rate
 # — the equilibrium is Gb_emb for ANY Sg>0, not something Sg has to fight a
@@ -378,6 +384,26 @@ class MetabolicModule(MassActionModule):
         with torch.no_grad():
             self.glucose_baseline_net[-1].weight.zero_()
             self.glucose_baseline_net[-1].bias.zero_()
+        # Iter 88: per-patient meal-appearance gain Ra. Through iter 87 log_ra was
+        # a single GLOBAL scalar while Gb_emb was the ONLY per-patient glucose
+        # lever. When the iter-87 meal-timing fix put real excursions back into the
+        # 240-min calibration window (which mixes meal peaks and fasting troughs
+        # into one embedding fit), each patient's amplitude mismatch had nowhere to
+        # go but Gb — biasing the fasting setpoint, so fasting glucose_mape
+        # regressed 0.20->0.27 (and HR co-regressed via the cardiovascular
+        # coupling). This head gives Ra its own per-patient offset, mirroring
+        # glucose_baseline_net, so calibration fits the excursion amplitude
+        # (ra_emb) and the baseline (Gb_emb) INDEPENDENTLY and Gb stops absorbing
+        # amplitude error. Final layer zero-init ⇒ ra_emb=0 at start, so Ra is
+        # byte-identical to the pre-iter-88 global softplus(log_ra) cold start; the
+        # dose-response signal still supervises the amplitude axis and now moves it
+        # per patient rather than globally.
+        self.ra_baseline_net = nn.Sequential(
+            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
+        )
+        with torch.no_grad():
+            self.ra_baseline_net[-1].weight.zero_()
+            self.ra_baseline_net[-1].bias.zero_()
         # Iter 86: insulin-action gain Si for the minimal-model clearance
         # (Sg + X)·(G - Gb), X = Si·max(insulin_above_baseline, 0). This is the
         # insulin->glucose suppression the dropped mass-action used to carry via
@@ -397,7 +423,12 @@ class MetabolicModule(MassActionModule):
         # Sg: gentle, bounded relaxation rate (never the brute-force clearance of
         # iters 83-85). Equilibrium is Gb_emb regardless of Sg magnitude.
         sg = _SG_MIN + _SG_RANGE * torch.sigmoid(self.log_sg)
-        ra = nn.functional.softplus(self.log_ra)
+        # Iter 88: per-patient Ra = softplus(log_ra + ra_emb), ra_emb tanh-bounded
+        # to ±_RA_BASELINE_MAX_Z. Decouples excursion amplitude from Gb_emb.
+        ra_emb = _RA_BASELINE_MAX_Z * torch.tanh(
+            self.ra_baseline_net(embedding).squeeze(-1)
+        )
+        ra = nn.functional.softplus(self.log_ra + ra_emb)
         # X: insulin action — extra glucose effectiveness when insulin is above
         # baseline (state is z-scored, so 0 = baseline). ≥0; ≈0 fasted.
         x_ins = nn.functional.softplus(self.log_si) * nn.functional.relu(

@@ -19,15 +19,26 @@ def _randomize_params(rng: np.random.Generator) -> dict:
     def vary(val, spread=0.3):
         return val * np.exp(rng.normal(0, spread))
 
+    # Iter 88: port the five constants that full_body was recalibrated away from
+    # in iter 21 but this standalone generator never followed (gamma, h, Si,
+    # IC50_keto, k_bhb). Both generators feed the SAME marker pool (bergman is
+    # ~22% of the trajectory teacher signal, full_body ~45%), so the stale values
+    # made the two teachers demand different glucose/insulin/BHB at the same
+    # nominal conditions — averaging two disagreeing teachers damps trajectories
+    # (a driver of the flat / worse-than-persistence tracking). Values now match
+    # full_body.py:66-92 (h<Gb so insulin can fall below Ib during a fast; gamma
+    # gives a physiological OGTT insulin peak; k_bhb/IC50_keto give the slow BHB
+    # clearance the cold model targets). Pure data-gen change; the two generators
+    # CONVERGE afterward, no full_body baseline shifted.
     return {
         "Sg": vary(0.018),
-        "Si": vary(0.0002, 0.5),
+        "Si": vary(0.0004, 0.5),
         "Gb": vary(95.0, 0.15),
         "Ib": vary(10.0, 0.4),
         "p2": 0.03,
         "n": vary(0.15),
-        "gamma": vary(0.015),
-        "h": 80.0,
+        "gamma": vary(0.07),
+        "h": 95.0,
         "Gnb": vary(70.0),
         "k_gn": 0.03,
         "alpha_gn": 1.5,
@@ -37,8 +48,8 @@ def _randomize_params(rng: np.random.Generator) -> dict:
         "k_ffa": 0.04,
         "BHB_b": vary(0.1),
         "keto_max": 0.005,
-        "IC50_keto": 10.0,
-        "k_bhb": 0.03,
+        "IC50_keto": 15.0,
+        "k_bhb": 0.005,
         "Lac_b": vary(1.0),
         "k_lac": 0.02,
     }
