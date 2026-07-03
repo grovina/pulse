@@ -181,6 +181,18 @@ class ModularPhysiologyNetwork(nn.Module):
                     f"state batch {batch}",
                 )
         elif batch == 1:
+            # FRAME CONTRACT: this per-step fallback feeds ``t_minutes`` (an
+            # ABSOLUTE minute-of-day, per this method's signature) straight into
+            # the gut as the absorption clock. But ``meal.time`` is a WINDOW
+            # OFFSET (0-based), so meal-accurate absorption requires the
+            # window-offset clock — which this path CANNOT reconstruct from an
+            # absolute ``t_minutes`` alone. Do NOT route trajectory integration
+            # through here: ``integrate`` precomputes the whole gut window on the
+            # correct offset clock (see precompute_gut_outputs, iter 87) and
+            # passes it via ``gut_override``. This fallback is retained only for
+            # pointwise sensitivity probes (coupling_prior_loss) where the gut
+            # is state-independent and cancels in the finite difference, so its
+            # timing frame does not affect the result.
             gut_out = self.gut(float(t_minutes[0].item()), meals, emb["gut"][0])
             gut_out_batch = gut_out.unsqueeze(0)
         else:

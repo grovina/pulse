@@ -115,9 +115,16 @@ class GutModule(nn.Module):
         - ``embedding[EMB]``  → ``[T, GUT_OUTPUT_DIM]``
         - ``embedding[B, EMB]`` → ``[B, T, GUT_OUTPUT_DIM]``
 
-        ``times`` is a 1-D tensor of absolute minute-of-day values, length
-        T (shared across batch members — gut depends on (t, meals, emb),
-        not on state, so per-batch times aren't useful here). Output is
+        ``times`` is a 1-D tensor in the SAME frame as ``meal.time`` — i.e.
+        window-offset minutes (0-based from the window start), NOT absolute
+        minute-of-day. Absorption is a function of ``dt = times - meal.time``
+        (see below), and meal times are 0-based offsets matching the teacher's
+        ``simulate_full_body`` frame, the benchmark dataset, and every
+        scenario/protocol generator. Passing an absolute-minute-of-day clock
+        here shifts every meal's absorption curve by the window start and
+        crushes post-meal amplitude — this was the iter-87 frame bug. Length
+        T, shared across batch members (gut depends on (t, meals, emb), not on
+        state, so per-batch times aren't useful here). Output is
         bit-equivalent (modulo float-reduction order) to stacking
         ``forward(t, meals, embedding)`` for each ``t`` and each batch row.
 
