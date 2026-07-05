@@ -23,18 +23,21 @@ _N_EXTERNAL = 2
 # Species order matches MODULE_MARKER_INDICES["metabolic"]:
 # 0: glucose, 1: insulin, 2: glucagon, 3: ffa, 4: bhb, 5: lactate,
 # 6: hepatic_output, 7: liver_glycogen (iter 56), 8: muscle_glycogen
-# (iter 56), 9: mitochondrial_capacity (iter 55).
+# (iter 56), 9: mitochondrial_capacity (iter 55), 10: insulin_action (iter 89).
 # Indices 7-9 are slow internal states (unobserved, marker_type="internal"
 # in types.py) — physical pool size + protein turnover give them long τ
 # naturally under the same mass-action primitive. See
-# docs/multi-timescale-plan.md.
+# docs/multi-timescale-plan.md. Index 10 (insulin_action) is a fast latent
+# (τ ≈ 33 min) whose rate is computed structurally in forward() (a low-pass of
+# relu(insulin)), not by its mass-action head — like glucose (index 0), its
+# SpeciesHead output is unused.
 #
 # Iter 56: the iter-55 lumped glycogen_pool (500 g, one τ ≈ 10 d) could
 # not express a −60 g / 1-day fast delta. Split by tissue: liver pool
 # (~100 g, τ ≈ 1 d — overnight-depleting) vs muscle pool (~400 g,
 # τ ≈ 3 wk — rest-preserved, exercise-coupled). Now one cons_scale per
 # tissue, each physically honest.
-_TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0]
+_TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0, 0.0]
 # cons_scale = 1/τ in the rate equation.
 #   liver_glycogen      τ ≈ 1 day  ≈ 1440 min  → cons_scale ≈ 7e-4
 #   muscle_glycogen     τ ≈ 3 weeks ≈ 30240 min → cons_scale ≈ 3.3e-5
@@ -43,9 +46,19 @@ _TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0]
 # equation `rate = prod - cons·state` evolves them slowly without any
 # special "slow integrator" mechanism. Liver's τ ≈ 1 d makes a −60 g
 # delta reachable within the 1-day EXTENDED_FAST_GLYCOGEN protocol.
-_CONS_SCALES = [0.02, 0.1, 0.03, 0.04, 0.03, 0.02, 0.04, 7e-4, 3.3e-5, 2.5e-5]
+_CONS_SCALES = [0.02, 0.1, 0.03, 0.04, 0.03, 0.02, 0.04, 7e-4, 3.3e-5, 2.5e-5, 0.02]
 _INSULIN_IDX = 1
 _GLUCOSE_IDX = 0
+# Iter 89: dynamic insulin action (remote insulin). Local species index 10.
+# Its rate is computed in forward() as a first-order low-pass of
+# relu(insulin_norm) (its mass-action SpeciesHead output is unused, like
+# glucose's), giving the insulin→glucose clearance the teacher's ≈33-min lag.
+_INSULIN_ACTION_IDX = 10
+# Lag rate p2 = 1/τ, bounded so τ ∈ [4, 100] min (teacher p2 ≈ 0.03, τ ≈ 33 min).
+# Floored so the state can't freeze (τ→∞); capped so it can't collapse to the
+# old instantaneous behaviour (τ→0). Euler-stable (p2·dt ≤ 0.25 ≪ 2).
+_P2_MIN = 0.01
+_P2_RANGE = 0.24
 # Iter 81: max per-patient fasting-glucose offset, z-score units. ±1.5 σ around
 # the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
 # the benchmark's 60-120 spread with margin.
@@ -88,8 +101,10 @@ _MITO_IDX = 9
 #   coupling[0] = gut glucose-appearance  → x index 10  (n_species + 0)
 #   metabolic external = [activity, sleep_wake] (model.py met_external)
 #     → activity = x index 15  (n_species + _N_COUPLING + 0)
-# 10 == n_species for this module (see MetabolicModule below).
-_N_SPECIES = 10
+# n_species for this module (see MetabolicModule below); iter 89: 10 → 11
+# (insulin_action appended). The GlycogenFluxHead x-indices below are computed
+# from _N_SPECIES so they track the coupling/external block automatically.
+_N_SPECIES = 11
 _GLUCOSE_APPEARANCE_X_IDX = _N_SPECIES + 0
 _ACTIVITY_X_IDX = _N_SPECIES + _N_COUPLING + 0
 # Index of the gut glucose-appearance channel within the `coupling` tensor
@@ -248,7 +263,7 @@ class GlycogenFluxHead(nn.Module):
 class MetabolicModule(MassActionModule):
     def __init__(self, embedding_dim: int, hidden_dim: int = 48):
         super().__init__(
-            n_species=10,
+            n_species=11,
             n_coupling=_N_COUPLING,
             n_external=_N_EXTERNAL,
             embedding_dim=embedding_dim,
@@ -410,6 +425,16 @@ class MetabolicModule(MassActionModule):
         # cons(insulin); now it lives in the physically-correct place (the
         # insulin-dependent glucose effectiveness of the Bergman minimal model).
         self.log_si = nn.Parameter(torch.tensor(math.log(0.1)))
+        # Iter 89: insulin-action lag rate p2 = _P2_MIN + _P2_RANGE·sigmoid(log_p2).
+        # Init so p2 ≈ 0.03 (τ ≈ 33 min, teacher value): sigmoid(log_p2) = (0.03 -
+        # _P2_MIN)/_P2_RANGE ≈ 0.0833. insulin_action low-passes relu(insulin_norm)
+        # at this rate, and the glucose clearance reads the lagged state so the
+        # insulin→glucose effect carries the teacher's delay instead of being
+        # instantaneous. At the fasting equilibrium the lagged state → 0, so the
+        # glucose dynamics are unchanged at rest (the fasting eval is protected);
+        # the lag only reshapes the postprandial clearance.
+        _p2_p0 = (0.03 - _P2_MIN) / _P2_RANGE
+        self.log_p2 = nn.Parameter(torch.tensor(math.log(_p2_p0 / (1.0 - _p2_p0))))
 
     def forward(
         self,
@@ -431,8 +456,14 @@ class MetabolicModule(MassActionModule):
         ra = nn.functional.softplus(self.log_ra + ra_emb)
         # X: insulin action — extra glucose effectiveness when insulin is above
         # baseline (state is z-scored, so 0 = baseline). ≥0; ≈0 fasted.
+        # Iter 89: read the LAGGED remote-insulin state (insulin_action, ≥0) rather
+        # than instantaneous insulin, so the insulin→glucose clearance carries the
+        # teacher's ≈33-min delay. insulin_action low-passes relu(insulin_norm)
+        # (see its rate below), and its NORM_SCALE is 1.0 so state[..., idx] is the
+        # raw non-negative lagged drive. relu() guards the transient in case the
+        # straight-through clamp lets it dip fractionally below 0.
         x_ins = nn.functional.softplus(self.log_si) * nn.functional.relu(
-            state[..., _INSULIN_IDX]
+            state[..., _INSULIN_ACTION_IDX]
         )
         # Per-patient fasting setpoint Gb = 95 + NORM_SCALE·b_emb (z-score offset).
         b_emb = _GLUCOSE_BASELINE_MAX_Z * torch.tanh(
@@ -452,5 +483,15 @@ class MetabolicModule(MassActionModule):
         rates_out[..., _GLUCOSE_IDX] = (
             -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb)
             + ra * gut_glucose_appearance
+        )
+        # Iter 89: insulin_action is a first-order low-pass of the insulin drive:
+        # dXa/dt = p2·(relu(insulin_norm) − Xa). Its equilibrium is
+        # relu(insulin_norm), so at rest Xa → 0 and x_ins above matches the old
+        # instantaneous term; during a meal it lags with τ = 1/p2 ≈ 33 min. This
+        # REPLACES the insulin_action SpeciesHead rate (its mass-action head output
+        # is unused, exactly like glucose's). p2 bounded to a physiological band.
+        p2 = _P2_MIN + _P2_RANGE * torch.sigmoid(self.log_p2)
+        rates_out[..., _INSULIN_ACTION_IDX] = p2 * (
+            nn.functional.relu(state[..., _INSULIN_IDX]) - state[..., _INSULIN_ACTION_IDX]
         )
         return rates_out

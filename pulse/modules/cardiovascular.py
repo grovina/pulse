@@ -2,9 +2,9 @@
 Cardiovascular module.
 
 Heart rate, HRV, systolic BP, diastolic BP.
-Fully learned dynamics. Receives cortisol from Stress, temperature from
-Thermoregulation, and glucose + insulin from Metabolic so postprandial
-sympathetic / autonomic effects can reach HR and BP.
+Receives cortisol from Stress, temperature from Thermoregulation, and
+glucose + insulin from Metabolic so postprandial sympathetic / autonomic
+effects can reach HR and BP.
 
 Architectural constraint: SBP > DBP (physical — systolic is during
 contraction, diastolic during relaxation).
@@ -14,19 +14,46 @@ stuck at ~0.245 across iters 27-31. With cortisol+temperature only,
 postprandial HR rise was structurally unreachable from the meal axis —
 no amount of glucose-side weight tuning could move HR.
 
-Iter 36 note (reverted): a per-user baseline head
-(``state_centered = state - tanh_bounded_offset(embedding)``) was added
-on the theory that calibration's shallow gradient through 12h of
-rate-of-change integration could be bypassed with a unit-slope gradient
-on baseline. Empirically (docs/iter36-calibration-investigation.md):
+Iter 36 note (reverted): a per-user baseline head fed *centered* state
+(``state_centered = state - tanh_bounded_offset(embedding)``) into the
+learned MLP. Empirically (docs/iter36-calibration-investigation.md):
 hr_mape 0.193 → 0.264, sbp_mape 0.062 → 0.173, verifier_coupling
-0.876 → 0.541. The head competed with the existing dynamics pathway
-during training: the model learned to respond to glucose/insulin
-couplings *in the centered frame*, but at calibration time
-(zero embedding ⇒ offset=0) state arrives uncentered and the coupling
-response misfires. Reverted so the codebase reflects iter 35 + Path 1
-(the actual current best).
+0.876 → 0.541. The head competed with the dynamics pathway: the model
+learned to respond to glucose/insulin couplings *in the centered frame*,
+but at calibration time (zero embedding ⇒ offset=0) state arrived
+uncentered and the coupling response misfired.
+
+Iter 89 note: per-patient SETPOINT dynamics — the RIGHT way to house a
+per-patient resting level, distinct from the iter-36 failure. Through
+iter 88 this module was pure-learned rate (a bare MLP, no setpoint term),
+so each patient's resting HR/BP had to be inferred implicitly through 12h
+of integrated rate. The iter-36 investigation proved that fails: HR drifts
+to a constant ~+15 bpm bias (hr_mape stuck ~0.19-0.21, the sole remaining
+gate failure through iter 88). This is exactly the gap the metabolic module
+closed for glucose across iters 81-88: fully-learned dynamics cannot hold a
+per-patient baseline, so the baseline must live *in the physics* as an
+explicit setpoint. The TEACHER (full_body.py) already models every vital
+this way — dHR = -k_hr·(HR − HR0 − circ − sleep) + cortisol·drive +
+activity·gain, with per-patient HR0/HRV0/SBP0/DBP0. This module now mirrors
+that structure: an ADDITIVE first-order restoring term toward a per-patient
+setpoint, on top of the untouched learned MLP which carries the autonomic
+DRIVERS (cortisol / temperature / glucose / insulin / activity / circadian).
+
+Why this avoids the iter-36 failure: the MLP still sees UNCENTERED normalized
+state, so the coupling response is learned and evaluated in the same frame —
+nothing shifts between training and zero-embedding calibration. Only an
+explicit ``-k·(state − setpoint)`` force is added to the rate (setpoint from
+a zero-init head ⇒ 0 offset at cold start ⇒ resting level = NORM_CENTER for
+the default patient). This is the additive-restoring form of glucose's
+``-(Sg+X)·(G − Gb_emb) + Ra·appearance`` (metabolic.py), not the iter-36
+input-centering. The equilibrium is the per-patient setpoint for ANY k>0,
+true by construction; per-patient authority grows from zero during training.
 """
+
+import math
+
+import torch
+import torch.nn as nn
 
 from .base import LearnedDynamicsModule
 
@@ -36,13 +63,72 @@ _N_COUPLING = 4
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
 
+# Module state order = MODULE_MARKER_INDICES["cardiovascular"] = [hr, hrv, sbp, dbp].
+_N_STATE = 4
+
+# Per-patient setpoint offset bound, z-score units (per NORM_SCALE). The learned
+# tanh offset moves each vital's resting equilibrium by ±_CVS_BASELINE_MAX_Z·scale
+# around NORM_CENTER. 3.0 covers the benchmark's per-patient spans with margin
+# (NORM_CENTER ± 3·NORM_SCALE): hr 70±30 = 40-100 bpm (eval 49-77), hrv 40±45,
+# sbp 120±30 = 90-150 mmHg (eval 94-133), dbp 80±24 = 56-104 mmHg (eval 61-88).
+_CVS_BASELINE_MAX_Z = 3.0
+
+# Bounded first-order restoring rate k on the NORMALIZED deviation (mirrors
+# glucose's Sg band). Raw time-constant is NORM_SCALE_i / K, so K=2 gives τ ≈
+# scale/2 ≈ 4-7 min per vital — fast enough to settle within the eval window,
+# gentle enough to never stiffen forward-Euler (k_eff·dt = K/scale·1 ≤ 5/8 ≪ 2)
+# and never become a brute-force clamp. The equilibrium is the setpoint for any
+# K>0, so K only sets relaxation SPEED, not the level.
+_CVS_K_MIN = 0.05
+_CVS_K_RANGE = 5.0
+# sigmoid(log_k) init so K ≈ 2.0: p0 = (2.0 - 0.05) / 5.0 = 0.39.
+_CVS_LOG_K_INIT = math.log(0.39 / (1.0 - 0.39))
+
 
 class CardiovascularModule(LearnedDynamicsModule):
     def __init__(self, embedding_dim: int, hidden_dim: int = 48):
         super().__init__(
-            n_state=4,
+            n_state=_N_STATE,
             n_coupling=_N_COUPLING,
             n_external=_N_EXTERNAL,
             embedding_dim=embedding_dim,
             hidden_dim=hidden_dim,
         )
+        # Per-patient resting-setpoint offsets for [hr, hrv, sbp, dbp], one head
+        # emitting all four (shared hidden layer; the teacher varies HR0/HRV0/
+        # SBP0/DBP0 independently, so the final layer separates them). Final
+        # layer zero-init ⇒ setpoint_emb = 0 for every embedding at cold start ⇒
+        # resting level = NORM_CENTER, and per-patient authority grows during
+        # training (final-layer weight gets non-zero grad at step 1). Mirrors
+        # metabolic.glucose_baseline_net / ra_baseline_net.
+        _bh = max(8, hidden_dim // 4)
+        self.setpoint_net = nn.Sequential(
+            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, _N_STATE),
+        )
+        with torch.no_grad():
+            self.setpoint_net[-1].weight.zero_()
+            self.setpoint_net[-1].bias.zero_()
+        # Per-vital restoring rate (bounded gentle band, see _CVS_K_* above).
+        self.log_k = nn.Parameter(torch.full((_N_STATE,), _CVS_LOG_K_INIT))
+
+    def forward(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> torch.Tensor:
+        # Learned autonomic drivers (cortisol/temp/glucose/insulin/activity/
+        # circadian) — the MLP is unchanged and still sees UNCENTERED normalized
+        # state (the iter-36 frame-consistency fix).
+        driver = super().forward(state, coupling, external, embedding, time_features)
+        # Per-patient setpoint offset (z-units), 0 at cold start.
+        setpoint = _CVS_BASELINE_MAX_Z * torch.tanh(self.setpoint_net(embedding))
+        k = _CVS_K_MIN + _CVS_K_RANGE * torch.sigmoid(self.log_k)
+        # ADDITIVE first-order restoring toward the per-patient setpoint plus the
+        # learned driver: rate = driver - k·(norm_state - setpoint). Equilibrium
+        # is `setpoint` (raw = NORM_CENTER + NORM_SCALE·setpoint) once the driver
+        # averages to ~0 (which DefaultBaselineSignal pins for the default
+        # patient). Mirrors glucose's -(Sg+X)·(G-Gb_emb) + Ra·appearance.
+        return driver - k * (state - setpoint)

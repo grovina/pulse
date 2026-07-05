@@ -639,6 +639,15 @@ def simulate_full_body(
             # derived ACTH and cortisol trajectories (which the cold
             # model does simulate).
             100.0,  # crh (pg/mL) — typical resting level
+            # Iter 89 — insulin_action (remote insulin) latent. The cold ODE
+            # DOES track a remote-insulin X internally (dX above), but the
+            # student's insulin_action is a differently-scaled low-pass of
+            # relu(insulin_above_baseline) and is unsupervised (not a
+            # cold-distill marker), so this is padded at the student's fasting
+            # equilibrium (0) — the value only seeds a rollout start-state, and
+            # 0 = relu(insulin-baseline) at rest, matching the benchmark loader's
+            # typical-padding of the same index.
+            0.0,    # insulin_action (a.u.) — fasting equilibrium
         ]
 
     return trajectory, absorption_profile

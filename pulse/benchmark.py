@@ -27,7 +27,7 @@ import torch
 
 from .modules.gut import MealEvent
 from .model import ModularPhysiologyNetwork, integrate
-from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_SCALE, STATE_DIM
+from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .verifier import evaluate_weak_checks
 
 # Gate-only calibration. Iter-36 investigation
@@ -173,6 +173,15 @@ def load_benchmark_dataset(path: str) -> list[BenchmarkEpisode]:
 
         duration_min = int(raw.get("duration_min", 12 * 60))
         initial_state = np.array(raw.get("initial_state", []), dtype=np.float32)
+        # Forward-compat: datasets generated before a trailing INTERNAL marker was
+        # added (crh iter-69, insulin_action iter-89) carry a shorter initial_state.
+        # Those tail markers are unobserved latents whose fasting value IS their
+        # typical (NORM_CENTER) — the cold model pads them identically — so pad the
+        # missing tail here instead of forcing a dataset regeneration. A length that
+        # is not a short prefix of the current markers still fails the check below.
+        if 0 < initial_state.shape[0] < STATE_DIM:
+            pad = np.array(NORM_CENTER[initial_state.shape[0]:], dtype=np.float32)
+            initial_state = np.concatenate([initial_state, pad])
         if initial_state.shape[0] != len(MARKER_IDS):
             continue
 

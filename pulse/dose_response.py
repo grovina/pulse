@@ -127,8 +127,19 @@ class DoseResponseProtocol:
     duration_min: int = 240
     start_hour: float = 8.0
     pre_window: int = 15
-    post_window: int = 180
-    softargmax_beta: float = 0.10
+    # Iter 89: measure the true post-meal PEAK, not a 180-min soft-mean. The
+    # target_slope (0.7 mg/dL/g, Wolever) is a literature PEAK-per-gram value,
+    # but through iter 88 the estimator averaged the whole 180-min post window
+    # at softargmax_beta=0.10 (a near-uniform soft-mean). Diluting the peak with
+    # the fasting tail biased amplitude supervision — and while the iter-87
+    # meal-timing frame fix restored the gradient SIGN, the soft-mean still
+    # under-reads the peak, so the 0.7 target under-demands the real excursion.
+    # post_window 180→60 confines the estimate to where the glucose/insulin peak
+    # actually sits (~30-60 min post-meal); softargmax_beta 0.10→3.0 sharpens the
+    # softmax toward a true (differentiable) argmax in raw marker units, so the
+    # supervised statistic is the peak the target is defined against.
+    post_window: int = 60
+    softargmax_beta: float = 3.0
     target_slope: float = 0.7
     sigma_slope: float = 0.25
     marker_targets: tuple[MarkerDoseTarget, ...] = field(default_factory=tuple)

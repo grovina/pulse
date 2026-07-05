@@ -217,6 +217,31 @@ MARKERS = [
         "#9f1239",
         "Wave",
     ),
+    # Iter 89 — dynamic insulin action (remote insulin) as a latent metabolic
+    # state. The teacher (full_body.py) drives glucose clearance with a LAGGED
+    # remote-insulin state X (dX = -p2·X + p3·max(I-Ib,0), τ ≈ 33 min, Bergman
+    # minimal model), but through iter 88 the student's clearance used an
+    # INSTANTANEOUS x_ins = Si·relu(insulin) — no delay, so meal glucose fell
+    # too fast relative to the teacher. This state gives the student the same
+    # first-order lag: insulin_action low-passes relu(insulin_above_baseline),
+    # and glucose clearance reads the lagged state instead of instantaneous
+    # insulin. Internal/unobserved (no ground truth): the cold model pads it at
+    # typical=0 (fasting equilibrium, where relu(insulin-baseline)=0, so glucose
+    # dynamics are byte-identical to iter 88 at rest); the lag manifests only
+    # during meals. Appended at the tail so all prior marker indices are
+    # preserved (mirrors crh iter-69). NORM_SCALE 1.0 so raw == normalized.
+    MarkerDef(
+        "insulin_action",
+        "Insulin action (remote)",
+        "a.u.",
+        System.METABOLIC,
+        0.0,
+        "internal",
+        0,
+        5,
+        "#c2410c",
+        "Timer",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -262,6 +287,7 @@ NORM_SCALE = [
     100.0,  # muscle_glycogen: ±100 g (typical ~400 g; rest-preserved over 1-day fast, depletes with exercise)
     0.3,    # mitochondrial_capacity: ±0.3 (typical=1.0; 8w training adds ~30%, so ±0.3 covers training-induced range)
     40.0,   # crh: ±40 pg/mL (typical=100; latent first stage of HPA cascade, circadian + stress amplitude)
+    1.0,    # insulin_action: dimensionless latent (raw==normalized); low-passes relu(insulin_norm) ∈ ~[0,5]
 ]
 
 # Hard physiological bounds for the integrator's state clamp (iter 81).
