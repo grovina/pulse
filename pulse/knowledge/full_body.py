@@ -228,13 +228,54 @@ class PatientParams:
 
 
 def randomize_params(rng: np.random.Generator) -> PatientParams:
+    """Sample a virtual patient.
+
+    Iter 90 — CORRELATED POPULATION. Every parameter used to be drawn INDEPENDENTLY
+    (`val * exp(N(0, sigma))`), so the "population" was a product of marginals: the teacher
+    could emit a lean-athlete resting HR alongside a diabetic fasting glucose and a
+    hypertensive blood pressure in the same "patient". Real physiology is strongly
+    correlated, and the consequence was concrete: with only ~20 such patients defining a
+    64-dim embedding space, the model baked the sample's *spurious* correlations into the
+    embedding geometry. Measured on iter-89: resting HR correlated -0.55 with SBP and +0.41
+    with HRV across prior-sampled patients — both WRONG-SIGNED (higher sympathetic tone
+    raises SBP and lowers HRV). Calibrating one marker then dragged the others along a fake
+    axis, and per-person recovery was worse than simply predicting the population mean.
+
+    Parameters now load on two latent physiological axes:
+
+      z_ir   insulin resistance / metabolic syndrome
+             -> lower Si and Sg, higher Gb, Ib, FFA, leptin, SBP/DBP, resting HR;
+                lower HRV and ghrelin.
+      z_fit  cardiorespiratory fitness
+             -> lower resting HR and RR, higher HRV, higher Si and muscle glycogen,
+                greater activity-induced insulin sensitivity, modestly lower BP.
+
+    Each parameter's log-deviation is `sigma * (a_ir*z_ir + a_fit*z_fit + sqrt(1 - a_ir^2 -
+    a_fit^2) * eps)`. Because the loadings and the idiosyncratic term have unit total
+    variance, the MARGINAL spread of every parameter is EXACTLY what it was before (the
+    sigmas were tuned across iters 82-88 to cover the benchmark ranges, so they are
+    preserved); only the joint structure changes. Loadings are signed from physiology, with
+    magnitudes deliberately moderate so no parameter becomes a deterministic function of a
+    latent.
+    """
     p = PatientParams()
 
-    def vary(val, spread=0.3):
-        return val * np.exp(rng.normal(0, spread))
+    # Latent physiological axes (standard normal, independent).
+    z_ir = float(rng.normal())
+    z_fit = float(rng.normal())
 
-    p.Sg = vary(p.Sg)
-    p.Si = vary(p.Si, 0.5)
+    def vary(val, spread=0.3, ir: float = 0.0, fit: float = 0.0):
+        shared = ir * z_ir + fit * z_fit
+        resid_var = 1.0 - ir * ir - fit * fit
+        if resid_var < 0.0:
+            raise ValueError(f"loadings exceed unit variance: ir={ir}, fit={fit}")
+        z = shared + np.sqrt(resid_var) * rng.normal()
+        return val * np.exp(spread * z)
+
+    # Glucose effectiveness falls with insulin resistance (Bergman: Sg and Si co-degrade).
+    p.Sg = vary(p.Sg, ir=-0.30)
+    # Insulin sensitivity: the defining axis of z_ir; training raises it.
+    p.Si = vary(p.Si, 0.5, ir=-0.70, fit=0.40)
     # Iter 82: widen fasting-glucose baseline diversity 0.15 -> 0.25. The
     # iter-81 population (sigma 0.15 ~ 82-110 mg/dL) was clinically too narrow:
     # the per-patient baseline (b_emb) only learned authority over the trained
@@ -243,20 +284,20 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # glucose_mape 0.49). 0.25 spans ~59-171 mg/dL at +/-2 sigma (mild hypo to
     # diabetic-range fasting) -- realistic clinical diversity; teacher verified
     # sane across the range (0/40 unstable trajectories).
-    p.Gb = vary(p.Gb, 0.25)
-    p.Ib = vary(p.Ib, 0.4)
+    p.Gb = vary(p.Gb, 0.25, ir=0.50)          # fasting hyperglycemia tracks IR
+    p.Ib = vary(p.Ib, 0.4, ir=0.60)           # compensatory hyperinsulinemia
     p.n = vary(p.n)
     p.gamma = vary(p.gamma)
     p.Gnb = vary(p.Gnb)
-    p.FFA_b = vary(p.FFA_b)
+    p.FFA_b = vary(p.FFA_b, ir=0.35)          # impaired lipolysis suppression
     p.BHB_b = vary(p.BHB_b)
     p.Lac_b = vary(p.Lac_b)
     p.Hep_b = float(np.clip(vary(p.Hep_b, 0.3), 0.4, 3.5))
     p.k_hep = float(np.clip(vary(p.k_hep, 0.35), 0.02, 0.09))
     p.cort_hep = float(np.clip(vary(p.cort_hep, 0.35), 0.02, 0.12))
     p.hep_to_glucose = float(np.clip(vary(p.hep_to_glucose, 0.3), 0.018, 0.055))
-    p.Ghr_b = vary(p.Ghr_b, 0.3)
-    p.Lep_b = vary(p.Lep_b, 0.5)
+    p.Ghr_b = vary(p.Ghr_b, 0.3, ir=-0.25)    # ghrelin lower in obesity/IR
+    p.Lep_b = vary(p.Lep_b, 0.5, ir=0.45)     # leptin tracks adiposity, co-travels with IR
     p.GLP1_b = vary(p.GLP1_b, 0.3)
     p.Cort_b = vary(p.Cort_b, 0.3)
     p.cort_circ_amp = vary(p.cort_circ_amp, 0.3)
@@ -274,10 +315,10 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # training range alone should unlock the low end. HR0 0.15->0.22 (~46-111 bpm
     # at +/-2 sigma: athlete to tachycardic); SBP0/DBP0 0.10->0.14/0.15 to reach
     # the benchmark lows (sbp 94, dbp 61). Teacher verified sane across the range.
-    p.HR0 = vary(p.HR0, 0.22)
-    p.HRV0 = vary(p.HRV0, 0.4)
-    p.SBP0 = vary(p.SBP0, 0.14)
-    p.DBP0 = vary(p.DBP0, 0.15)
+    p.HR0 = vary(p.HR0, 0.22, ir=0.20, fit=-0.60)   # trained athletes rest low
+    p.HRV0 = vary(p.HRV0, 0.4, ir=-0.30, fit=0.55)  # vagal tone up with fitness, down with IR
+    p.SBP0 = vary(p.SBP0, 0.14, ir=0.40, fit=-0.30)
+    p.DBP0 = vary(p.DBP0, 0.15, ir=0.40, fit=-0.30)
     p.T0 = p.T0 + rng.normal(0, 0.2)
     p.temp_circ_amp = float(np.clip(vary(p.temp_circ_amp, 0.15), 0.3, 0.55))
     p.temp_exercise_gain = float(np.clip(vary(p.temp_exercise_gain, 0.2), 0.4, 1.1))
@@ -287,9 +328,9 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.sleep_bp_frac = float(np.clip(vary(p.sleep_bp_frac, 0.2), 0.06, 0.20))
     p.sleep_rr_drop = float(np.clip(vary(p.sleep_rr_drop, 0.2), 1.5, 5.0))
     p.act_hr_gain = vary(p.act_hr_gain, 0.15)
-    p.act_insulin_sens = float(np.clip(vary(p.act_insulin_sens, 0.3), 0.1, 0.6))
+    p.act_insulin_sens = float(np.clip(vary(p.act_insulin_sens, 0.3, fit=0.35), 0.1, 0.6))
     p.rr_lactate_gain = vary(p.rr_lactate_gain, 0.2)
-    p.RR0 = vary(p.RR0, 0.15)
+    p.RR0 = vary(p.RR0, 0.15, fit=-0.20)
     p.SpO2_0 = min(100, max(94, p.SpO2_0 + rng.normal(0, 1)))
     p.meal_absorption_fast_rate = float(np.clip(vary(p.meal_absorption_fast_rate, 0.2), 0.01, 0.08))
     p.meal_absorption_slow_rate = float(np.clip(vary(p.meal_absorption_slow_rate, 0.25), 0.004, 0.04))
@@ -299,7 +340,7 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # the baselines so a larger pool can still fill. Cold-distill references
     # use PatientParams() defaults, so this only diversifies full_body episodes.
     p.LGly_b = float(np.clip(vary(p.LGly_b, 0.15), 70.0, 130.0))
-    p.MGly_b = float(np.clip(vary(p.MGly_b, 0.15), 300.0, 520.0))
+    p.MGly_b = float(np.clip(vary(p.MGly_b, 0.15, fit=0.50), 300.0, 520.0))
     p.LGly_max = p.LGly_b + 10.0
     p.MGly_max = p.MGly_b + 50.0
     return p
