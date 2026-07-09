@@ -12,12 +12,20 @@ import torch
 import torch.nn as nn
 
 from .base import BasalPlusGatedPeakHead, MassActionModule, SetpointHead, SpeciesHead, gate_temp
-from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_SCALE
+from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
 
 # Iter 90: converts the module's normalized glucose deviation back to raw mg/dL so the
 # restoring term is `-(Sg + Si·Xa)·(G_raw - Gb_raw)` with Sg/Si as true per-minute rate
 # constants (see the _SG_* block below).
 _GLUCOSE_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
+_GLUCOSE_CENTER = NORM_CENTER[MARKER_INDEX["glucose"]]
+# Iter 90 counter-regulation: raw-unit conversions for the states/couplings that feed
+# glucose. cortisol and glucagon are centered at their basal values, so relu(normalized)
+# is exactly their above-basal excess in z-units.
+_HEP_CENTER = NORM_CENTER[MARKER_INDEX["hepatic_output"]]
+_HEP_NORM_SCALE = NORM_SCALE[MARKER_INDEX["hepatic_output"]]
+_CORT_NORM_SCALE = NORM_SCALE[MARKER_INDEX["cortisol"]]
+_GN_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucagon"]]
 
 # Coupling inputs: gut outputs (4) + cortisol (1) + glp1 (1) = 6
 #
@@ -127,6 +135,60 @@ _SG_INIT = 0.018  # teacher full_body.py PatientParams.Sg
 _SI_MIN = 0.0005
 _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
+
+# Iter 90 — COUNTER-REGULATION RE-COUPLED. Through iter 89 the student's glucose rate was
+# ONLY the minimal model: -(Sg + Si·Xa)(G - Gb) + Ra·appearance. The teacher's dG additionally
+# carries four counter-regulatory terms (full_body.py:494-500):
+#     + hep_to_glucose · Hep                      hepatic glucose output
+#     + cort_gluco     · max(Cort - Cort_b, 0)    cortisol-driven gluconeogenesis
+#     + 0.02           · max(Gn  - Gnb, 0)        glucagon-driven hepatic release
+#     - act · 0.02     · max(G - 0.8·Gb, 0)       exercise glucose uptake
+# The student folded all of it into the STATIC per-patient baseline Gb_emb. The consequence
+# was that hepatic_output, glucagon and cortisol evolved as markers but had NO effect on
+# glucose at all: fasting counter-regulation and exercise-induced glucose drop were not
+# mechanistic, and those three markers had no gradient path from observed glucose (which also
+# starved them as identifiability signals). This is the largest structural divergence from the
+# teacher on the observed side (see the iter-90 physics review).
+#
+# Gains are RAW per-minute (matching the iter-90 frame convention), initialized at the
+# teacher's own values and bounded to keep every term a bounded perturbation of the restoring
+# force. Note the equilibrium now sits slightly ABOVE Gb (G* = Gb + hep_source/Sg, ≈ +4 mg/dL)
+# — exactly as it does in the teacher, so Gb remains the SETPOINT parameter that
+# SetpointSupervisionSignal supervises, not the fasting equilibrium.
+_KHEP_MIN, _KHEP_RANGE, _KHEP_INIT = 0.005, 0.095, 0.038      # teacher hep_to_glucose
+_KCORT_MIN, _KCORT_RANGE, _KCORT_INIT = 0.0, 0.006, 0.0012    # teacher cort_gluco
+_KGN_MIN, _KGN_RANGE, _KGN_INIT = 0.0, 0.10, 0.02             # teacher glucagon->glucose
+_KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
+
+_HEPATIC_IDX = 6
+# cortisol is metabolic coupling[GUT_OUTPUT_DIM]; activity is external[0].
+_CORTISOL_COUPLING_IDX = GUT_OUTPUT_DIM
+_ACTIVITY_EXTERNAL_IDX = 0
+
+# OFF-MANIFOLD SAFETY RAIL on total endogenous glucose production (mg/dL/min) — NOT a
+# physiological law. Read it the way PHYSIOLOGICAL_LIMIT_K is read in types.py: a catastrophe
+# bound that must be INACTIVE in distribution.
+#
+# The three source terms above are each linear in an unbounded state. That is safe for the
+# teacher, whose glucagon stays near basal, but not for a student: on an untrained model
+# glucagon reaches its state clamp at 470 pg/mL and at k_gn = 0.02/pg/mL that alone injects
+# 8 mg/dL/min into glucose (observed: 24h-fast glucose ran to 187). That is the iter-83-85
+# runaway class, so the sum gets a finite ceiling.
+#
+# Sizing it honestly. A first attempt used 3.0, reasoned from real basal EGP (~2 mg/kg/min ≈
+# 1.25 mg/dL/min at a 70 kg distribution volume). That was a FRAME ERROR of the same family as
+# the Sg bug: the teacher's `hep_to_glucose·Hep` term is not total EGP, it is a small
+# correction on top of the balance already implied by Sg·(G−Gb) — its basal value is
+# 0.046 mg/dL/min, ~27× smaller than physiological EGP. A 3.0 ceiling therefore bit hard inside
+# the teacher's own operating range (its realistic combined source peaks near 1.8 mg/dL/min
+# during a fasting glucagon rise, which 3.0 would shave to 1.56 — a 13% distortion of real
+# physiology to fix an untrained transient).
+#
+# 8.0 keeps the rail inactive where the model actually lives (≤0.5% deviation across the
+# teacher's 0–1.8 range) while still bounding the pathological limit. Applied as
+# `EGP_MAX · tanh(src / EGP_MAX)`; the integrator's physiological state clamp remains the
+# outer backstop, and trained glucagon is supervised by cold-distill so this should never bind.
+_EGP_MAX = 8.0
 
 
 def _logit(p: float) -> float:
@@ -490,6 +552,11 @@ class MetabolicModule(MassActionModule):
         # the lag only reshapes the postprandial clearance.
         _p2_p0 = (0.03 - _P2_MIN) / _P2_RANGE
         self.log_p2 = nn.Parameter(torch.tensor(math.log(_p2_p0 / (1.0 - _p2_p0))))
+        # Iter 90: counter-regulatory gains, raw per-minute, init at the teacher's values.
+        self.log_k_hep = nn.Parameter(torch.tensor(_logit((_KHEP_INIT - _KHEP_MIN) / _KHEP_RANGE)))
+        self.log_k_cort = nn.Parameter(torch.tensor(_logit((_KCORT_INIT - _KCORT_MIN) / _KCORT_RANGE)))
+        self.log_k_gn = nn.Parameter(torch.tensor(_logit((_KGN_INIT - _KGN_MIN) / _KGN_RANGE)))
+        self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
 
     def forward(
         self,
@@ -540,9 +607,39 @@ class MetabolicModule(MassActionModule):
         # NORM_SCALE_glucose turns it into the raw (G - Gb) in mg/dL. The rate is applied to
         # raw state, so Sg and Si are now true per-minute rate constants and this line IS the
         # teacher's dG = -(Sg + X)·(G - Gb) + Ra·appearance in raw units.
+        # Iter 90: counter-regulatory sources/sinks, in RAW mg/dL/min, mirroring the teacher.
+        # Each reads a state or coupling the module already receives; converting normalized
+        # deviations back to raw units keeps every gain a true per-minute rate constant.
+        k_hep = _KHEP_MIN + _KHEP_RANGE * torch.sigmoid(self.log_k_hep)
+        k_cort = _KCORT_MIN + _KCORT_RANGE * torch.sigmoid(self.log_k_cort)
+        k_gn = _KGN_MIN + _KGN_RANGE * torch.sigmoid(self.log_k_gn)
+        k_act = _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act)
+
+        relu = nn.functional.relu
+        # Hepatic glucose output (a >=0 flux state). raw = center + scale * normalized.
+        hep_raw = relu(
+            _HEP_CENTER + _HEP_NORM_SCALE * state[..., _HEPATIC_IDX]
+        )
+        # Above-basal cortisol and glucagon, back in raw units (their centers ARE their basals).
+        cort_excess = _CORT_NORM_SCALE * relu(coupling[..., _CORTISOL_COUPLING_IDX])
+        gn_excess = _GN_NORM_SCALE * relu(state[..., _GLUCAGON_IDX])
+        # Exercise-driven uptake, gated on glucose above 80% of the patient's own setpoint.
+        act = external[..., _ACTIVITY_EXTERNAL_IDX]
+        g_raw = _GLUCOSE_CENTER + _GLUCOSE_NORM_SCALE * state[..., _GLUCOSE_IDX]
+        gb_raw = _GLUCOSE_CENTER + _GLUCOSE_NORM_SCALE * b_emb
+        exercise_uptake = k_act * act * relu(g_raw - 0.8 * gb_raw)
+
+        # Total endogenous glucose production, soft-capped at a physiological Vmax (see
+        # _EGP_MAX). In distribution this is the identity; it only bounds a runaway source
+        # (e.g. an untrained glucagon pinned at its clamp).
+        egp = k_hep * hep_raw + k_cort * cort_excess + k_gn * gn_excess
+        egp = _EGP_MAX * torch.tanh(egp / _EGP_MAX)
+
         rates_out[..., _GLUCOSE_IDX] = (
             -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb) * _GLUCOSE_NORM_SCALE
             + ra * gut_glucose_appearance
+            + egp
+            - exercise_uptake
         )
         # Iter 89: insulin_action is a first-order low-pass of the insulin drive:
         # dXa/dt = p2·(relu(insulin_norm) − Xa). Its equilibrium is
