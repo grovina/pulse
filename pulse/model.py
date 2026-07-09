@@ -122,6 +122,7 @@ class ModularPhysiologyNetwork(nn.Module):
         sleep_wake: Optional[torch.Tensor] = None,
         activity: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
+        gut_clock_exempt: bool = False,
     ) -> torch.Tensor:
         """Compute rates of change for all state variables.
 
@@ -131,6 +132,10 @@ class ModularPhysiologyNetwork(nn.Module):
         meals: list of MealEvent
         sleep_wake: [batch] or None — 0=asleep, 1=awake
         activity: [batch] or None — 0=rest, 1=vigorous
+        gut_clock_exempt: opt out of the meal frame-contract guard below. ONLY for
+            callers whose result is provably independent of gut timing (the
+            coupling-prior finite-difference probe, where the gut term is
+            state-independent and cancels between the two evaluations).
         """
         is_unbatched = state.dim() == 1
         if is_unbatched:
@@ -193,6 +198,23 @@ class ModularPhysiologyNetwork(nn.Module):
             # pointwise sensitivity probes (coupling_prior_loss) where the gut
             # is state-independent and cancels in the finite difference, so its
             # timing frame does not affect the result.
+            #
+            # Iter 90: the contract above was enforced only by this comment. The
+            # iter-87 meal-timing bug (absorption computed on the absolute clock,
+            # silently shifting every meal out of the window) lived here for ~19
+            # iters. Enforce it instead of narrating it: with meals present, the
+            # caller must either supply gut_override from precompute_gut_outputs,
+            # or explicitly assert (via gut_clock_exempt) that gut timing cannot
+            # affect its result.
+            if meals and not gut_clock_exempt:
+                raise ValueError(
+                    "model.forward with meals requires gut_override (the window-offset "
+                    "absorption clock). Route trajectory integration through integrate(), "
+                    "which precomputes it via precompute_gut_outputs. The batch==1 "
+                    "per-step gut path uses an ABSOLUTE minute-of-day clock and would "
+                    "silently mis-time meal absorption (the iter-87 frame bug). Pass "
+                    "gut_clock_exempt=True only if the gut term provably cancels out.",
+                )
             gut_out = self.gut(float(t_minutes[0].item()), meals, emb["gut"][0])
             gut_out_batch = gut_out.unsqueeze(0)
         else:

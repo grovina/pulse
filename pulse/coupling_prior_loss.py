@@ -83,6 +83,11 @@ def coupling_prior_loss_at_step(
         s1 = state.clone()
         s1[si] = s1[si] + eps
 
+        # gut_clock_exempt (iter 90): this is a pointwise finite difference in the
+        # SOURCE STATE only. The gut appearance term depends on (meals, t, embedding)
+        # and not on state, so it is identical in r0 and r1 and cancels exactly in
+        # (r1 - r0). The absolute-vs-window-offset gut clock therefore cannot affect
+        # this loss — the one place the frame contract may be waived.
         r0 = model(
             s0.unsqueeze(0),
             embedding.unsqueeze(0),
@@ -90,6 +95,7 @@ def coupling_prior_loss_at_step(
             meals,
             sleep_wake=sleep_wake_step.unsqueeze(0) if sleep_wake_step is not None else None,
             activity=activity_step.unsqueeze(0) if activity_step is not None else None,
+            gut_clock_exempt=True,
         ).squeeze(0)
         r1 = model(
             s1.unsqueeze(0),
@@ -98,6 +104,7 @@ def coupling_prior_loss_at_step(
             meals,
             sleep_wake=sleep_wake_step.unsqueeze(0) if sleep_wake_step is not None else None,
             activity=activity_step.unsqueeze(0) if activity_step is not None else None,
+            gut_clock_exempt=True,
         ).squeeze(0)
 
         sens = (r1[ti] - r0[ti]) / eps
