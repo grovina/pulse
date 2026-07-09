@@ -56,6 +56,11 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
+from ..types import MARKER_INDEX, MODULE_MARKER_INDICES, NORM_SCALE
+
+# Iter 90: per-vital NORM_SCALE for [hr, hrv, sbp, dbp], used to convert the module's
+# normalized deviation back to raw units so k is a true per-minute rate constant.
+_CVS_NORM_SCALE = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["cardiovascular"]]
 
 # Coupling inputs: cortisol (1) + temperature (1) + glucose (1) + insulin (1) = 4
 _N_COUPLING = 4
@@ -73,16 +78,25 @@ _N_STATE = 4
 # sbp 120±30 = 90-150 mmHg (eval 94-133), dbp 80±24 = 56-104 mmHg (eval 61-88).
 _CVS_BASELINE_MAX_Z = 3.0
 
-# Bounded first-order restoring rate k on the NORMALIZED deviation (mirrors
-# glucose's Sg band). Raw time-constant is NORM_SCALE_i / K, so K=2 gives τ ≈
-# scale/2 ≈ 4-7 min per vital — fast enough to settle within the eval window,
-# gentle enough to never stiffen forward-Euler (k_eff·dt = K/scale·1 ≤ 5/8 ≪ 2)
-# and never become a brute-force clamp. The equilibrium is the setpoint for any
-# K>0, so K only sets relaxation SPEED, not the level.
-_CVS_K_MIN = 0.05
-_CVS_K_RANGE = 5.0
-# sigmoid(log_k) init so K ≈ 2.0: p0 = (2.0 - 0.05) / 5.0 = 0.39.
-_CVS_LOG_K_INIT = math.log(0.39 / (1.0 - 0.39))
+# Iter 90 — RATE-CONSTANT FRAME FIX (k now means what it says).
+#
+# Through iter 89 k multiplied the NORMALIZED deviation while the rate was applied to RAW
+# state, so the true per-minute constant was k / NORM_SCALE_i. That convention was applied
+# knowingly here (τ = NORM_SCALE/k), but it made k's units differ per vital and hid the same
+# 30× error that silently crippled glucose's Sg (see metabolic.py _SG_* block). k is now the
+# RAW per-minute rate constant for every vital: `rate = driver - k·(state_raw - setpoint_raw)`.
+#
+# Band [0.02, 0.80]/min (τ 1.25-50 min), init 0.30 = the teacher's k_hr (full_body.py:563,
+# τ ≈ 3.3 min). For reference the iter-89 model trained to a raw k of ~0.12-0.27 across the
+# four vitals — already near the teacher — so this reframe is a small, safe correction that
+# mainly makes the parameter honest. Euler-stable: k·dt ≤ 0.8 ≪ 2.
+_CVS_K_MIN = 0.02
+_CVS_K_RANGE = 0.78
+_CVS_K_INIT = 0.30  # teacher full_body.py PatientParams.k_hr
+# sigmoid(log_k) init so k == _CVS_K_INIT.
+_CVS_LOG_K_INIT = math.log(
+    ((_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE) / (1.0 - (_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE)
+)
 
 
 class CardiovascularModule(LearnedDynamicsModule):
@@ -108,8 +122,12 @@ class CardiovascularModule(LearnedDynamicsModule):
         with torch.no_grad():
             self.setpoint_net[-1].weight.zero_()
             self.setpoint_net[-1].bias.zero_()
-        # Per-vital restoring rate (bounded gentle band, see _CVS_K_* above).
+        # Per-vital restoring rate (bounded, raw per-minute; see _CVS_K_* above).
         self.log_k = nn.Parameter(torch.full((_N_STATE,), _CVS_LOG_K_INIT))
+        # Converts the normalized deviation back to raw units (bpm / ms / mmHg).
+        self.register_buffer(
+            "cvs_norm_scale", torch.tensor(_CVS_NORM_SCALE, dtype=torch.float32)
+        )
 
     def forward(
         self,
@@ -127,8 +145,9 @@ class CardiovascularModule(LearnedDynamicsModule):
         setpoint = _CVS_BASELINE_MAX_Z * torch.tanh(self.setpoint_net(embedding))
         k = _CVS_K_MIN + _CVS_K_RANGE * torch.sigmoid(self.log_k)
         # ADDITIVE first-order restoring toward the per-patient setpoint plus the
-        # learned driver: rate = driver - k·(norm_state - setpoint). Equilibrium
-        # is `setpoint` (raw = NORM_CENTER + NORM_SCALE·setpoint) once the driver
-        # averages to ~0 (which DefaultBaselineSignal pins for the default
-        # patient). Mirrors glucose's -(Sg+X)·(G-Gb_emb) + Ra·appearance.
-        return driver - k * (state - setpoint)
+        # learned driver. Iter 90: scaling the normalized deviation by NORM_SCALE makes
+        # this `rate = driver - k·(state_raw - setpoint_raw)` with k a true per-minute
+        # constant. Equilibrium is `setpoint` once the driver averages to ~0 (which
+        # DefaultBaselineSignal pins for the default patient). Mirrors glucose's
+        # -(Sg + Si·Xa)·(G_raw - Gb_raw) + Ra·appearance.
+        return driver - k * (state - setpoint) * self.cvs_norm_scale

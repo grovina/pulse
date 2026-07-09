@@ -12,7 +12,12 @@ import torch
 import torch.nn as nn
 
 from .base import BasalPlusGatedPeakHead, MassActionModule, SetpointHead, SpeciesHead, gate_temp
-from ..types import GUT_OUTPUT_DIM
+from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_SCALE
+
+# Iter 90: converts the module's normalized glucose deviation back to raw mg/dL so the
+# restoring term is `-(Sg + Si·Xa)·(G_raw - Gb_raw)` with Sg/Si as true per-minute rate
+# constants (see the _SG_* block below).
+_GLUCOSE_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
 
 # Coupling inputs: gut outputs (4) + cortisol (1) = 5
 _N_COUPLING = GUT_OUTPUT_DIM + 1
@@ -69,18 +74,51 @@ _GLUCOSE_BASELINE_MAX_Z = 1.5
 # a ~5× per-patient amplitude range, enough to cover the cohort's postprandial
 # spread without letting a single patient's excursion run away.
 _RA_BASELINE_MAX_Z = 1.0
-# Iter 86: glucose is the pure minimal-model setpoint (full_body.py teacher form
-# dG = -(Sg + X)·(G - Gb) + Ra), so Sg only needs to be a GENTLE relaxation rate
-# — the equilibrium is Gb_emb for ANY Sg>0, not something Sg has to fight a
-# competing mass-action to reach. Sg is bounded to a gentle band so it can NEVER
-# become the brute-force clearance that iters 83-85 used (Sg~0.5-0.8), which
-# corrupted the coupled glycogen/hepatic dynamics (liver_glycogen blew up to
-# ~770 during a 24h fast → gradient NaN on the long rollout → 3 aborted runs).
-# Sg ∈ [_SG_MIN, _SG_MIN+_SG_RANGE] = [0.03, 0.30]: tight enough to settle glucose
-# to Gb_emb well within the fasting eval window (tc 1/Sg ≈ 3-33 min), gentle
-# enough to stay physiological and never corrupt.
-_SG_MIN = 0.03
-_SG_RANGE = 0.27
+# Iter 90 — RATE-CONSTANT FRAME FIX (Sg now means what it says).
+#
+# Glucose is the pure minimal-model setpoint (teacher full_body.py:448
+# dG = -(Sg+X)·(G-Gb) + Ra). Through iter 89 the restoring term was computed on the
+# NORMALIZED deviation (`-Sg·(G_norm - b_emb)`) while the resulting rate was applied to the
+# RAW state, so the effective raw rate constant was Sg / NORM_SCALE_glucose = Sg/30 — thirty
+# times smaller than the code claimed ("tc 1/Sg ≈ 3-33 min"). Measured on the iter-89
+# checkpoint: trained Sg = 0.0583 gave k_eff = 0.00194/min, i.e. τ = 515 min for fasting
+# glucose, versus the teacher's Sg = 0.018/min (τ = 56 min) and the literature
+# glucose-effectiveness range 0.02-0.03/min (τ = 33-50 min). The old band [0.03, 0.30] spans
+# k_eff [0.001, 0.010]/min, so matching the teacher would have needed Sg = 0.54 — ABOVE the
+# old ceiling. The student was structurally incapable of physiological glucose effectiveness.
+#
+# The error was invisible to the gate because the scored eval window is fasting and flat: a
+# too-weak restoring force still holds a flat line flat. Note also that iters 83-85 ran
+# Sg ≈ 0.5-0.8, which in the CORRECT frame is k_eff 0.017-0.027/min — exactly the
+# teacher/literature range. Those runs were labelled "brute-force clearance" and fenced off
+# here, but iter-85's decisive test showed the aborts were the correlation sqrt(0) NaN (fixed
+# in 9ffa316) plus the competing mass-action controller (removed in iter 86). This band was
+# guarding against the physically correct value.
+#
+# Fix: Sg is now the RAW per-minute rate constant — the restoring term multiplies the
+# normalized deviation by NORM_SCALE_glucose so `rate = -Sg·(G_raw - Gb_raw)` exactly.
+# Band = literature glucose effectiveness with margin: [0.005, 0.05]/min (τ 20-200 min),
+# init 0.018 (the teacher's value). Euler-stable by a wide margin: the raw coefficient
+# (Sg + Si·Xa) peaks near 0.3/min, far below the dt=1 stability limit of 2.
+_SG_MIN = 0.005
+_SG_RANGE = 0.045
+_SG_INIT = 0.018  # teacher full_body.py PatientParams.Sg
+
+# Iter 90: Si is likewise a RAW rate constant. Insulin action enters glucose clearance as
+# X = Si·Xa where Xa = relu(insulin_norm) = max(I - Ib, 0)/NORM_SCALE_insulin. The teacher
+# uses X = Si_t·max(I-Ib,0) with Si_t = 0.0004 (full_body.py PatientParams.Si), so our Si
+# absorbs the /10 insulin normalization: Si = 10·Si_t = 0.004 at the teacher's value.
+# Band [0.0005, 0.02]/min per (normalized insulin unit) brackets the Bergman literature
+# range (Si_t ≈ 0.0002-0.001) with margin. At a meal peak (Xa≈5) this contributes at most
+# 0.1/min, so total clearance (Sg + Si·Xa) stays ≪ the dt=1 Euler limit of 2.
+_SI_MIN = 0.0005
+_SI_RANGE = 0.0195
+_SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
+
+
+def _logit(p: float) -> float:
+    """Inverse sigmoid — init a sigmoid-bounded parameter at a target value."""
+    return math.log(p / (1.0 - p))
 # Iter 51 dead-pathway species. The (prod, cons) parameterisation pins their
 # state at `typical` with a flat gradient surface — see docs/dead-pathways.md
 # and modules/base.py:SetpointHead.
@@ -351,7 +389,9 @@ class MetabolicModule(MassActionModule):
         # correct, not a benchmark hack. The meal excursion is carried by the Ra
         # appearance term (log_ra), which the dose-response signal raises to keep
         # postprandial amplitude despite the stronger clearance.
-        self.log_sg = nn.Parameter(torch.tensor(math.log(0.1)))
+        # Iter 90: Sg = _SG_MIN + _SG_RANGE·sigmoid(log_sg) is now the RAW per-minute
+        # glucose-effectiveness constant; init at the teacher's 0.018 (τ ≈ 56 min).
+        self.log_sg = nn.Parameter(torch.tensor(_logit((_SG_INIT - _SG_MIN) / _SG_RANGE)))
         # Structural glucose rate-of-appearance: learned gain Ra on the gut
         # glucose-appearance flux. Implements dG_extra = +Ra·appearance,
         # mirroring the minimal-model Ra(t) source term (Dalla Man 2007) the
@@ -424,7 +464,9 @@ class MetabolicModule(MassActionModule):
         # insulin->glucose suppression the dropped mass-action used to carry via
         # cons(insulin); now it lives in the physically-correct place (the
         # insulin-dependent glucose effectiveness of the Bergman minimal model).
-        self.log_si = nn.Parameter(torch.tensor(math.log(0.1)))
+        # Iter 90: bounded to the Bergman literature band and expressed as a RAW
+        # per-minute constant (was an unbounded softplus in the normalized frame).
+        self.log_si = nn.Parameter(torch.tensor(_logit((_SI_INIT - _SI_MIN) / _SI_RANGE)))
         # Iter 89: insulin-action lag rate p2 = _P2_MIN + _P2_RANGE·sigmoid(log_p2).
         # Init so p2 ≈ 0.03 (τ ≈ 33 min, teacher value): sigmoid(log_p2) = (0.03 -
         # _P2_MIN)/_P2_RANGE ≈ 0.0833. insulin_action low-passes relu(insulin_norm)
@@ -445,8 +487,9 @@ class MetabolicModule(MassActionModule):
         time_features: torch.Tensor,
     ) -> torch.Tensor:
         rates = super().forward(state, coupling, external, embedding, time_features)
-        # Sg: gentle, bounded relaxation rate (never the brute-force clearance of
-        # iters 83-85). Equilibrium is Gb_emb regardless of Sg magnitude.
+        # Sg: RAW per-minute glucose effectiveness, bounded to the literature band
+        # [0.005, 0.05]/min (iter 90 frame fix). Equilibrium is Gb_emb for any Sg>0;
+        # Sg sets the fasting return SPEED, which is now physiological (τ ≈ 56 min at init).
         sg = _SG_MIN + _SG_RANGE * torch.sigmoid(self.log_sg)
         # Iter 88: per-patient Ra = softplus(log_ra + ra_emb), ra_emb tanh-bounded
         # to ±_RA_BASELINE_MAX_Z. Decouples excursion amplitude from Gb_emb.
@@ -462,9 +505,9 @@ class MetabolicModule(MassActionModule):
         # (see its rate below), and its NORM_SCALE is 1.0 so state[..., idx] is the
         # raw non-negative lagged drive. relu() guards the transient in case the
         # straight-through clamp lets it dip fractionally below 0.
-        x_ins = nn.functional.softplus(self.log_si) * nn.functional.relu(
-            state[..., _INSULIN_ACTION_IDX]
-        )
+        # Iter 90: Si is a bounded RAW per-minute constant, so x_ins is /min like Sg.
+        si = _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si)
+        x_ins = si * nn.functional.relu(state[..., _INSULIN_ACTION_IDX])
         # Per-patient fasting setpoint Gb = 95 + NORM_SCALE·b_emb (z-score offset).
         b_emb = _GLUCOSE_BASELINE_MAX_Z * torch.tanh(
             self.glucose_baseline_net(embedding).squeeze(-1)
@@ -480,8 +523,12 @@ class MetabolicModule(MassActionModule):
         # simply unused now — its dynamics were the wrong shape: a homeostatically
         # defended setpoint, not a chemical species seeking prod/cons balance.)
         rates_out = rates.clone()
+        # Iter 90 frame fix: (state[glucose] - b_emb) is a NORMALIZED deviation, so scaling by
+        # NORM_SCALE_glucose turns it into the raw (G - Gb) in mg/dL. The rate is applied to
+        # raw state, so Sg and Si are now true per-minute rate constants and this line IS the
+        # teacher's dG = -(Sg + X)·(G - Gb) + Ra·appearance in raw units.
         rates_out[..., _GLUCOSE_IDX] = (
-            -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb)
+            -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb) * _GLUCOSE_NORM_SCALE
             + ra * gut_glucose_appearance
         )
         # Iter 89: insulin_action is a first-order low-pass of the insulin drive:
