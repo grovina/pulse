@@ -16,5 +16,5 @@
     "sleep": 0.55,
     "sanity": 0.85
   },
-  "textbook_mean_pass_rate_min": 0.45
+  "textbook_mean_pass_rate_min": 0.75
 }

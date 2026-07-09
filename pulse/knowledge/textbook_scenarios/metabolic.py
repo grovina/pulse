@@ -220,7 +220,25 @@ def overnight_fast_neural_on_model(model, rng: np.random.Generator, device: str 
     return scenario_result_overnight_fast(neural.cpu().numpy())
 
 
-def scenario_result_meal_dose_response(traj_small: np.ndarray, traj_large: np.ndarray) -> ScenarioResult:
+# Iter 90 — honest thresholds. These checks cite Wolever & Bolognesi (1996) but through
+# iter 89 demanded only +5 mg/dL between a 30 g and a 90 g meal, while Wolever's own
+# 0.7 ± 0.25 mg/dL/g implies ≈ 0.7 × 60 g = 42 mg/dL. The check was ~8× looser than the
+# literature it names, so it passed on trajectories that badly under-respond to dose (the
+# chronic amplitude problem iters 68-88 fought). We now DERIVE the bound from the cited
+# slope and the actual dose gap, using a deliberately conservative lower slope so the check
+# still cannot be "physiologically wrong":
+#   glucose: 0.30 mg/dL/g  (Wolever 0.7, −1.6σ at σ=0.25; literature range 0.6-1.0)
+#   insulin: 0.15 µU/mL/g  (training target is 0.4 ± 0.3 µU/mL/g; −0.8σ)
+# GLP-1 stays a pure ordering check (its magnitude is not well pinned).
+_DOSE_MIN_GLUCOSE_SLOPE = 0.30   # mg/dL per gram carb
+_DOSE_MIN_INSULIN_SLOPE = 0.15   # µU/mL per gram carb
+
+
+def scenario_result_meal_dose_response(
+    traj_small: np.ndarray,
+    traj_large: np.ndarray,
+    carb_gap_g: float = 60.0,
+) -> ScenarioResult:
     g_peak_small = float(np.max(traj_small[50:120, MARKER_INDEX["glucose"]]))
     g_peak_large = float(np.max(traj_large[50:120, MARKER_INDEX["glucose"]]))
 
@@ -230,18 +248,23 @@ def scenario_result_meal_dose_response(traj_small: np.ndarray, traj_large: np.nd
     glp1_mean_small = float(np.mean(traj_small[40:100, MARKER_INDEX["glp1"]]))
     glp1_mean_large = float(np.mean(traj_large[40:100, MARKER_INDEX["glp1"]]))
 
+    g_min_delta = _DOSE_MIN_GLUCOSE_SLOPE * carb_gap_g
+    ins_min_delta = _DOSE_MIN_INSULIN_SLOPE * carb_gap_g
+
     checks = [
         ScenarioCheck(
             "glucose_dose_response",
-            "90g carb meal should produce higher glucose peak than 30g",
-            g_peak_large > g_peak_small + 5.0,
-            g_peak_large - g_peak_small, 5.0,
+            f"90g vs 30g carb meal: glucose peak should scale with dose "
+            f"(≥{_DOSE_MIN_GLUCOSE_SLOPE} mg/dL/g ⇒ ≥{g_min_delta:.0f} mg/dL; Wolever 0.7)",
+            g_peak_large > g_peak_small + g_min_delta,
+            g_peak_large - g_peak_small, g_min_delta,
         ),
         ScenarioCheck(
             "insulin_dose_response",
-            "90g carb meal should produce higher insulin peak than 30g",
-            ins_peak_large > ins_peak_small + 2.0,
-            ins_peak_large - ins_peak_small, 2.0,
+            f"90g vs 30g carb meal: insulin peak should scale with dose "
+            f"(≥{_DOSE_MIN_INSULIN_SLOPE} µU/mL/g ⇒ ≥{ins_min_delta:.0f} µU/mL)",
+            ins_peak_large > ins_peak_small + ins_min_delta,
+            ins_peak_large - ins_peak_small, ins_min_delta,
         ),
         ScenarioCheck(
             "glp1_dose_response",
