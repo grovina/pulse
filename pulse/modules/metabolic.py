@@ -72,10 +72,15 @@ _INSULIN_ACTION_IDX = 10
 # old instantaneous behaviour (τ→0). Euler-stable (p2·dt ≤ 0.25 ≪ 2).
 _P2_MIN = 0.01
 _P2_RANGE = 0.24
-# Iter 81: max per-patient fasting-glucose offset, z-score units. ±1.5 σ around
-# the 95 mg/dL center (NORM_SCALE_glucose=30) ⇒ Gb ∈ ~[50, 140] mg/dL, covering
-# the benchmark's 60-120 spread with margin.
-_GLUCOSE_BASELINE_MAX_Z = 1.5
+# Iter 81: max per-patient fasting-glucose offset, z-score units, around the 95 mg/dL
+# center (NORM_SCALE_glucose=30).
+# Iter 90: widened 1.5 -> 2.2. The teacher's Gb spread (sigma=0.25 lognormal) spans
+# ~58-157 mg/dL at ±2σ, i.e. z ∈ [-1.25, +2.05]. At the old ±1.5 bound (Gb ∈ [50, 140])
+# the upper tail was UNREACHABLE, so SetpointSupervisionSignal would push the tanh into
+# saturation for diabetic-range patients — correct direction, vanishing gradient. ±2.2
+# gives Gb ∈ [29, 161], covering the teacher's range and the benchmark's 60-120 with
+# margin. (The physiological state clamp still bounds anything pathological.)
+_GLUCOSE_BASELINE_MAX_Z = 2.2
 # Iter 88: max per-patient meal-appearance (Ra) log-gain offset, pre-softplus
 # units. Ra = softplus(log_ra + ra_emb), ra_emb ∈ ±_RA_BASELINE_MAX_Z. With
 # log_ra init = log(0.55), ±1.0 gives Ra ∈ ~[0.18, 0.91] around the ~0.44 init —

@@ -103,6 +103,7 @@ from .training import (
     ColdModelDistillationSignal,
     CarbMassBalanceSignal,
     DefaultBaselineSignal,
+    SetpointSupervisionSignal,
     DoseResponseSignal,
     FastingStabilitySignal,
     PhysiologyRulesSignal,
@@ -303,6 +304,7 @@ def train(
     fasting_stability_window: int = 120,
     postprandial_recovery_weight: float = 0.0,
     default_baseline_weight: float = 0.0,
+    setpoint_supervision_weight: float = 0.0,
     default_baseline_markers: tuple[str, ...] = ("hr",),
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
@@ -419,6 +421,21 @@ def train(
         weight=WeightSchedule(default_baseline_weight, enable_at_epoch=0),
         markers=tuple(default_baseline_markers),
     )
+    # Iter 90: supervise the embedding->physiology map against the teacher's KNOWN
+    # per-patient setpoints. The recovery test showed the map is not invertible --
+    # calibration recovers a person's fasting glucose worse than predicting the
+    # population mean (skill -24.7). Targets come from full_body episodes, which carry
+    # the exact PatientParams they were simulated from. Cheap (no rollout), so it runs
+    # from epoch 0.
+    _setpoint_targets = {
+        int(rec["patient_id"]): rec["setpoints"]
+        for rec in trajectory_signal.dataset
+        if not rec.get("is_default") and rec.get("setpoints")
+    }
+    setpoint_supervision_signal = SetpointSupervisionSignal(
+        weight=WeightSchedule(setpoint_supervision_weight, enable_at_epoch=0),
+        targets=_setpoint_targets,
+    )
     # Iter 74: cross-module carb→glycogen mass-balance conservation. Pairs with
     # the phase-2 constraint suite (cohort / rules) — gate it at the phase
     # boundary so glycogen has a settled metabolic context before the
@@ -457,6 +474,7 @@ def train(
         fasting_stability_signal,
         postprandial_recovery_signal,
         default_baseline_signal,
+        setpoint_supervision_signal,
         carb_mass_balance_signal,
         cold_distill_signal,
         physiology_rules_signal,
@@ -893,6 +911,7 @@ def train(
         "insulin_sweep_glucose_mg_dL": list(insulin_sweep_protocol.glucose_sweep_mg_dL),
         "insulin_sweep_insulin_uU_mL": list(insulin_sweep_protocol.insulin_sweep_uU_mL),
         "default_baseline_weight": default_baseline_weight,
+        "setpoint_supervision_weight": setpoint_supervision_weight,
         "default_baseline_markers": list(default_baseline_markers),
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
@@ -1363,6 +1382,21 @@ def main():
         ),
     )
     parser.add_argument(
+        "--setpoint-supervision-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Weight for the setpoint-supervision signal (iter 90): MSE, in z-units, between "
+            "each patient's DECODED resting setpoints (glucose_baseline_net -> Gb; "
+            "cardiovascular.setpoint_net -> HR0/HRV0/SBP0/DBP0) and the ground-truth "
+            "PatientParams the teacher simulated that patient from. The benchmark finds a new "
+            "person by INVERTING the embedding->physiology map, but that map was never "
+            "supervised: measured best-case recovery of fasting glucose is worse than "
+            "predicting the population mean (skill -24.7). Cheap (no rollout); on from epoch 0. "
+            "0 disables (default)."
+        ),
+    )
+    parser.add_argument(
         "--default-baseline-weight",
         type=float,
         default=0.0,
@@ -1697,6 +1731,7 @@ def main():
         fasting_stability_window=args.fasting_stability_window,
         postprandial_recovery_weight=args.postprandial_recovery_weight,
         default_baseline_weight=args.default_baseline_weight,
+        setpoint_supervision_weight=args.setpoint_supervision_weight,
         default_baseline_markers=_split_markers(args.default_baseline_markers),
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,

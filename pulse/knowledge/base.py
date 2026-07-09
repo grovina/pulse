@@ -33,6 +33,15 @@ class Episode:
     sleep_wake: optional np.ndarray of shape (n_steps,) — 0=asleep, 1=awake
     activity: optional np.ndarray of shape (n_steps,) — 0=rest to 1=vigorous
     source: identifier of the knowledge contribution that generated this
+    setpoints: optional {marker_id: raw resting value} — the GROUND-TRUTH per-patient
+               setpoints this episode was generated from (iter 90). The generator knows
+               them exactly (they are the sampled PatientParams), but through iter 89 they
+               were discarded, so the per-patient embedding had to DISCOVER each patient's
+               physiology from the trajectory alone. That map was never supervised and, as
+               measured, is not invertible: calibration recovers a person's fasting glucose
+               worse than simply predicting the population mean. Carrying the setpoints lets
+               ``SetpointSupervisionSignal`` supervise the embedding's decoded physiology
+               directly. ``None`` for contributions that do not model a whole patient.
     """
     trajectory: np.ndarray
     meals: list[tuple[float, float, float, float]] = field(default_factory=list)
@@ -42,6 +51,7 @@ class Episode:
     activity: np.ndarray | None = None
     absorption_profile: np.ndarray | None = None  # (n_steps, 4): glucose/lipid/amino appearance + nutrient flag
     source: str = ""
+    setpoints: dict[str, float] | None = None
 
 
 @dataclass

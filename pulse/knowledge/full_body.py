@@ -728,6 +728,20 @@ class FullBody(KnowledgeContribution):
                 activity=activity,
                 absorption_profile=absorption_profile,
                 source=self.name,
+                # Iter 90: the ground-truth per-patient resting setpoints this episode was
+                # simulated from. These are exactly the quantities the model's per-patient
+                # heads decode from the embedding (metabolic.glucose_baseline_net ->
+                # Gb; cardiovascular.setpoint_net -> HR0/HRV0/SBP0/DBP0), so they give the
+                # embedding->physiology map direct supervision instead of leaving it to be
+                # discovered through 12h of integrated rate. Only markers with a dedicated
+                # per-patient head are listed.
+                setpoints={
+                    "glucose": float(params.Gb),
+                    "hr": float(params.HR0),
+                    "hrv": float(params.HRV0),
+                    "sbp": float(params.SBP0),
+                    "dbp": float(params.DBP0),
+                },
             ))
         return episodes
 

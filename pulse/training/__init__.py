@@ -33,6 +33,7 @@ from .insulin_sweep_signal import InsulinSweepProtocol, InsulinSweepSignal
 from .fasting_stability_signal import FastingStabilitySignal
 from .postprandial_recovery_signal import PostprandialRecoverySignal
 from .default_baseline_signal import DefaultBaselineSignal
+from .setpoint_supervision_signal import SetpointSupervisionSignal
 from .carb_mass_balance_signal import CarbMassBalanceSignal
 from .cold_model_distillation_signal import ColdModelDistillationSignal
 from .physiology_rules_signal import PhysiologyRulesSignal
@@ -58,6 +59,7 @@ __all__ = [
     "FastingStabilitySignal",
     "PostprandialRecoverySignal",
     "DefaultBaselineSignal",
+    "SetpointSupervisionSignal",
     "CarbMassBalanceSignal",
     "ColdModelDistillationSignal",
     "PhysiologyRulesSignal",

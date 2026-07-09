@@ -180,6 +180,9 @@ def generate_trajectory_dataset(
             "absorption_profile": ep.absorption_profile,
             "knowledge_source": contrib.name,
             "trajectory_loss_mode": contrib.trajectory_loss_mode(),
+            # Iter 90: ground-truth per-patient setpoints (None for contributions that
+            # do not simulate a whole patient). Consumed by SetpointSupervisionSignal.
+            "setpoints": ep.setpoints,
         })
 
     for di in range(n_default_patients):
