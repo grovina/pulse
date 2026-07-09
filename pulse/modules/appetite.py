@@ -2,16 +2,29 @@
 Appetite & Satiety module.
 
 Hunger/fullness signaling: ghrelin, leptin, GLP-1.
-Uses mass-action kinetics. Receives insulin from Metabolic
-and nutrient sensing flag from Gut.
+Uses mass-action kinetics. Receives insulin from Metabolic, and from Gut both the
+nutrient-sensing flag and the (dose-linear) glucose-appearance flux.
+
+Iter 90 — DOSE BLINDNESS FIX. Through iter 89 this module's only meal input was
+``nutrient_flag``, whose presence gate is ``1 - exp(-total_macro / 10 g)``. That
+SATURATES: a 30 g-carb meal gives 0.9889 and a 90 g meal 0.99997 — a 1.1% difference.
+The module was structurally unable to perceive meal SIZE. Its only other coupling,
+insulin, does scale with dose, and appetite hormones are insulin-SUPPRESSED — so a
+bigger meal produced LESS GLP-1. Measured on the iter-89 model:
+``glp1_dose_response = -0.656`` (wrong-signed; the textbook meal_dose_response check
+has been failing on it). The gut kernel already emits a dose-LINEAR glucose-appearance
+flux by construction (macros @ K, see base.GutModuleBase), so the information existed
+and simply was not routed here. It now is, and GLP-1's peak gate reads it rather than
+the saturating flag — which is also the anatomically correct stimulus: intestinal
+L-cells secrete GLP-1 in response to nutrient delivery rate, not to a binary fed flag.
 """
 
 import torch
 
 from .base import BasalPlusGatedPeakHead, MassActionModule, SetpointHead
 
-# Coupling inputs: insulin (1) + nutrient_flag (1) = 2
-_N_COUPLING = 2
+# Coupling inputs: insulin (1) + nutrient_flag (1) + gut glucose_appearance (1) = 3
+_N_COUPLING = 3
 
 # External inputs: sleep_wake (1)
 _N_EXTERNAL = 1
@@ -46,12 +59,20 @@ class AppetiteModule(MassActionModule):
                 _GHRELIN_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_GHRELIN_IDX]),
                 # Iter 53: GLP-1 is meal-driven (sharp postprandial peaks) — iter 52's
                 # SetpointHead regressed it (0.276→0.421) because target_z can drift
-                # but can't fire a peak. Switch to BasalPlusGatedPeakHead gated by
-                # nutrient_flag (the coupling[1] feature, head-input index =
-                # n_species + 1 = 4): peak when nutrient_flag ≈ 1 (meal present).
+                # but can't fire a peak. BasalPlusGatedPeakHead fires a gated peak.
+                #
+                # Iter 90: the gate stimulus moves from nutrient_flag (coupling[1],
+                # head-input index n_species+1 = 4) to the gut GLUCOSE-APPEARANCE flux
+                # (coupling[2], index n_species+2 = 5). nutrient_flag saturates at ~1
+                # for any real meal, so gating on it made both the gate AND the
+                # MLP-derived peak amplitude dose-blind; appearance is dose-linear by
+                # construction, so peak amplitude can now scale with meal size (and
+                # the dose-response rank signal has a gradient that can move it).
+                # Appearance is a ≥0 flux, ≈0 fasted and O(0.1-3) during absorption,
+                # so the threshold sits just above zero with a sharp gate.
                 _GLP1_IDX: lambda inp, hd: BasalPlusGatedPeakHead(
-                    inp, hd, stimulus_idx=3 + 1, gate_dir=1,
-                    init_thresh=0.3, init_log_temp=-1.6,  # exp(-1.6) ≈ 0.2 sharp gate
+                    inp, hd, stimulus_idx=3 + 2, gate_dir=1,
+                    init_thresh=0.1, init_log_temp=-1.6,  # exp(-1.6) ≈ 0.2 sharp gate
                 ),
             },
         )

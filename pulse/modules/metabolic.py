@@ -19,8 +19,16 @@ from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_SCALE
 # constants (see the _SG_* block below).
 _GLUCOSE_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
 
-# Coupling inputs: gut outputs (4) + cortisol (1) = 5
-_N_COUPLING = GUT_OUTPUT_DIM + 1
+# Coupling inputs: gut outputs (4) + cortisol (1) + glp1 (1) = 6
+#
+# Iter 90 — INCRETIN PATH. The teacher potentiates glucose-stimulated insulin secretion by
+# an incretin factor `1 + GLP1/(GLP1 + K_incretin)` (full_body.py:446,452), and the coupling
+# prior registry has always DECLARED `glp1 -> insulin` (+1, knowledge/coupling_priors/
+# metabolism.py). But glp1 was never fed into this module, so ∂insulin_rate/∂glp1 ≡ 0: the
+# declared prior had ZERO gradient and was silently inert, and the student had no incretin
+# effect at all. Routing glp1 in makes the prior live and lets the insulin head learn the
+# potentiation. Placed LAST so the gut(0-3) and cortisol(4) coupling indices are unchanged.
+_N_COUPLING = GUT_OUTPUT_DIM + 2
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2

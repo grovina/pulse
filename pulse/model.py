@@ -109,6 +109,7 @@ class ModularPhysiologyNetwork(nn.Module):
         self._lactate_idx = MARKER_INDEX["lactate"]
         self._cortisol_idx = MARKER_INDEX["cortisol"]
         self._temp_idx = MARKER_INDEX["temp"]
+        self._glp1_idx = MARKER_INDEX["glp1"]  # iter 90: incretin path glp1 -> insulin
 
         self.register_buffer("norm_center", torch.tensor(NORM_CENTER, dtype=torch.float32))
         self.register_buffer("norm_scale", torch.tensor(NORM_SCALE, dtype=torch.float32))
@@ -230,13 +231,19 @@ class ModularPhysiologyNetwork(nn.Module):
         lactate = norm_state[:, self._lactate_idx: self._lactate_idx + 1]
         cortisol = norm_state[:, self._cortisol_idx: self._cortisol_idx + 1]
         temperature = norm_state[:, self._temp_idx: self._temp_idx + 1]
+        glp1 = norm_state[:, self._glp1_idx: self._glp1_idx + 1]
         nutrient_flag = gut_out_batch[:, 3:4]
+        # Iter 90: the gut's glucose-appearance channel is dose-LINEAR by construction
+        # (macros @ K). nutrient_flag saturates (1 - exp(-total/10g)), so it is the only
+        # meal signal that can tell a 30 g meal from a 90 g one.
+        gut_glucose_appearance = gut_out_batch[:, 0:1]
 
         # --- Compute rates per module ---
         rates = torch.zeros_like(state)
 
-        # Metabolic: coupling = [gut_outputs(4), cortisol(1)]
-        met_coupling = torch.cat([gut_out_batch, cortisol], dim=-1)
+        # Metabolic: coupling = [gut_outputs(4), cortisol(1), glp1(1)]
+        # glp1 last (iter 90 incretin path) so gut/cortisol coupling indices are unchanged.
+        met_coupling = torch.cat([gut_out_batch, cortisol, glp1], dim=-1)
         met_external = torch.stack([act, sw], dim=-1)
         met_rates = self.metabolic(
             norm_state[:, self._met_idx],
@@ -246,8 +253,11 @@ class ModularPhysiologyNetwork(nn.Module):
         for i, idx in enumerate(self._met_idx):
             rates[:, idx] = met_rates[:, i]
 
-        # Appetite: coupling = [insulin(1), nutrient_flag(1)]
-        app_coupling = torch.cat([insulin, nutrient_flag], dim=-1)
+        # Appetite: coupling = [insulin(1), nutrient_flag(1), gut_glucose_appearance(1)]
+        # Iter 90: appearance added because nutrient_flag saturates, leaving the module
+        # dose-blind — GLP-1 then tracked (insulin-suppressed) dose and came out
+        # WRONG-SIGNED (glp1_dose_response = -0.656 on iter-89). See modules/appetite.py.
+        app_coupling = torch.cat([insulin, nutrient_flag, gut_glucose_appearance], dim=-1)
         app_external = sw.unsqueeze(-1)
         app_rates = self.appetite(
             norm_state[:, self._app_idx],
