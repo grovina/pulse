@@ -331,6 +331,12 @@ class InsulinSweepSignal(TrainingSignal):
 
         met_idx = list(MODULE_MARKER_INDICES["metabolic"])
         cortisol_idx = MARKER_INDEX["cortisol"]
+        # Iter 90: metabolic coupling gained a glp1 channel (the incretin path). This
+        # signal builds the metabolic coupling vector by hand instead of going through
+        # ModularPhysiologyNetwork.forward, so it must mirror that layout exactly:
+        # [gut_outputs(4), cortisol(1), glp1(1)]. Omitting it made metabolic's input 41
+        # wide against a 42-wide first layer, which killed the iter-90 dispatch at epoch 0.
+        glp1_idx = MARKER_INDEX["glp1"]
 
         # Project embedding once per metabolic call — one [B, EMB_MET] tensor.
         emb_met = net.embedding_projections["metabolic"](embeddings)
@@ -356,7 +362,9 @@ class InsulinSweepSignal(TrainingSignal):
             norm_state = (full_state_b - net.norm_center) / net.norm_scale
             met_state = norm_state[:, met_idx]  # [B, n_species]
             cortisol = norm_state[:, cortisol_idx: cortisol_idx + 1]
-            coupling = torch.cat([zero_gut, cortisol], dim=-1)
+            glp1 = norm_state[:, glp1_idx: glp1_idx + 1]
+            # Must match model.forward: [gut_outputs(4), cortisol(1), glp1(1)].
+            coupling = torch.cat([zero_gut, cortisol, glp1], dim=-1)
             rates = net.metabolic(met_state, coupling, zero_external, emb_met, time_feats)
             # Drop internal slow-state rate outputs (iter 55+): no cold target.
             per_point.append(rates[..., :_N_COLD_METABOLIC])
