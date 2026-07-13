@@ -12,13 +12,13 @@ M._SG_MIN = SG_KEFF * 30.0
 M._SG_RANGE = 0.0
 
 from pulse.model import ModularPhysiologyNetwork, integrate
-from pulse.types import MARKER_INDEX, NORM_CENTER
+from pulse.types import MARKER_INDEX, NORM_CENTER, EMBEDDING_DIM
 from pulse.benchmark import calibrate_embedding, MeasurementPoint
 from pulse.modules.gut import MealEvent
 from pulse.modules import cardiovascular as C
 
 ck = torch.load('/tmp/iter89.pt', map_location='cpu', weights_only=False)
-m = ModularPhysiologyNetwork(embedding_dim=64, metabolic_hidden=48, cardiovascular_hidden=48,
+m = ModularPhysiologyNetwork(embedding_dim=EMBEDDING_DIM, metabolic_hidden=48, cardiovascular_hidden=48,
     gut_hidden=32, appetite_hidden=24, stress_hidden=24, thermoreg_hidden=16, respiratory_hidden=16)
 m.load_state_dict(ck['model_state']); m.eval()
 pm = torch.tensor(ck['embedding_prior_mean']); ps = torch.tensor(ck['embedding_prior_std'])
@@ -43,7 +43,7 @@ pp = phys(pm); rows=[]
 sg_eff = M._SG_MIN
 print(f'ARM: Sg_keff={SG_KEFF:.5f}/min (tau {1/SG_KEFF:.0f} min), prior_weight={PRIOR_W}')
 for i in range(N_PEOPLE):
-    et = pm + ps*torch.randn(64); tp = phys(et)
+    et = pm + ps*torch.randn(EMBEDDING_DIM); tp = phys(et)
     st = torch.tensor(NORM_CENTER,dtype=torch.float32).clone()
     for k,mk in (('Gb','glucose'),('HR0','hr'),('HRV0','hrv'),('SBP0','sbp'),('DBP0','dbp')): st[IDX[mk]]=tp[k]
     with torch.no_grad(): tr = integrate(m, st, et, n_steps=DUR, dt=1.0, meals=MEALS)

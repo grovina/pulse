@@ -8,7 +8,7 @@ at range, physiological plausibility, and cross-marker entanglement.
 """
 import torch, numpy as np
 from pulse.model import ModularPhysiologyNetwork
-from pulse.types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
+from pulse.types import MARKER_INDEX, NORM_CENTER, NORM_SCALE, EMBEDDING_DIM
 from pulse.modules import metabolic as M
 from pulse.modules import cardiovascular as C
 
@@ -48,11 +48,11 @@ def summarize(tag, emb):
 torch.manual_seed(0)
 K = 4000
 # 1) embeddings from the LEARNED prior (what a "typical" trained patient looks like)
-prior = pm.unsqueeze(0) + ps.unsqueeze(0) * torch.randn(K, 64)
+prior = pm.unsqueeze(0) + ps.unsqueeze(0) * torch.randn(K, EMBEDDING_DIM)
 p_prior = summarize('PRIOR-sampled embeddings (the learned population)', prior)
 
 # 2) embeddings the calibration LEASH allows (||emb||<=3.0) — the reachable set
-wide = torch.randn(K, 64); wide = wide / wide.norm(dim=1, keepdim=True) * torch.rand(K,1)*3.0
+wide = torch.randn(K, EMBEDDING_DIM); wide = wide / wide.norm(dim=1, keepdim=True) * torch.rand(K,1)*3.0
 summarize('LEASH-reachable embeddings (||emb||<=3.0, calibration search space)', pm.unsqueeze(0)+wide)
 
 # 3) identifiability: cross-marker entanglement across prior-sampled patients.

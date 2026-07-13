@@ -16,7 +16,7 @@ import sys, time
 import torch, numpy as np
 
 from pulse.model import ModularPhysiologyNetwork, integrate
-from pulse.types import MARKER_INDEX, NORM_CENTER
+from pulse.types import MARKER_INDEX, NORM_CENTER, EMBEDDING_DIM
 from pulse.benchmark import calibrate_embedding, MeasurementPoint
 from pulse.modules.gut import MealEvent
 from pulse.modules import metabolic as M
@@ -75,7 +75,7 @@ rows = []
 prior_phys = physiology(pm)
 
 for i in range(N_PEOPLE):
-    emb_true = pm + ps * torch.randn(64)
+    emb_true = pm + ps * torch.randn(EMBEDDING_DIM)
     true_phys = physiology(emb_true)
     st0 = person_initial_state(true_phys)
 
