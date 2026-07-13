@@ -183,6 +183,9 @@ def generate_trajectory_dataset(
             # Iter 90: ground-truth per-patient setpoints (None for contributions that
             # do not simulate a whole patient). Consumed by SetpointSupervisionSignal.
             "setpoints": ep.setpoints,
+            # Iter 91: teacher's own standard-meal response for this patient. Consumed by
+            # MealResponseSignal to unfreeze the per-patient meal gain Ra.
+            "meal_response": ep.meal_response,
         })
 
     for di in range(n_default_patients):

@@ -104,6 +104,7 @@ from .training import (
     CarbMassBalanceSignal,
     DefaultBaselineSignal,
     SetpointSupervisionSignal,
+    MealResponseSignal,
     DoseResponseSignal,
     FastingStabilitySignal,
     PhysiologyRulesSignal,
@@ -305,6 +306,8 @@ def train(
     postprandial_recovery_weight: float = 0.0,
     default_baseline_weight: float = 0.0,
     setpoint_supervision_weight: float = 0.0,
+    meal_response_weight: float = 0.0,
+    meal_response_sample_patients: int = 4,
     default_baseline_markers: tuple[str, ...] = ("hr",),
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
@@ -436,6 +439,21 @@ def train(
         weight=WeightSchedule(setpoint_supervision_weight, enable_at_epoch=0),
         targets=_setpoint_targets,
     )
+    # Iter 91: unfreeze Ra. iter-90 measured the per-patient meal gain FROZEN (std 0.01), so
+    # calibration inflated Gb to fit meal peaks -- which broke person-recovery AND the glucose
+    # gate. Supervise each patient's realized meal response against the teacher's own. Rollout-
+    # based, so gated to phase 2 like the other amplitude signals.
+    _meal_targets = {
+        int(rec["patient_id"]): rec["meal_response"]
+        for rec in trajectory_signal.dataset
+        if not rec.get("is_default") and rec.get("meal_response")
+    }
+    meal_response_signal = MealResponseSignal(
+        weight=WeightSchedule(meal_response_weight, enable_at_epoch=enable_at),
+        n_patients=n_patients,
+        sample_patients=meal_response_sample_patients,
+        targets=_meal_targets,
+    )
     # Iter 74: cross-module carb→glycogen mass-balance conservation. Pairs with
     # the phase-2 constraint suite (cohort / rules) — gate it at the phase
     # boundary so glycogen has a settled metabolic context before the
@@ -475,6 +493,7 @@ def train(
         postprandial_recovery_signal,
         default_baseline_signal,
         setpoint_supervision_signal,
+        meal_response_signal,
         carb_mass_balance_signal,
         cold_distill_signal,
         physiology_rules_signal,
@@ -912,6 +931,7 @@ def train(
         "insulin_sweep_insulin_uU_mL": list(insulin_sweep_protocol.insulin_sweep_uU_mL),
         "default_baseline_weight": default_baseline_weight,
         "setpoint_supervision_weight": setpoint_supervision_weight,
+        "meal_response_weight": meal_response_weight,
         "default_baseline_markers": list(default_baseline_markers),
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
@@ -1382,6 +1402,27 @@ def main():
         ),
     )
     parser.add_argument(
+        "--meal-response-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Weight for per-patient meal-response supervision (iter 91). iter-90 measured the "
+            "per-patient meal gain Ra FROZEN (trained std 0.01) because nothing supervised it: "
+            "SetpointSupervision covers Gb/HR0/.../DBP0 but not Ra, and dose-response only "
+            "supplies a POPULATION target. With a meal in the calibration window the optimizer "
+            "therefore cannot fit a person's amplitude and INFLATES their Gb instead -- which "
+            "broke person-recovery (Gb skill -1.38 with a meal vs +0.87 without) AND the glucose "
+            "gate (0.193->0.210). This supervises each patient's realized 75 g-meal peak-rise and "
+            "time-to-peak against the teacher's own. 0 disables (default)."
+        ),
+    )
+    parser.add_argument(
+        "--meal-response-sample-patients",
+        type=int,
+        default=4,
+        help="Patients sampled per epoch for meal-response supervision (one short rollout each).",
+    )
+    parser.add_argument(
         "--setpoint-supervision-weight",
         type=float,
         default=0.0,
@@ -1732,6 +1773,8 @@ def main():
         postprandial_recovery_weight=args.postprandial_recovery_weight,
         default_baseline_weight=args.default_baseline_weight,
         setpoint_supervision_weight=args.setpoint_supervision_weight,
+        meal_response_weight=args.meal_response_weight,
+        meal_response_sample_patients=args.meal_response_sample_patients,
         default_baseline_markers=_split_markers(args.default_baseline_markers),
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,

@@ -147,12 +147,19 @@ class PatientParams:
     # HPA: ACTH drives cortisol; cortisol feeds back on ACTH
     Cort_b: float = 12.0
     k_cort: float = 0.02
-    cort_circ_amp: float = 5.0
+    cort_circ_amp: float = 5.0   # legacy (iter<=90 cortisol's own circadian; unused since iter 91)
     cort_gluco: float = 0.0012
     ACTH_b: float = 30.0
     k_acth: float = 0.04
-    acth_circ_amp: float = 8.0
-    k_acth_to_cort: float = 0.006
+    # Iter 91: 8.0 -> 18.0. ACTH now carries the ENTIRE HPA circadian (cortisol's separate
+    # circadian target was removed -- it was double-driving the rhythm), so ACTH's own swing
+    # must be deep enough to move cortisol across its real 4-5x range. Measured: ACTH 12-46
+    # pg/mL (physiological 10-60), giving cortisol nadir 4.2 / peak 18.2 / ratio 4.35.
+    acth_circ_amp: float = 18.0
+    k_acth_to_cort: float = 0.006   # legacy (iter<=90 additive ACTH->cortisol term; unused since iter 91)
+    # Iter 91: cortisol's relaxation target is cort_per_acth * ACTH (see the HPA block). Set so
+    # the ACTH rhythm carries cortisol across its physiological range; tuned by measurement below.
+    cort_per_acth: float = 0.42
     cort_feedback_acth: float = 0.025
     hypo_acth: float = 0.025
     # Sympathetic / exercise-associated HPA drive on ACTH (activity in [0, 1])
@@ -467,7 +474,12 @@ def simulate_full_body(
     X = 0.0
     ns = noise_scale
 
-    ghr_base_prod = params.Ghr_b * params.k_ghr * (1 + params.Ib / params.IC50_ghr)
+    # Iter 91: the `(1 + Ib/IC50_ghr)` factor was a COMPENSATION for the standing suppression
+    # that basal insulin used to apply (insulin_supp_ghr used ABSOLUTE insulin, so it was ~0.33
+    # even at rest). With suppression now correctly keyed to insulin ABOVE basal, there is
+    # nothing to compensate for -- keeping the boost overshot ghrelin to 138.8 against a basal
+    # of 100. Basal production is simply Ghr_b * k_ghr, whose equilibrium is exactly Ghr_b.
+    ghr_base_prod = params.Ghr_b * params.k_ghr
     glp1_base_prod = params.GLP1_b * params.k_glp1
 
     for t in range(duration_min):
@@ -495,7 +507,13 @@ def simulate_full_body(
         dG -= act * 0.02 * max(G - params.Gb * 0.8, 0)
 
         glucagon_stim = params.alpha_gn * max(params.Gb - G, 0) / max(params.Gb, 1)
-        glucagon_supp = 0.5 * I / (params.Ib + 10.0)
+        # Iter 91: suppression responds to insulin ABOVE BASAL, not absolute insulin. With
+        # `0.5 * I / (Ib + 10)` the basal insulin level already suppressed glucagon (0.25 at
+        # I=Ib), so the teacher's glucagon rested at 60.3 against its own declared basal of 70
+        # -- and the student faithfully distilled that 10-unit deficit. Physiologically,
+        # alpha-cells are suppressed by a RISE in insulin (Unger & Orci); at basal insulin the
+        # hormone sits AT its basal.
+        glucagon_supp = 0.5 * max(I - params.Ib, 0.0) / (params.Ib + 10.0)
         dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp + 0.02 * Ra_protein
         dG += 0.02 * max(Gn - params.Gnb, 0)
 
@@ -574,7 +592,11 @@ def simulate_full_body(
 
         # --- Appetite (ghrelin, leptin, GLP-1) ---
         Ra_norm = Ra / (Ra + params.K_meal_ghr) if (Ra + params.K_meal_ghr) > 1e-9 else 0.0
-        insulin_supp_ghr = I / (I + params.IC50_ghr)
+        # Iter 91: same fix as glucagon -- above-basal insulin, not absolute. At I=Ib the old
+        # form gave 10/30 = 0.33 of standing suppression, so ghrelin rested at 94.9 against a
+        # basal of 100. Ghrelin falls POSTPRANDIALLY (Cummings 2001), i.e. in response to the
+        # insulin RISE, not to the existence of basal insulin.
+        insulin_supp_ghr = max(I - params.Ib, 0.0) / (max(I - params.Ib, 0.0) + params.IC50_ghr)
         ghr_prod = ghr_base_prod * (1 - insulin_supp_ghr) * (1 - Ra_norm)
         dGhr = ghr_prod - params.k_ghr * Ghr
 
@@ -585,9 +607,30 @@ def simulate_full_body(
         dGLP1 = glp1_prod - params.k_glp1 * GLP1
 
         # --- Stress / HPA (ACTH → cortisol + feedback) ---
-        circ_cort = _circadian(t_abs, params.cort_circ_amp, peak_hour=8.0)
+        #
+        # Iter 91 — CORTISOL WAS DOUBLE-DRIVEN. Through iter 90 cortisol relaxed toward a
+        # circadian target (Cort_b + circ_cort) AND received an additive k_acth_to_cort·ACTH
+        # term. But ACTH is itself circadian, so the same rhythm was injected twice and the
+        # ACTH term added a standing offset on top. Measured equilibrium:
+        #     Cort* ≈ (Cort_b 12 ± circ 5) + k_acth_to_cort·ACTH/k_cort (≈ +6.9) ≈ 18.9 ± 5
+        # so the simulated teacher produced nadir 11.75 / peak 25.5 µg/dL with a peak:nadir
+        # ratio of 2.17. Physiology: nadir 3-5, peak 15-20, ratio ~4-5x (Weitzman 1971;
+        # Pruessner 1997). The teacher's cortisol was ~3x too high overnight and its rhythm
+        # was half as deep as it should be -- and cortisol drives glucose (cort_gluco, added to
+        # the student in iter-90 C3), heart rate, BP and thermoregulation, so the error
+        # propagated into every one of those.
+        #
+        # The fix is the cascade this model already claims to implement: ACTH DRIVES CORTISOL.
+        # The circadian belongs in ACTH (where it already is, and where the SCN→PVN→pituitary
+        # pathway actually puts it); cortisol simply follows its own secretagogue. So cortisol's
+        # relaxation target is now proportional to ACTH, with no second circadian of its own.
+        # ACTH's own rhythm is deepened (acth_circ_amp) because the previous amplitude was far
+        # too compressed to carry cortisol's real 4-5x swing.
+        #
+        # Cort_b is RETAINED as the per-patient reference level -- it is the threshold for
+        # cortisol's downstream effects (cort_feedback_acth, cort_gluco, cort_hr) and for the
+        # student's normalization -- but it is no longer cortisol's relaxation target.
         circ_acth = _circadian(t_abs, params.acth_circ_amp, peak_hour=7.5)
-        cort_target = max(params.Cort_b + circ_cort, 1.0)
         acth_target = max(params.ACTH_b + circ_acth, 5.0)
         sleep_suppression = 1.0 - 0.3 * sleep_depth
         dACTH = -params.k_acth * (ACTH - acth_target * sleep_suppression)
@@ -595,8 +638,9 @@ def simulate_full_body(
         dACTH += params.cort_activity * act
         dACTH -= params.cort_feedback_acth * max(Cort - params.Cort_b, 0)
 
+        # Cortisol tracks its secretagogue: target = cort_per_acth · ACTH.
+        cort_target = max(params.cort_per_acth * max(ACTH, 0.0), 0.5)
         dCort = -params.k_cort * (Cort - cort_target * sleep_suppression)
-        dCort += params.k_acth_to_cort * max(ACTH, 0)
 
         cort_dev = Cort - params.Cort_b
 
@@ -694,6 +738,60 @@ def simulate_full_body(
     return trajectory, absorption_profile
 
 
+# Iter 91 — standard meal used to characterise a patient's postprandial glucose response.
+# 75 g carbohydrate is the OGTT dose (Guyton & Hall Ch. 79), so the resulting peak-rise is a
+# clinically meaningful per-patient quantity rather than an arbitrary probe.
+STANDARD_MEAL_CARBS_G = 75.0
+STANDARD_MEAL_FATS_G = 5.0
+STANDARD_MEAL_PROTEINS_G = 10.0
+# Iter 91: the meal sits at t=120 (not t=30) so glucose has ~2.2 time-constants (tau ~56 min)
+# to SETTLE at the patient's own fasting equilibrium first. That settled level is itself a
+# supervision target: it is the OBSERVABLE fasting glucose, which is NOT params.Gb -- the
+# standing hepatic source puts the equilibrium at Gb + egp/Sg, measured at +0.85..+5.09 mg/dL
+# and VARYING per patient. Calibration only ever sees the observable, so supervising the latent
+# Gb alone injects a per-patient bias.
+_MEAL_RESPONSE_DURATION_MIN = 360
+_MEAL_RESPONSE_MEAL_TIME_MIN = 120
+
+
+def _standard_meal_response(params: PatientParams) -> dict[str, float]:
+    """This patient's glucose response to a standard 75 g meal, from the teacher itself.
+
+    Returns the peak RISE above the patient's own fasting equilibrium (mg/dL) and the time to
+    that peak (minutes after the meal). Both are per-patient consequences of the sampled
+    PatientParams -- Si, Sg, the absorption rates and the insulin response all feed in -- so
+    they are exactly the amplitude information the student's Ra head needs and has never had.
+
+    Deterministic (noise_scale=0): this is a reference quantity, not a training trajectory.
+    Cost is one 240-minute simulation per patient at dataset-generation time, i.e. negligible
+    beside the 14-day episode already being simulated.
+    """
+    meals = [(
+        float(_MEAL_RESPONSE_MEAL_TIME_MIN),
+        STANDARD_MEAL_CARBS_G, STANDARD_MEAL_FATS_G, STANDARD_MEAL_PROTEINS_G,
+    )]
+    n = _MEAL_RESPONSE_DURATION_MIN
+    sleep_wake = np.ones(n)          # awake
+    activity = np.zeros(n)           # at rest
+    traj, _ = simulate_full_body(
+        params, meals, sleep_wake, activity, n,
+        start_hour=8.0, noise_scale=0.0, rng=np.random.default_rng(0),
+    )
+    g = traj[:, MARKER_INDEX["glucose"]]
+    # Fasting reference = the level just before the meal (the patient's own equilibrium,
+    # which sits slightly above params.Gb because of the standing hepatic source -- so a RISE
+    # is the honest amplitude measure, independent of that offset).
+    pre = float(g[_MEAL_RESPONSE_MEAL_TIME_MIN - 1])
+    post = g[_MEAL_RESPONSE_MEAL_TIME_MIN:]
+    peak_idx = int(np.argmax(post))
+    return {
+        # The OBSERVABLE fasting glucose (settled), not params.Gb. See the note above.
+        "glucose_fasting": pre,
+        "glucose_peak_rise": float(post[peak_idx] - pre),
+        "glucose_time_to_peak_min": float(peak_idx),
+    }
+
+
 class FullBody(KnowledgeContribution):
     def __init__(self, n_days: int = 14):
         super().__init__(
@@ -742,6 +840,23 @@ class FullBody(KnowledgeContribution):
                     "sbp": float(params.SBP0),
                     "dbp": float(params.DBP0),
                 },
+                # Iter 91: this patient's TRUE postprandial glucose peak-rise for a standard
+                # meal. Measured on iter-90: the student's per-patient meal gain (Ra) is FROZEN
+                # (trained std 0.01), because nothing ever supervised per-patient meal
+                # amplitude -- SetpointSupervisionSignal (iter 90) covered Gb/HR0/HRV0/SBP0/DBP0
+                # but not Ra, and dose-response only supplies a POPULATION target (Wolever's
+                # 0.7 mg/dL/g, identical for every patient). The consequence is severe: with a
+                # meal in the calibration window the optimizer cannot fit a person's meal
+                # amplitude, so it compensates with the only lever it has and INFLATES their Gb
+                # (measured: pushes Gb to ~110 whether the truth is 100 or 85). That single bias
+                # explains BOTH failures of iter 90 -- calibration recovers Gb to 0.96 mg/dL with
+                # no meal in the window but is off by 17.84 mg/dL with one, and the same inflated
+                # Gb drives the fasting eval prediction upward (glucose_mape 0.193 -> 0.210).
+                #
+                # The teacher knows each patient's true meal response exactly, and we were
+                # throwing it away -- the same oversight as the setpoints above. Recording it
+                # gives ra_baseline_net a real per-patient gradient.
+                meal_response=_standard_meal_response(params),
             ))
         return episodes
 

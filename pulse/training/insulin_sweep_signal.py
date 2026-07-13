@@ -363,8 +363,12 @@ class InsulinSweepSignal(TrainingSignal):
             met_state = norm_state[:, met_idx]  # [B, n_species]
             cortisol = norm_state[:, cortisol_idx: cortisol_idx + 1]
             glp1 = norm_state[:, glp1_idx: glp1_idx + 1]
-            # Must match model.forward: [gut_outputs(4), cortisol(1), glp1(1)].
-            coupling = torch.cat([zero_gut, cortisol, glp1], dim=-1)
+            # Iter 91: ask the model for its coupling layout instead of rebuilding it. This
+            # signal hand-built [gut(4), cortisol(1)] and silently missed iter-90's new glp1
+            # channel, which killed the first iter-90 dispatch at epoch 0. There is now exactly
+            # one definition of this vector (ModularPhysiologyNetwork.metabolic_coupling), so a
+            # future coupling change cannot drift out of sync with it again.
+            coupling = net.metabolic_coupling(zero_gut, cortisol, glp1)
             rates = net.metabolic(met_state, coupling, zero_external, emb_met, time_feats)
             # Drop internal slow-state rate outputs (iter 55+): no cold target.
             per_point.append(rates[..., :_N_COLD_METABOLIC])

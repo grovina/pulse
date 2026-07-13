@@ -114,6 +114,28 @@ class ModularPhysiologyNetwork(nn.Module):
         self.register_buffer("norm_center", torch.tensor(NORM_CENTER, dtype=torch.float32))
         self.register_buffer("norm_scale", torch.tensor(NORM_SCALE, dtype=torch.float32))
 
+    def metabolic_coupling(
+        self,
+        gut_outputs: torch.Tensor,
+        cortisol: torch.Tensor,
+        glp1: torch.Tensor,
+    ) -> torch.Tensor:
+        """Assemble the metabolic module's coupling vector: [gut(4), cortisol(1), glp1(1)].
+
+        Iter 91: THE SINGLE SOURCE OF TRUTH for this layout. It used to be assembled inline in
+        ``forward`` and, independently, by hand in ``training/insulin_sweep_signal.py``, which
+        calls ``model.metabolic(...)`` directly. When iter 90 added the glp1 incretin channel,
+        ``forward`` got it and the hand-built copy did not — 5 channels into a 6-channel module.
+        That killed the first iter-90 dispatch at epoch 0 (``mat1 and mat2 shapes cannot be
+        multiplied (5x41 and 42x48)``).
+
+        The architecture review had already named the disease: "the coupling story is told in
+        three places that have drifted apart." It was four, and nothing forced them to agree, so
+        the next coupling change would have broken it again. Any caller that needs metabolic's
+        coupling vector must call THIS method rather than rebuild the layout.
+        """
+        return torch.cat([gut_outputs, cortisol, glp1], dim=-1)
+
     def forward(
         self,
         state: torch.Tensor,
@@ -243,7 +265,7 @@ class ModularPhysiologyNetwork(nn.Module):
 
         # Metabolic: coupling = [gut_outputs(4), cortisol(1), glp1(1)]
         # glp1 last (iter 90 incretin path) so gut/cortisol coupling indices are unchanged.
-        met_coupling = torch.cat([gut_out_batch, cortisol, glp1], dim=-1)
+        met_coupling = self.metabolic_coupling(gut_out_batch, cortisol, glp1)
         met_external = torch.stack([act, sw], dim=-1)
         met_rates = self.metabolic(
             norm_state[:, self._met_idx],

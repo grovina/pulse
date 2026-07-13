@@ -52,6 +52,12 @@ class Episode:
     absorption_profile: np.ndarray | None = None  # (n_steps, 4): glucose/lipid/amino appearance + nutrient flag
     source: str = ""
     setpoints: dict[str, float] | None = None
+    # Iter 91: this patient's TRUE postprandial response to a standard 75 g meal
+    # (glucose_peak_rise mg/dL, glucose_time_to_peak_min). The per-patient meal AMPLITUDE
+    # the student's Ra head needs -- iter-90 measured Ra frozen (std 0.01) because nothing
+    # supervised it, which made calibration inflate Gb to compensate. None for contributions
+    # that do not simulate a whole patient.
+    meal_response: dict[str, float] | None = None
 
 
 @dataclass

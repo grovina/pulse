@@ -78,14 +78,33 @@ BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
 # Iter 64: default reverted to 0.0 (off). The iter-62/63 ablation on
 # iter 61's checkpoint showed PULSE_BENCHMARK_PRIOR_WEIGHT=1.0/0.5/0
 # gave overall_weighted_mape = 0.146 / 0.140 / 0.084 respectively —
-# the diag-Gauss prior at any non-zero weight is a net regression vs
-# the legacy iso-L2 path. The acth/insulin shortcut problem the prior
-# was meant to fix at EVAL is being addressed at TRAINING time instead
-# (iter-64 physiology rules: acth_precedes_cortisol_morning_peak,
-# insulin_rises_postprandial). Keep the plumbing in place for future
-# experiments — set `PULSE_BENCHMARK_PRIOR_WEIGHT=1.0` and re-run
-# `python -m pulse.benchmark` to reactivate it.
-BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
+# the diag-Gauss prior at any non-zero weight was a net regression vs
+# the legacy iso-L2 path.
+#
+# Iter 91: RE-ENABLED at 1.0, on measured evidence. The iter-62/63 result was obtained on a
+# model whose embedding was unsupervised and whose Sg was 30x too weak (the iter-90 frame bug),
+# so calibration was walking a degenerate direction into the norm clamp — a regime where any
+# prior looks harmful because the whole inverse problem was ill-posed. That is no longer the
+# case.
+#
+# Swept on the iter-90 checkpoint with the recovery test (scripts/iter89_recovery_test.py,
+# meal in the calibration window — the case that fails), varying ONLY prior_weight:
+#
+#   prior_weight   Gb skill   Gb |err|   HR0     SBP0    DBP0
+#   0.0            -1.47      18.52      +0.18   +0.47   +0.80
+#   1.0            +0.21       5.90      +0.38   +0.81   +0.87   <-- every marker improves
+#   4.0            +0.07       6.99      +0.28   +0.66   +0.61       (over-regularized)
+#
+# Read this honestly: at 1.0 the prior wins mostly by PREVENTING A RUNAWAY, not by finding the
+# person. The calibrated norm collapses to ||emb|| ~ 0.27 (trained embeddings sit near 1.1), and
+# for one of the two probe patients Gb moves the WRONG way — the error is small only because the
+# embedding barely leaves the population mean. The underlying disease is that per-patient meal
+# amplitude is not identifiable, so with a meal in the calibration window the optimizer inflates
+# Gb to fit the peak (measured: it drives Gb to ~110 whether the truth is 100 or 85). Iter 91
+# attacks that at TRAINING time (MealResponseSignal). The prior is the guardrail that keeps
+# calibration from running away while the amplitude axis becomes fittable — the two belong
+# together, and the prior should be re-swept once amplitude is identifiable.
+BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 1.0)
 
 # Iter 81: hard leash on the calibrated embedding norm. Calibration is 512 Adam
 # steps at lr=0.05 with only a 0.003 iso-L2 penalty and (previously) no bound —
