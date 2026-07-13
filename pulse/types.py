@@ -245,13 +245,32 @@ MARKERS = [
 ]
 
 STATE_DIM = len(MARKERS)
-# iter 60: widened 32->64. The 32-dim patient code was the structural
-# ceiling (spec R1 / architecture-roadmap.md #8): glp1/ghrelin (the two
-# >100%-MAPE markers) collapsed to the population mean because the
-# AppetiteModule's 6-dim projection could not encode two independent
-# patient-specific spike manifolds. A 12x glp1 supervision bump (iter 59)
-# moved it +0.0353 — the capacity-not-weight signature.
-EMBEDDING_DIM = 64
+# iter 60: widened 32->64 after glp1/ghrelin collapsed to the population mean. But the REAL
+# fix in that iter was widening the AppetiteModule's PROJECTION (6 -> 16 dims); the shared
+# embedding was widened alongside it, and that half was never needed.
+#
+# Iter 91: back to 32, because the shared embedding is the SIZE OF THE INVERSE PROBLEM.
+# Calibration finds a new person by solving for this vector from their observations. A
+# calibration window supplies ~5 markers x ~10 check-ins ~= 50 numbers. With 64 unknowns the
+# system is UNDERDETERMINED -- infinitely many embeddings explain the same data -- and that is
+# exactly what we measure: the recovered embedding is orthogonal to the truth (cos ~= 0) while
+# fitting the observations, and Gb recovery is worse than predicting the population mean.
+#
+# The extra dimensions buy nothing. Measured (SetpointSupervisionSignal fitting 10 patients'
+# Gb/HR0/SBP0/DBP0 to convergence, module projections unchanged):
+#     EMB_DIM   glucose_mae   hr_mae   sbp_mae   dbp_mae
+#        64        0.006       0.020     0.908     0.274
+#        32        0.013       0.027     0.870     0.285   <-- same fit, half the unknowns
+#        24        0.008       0.029     1.071     0.324
+# So dims 33-64 are free parameters the observations cannot pin down: pure underdetermination
+# with no capacity benefit. This is also what the teacher says -- it generates each patient from
+# TWO latent axes (insulin-resistance, fitness) plus per-parameter noise, so the true patient
+# manifold is low-dimensional.
+#
+# Module capacity is UNCHANGED: the per-module projections (EMBEDDING_DIM -> {gut 16,
+# metabolic 20, appetite 16, stress 12, cardiovascular 16, thermoreg 8, respiratory 8}) keep
+# their widths, so iter-60's actual fix survives intact.
+EMBEDDING_DIM = 32
 TIME_FEATURES_DIM = 3
 EXTERNAL_INPUT_DIM = 2  # sleep_wake, activity
 

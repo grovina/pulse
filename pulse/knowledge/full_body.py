@@ -839,6 +839,10 @@ class FullBody(KnowledgeContribution):
                     "hrv": float(params.HRV0),
                     "sbp": float(params.SBP0),
                     "dbp": float(params.DBP0),
+                    # Iter 91: thermoreg gained a per-patient setpoint head (modules/thermoreg.py),
+                    # so its resting level now has a ground-truth target instead of having to be
+                    # discovered from trajectories. temp is a thin-margin gate marker.
+                    "temp": float(params.T0),
                 },
                 # Iter 91: this patient's TRUE postprandial glucose peak-rise for a standard
                 # meal. Measured on iter-90: the student's per-patient meal gain (Ra) is FROZEN

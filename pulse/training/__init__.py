@@ -35,6 +35,7 @@ from .postprandial_recovery_signal import PostprandialRecoverySignal
 from .default_baseline_signal import DefaultBaselineSignal
 from .setpoint_supervision_signal import SetpointSupervisionSignal
 from .meal_response_signal import MealResponseSignal
+from .embedding_prior_signal import EmbeddingPriorSignal
 from .carb_mass_balance_signal import CarbMassBalanceSignal
 from .cold_model_distillation_signal import ColdModelDistillationSignal
 from .physiology_rules_signal import PhysiologyRulesSignal
@@ -62,6 +63,7 @@ __all__ = [
     "DefaultBaselineSignal",
     "SetpointSupervisionSignal",
     "MealResponseSignal",
+    "EmbeddingPriorSignal",
     "CarbMassBalanceSignal",
     "ColdModelDistillationSignal",
     "PhysiologyRulesSignal",

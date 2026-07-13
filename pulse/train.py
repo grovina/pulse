@@ -105,6 +105,7 @@ from .training import (
     DefaultBaselineSignal,
     SetpointSupervisionSignal,
     MealResponseSignal,
+    EmbeddingPriorSignal,
     DoseResponseSignal,
     FastingStabilitySignal,
     PhysiologyRulesSignal,
@@ -307,6 +308,7 @@ def train(
     default_baseline_weight: float = 0.0,
     setpoint_supervision_weight: float = 0.0,
     meal_response_weight: float = 0.0,
+    embedding_prior_weight: float = 0.0,
     meal_response_sample_patients: int = 4,
     default_baseline_markers: tuple[str, ...] = ("hr",),
     carb_mass_balance_weight: float = 0.0,
@@ -448,6 +450,11 @@ def train(
         for rec in trajectory_signal.dataset
         if not rec.get("is_default") and rec.get("meal_response")
     }
+    # Iter 91: shape the patient codes so the calibration prior is well-specified (see
+    # training/embedding_prior_signal.py). Cheap, on from epoch 0.
+    embedding_prior_signal = EmbeddingPriorSignal(
+        weight=WeightSchedule(embedding_prior_weight, enable_at_epoch=0),
+    )
     meal_response_signal = MealResponseSignal(
         weight=WeightSchedule(meal_response_weight, enable_at_epoch=enable_at),
         n_patients=n_patients,
@@ -494,6 +501,7 @@ def train(
         default_baseline_signal,
         setpoint_supervision_signal,
         meal_response_signal,
+        embedding_prior_signal,
         carb_mass_balance_signal,
         cold_distill_signal,
         physiology_rules_signal,
@@ -932,6 +940,7 @@ def train(
         "default_baseline_weight": default_baseline_weight,
         "setpoint_supervision_weight": setpoint_supervision_weight,
         "meal_response_weight": meal_response_weight,
+        "embedding_prior_weight": embedding_prior_weight,
         "default_baseline_markers": list(default_baseline_markers),
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
@@ -1402,6 +1411,21 @@ def main():
         ),
     )
     parser.add_argument(
+        "--embedding-prior-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Weight for the embedding-prior signal (iter 91): L2 toward the origin on the learned "
+            "patient codes. Calibration solves an UNDERDETERMINED inverse problem (~50 observations "
+            "vs 32 unknowns), so it needs a prior -- but the eval prior is a diagonal Gaussian "
+            "fitted POST-HOC to whatever cloud training left behind (measured on iter-90: "
+            "||prior_mean||=0.26, per-dim scales differing 1.7x). Training the codes to be centred "
+            "and isotropic makes that prior correct BY CONSTRUCTION. Keep it weak: too strong and "
+            "the codes collapse toward the population mean (watch setpoint_supervision's MAE). "
+            "0 disables (default)."
+        ),
+    )
+    parser.add_argument(
         "--meal-response-weight",
         type=float,
         default=0.0,
@@ -1774,6 +1798,7 @@ def main():
         default_baseline_weight=args.default_baseline_weight,
         setpoint_supervision_weight=args.setpoint_supervision_weight,
         meal_response_weight=args.meal_response_weight,
+        embedding_prior_weight=args.embedding_prior_weight,
         meal_response_sample_patients=args.meal_response_sample_patients,
         default_baseline_markers=_split_markers(args.default_baseline_markers),
         carb_mass_balance_weight=args.carb_mass_balance_weight,

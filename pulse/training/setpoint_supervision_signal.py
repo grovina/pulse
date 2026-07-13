@@ -56,6 +56,7 @@ import torch.nn as nn
 
 from ..modules import cardiovascular as _cvs
 from ..modules import metabolic as _met
+from ..modules import thermoreg as _thm
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
@@ -63,6 +64,7 @@ from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 # Markers decoded by the cardiovascular setpoint head, in its state order.
 _CVS_MARKERS = ("hr", "hrv", "sbp", "dbp")
 _GLUCOSE = "glucose"
+_TEMP = "temp"
 
 
 def _z(marker: str, raw: float) -> float:
@@ -109,22 +111,30 @@ class SetpointSupervisionSignal(TrainingSignal):
         pred_cvs_z = _cvs._CVS_BASELINE_MAX_Z * torch.tanh(
             model.cardiovascular.setpoint_net(e_cvs)
         )  # [P, 4]
+        # Iter 91: thermoreg now has a per-patient setpoint head too (it was a bare MLP with no
+        # restoring structure — the same gap CVS had until iter 89).
+        e_thm = model.embedding_projections["thermoreg"](emb)
+        pred_temp_z = _thm._TEMP_SETPOINT_MAX_Z * torch.tanh(
+            model.thermoreg.setpoint_net(e_thm).squeeze(-1)
+        )  # [P]
 
         # --- ground truth (z-units), masked per marker ---
         # Not every contribution simulates a whole patient: only full_body episodes carry
         # all five setpoints, and a partial dict must not KeyError. Build a [P, 5] target
         # and a matching mask, and average over the OBSERVED (patient, marker) pairs only.
-        markers = (_GLUCOSE,) + _CVS_MARKERS
+        markers = (_GLUCOSE,) + _CVS_MARKERS + (_TEMP,)
         tgt_rows: list[list[float]] = []
         mask_rows: list[list[float]] = []
         for p in pids:
             sp = self.targets[p]
             tgt_rows.append([_z(m, sp[m]) if m in sp else 0.0 for m in markers])
             mask_rows.append([1.0 if m in sp else 0.0 for m in markers])
-        tgt_z = torch.tensor(tgt_rows, dtype=torch.float32, device=device)   # [P, 5]
-        mask = torch.tensor(mask_rows, dtype=torch.float32, device=device)   # [P, 5]
+        tgt_z = torch.tensor(tgt_rows, dtype=torch.float32, device=device)   # [P, 6]
+        mask = torch.tensor(mask_rows, dtype=torch.float32, device=device)   # [P, 6]
 
-        pred_z = torch.cat([pred_gb_z.unsqueeze(-1), pred_cvs_z], dim=-1)    # [P, 5]
+        pred_z = torch.cat(
+            [pred_gb_z.unsqueeze(-1), pred_cvs_z, pred_temp_z.unsqueeze(-1)], dim=-1
+        )  # [P, 6]
 
         denom = mask.sum().clamp_min(1.0)
         loss = (mask * (pred_z - tgt_z).pow(2)).sum() / denom
