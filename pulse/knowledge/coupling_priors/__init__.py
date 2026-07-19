@@ -23,16 +23,19 @@ on contributions or training signals required.
 from __future__ import annotations
 
 from ..base import CouplingPrior
+from .cardiovascular import COUPLING_PRIORS as CARDIOVASCULAR_PRIORS
 from .endocrine import COUPLING_PRIORS as ENDOCRINE_PRIORS
 from .metabolism import COUPLING_PRIORS as METABOLISM_PRIORS
 
 ALL_COUPLING_PRIORS: list[CouplingPrior] = [
     *METABOLISM_PRIORS,
     *ENDOCRINE_PRIORS,
+    *CARDIOVASCULAR_PRIORS,
 ]
 
 __all__ = [
     "ALL_COUPLING_PRIORS",
+    "CARDIOVASCULAR_PRIORS",
     "CouplingPrior",
     "ENDOCRINE_PRIORS",
     "METABOLISM_PRIORS",

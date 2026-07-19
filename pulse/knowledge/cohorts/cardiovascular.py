@@ -136,6 +136,21 @@ SLEEP_HR_DIP = CohortStatisticSpec(
 )
 
 
+# ---------------------------------------------------------------------------
+# NOT ADDED: resting HRV (RMSSD) absolute anchor.
+# ---------------------------------------------------------------------------
+# Nunan, Sandercock & Brodie (2010), PACE 33(11):1407-1417 (meta-analysis,
+# n=21,438) gives resting RMSSD mean 42 ms (SD 15). The model's HRV0
+# PARAMETER (population mean ~43 ms) already matches this. But Nunan measures
+# short-term SUPINE resting HRV, whereas a MEAN_IN_WINDOW cohort anchor would
+# score the teacher's realized AWAKE-DAYTIME HRV, which settles at ~26 ms
+# (ambulatory HRV runs below supine-resting, and the teacher's HRV setpoint
+# HRV0*HR0/HR falls as daytime HR rises above HR0). Anchoring daytime HRV to
+# 42 would therefore fight the teacher and conflate two measurement
+# conditions. The literature is already satisfied at the HRV0 level; adding
+# this anchor would be a net regression. (Verified 2026-07-19.)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     POSTPRANDIAL_HR_RISE,
     SLEEP_HR_DIP,
