@@ -104,7 +104,20 @@ BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
 # attacks that at TRAINING time (MealResponseSignal). The prior is the guardrail that keeps
 # calibration from running away while the amplitude axis becomes fittable — the two belong
 # together, and the prior should be re-swept once amplitude is identifiable.
-BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 1.0)
+# Iter 91 follow-up: re-swept, default REVERTED to 0.0. The iter-91 re-enable above was validated
+# ONLY on the recovery test — which samples synthetic people FROM the prior (near the population mean
+# by construction), a metric that structurally rewards a mean-reverting prior. On the ACTUAL gate
+# (trained iter-91 checkpoint, full 512-step calibration, full 26-episode set), prior=0 wins outright:
+#   MAPE @ prior=0 : glucose 0.151  hr 0.125  sbp 0.037  dbp 0.042  temp 0.019  -> ALL PASS (overall 0.077)
+#   shipped iter-91 @ prior=1.0    : hr 0.248 FAIL, overall 0.133
+# Real users span a wide CGM-anchored gradient (glucose 60->118, hr 49->77); the prior just adds
+# mean-reversion bias that clobbers both tails (athlete true HR 49 -> predicted 71 @ w=1.0 vs 61 @ w=0).
+# The ||emb||<=3 clamp (below) already prevents off-manifold runaway, so w=0 is safe. This reproduces
+# iter-62/63's result (0.084 @ w=0) that iter-64 shipped; the iter-91 re-enable used the wrong metric.
+# The prior DOES still help the near-mean synthetic cohort episodes (glucose 0.03->0.15 on 2 teacher
+# cohorts), so an anisotropic prior (weak on identifiable CVS dirs, strong on underdetermined glucose)
+# could get both — but w=0 already passes the gate and lowers real-user bias.
+BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
 
 # Iter 81: hard leash on the calibrated embedding norm. Calibration is 512 Adam
 # steps at lr=0.05 with only a 0.003 iso-L2 penalty and (previously) no bound —
