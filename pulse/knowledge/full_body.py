@@ -8,8 +8,11 @@ generation so the model trains on coherent joint dynamics.
 
 This is training data generation — it can use any model or hand-tuning
 that produces plausible trajectories. The dynamics here come from the
-individual knowledge contributions (Bergman, circadian, baroreflex)
+individual knowledge contributions (Bergman, circadian, autonomic CV)
 wired together into one system.
+
+There is deliberately NO arterial baroreflex term in dHR; see the
+CARDIOVASCULAR block below for the measurements behind that decision.
 
 Sources:
   - Bergman et al. (1979): glucose-insulin minimal model
@@ -645,6 +648,36 @@ def simulate_full_body(
         cort_dev = Cort - params.Cort_b
 
         # --- Cardiovascular ---
+        #
+        # NO ARTERIAL BAROREFLEX TERM (evaluated and rejected 2026-07-20; measured, not
+        # assumed). The obvious addition here is dHR += -k_baro*(SBP - SBP0) with k_baro
+        # ~0.5-1.5 bpm/mmHg from BRS ~15 ms/mmHg (Guyton & Hall 14th ed. ch. 18). It is
+        # wrong at this model's resolution, for four independent reasons:
+        #
+        # 1. TIMESCALE. The baroreflex is a beat-to-beat mechanism (~1-5 s). This is a
+        #    MINUTE-mean Euler sim, so the reflex fully equilibrates inside a single step.
+        #    It is not a dynamic state here -- it is already implicitly folded into the
+        #    effective act_hr_gain / k_hr gains.
+        # 2. NOTHING TO REFLEX AGAINST. The baroreflex exists to buffer pressure
+        #    perturbations (orthostasis, Valsalva, hemorrhage, vasoactive drugs). This sim
+        #    has none of them, and BP process noise is ns*0.5 <= 0.0005 mmHg/min. Measured
+        #    over 40 patients x 24 h: SBP sd is 9.97 mmHg but the ACTIVITY-INDEPENDENT part
+        #    -- the only part a correctly-gated reflex could act on -- has sd 0.40 mmHg in
+        #    steady periods. That is a ~1 bpm HR effect: below the noise floor.
+        # 3. THE RESIDUAL IS A LAG ARTIFACT, AND ACTING ON IT WOULD DO HARM. What
+        #    activity-independent SBP deviation does exist is concentrated entirely at
+        #    exercise transitions, where first-order SBP lags its new equilibrium: peak
+        #    residual -17.7 mmHg at bout onset, +17.7 mmHg at offset. Feeding that to
+        #    -k_baro*resid would ADD ~+18 bpm/min to the exercise HR rise and SUBTRACT
+        #    ~18 bpm/min from recovery -- corrupting dynamics that are currently CORRECT
+        #    (measured HRR1 at maximal intensity = 22.0 bpm, vs Cole 1999 healthy 20-30).
+        # 4. SIGN. Central command RESETS the baroreflex operating point upward during
+        #    exercise, so HR and SBP rise together; realized corr(HR, SBP) in the teacher
+        #    is +0.964. A naive reflex would fight that co-rise rather than model it.
+        #
+        # Consequence for the student: the sbp->hr NEGATIVE coupling prior is likewise NOT
+        # registered (see coupling_priors/cardiovascular.py) -- it would contradict a
+        # trajectory signal whose realized HR-SBP correlation is +0.96.
         circ_hr = _circadian(t_abs, params.hr_circ_amp, peak_hour=14.0)
         sleep_hr_shift = -params.sleep_hr_frac * params.HR0 * sleep_depth
         dHR = (-params.k_hr * (HR - params.HR0 - circ_hr - sleep_hr_shift)
