@@ -27,6 +27,12 @@ demo_data.json
 # Local benchmark / training reports (not source of truth)
 pulse/benchmark.report*.json
 
+# Real-data benchmarks built by scripts/ingest_real_data.py contain personal
+# health data (CGM + Oura HR). Never commit them; keep them outside the repo.
+*.real.json
+benchmark.dataset.real*.json
+pulse/benchmark.dataset.real*.json
+
 # OS
 .DS_Store
 
