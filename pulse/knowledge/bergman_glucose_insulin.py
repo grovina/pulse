@@ -30,11 +30,23 @@ def _randomize_params(rng: np.random.Generator) -> dict:
     # gives a physiological OGTT insulin peak; k_bhb/IC50_keto give the slow BHB
     # clearance the cold model targets). Pure data-gen change; the two generators
     # CONVERGE afterward, no full_body baseline shifted.
+    # Iter 93: same porting discipline, for the lipolysis re-parameterization
+    # (IC50_lip 15 -> 5 with lip_max solved per-patient so basal FFA still lands
+    # on FFA_b) and the steepened fasted insulin setpoint (fast_ins_exp). This
+    # generator has no glycogen pool, so full_body's glycogen-gated fall in the
+    # defended glucose level has nothing to read here and is deliberately NOT
+    # ported — bergman stays a 3-hour postprandial tool, which is the regime it
+    # is actually used for. Its glucagon suppression is also brought onto the
+    # above-basal form iter 91 established in full_body.
+    _Ib = vary(10.0, 0.4)
+    _FFA_b = vary(0.5)
+    _IC50_lip = 5.0
     return {
         "Sg": vary(0.018),
         "Si": vary(0.0004, 0.5),
         "Gb": vary(95.0, 0.15),
-        "Ib": vary(10.0, 0.4),
+        "Ib": _Ib,
+        "fast_ins_exp": 5.0,
         "p2": 0.03,
         "n": vary(0.15),
         "gamma": vary(0.07),
@@ -42,10 +54,10 @@ def _randomize_params(rng: np.random.Generator) -> dict:
         "Gnb": vary(70.0),
         "k_gn": 0.03,
         "alpha_gn": 1.5,
-        "FFA_b": vary(0.5),
-        "lip_max": 0.033,
-        "IC50_lip": 15.0,
-        "k_ffa": 0.04,
+        "FFA_b": _FFA_b,
+        "lip_max": _FFA_b * 0.20 * (1.0 + _Ib / _IC50_lip),
+        "IC50_lip": _IC50_lip,
+        "k_ffa": 0.20,
         "BHB_b": vary(0.1),
         "keto_max": 0.005,
         "IC50_keto": 15.0,
@@ -91,11 +103,11 @@ def _simulate(params: dict, meals: list[tuple], duration_min: int, start_hour: f
         dG = -(params["Sg"] + X) * (G - params["Gb"]) + Ra
         dX = -params["p2"] * X + p3 * max(I - params["Ib"], 0)
         glucose_ratio = min(G / max(params["Gb"], 1.0), 1.0)
-        effective_Ib = params["Ib"] * glucose_ratio
+        effective_Ib = params["Ib"] * glucose_ratio ** params["fast_ins_exp"]
         dI = -params["n"] * (I - effective_Ib) + params["gamma"] * max(G - params["h"], 0)
 
         glucagon_stim = params["alpha_gn"] * max(params["Gb"] - G, 0) / max(params["Gb"], 1)
-        glucagon_supp = 0.5 * I / (params["Ib"] + 10.0)
+        glucagon_supp = 0.5 * max(I - params["Ib"], 0.0) / (params["Ib"] + 10.0)
         dGn = -params["k_gn"] * (Gn - params["Gnb"]) + glucagon_stim - glucagon_supp
 
         lipolysis = params["lip_max"] / (1 + I / params["IC50_lip"])

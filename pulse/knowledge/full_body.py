@@ -94,16 +94,75 @@ class PatientParams:
     gamma: float = 0.07
     h: float = 95.0
 
+    # --- Iter 93: THE FASTED STATE NEVER ENGAGED ---------------------------
+    # Measured over 12 randomized patients, a 48 h fast produced: glucose
+    # 97.4 -> 99.9 mg/dL (literature: 70-80 by 24 h), insulin 16.0 uU/mL at
+    # 24 h (literature 3-5), FFA 0.50 -> 0.44 (literature 2-3x rise). One root
+    # cause, three symptoms: in `dG = -(Sg+X)(G-Gb) + Ra`, Gb is a HARD
+    # ATTRACTOR, so with no meal G cannot fall below it. Insulin's fasted
+    # setpoint keys off `min(G/Gb, 1)`, which therefore never leaves 1.0, so
+    # insulin never falls; and lipolysis is insulin-gated, so FFA never rises.
+    # The iter-21 comment above already INTENDED "insulin can drop below Ib
+    # during a fast" — the trigger simply could not fire.
+    #
+    # The minimal model is a 3-hour tool: over that span Gb genuinely is the
+    # defended level. Over a fast it is not — as hepatic glycogen empties,
+    # gluconeogenesis cannot fully replace glycogenolysis and the defended
+    # level itself falls (Cahill 2006). So Gb becomes glycogen-dependent,
+    # gated on the SAME `glyco_avail` the hepatic-output split and ketogenesis
+    # already read — which makes it exactly the IDENTITY at the fed
+    # calibration state (glyco_avail = 1), so no fed/postprandial behaviour
+    # moves. Confirmed against the user's own CGM: 14/14 overnight episodes
+    # fall, -2.37 mg/dL/h through 23:00-07:00.
+    # Calibrated on the DEFAULT (healthy) patient against five independent
+    # anchors at once — see the iter-93 spec. Population means are NOT used for
+    # this calibration: the population deliberately includes impaired/diabetic
+    # patients, so its mean fasting insulin is not what Polonsky measured.
+    fast_gb_drop: float = 0.55
+    # Prolonged starvation does not extrapolate to zero — glucose plateaus at
+    # ~60-70 mg/dL and holds there for weeks on gluconeogenesis alone (Cahill
+    # 2006). The floor makes that asymptote explicit rather than trusting the
+    # liver pool never to empty. It is slack in every protocol shorter than
+    # ~3 days; it exists so the linear law cannot run somewhere absurd.
+    fast_gb_floor_frac: float = 0.62
+    # Insulin's fall in fasting is far steeper than the glucose fall that
+    # drives it (Polonsky 1988: basal insulin roughly halves while glucose
+    # drops ~15%) because beta-cell secretion is sigmoid in glucose near
+    # threshold. A linear ratio cannot express that; the exponent can.
+    # Identity whenever G >= Gb, so again the fed state is untouched.
+    fast_ins_exp: float = 5.0
+
     # Glucagon
     Gnb: float = 70.0
     k_gn: float = 0.03
     alpha_gn: float = 1.5
 
-    # Free fatty acids
+    # Free fatty acids. Iter 93: FFA was very nearly INERT — measured across a
+    # 48 h fast it moved 0.50 -> 0.44 mmol/L (literature: a 2-3x RISE, Cahill
+    # 2006), and postprandially it fell only -41% against Frayn's -60 to -80%.
+    # Both ends are the same defect: IC50_lip = 15 uU/mL made lipolysis far too
+    # insulin-INSENSITIVE across the physiological insulin range. Adipose
+    # antilipolysis is the most insulin-sensitive action in the body — half-
+    # maximal near 5-10 uU/mL, well below the ~50 uU/mL half-max for glucose
+    # disposal (Nurjhan 1986; Jensen 1989).
+    #
+    # IC50_lip 15 -> 5 with lip_max 0.033 -> 0.06 holds the ANCHORED observable
+    # exactly: basal FFA at I = Ib is (lip_max/(1+Ib/IC50))/k_ffa = 0.5 mmol/L
+    # both before and after. Only the RESPONSE changes — same discipline as
+    # iter 92's CARB_APPEARANCE_GAIN, which held the glucose excursion while
+    # the kernel sharpened.
+    # k_ffa 0.04 -> 0.20 is a SPEED change, not a level change: FFA relaxes to
+    # lip_max/(1+I/IC50)/k_ffa, and lip_max is solved from FFA_b *including*
+    # k_ffa (see randomize_params), so every equilibrium is identical and only
+    # the time constant moves — 25 min -> 5 min. The old tau was the reason
+    # postprandial suppression measured only -41%: FFA never reached the
+    # equilibrium its insulin level implied before insulin came back down.
+    # Plasma FFA turnover is genuinely fast, t1/2 ~2-4 min (Eaton 1969), so
+    # 25 min was never defensible; 5 min is still conservative.
     FFA_b: float = 0.5
-    lip_max: float = 0.033
-    IC50_lip: float = 15.0
-    k_ffa: float = 0.04
+    lip_max: float = 0.30
+    IC50_lip: float = 5.0
+    k_ffa: float = 0.20
 
     # Beta-hydroxybutyrate. Iter 21 recalibration: k_bhb 0.03 -> 0.005
     # (much slower BHB clearance) + IC50_keto 10 -> 15 (less insulin
@@ -121,11 +180,29 @@ class PatientParams:
     # the marker that *actually moves* in fasting, so it gives the slow
     # glycogen pool a strong, observable gradient — what the glucose-side
     # coupling alone could not (glucose is homeostatically defended).
-    keto_glyc_gain: float = 22.0
+    # Iter 93: 22.0 -> 5.0. This gain was set in iter 80 to force the fasting
+    # ketosis ramp at a time when FFA — ketogenesis' actual SUBSTRATE — was
+    # frozen (it moved 0.50 -> 0.44 across a 48 h fast, so the FFA factor in
+    # `ketogenesis` contributed nothing and the glycogen gain had to carry the
+    # whole fuel switch by itself). That was a compensation for a defect, and
+    # with FFA now mobilizing properly it double-counts: BHB at 24 h overshot
+    # to 3.66 mmol/L against Cahill's 0.8-2.2. Retuned so BHB lands 0.55 / 1.32
+    # / 3.51 mmol/L at 12 / 24 / 48 h, and it now rises for the RIGHT reason —
+    # substrate supply — rather than being driven open-loop by the glycogen pool.
+    keto_glyc_gain: float = 5.0
 
-    # Lactate
+    # Lactate. Iter 93: the drive was LINEAR in activity (`act * 0.3`), which
+    # put a *moderate* 0.65 bout at 9.8 mmol/L — near-maximal, anaerobic
+    # territory — against Brooks (1986) / Wasserman's 2-4 mmol/L for moderate
+    # steady state. Blood lactate is not linear in intensity: it stays near
+    # rest until the lactate threshold (~55-65% VO2max), then climbs steeply.
+    # A thresholded quadratic reproduces both anchors — 2.4 mmol/L at act=0.65
+    # and 11.6 at act=1.0 (maximal effort, literature 10-12) — where no linear
+    # gain could satisfy both at once.
     Lac_b: float = 1.0
     k_lac: float = 0.02
+    lac_thresh: float = 0.45     # activity fraction at the lactate threshold
+    lac_act_gain: float = 0.7    # supra-threshold production, quadratic in excess
 
     # Hepatic endogenous glucose output (slow flux into glucose mass balance)
     Hep_b: float = 1.2
@@ -214,6 +291,26 @@ class PatientParams:
     cort_hr: float = 0.3
     cort_hrv: float = 0.2
     cort_bp: float = 0.15
+    # Iter 93: there was NO meal -> cardiovascular coupling at all. Measured,
+    # a 75 g mixed meal and a fasted arm produced BIT-IDENTICAL HR, HRV, SBP
+    # and DBP trajectories (max delta 0.0000 over 5 h) against a literature
+    # postprandial HR rise of +5 to +10 bpm peaking at 30-60 min (Brunzell
+    # 1971; Kearney 1995; Marfella 2000 — the same sources the cohort
+    # statistic `postprandial_hr_rise` already cites, and which the teacher
+    # was failing at z = -2.33). The mechanism is meal-induced sympathetic
+    # activation plus splanchnic vasodilation, so it is driven by NUTRIENT
+    # APPEARANCE (ra_norm), which times it to absorption rather than to the
+    # meal clock. HRV needs no term of its own: it already tracks HR
+    # inversely through `HRV0 * HR0 / HR`, so postprandial HRV suppression
+    # falls out of the coupling that is already there (see the registered
+    # hr -> hrv inverse prior, d8735a6).
+    #
+    # BP deliberately gets NO term. Postprandial BP in healthy adults is
+    # roughly flat — splanchnic pooling offsets the cardiac-output rise
+    # (postprandial HYPOtension is an autonomic-failure/elderly phenomenon,
+    # not the healthy default), so adding one would assert an effect the
+    # literature does not support at this population's age.
+    meal_hr_gain: float = 4.0
 
     # Thermal
     T0: float = 37.0
@@ -341,8 +438,24 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.gamma = vary(p.gamma)
     p.Gnb = vary(p.Gnb)
     p.FFA_b = vary(p.FFA_b, ir=0.35)          # impaired lipolysis suppression
+    # Iter 93: make FFA_b the level the patient actually DEFENDS. FFA relaxes to
+    # lipolysis/k_ffa, so with a global lip_max every patient converged to the
+    # same ~0.5 mmol/L and FFA_b only set a transient initial condition — the
+    # per-patient spread was decorative. Solving lip_max for FFA_b at basal
+    # insulin makes fasting FFA equal FFA_b exactly, per patient, and restores
+    # the physiological IR direction (FFA_b loads +0.35 on z_ir; without this,
+    # sharpening IC50_lip would have made insulin-resistant patients converge to
+    # LOWER FFA, the wrong sign — Boden 1997).
+    p.lip_max = p.FFA_b * p.k_ffa * (1.0 + p.Ib / p.IC50_lip)
     p.BHB_b = vary(p.BHB_b)
     p.Lac_b = vary(p.Lac_b)
+    # Fitter patients cross the lactate threshold later and clear lactate faster.
+    p.lac_thresh = float(np.clip(vary(p.lac_thresh, 0.12, fit=0.45), 0.30, 0.65))
+    p.lac_act_gain = vary(p.lac_act_gain, 0.2, fit=-0.30)
+    # How far the defended glucose level falls once the liver empties.
+    # Clip brackets the calibrated 0.55 default (see PatientParams); an
+    # insulin-resistant liver defends its glucose harder, hence ir=-0.30.
+    p.fast_gb_drop = float(np.clip(vary(p.fast_gb_drop, 0.25, ir=-0.30), 0.25, 0.90))
     p.Hep_b = float(np.clip(vary(p.Hep_b, 0.3), 0.4, 3.5))
     p.k_hep = float(np.clip(vary(p.k_hep, 0.35), 0.02, 0.09))
     p.cort_hep = float(np.clip(vary(p.cort_hep, 0.35), 0.02, 0.12))
@@ -379,6 +492,7 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.sleep_bp_frac = float(np.clip(vary(p.sleep_bp_frac, 0.2), 0.06, 0.20))
     p.sleep_rr_drop = float(np.clip(vary(p.sleep_rr_drop, 0.2), 1.5, 5.0))
     p.act_hr_gain = vary(p.act_hr_gain, 0.15)
+    p.meal_hr_gain = vary(p.meal_hr_gain, 0.25)
     p.act_insulin_sens = float(np.clip(vary(p.act_insulin_sens, 0.3, fit=0.35), 0.1, 0.6))
     p.rr_lactate_gain = vary(p.rr_lactate_gain, 0.2)
     p.RR0 = vary(p.RR0, 0.15, fit=-0.20)
@@ -394,7 +508,25 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.MGly_b = float(np.clip(vary(p.MGly_b, 0.15, fit=0.50), 300.0, 520.0))
     p.LGly_max = p.LGly_b + 10.0
     p.MGly_max = p.MGly_b + 50.0
-    return p
+    return resolve_derived_params(p)
+
+
+def resolve_derived_params(params: PatientParams) -> PatientParams:
+    """Recompute parameters that are DERIVED from other parameters.
+
+    Iter 93: ``lip_max`` is not free — it is solved so that FFA's equilibrium at
+    basal insulin lands exactly on ``FFA_b`` (see randomize_params). Anything
+    that mutates ``FFA_b``, ``Ib``, ``IC50_lip`` or ``k_ffa`` after the fact
+    must call this, or the patient silently defends an FFA level nobody asked
+    for. ``synthetic_users`` does exactly that — its ``insulin_resistant``
+    profile overrides FFA_b 0.7 AND Ib 18 post-randomization, which without
+    this would have left it defending a much LOWER FFA than the profile
+    declares, i.e. the opposite of the phenotype it exists to represent.
+
+    Idempotent, so it is safe to call more than once.
+    """
+    params.lip_max = params.FFA_b * params.k_ffa * (1.0 + params.Ib / params.IC50_lip)
+    return params
 
 
 def generate_meal_plan(
@@ -542,10 +674,39 @@ def simulate_full_body(
         p3 = si_effective * params.p2
         incretin_factor = 1 + GLP1 / (GLP1 + params.K_incretin)
 
-        dG = -(params.Sg + X) * (G - params.Gb) + Ra
+        # Iter 93: hoisted above the glucose ODE (it used to be computed with the
+        # hepatic split, further down) so the DEFENDED GLUCOSE LEVEL can read it.
+        # Depends only on LGly, which is a state carried in from the previous
+        # step, so hoisting changes no value — only availability.
+        phi_L = LGly / (LGly + params.glyc_K_L)
+        phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
+        glyco_avail = min(phi_L / phi_L0, 1.0)
+
+        # Iter 93: the defended level falls as hepatic glycogen empties (see
+        # fast_gb_drop). Zero at the fed calibration state (LGly = LGly_b), so
+        # this is the IDENTITY there and the entire fed/postprandial regime —
+        # the regime the gate and the dose-response signals score — is
+        # unchanged.
+        #
+        # Keyed to LINEAR pool depletion, NOT to `glyco_avail`. glyco_avail is
+        # a saturating Michaelis ratio built to describe how much glycogen the
+        # liver can still RELEASE, and it stays near 1 while the pool halves
+        # (measured: LGly 100 -> 43.5 over 24 h moves glyco_avail only
+        # 1.00 -> 0.75). Reusing it here would have been convenient and wrong:
+        # what the defended level tracks is how much of the pool is GONE.
+        glyco_depleted = max(0.0, 1.0 - LGly / max(params.LGly_b, 1e-6))
+        Gb_fasted = max(
+            params.Gb * (1.0 - params.fast_gb_drop * glyco_depleted),
+            params.Gb * params.fast_gb_floor_frac,
+        )
+
+        dG = -(params.Sg + X) * (G - Gb_fasted) + Ra
         dX = -params.p2 * X + p3 * max(I - params.Ib, 0)
+        # NB: the ratio stays referenced to the FED Gb, not Gb_fasted — it is
+        # what senses the fall. Referencing it to the falling level would
+        # cancel exactly the signal it exists to carry.
         glucose_ratio = min(G / max(params.Gb, 1.0), 1.0)
-        effective_Ib = params.Ib * glucose_ratio
+        effective_Ib = params.Ib * glucose_ratio ** params.fast_ins_exp
         dI = -params.n * (I - effective_Ib) + params.gamma * max(G - params.h, 0) * incretin_factor
         dG += params.hep_to_glucose * Hep + params.cort_gluco * max(Cort - params.Cort_b, 0)
         dG -= act * 0.02 * max(G - params.Gb * 0.8, 0)
@@ -574,9 +735,6 @@ def simulate_full_body(
         # state (LGly = LGly_b) and falls toward 0 as the liver depletes, so
         # this partition is the IDENTITY until the pool empties (conservation-
         # exact) and only then bends hepatic output downward.
-        phi_L = LGly / (LGly + params.glyc_K_L)
-        phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
-        glyco_avail = min(phi_L / phi_L0, 1.0)
         hep_glyco = params.hep_glyco_frac * hep_target * glyco_avail
         hep_gng = (
             (1.0 - params.hep_glyco_frac) * hep_target
@@ -597,7 +755,9 @@ def simulate_full_body(
         )
         dBHB = ketogenesis - params.k_bhb * BHB
 
-        dLac = -params.k_lac * (Lac - params.Lac_b) + act * 0.3
+        # Iter 93: thresholded, not linear — see lac_thresh / lac_act_gain.
+        lac_supra = max(act - params.lac_thresh, 0.0)
+        dLac = -params.k_lac * (Lac - params.Lac_b) + params.lac_act_gain * lac_supra ** 2
 
         # --- Glycogen pools (iter 76) ---
         # Flux integrators, not setpoints. Synthesis is gated on gut carb
@@ -743,7 +903,8 @@ def simulate_full_body(
         sleep_hr_shift = -params.sleep_hr_frac * params.HR0 * sleep_depth
         dHR = (-params.k_hr * (HR - params.HR0 - circ_hr - sleep_hr_shift)
                 + params.cort_hr * cort_dev
-                + params.act_hr_gain * act)
+                + params.act_hr_gain * act
+                + params.meal_hr_gain * ra_norm)
         hrv_sleep_mult = 1.0 + (params.sleep_hrv_gain - 1.0) * sleep_depth
         dHRV = (-params.k_hrv * (HRV - params.HRV0 * params.HR0 / max(HR, 40) * hrv_sleep_mult)
                  - params.cort_hrv * max(cort_dev, 0))

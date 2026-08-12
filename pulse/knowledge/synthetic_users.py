@@ -15,7 +15,7 @@ from ..types import STATE_DIM, MARKER_INDEX, MARKER_IDS
 from ..benchmark import MeasurementPoint
 from ..modules.gut import MealEvent
 from .full_body import (
-    PatientParams, randomize_params, generate_meal_plan,
+    PatientParams, randomize_params, resolve_derived_params, generate_meal_plan,
     generate_sleep_wake, generate_activity, simulate_full_body,
 )
 
@@ -206,6 +206,8 @@ def generate_synthetic_users(
 
         for attr, val in profile.param_overrides.items():
             setattr(params, attr, val)
+        # Overrides can touch FFA_b / Ib, which lip_max is solved from.
+        resolve_derived_params(params)
 
         start_hour = 6.0
         duration_min = n_days * 1440

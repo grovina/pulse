@@ -311,11 +311,27 @@ LACTATE_EXERCISE_RISE = CohortStatisticSpec(
 MUSCLE_GLYCOGEN_EXERCISE_DEPLETION = CohortStatisticSpec(
     name="muscle_glycogen_exercise_depletion",
     source="Bergstrom & Hultman (1967) — muscle glycogen and exercise",
-    description="Muscle glycogen -25 g post moderate bout vs rest",
+    description="Muscle glycogen -150 g post moderate 2 h bout vs rest",
     arms=_EX_ARMS, marker_id="muscle_glycogen", kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=150, end_min=360),
-    target=-25.0, sigma=30.0, weight=3.0, init_mode=InitMode.NORM_CENTER,
+    target=-150.0, sigma=60.0, weight=3.0, init_mode=InitMode.NORM_CENTER,
 )
+# Iter 93 — the -25 above was NOT a literature value. It was picked as a small
+# "signed anchor" out of deference to the student's deliberately slow muscle
+# head, and it made this ruler state something false: Bergstrom & Hultman
+# measured ~40-50% depletion of a ~400 unit pool over a 2 h moderate bout, and
+# the teacher (which the same student is distilled against) realizes -156. So
+# the two supervision sources were demanding -25 and -156 for the identical
+# protocol. Target now states the literature; sigma widened to match how
+# loosely it is known. Weight deliberately UNCHANGED.
+#
+# MEASURED, so the next iteration does not have to rediscover it: the student
+# realizes exactly -0.0 here — the pathway is not weakly expressed, it is DEAD,
+# and it was equally dead against the old -25 target, so this change cannot be
+# blamed if it stays dead. The cause is upstream of any target: the muscle head's
+# cons_scale gives tau ~3 weeks BY DESIGN (see the note above), which cannot
+# express an hours-scale depletion that is real physiology. If this still reads
+# -0.0 after iter 93, fix the HEAD's timescale — do not re-falsify the target.
 
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
