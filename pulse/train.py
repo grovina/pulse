@@ -567,7 +567,15 @@ def train(
     )
     print(
         f"Cold-model distillation: weight={cold_distill_weight} pool={cold_distill_pool} mode={cold_distill_mode}"
-        f"{f'(W={cold_distill_anchor_window})' if cold_distill_mode == 'anchored' else ''} "
+        # Iter 94: print the anchor settings that decide WHAT this signal can see, not
+        # just the short window. The local-scale floor and the long windows are the
+        # whole point of the iter-94 change and were previously unverifiable from the
+        # logs — the only other record is the checkpoint, which does not exist until
+        # the run is over.
+        f"{f'(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}'
+           f' long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}'
+           f' local_scale_floor={cold_distill_anchor_local_scale_floor})'
+           if cold_distill_mode == 'anchored' else ''} "
         f"markers={tuple(cold_distill_markers)} "
         f"protocols/epoch={cold_distill_protocols_per_epoch}/{len(cold_distill_signal._protocols)} "
         f"(zero-embedding trajectory MSE vs simulate_full_body on a broad "
