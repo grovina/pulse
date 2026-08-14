@@ -433,6 +433,20 @@ class ColdModelDistillationSignal(TrainingSignal):
     # windows are evenly spaced across the protocol (deterministic, low-
     # variance), so 8 over a 24 h day samples morning / each meal / overnight.
     anchor_samples: int = 8
+    # Iter 94, mode="anchored": normalize the level residual by the reference's OWN
+    # peak-to-peak range inside each window, floored at this fraction of NORM_SCALE,
+    # instead of by NORM_SCALE itself. 0.0 keeps the pre-iter-94 global-scale
+    # behaviour. The floor caps the amplification at 1/floor_frac (0.05 -> 20x), which
+    # is roughly the attenuation measured for the slow states, and keeps a window
+    # where the teacher is genuinely flat from amplifying float noise. See
+    # `_level_terms` for the measurement that motivates it.
+    anchor_local_scale_floor: float = 0.0
+    # Iter 94, mode="anchored": a second, much longer set of reset-to-truth windows,
+    # so a slow arc is scored as an arc rather than as N independent local slopes.
+    # 0 disables (pre-iter-94 behaviour). Keep `anchor_long_samples` small — each
+    # long window retains ~W steps of graph until backward.
+    anchor_long_window: int = 0
+    anchor_long_samples: int = 0
     # Embedding calibration (mirrors pulse.benchmark.calibrate_embedding).
     obs_markers: Sequence[str] = field(
         default_factory=lambda: ("glucose", "hr", "sbp", "dbp", "temp"),
@@ -496,16 +510,20 @@ class ColdModelDistillationSignal(TrainingSignal):
     def _build_bench_cohort_protocols(self) -> list[_Protocol]:
         """The exact cohort episodes the bench scores unobserved markers on.
 
-        Pulled from ``benchmark_extras.all_cohort_benchmark_episodes()`` (the
-        public entry the gate uses), so the schedules + observation check-ins
-        track the bench by construction. The cold reference is re-run clean
-        (``noise_scale=0``) — the bench's own targets carry 1e-3 noise, which
-        is negligible against the marker scales.
+        Pulled from ``benchmark_extras.distillation_pool_episodes()``, so the
+        schedules + observation check-ins track the bench by construction. The cold
+        reference is re-run clean (``noise_scale=0``) — the bench's own targets carry
+        1e-3 noise, which is negligible against the marker scales.
+
+        Iter 94: this reads the DISTILLATION pool, not the full gate set. Training on
+        an episode the gate scores makes that episode's score meaningless, and the
+        iter-94 `teacher_dynamic` episodes exist precisely to test unfitted meal
+        prediction. See ``distillation_pool_episodes`` for the split.
         """
-        from ..knowledge.benchmark_extras import all_cohort_benchmark_episodes
+        from ..knowledge.benchmark_extras import distillation_pool_episodes
 
         out: list[_Protocol] = []
-        for ep in all_cohort_benchmark_episodes():
+        for ep in distillation_pool_episodes():
             dur = int(ep.duration_min)
             start_hour = float(ep.start_time_minutes if ep.start_time_minutes is not None else 360.0) / 60.0
             meals_4t = [
@@ -837,9 +855,33 @@ class ColdModelDistillationSignal(TrainingSignal):
         states but all are retained until the signal's single backward(), so
         capping the count (vs tiling all of [0, T)) keeps peak memory bounded
         (~samples×W steps).
+
+        Iter 94 changes two things about this term; both are diagnosed in
+        docs/iter94-proposal.md section 0.2.
+
+        **Local scaling (``anchor_local_scale_floor``).** The residual used to be
+        normalized by the marker's GLOBAL ``NORM_SCALE`` — a scale sized to its full
+        physiological range, which meal and exercise excursions dominate. A slow state
+        moves a tiny fraction of that inside 60 minutes, so its gradient was attenuated
+        by that ratio for the same *relative* error. Measured on the shipped teacher: a
+        perfectly flat predictor pays 0.00055 on the fasting protocol against 1.505 on
+        the 3-meal protocol for glucose, and 0.00129 against 3.917 for insulin — about
+        1:3000. That is why iter 93's fasted-state teacher fix never reached the
+        student while its circadian work (large within-window motion) transferred
+        intact. Normalizing by what the teacher ACTUALLY does in this window makes a
+        50 % relative error on liver glycogen cost about what a 50 % relative error on
+        insulin costs. The floor (a fraction of NORM_SCALE) bounds the amplification
+        and stops genuinely-flat windows from amplifying numerical noise; the divisor
+        comes from the reference, which carries no gradient, so this reweights the loss
+        without adding a path for the model to game it.
+
+        **Long windows (``anchor_long_window``).** 60 minutes bounds the integration
+        chain, but it also means a slow arc is never scored as an arc — only as ~60
+        independent local slopes, each of which a flat predictor gets nearly right.
+        A few much longer windows score the integrated trajectory. They are expensive
+        (the graph is retained until backward), so they are few and opt-in.
         """
         T = int(proto.reference.shape[0])
-        W = max(2, int(self.anchor_window))
         if T < 2:
             return {}
         scale = torch.tensor(NORM_SCALE, dtype=torch.float32, device=device)
@@ -848,40 +890,60 @@ class ColdModelDistillationSignal(TrainingSignal):
         sw_all = torch.tensor(proto.sleep_wake, dtype=torch.float32, device=device)
         act_all = torch.tensor(proto.activity, dtype=torch.float32, device=device)
         start_min = proto.start_hour * 60.0
-        # Evenly-spaced window starts over [0, T-W], capped at anchor_samples.
-        last_start = max(0, T - W)
-        n = max(1, min(int(self.anchor_samples), last_start // W + 1))
-        if n == 1:
-            starts = [0]
-        else:
-            starts = sorted({(last_start * k) // (n - 1) for k in range(n)})
+
+        def _starts(W: int, n_max: int) -> list[int]:
+            """Evenly-spaced window starts over [0, T-W], capped at n_max."""
+            last_start = max(0, T - W)
+            n = max(1, min(int(n_max), last_start // W + 1))
+            if n == 1:
+                return [0]
+            return sorted({(last_start * k) // (n - 1) for k in range(n)})
+
+        # (window_length, starts) pairs. The long pass is skipped when unconfigured,
+        # which reproduces the iter-75..93 behaviour exactly.
+        passes: list[tuple[int, list[int]]] = []
+        W_short = max(2, int(self.anchor_window))
+        passes.append((W_short, _starts(W_short, self.anchor_samples)))
+        if self.anchor_long_window > W_short and self.anchor_long_samples > 0:
+            W_long = min(int(self.anchor_long_window), T)
+            passes.append((W_long, _starts(W_long, self.anchor_long_samples)))
+
+        floor_frac = float(self.anchor_local_scale_floor)
         per_marker: dict[str, list[torch.Tensor]] = {m: [] for m, _ in self._marker_idx}
-        for t0 in starts:
-            w = min(W, T - t0)
-            if w < 2:
-                continue
-            # Roll out freely from the cold state at t0. gut_outputs carries the
-            # cold ODE's absorption so the rollout sees the same meal coupling
-            # the reference did (meals=[] — the gut appearance is already in
-            # gut_outputs; the unobserved markers couple to meals only through
-            # it). integrate returns out[0]=initial, out[k]≈ref[t0+k].
-            pred = integrate(
-                model, ref_all[t0], emb, w, dt=1.0,
-                start_time_minutes=start_min + t0, meals=[],
-                sleep_wake=sw_all[t0:t0 + w], activity=act_all[t0:t0 + w],
-                gut_outputs=absorp[t0:t0 + w],
-            )
-            if not torch.isfinite(pred).all():
-                self._n_anchor_skips += 1
-                continue
-            seg = ref_all[t0:t0 + w]
-            L = min(pred.shape[0], seg.shape[0])
-            for marker, midx in self._marker_idx:
-                pred_n = pred[:L, midx] / scale[midx]
-                ref_n = seg[:L, midx] / scale[midx]
-                per_marker[marker].append(
-                    F.huber_loss(pred_n, ref_n, delta=_HUBER_DELTA, reduction="mean")
+        for W, starts in passes:
+            for t0 in starts:
+                w = min(W, T - t0)
+                if w < 2:
+                    continue
+                # Roll out freely from the cold state at t0. gut_outputs carries the
+                # cold ODE's absorption so the rollout sees the same meal coupling
+                # the reference did (meals=[] — the gut appearance is already in
+                # gut_outputs; the unobserved markers couple to meals only through
+                # it). integrate returns out[0]=initial, out[k]≈ref[t0+k].
+                pred = integrate(
+                    model, ref_all[t0], emb, w, dt=1.0,
+                    start_time_minutes=start_min + t0, meals=[],
+                    sleep_wake=sw_all[t0:t0 + w], activity=act_all[t0:t0 + w],
+                    gut_outputs=absorp[t0:t0 + w],
                 )
+                if not torch.isfinite(pred).all():
+                    self._n_anchor_skips += 1
+                    continue
+                seg = ref_all[t0:t0 + w]
+                L = min(pred.shape[0], seg.shape[0])
+                for marker, midx in self._marker_idx:
+                    ref_w = seg[:L, midx]
+                    if floor_frac > 0.0:
+                        # What this marker actually does in THIS window, floored.
+                        local = ref_w.max() - ref_w.min()
+                        denom = torch.clamp(local, min=floor_frac * scale[midx])
+                    else:
+                        denom = scale[midx]
+                    resid = (pred[:L, midx] - ref_w) / denom
+                    per_marker[marker].append(
+                        F.huber_loss(resid, torch.zeros_like(resid),
+                                     delta=_HUBER_DELTA, reduction="mean")
+                    )
         return {m: torch.stack(v).mean() for m, v in per_marker.items() if v}
 
     # -- main signal ----------------------------------------------------------

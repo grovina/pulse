@@ -35,7 +35,7 @@ from .cohorts.sleep import (
     SLEEP_COHORT_48H_START_HOUR,
     sleep_two_nights_adequate,
 )
-from .full_body import PatientParams, simulate_full_body
+from .full_body import PatientParams, randomize_params, simulate_full_body
 from ..benchmark import BenchmarkEpisode, MeasurementPoint
 from ..modules.gut import MealEvent
 from ..types import MARKER_INDEX
@@ -229,6 +229,106 @@ def cohort_meal_postprandial_benchmark_episodes() -> list[BenchmarkEpisode]:
     return _meal_episodes_cache
 
 
+_dynamic_episodes_cache: list[BenchmarkEpisode] | None = None
+
+# Iter 94 — episodes whose SCORED window actually contains a meal.
+#
+# The ruler audit (scripts/iter94_ruler_audit.py, docs/iter94-proposal.md §0.6)
+# found that on the 24 exported check-in episodes all 72 meals fall inside the
+# CALIBRATION window and not one lands in the eval window, so the scored 3 hours
+# are always quiescent: ground-truth within-episode sd is ~1 mg/dL glucose and
+# 0.035 °C temp, and carrying the last reading forward beats every gate threshold
+# by 11-50x. Every postprandial iteration since that dataset was exported has been
+# graded almost entirely on flat windows.
+#
+# These episodes fix that directly: calibration ends at t=360, the eval window is
+# t=390..690, and a meal lands at t=450 — inside it. They deliberately score only
+# the five markers a real user measures, so they land in the SAME gate metrics as
+# the real episodes rather than in a separate diagnostic bucket. Meal size and
+# patient vary so the set is not one protocol repeated.
+_DYNAMIC_CAL_END = 360
+_DYNAMIC_EVAL_TIMES: tuple[int, ...] = tuple(range(390, 691, 30))
+# 8 arms, not 4: per-marker statistics here are per-EPISODE MAPEs (one per episode,
+# not one per eval point), so the arm count IS the sample size behind the skill
+# threshold. Four was too thin to gate on.
+_DYNAMIC_ARMS: tuple[tuple[str, float, tuple[tuple[float, float, float, float], ...]], ...] = (
+    # label, start_hour, meals ((t, carbs, fats, proteins), ...)
+    ("small-carb", 7.0, ((60.0, 40.0, 10.0, 15.0), (450.0, 40.0, 10.0, 15.0))),
+    ("large-carb", 7.0, ((60.0, 60.0, 15.0, 20.0), (450.0, 100.0, 20.0, 25.0))),
+    ("high-fat", 8.0, ((60.0, 50.0, 15.0, 20.0), (450.0, 30.0, 55.0, 30.0))),
+    ("late-start", 11.0, ((60.0, 55.0, 12.0, 22.0), (450.0, 70.0, 18.0, 28.0))),
+    ("protein-rich", 7.5, ((60.0, 45.0, 12.0, 18.0), (450.0, 35.0, 15.0, 55.0))),
+    ("pure-glucose", 9.0, ((60.0, 50.0, 12.0, 18.0), (450.0, 75.0, 0.0, 0.0))),
+    ("grazing", 7.0, ((60.0, 50.0, 12.0, 18.0), (420.0, 30.0, 8.0, 10.0),
+                      (540.0, 30.0, 8.0, 10.0), (660.0, 30.0, 8.0, 10.0))),
+    ("early-start", 5.5, ((60.0, 65.0, 18.0, 24.0), (450.0, 55.0, 14.0, 20.0))),
+)
+
+
+def cohort_meal_in_eval_window_episodes() -> list[BenchmarkEpisode]:
+    """Teacher episodes that score a meal response instead of a flat window."""
+    global _dynamic_episodes_cache
+    if _dynamic_episodes_cache is not None:
+        return _dynamic_episodes_cache
+
+    duration_min = 720
+    measured = ("glucose", "hr", "sbp", "dbp", "temp")
+    out: list[BenchmarkEpisode] = []
+    for k, (label, start_hour, meals) in enumerate(_DYNAMIC_ARMS):
+        rng = np.random.default_rng(940_000 + k)
+        # Vary the patient across arms so the set is not one body repeated; seeded,
+        # so the ruler is reproducible episode-for-episode.
+        params = PatientParams() if k == 0 else randomize_params(
+            np.random.default_rng(94_100 + k))
+        sw = np.ones(duration_min, dtype=np.float32)          # awake throughout
+        activity = np.full(duration_min, 0.05, dtype=np.float32)
+        traj, _abs = simulate_full_body(
+            params, list(meals), sw, activity,
+            duration_min, start_hour, noise_scale=0.001, rng=rng,
+        )
+        cal = [
+            {
+                "time": t,
+                "measurements": {m: float(traj[t, MARKER_INDEX[m]]) for m in measured},
+            }
+            for t in range(30, _DYNAMIC_CAL_END + 1, 30)
+        ]
+        out.append(BenchmarkEpisode(
+            user_id=f"benchmark-dynamic-{label}",
+            duration_min=duration_min,
+            initial_state=traj[0].astype(np.float32),
+            meals=[MealEvent(time=float(t), carbs=float(c), fats=float(f),
+                             proteins=float(p)) for t, c, f, p in meals],
+            calibration_check_ins=cal,
+            eval_measurements=_eval_block(traj, _DYNAMIC_EVAL_TIMES, measured),
+            start_time_minutes=start_hour * 60.0,
+            sleep_wake=sw,
+            activity=activity,
+            source="teacher_dynamic",
+        ))
+    _dynamic_episodes_cache = out
+    return _dynamic_episodes_cache
+
+
+def distillation_pool_episodes() -> list[BenchmarkEpisode]:
+    """Cohort episodes the distillation signal may TRAIN on.
+
+    Deliberately NOT the same set as `all_cohort_benchmark_episodes`. The
+    cold-model distillation's ``pool="bench_cohorts"`` turns these episodes into
+    training protocols, so anything in here is trained on as well as scored — the
+    circularity the sleep/meal episodes already carry knowingly.
+
+    The iter-94 `teacher_dynamic` episodes exist to measure whether the model can
+    predict a meal response it has not been fitted to, so putting them in the
+    training pool would answer that question with the answer written on the back.
+    They are excluded here and appear only in the gate.
+    """
+    return (
+        cohort_sleep_48h_benchmark_episodes()
+        + cohort_meal_postprandial_benchmark_episodes()
+    )
+
+
 def all_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
     """All cohort episodes injected into the bench gate at runtime."""
-    return cohort_sleep_48h_benchmark_episodes() + cohort_meal_postprandial_benchmark_episodes()
+    return distillation_pool_episodes() + cohort_meal_in_eval_window_episodes()

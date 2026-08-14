@@ -282,6 +282,17 @@ class PatientParams:
     # Cardiovascular
     HR0: float = 70.0
     k_hr: float = 0.3
+    # Iter 94 considered lowering this 5.0 -> 3.5 and REVERTED it. Recorded because the
+    # reasoning is the trap, not the number: no cohort statistic constrains this term
+    # (it cancels in `sleep_hr_dip`, whose arms share a clock window), so the only
+    # justification available was a whole-day sleep-vs-wake contrast — which is not an
+    # encoded, cited quantity at all. Measured properly, the change also does not do
+    # what it was invoked for: whole-day contrast is 26.7 % at 5.0 and 24.6 % at 3.5,
+    # both ABOVE the 10-20 % ambulatory band, so 3.5 bought nothing. (And the protocol
+    # matters in the opposite direction to the intuition: adding realistic daytime
+    # activity WIDENS the contrast, 24.1 % -> 26.7 %, because it lifts the daytime mean.)
+    # The whole-day HR contrast running ~25 % is a real open discrepancy — see
+    # docs/iter94-spec.md; it needs a cited contribution, not a tuned constant.
     hr_circ_amp: float = 5.0
     HRV0: float = 40.0
     k_hrv: float = 0.1
@@ -315,14 +326,39 @@ class PatientParams:
     # Thermal
     T0: float = 37.0
     k_temp: float = 0.025
-    temp_circ_amp: float = 0.45
+    # Iter 94: 0.45 -> 0.25. `circ_temp` is amp*cos, so peak-to-trough is 2*amp and
+    # the sleep drop lands on top of it; 0.45 + 0.15 gave a 1.04 °C daily swing vs
+    # the 0.5-0.8 °C of Czeisler (1999) / Refinetti & Menaker (1992), and
+    # temp_circadian_nadir realized -1.02 against its -0.5 +/- 0.3 target.
+    # Measured after the change: nadir -0.60 (z=-0.34), daily swing 0.61 °C.
+    temp_circ_amp: float = 0.25
     temp_exercise_gain: float = 0.8
     temp_dit_gain: float = 0.0008
-    sleep_temp_drop: float = 0.15
+    sleep_temp_drop: float = 0.12
 
     # Sleep modulation
-    sleep_hr_frac: float = 0.15
-    sleep_hrv_gain: float = 1.3
+    # Iter 94: sleep_hr_frac 0.15 -> 0.06 and sleep_hrv_gain 1.3 -> 1.08. Measured on
+    # the cohort arms these two are scored against (same clock window, awake vs
+    # asleep, so the circadian term cancels), the teacher gave sleep_hr_dip -20.3
+    # against -8 +/- 4 and hrv_sleep_rise +42.8 against +12 +/- 7.5. They interact:
+    # HRV relaxes to HRV0*HR0/HR*gain, so shrinking the HR dip shrinks the HRV rise
+    # through the inverse-coupling channel before `gain` is touched at all — which is
+    # why `gain` moves much further than a naive ratio would suggest. Landing values
+    # (N=12 randomized): sleep_hr_dip -11.9 (z=-0.99), hrv_sleep_rise +19.4 (z=+0.99).
+    #
+    # WHAT THIS NUMBER IS NOT. Setting sleep_hr_frac=0 still leaves a -6.9 bpm dip, so
+    # only ~38 % of the realized sleep bradycardia is produced by this term; the rest
+    # comes through sleep's suppression of cortisol and thence `cort_hr`. Both channels
+    # are real physiology and NOTHING WE HAVE ENCODED DETERMINES THE SPLIT — lowering
+    # `cort_hr` instead would satisfy the same target equally well. So 0.06 fixes the
+    # TOTAL, which is the only thing the literature here constrains, and should not be
+    # read as "the sleep bradycardia is 6 % of HR0". Separating the channels needs a
+    # contribution that isolates them (a beta-blockade or cortisol-suppression arm),
+    # not a further tuning pass. Recorded as open in docs/iter94-spec.md.
+    #
+    # sleep_bp_frac deliberately NOT changed — see sbp_sleep_dip in cohorts/breadth_floor.py.
+    sleep_hr_frac: float = 0.06
+    sleep_hrv_gain: float = 1.08
     sleep_bp_frac: float = 0.12
     sleep_rr_drop: float = 3.0
 
@@ -484,11 +520,23 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.SBP0 = vary(p.SBP0, 0.14, ir=0.40, fit=-0.30)
     p.DBP0 = vary(p.DBP0, 0.15, ir=0.40, fit=-0.30)
     p.T0 = p.T0 + rng.normal(0, 0.2)
-    p.temp_circ_amp = float(np.clip(vary(p.temp_circ_amp, 0.15), 0.3, 0.55))
+    # Iter 94: these four clip ranges moved WITH their defaults. Three of them
+    # (temp_circ_amp, sleep_hr_frac, sleep_hrv_gain) would otherwise have clipped
+    # every patient back UP to the old range and no patient would have received the
+    # recalibrated value — the exact self-inflicted bug iter 93 caught. Ranges are
+    # ~+/-2.5 sigma of the lognormal `vary` around each new default.
+    p.temp_circ_amp = float(np.clip(vary(p.temp_circ_amp, 0.15), 0.16, 0.38))
     p.temp_exercise_gain = float(np.clip(vary(p.temp_exercise_gain, 0.2), 0.4, 1.1))
-    p.sleep_temp_drop = float(np.clip(vary(p.sleep_temp_drop, 0.2), 0.05, 0.25))
-    p.sleep_hr_frac = float(np.clip(vary(p.sleep_hr_frac, 0.2), 0.08, 0.25))
-    p.sleep_hrv_gain = float(np.clip(vary(p.sleep_hrv_gain, 0.15), 1.1, 1.6))
+    p.sleep_temp_drop = float(np.clip(vary(p.sleep_temp_drop, 0.2), 0.05, 0.21))
+    p.sleep_hr_frac = float(np.clip(vary(p.sleep_hr_frac, 0.2), 0.03, 0.11))
+    # sleep_hrv_gain is a MULTIPLIER on the HRV setpoint, so the physiological
+    # quantity is the excess over 1.0, not the gain itself. With the default now at
+    # 1.08, varying the gain multiplicatively (as every other param is varied) would
+    # push most patients below 1.0 — i.e. HRV *falling* during sleep, inverting an
+    # effect the literature is unambiguous about. Vary the excess instead: the sign
+    # is then correct by construction rather than by clipping.
+    p.sleep_hrv_gain = 1.0 + float(np.clip(
+        (p.sleep_hrv_gain - 1.0) * np.exp(0.30 * rng.normal()), 0.02, 0.20))
     p.sleep_bp_frac = float(np.clip(vary(p.sleep_bp_frac, 0.2), 0.06, 0.20))
     p.sleep_rr_drop = float(np.clip(vary(p.sleep_rr_drop, 0.2), 1.5, 5.0))
     p.act_hr_gain = vary(p.act_hr_gain, 0.15)

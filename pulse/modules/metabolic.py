@@ -209,6 +209,28 @@ _LIVER_GLYCOGEN_IDX = 7
 _MUSCLE_GLYCOGEN_IDX = 8
 _MITO_IDX = 9
 
+# Iter 94: glycogen storage-pool flux constants (see the override at the end of
+# MetabolicModule.forward for why the mass-action shape was replaced).
+_LIVER_GLY_CENTER = NORM_CENTER[MARKER_INDEX["liver_glycogen"]]      # 100 g
+_LIVER_GLY_NORM_SCALE = NORM_SCALE[MARKER_INDEX["liver_glycogen"]]   # 60 g
+_MUSCLE_GLY_CENTER = NORM_CENTER[MARKER_INDEX["muscle_glycogen"]]    # 400 g
+_MUSCLE_GLY_NORM_SCALE = NORM_SCALE[MARKER_INDEX["muscle_glycogen"]]  # 100 g
+# Glycogen supercompensation after depletion+refeed is a real ~20-40 % overshoot
+# (Bergstrom & Hultman 1966), so the store's ceiling sits above its typical value.
+_GLY_CAPACITY_FRAC = 1.3
+# Flux scale in RAW g/min. These are order-of-magnitude anchors: both bracket terms
+# are O(1) at a normal store, and the head's learned softplus outputs (range ~0.1-3)
+# modulate around them, so each scale needs to REACH its tissue's physiological rate,
+# not to equal it.
+#   Liver: ~100 g pool turning over across an overnight/24 h fast — the teacher falls
+#   58 g/24 h = 0.04 g/min, and postprandial synthesis runs a few tenths of a g/min.
+#   0.15 covers both directions with headroom.
+_LIVER_GLY_FLUX = 0.15
+#   Muscle: a hard 2 h bout costs 150-200 g (Bergstrom 1967; the cohort target is
+#   -150 g), i.e. ~1.3-1.7 g/min sustained, while resting turnover is far slower and
+#   the head's gate — not this constant — is what keeps rest quiet.
+_MUSCLE_GLY_FLUX = 1.0
+
 # GlycogenFluxHead input indices (iter 57). The head sees the module
 # input x = cat([state(10), coupling(5), external(2), embedding, time]).
 #   coupling[0] = gut glucose-appearance  → x index 10  (n_species + 0)
@@ -566,7 +588,9 @@ class MetabolicModule(MassActionModule):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
-        rates = super().forward(state, coupling, external, embedding, time_features)
+        prod_raw, cons_raw = self.species_fluxes(
+            state, coupling, external, embedding, time_features)
+        rates = prod_raw * self.prod_scale - cons_raw * self.cons_scale * state
         # Sg: RAW per-minute glucose effectiveness, bounded to the literature band
         # [0.005, 0.05]/min (iter 90 frame fix). Equilibrium is Gb_emb for any Sg>0;
         # Sg sets the fasting return SPEED, which is now physiological (τ ≈ 56 min at init).
@@ -651,4 +675,50 @@ class MetabolicModule(MassActionModule):
         rates_out[..., _INSULIN_ACTION_IDX] = p2 * (
             nn.functional.relu(state[..., _INSULIN_IDX]) - state[..., _INSULIN_ACTION_IDX]
         )
+
+        # Iter 94 — GLYCOGEN IS A STORAGE POOL, NOT A SPECIES IN EQUILIBRIUM.
+        #
+        # The mass-action assembly is `prod·prod_scale − cons·cons_scale·norm_state`,
+        # and `norm_state` is ZERO at the pool's typical value. GlycogenFluxHead emits
+        # prod = synthesis ≥ 0, so at typical the entire breakdown term vanishes and
+        # the rate is ≥ 0. `typical` was therefore an ABSORBING FLOOR: measured on the
+        # iter-93 artifact, both pools hit exactly `min - typical = 0.0000` in every
+        # protocol — fasted, fed, and a 2 h hard bout — while the teacher falls 58 g
+        # (liver) and 206 g (muscle) below start on the same input. No amount of
+        # gradient can fix that; iters 55-57 read it as a supervision/timescale
+        # problem and it was never either. (Doc: docs/iter94-spec.md.)
+        #
+        # Physically, glycogenolysis flux is set by DEMAND — fasting for the liver,
+        # contraction for muscle — not by how far the pool sits from a reference
+        # level, and it stops only as the pool empties. So the two pools get an
+        # explicit flux balance in RAW g/min, exactly as glucose gets the explicit
+        # minimal-model form above and for the same reason: the mass-action shape is
+        # the wrong shape here, and the PRD's rule is to change the structure rather
+        # than fit against it. The head's own (synthesis, breakdown) outputs and its
+        # learned gut/insulin/activity gates are reused UNCHANGED; only how they are
+        # turned into a rate changes.
+        #
+        #   d(pool)/dt = flux_scale · ( synth·headroom − breakdown·fullness )
+        #     headroom = relu(1 − pool/capacity)  — synthesis stops at a full store,
+        #                                            capacity = 1.3·typical (glycogen
+        #                                            supercompensation is real, ~20-40%)
+        #     fullness = clamp(pool/typical, 0, 1) — breakdown has FULL authority at a
+        #                                            normal store and fades to zero as
+        #                                            the pool empties, so the pool
+        #                                            cannot go negative by construction
+        # Both bracket terms are O(1) at a normal store, so `flux_scale` alone sets the
+        # physiological magnitude; it is NOT 1/tau any more (the old cons_scale was,
+        # which is why 3.3e-5 could never express an hours-scale bout).
+        for idx, center, nscale, flux_scale in (
+            (_LIVER_GLYCOGEN_IDX, _LIVER_GLY_CENTER, _LIVER_GLY_NORM_SCALE,
+             _LIVER_GLY_FLUX),
+            (_MUSCLE_GLYCOGEN_IDX, _MUSCLE_GLY_CENTER, _MUSCLE_GLY_NORM_SCALE,
+             _MUSCLE_GLY_FLUX),
+        ):
+            pool = center + nscale * state[..., idx]
+            fullness = torch.clamp(pool / center, min=0.0, max=1.0)
+            headroom = relu(1.0 - pool / (_GLY_CAPACITY_FRAC * center))
+            rates_out[..., idx] = flux_scale * (
+                prod_raw[..., idx] * headroom - cons_raw[..., idx] * fullness
+            )
         return rates_out

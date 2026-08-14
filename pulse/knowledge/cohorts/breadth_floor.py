@@ -148,24 +148,38 @@ HRV_SLEEP_RISE = CohortStatisticSpec(
     window=_DIP_WINDOW, target=12.0, sigma=7.5,
 )
 
-# Dipper pattern (O'Brien 1988; Staessen 1997): healthy nocturnal SBP
-# falls ~10–20% (≈ -10–20 mmHg) vs daytime. Gentle -10 mmHg ± 5.
+# Dipper pattern (O'Brien 1988; Staessen 1997): healthy nocturnal SBP falls
+# ~10–20% vs daytime, i.e. ≈ -12 to -24 mmHg on a 120 mmHg daytime SBP.
+#
+# Iter 94: target -10 -> -15. The old target sat at (in fact just below) the SHALLOW
+# EDGE of the range this comment itself cites rather than inside it — mis-sized
+# supervision in the sense of the PRD's "match supervision to the evidence", and
+# diagnosable without reference to what the teacher does. -15 is the midpoint of the
+# "-10 to -20 mmHg" span as the comment was originally written; note the strict
+# midpoint of the PERCENTAGE range (15 % of 120) would be -18, so -15 is the
+# conservative choice of the two, moving less far toward the teacher.
+# Disclosure so a reader can judge the direction of the fix: the teacher realizes
+# -19.3 mmHg here (16 %, inside the normal dipper range), so this correction also
+# moves it from z=-1.87 to z=-0.87. `sleep_bp_frac` is deliberately NOT changed —
+# a 16 % nocturnal dip is normal physiology, not a defect to tune away.
 SBP_SLEEP_DIP = CohortStatisticSpec(
     name="sbp_sleep_dip",
     source="O'Brien et al. (1988); Staessen et al. (1997) — nocturnal BP dipping",
-    description="Mid-NREM systolic BP -10 mmHg vs hypothetical-awake same window",
+    description="Mid-NREM systolic BP -15 mmHg vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="sbp", kind=StatisticKind.DELTA_MEANS,
-    window=_DIP_WINDOW, target=-10.0, sigma=5.0,
+    window=_DIP_WINDOW, target=-15.0, sigma=5.0,
 )
 
-# Dipper pattern: nocturnal DBP falls ~10–15% (≈ -7–12 mmHg). Gentle
-# -7 mmHg ± 4.
+# Dipper pattern: nocturnal DBP falls ~10–15% (≈ -8–12 mmHg on an 80 mmHg
+# daytime DBP). Iter 94: target -7 -> -9.5 for the same reason as SBP above —
+# -7 sat just BELOW the cited range rather than at its centre. Teacher realizes
+# -11.1 (z goes -1.03 -> -0.41).
 DBP_SLEEP_DIP = CohortStatisticSpec(
     name="dbp_sleep_dip",
     source="O'Brien et al. (1988); Staessen et al. (1997) — nocturnal BP dipping",
-    description="Mid-NREM diastolic BP -7 mmHg vs hypothetical-awake same window",
+    description="Mid-NREM diastolic BP -9.5 mmHg vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="dbp", kind=StatisticKind.DELTA_MEANS,
-    window=_DIP_WINDOW, target=-7.0, sigma=4.0,
+    window=_DIP_WINDOW, target=-9.5, sigma=4.0,
 )
 
 # Douglas et al. (1982): respiratory rate falls in NREM sleep vs

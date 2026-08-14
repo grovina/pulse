@@ -384,7 +384,12 @@ def main() -> int:
 
     episodes = []
     for s in starts:
-        ep = build_episode(args.user_id, s, EPISODE_DURATION_MIN, cgm, hr, sleep, activity)
+        # Iter 94: one id PER EPISODE. These are all the same person, but the
+        # benchmark keys episodes by user_id (results, logs, and the deterministic
+        # embedding init), so reusing one id made 14 distinct nights indistinguishable
+        # in the report. Calibration is per-episode regardless.
+        ep = build_episode(f"{args.user_id}-night-{len(episodes) + 1:02d}", s,
+                           EPISODE_DURATION_MIN, cgm, hr, sleep, activity)
         if ep is None:
             continue
         episodes.append(ep)

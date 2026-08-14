@@ -112,14 +112,56 @@ def audit(path: Path) -> None:
           "\n  model is 8.2x WORSE than carrying the last reading forward.")
 
 
+def _generated_payloads() -> dict[str, dict]:
+    """The in-process cohort episodes, grouped by source.
+
+    These never appear in the dataset file — `train._run_benchmark` merges them at
+    benchmark time — so auditing only the JSON understates the real ruler.
+    Adapted to the same dict shape `audit` reads.
+    """
+    from pulse.knowledge.benchmark_extras import all_cohort_benchmark_episodes
+
+    by_source: dict[str, list[dict]] = {}
+    for ep in all_cohort_benchmark_episodes():
+        cal = []
+        for c in ep.calibration_check_ins:
+            meas = c.get("measurements") if isinstance(c, dict) else None
+            cal.append({"time": (c["time"] if isinstance(c, dict) else 0),
+                        "measurements": meas or {}})
+        by_source.setdefault(ep.source, []).append({
+            "user_id": ep.user_id,
+            "duration_min": int(ep.duration_min),
+            "start_time_minutes": ep.start_time_minutes,
+            "meals": [{"time": float(m.time)} for m in ep.meals],
+            "calibration_check_ins": cal,
+            "eval_measurements": [
+                {"time": float(p.time), "marker_id": p.marker_id, "value": float(p.value)}
+                for p in ep.eval_measurements
+            ],
+        })
+    return {src: {"meta": {"source": f"in-process: {src}"}, "episodes": eps}
+            for src, eps in by_source.items()}
+
+
 def main() -> int:
-    paths = [Path(a) for a in sys.argv[1:]] or [
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    include_generated = "--no-generated" not in sys.argv[1:]
+    paths = [Path(a) for a in args] or [
         _ROOT / "pulse" / "benchmark.dataset.generated.json"]
     for p in paths:
         if not p.exists():
             print(f"missing: {p}")
             continue
         audit(p)
+    if include_generated:
+        import tempfile
+        for src, payload in sorted(_generated_payloads().items()):
+            with tempfile.NamedTemporaryFile("w", suffix=f"__{src}.json",
+                                             delete=False) as fh:
+                json.dump(payload, fh)
+                tmp = Path(fh.name)
+            audit(tmp)
+            tmp.unlink()
     return 0
 
 

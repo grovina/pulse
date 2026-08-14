@@ -322,6 +322,9 @@ def train(
     cold_distill_mode: str = "trajectory",
     cold_distill_anchor_window: int = 60,
     cold_distill_anchor_samples: int = 8,
+    cold_distill_anchor_local_scale_floor: float = 0.0,
+    cold_distill_anchor_long_window: int = 0,
+    cold_distill_anchor_long_samples: int = 0,
     physiology_rules_weight: float = 0.0,
     physiology_rules_sample_patients: int = 4,
     physiology_rules_adaptive: bool = False,
@@ -482,6 +485,9 @@ def train(
         mode=cold_distill_mode,
         anchor_window=cold_distill_anchor_window,
         anchor_samples=cold_distill_anchor_samples,
+        anchor_local_scale_floor=cold_distill_anchor_local_scale_floor,
+        anchor_long_window=cold_distill_anchor_long_window,
+        anchor_long_samples=cold_distill_anchor_long_samples,
     )
     physiology_rules_signal = PhysiologyRulesSignal(
         rules=list(PHYSIOLOGY_RULES),
@@ -951,6 +957,9 @@ def train(
         "cold_distill_mode": cold_distill_mode,
         "cold_distill_anchor_window": cold_distill_anchor_window,
         "cold_distill_anchor_samples": cold_distill_anchor_samples,
+        "cold_distill_anchor_local_scale_floor": cold_distill_anchor_local_scale_floor,
+        "cold_distill_anchor_long_window": cold_distill_anchor_long_window,
+        "cold_distill_anchor_long_samples": cold_distill_anchor_long_samples,
         "physiology_rules_weight": physiology_rules_weight,
         "physiology_rules_sample_patients": physiology_rules_sample_patients,
         "physiology_rules_adaptive": physiology_rules_adaptive,
@@ -1117,6 +1126,32 @@ def _run_benchmark(
             f"textbook_mean_pass_rate={textbook_block['textbook_mean_pass_rate']:.4f} < {textbook_min}",
         )
 
+    # Iter 94: gate on SKILL, per source. An absolute MAPE threshold on a quiescent
+    # window is not a test — measured on the legacy episodes, carrying the last
+    # reading forward scores 0.0004-0.014 while the thresholds sit at 0.02-0.20, so a
+    # constant passes with 11-50x margin (scripts/iter94_ruler_audit.py). Skill is
+    # 1 - mape/persistence_mape, so 0.0 means "exactly as good as predicting no
+    # change" and negative means worse. Applied ONLY to sources listed in the
+    # thresholds file, so the deliberately-flat legacy set is excluded by omission
+    # rather than by a special case here.
+    skill_min_by_source = thresholds.get("skill_vs_persistence_min_by_source") or {}
+    pm_by_source = results.get("per_marker_by_source", {})
+    for src, marker_mins in skill_min_by_source.items():
+        src_pm = pm_by_source.get(src) or {}
+        if not src_pm:
+            # Absent source = the ruler was rebuilt without it. Loud, not silent:
+            # a threshold nobody evaluates is worse than no threshold.
+            failures.append(f"skill[{src}]: source missing from the ruler")
+            continue
+        for mid, need in (marker_mins or {}).items():
+            entry = src_pm.get(mid) or {}
+            got = entry.get("skill_vs_persistence")
+            if got is None:
+                continue
+            if float(got) < float(need):
+                failures.append(
+                    f"skill[{src}].{mid}={float(got):+.3f} < {float(need):+.3f}")
+
     gate_passed = len(failures) == 0
 
     report = {
@@ -1148,17 +1183,21 @@ def _run_benchmark(
         )
     # Persistence skill on the measured (real) markers — the honest read the
     # flat-window MAPE hides. <0 means worse than carrying the last reading.
-    real_pm = results.get("per_marker_by_source", {}).get("real", {})
-    skills = {
-        m: e["skill_vs_persistence"]
-        for m, e in real_pm.items()
-        if "skill_vs_persistence" in e
-    }
-    if skills:
-        print(
-            "  skill vs persistence (real): "
-            + ", ".join(f"{m}={skills[m]:+.2f}" for m in sorted(skills)),
-        )
+    # Iter 94: print EVERY source, not just "real". That label was a code default
+    # (benchmark.py: `source: str = "real"`), not an assertion about provenance, and
+    # printing only it hid both which episodes were being scored and the fact that
+    # the dynamic sources existed at all.
+    for src, src_pm in sorted(results.get("per_marker_by_source", {}).items()):
+        skills = {
+            m: e["skill_vs_persistence"]
+            for m, e in src_pm.items()
+            if "skill_vs_persistence" in e
+        }
+        if skills:
+            print(
+                f"  skill vs persistence ({src}): "
+                + ", ".join(f"{m}={skills[m]:+.2f}" for m in sorted(skills)),
+            )
     print(f"  verifier.overall_score={results['verifier_overall']:.4f}")
     print(f"  textbook_mean_pass_rate={textbook_block['textbook_mean_pass_rate']:.4f}")
     if failures:
@@ -1607,6 +1646,37 @@ def main():
         ),
     )
     parser.add_argument(
+        "--cold-distill-anchor-local-scale-floor",
+        type=float,
+        default=0.0,
+        help=(
+            "mode='anchored' only: normalize the level residual by the reference's "
+            "own peak-to-peak range within each window, floored at this fraction of "
+            "NORM_SCALE, instead of by NORM_SCALE. Fixes the ~1:3000 gradient "
+            "attenuation slow markers suffered against meal-scale ones. 0 (default) "
+            "keeps the pre-iter-94 behaviour; 0.05 caps amplification at 20x."
+        ),
+    )
+    parser.add_argument(
+        "--cold-distill-anchor-long-window",
+        type=int,
+        default=0,
+        help=(
+            "mode='anchored' only: length in minutes of a second, longer set of "
+            "reset-to-truth windows, so slow arcs are scored as arcs and not as N "
+            "local slopes. 0 (default) disables."
+        ),
+    )
+    parser.add_argument(
+        "--cold-distill-anchor-long-samples",
+        type=int,
+        default=0,
+        help=(
+            "mode='anchored' only: how many long windows per protocol per epoch. "
+            "Keep small — each retains ~window steps of autograd graph."
+        ),
+    )
+    parser.add_argument(
         "--physiology-rules-weight",
         type=float,
         default=0.0,
@@ -1810,6 +1880,9 @@ def main():
         cold_distill_mode=args.cold_distill_mode,
         cold_distill_anchor_window=args.cold_distill_anchor_window,
         cold_distill_anchor_samples=args.cold_distill_anchor_samples,
+        cold_distill_anchor_local_scale_floor=args.cold_distill_anchor_local_scale_floor,
+        cold_distill_anchor_long_window=args.cold_distill_anchor_long_window,
+        cold_distill_anchor_long_samples=args.cold_distill_anchor_long_samples,
         physiology_rules_weight=args.physiology_rules_weight,
         physiology_rules_sample_patients=args.physiology_rules_sample_patients,
         physiology_rules_adaptive=args.physiology_rules_adaptive,

@@ -1,5 +1,6 @@
 {
   "min_samples_per_marker": 50,
+  "_comment_marker_mape_max": "Absolute-MAPE floors. Iter 94 measured these against the trivial persistence baseline on the legacy episodes: glucose 0.0098, hr 0.0141, sbp 0.0054, dbp 0.0058, temp 0.0004. Every threshold below is 11-50x looser than that, i.e. a constant-output model passes all of them. They are kept for cross-iteration continuity and are NOT a test of dynamics; skill_vs_persistence_min_by_source is.",
   "marker_mape_max": {
     "glucose": 0.2,
     "hr": 0.15,
@@ -8,6 +9,20 @@
     "temp": 0.02
   },
   "overall_weighted_mape_max": 0.16,
+  "_comment_skill": "skill = 1 - mape/persistence_mape. 0.0 is the natural zero — 'exactly as good as predicting no change' — NOT a tuned number, which is why it is the same for every marker and source. Applied only to sources whose scored window actually moves; legacy_static is excluded by omission because its ground truth barely varies (within-episode sd ~1 mg/dL glucose, 0.035 C temp) and the ratio there is a structural artifact, not a model property (see docs/iter94-proposal.md 0.6 and the iter-77/87 notes). Expect iter 94 to FAIL this: on the legacy ruler the model sits at -7.2 on glucose, i.e. 8.2x worse than persistence. Making that visible is the point.",
+  "skill_vs_persistence_min_by_source": {
+    "cgm_real": {
+      "glucose": 0.0,
+      "hr": 0.0
+    },
+    "teacher_dynamic": {
+      "glucose": 0.0,
+      "hr": 0.0,
+      "sbp": 0.0,
+      "dbp": 0.0,
+      "temp": 0.0
+    }
+  },
   "verifier_overall_min": 0.7,
   "verifier_category_min": {
     "meal": 0.65,

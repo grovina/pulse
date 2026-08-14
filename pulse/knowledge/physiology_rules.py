@@ -349,13 +349,22 @@ def hinge_min_correlation(
 
 def hinge_circadian_amplitude(
     traj: torch.Tensor, col: int, window: slice, min_amplitude: float,
+    max_amplitude: float | None = None,
     softmax_beta: float = 0.05,
 ) -> torch.Tensor:
-    """Violation when (soft-max − soft-min) over ``window`` is below ``min_amplitude``.
+    """Violation when (soft-max − soft-min) over ``window`` leaves the band.
 
     Use for "marker has a meaningful daily swing" rules — cortisol
     morning-peak vs evening-trough, temp pre-dawn vs late-afternoon,
     HR/BP day vs night, etc.
+
+    Iter 94: ``max_amplitude`` added. With a floor alone this predicate is
+    one-sided — every amplitude above ``min_amplitude`` is free — and the
+    teacher's core-temperature swing had drifted to 1.04 °C, ~2x literature,
+    without ever registering as a violation. Pass a ceiling wherever the
+    literature bounds the swing from above as well; leaving it ``None``
+    keeps the old floor-only behaviour for rules that genuinely only know
+    "there must be a rhythm".
     """
     values = traj[window, col]
     w_max = torch.softmax(values * softmax_beta, dim=0)
@@ -363,7 +372,10 @@ def hinge_circadian_amplitude(
     soft_max = (w_max * values).sum()
     soft_min = (w_min * values).sum()
     amplitude = soft_max - soft_min
-    return torch.relu(min_amplitude - amplitude)
+    violation = torch.relu(min_amplitude - amplitude)
+    if max_amplitude is not None:
+        violation = violation + torch.relu(amplitude - max_amplitude)
+    return violation
 
 
 def hinge_max_drift(
@@ -1555,15 +1567,21 @@ TEMP_CIRCADIAN_AMPLITUDE = PhysiologyRule(
     name="temp_circadian_amplitude",
     source="Czeisler et al. (1999); Refinetti & Menaker (1992)",
     description=(
-        "Core body temperature shows a daily peak-to-trough "
-        "amplitude of ≥ 0.5 °C (the canonical 36.5 → 37.2 swing). "
-        "Forces the model to express the diurnal thermal rhythm."
+        "Core body temperature swings 0.5–0.8 °C peak-to-trough over a day "
+        "(the canonical 36.5 → 37.2 swing). Both bounds are supervised: the "
+        "rhythm must exist AND must not be exaggerated."
     ),
+    # Iter 94: this was `min_amplitude=0.5` alone — a one-sided floor that made
+    # any overshoot free. The teacher had drifted to 1.04 °C, ~2x literature, and
+    # the student inherited it to within 6 %; nothing in training ever objected.
+    # The ceiling is the upper end of the same Czeisler/Refinetti range the floor
+    # comes from, so this adds no specificity we do not already cite.
     arms=(_CIRCADIAN_24H_ARM, _SLEEP_WAKE_24H_ARM),
     predicate=lambda traj, ctx: hinge_circadian_amplitude(
         traj, ctx.col("temp"),
         window=ctx.window(0.0, 24 * 60.0),
         min_amplitude=0.5,
+        max_amplitude=0.8,
     ),
     scale=0.5,
 )

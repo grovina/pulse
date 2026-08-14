@@ -330,6 +330,25 @@ class MassActionModule(nn.Module):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
+        prod, cons = self.species_fluxes(
+            state, coupling, external, embedding, time_features)
+        return prod * self.prod_scale - cons * self.cons_scale * state
+
+    def species_fluxes(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Per-species ``(prod, cons)`` before the mass-action scales are applied.
+
+        Split out of ``forward`` (iter 94) so a subclass can build a species' rate
+        from the raw head fluxes instead of from ``prod·prod_scale −
+        cons·cons_scale·state``, without paying for a second pass over every head.
+        The mass-action assembly stays in ``forward`` and is unchanged.
+        """
         x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
         prods: list[torch.Tensor] = []
         conss: list[torch.Tensor] = []
@@ -337,9 +356,7 @@ class MassActionModule(nn.Module):
             prod_i, cons_i = head(x, state[..., i])
             prods.append(prod_i)
             conss.append(cons_i)
-        prod = torch.stack(prods, dim=-1) * self.prod_scale
-        cons = torch.stack(conss, dim=-1) * self.cons_scale
-        return prod - cons * state
+        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
 
 
 class LearnedDynamicsModule(nn.Module):
