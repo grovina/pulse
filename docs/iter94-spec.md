@@ -124,6 +124,26 @@ of a ruler whose temperature ground truth has two distinct values (36.6, 36.7) a
 persistence error of 0.0004. The iter-77/87 reading — structural artifact, do not chase
 — was right. Part C stands on the literature contradiction alone.
 
+## Two risks this iteration deliberately takes
+
+**B1 tightens agreement with the teacher exactly where the teacher knows least.**
+Normalizing by the reference's own within-window range amplifies the residual (up to
+20x at the floor) precisely in windows where the teacher barely moves — and a teacher
+that is flat because it is *wrong* now costs the student as much as one that is flat
+because the physiology is. That runs against the PRD's "teachers as fences, not
+mandatory pointwise truth", and it is a real trade for making slow physiology visible
+at all. The floor and the Huber delta bound it, but the honest mitigation is the ruler:
+`cgm_real` is **real measured data, not the teacher**, so the signature of this failure
+mode is specific and checkable — teacher-source agreement improving while `cgm_real`
+skill degrades. Watch that pair.
+
+**`teacher_dynamic` scores agreement with the teacher, not with reality.** These
+episodes are not circular in the training sense (they are excluded from the distillation
+pool, so the model has not been fitted to them), which is what makes them a fair test of
+whether the student can express meal dynamics out-of-sample. They are still circular in
+the deeper sense that the teacher is our current approximate law. `cgm_real` is the only
+source in the ruler whose ground truth is independent of our own modelling.
+
 ## Open, measured, deliberately not fixed
 
 1. **The `sleep_hr_dip` decomposition is undetermined.** With `sleep_hr_frac = 0` the
