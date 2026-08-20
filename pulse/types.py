@@ -9,6 +9,7 @@ class System(str, Enum):
     CARDIOVASCULAR = "cardiovascular"
     THERMOREG = "thermoreg"
     RESPIRATORY = "respiratory"
+    HEPATOBILIARY = "hepatobiliary"
 
 
 @dataclass(frozen=True)
@@ -242,6 +243,65 @@ MARKERS = [
         "#c2410c",
         "Timer",
     ),
+    # --- Hepatobiliary (iter 95) -------------------------------------------
+    # The enterohepatic circulation, entered at the MEDIATOR rather than at the
+    # damage readouts. Full design + sourced anchors: docs/iter95-biliary-anchors.md.
+    #
+    #   meal lipid/protein -> [cck] -gate-> [gallbladder_bile] -> [intestinal_bile]
+    #                              ^                                     |
+    #                     canalicular export                    ileal reabsorption ~95%
+    #                              |                                     v
+    #                        hepatocyte <----- portal return ------------+
+    #                              |
+    #                     first-pass extraction -> spillover -> [bile_acids]
+    #
+    # Why here and not at ALP/GGT/ALT/bilirubin: those are damage and obstruction
+    # readouts, and with no injury or obstruction in the state vector they would ship
+    # as constants — and the iter-94 ruler finding is precisely that the gate cannot
+    # tell a constant from a simulator. Cholestasis IS failure of canalicular export,
+    # so modelling that step explicitly means the enzymes later hang off impairment of
+    # a step that already exists instead of needing a driver bolted on.
+    #
+    # Appended at the tail (mirrors crh iter-69 / insulin_action iter-89) so all prior
+    # marker indices are preserved.
+    MarkerDef(
+        # Duodenal I-cell secretion in response to intraluminal fat and protein — which
+        # is why the gut module's EXISTING lipid and amino appearance channels are the
+        # stimulus and no new model input is needed. Fasting 0.8-1.2 pmol/L, peak
+        # 6.5-7.1 within ~10 min of a mixed meal, ~3.5 at 30 min, elevated 3-5 h.
+        "cck", "Cholecystokinin", "pmol/L", System.HEPATOBILIARY, 1.0,
+        "internal", 0, 30, "#65a30d", "Zap",
+    ),
+    MarkerDef(
+        # The axis's one genuine POOL. Content in mmol rather than volume in mL: the
+        # gallbladder concentrates bile ~10x, so content is what conserves around the
+        # loop, and the two are interchangeable up to a concentration constant.
+        # Contraction is a GATE computed from cck, not a state — see
+        # docs/iter95-proposal.md 3.2.1 for why the reverse parameterisation is wrong
+        # (you cannot empty a gallbladder twice). Ejection fraction is DERIVED and
+        # scored against the >=35-38% HIDA threshold.
+        "gallbladder_bile", "Gallbladder bile acids", "mmol",
+        System.HEPATOBILIARY, 4.0,
+        "internal", 0, 12, "#4d7c0f", "Droplet",
+    ),
+    MarkerDef(
+        # Carries the transit delay AND the 95%/5% reabsorption split. This state is
+        # what makes the CCK-peak-at-10-min vs serum-peak-at-75-120-min gap a
+        # CONSEQUENCE of transport in series rather than a fitted lag constant, and it
+        # turns reabsorption efficiency into a mass balance rather than a number.
+        "intestinal_bile", "Intestinal bile acids", "mmol",
+        System.HEPATOBILIARY, 1.0,
+        "internal", 0, 10, "#3f6212", "ArrowDownUp",
+    ),
+    MarkerDef(
+        # The observable. Fasting reference 4.4-14.1 umol/L, postprandial 4.7-20.2,
+        # rise beginning within 30 min and peaking 75-120 min. Only a small spillover
+        # of the portal return escapes hepatic first-pass extraction — which is exactly
+        # why impaired canalicular export raises it.
+        "bile_acids", "Serum total bile acids", "µmol/L",
+        System.HEPATOBILIARY, 6.0,
+        "internal", 0, 100, "#a3e635", "Waves",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -323,6 +383,14 @@ NORM_SCALE = [
     0.3,    # mitochondrial_capacity: ±0.3 (typical=1.0; 8w training adds ~30%, so ±0.3 covers training-induced range)
     40.0,   # crh: ±40 pg/mL (typical=100; latent first stage of HPA cascade, circadian + stress amplitude)
     1.0,    # insulin_action: dimensionless latent (raw==normalized); low-passes relu(insulin_norm) ∈ ~[0,5]
+    # --- Hepatobiliary (iter 95). Each is a TYPICAL EXCURSION, not a reference range:
+    # the iter-95 bhb lesson is that a NORM_SCALE far below the marker's real swing puts
+    # the catastrophe clamp inside physiology and drives every head's tanh into
+    # saturation once the marker actually moves.
+    2.0,    # cck: ±2 pmol/L (typical 1.0; postprandial peak 6.5-7.1, so a meal is ~+3σ)
+    1.5,    # gallbladder_bile: ±1.5 mmol (typical 4.0; a >=35% ejection is ~-1σ)
+    1.0,    # intestinal_bile: ±1.0 mmol (typical 1.0; fills to several mmol after emptying)
+    4.0,    # bile_acids: ±4 µmol/L (typical 6.0; fasting interval 4.4-14.1, postprandial to 20.2)
 ]
 
 # Hard physiological bounds for the integrator's state clamp (iter 81).

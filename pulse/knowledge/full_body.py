@@ -70,6 +70,38 @@ def _fat_absorption(t: float, meal_time: float, fats: float,
     return fats * rate * rate * dt * np.exp(-rate * dt) * 3.0
 
 
+def _duodenal_delivery(t: float, meal_time: float, grams: float,
+                       fast_rate: float = 0.10, slow_rate: float = 0.005,
+                       slow_frac: float = 0.35) -> float:
+    """Nutrient delivery INTO THE DUODENUM (g/min) — gastric emptying.
+
+    Iter 95. Distinct from `_fat_absorption` / `_protein_absorption`, which are
+    SYSTEMIC appearance: fat reaches the blood via chylomicrons and peaks around
+    60 min, whereas duodenal I-cells see nutrient arriving within minutes. Driving
+    CCK from systemic appearance put the modelled peak at +68 min against a
+    literature +10 min — the wrong signal, not the wrong gain.
+
+    TWO COMPONENTS, following the same fast/slow split this module already uses for
+    carbohydrate absorption, because one component cannot fit the CCK data:
+
+      fast  gamma-shaped, peaking at 1/fast_rate = 10 min — the rapid liquid-phase
+            emptying (plus cephalic phase) that produces the sharp early CCK peak
+            and its fall to roughly half by 30 min.
+      slow  exponential, tau = 1/slow_rate = 200 min — continued emptying of the
+            solid phase, which is what keeps CCK elevated for the observed 3-5 h.
+
+    A single fast kernel reproduces the peak but loses the plateau; a single slow one
+    reproduces neither. Measured: with one exponential, peak and the +30 min value
+    moved together and no (rate, gain) pair satisfied both anchors at once.
+    """
+    dt = t - meal_time
+    if dt < 0 or dt > 480:
+        return 0.0
+    fast = fast_rate * fast_rate * dt * np.exp(-fast_rate * dt)
+    slow = slow_rate * np.exp(-slow_rate * dt)
+    return grams * ((1.0 - slow_frac) * fast + slow_frac * slow)
+
+
 def _protein_absorption(t: float, meal_time: float, proteins: float,
                         rate: float = 0.02) -> float:
     dt = t - meal_time
@@ -190,6 +222,68 @@ class PatientParams:
     # / 3.51 mmol/L at 12 / 24 / 48 h, and it now rises for the RIGHT reason —
     # substrate supply — rather than being driven open-loop by the glycogen pool.
     keto_glyc_gain: float = 5.0
+
+    # --- Hepatobiliary / enterohepatic circulation (iter 95) ---------------------
+    # Sourced anchors and the design rationale: docs/iter95-biliary-anchors.md.
+    # Entered at the MEDIATOR (bile acids) rather than the damage readouts
+    # (ALP/GGT/ALT/bilirubin), because those have no driver in this state vector and
+    # would ship inert — and the iter-94 ruler finding is that the gate cannot tell a
+    # constant from a simulator.
+    #
+    # CCK. Duodenal I-cells respond to intraluminal FAT and PROTEIN (not carbohydrate),
+    # so the drive reads Ra_fat and Ra_protein. Literature: fasting 0.8-1.2 pmol/L,
+    # peak 6.5-7.1 within ~10 min of a mixed meal, ~3.5 at 30 min, elevated 3-5 h.
+    # k_cck = 1/tau; tau ~ 8 min gives the fast rise and the fall to ~3.5 by 30 min.
+    CCK_b: float = 1.0            # pmol/L, fasting
+    # CCK is cleared fast — plasma half-life ~1-3 min — so it tracks duodenal delivery
+    # closely rather than smoothing it. tau = 1/k_cck = 2.9 min.
+    k_cck: float = 0.35           # /min
+    # Gains are per (g/min) of DUODENAL delivery, not of systemic appearance.
+    # Calibrated (not guessed) against the three QUANTITATIVE CCK anchors at once:
+    # peak 6.5-7.1 pmol/L, peak time 5-20 min, and ~2.5-4.5 pmol/L at +30 min.
+    # The "elevated for 3-5 h" statement in the same sources is qualitative, so it is
+    # NOT fitted to: the model realizes +17% over basal at +3 h, which is in the right
+    # direction but is not evidence of anything and must not be quoted as a match.
+    cck_fat_gain: float = 2.25    # fat is the strongest I-cell stimulus
+    cck_prot_gain: float = 0.79   # protein is weaker (0.35x)
+    # Gastric emptying, two-component (see _duodenal_delivery).
+    duo_fast_rate: float = 0.10          # /min, gamma peaking at 10 min (liquid phase)
+    duo_slow_rate: float = 0.005         # /min, tau 200 min tail (solid phase)
+    duo_slow_frac: float = 0.35          # share of the meal on the slow route
+    # Gallbladder. A POOL in mmol of bile acids (content, not volume — the gallbladder
+    # concentrates bile ~10x, so content is what conserves round the loop). Emptying is
+    # CCK-gated and PROPORTIONAL TO CONTENT, which makes it exponential: that is what
+    # produces the observed biphasic "early rapid, late slow" shape without a second
+    # mechanism, and it is why a second meal 90 min later empties far less.
+    GB_b: float = 4.0             # mmol, fasting (fills between meals)
+    GB_max: float = 6.0           # mmol, capacity
+    k_gb_eject: float = 0.030     # /min at saturating CCK -> ~35-40% ejected by 60 min
+    K_cck_gb: float = 2.5         # pmol/L above basal for half-maximal ejection
+    k_gb_fill: float = 0.004      # /min, interdigestive refill toward GB_max
+    # Intestine. Carries the transit delay AND the 95%/5% split, so the CCK-peak-at-10min
+    # to serum-peak-at-75-120min gap is a CONSEQUENCE of transport in series rather than
+    # a fitted lag. k_ileal = 1/tau of transit-to-ileal-uptake.
+    INT_b: float = 1.0            # mmol resident in the gut lumen at rest
+    # Calibrated so serum bile acids peak MID-band (75-120 min), not on its edge:
+    # tau 50 min put the peak at 73 min, two minutes outside. tau ~77 min lands it at
+    # 83. This one constant sets the peak time, so it is the honest place to calibrate
+    # — everything upstream is already pinned by the CCK and ejection-fraction anchors.
+    k_ileal: float = 0.013        # /min (tau ~77 min) transit to ileal uptake
+    f_ileal: float = 0.95         # fraction reabsorbed; 5% lost to faeces
+    # Hepatic first-pass. THE CHOLESTASIS SITE. `k_canalicular` is the export capacity of
+    # the hepatocyte->bile step; extraction saturates against it, so when it falls, more
+    # of the portal return spills into serum and serum bile acids rise. That is the
+    # clinical picture falling out of the mass balance, and it is the whole reason the
+    # step is explicit rather than lumped. Healthy value = generous (extraction ~90%).
+    k_canalicular: float = 1.0    # relative export capacity; 1.0 = healthy
+    hep_extraction: float = 0.90  # fraction of portal return cleared on first pass
+    # Serum. Fasting reference 4.4-14.1 umol/L; postprandial 4.7-20.2, peak 75-120 min.
+    BA_b: float = 6.0             # umol/L
+    k_ba: float = 0.030           # /min systemic clearance (tau ~ 33 min)
+    ba_spill_gain: float = 45.0   # umol/L per mmol/min of unextracted portal return
+    # Hepatic synthesis replaces faecal loss (~5% of the pool per cycle), holding the
+    # ~3 g total pool steady over a day.
+    k_ba_synth: float = 0.0010    # mmol/min
 
     # Lactate. Iter 93: the drive was LINEAR in activity (`act * 0.3`), which
     # put a *moderate* 0.65 bout at 9.8 mmol/L — near-maximal, anaerobic
@@ -695,6 +789,7 @@ def simulate_full_body(
     SBP, DBP = params.SBP0, params.DBP0
     T, RR, SpO2 = params.T0, params.RR0, params.SpO2_0
     LGly, MGly = params.LGly_b, params.MGly_b
+    CCK, GB, INT, BA = params.CCK_b, params.GB_b, params.INT_b, params.BA_b
     X = 0.0
     ns = noise_scale
 
@@ -806,6 +901,56 @@ def simulate_full_body(
         # Iter 93: thresholded, not linear — see lac_thresh / lac_act_gain.
         lac_supra = max(act - params.lac_thresh, 0.0)
         dLac = -params.k_lac * (Lac - params.Lac_b) + params.lac_act_gain * lac_supra ** 2
+
+        # --- Hepatobiliary: the enterohepatic circulation (iter 95) ---
+        # Four states in series. The delay structure is the point: CCK peaks ~10 min
+        # after a meal but serum bile acids peak at 75-120 min, and that gap is
+        # gallbladder emptying -> intestinal transit -> ileal reabsorption -> hepatic
+        # first-pass extraction happening in sequence. Nothing here fits the gap
+        # directly; it falls out. Anchors: docs/iter95-biliary-anchors.md.
+        #
+        # CCK: duodenal I-cells read FAT and PROTEIN, not carbohydrate.
+        # Duodenal delivery, NOT systemic appearance — see _duodenal_delivery.
+        fat_duo = sum(_duodenal_delivery(t, mt, mf, params.duo_fast_rate,
+                                         params.duo_slow_rate, params.duo_slow_frac)
+                      for mt, _mc, mf, _mp in meals)
+        prot_duo = sum(_duodenal_delivery(t, mt, mp, params.duo_fast_rate,
+                                          params.duo_slow_rate, params.duo_slow_frac)
+                       for mt, _mc, _mf, mp in meals)
+        cck_drive = (params.cck_fat_gain * fat_duo
+                     + params.cck_prot_gain * prot_duo)
+        dCCK = -params.k_cck * (CCK - params.CCK_b) + cck_drive
+        # Gallbladder: CCK-gated emptying, PROPORTIONAL TO CONTENT. Proportionality is
+        # what makes emptying exponential (the observed early-rapid / late-slow shape)
+        # and what makes a second meal empty far less than the first — a gallbladder
+        # cannot be emptied twice. Contraction is a GATE computed here, not a state;
+        # see docs/iter95-proposal.md 3.2.1.
+        cck_excess = max(CCK - params.CCK_b, 0.0)
+        contraction = cck_excess / (cck_excess + params.K_cck_gb)   # in [0, 1)
+        gb_empty = params.k_gb_eject * contraction * GB             # mmol/min
+        # Interdigestive refill from hepatic secretion, tapering as the store fills.
+        # Gated on canalicular export capacity — the cholestasis site.
+        gb_fill = (params.k_gb_fill * params.k_canalicular
+                   * max(params.GB_max - GB, 0.0))
+        dGB = gb_fill - gb_empty
+        # Intestine: what the gallbladder delivers transits and is reabsorbed in the
+        # ileum at ~95%; the remaining ~5% is the faecal loss that hepatic synthesis
+        # replaces. This state is where the transit delay lives.
+        ileal_uptake = params.k_ileal * INT                          # mmol/min
+        dINT = gb_empty + params.k_ba_synth - ileal_uptake
+        portal_return = params.f_ileal * ileal_uptake                # mmol/min
+        # Hepatic first pass. Extraction saturates against canalicular export capacity:
+        # when k_canalicular falls (cholestasis), the liver cannot clear the portal
+        # load into bile, extraction drops, and the unextracted remainder spills into
+        # the systemic circulation. Serum bile acids then rise as a CONSEQUENCE of the
+        # mass balance rather than by assertion — which is the whole reason this step
+        # is explicit rather than lumped into a single clearance constant.
+        extraction = params.hep_extraction * (
+            params.k_canalicular / (params.k_canalicular + 0.15)
+        ) / (1.0 / (1.0 + 0.15))     # == hep_extraction at k_canalicular = 1
+        extraction = min(max(extraction, 0.0), 0.995)
+        spillover = (1.0 - extraction) * portal_return               # mmol/min
+        dBA = params.ba_spill_gain * spillover - params.k_ba * (BA - params.BA_b)
 
         # --- Glycogen pools (iter 76) ---
         # Flux integrators, not setpoints. Synthesis is gated on gut carb
@@ -1003,6 +1148,10 @@ def simulate_full_body(
         SpO2 = min(100, max(SpO2 + dSpO2 + rng.normal(0, ns * 0.1), 70))
         LGly = max(LGly + dLGly + rng.normal(0, ns * 0.5), 1.0)
         MGly = max(MGly + dMGly + rng.normal(0, ns * 0.5), 1.0)
+        CCK = max(CCK + dCCK + rng.normal(0, ns * 0.05), 0.05)
+        GB = min(max(GB + dGB, 0.0), params.GB_max)
+        INT = max(INT + dINT, 0.0)
+        BA = max(BA + dBA + rng.normal(0, ns * 0.2), 0.1)
 
         trajectory[t] = [
             G, I, Gn, FFA, BHB, Lac, Hep,
@@ -1036,6 +1185,13 @@ def simulate_full_body(
             # 0 = relu(insulin-baseline) at rest, matching the benchmark loader's
             # typical-padding of the same index.
             0.0,    # insulin_action (a.u.) — fasting equilibrium
+            # Iter 95 — hepatobiliary. SIMULATED (not padded): the whole point of the
+            # axis is that it is dynamic and meal-locked, so the distillation gets a
+            # real trajectory target from day one rather than a flat reference.
+            CCK,    # cck (pmol/L)
+            GB,     # gallbladder_bile (mmol) — the pool
+            INT,    # intestinal_bile (mmol) — transit delay + the 95%/5% split
+            BA,     # bile_acids (µmol/L) — the observable
         ]
 
     return trajectory, absorption_profile
