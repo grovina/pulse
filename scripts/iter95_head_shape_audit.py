@@ -13,14 +13,12 @@ Three things it measures.
        rate = prod·prod_scale − cons·cons_scale·norm_state          prod, cons ≥ 0
 
    with `norm_state = (raw − typical)/NORM_SCALE`. At raw == typical the consumption
-   term is exactly zero, so rate = prod ≥ 0. Below typical, `norm_state < 0` turns
-   −cons·norm_state into a POSITIVE source. So no species whose head cannot emit signed
-   production can ever fall below its typical value — measured, all six hit
-   `min − typical = 0.0000` in every protocol (fast, fed, big meal, hard bout), while
-   the teacher takes insulin to 2.81 and hepatic_output to 1.12.
-
-   `SetpointHead` species escape this (their prod = k·target_z/typical is signed); that
-   is what iter 51 was actually fixing, and only bhb and mitochondrial_capacity got it.
+   term was exactly zero, so rate = prod ≥ 0, and below typical `−cons·norm_state`
+   became a POSITIVE source. Measured on the iter-94 artifact, all six species hit
+   `min − typical = 0.0000` in every protocol (fast, fed, big meal, hard bout) while the
+   teacher takes insulin to 2.81 and hepatic_output to 1.12. FIXED in iter 95 — this
+   section is now a regression check, and it flags only where the TEACHER goes below
+   typical and the student does not.
 
 2. THE TIME CONSTANT, IN THE RIGHT FRAME. Modules receive the NORMALIZED state but their
    rates are applied to the RAW state (model.py: `norm_state = (state − norm_center)/
@@ -134,11 +132,8 @@ PROTOCOLS = {
 }
 FLOOR_MARKERS = ("insulin", "glucagon", "ffa", "bhb", "lactate", "hepatic_output")
 mins: dict[str, tuple[float, str]] = {k: (float("inf"), "") for k in FLOOR_MARKERS}
-fast_traj = None
 for label, (meals, dur, act) in PROTOCOLS.items():
     tr = rollout(meals, dur, act)
-    if label == "48h fast":
-        fast_traj = tr
     for k in FLOOR_MARKERS:
         v = float(tr[:, MI[k]].min())
         if v < mins[k][0]:
@@ -154,10 +149,21 @@ print(f"{'marker':<18}{'typical':>9}{'student min':>13}{'min - typ':>11}{'protoc
 for k in FLOOR_MARKERS:
     typ = float(NORM_CENTER[MI[k]])
     v, lab = mins[k]
-    floored = abs(v - typ) < 1e-3
-    print(f"{k:<18}{typ:>9.2f}{v:>13.4f}{v - typ:>11.4f}{lab:>11}"
-          f"{float(teacher[:, MI[k]].min()):>13.4f}"
-          f"  {'**FLOORED AT typical**' if floored else 'ok'}")
+    t_min = float(teacher[:, MI[k]].min())
+    # Only a defect if the TEACHER goes below typical and the student does not. bhb and
+    # lactate legitimately sit at their typical value as their floor on these protocols
+    # (bhb RISES in a fast — the teacher's own min is 0.101), so `min == typical` is not
+    # evidence of anything for them. The pre-iter-95 signature was every species pinned at
+    # exactly 0.0000 INCLUDING those the teacher takes well below, which is the real tell.
+    student_stuck = abs(v - typ) < 1e-3
+    teacher_goes_below = t_min < typ - 1e-3
+    if student_stuck and teacher_goes_below:
+        verdict = "**FLOORED AT typical**"
+    elif student_stuck:
+        verdict = "at typical (teacher too — not a defect)"
+    else:
+        verdict = "ok"
+    print(f"{k:<18}{typ:>9.2f}{v:>13.4f}{v - typ:>11.4f}{lab:>11}{t_min:>13.4f}  {verdict}")
 
 # --- 2. time constants, in the raw frame -----------------------------------------------
 READ_AT = 1440
@@ -172,7 +178,9 @@ for i, name in enumerate(LOCAL):
         note = "(head unused — structural rate)"
     elif cons < 1e-3:
         note = "<== RATE CONSTANT COLLAPSED"
-    elif tau > 10_000:
+    elif tau > 10_000 and name != "mitochondrial_capacity":
+        # mito is genuinely a ~4-week training adaptation (cons_scale 2.5e-5 encodes that
+        # on purpose), so a long tau there is the physics, not a defect.
         note = "<== inert on any protocol timescale"
     else:
         note = ""
