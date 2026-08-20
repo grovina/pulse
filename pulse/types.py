@@ -287,7 +287,23 @@ NORM_SCALE = [
     10.0,   # insulin: ±10 μU/mL during meals
     20.0,   # glucagon: ±20 pg/mL
     0.2,    # ffa: ±0.2 mmol/L
-    0.05,   # bhb: ±0.05 mmol/L
+    # bhb: ±0.5 mmol/L (iter 95; was ±0.05). BHB spans 0.1 mmol/L fed to 1-2 by a 24 h
+    # fast and 3-5 in sustained ketosis (Cahill 2006), so ±0.05 was not a typical
+    # excursion — it was ~1/20th of one, and it broke two things at once.
+    #   1. PHYSIOLOGICAL_MAX = center + 20·NORM_SCALE landed at 1.10 mmol/L — BELOW the
+    #      teacher's own 1.315 at a 24 h fast, and far below its 3.505 at 48 h. The
+    #      catastrophe clamp sat inside the physiological range, so even a perfect
+    #      student would have been clipped. It is now 10.1.
+    #   2. Every metabolic head reads the whole module state, normalized. At ±0.05 a
+    #      ketotic BHB is z ≈ +24 while every other species lives in z ∈ [-2, +2], so a
+    #      WORKING bhb would have driven every head's tanh layers into saturation. This
+    #      was invisible only because bhb was frozen at typical (the absorbing floor —
+    #      see modules/base.py:MassActionModule); fixing that floor without fixing this
+    #      scale would have traded one failure for another.
+    # Note this also reduces bhb's weight in every NORM_SCALE-normalized loss by 10x.
+    # That is the point: at ±0.05 a 1.2 mmol/L residual counted as 24 z-units, dominating
+    # the distillation objective for a marker that could not move at all.
+    0.5,    # bhb: ±0.5 mmol/L
     0.3,    # lactate: ±0.3 mmol/L
     1.2,    # hepatic_output: endogenous appearance flux (not directly measured)
     40.0,   # ghrelin: ±40 pg/mL (preprandial rise/postprandial drop)

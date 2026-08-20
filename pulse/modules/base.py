@@ -77,114 +77,23 @@ class SpeciesHead(nn.Module):
         return prod, cons
 
 
-class SetpointHead(nn.Module):
-    """Setpoint re-parameterisation of (prod, cons) for dead-pathway species.
-
-    Iter-51 fix for the four-iter dead-pathway wall (see docs/dead-pathways.md).
-    The parent ``MassActionModule`` passes the *normalized* state
-    (``norm_state = (raw_state − typical) / norm_scale``) to each head, then
-    computes ``rate = prod·prod_scale − cons·cons_scale·norm_state`` with
-    ``prod_scale = cons_scale·typical``. So:
-
-        rate = cons_scale · (prod·typical − cons·norm_state)
-
-    Setting rate = 0 at the typical raw state (norm_state = 0) requires
-    ``prod = 0``. Since ``SpeciesHead`` emits ``prod = softplus(prod_raw)``,
-    achieving prod ≈ 0 forces ``prod_raw → −∞`` and the softplus saturates.
-    In that saturated regime, ``sigmoid(prod_raw) ≈ exp(prod_raw)`` is
-    exponentially small — so the gradient through prod_raw onto the rest of
-    the head's MLP collapses. *This is the structural trap the dead trio has
-    been stuck in*: training pushes prod_raw very negative to keep the marker
-    at typical (the cohort-stat and bench-cohort losses demand it), and then
-    no further gradient can lift the marker off typical because the softplus
-    derivative has vanished. iters 47-49 (trajectory-matching) and iter 50
-    (rate-matching) all fed in stronger gradients to the rate, but the
-    gradient delivered to the head saturates against ``sigmoid(prod_raw)`` —
-    the diagnostic measured the result as ~1e-5 grad-norm on these heads.
-
-    SetpointHead bypasses the trap by re-parameterising the head's emission.
-    The MLP emits ``(target_z_raw, k_factor_raw)``; we then construct the
-    (prod, cons) pair that gives setpoint dynamics around ``typical +
-    norm_scale·target_z``:
-
-        rate = (k_factor · cons_scale) · (target_z − norm_state)
-             = cons_scale · (k_factor · target_z − k_factor · norm_state)
-
-    Matching against ``cons_scale · (prod·typical − cons·norm_state)``:
-
-        prod = k_factor · target_z / typical
-        cons = k_factor
-
-    ``target_z`` is *signed* (no softplus) and lives in z-score units, so
-    setting target = typical is ``target_z = 0`` — no saturation needed.
-    Moving the equilibrium off typical is a pure linear change in target_z;
-    the gradient onto ``target_z_raw`` is direct, ``∂rate/∂target_z_raw =
-    cons_scale·k_factor·(linear coefficient through the MLP)``, with no
-    ``sigmoid(very_negative)`` factor in front.
-
-    ``k_factor`` keeps softplus (must be ≥ 0 for stability — a negative rate
-    constant would make the system explode away from target). Init via
-    softplus(0) = log 2 matches ``SpeciesHead``'s converged behaviour at
-    typical (where it has prod_softplus ≈ 0 and cons_softplus ≈ log 2 set
-    by the prior on the slope of the rate w.r.t. state).
-
-    The parent module is unchanged: same per-species scaling, same
-    ``return prod − cons·state`` arithmetic, mass conservation preserved.
-    What changes is purely the coordinate system the head's MLP operates in
-    — and which way the gradient flows through it.
-
-    Init: final-layer weights zeroed, biases set so ``raw = [0, 0]`` ⇒
-    ``target_z = 0`` (equilibrium at typical) and ``k_factor = log 2``.
-    With prod = 0, cons = log 2, this matches the (post-training, sat-near-
-    typical) behaviour SpeciesHead converges to. Data-dependent target_z
-    emerges as the final-layer weights move off zero during training; the
-    final layer gets non-zero gradient at step 1 (``W_final.grad =
-    upstream_grad ⊗ hidden_input`` is non-zero even when ``W_final = 0``,
-    so weights start moving immediately).
-
-    ``typical`` is captured at construction (per-species scalar) so the head
-    can compute ``prod = k_factor·target_z/typical`` without needing the
-    parent's ``prod_scale`` exposed.
-    """
-
-    typical_val: torch.Tensor
-
-    def __init__(self, input_dim: int, hidden_dim: int, typical: float):
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, 2),
-        )
-        self.register_buffer("typical_val", torch.tensor(float(typical), dtype=torch.float32))
-        # Zero the final-layer weights so init output is purely the bias —
-        # the head's data-dependent component starts at zero and grows during
-        # training. Final-layer weight gradient at step 1 is non-zero
-        # (upstream_grad ⊗ hidden_input ≠ 0 even when W = 0), so the weights
-        # start moving off zero immediately.
-        with torch.no_grad():
-            self.network[-1].weight.zero_()
-            # bias[0] = 0 ⇒ target_z = 0 ⇒ equilibrium at typical.
-            # bias[1] = 0 ⇒ k_factor = softplus(0) = log 2 ≈ 0.693 — matches
-            # the rate constant SpeciesHead converges to (its cons_softplus ≈
-            # log 2 after the trajectory loss has shaped the slope around
-            # typical).
-            self.network[-1].bias.zero_()
-
-    def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        raw = self.network(x)
-        target_z = raw[..., 0]                                # signed, z-score units
-        k_factor = nn.functional.softplus(raw[..., 1])        # ≥ 0
-        # Return (prod_value, cons_value) so the parent's
-        # `prod·prod_scale − cons·cons_scale·norm_state` (with prod_scale =
-        # cons_scale·typical) reproduces
-        # `cons_scale·k_factor·(target_z − norm_state)`.
-        cons = k_factor
-        prod = k_factor * target_z / self.typical_val
-        return prod, cons
-
+# ITER 95 — `SetpointHead` REMOVED (was here, iters 51-94).
+#
+# It re-parameterised (prod, cons) as (target_z, k_factor) to escape a softplus
+# saturation trap: in the old DEVIATION frame, sitting at `typical` required
+# prod = 0, i.e. prod_raw -> -inf, where d(softplus)/d(prod_raw) vanishes and the
+# head's gradient died. That trap was an artifact of the frame, not of physiology
+# — see MassActionModule below. In the corrected concentration frame, sitting at
+# typical requires prod == cons (two moderate positive values) and any positive
+# equilibrium is reachable, so a plain SpeciesHead has live gradients everywhere
+# and the workaround has nothing left to work around.
+#
+# It also had a failure mode of its own: `k_factor = softplus(raw)` could collapse
+# to zero, which freezes the species AND zeroes the gradient onto target_z, since
+# the rate is k_factor*(target_z - norm_state). Measured on the iter-94 artifact,
+# bhb sat at k_factor = 1e-5 (tau ~ 265 days) with target_z = +2.64 — the head
+# asking for 0.23 mmol/L with no authority to get there. Removing the head removes
+# that mode; nothing replaces it.
 
 class BasalPlusGatedPeakHead(nn.Module):
     """Basal + stimulus-gated peak head for stimulus-driven hormones.
@@ -283,10 +192,54 @@ class MassActionModule(nn.Module):
     This isolates each species' representation so insulin's dominant
     gradient pressure cannot collapse the small-magnitude species
     onto a flat manifold (iter-23 architectural surgery).
+
+    ITER 95 — THE CONSUMPTION TERM NOW USES CONCENTRATION, AS THE LINE ABOVE
+    ALWAYS CLAIMED. Through iter 94 it used the NORMALIZED DEVIATION instead:
+
+        rate = prod·prod_scale − cons·cons_scale·norm_state
+        norm_state = (raw − typical) / NORM_SCALE
+
+    Modules receive the normalized state but their rates are applied to the RAW
+    state (model.py), so this is a frame error of the same family as the iter-90
+    Sg bug — and it had two consequences, both of which have been misdiagnosed
+    for dozens of iterations.
+
+    1. ``typical`` WAS AN ABSORBING FLOOR FOR EVERY SPECIES. At raw == typical
+       the consumption term is exactly zero, so rate = prod ≥ 0; below typical,
+       ``−cons·norm_state`` becomes a positive SOURCE. No species whose head
+       emits non-negative production could ever fall below its typical value.
+       Measured on the iter-94 artifact across fast / fed / big-meal / hard-bout
+       protocols, all six metabolic species hit ``min − typical = 0.0000``
+       exactly, while the teacher takes insulin to 2.81 and hepatic_output to
+       1.12. iter 94 found this for the glycogen pools and read it as specific to
+       ``GlycogenFluxHead``; it was never specific to anything.
+
+    2. IT MANUFACTURED THE ITER-51 DEAD-PATHWAY TRAP. Sitting at typical required
+       ``prod = 0``, i.e. ``prod_raw → −∞``, where ``d(softplus)/d(prod_raw) =
+       sigmoid(prod_raw)`` vanishes and the head's gradient dies. Measured on the
+       isolated assembly: asking the deviation frame for an equilibrium at 3.8
+       (teacher's 24 h-fast insulin, typical 10) reaches 10.002 with prod_raw
+       = −9.05 and 1.2e-04 of the gradient surviving. The concentration frame
+       reaches 3.800 exactly with prod_raw = −0.23 and 4.4e-01 surviving.
+
+    In the corrected frame the equilibrium is ``raw* = typical·prod/cons`` —
+    reachable anywhere in (0, ∞) — and sitting at typical requires ``prod = cons``,
+    two moderate positive values, so there is no saturation to escape. That is
+    why ``SetpointHead`` no longer exists: it was invented in iter 51 to work
+    around a trap that was an artifact of the frame, and iters 51-57's whole
+    architecture of per-species workarounds was compensating for this one line.
+
+    Note the effective relaxation rate changes from ``cons·cons_scale/NORM_SCALE``
+    to ``cons·cons_scale`` — stiffer by NORM_SCALE for markers whose scale exceeds
+    1 (insulin 10x, glucagon 20x). Trained ``cons`` values therefore do not
+    transfer, and Euler headroom shrinks by the same factor; at dt=1 the limit is
+    2/min, and insulin at cons≈2.4, cons_scale=0.1 sits at 0.24/min.
     """
 
     prod_scale: torch.Tensor
     cons_scale: torch.Tensor
+    typical_val: torch.Tensor
+    norm_scale_val: torch.Tensor
 
     def __init__(
         self,
@@ -296,6 +249,7 @@ class MassActionModule(nn.Module):
         embedding_dim: int,
         hidden_dim: int = 48,
         typicals: list[float] | None = None,
+        norm_scales: list[float] | None = None,
         head_factories: Optional[dict[int, HeadFactory]] = None,
     ):
         super().__init__()
@@ -316,11 +270,17 @@ class MassActionModule(nn.Module):
 
         if typicals is None:
             typicals = [1.0] * n_species
+        # Iter 95: NORM_SCALE per species, needed to rebuild the RAW concentration from
+        # the normalized state the module is handed. Defaults to 1.0 (raw == normalized).
+        if norm_scales is None:
+            norm_scales = [1.0] * n_species
         cons_scales = [0.02] * n_species
         prod_scales = [c * t for c, t in zip(cons_scales, typicals)]
 
         self.register_buffer("prod_scale", torch.tensor(prod_scales, dtype=torch.float32))
         self.register_buffer("cons_scale", torch.tensor(cons_scales, dtype=torch.float32))
+        self.register_buffer("typical_val", torch.tensor(typicals, dtype=torch.float32))
+        self.register_buffer("norm_scale_val", torch.tensor(norm_scales, dtype=torch.float32))
 
     def forward(
         self,
@@ -332,7 +292,16 @@ class MassActionModule(nn.Module):
     ) -> torch.Tensor:
         prod, cons = self.species_fluxes(
             state, coupling, external, embedding, time_features)
-        return prod * self.prod_scale - cons * self.cons_scale * state
+        return prod * self.prod_scale - cons * self.cons_scale * self.raw_state(state)
+
+    def raw_state(self, state: torch.Tensor) -> torch.Tensor:
+        """Rebuild the RAW concentration from the normalized state handed to the module.
+
+        Iter 95: clamped at 0 because a concentration is not negative — the integrator's
+        own physiological clamp already enforces that on the state, so this only guards
+        a transient where the straight-through clamp lets a value dip fractionally below.
+        """
+        return torch.clamp(self.typical_val + self.norm_scale_val * state, min=0.0)
 
     def species_fluxes(
         self,

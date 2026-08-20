@@ -11,8 +11,8 @@ import math
 import torch
 import torch.nn as nn
 
-from .base import BasalPlusGatedPeakHead, MassActionModule, SetpointHead, SpeciesHead, gate_temp
-from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
+from .base import BasalPlusGatedPeakHead, MassActionModule, SpeciesHead, gate_temp
+from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
 # Iter 90: converts the module's normalized glucose deviation back to raw mg/dL so the
 # restoring term is `-(Sg + Si·Xa)·(G_raw - Gb_raw)` with Sg/Si as true per-minute rate
@@ -59,6 +59,10 @@ _N_EXTERNAL = 2
 # τ ≈ 3 wk — rest-preserved, exercise-coupled). Now one cons_scale per
 # tissue, each physically honest.
 _TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0, 0.0]
+# Iter 95: NORM_SCALE per species, in the same order, so the module can rebuild the RAW
+# concentration for the mass-action consumption term. Derived rather than hardcoded so it
+# cannot drift from types.py.
+_NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["metabolic"]]
 # cons_scale = 1/τ in the rate equation.
 #   liver_glycogen      τ ≈ 1 day  ≈ 1440 min  → cons_scale ≈ 7e-4
 #   muscle_glycogen     τ ≈ 3 weeks ≈ 30240 min → cons_scale ≈ 3.3e-5
@@ -164,6 +168,88 @@ _HEPATIC_IDX = 6
 # cortisol is metabolic coupling[GUT_OUTPUT_DIM]; activity is external[0].
 _CORTISOL_COUPLING_IDX = GUT_OUTPUT_DIM
 _ACTIVITY_EXTERNAL_IDX = 0
+
+# Iter 95 (A1) — THE DEFENDED GLUCOSE LEVEL IS NOT A CONSTANT.
+#
+# Through iter 94 the student's fasting equilibrium was `b_emb` alone: a per-patient
+# value read from the embedding and CONSTANT IN TIME. No fast of any length could lower
+# it, so the student could not express the fasted state at all. Measured on the iter-94
+# artifact over a 24 h fast (scripts/iter94_student_fast_probe.py): glucose ROSE
+# 95.0 -> 100.2 while the teacher fell to 78.2, and with glucose held up the insulin gate
+# stayed open (insulin rose 10 -> 12.5 against the teacher's fall to 3.8), which in turn
+# suppressed lipolysis (FFA reached 0.29 of the teacher's delta). One missing term, three
+# downstream failures.
+#
+# The teacher gained this in iter 93 (full_body.py:733-748, Cahill 2006): the minimal
+# model is a 3-hour tool, and over that span Gb genuinely is the defended level, but over
+# a fast it is not — as hepatic glycogen empties, gluconeogenesis cannot fully replace
+# glycogenolysis and the defended level ITSELF falls.
+#
+#     Gb_fasted = max( Gb·(1 - fast_gb_drop·glyco_depleted),  Gb·fast_gb_floor_frac )
+#     glyco_depleted = relu(1 - LGly/LGly_b)      LINEAR pool depletion
+#
+# Keyed to linear depletion, NOT to the Michaelis `glyco_avail` the hepatic-output split
+# reads: that ratio describes how much glycogen the liver can still RELEASE and stays near
+# 1 while the pool halves, whereas what the defended level tracks is how much of the pool
+# is GONE. (The teacher's own comment makes this distinction; reusing glyco_avail here
+# would be convenient and wrong.)
+#
+# Critically this is EXACTLY THE IDENTITY at the fed calibration state (LGly = LGly_b
+# ⇒ glyco_depleted = 0 ⇒ Gb_fasted = Gb), so the entire fed/postprandial regime — the
+# regime the gate, the dose-response signals and SetpointSupervisionSignal all score — is
+# unchanged by construction, and `b_emb` remains the setpoint parameter that
+# SetpointSupervisionSignal supervises. iter-95 A1 depends on iter-94's B4: only now that
+# the glycogen pool can actually fall below `typical` does this term ever fire.
+#
+# The drop fraction is LEARNED (PRD: existence is architecture, strength is learned),
+# bounded and initialized at the teacher's default exactly like every other rate constant
+# in this file. The band reaches 0, so the model can switch the mechanism off if the data
+# disagrees rather than being forced to use it.
+#
+# NOT per-patient. The teacher's population DOES vary fast_gb_drop over [0.25, 0.90]
+# (full_body.py:494), so a per-patient head is the physiologically complete version and
+# is deliberately deferred: it would add a third unsupervised embedding->physiology map,
+# and iter-90's finding was that exactly those maps go wrong when nothing supervises them.
+# A1's job is to make the mechanism EXIST; per-patient strength is a later question.
+_GB_DROP_MIN, _GB_DROP_RANGE, _GB_DROP_INIT = 0.0, 0.95, 0.55  # teacher fast_gb_drop
+# Floor on the defended level as a fraction of the fed setpoint — a healthy fast does not
+# drive glucose arbitrarily low. Held at the teacher's value rather than learned: it binds
+# only deep into a fast, so a learned version would carry almost no gradient signal.
+_GB_FLOOR_FRAC = 0.62  # teacher fast_gb_floor_frac
+
+# Iter 95 (A5) — FASTING HYPOINSULINEMIA. The second half of the iter-93 teacher fix, and
+# it was never ported either.
+#
+# The teacher's iter-93 comment names the exact chain measured on the iter-94 student:
+# "insulin never falls; and lipolysis is insulin-gated, so FFA never rises." iter 93 fixed
+# it with TWO terms — `fast_gb_drop` (ported above as A1) and `fast_ins_exp` here. With A1
+# alone, a 24 h fast now drops student glucose 95.0 -> 76.3 (teacher 78.2) but insulin
+# still sits at 10.4 against the teacher's 3.8, because nothing lowers its setpoint.
+#
+#     effective_Ib = Ib · min(G/Gb, 1)^fast_ins_exp
+#
+# The exponent is not decoration: beta-cell secretion is sigmoid in glucose near threshold,
+# so basal insulin roughly HALVES while glucose drops only ~15% (Polonsky 1988). A linear
+# ratio cannot express that. Identity whenever G >= Gb, so the fed state is untouched, and
+# the ratio is referenced to the FED setpoint `gb_raw` — NOT to A1's falling gb_fasted_raw,
+# which would cancel exactly the signal this term exists to sense.
+#
+# APPLIED TO TOTAL INSULIN PRODUCTION, NOT ONLY TO A BASAL TERM — a deliberate divergence
+# from the teacher's Ib-only application, on evidence. The teacher's secretion term
+# `gamma·max(G-h,0)` with h=95 is exactly zero at fasting glucose, so suppressing Ib alone
+# suppresses everything. `GlucoseGatedInsulinHead`'s equivalent is a SOFT sigmoid gate,
+# and measured on the iter-94 artifact it leaks: peak·gate still supplies 18-47% of
+# production across a 48 h fast (gate 0.008-0.063 at glucose 76-95). Suppressing only the
+# basal channel would therefore leave up to half the fasting production untouched and the
+# port would be incomplete. Scaling total production scales insulin's mass-action
+# equilibrium (norm* = prod·typical/cons) by the same factor, which is exactly what
+# `effective_Ib` means. At the meal peak the factor is clamped to 1, so meal kinetics —
+# the iter-92 guard — are unaffected by construction.
+#
+# Exponent held at the teacher's calibrated value rather than learned: this is a SHAPE
+# fitted to Polonsky, not a strength, and a learned exponent could drift to 0 and switch
+# the mechanism off in exactly the way the bhb rate constant did.
+_FAST_INS_EXP = 5.0  # teacher fast_ins_exp
 
 # OFF-MANIFOLD SAFETY RAIL on total endogenous glucose production (mg/dL/min) — NOT a
 # physiological law. Read it the way PHYSIOLOGICAL_LIMIT_K is read in types.py: a catastrophe
@@ -404,6 +490,7 @@ class MetabolicModule(MassActionModule):
             embedding_dim=embedding_dim,
             hidden_dim=hidden_dim,
             typicals=_TYPICALS,
+            norm_scales=_NORM_SCALES,
             head_factories={
                 _INSULIN_IDX: GlucoseGatedInsulinHead,
                 # SetpointHead needs typical to map target_z (z-score units) ↔
@@ -432,7 +519,10 @@ class MetabolicModule(MassActionModule):
                     inp, hd, stimulus_idx=_INSULIN_IDX, gate_dir=-1,
                     init_thresh=-0.2, init_log_temp=-0.7,
                 ),
-                _BHB_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_BHB_IDX]),
+                # Iter 95: was SetpointHead. In the corrected concentration frame a plain
+                # SpeciesHead reaches any positive equilibrium with live gradients, so the
+                # iter-51 workaround is unnecessary (see modules/base.py:MassActionModule).
+                _BHB_IDX: SpeciesHead,
                 # Iter 57: glycogen is a flux integrator, not a setpoint
                 # species (iters 55-56 proved a SetpointHead glycogen can't
                 # be driven off typical by the indirect cohort delta —
@@ -457,7 +547,7 @@ class MetabolicModule(MassActionModule):
                 # mito stays SetpointHead: it genuinely IS a slow
                 # setpoint-like adaptation variable (not a flux pool), so
                 # the setpoint primitive is correct for it.
-                _MITO_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_MITO_IDX]),
+                _MITO_IDX: SpeciesHead,  # iter 95: was SetpointHead
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
@@ -579,6 +669,10 @@ class MetabolicModule(MassActionModule):
         self.log_k_cort = nn.Parameter(torch.tensor(_logit((_KCORT_INIT - _KCORT_MIN) / _KCORT_RANGE)))
         self.log_k_gn = nn.Parameter(torch.tensor(_logit((_KGN_INIT - _KGN_MIN) / _KGN_RANGE)))
         self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
+        # Iter 95 (A1): fraction of the defended glucose level lost at full liver-glycogen
+        # depletion. Init at the teacher's fast_gb_drop; zero at the fed state regardless.
+        self.log_gb_drop = nn.Parameter(
+            torch.tensor(_logit((_GB_DROP_INIT - _GB_DROP_MIN) / _GB_DROP_RANGE)))
 
     def forward(
         self,
@@ -590,7 +684,12 @@ class MetabolicModule(MassActionModule):
     ) -> torch.Tensor:
         prod_raw, cons_raw = self.species_fluxes(
             state, coupling, external, embedding, time_features)
-        rates = prod_raw * self.prod_scale - cons_raw * self.cons_scale * state
+        # Iter 95: consumption is proportional to CONCENTRATION, not to the normalized
+        # deviation. This module assembles its own rates instead of calling
+        # super().forward() (it overrides several species below), so the frame fix has to
+        # be applied here too — see modules/base.py:MassActionModule for why `typical` was
+        # an absorbing floor for every species that reaches this line.
+        rates = prod_raw * self.prod_scale - cons_raw * self.cons_scale * self.raw_state(state)
         # Sg: RAW per-minute glucose effectiveness, bounded to the literature band
         # [0.005, 0.05]/min (iter 90 frame fix). Equilibrium is Gb_emb for any Sg>0;
         # Sg sets the fasting return SPEED, which is now physiological (τ ≈ 56 min at init).
@@ -651,6 +750,30 @@ class MetabolicModule(MassActionModule):
         act = external[..., _ACTIVITY_EXTERNAL_IDX]
         g_raw = _GLUCOSE_CENTER + _GLUCOSE_NORM_SCALE * state[..., _GLUCOSE_IDX]
         gb_raw = _GLUCOSE_CENTER + _GLUCOSE_NORM_SCALE * b_emb
+        # Iter 95 (A1): the defended level falls as the liver pool empties (see the
+        # _GB_DROP_* block). Zero at the fed state, so this is the identity there.
+        lgly_raw = _LIVER_GLY_CENTER + _LIVER_GLY_NORM_SCALE * state[..., _LIVER_GLYCOGEN_IDX]
+        glyco_depleted = relu(1.0 - lgly_raw / _LIVER_GLY_CENTER)
+        gb_drop = _GB_DROP_MIN + _GB_DROP_RANGE * torch.sigmoid(self.log_gb_drop)
+        gb_fasted_raw = torch.maximum(
+            gb_raw * (1.0 - gb_drop * glyco_depleted),
+            gb_raw * _GB_FLOOR_FRAC,
+        )
+        # Iter 95 (A5): insulin's setpoint falls with the glucose ratio (see _FAST_INS_EXP).
+        # Referenced to the FED gb_raw, not to gb_fasted_raw — referencing it to the falling
+        # level would cancel exactly the signal it exists to sense (the teacher makes the
+        # same note at full_body.py:754).
+        fast_ins_supp = torch.clamp(g_raw / gb_raw, min=0.0, max=1.0) ** _FAST_INS_EXP
+        # Consumption on the RAW concentration, as everywhere else in the corrected frame —
+        # writing `state` here would silently restore the absorbing floor for insulin alone.
+        rates_out[..., _INSULIN_IDX] = (
+            prod_raw[..., _INSULIN_IDX] * fast_ins_supp * self.prod_scale[_INSULIN_IDX]
+            - cons_raw[..., _INSULIN_IDX] * self.cons_scale[_INSULIN_IDX]
+            * self.raw_state(state)[..., _INSULIN_IDX]
+        )
+        # NB: exercise uptake stays referenced to the FED setpoint, matching the teacher
+        # (full_body.py `max(G - params.Gb * 0.8, 0)` uses Gb, not Gb_fasted) — it is a
+        # threshold on absolute glucose availability, not on the defended level.
         exercise_uptake = k_act * act * relu(g_raw - 0.8 * gb_raw)
 
         # Total endogenous glucose production, soft-capped at a physiological Vmax (see
@@ -660,7 +783,11 @@ class MetabolicModule(MassActionModule):
         egp = _EGP_MAX * torch.tanh(egp / _EGP_MAX)
 
         rates_out[..., _GLUCOSE_IDX] = (
-            -(sg + x_ins) * (state[..., _GLUCOSE_IDX] - b_emb) * _GLUCOSE_NORM_SCALE
+            # Iter 95 (A1): written directly in raw mg/dL. Identical to the previous
+            # `(state - b_emb)·NORM_SCALE` form when gb_fasted_raw == gb_raw (both equal
+            # G_raw - Gb_raw by construction), so Sg and Si keep their iter-90 meaning as
+            # true per-minute rate constants.
+            -(sg + x_ins) * (g_raw - gb_fasted_raw)
             + ra * gut_glucose_appearance
             + egp
             - exercise_uptake

@@ -44,7 +44,8 @@ it lands ACTH ≈ 0.0755.
 
 CRH is retained as a typed state at idx 22 (n_species stays at 3) — this
 keeps the iter-69 benchmark dataset (23-D initial_state) working without
-regeneration. CRH is mechanically inert: SetpointHead-only, no
+regeneration. CRH carries no term in the iter-64 mechanism, though
+its head (a plain SpeciesHead since iter 95) reads it like any other state. No
 participation in the ACTH/cortisol cascade. A CRH cascade could only be
 re-introduced once the cold model is taught to simulate CRH (giving it
 direct distillation supervision) — until then it stays inert.
@@ -58,7 +59,8 @@ External inputs (n_external=2): sleep_wake, activity.
 import torch
 import torch.nn as nn
 
-from .base import MassActionModule, SetpointHead
+from .base import MassActionModule, SpeciesHead
+from ..types import MODULE_MARKER_INDICES, NORM_SCALE
 
 # Coupling inputs: glucose (1) + cortisol feedback (1)
 _N_COUPLING = 2
@@ -77,6 +79,8 @@ _CRH_IDX = 2
 
 # Typicals (μg/dL for cortisol; pg/mL for ACTH and CRH).
 _TYPICALS = [12.0, 30.0, 100.0]
+# Iter 95: NORM_SCALE per species, for the raw-concentration consumption term.
+_NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["stress"]]
 # cons_scale per species (inverse time-constant proxy; SetpointHead uses
 # this as base decay).
 _CONS_SCALES = [0.02, 0.03, 0.04]
@@ -93,10 +97,11 @@ class StressModule(MassActionModule):
             embedding_dim=embedding_dim,
             hidden_dim=hidden_dim,
             typicals=_TYPICALS,
+            norm_scales=_NORM_SCALES,
             head_factories={
-                _CORTISOL_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_CORTISOL_IDX]),
-                _ACTH_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_ACTH_IDX]),
-                _CRH_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_CRH_IDX]),
+                _CORTISOL_IDX: SpeciesHead,  # iter 95: was SetpointHead
+                _ACTH_IDX: SpeciesHead,  # iter 95: was SetpointHead
+                _CRH_IDX: SpeciesHead,  # iter 95: was SetpointHead
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]

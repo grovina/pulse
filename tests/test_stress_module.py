@@ -18,6 +18,7 @@ import unittest
 
 import torch
 
+from pulse.modules.base import MassActionModule
 from pulse.modules.stress import StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX, MODULE_MARKER_INDICES
 
@@ -131,27 +132,38 @@ class TestCascadeMechanism(unittest.TestCase):
             float(rate_evening[0, _ACTH_IDX].item()),
         )
 
-    def test_crh_state_does_not_affect_acth_or_cortisol(self) -> None:
-        """CRH is mechanically inert this iter — varying CRH state must not
-        change ACTH or cortisol rates. Confirms the iter-69 cascade is fully
-        decoupled, not just dampened."""
+    def test_crh_carries_no_term_in_the_iter64_mechanism(self) -> None:
+        """The iter-64 cascade mechanism contains no CRH term.
+
+        Iter 95: this previously asserted that the module's TOTAL rate was
+        CRH-independent. That was an initialization artifact, not a structural
+        property — `SetpointHead` zero-initialized its final layer, so the head's
+        output ignored its inputs at init and would have picked up a CRH dependence
+        as soon as those weights moved. With `SetpointHead` removed (see
+        modules/base.py) the head is a plain `SpeciesHead`, which reads the whole
+        module state including CRH from step 0.
+
+        That is not a regression: CRH -> ACTH -> cortisol is the real cascade, so a
+        learned dependence there is physiologically correct. What the iter-64 design
+        actually claims is narrower — that the explicit MECHANISM terms
+        (alpha/beta/gamma/delta) route no CRH — and that is what is asserted here, by
+        isolating the adjustment the subclass adds on top of the mass-action base.
+        Unlike the old assertion, this one also holds after training.
+        """
         module = self._module()
         coupling, external, embedding, time_features = self._zero_inputs()
         crh_low = torch.tensor([[12.0, 30.0, 50.0]])
         crh_high = torch.tensor([[12.0, 30.0, 200.0]])
         with torch.no_grad():
-            rate_low = module(crh_low, coupling, external, embedding, time_features)
-            rate_high = module(crh_high, coupling, external, embedding, time_features)
-        self.assertAlmostEqual(
-            float(rate_low[0, _CORTISOL_IDX].item()),
-            float(rate_high[0, _CORTISOL_IDX].item()),
-            places=5,
-        )
-        self.assertAlmostEqual(
-            float(rate_low[0, _ACTH_IDX].item()),
-            float(rate_high[0, _ACTH_IDX].item()),
-            places=5,
-        )
+            args_low = (crh_low, coupling, external, embedding, time_features)
+            args_high = (crh_high, coupling, external, embedding, time_features)
+            mech_low = module(*args_low) - MassActionModule.forward(module, *args_low)
+            mech_high = module(*args_high) - MassActionModule.forward(module, *args_high)
+        for idx, name in ((_CORTISOL_IDX, "cortisol"), (_ACTH_IDX, "acth")):
+            self.assertAlmostEqual(
+                float(mech_low[0, idx].item()), float(mech_high[0, idx].item()),
+                places=6, msg=f"iter-64 mechanism routes CRH into {name}",
+            )
 
 
 if __name__ == "__main__":

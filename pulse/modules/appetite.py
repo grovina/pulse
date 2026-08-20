@@ -21,7 +21,8 @@ L-cells secrete GLP-1 in response to nutrient delivery rate, not to a binary fed
 
 import torch
 
-from .base import BasalPlusGatedPeakHead, MassActionModule, SetpointHead
+from .base import BasalPlusGatedPeakHead, MassActionModule, SpeciesHead
+from ..types import MODULE_MARKER_INDICES, NORM_SCALE
 
 # Coupling inputs: insulin (1) + nutrient_flag (1) + gut glucose_appearance (1) = 3
 _N_COUPLING = 3
@@ -30,6 +31,8 @@ _N_COUPLING = 3
 _N_EXTERNAL = 1
 
 _TYPICALS = [100.0, 10.0, 10.0]
+# Iter 95: NORM_SCALE per species, for the raw-concentration consumption term.
+_NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["appetite"]]
 _CONS_SCALES = [0.02, 0.001, 0.2]
 
 # Ghrelin (idx 0) is in the iter-51 dead trio — re-parameterised to
@@ -52,11 +55,14 @@ class AppetiteModule(MassActionModule):
             embedding_dim=embedding_dim,
             hidden_dim=hidden_dim,
             typicals=_TYPICALS,
+            norm_scales=_NORM_SCALES,
             # SetpointHead needs typical to map target_z (z-score units) ↔
             # prod (see modules/base.py). Factory closure captures it from
             # _TYPICALS so the head construction stays via head_factories.
             head_factories={
-                _GHRELIN_IDX: lambda inp, hd: SetpointHead(inp, hd, typical=_TYPICALS[_GHRELIN_IDX]),
+                # Iter 95: was SetpointHead — unnecessary in the corrected concentration
+                # frame (see modules/base.py:MassActionModule).
+                _GHRELIN_IDX: SpeciesHead,
                 # Iter 53: GLP-1 is meal-driven (sharp postprandial peaks) — iter 52's
                 # SetpointHead regressed it (0.276→0.421) because target_z can drift
                 # but can't fire a peak. BasalPlusGatedPeakHead fires a gated peak.
