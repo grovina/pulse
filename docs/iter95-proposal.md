@@ -189,8 +189,43 @@ is actually true.
 | state | driver | why it is not inert |
 |---|---|---|
 | `cck` | duodenal lipid + protein appearance | the gut module **already exports** lipid and amino channels (`GUT_OUTPUT_SCALE`); no new input needed |
-| `gallbladder_volume` | CCK-driven contraction, inter-meal refill | fast, meal-locked, in the regime iter-92 already tuned |
+| `gallbladder_bile` | CCK-gated emptying, inter-meal refill | fast, meal-locked, in the regime iter-92 already tuned |
 | `bile_acids` | release → ileal reabsorption → portal → **hepatic export** → systemic spillover | postprandial serum excursion is a scorable dynamic event |
+
+### 3.2.1 The gallbladder is a POOL, and contraction is a gate — not the other way round
+
+Considered and rejected: making `gallbladder_contraction ∈ [0, 1]` the state and holding
+volume constant. It is the more bounded and tempting parameterisation, and it is the same
+category error §1 is about — contraction has no conservation law of its own. It is a
+dimensionless fraction fully determined at each instant by CCK, i.e. a **gate**, while
+volume/content is the one genuine **pool** in the axis.
+
+The concrete failure it would produce: **you cannot empty a gallbladder twice.** Two meals
+90 min apart give a large bile-acid excursion and then a much smaller one, because the
+reservoir is depleted. With a constant volume the second meal reproduces the first exactly.
+That is the same class of error as the glycogen absorbing floor (a pool that could not
+deplete) and the iter-91 postprandial drift (meals that accumulated without clearing). It
+would also erase the interdigestive dynamics — the gallbladder fills and concentrates
+through an overnight fast, which is *why* the first meal of the day gives the largest
+excursion.
+
+The resolution keeps both:
+
+```
+state    gallbladder_bile    a pool — floor at empty, ceiling at capacity
+gate     contraction = f(CCK)    computed, not stored; multiplies the emptying flux
+derived  ejection fraction = dV/V0 over 60 min    <-- score THIS against HIDA literature
+```
+
+Structurally identical to `GlycogenFluxHead` — the pool is the state, the learned gates sit
+on the flux — which is the one part of iter 94 that demonstrably worked. Conservation is
+kept, the clinical anchor (ejection fraction is what HIDA actually measures) survives as a
+scorable derived quantity, and it costs one state rather than two.
+
+Named for **bile-acid content (µmol)** rather than volume (mL): the gallbladder concentrates
+bile ~10x, so content is what conserves through the enterohepatic loop. The two are
+interchangeable up to a concentration constant, and volume only matters for matching
+ultrasound directly.
 
 All three live in the **fast meal-response regime the model is already good at**, which
 is the point: they are testable on the existing ruler this iteration, not two iterations
@@ -239,7 +274,7 @@ repo already uses the pattern in `glucose_baseline_net`, `ra_baseline_net` and
    species shows a live `cons` and a τ within its physiological response time.
    `scripts/iter95_head_shape_audit.py`. This is the falsification test for §1.1.
 3. **Biliary — the axis is dynamic, not decorative.** Postprandial `bile_acids`
-   excursion and `gallbladder_volume` ejection fraction within their encoded bands, and
+   excursion and gallbladder ejection fraction (derived, §3.2.1) within their encoded bands, and
    `cck` peaking ahead of the bile-acid rise.
 4. **Guard — iter-92 meal kinetics hold** (glucose peak 45-60 min, ghrelin nadir
    −30…−50 % at 60-90 min).
