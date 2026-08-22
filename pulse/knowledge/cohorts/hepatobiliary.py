@@ -22,6 +22,32 @@ Deliberately NOT encoded:
   basal at 3 h, which is the right direction and is not evidence of anything.
 * Anything about ALP/GGT/ALT/bilirubin. Those markers do not exist yet, and will not
   until there is a driver for them (see the anchors doc).
+
+SOFT-ARGMAX BETA IS NOT OPTIONAL HERE. ``StatisticKind.TIME_TO_PEAK`` estimates the peak
+minute as a softmax-weighted average of times, ``softmax(beta * value)``. The default
+beta = 0.05 in ``cohort_types`` was never exercised — these are the first cohort specs to
+use TIME_TO_PEAK — and it is far too soft for markers with a small absolute range.
+Measured on the iter-95 validation checkpoint:
+
+    marker        true argmax   range    beta=0.05   0.5    1.0    2.0    5.0   10.0
+    cck                    12    5.54         57.2  32.4   17.2   13.2   12.4   12.2
+    bile_acids             80    2.13        119.2 115.1  109.3   98.8   86.4   82.7
+
+At the default, the CCK spec reported a peak at 57 min for a trajectory that peaks at 12,
+and contributed z = 9.4 — 88.9 of the whole registry's 181 total z², i.e. HALF the cohort
+objective, spent driving the model against a broken measurement. The bile-acid spec
+"passed" while measuring something 39 minutes from its own peak.
+
+Rule of thumb: beta * (marker's postprandial range) should be >= ~20 for the softmax to
+concentrate on the peak rather than drift toward the window centroid. Hence beta = 5 for
+cck (range ~5.5) and 10 for bile_acids (range ~2.1), both verified above to land within
+~3 min of the true argmax.
+
+NOTE for whoever touches ``knowledge/physiology_rules.py``: ``hinge_argmax_in_band`` and
+``hinge_a_precedes_b`` (the ACTH->cortisol lead rule) carry the same 0.05 default over
+markers whose ranges are ~30 and ~10, so beta*range is 1.5 and 0.5. They are likely
+measuring closer to the window centroid than to the peak. NOT changed here — iterations
+have been tuned around that behaviour and the impact is unmeasured — but it should be.
 """
 
 from __future__ import annotations
@@ -86,6 +112,7 @@ CCK_TIME_TO_PEAK = CohortStatisticSpec(
     window=StatisticWindow(start_min=60, end_min=180),
     target=10.0,
     sigma=5.0,
+    softargmax_beta=5.0,   # see the beta note in the module docstring
     init_mode=InitMode.NORM_CENTER,
 )
 
@@ -120,6 +147,7 @@ BILE_ACIDS_TIME_TO_PEAK = CohortStatisticSpec(
     window=StatisticWindow(start_min=60, end_min=300),
     target=95.0,
     sigma=20.0,
+    softargmax_beta=10.0,  # see the beta note in the module docstring
     init_mode=InitMode.NORM_CENTER,
 )
 
