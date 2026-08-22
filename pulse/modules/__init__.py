@@ -6,6 +6,7 @@ from .stress import StressModule
 from .cardiovascular import CardiovascularModule
 from .thermoreg import ThermoregModule
 from .respiratory import RespiratoryModule
+from .hepatobiliary import HepatobiliaryModule, DuodenalDeliveryKernel
 
 __all__ = [
     "MassActionModule",
@@ -17,4 +18,6 @@ __all__ = [
     "CardiovascularModule",
     "ThermoregModule",
     "RespiratoryModule",
+    "HepatobiliaryModule",
+    "DuodenalDeliveryKernel",
 ]

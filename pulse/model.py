@@ -30,6 +30,7 @@ from .types import (
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
     CardiovascularModule, ThermoregModule, RespiratoryModule,
+    HepatobiliaryModule, DuodenalDeliveryKernel,
 )
 from .modules.base import compute_time_features
 from .modules.gut import MealEvent
@@ -59,6 +60,7 @@ class ModularPhysiologyNetwork(nn.Module):
         thermoreg_hidden: int = 24,
         respiratory_hidden: int = 24,
         gut_hidden: int = 32,
+        hepatobiliary_hidden: int = 32,
     ):
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -76,6 +78,10 @@ class ModularPhysiologyNetwork(nn.Module):
             "cardiovascular": 16,
             "thermoreg": 8,
             "respiratory": 8,
+            # Iter 95: the enterohepatic loop. 8 is deliberately modest — most of the
+            # axis's behaviour is structural (see modules/hepatobiliary.py), so the
+            # embedding only needs to carry per-patient gains, not the mechanism.
+            "hepatobiliary": 8,
         }
         self.embedding_projections = nn.ModuleDict({
             name: nn.Linear(embedding_dim, dim)
@@ -90,6 +96,10 @@ class ModularPhysiologyNetwork(nn.Module):
         self.cardiovascular = CardiovascularModule(self._emb_dims["cardiovascular"], cardiovascular_hidden)
         self.thermoreg = ThermoregModule(self._emb_dims["thermoreg"], thermoreg_hidden)
         self.respiratory = RespiratoryModule(self._emb_dims["respiratory"], respiratory_hidden)
+        self.hepatobiliary = HepatobiliaryModule(self._emb_dims["hepatobiliary"], hepatobiliary_hidden)
+        # Duodenal delivery (gastric emptying) — NOT the gut module's systemic
+        # appearance channels. Takes no embedding, so it needs no precompute path.
+        self.duodenal = DuodenalDeliveryKernel()
 
         # Learned defaults for missing external inputs
         self.default_sleep_wake = nn.Parameter(torch.tensor(0.5))
@@ -102,6 +112,7 @@ class ModularPhysiologyNetwork(nn.Module):
         self._cvs_idx = MODULE_MARKER_INDICES["cardiovascular"]
         self._thm_idx = MODULE_MARKER_INDICES["thermoreg"]
         self._rsp_idx = MODULE_MARKER_INDICES["respiratory"]
+        self._hpb_idx = MODULE_MARKER_INDICES["hepatobiliary"]
 
         # Specific marker indices for coupling
         self._glucose_idx = MARKER_INDEX["glucose"]
@@ -146,6 +157,7 @@ class ModularPhysiologyNetwork(nn.Module):
         activity: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
+        duodenal_override: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Compute rates of change for all state variables.
 
@@ -155,6 +167,13 @@ class ModularPhysiologyNetwork(nn.Module):
         meals: list of MealEvent
         sleep_wake: [batch] or None — 0=asleep, 1=awake
         activity: [batch] or None — 0=rest, 1=vigorous
+        duodenal_override: [batch, 2] duodenal (fat, protein) delivery for this step,
+            computed by ``integrate`` on the WINDOW-OFFSET clock. Same frame contract as
+            ``gut_override`` and for the same reason: ``t_minutes`` here is ABSOLUTE
+            time of day while ``meal.time`` is a window offset, so computing meal-dt
+            from ``t_minutes`` re-introduces the iter-87 shift. When absent (a caller
+            outside ``integrate``), delivery falls back to zero rather than being
+            computed on the wrong clock — a silently-shifted meal is worse than none.
         gut_clock_exempt: opt out of the meal frame-contract guard below. ONLY for
             callers whose result is provably independent of gut timing (the
             coupling-prior finite-difference probe, where the gut term is
@@ -333,6 +352,32 @@ class ModularPhysiologyNetwork(nn.Module):
         for i, idx in enumerate(self._rsp_idx):
             rates[:, idx] = rsp_rates[:, i]
 
+        # Hepatobiliary: coupling = [duodenal fat delivery(1), duodenal protein(1)].
+        # Deliberately NOT the gut appearance channels — those are systemic (fat peaks
+        # ~60 min via chylomicrons) whereas duodenal I-cells see nutrient within
+        # minutes. Using appearance put the TEACHER's CCK peak at +68 min against a
+        # literature +10, and the student would inherit the same error.
+        # FRAME CONTRACT: duodenal delivery MUST come from ``integrate`` on the
+        # window-offset clock (see ``duodenal_override``). Falling back to zero rather
+        # than computing it from the absolute ``t_minutes`` is deliberate — that was
+        # the iter-87 bug, and a silently-shifted meal response is worse than none.
+        if duodenal_override is not None:
+            hpb_coupling = duodenal_override
+            if hpb_coupling.dim() == 1:
+                hpb_coupling = hpb_coupling.unsqueeze(0)
+            if hpb_coupling.shape[0] != batch:
+                hpb_coupling = hpb_coupling.expand(batch, -1)
+        else:
+            hpb_coupling = torch.zeros(batch, 2, dtype=state.dtype, device=state.device)
+        hpb_external = torch.stack([act, sw], dim=-1)
+        hpb_rates = self.hepatobiliary(
+            norm_state[:, self._hpb_idx],
+            hpb_coupling, hpb_external,
+            emb["hepatobiliary"], time_feats,
+        )
+        for i, idx in enumerate(self._hpb_idx):
+            rates[:, idx] = hpb_rates[:, i]
+
         if is_unbatched:
             rates = rates.squeeze(0)
 
@@ -429,10 +474,12 @@ def integrate(
         sw_step = sleep_wake[step].expand(batch) if sleep_wake is not None else None
         act_step = activity[step].expand(batch) if activity is not None else None
         gut_step = gut_outputs[:, step] if gut_outputs is not None else None
+        duo_step = duo_outputs[step] if duo_outputs is not None else None
         rates = model(
             state, embedding, t, meals,
             sleep_wake=sw_step, activity=act_step,
             gut_override=gut_step,
+            duodenal_override=duo_step,
         )
         # Physiological clamp (iter 81): a no-op in-distribution, it bounds
         # off-manifold divergence so a runaway term cannot integrate a marker to
@@ -449,6 +496,19 @@ def integrate(
             _PHYS_MAX.to(new_state.device),
         )
         return new_state + (clamped - new_state).detach()
+
+    # Duodenal delivery (gastric emptying) for the whole window, on the WINDOW-OFFSET
+    # clock — the same frame contract as the gut precompute above, and for the same
+    # reason: meal.time is a window offset while the model's t_minutes is absolute time
+    # of day, and mixing them is the iter-87 bug. Embedding-independent, so one call
+    # covers every batch member.
+    duo_outputs = None
+    if meals and hasattr(model, "duodenal"):
+        duo_outputs = model.duodenal.forward_window(
+            torch.arange(n_steps, dtype=torch.float32,
+                         device=initial_state.device) * dt,
+            meals,
+        )
 
     use_checkpointing = (
         checkpoint_segments > 0

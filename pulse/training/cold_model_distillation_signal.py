@@ -803,9 +803,21 @@ class ColdModelDistillationSignal(TrainingSignal):
             dtype=torch.float32, device=device,
         )
         emb_b = emb.unsqueeze(0).expand(T, -1)
+        # Iter 95: duodenal delivery on the WINDOW-OFFSET clock (k = 0..T-1), matching
+        # meal.time — NOT the absolute `t_min` above. Without this the hepatobiliary
+        # states would be rate-matched against the teacher with ZERO meal drive, which
+        # would train CCK's clearance to explain the teacher's secretion: a silently
+        # wrong target, not a missing one.
+        meal_list = list(proto.meal_events)
+        duo_in = (
+            model.duodenal.forward_window(
+                torch.arange(T, dtype=torch.float32, device=device), meal_list)
+            if (meal_list and hasattr(model, "duodenal")) else None
+        )
         rates = model(
-            cold_state, emb_b, t_min, list(proto.meal_events),
+            cold_state, emb_b, t_min, meal_list,
             sleep_wake=sw, activity=act, gut_override=gut_in,
+            duodenal_override=duo_in,
         )
         # Iter 67: loud assert on non-finite rates. If we reach here with NaN
         # output despite the calibration guards, something else in the model
