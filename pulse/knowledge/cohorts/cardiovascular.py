@@ -151,7 +151,76 @@ SLEEP_HR_DIP = CohortStatisticSpec(
 # this anchor would be a net regression. (Verified 2026-07-19.)
 
 
+# ---------------------------------------------------------------------------
+# Whole-day HR contrast — the anchor iter 94 said was missing.
+# ---------------------------------------------------------------------------
+# The `hr_circ_amp` comment in full_body.py records iter 94 considering a change
+# to that constant and reverting it, with the reason stated plainly: "no cohort
+# statistic constrains this term (it cancels in `sleep_hr_dip`, whose arms share
+# a clock window), so the only justification available was a whole-day sleep-vs-
+# wake contrast — which is not an encoded, cited quantity at all."
+#
+# It is now. The 24 h Holter reference cohort (n=134 normal subjects; PMID
+# 2424396) reports mean HR 75 ± 9 bpm over 24 h, 82 ± 10 daytime and 64 ± 8 at
+# night — a day→night fall of 22 %. The widely-quoted clinical range for the
+# nocturnal fall is 10-20 %, so 22 % sits at the top of it; sigma 6 covers both
+# readings without pretending to more precision than the sources support.
+#
+# ONE arm, so unlike `sleep_hr_dip` the circadian term does NOT cancel: this is
+# the statistic that pins the total diurnal amplitude, whichever channel carries
+# it. Together with `sleep_hr_dip` (which isolates the sleep term) and Adlan 2018
+# (which fixes `cort_hr` by direct measurement) the three HR channels are finally
+# separately identified — iter 94's open item, closed.
+_DN_DUR = 1440
+_dn_sleep = [1.0] * _DN_DUR
+for _i in range(0, 60):          # start 06:00; asleep until 07:00
+    _dn_sleep[_i] = 0.0
+for _i in range(1020, _DN_DUR):  # asleep from 23:00
+    _dn_sleep[_i] = 0.0
+_dn_k = 20
+_dn_smoothed = [
+    sum(_dn_sleep[max(0, _i - _dn_k // 2):min(_DN_DUR, _i + _dn_k // 2)])
+    / (min(_DN_DUR, _i + _dn_k // 2) - max(0, _i - _dn_k // 2))
+    for _i in range(_DN_DUR)
+]
+DAY_NIGHT_HR_CONTRAST = CohortStatisticSpec(
+    name="day_night_hr_contrast",
+    source="24 h Holter reference cohort, n=134 normal subjects (PMID 2424396): day 82 ± 10, night 64 ± 8 bpm",
+    description="Mid-afternoon mean HR minus mid-NREM mean HR over one realistic 24 h day",
+    arms=(
+        CohortArmSpec(
+            label="realistic_24h",
+            duration_min=_DN_DUR, start_hour=6.0,
+            meals=((120.0, 50.0, 8.0, 15.0), (360.0, 65.0, 12.0, 25.0),
+                   (720.0, 60.0, 15.0, 30.0)),
+            sleep_wake=tuple(_dn_smoothed),
+        ),
+    ),
+    marker_id="hr",
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    # 13:00-16:00 (min 420-600) — awake, post-absorptive, away from meals.
+    window=StatisticWindow(start_min=420, end_min=600),
+    target=82.0,
+    sigma=10.0,
+)
+
+NIGHT_HR_LEVEL = CohortStatisticSpec(
+    name="night_hr_level",
+    source="24 h Holter reference cohort, n=134 normal subjects (PMID 2424396): night 64 ± 8 bpm",
+    description="Mid-NREM mean HR (02:00-05:00) over the same realistic 24 h day",
+    arms=DAY_NIGHT_HR_CONTRAST.arms,
+    marker_id="hr",
+    # 02:00-05:00 = minutes 1200-1380 from a 06:00 start.
+    window=StatisticWindow(start_min=1200, end_min=1380),
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    target=64.0,
+    sigma=8.0,
+)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     POSTPRANDIAL_HR_RISE,
     SLEEP_HR_DIP,
+    DAY_NIGHT_HR_CONTRAST,
+    NIGHT_HR_LEVEL,
 ]

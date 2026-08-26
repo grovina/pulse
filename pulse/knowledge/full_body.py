@@ -124,7 +124,20 @@ class PatientParams:
     p2: float = 0.03
     n: float = 0.15
     gamma: float = 0.07
+    # Iter 96: `h` -- the glucose threshold above which glucose-stimulated insulin
+    # release engages -- is now DERIVED per patient in resolve_derived_params as
+    # Gb * h_frac, not held at the population 95. Iter 21 set 80 -> 95 precisely to
+    # "zero out GSIR at fasting glucose"; that intent is correct and was expressed
+    # against ONE patient's fasting glucose while `Gb` is sampled over 54-126.
+    # MEASURED on 12 randomized patients: 5 of 12 have Gb > 95, so their GSIR never
+    # switches off and fasted insulin runs 27-53 uU/mL against the 7 +/- 4 anchor
+    # (`extended_fast_insulin_basal`); corr(Gb, fasted insulin) = +0.835 and the
+    # standing GSIR contribution averages 7.0 uU/mL -- the whole anchor's budget.
+    # Same family as the iter-95 frame error: a rate law referenced to a POPULATION
+    # constant where the physiology references the INDIVIDUAL's set point. In the
+    # Bergman minimal model h is a per-subject fitted parameter, not a constant.
     h: float = 95.0
+    h_frac: float = 1.0
 
     # --- Iter 93: THE FASTED STATE NEVER ENGAGED ---------------------------
     # Measured over 12 randomized patients, a 48 h fast produced: glucose
@@ -341,7 +354,20 @@ class PatientParams:
 
     # Leptin
     Lep_b: float = 10.0
-    k_lep: float = 0.001
+    # Iter 96: 0.001 -> 0.025. Leptin is driven by a 24 h circadian target peaking
+    # at 02:00, and a first-order filter with k = 0.001 (tau = 1000 min) applied to
+    # a 24 h sinusoid has a phase lag of atan(omega/k)/omega = 5.14 h and retains
+    # only 1/sqrt(1+(omega/k)^2) = 23 % of the amplitude. MEASURED, the teacher's
+    # leptin peaked at 07:00 against a 02:00 target with a realized range of 0.94
+    # against a +/-2.0 target -- which is the whole of why leptin has read as
+    # "inert" for many iterations, and why `leptin_nocturnal_peak` reported a
+    # standing violation. Plasma leptin's half-life is ~25-30 min (Klein et al.
+    # 1996, J Clin Invest 97:2152), i.e. k = ln2/27 = 0.026/min; 0.025 gives a
+    # 0.6 h lag and 98 % amplitude retention. NOT fixed here: leptin still has no
+    # meal coupling at all, so `leptin_fed_vs_fasted` is structurally 0.00 against
+    # its +2 target -- that needs an insulin->leptin term (Saad et al. 1998), which
+    # is a new mechanism rather than a rate constant. Left as an open item.
+    k_lep: float = 0.025
     lep_circ_amp: float = 2.0
 
     # GLP-1. Iter 21 recalibration: glp1_meal_gain 5.0 -> 1.5 to match
@@ -393,9 +419,40 @@ class PatientParams:
     SBP0: float = 120.0
     DBP0: float = 80.0
     k_bp: float = 0.2
-    cort_hr: float = 0.3
-    cort_hrv: float = 0.2
-    cort_bp: float = 0.15
+    # --- Iter 96: THE CORTISOL -> CARDIOVASCULAR GAINS WERE 7-13x TOO STRONG ---
+    #
+    # These three coefficients enter dHR/dHRV/dSBP as rate terms, so the level a
+    # standing cortisol deviation buys is coefficient/k. The teacher realized
+    #     hr 1.000 bpm, sbp 0.750 mmHg, hrv 2.000 ms   per ug/dL of cortisol
+    # i.e. cortisol's own 4-18 ug/dL diurnal swing moved HR by 14 bpm on its own.
+    #
+    # The measurement (Adlan et al. 2018, J Physiol 596(20):4847-4861): 200 mg IV
+    # hydrocortisone vs placebo, n=10 healthy males, 3 h post-dose ->
+    #     HR +7 +/- 4 bpm, SBP +5 +/- 5 mmHg, rMSSD 84 +/- 38 -> 59 +/- 29 ms.
+    # Serum cortisol: placebo 93.7 +/- 37.0 nmol/L; on hydrocortisone it exceeded
+    # the assay ceiling in 7 of 10 (censored to 1400; the 3 measurable read
+    # 2637 +/- 42). Using the CENSORED floor gives delta-cortisol 47.3 ug/dL --
+    # deliberately the conservative choice, because a smaller denominator
+    # OVERSTATES the gain. Even so:
+    #     hr  0.148 bpm, sbp 0.106 mmHg, hrv -0.528 ms   per ug/dL
+    # and against the actually-measured concentration those halve again. The
+    # teacher was 6.8x the conservative gain and 13.2x the measured one.
+    #
+    # WHAT THIS FIXES. Measured on the 14 real overnight episodes with their own
+    # Oura masks, the teacher's 03:00-06:00 HR rise decomposes as circadian
+    # +2.33, sleep-shift +3.14, CORTISOL +6.84 bpm -- so cortisol alone carried
+    # 56% of a +12.2 bpm dawn rise against a real +3.2. Re-gaining it is the
+    # single largest correction available in that window, and it also relieves
+    # `sleep_hr_dip`, which sat 1 sd too DEEP (-11.9 vs -8 +/- 4) precisely
+    # because sleep's cortisol suppression was being amplified 7x on the way to HR.
+    #
+    # HONEST LIMIT: a 200 mg bolus is supraphysiological and a receptor-mediated
+    # effect may well be steeper (not flatter) inside the 4-18 ug/dL range, so
+    # this could under-gain. It is still the only direct human dose-response
+    # measurement available, and 7x is far outside any plausible curvature.
+    cort_hr: float = 0.045
+    cort_hrv: float = 0.053
+    cort_bp: float = 0.021
     # Iter 93: there was NO meal -> cardiovascular coupling at all. Measured,
     # a 75 g mixed meal and a fasted arm produced BIT-IDENTICAL HR, HRV, SBP
     # and DBP trajectories (max delta 0.0000 over 5 h) against a literature
@@ -451,7 +508,15 @@ class PatientParams:
     # not a further tuning pass. Recorded as open in docs/iter94-spec.md.
     #
     # sleep_bp_frac deliberately NOT changed — see sbp_sleep_dip in cohorts/breadth_floor.py.
-    sleep_hr_frac: float = 0.06
+    # Iter 96: 0.06 -> 0.09. The iter-94 note below asked for "a contribution that
+    # isolates them" before this could be set honestly -- Adlan 2018 (see cort_hr)
+    # IS that contribution. With cortisol's chronotropic gain fixed at its measured
+    # value, the explicit sleep term is no longer double-counted, and `sleep_hr_dip`
+    # falls to -5.2 bpm at 0.06. 0.09 restores it to -7.3 against the -8 +/- 4
+    # target (z -0.99 -> +0.17, i.e. BETTER anchored than before), and leaves the
+    # whole-day contrast at 23.7% -- see DAY_NIGHT_HR_CONTRAST in
+    # cohorts/cardiovascular.py, which is the cited anchor iter-94 said was missing.
+    sleep_hr_frac: float = 0.09
     sleep_hrv_gain: float = 1.08
     sleep_bp_frac: float = 0.12
     sleep_rr_drop: float = 3.0
@@ -493,6 +558,20 @@ class PatientParams:
     # star (mitochondrial_capacity, deferred) will eventually ride on.
     LGly_b: float = 100.0       # liver glycogen typical / fed level (g)
     MGly_b: float = 400.0       # muscle glycogen typical / fed level (g)
+    # Iter 96 CONSIDERED 110 -> 125 and REVERTED it; recorded because the reasoning
+    # is the trap. With the width taper (glyc_fill_width_L) the eucaloric pool
+    # equilibrates near LGly_max - 25 g, so 125 lands it at LGly_b = 100 g, which
+    # looks like the right answer for "a eucaloric day is glycogen-neutral". But
+    # the cap is not only a cap: raising it also lets each meal deposit more, and
+    # MEASURED, the 10-16 h fasted arm went from 82.6 g to 97 g -- the pool stopped
+    # emptying overnight, and four fasted-state anchors degraded together
+    # (insulin_basal z +2.07 -> +3.09, bhb -0.93 -> -1.59, ffa -1.71 -> -1.91).
+    # The per-meal deposition is pinned by Taylor 1996 (19% of meal carbohydrate)
+    # and the 24 h fast level by Cahill/Rothman (~40 g); both are already satisfied
+    # at 110. That a 175 g-carbohydrate day is then mildly glycogen-negative is not
+    # obviously an error -- it is a low-carbohydrate day. What WAS an error was the
+    # 9%-of-capacity throttle at the fed level, and the width taper fixes that
+    # without touching the cap.
     LGly_max: float = 110.0     # liver storage cap (synthesis tapers as it fills)
     MGly_max: float = 450.0     # muscle storage cap
     k_glyc_syn_L: float = 0.6   # liver synthesis gain (per unit carb-appearance·insulin-drive)
@@ -502,6 +581,12 @@ class PatientParams:
     glyc_ins_supp: float = 15.0  # above-basal insulin (µU/mL) that halves liver glycogenolysis
     glyc_K_L: float = 35.0      # liver depletion-saturation constant (g)
     glyc_K_M: float = 150.0     # muscle depletion-saturation constant (g)
+    # Iter 96: width (g) over which synthesis tapers off as the pool approaches
+    # its cap. See the dLGly block -- `1 - LGly/LGly_max` throttled refill to 9%
+    # of capacity exactly at the fed level, which made a eucaloric day
+    # glycogen-NEGATIVE and gave the pool an implicit setpoint near 51 g.
+    glyc_fill_width_L: float = 30.0
+    glyc_fill_width_M: float = 60.0
     act_rest_M: float = 0.10    # activity below this is rest — no muscle glycogenolysis (Coppack 1989)
 
 
@@ -562,7 +647,11 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # glucose_mape 0.49). 0.25 spans ~59-171 mg/dL at +/-2 sigma (mild hypo to
     # diabetic-range fasting) -- realistic clinical diversity; teacher verified
     # sane across the range (0/40 unstable trajectories).
-    p.Gb = vary(p.Gb, 0.25, ir=0.50)          # fasting hyperglycemia tracks IR
+    # Iter 96: CLIPPED. The unclipped 0.25 spread reached Gb = 54 mg/dL, and that
+    # patient's simulated fasted glucose settled at 42 mg/dL -- neuroglycopenic, not
+    # a phenotype, and it was being distilled as one. Clinical fasting glucose spans
+    # ~70 (low-normal) to ~130 (diabetic range); clip there and keep the spread.
+    p.Gb = float(np.clip(vary(p.Gb, 0.25, ir=0.50), 70.0, 130.0))
     p.Ib = vary(p.Ib, 0.4, ir=0.60)           # compensatory hyperinsulinemia
     p.n = vary(p.n)
     p.gamma = vary(p.gamma)
@@ -668,6 +757,8 @@ def resolve_derived_params(params: PatientParams) -> PatientParams:
     Idempotent, so it is safe to call more than once.
     """
     params.lip_max = params.FFA_b * params.k_ffa * (1.0 + params.Ib / params.IC50_lip)
+    # Iter 96: GSIR threshold tracks the patient's own defended fasting glucose.
+    params.h = params.Gb * params.h_frac
     return params
 
 
@@ -976,10 +1067,35 @@ def simulate_full_body(
         # to give; now it does). The split is the IDENTITY at the fed
         # calibration state, so the acute/fed observed-marker ODE is unchanged.
         ins_drive = max(I - params.Ib, 0.0) / (max(I - params.Ib, 0.0) + params.Ib)
-        syn_L = (params.k_glyc_syn_L * Ra_carb * ins_drive
-                 * max(0.0, 1.0 - LGly / params.LGly_max))
-        syn_M = (params.k_glyc_syn_M * Ra_carb * ins_drive
-                 * max(0.0, 1.0 - MGly / params.MGly_max))
+        # ITER 96 -- THE FILL TAPER GAVE THE POOL AN IMPLICIT SETPOINT.
+        # The taper used to be `1 - LGly/LGly_max`, which at the fed level
+        # LGly=100 with LGly_max=110 is 0.091: synthesis was throttled to 9% of
+        # capacity exactly where the pool is supposed to be refilling, while
+        # breakdown ran at LGly/(LGly+K) = 0.74 of its own. Measured on the
+        # eucaloric cohort day (175 g carbohydrate, 3 meals): synthesis totalled
+        # 21 g against 48 g of breakdown, i.e. **a normal eating day was
+        # glycogen-NEGATIVE by 27 g**, and the pool ran down to an implicit
+        # equilibrium of 51 g over five such days. A storage pool whose fed state
+        # cannot hold its own level has stopped being a storage pool: it no longer
+        # discriminates fed from fasted in EITHER direction, which is exactly what
+        # `extended_fast_liver_glycogen_overnight` had been reporting (teacher
+        # delta -7.8 g) and what the student inherited (its own pool drains to
+        # 19 g over five eucaloric days -- docs/iter95 notes).
+        #
+        # The taper is now a WIDTH: full synthesis through the working range,
+        # closing over the last `glyc_fill_width` grams before the cap. Same
+        # physical statement (you cannot overfill a liver), without the throttle
+        # that was ALSO applied through the whole normal operating range.
+        # Measured after the fix: the pool is stationary -- day-1 and day-5
+        # eucaloric levels agree to 0.1 g at every setting swept.
+        #
+        # This is the same shape error as the student's GlycogenFluxHead anabolic
+        # gate (`headroom` grows as the pool empties while `fullness` shrinks its
+        # breakdown authority) -- see the iter-96 proposal. Both are fixed here.
+        fill_L = min(1.0, max(0.0, (params.LGly_max - LGly) / params.glyc_fill_width_L))
+        fill_M = min(1.0, max(0.0, (params.MGly_max - MGly) / params.glyc_fill_width_M))
+        syn_L = params.k_glyc_syn_L * Ra_carb * ins_drive * fill_L
+        syn_M = params.k_glyc_syn_M * Ra_carb * ins_drive * fill_M
         fast_gate_L = 1.0 / (1.0 + max(I - params.Ib, 0.0) / params.glyc_ins_supp)
         brk_L = params.k_glyc_brk_L * fast_gate_L * (LGly / (LGly + params.glyc_K_L))
         act_ex = max(act - params.act_rest_M, 0.0)  # only supra-rest activity spends muscle glycogen
