@@ -185,20 +185,68 @@ def hinge_max_correlation(
     return torch.relu(corr - max_corr)
 
 
+# Iter 96: sharpness for every soft-argmax/argmin here, expressed in units of
+# the marker's own value range rather than absolute marker units. ~20 is where
+# the weights stop reporting the window centroid and start reporting the peak
+# (measured across six markers spanning ranges 0.5 to 32 — see the helper below).
+_SOFTARGMAX_BETA_SCALE = 20.0
+
+
+def _range_normalized_softmax_weights(
+    values: torch.Tensor, beta_scale: float, sign: float = 1.0,
+) -> torch.Tensor:
+    """Softmax weights whose sharpness is measured in units of the marker's own range.
+
+    ITER 96 — WHY THIS EXISTS. Every soft-argmax here used an ABSOLUTE
+    ``beta`` of 0.05, i.e. `softmax(0.05 · value)`. Sharpness is only
+    meaningful relative to how far the values actually spread: the useful
+    quantity is ``beta · range``, and it needs to be ~20 or more before the
+    weights concentrate on the peak at all. Measured on a teacher 24 h
+    trajectory (scratchpad/beta.py):
+
+        marker      range   true argmax   reported at beta=0.05   beta*range
+        cortisol    14.13       508 min          654 min             0.71
+        sbp         15.88       513              687                 0.79
+        temp         0.51       920              722                 0.03
+        acth        31.98       459              570                 1.60
+        leptin       0.94       418              714                 0.05
+
+    Every one collapses toward 719.5 — the CENTROID of the 1440-minute
+    window. The rules were not measuring a peak; they were measuring the
+    middle of the window and calling it a peak. Two of them
+    (``cortisol_morning_peak``, ``sbp_morning_surge``) therefore reported
+    standing violations of 114 and 87 minutes against trajectories whose
+    true peaks sit INSIDE their target bands, at ~0.95 and ~0.73 loss each,
+    with a gradient that pushes the whole trajectory toward midday rather
+    than moving the peak. ``temp_afternoon_peak``'s real 40-minute error was
+    reported as 238.
+
+    Normalising by the (detached) range makes ``beta_scale`` dimensionless
+    and self-calibrating, so a marker added later cannot inherit a silently
+    broken sharpness the way `bile_acids` did in iter 95 (that one was
+    caught only because it happened to eat half the cohort objective).
+    The range is detached: it sets the temperature, it is not a thing to
+    optimise through.
+    """
+    spread = (values.max() - values.min()).detach()
+    beta = beta_scale / torch.clamp(spread, min=1e-6)
+    return torch.softmax(sign * values * beta, dim=0)
+
+
 def hinge_argmax_in_band(
     traj: torch.Tensor, col: int, window: slice,
     target_min: float, target_max: float, step_min: float,
-    softargmax_beta: float = 0.05,
+    softargmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when soft-argmax minute over ``window`` falls outside [target_min, target_max].
 
     ``target_min`` / ``target_max`` are in minutes relative to the
     window start. ``step_min`` is the integration step in minutes
-    (passed from RuleContext). ``softargmax_beta`` matches the
-    cohort_types convention.
+    (passed from RuleContext). ``softargmax_beta`` is a RANGE-RELATIVE
+    sharpness (iter 96) — see ``_range_normalized_softmax_weights``.
     """
     values = traj[window, col]
-    weights = torch.softmax(values * softargmax_beta, dim=0)
+    weights = _range_normalized_softmax_weights(values, softargmax_beta)
     indices = torch.arange(values.shape[0], device=values.device, dtype=values.dtype)
     soft_step = (weights * indices).sum()
     soft_min = soft_step * step_min
@@ -208,7 +256,7 @@ def hinge_argmax_in_band(
 def hinge_a_precedes_b(
     traj: torch.Tensor, col_a: int, col_b: int, window: slice,
     min_lead_min: float, max_lead_min: float, step_min: float,
-    softargmax_beta: float = 0.05,
+    softargmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when A's soft-argmax does not lead B's by [min_lead, max_lead] minutes.
 
@@ -223,7 +271,7 @@ def hinge_a_precedes_b(
     """
     def soft_argmax_minutes(col: int) -> torch.Tensor:
         values = traj[window, col]
-        weights = torch.softmax(values * softargmax_beta, dim=0)
+        weights = _range_normalized_softmax_weights(values, softargmax_beta)
         indices = torch.arange(values.shape[0], device=values.device, dtype=values.dtype)
         return (weights * indices).sum() * step_min
 
@@ -399,7 +447,7 @@ def hinge_max_drift(
 def hinge_argmin_in_band(
     traj: torch.Tensor, col: int, window: slice,
     target_min: float, target_max: float, step_min: float,
-    softargmin_beta: float = 0.05,
+    softargmin_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when soft-argmin minute over ``window`` falls outside [target_min, target_max].
 
@@ -407,7 +455,7 @@ def hinge_argmin_in_band(
     evening trough, temp pre-dawn trough, HR sleep nadir.
     """
     values = traj[window, col]
-    weights = torch.softmax(-values * softargmin_beta, dim=0)
+    weights = _range_normalized_softmax_weights(values, softargmin_beta, sign=-1.0)
     indices = torch.arange(values.shape[0], device=values.device, dtype=values.dtype)
     soft_step = (weights * indices).sum()
     soft_min = soft_step * step_min
@@ -1219,11 +1267,21 @@ GHRELIN_EVENING_PEAK = PhysiologyRule(
         "before habitual dinner timing."
     ),
     arms=(_CIRCADIAN_24H_WITH_MEALS_ARM, _SLEEP_WAKE_24H_ARM),
+    # ITER 96 — RE-WINDOWED from the full 24 h to the afternoon/evening.
+    # The rule describes a "meal-anticipatory peak before habitual dinner
+    # timing", which is a LOCAL maximum. Ghrelin's GLOBAL 24 h maximum is the
+    # nocturnal peak around 01:00 (Cummings et al. 2001, Diabetes 50:1714), so a
+    # 24 h argmax could never land in 18:00-22:00 no matter what the model did.
+    # This was invisible while the soft-argmax was reporting the window centroid
+    # (~12:00) for every marker; with the range-normalized sharpness the rule
+    # would now report an 819-minute standing violation on a trajectory that has
+    # a perfectly good pre-dinner peak. Window 14:00-23:00 makes the described
+    # peak the window's own maximum; the band is relative to the window start.
     predicate=lambda traj, ctx: hinge_argmax_in_band(
         traj, ctx.col("ghrelin"),
-        window=ctx.window(0.0, 24 * 60.0),
-        target_min=18 * 60.0,
-        target_max=22 * 60.0,
+        window=ctx.window(14 * 60.0, 23 * 60.0),
+        target_min=4 * 60.0,   # 18:00
+        target_max=8 * 60.0,   # 22:00
         step_min=ctx.step_min,
     ),
     scale=120.0,
@@ -1240,11 +1298,18 @@ LEPTIN_EVENING_PEAK = PhysiologyRule(
         "one for its phase."
     ),
     arms=(_CIRCADIAN_24H_WITH_MEALS_ARM, _SLEEP_WAKE_24H_ARM),
+    # ITER 96 — the old band was `target_max = 26 h` on a window only 24 h long,
+    # so a quarter of the stated band lay outside the trajectory and the rule
+    # could only ever score the 22:00-24:00 half. The nocturnal leptin peak
+    # straddles midnight, and these arms start at 00:00, so the peak sits on the
+    # window BOUNDARY — the one place an argmax cannot be measured. Windowing to
+    # 14:00-24:00 asks the reachable half of the claim ("leptin is still climbing
+    # into the late evening") of a trajectory that can actually express it.
     predicate=lambda traj, ctx: hinge_argmax_in_band(
         traj, ctx.col("leptin"),
-        window=ctx.window(0.0, 24 * 60.0),
-        target_min=22 * 60.0,
-        target_max=26 * 60.0,  # wraps midnight; treated as continuous within window
+        window=ctx.window(14 * 60.0, 24 * 60.0),
+        target_min=8 * 60.0,   # 22:00
+        target_max=10 * 60.0,  # 24:00
         step_min=ctx.step_min,
     ),
     scale=120.0,
