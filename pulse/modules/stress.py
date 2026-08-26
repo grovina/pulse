@@ -111,9 +111,9 @@ class StressModule(MassActionModule):
         # Iter 64 compact mechanism — restored after iter 69's Move B FULL
         # regressed ACTH (0.091→0.761) by diluting the direct γ·diurnal drive.
         self._alpha_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))   # ACTH → cortisol drive
-        self._delta_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))   # diurnal → cortisol drive (iter 66)
         self._gamma_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))   # diurnal → ACTH drive
         self._beta_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))    # cortisol → ACTH neg feedback
+        # ITER 96 -- `_delta_raw` (diurnal → cortisol) IS GONE. See forward().
 
         # Per-patient diurnal phase (scalar) projected from the embedding.
         # Carries population-relative OFFSET; the SetpointHead's time-feature
@@ -137,7 +137,33 @@ class StressModule(MassActionModule):
         typical_cortisol = float(_TYPICALS[_CORTISOL_IDX])
         typical_acth = float(_TYPICALS[_ACTH_IDX])
 
-        acth_excess = torch.relu((acth_raw - typical_acth) / typical_acth)
+        # ITER 96 -- CORTISOL WAS DOUBLE-DRIVEN IN THE STUDENT. This is iter-91's
+        # TEACHER fix, which was never ported across.
+        #
+        # Through iter 95 the student had BOTH `cortisol_drive = α·relu(ACTH−typ)`
+        # AND `cortisol_diurnal = δ·(1+diurnal)·prod_scale`. The teacher stopped
+        # doing exactly this in iter 91 (full_body.py, the HPA block): ACTH is
+        # itself circadian, so a second circadian on cortisol injects the same
+        # rhythm twice and — because `diurnal_carrier` ∈ [0,2] and δ = softplus(·)
+        # ≥ 0 — adds a STRICTLY NON-NEGATIVE standing offset on top. A rectified
+        # source term is a production FLOOR, the same shape of error iter 95 found
+        # in the mass-action frame: cortisol could not fall below what δ·prod_scale
+        # sustains. Measured on the iter-95 artifact across the 14 real overnight
+        # episodes, the student's hourly cortisol nadir sat at 10.3-12.0 µg/dL
+        # against the teacher's 4.4 and a physiological 3-5 (Weitzman 1971).
+        #
+        # The cascade the model claims to implement is ACTH → cortisol. So:
+        #   - `cortisol_diurnal` is REMOVED. The circadian lives in ACTH alone,
+        #     which is where the SCN→PVN→pituitary pathway puts it.
+        #   - the ACTH → cortisol drive is now PROPORTIONAL to the secretagogue
+        #     (`ACTH/typical`), matching the teacher's `cort_target =
+        #     cort_per_acth · ACTH`, instead of rectified at typical. Rectifying
+        #     made the map FLAT below typical ACTH — cortisol could not tell an
+        #     ACTH of 5 from an ACTH of 12, which is precisely the overnight
+        #     range the nadir lives in.
+        # ACTH's own drive keeps the [0,2] carrier, which reaches 0 at the trough,
+        # so ACTH retains a real nadir of its own.
+        acth_norm = torch.relu(acth_raw / typical_acth)
         cortisol_excess = torch.relu((cortisol_raw - typical_cortisol) / typical_cortisol)
 
         # Diurnal carrier with per-patient phase offset.
@@ -149,17 +175,15 @@ class StressModule(MassActionModule):
         diurnal_carrier = 1.0 + diurnal  # range [0, 2]
 
         alpha = nn.functional.softplus(self._alpha_raw)
-        delta = nn.functional.softplus(self._delta_raw)
         gamma = nn.functional.softplus(self._gamma_raw)
         beta = nn.functional.softplus(self._beta_raw)
 
-        cortisol_drive = alpha * acth_excess * self.prod_scale[_CORTISOL_IDX]
-        cortisol_diurnal = delta * diurnal_carrier * self.prod_scale[_CORTISOL_IDX]
+        cortisol_drive = alpha * acth_norm * self.prod_scale[_CORTISOL_IDX]
         acth_drive = gamma * diurnal_carrier * self.prod_scale[_ACTH_IDX]
         acth_feedback = -beta * cortisol_excess * self.prod_scale[_ACTH_IDX]
 
         adjustments = torch.zeros_like(base_rate)
-        adjustments[..., _CORTISOL_IDX] = cortisol_drive + cortisol_diurnal
+        adjustments[..., _CORTISOL_IDX] = cortisol_drive
         adjustments[..., _ACTH_IDX] = acth_drive + acth_feedback
         # _CRH_IDX: no mechanism adjustment — inert this iter.
 

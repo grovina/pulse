@@ -57,10 +57,13 @@ class TestStressModuleStructure(unittest.TestCase):
 
 
 class TestCascadeMechanism(unittest.TestCase):
-    """At typical baseline + zero embedding, α·acth_excess = 0 and β·cortisol_excess
-    = 0, so the mechanism fires only when the relevant species exceeds typical.
-    Drive a single stage at a time and confirm the downstream species *responds*
-    (gets a non-zero, correct-sign rate adjustment on top of the SetpointHead)."""
+    """Drive a single stage at a time and confirm the downstream species *responds*
+    (gets a correct-sign rate adjustment on top of the mass-action base).
+
+    Iter 96: the ACTH→cortisol drive is now PROPORTIONAL to ACTH rather than
+    rectified at typical, and `_delta_raw` (a second, independent circadian on
+    cortisol) is gone — cortisol follows its secretagogue and nothing else. The
+    β feedback on ACTH is still rectified at typical."""
 
     def _module(self) -> StressModule:
         torch.manual_seed(0)
@@ -68,7 +71,7 @@ class TestCascadeMechanism(unittest.TestCase):
         # Bias the mechanism parameters above the init floor (softplus(0)
         # ≈ 0.69 vs init softplus(-3) ≈ 0.05) so the mechanism signal is
         # measurable above the SetpointHead residual at random init.
-        for p in (m._alpha_raw, m._delta_raw, m._gamma_raw, m._beta_raw):
+        for p in (m._alpha_raw, m._gamma_raw, m._beta_raw):
             with torch.no_grad():
                 p.fill_(0.0)
         return m
@@ -164,6 +167,62 @@ class TestCascadeMechanism(unittest.TestCase):
                 float(mech_low[0, idx].item()), float(mech_high[0, idx].item()),
                 places=6, msg=f"iter-64 mechanism routes CRH into {name}",
             )
+
+
+    def test_cortisol_mechanism_carries_no_independent_circadian(self) -> None:
+        """Iter 96: cortisol is driven by ACTH alone — no second circadian.
+
+        Through iter 95 the module added `δ·(1+diurnal)·prod_scale` to cortisol on
+        top of the ACTH drive, duplicating a rhythm ACTH already carries and — since
+        the carrier is in [0,2] and δ = softplus(·) ≥ 0 — laying a strictly
+        non-negative production floor under it. That floor is why the student's
+        overnight cortisol nadir sat at 10-12 µg/dL against the teacher's 4.4. The
+        teacher stopped doing exactly this in iter 91; this asserts the student
+        does not do it either, at ANY phase, holding ACTH fixed.
+        """
+        module = self._module()
+        coupling = torch.zeros(1, 2)
+        external = torch.zeros(1, 2)
+        embedding = torch.zeros(1, EMBEDDING_DIM)
+        state = torch.tensor([[12.0, 30.0, 100.0]])
+        morning = torch.tensor([[6 / 24.0, 1.0, 0.0]])    # carrier = 2
+        evening = torch.tensor([[18 / 24.0, -1.0, 0.0]])  # carrier = 0
+        with torch.no_grad():
+            args_m = (state, coupling, external, embedding, morning)
+            args_e = (state, coupling, external, embedding, evening)
+            mech_m = module(*args_m) - MassActionModule.forward(module, *args_m)
+            mech_e = module(*args_e) - MassActionModule.forward(module, *args_e)
+        self.assertAlmostEqual(
+            float(mech_m[0, _CORTISOL_IDX].item()),
+            float(mech_e[0, _CORTISOL_IDX].item()),
+            places=6,
+            msg="cortisol mechanism still carries a circadian term of its own",
+        )
+        # ...while ACTH's mechanism DOES move with phase (it owns the rhythm).
+        self.assertGreater(
+            float(mech_m[0, _ACTH_IDX].item()), float(mech_e[0, _ACTH_IDX].item()),
+        )
+
+    def test_cortisol_drive_is_proportional_below_typical_acth(self) -> None:
+        """Iter 96: the ACTH→cortisol map is not flat below typical ACTH.
+
+        The old `relu((ACTH − typical)/typical)` made cortisol unable to tell an
+        ACTH of 5 from an ACTH of 12 — precisely the overnight range its nadir
+        lives in, and a direct contributor to a nadir that never fell.
+        """
+        module = self._module()
+        coupling, external, embedding, time_features = self._zero_inputs()
+        low = torch.tensor([[12.0, 8.0, 100.0]])
+        lower = torch.tensor([[12.0, 4.0, 100.0]])
+        with torch.no_grad():
+            args_l = (low, coupling, external, embedding, time_features)
+            args_ll = (lower, coupling, external, embedding, time_features)
+            mech_l = module(*args_l) - MassActionModule.forward(module, *args_l)
+            mech_ll = module(*args_ll) - MassActionModule.forward(module, *args_ll)
+        self.assertGreater(
+            float(mech_l[0, _CORTISOL_IDX].item()),
+            float(mech_ll[0, _CORTISOL_IDX].item()),
+        )
 
 
 if __name__ == "__main__":
