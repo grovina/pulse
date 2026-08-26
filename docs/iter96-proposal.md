@@ -453,6 +453,63 @@ the teacher, and the student is a separate question that only the run answers.
 
 ---
 
+## 8.5 LOCAL VALIDATION — 18 epochs, 8 patients (2026-08-26)
+
+Run before dispatch, at roughly a fifth of the paid run's training budget
+(55 epochs / 40 patients). Probes: `scripts/iter96_longclock_probe.py` and
+`scripts/iter96_dawn_probe.py`, both verified beforehand to reproduce iter-95's
+recorded numbers to three figures on the iter-95 artifact.
+
+**The two structural criteria pass outright, as they must — they are guarantees,
+not training outcomes:**
+
+```
+(4) net d(liver_glycogen)/dt at the teacher's 24 h-fast state
+      iter-95  +0.1590 g/min   (refilling during a fast)
+      iter-96  -0.0165 g/min   PASS
+
+(5) five eucaloric days
+      liver_glycogen         19.0 g -> 99.47 g   (accept > 70)   PASS
+      mitochondrial_capacity  0.474 -> 0.911     (accept > 0.9)  PASS
+```
+
+The glycogen pool is now flat across five identical days (99.95, 101.13, 99.86,
+99.61, 100.14, 99.47) where it used to halve twice over. It sits ABOVE the
+teacher's own 84.4 — a mismatch, but in the safe direction, and one the full
+training budget should close.
+
+**The three trained criteria — two pass, one near-misses:**
+
+```
+                    iter-95    iter-96 local    teacher(i96)    real    criterion
+hr slope   /h        +5.46         +3.10           +2.89       +1.06    <= +2.89
+glu slope  /h        -0.15         -0.68           -0.88       -1.75    <= -0.50   PASS
+cort nadir           9.51           6.59            4.20        3-5     <  7.00    PASS
+```
+
+**The falsifier is decisively not triggered.** The student's dawn HR slope fell
+from +5.46 to +3.10 when the teacher's fell from +4.08 to +2.89 — it closed 84%
+of its gap to the teacher, which is exactly what "hr in this window is driven by
+the channel the attribution named" predicts. The +3.10 sits 0.21 above the
+criterion at a fifth of the training budget; that is a near-miss to watch on the
+artifact, not a refutation.
+
+Glucose is the bigger change in kind: the student tracked 20% of the teacher's
+overnight decline and now tracks 77% of it.
+
+Also visible in the long-clock probe: the student's cortisol no longer RATCHETS.
+Over five eucaloric days iter-95 climbed to 16.55 µg/dL against a teacher flat at
+8.90; iter-96 holds at 13.26. Still high — the level, unlike the nadir, is not
+yet where it should be — but the non-negative source term is gone.
+
+**Caveat, stated because it is exactly the kind of thing that gets forgotten:**
+this run started before the flat-window gradient fix (commit b209afa) landed, so
+it exercised the range-normalized beta without the relative spread floor. That
+clamp only fires on near-flat windows, so it cannot have affected these numbers —
+but the validated code and the dispatched code differ by that one line.
+
+---
+
 ## 9. Run plan
 
 Training and benchmarking are **separate jobs** (iter-93 spent 12.2 h of 20 h in the
