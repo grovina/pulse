@@ -411,12 +411,14 @@ class GlycogenFluxHead(nn.Module):
     ``prod·prod_scale − cons·cons_scale·state`` realises exactly that,
     with NO setpoint attractor:
 
-      synthesis  = softplus(net) · σ(glucose_appearance gate)
+      synthesis  = softplus(net) · relu(glucose_appearance)
                    — glycogen fills only while gut nutrients are being
-                     absorbed. Routes the −60 g fast-vs-fed gradient
-                     through the SAME strong gut-coupling pathway the
-                     `glucose` cohort spec uses (the fix for the
-                     diagnosed gradient starvation).
+                     absorbed, and STRICTLY not otherwise (iter 96; the
+                     sigmoid gate this replaced learned its way to 63 %
+                     open at zero appearance). Routes the fast-vs-fed
+                     gradient through the SAME strong gut-coupling
+                     pathway the `glucose` cohort spec uses (the fix for
+                     the diagnosed gradient starvation).
       breakdown  = softplus(net)·basal + softplus(net)·σ(catabolic gate)
                    — tissue-specific catabolic drive:
                      liver:  gate on LOW insulin (systemic fast →
@@ -452,13 +454,35 @@ class GlycogenFluxHead(nn.Module):
         self.anabolic_idx = int(anabolic_idx)
         self.catabolic_idx = int(catabolic_idx)
         self.catabolic_dir = float(catabolic_dir)
-        # Anabolic gate on gut glucose-appearance: a >=0 flux, ~0 when
-        # not absorbing and O(1)+ during a meal. Threshold just above 0
-        # so the gate is OFF fasted and ON while nutrients arrive; sharp
-        # temperature so fed/fasted land on opposite sides from the start
-        # (mirrors GlucoseGatedInsulinHead's already-discriminative init).
-        self.a_thresh = nn.Parameter(torch.tensor(0.1))
-        self.log_a_temp = nn.Parameter(torch.tensor(-1.6))  # exp ≈ 0.2
+        # ITER 96 -- THE ANABOLIC GATE LEAKED, AND A LEARNABLE THRESHOLD CANNOT
+        # BE STOPPED FROM LEAKING.
+        #
+        # Through iter 95 synthesis was `softplus(net) · σ((a − a_thresh)/temp)`
+        # with `a_thresh` free (init +0.1). It learned a_thresh = −0.114, so at
+        # ZERO gut glucose appearance the gate sat 63 % OPEN. Measured on the
+        # iter-95 artifact at the teacher's own 24 h-fast state (liver_glycogen
+        # 41.7 g), the student's net glycogen rate was **+0.159 g/min — it
+        # REFILLED the liver during a fast**. Nothing downstream could then work:
+        # `Gb_fasted` reads how much of the pool is GONE, so a pool that never
+        # empties defends a glucose level that never falls. That is the student
+        # half of the pre-dawn glucose blocker (student −0.14 mg/dL/h over
+        # 03:00-06:00 against the teacher's −0.74 and the real −1.75).
+        #
+        # The physics is not a threshold. Glycogen synthase has no substrate to
+        # act on when no glucose is arriving: the rate is PROPORTIONAL to the
+        # appearance flux, exactly as the teacher writes it
+        # (`syn_L = k · Ra_carb · ins_drive · fill`). So synthesis is now
+        # `softplus(net) · relu(a)`, which is identically zero at zero
+        # appearance — a structural guarantee, not a learned one — and linear in
+        # the drive, which is a better-conditioned gradient than a saturating
+        # sigmoid. The insulin dependence stays learnable: insulin is in `x`, so
+        # `softplus(net)` can express `ins_drive` itself.
+        #
+        # `a_thresh` / `log_a_temp` are DELETED rather than clamped. A softplus
+        # reparam would keep the gate closed at zero but leaves the same
+        # saturating shape and one more parameter to mis-learn; the substrate
+        # form removes the failure mode instead of bounding it.
+        #
         # Catabolic gate on a normalized (~0-centred) state/external.
         self.c_thresh = nn.Parameter(torch.tensor(0.0))
         self.log_c_temp = nn.Parameter(torch.tensor(-0.7))  # exp ≈ 0.5
@@ -467,13 +491,11 @@ class GlycogenFluxHead(nn.Module):
         raw = self.network(x)
         anab_stim = x[..., self.anabolic_idx]
         catab_stim = x[..., self.catabolic_idx]
-        synth_gate = torch.sigmoid(
-            (anab_stim - self.a_thresh) / gate_temp(self.log_a_temp)
-        )
         catab_gate = torch.sigmoid(
             self.catabolic_dir * (catab_stim - self.c_thresh) / gate_temp(self.log_c_temp)
         )
-        synth = nn.functional.softplus(raw[..., 0]) * synth_gate
+        # Substrate-proportional, not gated: zero appearance -> zero synthesis.
+        synth = nn.functional.softplus(raw[..., 0]) * torch.relu(anab_stim)
         break_basal = nn.functional.softplus(raw[..., 1])
         break_active = nn.functional.softplus(raw[..., 2]) * catab_gate
         prod = synth
