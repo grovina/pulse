@@ -105,9 +105,22 @@ from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 # blind to). mito_capacity / crh stay out: the teacher still pads them (mito
 # needs chronic-block protocols its ≤1-day pool can't provide; the cold ODE
 # doesn't simulate crh).
+#
+# ITER 96 — mitochondrial_capacity IS NOW DISTILLED, on the flat reference.
+# The reasoning above ("simulating it here would only emit a flat reference")
+# treated a flat target as a reason to leave it out. That has a hole, and the
+# iter-95 artifact walked straight through it: with NO supervision the student
+# does not hold flat either. Measured over five eucaloric days it decays
+# 1.00 → 0.85 → 0.73 → 0.63 → 0.54 → 0.46, ~14 %/day, toward a mass-action
+# equilibrium near 0.005 — because after the iter-95 frame fix the species has a
+# real consumption term and nothing anywhere gives it a production target.
+# "This does not move measurably in a day" is a TRUE statement about a state
+# whose τ is weeks, and it is exactly the statement the student is violating,
+# so the flat reference is the correct supervision at this protocol length —
+# not a placeholder for the chronic-block work, which is still owed.
 _DEFAULT_DISTILL_MARKERS: tuple[str, ...] = (
     "glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb",
-    "liver_glycogen", "muscle_glycogen",
+    "liver_glycogen", "muscle_glycogen", "mitochondrial_capacity",
 )
 
 # Huber transition on the NORM_SCALE-normalized residual. The dead markers

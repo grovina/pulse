@@ -314,8 +314,12 @@ def train(
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
     cold_distill_weight: float = 0.0,
+    # Iter 96: brought in line with _DEFAULT_DISTILL_MARKERS. The dispatch recipe
+    # has passed the glycogen pools explicitly since iter 76; this default had
+    # silently lagged it, which is a trap for any run that does NOT pass the flag.
     cold_distill_markers: tuple[str, ...] = (
         "glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb",
+        "liver_glycogen", "muscle_glycogen", "mitochondrial_capacity",
     ),
     cold_distill_protocols_per_epoch: int = 4,
     cold_distill_pool: str = "synthetic",
