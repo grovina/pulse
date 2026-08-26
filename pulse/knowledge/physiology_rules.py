@@ -229,7 +229,20 @@ def _range_normalized_softmax_weights(
     optimise through.
     """
     spread = (values.max() - values.min()).detach()
-    beta = beta_scale / torch.clamp(spread, min=1e-6)
+    # NEAR-FLAT WINDOWS. Dividing by the raw spread is a trap: a window that
+    # barely moves drives `beta` toward infinity, and -- because the weights on
+    # a flat input stay UNIFORM rather than saturating -- the gradient scales
+    # with it. Measured on a 240-step constant window, a 1e-6 spread floor gave
+    # |grad| = 1.2e9 against 1.97e1 for a normal sinusoidal window: eight orders
+    # of magnitude, on a term meant to be a soft plausibility hinge. So the
+    # floor is RELATIVE to the window's own level. Every marker these rules
+    # cover clears it comfortably -- temp has the narrowest real range at 1.4 %
+    # of its level, 4.6x the floor -- while a genuinely flat window, where the
+    # time of the peak means nothing anyway, gets a bounded beta rather than an
+    # explosive one.
+    level = values.abs().mean().detach()
+    min_spread = torch.clamp(3e-3 * level, min=1e-6)
+    beta = beta_scale / torch.maximum(spread, min_spread)
     return torch.softmax(sign * values * beta, dim=0)
 
 
