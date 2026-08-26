@@ -114,7 +114,7 @@ def main() -> None:
         p.HRV0 = float(e.initial_state[MARKER_INDEX["hrv"]])
         p = fb.resolve_derived_params(p)
         traj, _ = fb.simulate_full_body(
-            params=p, meals=[(m.time, m.carbs, m.fat, m.protein) for m in e.meals],
+            params=p, meals=[(m.time, m.carbs, m.fats, m.proteins) for m in e.meals],
             sleep_wake=sw_np, activity=act_np, duration_min=e.duration_min,
             start_hour=t0 / 60.0, noise_scale=0.0,
         )
