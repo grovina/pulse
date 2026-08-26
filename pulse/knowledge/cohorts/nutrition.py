@@ -103,10 +103,35 @@ EXTENDED_FAST_BHB = CohortStatisticSpec(
 # preservation under a resting fast falls out of its slow τ + absence of
 # an exercise drive; its exercise supervision lands in iter 57 with the
 # chronic-block protocol. See docs/multi-timescale-plan.md.
+# ITER 96 — THE −60 g TARGET WAS THE RIGHT LITERATURE ATTACHED TO THE WRONG
+# STATISTIC, AND NO PARAMETER SETTING COULD EVER HAVE REACHED IT.
+#
+# Cahill's −60 g is an ABSOLUTE depletion: fed pool (~100 g) → ~40 g after a
+# 16-24 h fast. It was encoded as DELTA_MEANS between two arms that differ by
+# ONE 60 g-carbohydrate dinner, which asks that dinner to deposit 60 g of liver
+# glycogen — 100 % of its carbohydrate, into one organ. Taylor et al. (1996,
+# J Clin Invest 97:126-132, 13C NMR + acetaminophen tracer) measured what a meal
+# actually deposits: liver glycogen 207 ± 22 → 316 ± 19 mmol/l, peaking at
+# 318 ± 31 min, **net 28.3 ± 3.7 g, ≈ 19 % of meal carbohydrate**. For this
+# spec's 60 g dinner that is 11.4 g, plus a few grams of divergence from the
+# fasted arm's continued glycogenolysis over the 10-16 h to the window.
+#
+# MEASURED, the target was unreachable: a 5×4×2 sweep over
+# (k_glyc_syn_L, k_glyc_brk_L, fill width) moved this delta only between −14.6
+# and −32.6, and every setting that reached −32 had already driven the 24 h fast
+# to 4.8 g against Cahill's ~40. The two anchors are inconsistent, and the 24 h
+# level is the one that IS the cited quantity. So the delta is re-targeted to
+# Taylor's measured deposition, and the absolute depletion Cahill actually
+# reports gets its own spec below (EXTENDED_FAST_GLYCOGEN_LEVEL), which is what
+# the −60 was trying to say all along.
+#
+# This mattered: the unreachable target had been contradicted at |z| ≈ 2 for
+# ~40 iterations, i.e. a standing gradient pulling the teacher — and through
+# distillation the student — toward a liver that empties on a normal eating day.
 EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
     name="extended_fast_liver_glycogen_overnight",
-    source="Cahill (2006); Coppack et al. (1989) — hepatic glycogen turnover",
-    description="Skipping dinner (≈16 h fast) → −60 g mean liver_glycogen in late-fast window (hepatic depletion)",
+    source="Taylor et al. (1996) J Clin Invest 97:126-132 — 13C NMR; net hepatic glycogen storage = 19 % of meal carbohydrate",
+    description="Skipping a 60 g-carbohydrate dinner → −13 g mean liver_glycogen in the late-fast window",
     arms=(
         CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING),
         CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
@@ -114,8 +139,29 @@ EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
     marker_id="liver_glycogen",
     kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=960, end_min=1320),
-    target=-60.0,
-    sigma=25.0,
+    target=-13.0,
+    sigma=6.0,
+)
+
+# The absolute depletion the −60 g was reaching for. Cahill (2006): the hepatic
+# pool (~100 g fed) is largely spent by 16-24 h of fasting; Rothman et al. (1991,
+# Science 254:573-575, 13C NMR over a 68 h fast) put gluconeogenesis at 64 ± 5 %
+# of glucose production over the first 22 h, leaving ~3 g/h of net glycogenolysis
+# — ~65 g over 22 h from a ~100 g fed pool. MEAN_IN_WINDOW on the fasted arm
+# alone, so it constrains the LEVEL rather than an arm contrast, and it is the
+# anchor that keeps the pool honest now that the delta no longer over-asks.
+EXTENDED_FAST_GLYCOGEN_LEVEL = CohortStatisticSpec(
+    name="extended_fast_liver_glycogen_level",
+    source="Cahill (2006); Rothman et al. (1991) Science 254:573 — 13C NMR hepatic glycogenolysis",
+    description="≈16 h fast → liver_glycogen ≈ 60 g in the late-fast window (absolute hepatic depletion)",
+    arms=(
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+    ),
+    marker_id="liver_glycogen",
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    window=StatisticWindow(start_min=960, end_min=1320),
+    target=60.0,
+    sigma=20.0,
 )
 
 # ---------------------------------------------------------------------------
@@ -359,6 +405,7 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     FASTING_BREAKFAST_GLUCOSE,
     EXTENDED_FAST_BHB,
     EXTENDED_FAST_GLYCOGEN,
+    EXTENDED_FAST_GLYCOGEN_LEVEL,
     EXTENDED_FAST_GLUCOSE,
     EXTENDED_FAST_FFA,
     EXTENDED_FAST_INSULIN,
