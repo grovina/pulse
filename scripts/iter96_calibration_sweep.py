@@ -51,7 +51,8 @@ import numpy as np
 import torch
 
 from pulse import benchmark as bm
-from pulse.model import ModularPhysiologyNetwork, integrate
+from pulse.diagnostics.probe import load_model_from_checkpoint
+from pulse.model import integrate
 from pulse.types import MARKER_INDEX
 
 # (prior_weight, max_norm, l2_weight) -- the three ways to shrink the fit.
@@ -69,19 +70,17 @@ SETTINGS: tuple[tuple[float, float, float], ...] = (
 
 def _episode_scores(args):
     model_path, ep_index, ep, prior_weight, max_norm, l2 = args
-    model = ModularPhysiologyNetwork()
-    blob = torch.load(model_path, map_location="cpu", weights_only=False)
-    state = blob
-    if isinstance(blob, dict):
-        for key in ("model_state", "model_state_dict"):
-            if key in blob:
-                state = blob[key]
-                break
-    model.load_state_dict(state)
-    model.eval()
+    # Reconstruct with the checkpoint's TRAINING-TIME dims. Building
+    # ModularPhysiologyNetwork() with library defaults does not load an iter-96
+    # blob (hidden_dim=48 -> appetite/stress 24, thermoreg/respiratory 16), and
+    # a default build fails on ~40 size mismatches.
+    model, blob = load_model_from_checkpoint(model_path)
+    # The checkpoint stores the prior as plain lists; calibrate_embedding calls
+    # .detach() on it, so wrap exactly as train.py:1829 does.
     for attr in ("_embedding_prior_mean", "_embedding_prior_std"):
-        if isinstance(blob, dict) and attr.lstrip("_") in blob:
-            setattr(model, attr, blob[attr.lstrip("_")])
+        raw = blob.get(attr.lstrip("_")) if isinstance(blob, dict) else None
+        if raw is not None:
+            setattr(model, attr, torch.as_tensor(raw, dtype=torch.float32))
 
     t0 = float(ep.start_time_minutes) % 1440.0 if ep.start_time_minutes is not None else 360.0
     sw = torch.tensor(ep.sleep_wake[:ep.duration_min], dtype=torch.float32) if ep.sleep_wake is not None else None
