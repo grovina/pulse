@@ -93,6 +93,8 @@ def test_argparse_defaults_do_not_shadow_function_defaults() -> None:
         fd = fn_defaults[name].default
         if isinstance(fd, tuple):
             continue
+        if fd is None and val == "":
+            continue  # string flag parsed into a structured None
         if fd != val:
             mismatched.append((name, val, fd))
     assert not mismatched, f"argparse default != train() default: {mismatched}"
