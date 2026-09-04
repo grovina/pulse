@@ -25,7 +25,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from .modules.gut import MealEvent
+from .modules.gut import MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from .model import ModularPhysiologyNetwork, integrate
 from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .verifier import evaluate_weak_checks
@@ -376,70 +376,114 @@ def _parse_points_list(raw_points: list[Any], duration_min: int) -> list[Measure
     return points
 
 
+def active_meals(meals: list[MealEvent], t_start: float, t_end: float) -> list[MealEvent]:
+    """Meals whose absorption can touch the span ``[t_start, t_end)`` (episode frame).
+
+    Iter 97 (review 1.4): the lookback is the gut kernel's own active window,
+    ``MEAL_ACTIVE_WINDOW_MIN`` (480 min), not a hand-written 120. A meal older
+    than that contributes nothing; a younger one still delivers nutrient.
+    """
+    return [
+        m for m in meals
+        if m.time < t_end and m.time + MEAL_ACTIVE_WINDOW_MIN >= t_start
+    ]
+
+
+def _calibration_forward(
+    embedding: torch.Tensor,
+    *,
+    model: ModularPhysiologyNetwork,
+    observations: list[MeasurementPoint],
+    initial_state: torch.Tensor,
+    meals: list[MealEvent],
+    start_time_minutes: float,
+    sleep_wake: torch.Tensor | None,
+    activity: torch.Tensor | None,
+    checkpoint_segments: int = 0,
+) -> tuple[torch.Tensor | None, list[MeasurementPoint]]:
+    """The calibration forward map: ONE continuous integration over
+    ``[0, last_observation]`` in the episode frame.
+
+    Iter 97 (review 1.3). Through iter 96 calibration re-integrated every
+    observation window > 0 from the t=0 state with meals passed at absolute
+    episode times, while ``precompute_gut_outputs`` treats ``meal.time`` as a
+    window offset — so window 2 of a legacy episode absorbed its meals at
+    270/390/510 instead of 90/210/330, and the windowed prediction differed
+    from the scored (continuous) one by up to 30 mg/dL at the fitted points.
+    The embedding was being optimized to explain trajectories the scorer
+    never produces. This function is, by construction, the same forward map
+    ``_evaluate_one_episode`` scores: same initial state, same start time,
+    same meals in the same frame, same masks — truncated at the last
+    observation so the cost matches the old windows.
+
+    Returns ``(predicted[T, STATE_DIM] or None, valid_observations)``.
+    """
+    valid = [
+        o for o in observations
+        if o.marker_id in MARKER_INDEX and o.time >= 0
+    ]
+    if not valid:
+        return None, []
+    n_steps = int(max(o.time for o in valid)) + 1
+    sw = sleep_wake[:n_steps] if sleep_wake is not None else None
+    act = activity[:n_steps] if activity is not None else None
+    predicted = integrate(
+        model=model,
+        initial_state=initial_state,
+        embedding=embedding,
+        n_steps=n_steps,
+        dt=1.0,
+        start_time_minutes=start_time_minutes,
+        meals=active_meals(meals, 0.0, float(n_steps)),
+        sleep_wake=sw,
+        activity=act,
+        checkpoint_segments=checkpoint_segments,
+    )
+    return predicted, valid
+
+
 def _calibration_loss(
     embedding: torch.Tensor,
     *,
     model: ModularPhysiologyNetwork,
-    obs_windows: list[tuple[int, list[MeasurementPoint]]],
+    observations: list[MeasurementPoint],
     initial_state: torch.Tensor,
     meals: list[MealEvent],
-    duration_min: int,
     start_time_minutes: float,
     sleep_wake: torch.Tensor | None,
     activity: torch.Tensor | None,
-    window_size: int,
     l2_weight: float,
     norm_scale: torch.Tensor,
     prior_mean: torch.Tensor | None = None,
     prior_std: torch.Tensor | None = None,
     prior_weight: float = 1.0,
+    duration_min: int | None = None,
+    window_size: int | None = None,
 ) -> tuple[torch.Tensor, int]:
     """Differentiable calibration loss in the embedding.
 
-    Mirrors what ``calibrate_embedding`` and ``bayesian_calibrate``
-    optimize: per-window integration, observation MSE in normalized
-    units, plus an L2 prior term on the embedding. Returns
-    ``(loss, n_obs)`` so the caller can detect "no observations
-    landed in any window" without doing a no-op step.
+    Observation MSE in NORM_SCALE units on the continuous forward map
+    (``_calibration_forward``) plus a prior term. Returns ``(loss, n_obs)``
+    so the caller can detect "no observations" without a no-op step.
+    ``duration_min`` / ``window_size`` are accepted for call-site
+    compatibility and ignored: there are no windows any more.
     """
-    total_loss = torch.tensor(0.0)
-    n_obs = 0
-    for win_start, win_obs in obs_windows:
-        win_end = min(win_start + window_size, duration_min)
-        win_steps = win_end - win_start
-        win_time = (start_time_minutes + win_start) % 1440
+    del duration_min, window_size
+    predicted, valid = _calibration_forward(
+        embedding, model=model, observations=observations,
+        initial_state=initial_state, meals=meals,
+        start_time_minutes=start_time_minutes,
+        sleep_wake=sleep_wake, activity=activity,
+    )
+    if predicted is None:
+        return torch.tensor(0.0), 0
+    times = torch.tensor([o.time for o in valid], dtype=torch.long)
+    idxs = torch.tensor([MARKER_INDEX[o.marker_id] for o in valid], dtype=torch.long)
+    targets = torch.tensor([o.value for o in valid], dtype=torch.float32)
+    resid = (predicted[times, idxs] - targets) / norm_scale[idxs]
+    total_loss = resid.pow(2).sum()
+    n_obs = int(len(valid))
 
-        win_initial = initial_state if win_start == 0 else torch.tensor(
-            initial_state.numpy(), dtype=torch.float32,
-        )
-        win_meals = [m for m in meals if win_start - 120 <= m.time < win_end]
-        sw = sleep_wake[win_start:win_end] if sleep_wake is not None else None
-        act = activity[win_start:win_end] if activity is not None else None
-
-        predicted = integrate(
-            model=model,
-            initial_state=win_initial,
-            embedding=embedding,
-            n_steps=win_steps,
-            dt=1.0,
-            start_time_minutes=win_time,
-            meals=win_meals,
-            sleep_wake=sw,
-            activity=act,
-        )
-
-        for obs in win_obs:
-            idx = MARKER_INDEX.get(obs.marker_id)
-            local_t = obs.time - win_start
-            if idx is None or local_t < 0 or local_t >= win_steps:
-                continue
-            pred_val = predicted[local_t, idx]
-            target_val = torch.tensor(obs.value, dtype=torch.float32)
-            total_loss = total_loss + ((pred_val - target_val) / norm_scale[idx]).pow(2)
-            n_obs += 1
-
-    if n_obs == 0:
-        return total_loss, 0
     if prior_mean is not None and prior_std is not None and prior_weight > 0.0:
         # Diagonal Gaussian prior matched to the trained-table per-dim
         # std. `mean()` keeps dim-invariance and gives a per-dim scale
@@ -473,8 +517,9 @@ def calibrate_embedding(
 ) -> CalibrationResult:
     """Optimize embedding to best explain sparse observations.
 
-    Uses windowed integration around observation clusters rather than
-    integrating the full trajectory each step, for tractability.
+    Iter 97: one continuous integration over ``[0, last_observation]`` per
+    Adam step (``_calibration_forward``) — the same forward map the scorer
+    runs. ``window_size`` is accepted for compatibility and ignored.
     L2 regularization prevents extreme embeddings that distort
     unobserved markers while fitting observed ones.
 
@@ -496,20 +541,18 @@ def calibrate_embedding(
     model.eval()
     final_loss = float("inf")
 
-    obs_windows = _build_observation_windows(observations, duration_min, window_size)
+    del duration_min, window_size  # continuous map: no windows (iter 97)
 
     for step in range(n_steps):
         optimizer.zero_grad()
         with torch.enable_grad():
             loss, n_obs = _calibration_loss(
                 embedding,
-                model=model, obs_windows=obs_windows,
+                model=model, observations=observations,
                 initial_state=initial_state, meals=meals,
-                duration_min=duration_min,
                 start_time_minutes=start_time_minutes,
                 sleep_wake=sleep_wake, activity=activity,
-                window_size=window_size, l2_weight=l2_weight,
-                norm_scale=norm_scale,
+                l2_weight=l2_weight, norm_scale=norm_scale,
                 prior_mean=prior_mean, prior_std=prior_std,
                 prior_weight=prior_weight,
             )
@@ -586,18 +629,15 @@ def bayesian_calibrate(
     )
 
     norm_scale = torch.tensor(NORM_SCALE, dtype=torch.float32)
-    obs_windows = _build_observation_windows(observations, duration_min, window_size)
 
     def loss_fn(eps: torch.Tensor) -> torch.Tensor:
         loss, n_obs = _calibration_loss(
             eps,
-            model=model, obs_windows=obs_windows,
+            model=model, observations=observations,
             initial_state=initial_state, meals=meals,
-            duration_min=duration_min,
             start_time_minutes=start_time_minutes,
             sleep_wake=sleep_wake, activity=activity,
-            window_size=window_size, l2_weight=l2_weight,
-            norm_scale=norm_scale,
+            l2_weight=l2_weight, norm_scale=norm_scale,
         )
         # If no observations landed, return a degenerate loss anchored
         # only by the prior — Hessian becomes (l2_weight/d)·I, which
@@ -751,7 +791,12 @@ def _build_observation_windows(
     duration_min: int,
     window_size: int,
 ) -> list[tuple[int, list[MeasurementPoint]]]:
-    """Group observations into non-overlapping windows."""
+    """Group observations into non-overlapping windows.
+
+    Iter 97: no longer used by calibration (the forward map is continuous,
+    see ``_calibration_forward``). Kept for probes and diagnostics that
+    describe where check-ins cluster.
+    """
     if not observations:
         return []
 
