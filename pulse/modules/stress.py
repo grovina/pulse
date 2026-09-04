@@ -50,6 +50,10 @@ participation in the ACTH/cortisol cascade. A CRH cascade could only be
 re-introduced once the cold model is taught to simulate CRH (giving it
 direct distillation supervision) — until then it stays inert.
 
+Iter 97: the cascade reads the RAW cortisol/ACTH via ``raw_state`` — through
+iter 96 it read the normalized state as if it were raw, which made the whole
+mechanism inert at runtime (see the comment in ``forward``).
+
 Couplings (n_coupling=2): glucose, cortisol_feedback (legacy — duplicated
 by our explicit β-feedback term; kept for parity with the rest of the
 coupling graph and because the cohort generator still supplies it).
@@ -132,8 +136,23 @@ class StressModule(MassActionModule):
     ) -> torch.Tensor:
         base_rate = super().forward(state, coupling, external, embedding, time_features)
 
-        cortisol_raw = state[..., _CORTISOL_IDX]
-        acth_raw = state[..., _ACTH_IDX]
+        # ITER 97 -- THE CASCADE READ THE NORMALIZED STATE AS RAW (review 2026-09-04, 1.1).
+        #
+        # Through iter 96 the two lines below were `state[..., idx]`, but model.py hands
+        # every module the NORMALIZED state `(raw - typical) / NORM_SCALE`. So
+        # `relu(acth / 30)` was really `relu((ACTH - 30) / 540)` -- exactly zero for every
+        # ACTH <= 30 pg/mL, i.e. the whole overnight range the cortisol nadir lives in --
+        # and the cortisol feedback `relu((cort - 12) / 12)` needed cortisol > 108 ug/dL
+        # to fire at all. `_beta_raw` in the iter-96 checkpoint was -3.000000, bit-
+        # identical to its init after 21 h of training: no gradient path had ever reached
+        # it. The iter-96 claim that the ACTH->cortisol drive was "proportional" was true
+        # of the source and false at runtime; the nadir gain that iter measured came from
+        # removing the delta floor alone. The fifth frame bug of this family (iter-90 Sg,
+        # iter-95 consumption, ...): the helper that rebuilds raw concentration has been
+        # in base.py since iter 95 and this module never called it.
+        raw = self.raw_state(state)
+        cortisol_raw = raw[..., _CORTISOL_IDX]
+        acth_raw = raw[..., _ACTH_IDX]
         typical_cortisol = float(_TYPICALS[_CORTISOL_IDX])
         typical_acth = float(_TYPICALS[_ACTH_IDX])
 
@@ -167,10 +186,11 @@ class StressModule(MassActionModule):
         cortisol_excess = torch.relu((cortisol_raw - typical_cortisol) / typical_cortisol)
 
         # Diurnal carrier with per-patient phase offset.
-        # time_features[..., 1] = sin(2π·hour/24); [..., 2] = cos(2π·hour/24).
+        # Iter 97: time_features = [sin θ, cos θ, sin 2θ, cos 2θ] (the linear ramp is gone,
+        # see base.compute_time_features), so the first harmonic is at indices 0 and 1.
         phase = self.phase_proj(embedding).squeeze(-1)
-        sin_t = time_features[..., 1]
-        cos_t = time_features[..., 2]
+        sin_t = time_features[..., 0]
+        cos_t = time_features[..., 1]
         diurnal = sin_t * torch.cos(phase) - cos_t * torch.sin(phase)
         diurnal_carrier = 1.0 + diurnal  # range [0, 2]
 

@@ -1,15 +1,23 @@
-"""StressModule (iter 64 compact cascade) — structural tests.
+"""StressModule (iter 64 compact cascade) — structural tests, in the NORMALIZED frame.
 
 The cascade has three state species (cortisol, acth, crh). CRH is retained
 as state (so the iter-69 23-D benchmark dataset works without regeneration)
-but is mechanically inert this iter — its rate comes from the SetpointHead
-only, no participation in the ACTH/cortisol mechanism. The iter-64 compact
-mechanism is what these tests validate:
+but is mechanically inert — its rate comes from its SpeciesHead only. The
+iter-64 compact mechanism, as of iter 96/97, is:
 
-    cortisol_rate +=  α·relu(acth_excess)·prod_scale_cortisol
-                  +   δ·(1+diurnal_carrier)·prod_scale_cortisol
-    acth_rate     +=  γ·(1+diurnal_carrier)·prod_scale_acth
-                  −   β·relu(cortisol_excess)·prod_scale_acth
+    cortisol_rate +=  α·(ACTH / typical_ACTH)·prod_scale_cortisol
+    acth_rate     +=  γ·(1 + diurnal_carrier)·prod_scale_acth
+                  −   β·relu((cortisol − typical) / typical)·prod_scale_acth
+
+ITER 97: these tests feed the module what ``model.py`` feeds it — the
+NORMALIZED state ``(raw − typical) / NORM_SCALE`` and the 4-dim time features
+``[sin θ, cos θ, sin 2θ, cos 2θ]``. Through iter 96 they fed RAW values, which
+is exactly why the frame bug the 2026-09-04 review found (item 1.1) passed
+every test: ``state[..., idx]`` read as raw made ``relu(ACTH/30)`` really
+``relu((ACTH − 30)/540)`` = 0 for all ACTH ≤ 30 and the cortisol feedback
+inert until cortisol > 108 µg/dL; ``_beta_raw`` sat at its init after 21 h of
+training. A test that hands a module a frame it never sees at runtime tests
+nothing.
 """
 
 from __future__ import annotations
@@ -18,211 +26,164 @@ import unittest
 
 import torch
 
-from pulse.modules.base import MassActionModule
+from pulse.modules.base import MassActionModule, compute_time_features
 from pulse.modules.stress import StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX
-from pulse.types import EMBEDDING_DIM, MARKER_INDEX, MODULE_MARKER_INDICES
+from pulse.types import (
+    EMBEDDING_DIM, MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
+    TIME_FEATURES_DIM,
+)
+
+_STRESS = MODULE_MARKER_INDICES["stress"]
+_CENTER = torch.tensor([NORM_CENTER[i] for i in _STRESS])
+_SCALE = torch.tensor([NORM_SCALE[i] for i in _STRESS])
+
+
+def _norm(cortisol: float, acth: float, crh: float = 100.0) -> torch.Tensor:
+    """Raw (µg/dL, pg/mL, pg/mL) → the normalized module state ``[1, 3]``."""
+    raw = torch.tensor([[cortisol, acth, crh]], dtype=torch.float32)
+    return (raw - _CENTER) / _SCALE
+
+
+def _time(hour: float) -> torch.Tensor:
+    return compute_time_features(torch.tensor([hour * 60.0]))
+
+
+# A phase where the first harmonic is balanced (sin = 0, cos = 1): 00:00.
+_BALANCED = _time(0.0)
 
 
 class TestStressModuleStructure(unittest.TestCase):
     def test_crh_is_internal_marker_in_stress_module(self) -> None:
         self.assertIn("crh", MARKER_INDEX)
-        stress_indices = MODULE_MARKER_INDICES["stress"]
-        self.assertEqual(len(stress_indices), 3)
-        self.assertIn(MARKER_INDEX["cortisol"], stress_indices)
-        self.assertIn(MARKER_INDEX["acth"], stress_indices)
-        self.assertIn(MARKER_INDEX["crh"], stress_indices)
+        self.assertEqual(len(_STRESS), 3)
+        self.assertIn(MARKER_INDEX["cortisol"], _STRESS)
+        self.assertIn(MARKER_INDEX["acth"], _STRESS)
+        self.assertIn(MARKER_INDEX["crh"], _STRESS)
 
     def test_module_local_index_order(self) -> None:
-        """Module local indices must match the order of MODULE_MARKER_INDICES['stress'].
-
-        MODULE_MARKER_INDICES is built by enumerating MARKERS in order, so
-        cortisol (10) and acth (11) come before crh (22) — local indices
-        0, 1, 2 respectively.
-        """
         self.assertEqual(_CORTISOL_IDX, 0)
         self.assertEqual(_ACTH_IDX, 1)
         self.assertEqual(_CRH_IDX, 2)
 
-    def test_module_accepts_3_species_state(self) -> None:
+    def test_module_accepts_normalized_state_and_4_time_features(self) -> None:
         torch.manual_seed(0)
         module = StressModule(embedding_dim=EMBEDDING_DIM)
-        state = torch.tensor([[12.0, 30.0, 100.0]])  # typical cortisol, acth, crh
-        coupling = torch.zeros(1, 2)
-        external = torch.zeros(1, 2)
-        embedding = torch.zeros(1, EMBEDDING_DIM)
-        # time_features = [linear_time, sin(2π·hr/24), cos(2π·hr/24)]
-        time_features = torch.tensor([[8 / 24.0, 0.0, 1.0]])
-        rate = module(state, coupling, external, embedding, time_features)
+        self.assertEqual(_BALANCED.shape[-1], TIME_FEATURES_DIM)
+        rate = module(_norm(12.0, 30.0), torch.zeros(1, 2), torch.zeros(1, 2),
+                      torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         self.assertEqual(rate.shape, (1, 3))
+
+    def test_raw_state_round_trips(self) -> None:
+        module = StressModule(embedding_dim=EMBEDDING_DIM)
+        raw = module.raw_state(_norm(4.4, 8.0, 60.0))
+        torch.testing.assert_close(raw, torch.tensor([[4.4, 8.0, 60.0]]))
 
 
 class TestCascadeMechanism(unittest.TestCase):
-    """Drive a single stage at a time and confirm the downstream species *responds*
-    (gets a correct-sign rate adjustment on top of the mass-action base).
-
-    Iter 96: the ACTH→cortisol drive is now PROPORTIONAL to ACTH rather than
-    rectified at typical, and `_delta_raw` (a second, independent circadian on
-    cortisol) is gone — cortisol follows its secretagogue and nothing else. The
-    β feedback on ACTH is still rectified at typical."""
+    """Drive one stage at a time and confirm the downstream species responds with the
+    correct sign, isolating the mechanism (module − mass-action base)."""
 
     def _module(self) -> StressModule:
         torch.manual_seed(0)
         m = StressModule(embedding_dim=EMBEDDING_DIM)
-        # Bias the mechanism parameters above the init floor (softplus(0)
-        # ≈ 0.69 vs init softplus(-3) ≈ 0.05) so the mechanism signal is
-        # measurable above the SetpointHead residual at random init.
         for p in (m._alpha_raw, m._gamma_raw, m._beta_raw):
             with torch.no_grad():
                 p.fill_(0.0)
         return m
 
-    def _zero_inputs(self):
-        coupling = torch.zeros(1, 2)
-        external = torch.zeros(1, 2)
-        embedding = torch.zeros(1, EMBEDDING_DIM)
-        # Pick a phase where diurnal carrier is balanced (sin=0, cos=1)
-        # so we isolate the cascade contributions from the diurnal drive.
-        time_features = torch.tensor([[8 / 24.0, 0.0, 1.0]])
-        return coupling, external, embedding, time_features
+    def _mech(self, module: StressModule, state: torch.Tensor,
+              time_features: torch.Tensor = _BALANCED) -> torch.Tensor:
+        args = (state, torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM),
+                time_features)
+        with torch.no_grad():
+            return module(*args) - MassActionModule.forward(module, *args)
+
+    def test_acth_drive_is_nonzero_and_proportional_at_30_and_48(self) -> None:
+        """The review's case: ACTH = 30 and 48 pg/mL. Through iter 96 the drive at
+        30 was exactly zero and at 48 was relu((48−30)/540)·α — 1/48 of the intended
+        value. It must be non-zero at both and scale with ACTH."""
+        module = self._module()
+        d30 = float(self._mech(module, _norm(12.0, 30.0))[0, _CORTISOL_IDX])
+        d48 = float(self._mech(module, _norm(12.0, 48.0))[0, _CORTISOL_IDX])
+        self.assertGreater(d30, 0.0)
+        self.assertGreater(d48, d30)
+        self.assertAlmostEqual(d48 / d30, 48.0 / 30.0, places=5)
 
     def test_acth_above_typical_raises_cortisol_rate(self) -> None:
         module = self._module()
-        coupling, external, embedding, time_features = self._zero_inputs()
-        elevated = torch.tensor([[12.0, 45.0, 100.0]])  # ACTH +50%
-        baseline = torch.tensor([[12.0, 30.0, 100.0]])
+        args = (torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         with torch.no_grad():
-            rate_elevated = module(elevated, coupling, external, embedding, time_features)
-            rate_baseline = module(baseline, coupling, external, embedding, time_features)
-        self.assertGreater(
-            float(rate_elevated[0, _CORTISOL_IDX].item()),
-            float(rate_baseline[0, _CORTISOL_IDX].item()),
-        )
-
-    def test_cortisol_above_typical_lowers_acth_rate(self) -> None:
-        """Iter-64 compact: β feedback hits ACTH directly (not CRH)."""
-        module = self._module()
-        coupling, external, embedding, time_features = self._zero_inputs()
-        elevated = torch.tensor([[18.0, 30.0, 100.0]])  # cortisol +50%
-        baseline = torch.tensor([[12.0, 30.0, 100.0]])
-        with torch.no_grad():
-            rate_elevated = module(elevated, coupling, external, embedding, time_features)
-            rate_baseline = module(baseline, coupling, external, embedding, time_features)
-        self.assertLess(
-            float(rate_elevated[0, _ACTH_IDX].item()),
-            float(rate_baseline[0, _ACTH_IDX].item()),
-        )
-
-    def test_diurnal_carrier_drives_acth(self) -> None:
-        """Iter-64 compact: γ·(1+diurnal_carrier) drives ACTH directly.
-
-        The diurnal carrier ranges over [0, 2] so morning (carrier high) vs
-        evening (carrier low) must produce different ACTH rates.
-        """
-        module = self._module()
-        coupling = torch.zeros(1, 2)
-        external = torch.zeros(1, 2)
-        embedding = torch.zeros(1, EMBEDDING_DIM)
-        state = torch.tensor([[12.0, 30.0, 100.0]])
-        # With phase_proj ≈ 0 at zero embedding, diurnal = sin(t).
-        # t=06:00 → sin(π/2)=+1 → carrier=2; t=18:00 → sin(3π/2)=−1 → carrier=0.
-        morning = torch.tensor([[6 / 24.0, 1.0, 0.0]])
-        evening = torch.tensor([[18 / 24.0, -1.0, 0.0]])
-        with torch.no_grad():
-            rate_morning = module(state, coupling, external, embedding, morning)
-            rate_evening = module(state, coupling, external, embedding, evening)
-        self.assertGreater(
-            float(rate_morning[0, _ACTH_IDX].item()),
-            float(rate_evening[0, _ACTH_IDX].item()),
-        )
-
-    def test_crh_carries_no_term_in_the_iter64_mechanism(self) -> None:
-        """The iter-64 cascade mechanism contains no CRH term.
-
-        Iter 95: this previously asserted that the module's TOTAL rate was
-        CRH-independent. That was an initialization artifact, not a structural
-        property — `SetpointHead` zero-initialized its final layer, so the head's
-        output ignored its inputs at init and would have picked up a CRH dependence
-        as soon as those weights moved. With `SetpointHead` removed (see
-        modules/base.py) the head is a plain `SpeciesHead`, which reads the whole
-        module state including CRH from step 0.
-
-        That is not a regression: CRH -> ACTH -> cortisol is the real cascade, so a
-        learned dependence there is physiologically correct. What the iter-64 design
-        actually claims is narrower — that the explicit MECHANISM terms
-        (alpha/beta/gamma/delta) route no CRH — and that is what is asserted here, by
-        isolating the adjustment the subclass adds on top of the mass-action base.
-        Unlike the old assertion, this one also holds after training.
-        """
-        module = self._module()
-        coupling, external, embedding, time_features = self._zero_inputs()
-        crh_low = torch.tensor([[12.0, 30.0, 50.0]])
-        crh_high = torch.tensor([[12.0, 30.0, 200.0]])
-        with torch.no_grad():
-            args_low = (crh_low, coupling, external, embedding, time_features)
-            args_high = (crh_high, coupling, external, embedding, time_features)
-            mech_low = module(*args_low) - MassActionModule.forward(module, *args_low)
-            mech_high = module(*args_high) - MassActionModule.forward(module, *args_high)
-        for idx, name in ((_CORTISOL_IDX, "cortisol"), (_ACTH_IDX, "acth")):
-            self.assertAlmostEqual(
-                float(mech_low[0, idx].item()), float(mech_high[0, idx].item()),
-                places=6, msg=f"iter-64 mechanism routes CRH into {name}",
-            )
-
-
-    def test_cortisol_mechanism_carries_no_independent_circadian(self) -> None:
-        """Iter 96: cortisol is driven by ACTH alone — no second circadian.
-
-        Through iter 95 the module added `δ·(1+diurnal)·prod_scale` to cortisol on
-        top of the ACTH drive, duplicating a rhythm ACTH already carries and — since
-        the carrier is in [0,2] and δ = softplus(·) ≥ 0 — laying a strictly
-        non-negative production floor under it. That floor is why the student's
-        overnight cortisol nadir sat at 10-12 µg/dL against the teacher's 4.4. The
-        teacher stopped doing exactly this in iter 91; this asserts the student
-        does not do it either, at ANY phase, holding ACTH fixed.
-        """
-        module = self._module()
-        coupling = torch.zeros(1, 2)
-        external = torch.zeros(1, 2)
-        embedding = torch.zeros(1, EMBEDDING_DIM)
-        state = torch.tensor([[12.0, 30.0, 100.0]])
-        morning = torch.tensor([[6 / 24.0, 1.0, 0.0]])    # carrier = 2
-        evening = torch.tensor([[18 / 24.0, -1.0, 0.0]])  # carrier = 0
-        with torch.no_grad():
-            args_m = (state, coupling, external, embedding, morning)
-            args_e = (state, coupling, external, embedding, evening)
-            mech_m = module(*args_m) - MassActionModule.forward(module, *args_m)
-            mech_e = module(*args_e) - MassActionModule.forward(module, *args_e)
-        self.assertAlmostEqual(
-            float(mech_m[0, _CORTISOL_IDX].item()),
-            float(mech_e[0, _CORTISOL_IDX].item()),
-            places=6,
-            msg="cortisol mechanism still carries a circadian term of its own",
-        )
-        # ...while ACTH's mechanism DOES move with phase (it owns the rhythm).
-        self.assertGreater(
-            float(mech_m[0, _ACTH_IDX].item()), float(mech_e[0, _ACTH_IDX].item()),
-        )
+            r_hi = module(_norm(12.0, 45.0), *args)
+            r_lo = module(_norm(12.0, 30.0), *args)
+        self.assertGreater(float(r_hi[0, _CORTISOL_IDX]), float(r_lo[0, _CORTISOL_IDX]))
 
     def test_cortisol_drive_is_proportional_below_typical_acth(self) -> None:
-        """Iter 96: the ACTH→cortisol map is not flat below typical ACTH.
-
-        The old `relu((ACTH − typical)/typical)` made cortisol unable to tell an
-        ACTH of 5 from an ACTH of 12 — precisely the overnight range its nadir
-        lives in, and a direct contributor to a nadir that never fell.
-        """
+        """The ACTH→cortisol map is not flat below typical: ACTH 8 vs 4 pg/mL — the
+        overnight range the nadir lives in — must give different drives."""
         module = self._module()
-        coupling, external, embedding, time_features = self._zero_inputs()
-        low = torch.tensor([[12.0, 8.0, 100.0]])
-        lower = torch.tensor([[12.0, 4.0, 100.0]])
+        d8 = float(self._mech(module, _norm(12.0, 8.0))[0, _CORTISOL_IDX])
+        d4 = float(self._mech(module, _norm(12.0, 4.0))[0, _CORTISOL_IDX])
+        self.assertGreater(d8, d4)
+        self.assertGreater(d4, 0.0)
+
+    def test_cortisol_above_typical_lowers_acth_rate_at_physiological_levels(self) -> None:
+        """β feedback must fire at cortisol 18 µg/dL (+50 %), not only above 108."""
+        module = self._module()
+        m18 = float(self._mech(module, _norm(18.0, 30.0))[0, _ACTH_IDX])
+        m12 = float(self._mech(module, _norm(12.0, 30.0))[0, _ACTH_IDX])
+        self.assertLess(m18, m12)
+        beta = float(torch.nn.functional.softplus(module._beta_raw))
+        self.assertAlmostEqual(m12 - m18, beta * 0.5 * float(module.prod_scale[_ACTH_IDX]), places=5)
+
+    def test_beta_receives_gradient_in_the_runtime_frame(self) -> None:
+        """The iter-96 checkpoint's `_beta_raw` was bit-identical to its init: no
+        gradient path. With the raw-frame read, a cortisol excursion above typical must
+        reach it."""
+        module = self._module()
+        state = _norm(20.0, 30.0)
+        rate = module(state, torch.zeros(1, 2), torch.zeros(1, 2),
+                      torch.zeros(1, EMBEDDING_DIM), _BALANCED)
+        rate[0, _ACTH_IDX].backward()
+        self.assertIsNotNone(module._beta_raw.grad)
+        self.assertNotEqual(float(module._beta_raw.grad), 0.0)
+
+    def test_diurnal_carrier_drives_acth(self) -> None:
+        """γ·(1+diurnal_carrier) with carrier = 1 + sin θ at zero phase: 06:00 → 2,
+        18:00 → 0 — so morning ACTH mechanism > evening."""
+        module = self._module()
+        state = _norm(12.0, 30.0)
+        m_morning = float(self._mech(module, state, _time(6.0))[0, _ACTH_IDX])
+        m_evening = float(self._mech(module, state, _time(18.0))[0, _ACTH_IDX])
+        self.assertGreater(m_morning, m_evening)
+
+    def test_mechanism_is_continuous_across_midnight(self) -> None:
+        """Iter 97: with the linear ramp gone the time features are periodic, so the
+        mechanism (and the base) agree at 23:59.99 and 00:00.01."""
+        module = self._module()
+        state = _norm(12.0, 30.0)
+        args = (state, torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM))
         with torch.no_grad():
-            args_l = (low, coupling, external, embedding, time_features)
-            args_ll = (lower, coupling, external, embedding, time_features)
-            mech_l = module(*args_l) - MassActionModule.forward(module, *args_l)
-            mech_ll = module(*args_ll) - MassActionModule.forward(module, *args_ll)
-        self.assertGreater(
-            float(mech_l[0, _CORTISOL_IDX].item()),
-            float(mech_ll[0, _CORTISOL_IDX].item()),
-        )
+            before = module(*args, compute_time_features(torch.tensor([1439.99])))
+            after = module(*args, compute_time_features(torch.tensor([0.01])))
+        torch.testing.assert_close(before, after, atol=1e-4, rtol=1e-4)
+
+    def test_crh_carries_no_term_in_the_iter64_mechanism(self) -> None:
+        module = self._module()
+        low = self._mech(module, _norm(12.0, 30.0, 50.0))
+        high = self._mech(module, _norm(12.0, 30.0, 200.0))
+        for idx, name in ((_CORTISOL_IDX, "cortisol"), (_ACTH_IDX, "acth")):
+            self.assertAlmostEqual(float(low[0, idx]), float(high[0, idx]), places=6,
+                                   msg=f"iter-64 mechanism routes CRH into {name}")
+
+    def test_cortisol_mechanism_carries_no_independent_circadian(self) -> None:
+        """Iter 96: cortisol is driven by ACTH alone — no second circadian."""
+        module = self._module()
+        state = _norm(12.0, 30.0)
+        m_m = self._mech(module, state, _time(6.0))
+        m_e = self._mech(module, state, _time(18.0))
+        self.assertAlmostEqual(float(m_m[0, _CORTISOL_IDX]), float(m_e[0, _CORTISOL_IDX]),
+                               places=6)
+        self.assertGreater(float(m_m[0, _ACTH_IDX]), float(m_e[0, _ACTH_IDX]))
 
 
 if __name__ == "__main__":
