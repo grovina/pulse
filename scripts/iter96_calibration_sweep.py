@@ -92,18 +92,18 @@ def _episode_scores(args):
     prior_mean = getattr(model, "_embedding_prior_mean", None)
     prior_std = getattr(model, "_embedding_prior_std", None)
 
-    old_norm = bm.BENCHMARK_GATE_CALIBRATE_MAX_NORM
-    bm.BENCHMARK_GATE_CALIBRATE_MAX_NORM = max_norm
-    try:
-        emb = bm.calibrate_embedding(
-            model=model, observations=cal_obs, initial_state=init, meals=ep.meals,
-            duration_min=ep.duration_min, start_time_minutes=t0,
-            n_steps=bm.BENCHMARK_GATE_CALIBRATE_STEPS, lr=bm.BENCHMARK_GATE_CALIBRATE_LR,
-            l2_weight=l2, sleep_wake=sw, activity=act,
-            prior_mean=prior_mean, prior_std=prior_std, prior_weight=prior_weight,
-        ).embedding
-    finally:
-        bm.BENCHMARK_GATE_CALIBRATE_MAX_NORM = old_norm
+    # Iter 97 (review 1.6): pass max_norm EXPLICITLY. Reassigning
+    # bm.BENCHMARK_GATE_CALIBRATE_MAX_NORM did nothing -- calibrate_embedding
+    # bound its default at import time -- so the max_norm=1.5 row re-measured
+    # the control.
+    emb = bm.calibrate_embedding(
+        model=model, observations=cal_obs, initial_state=init, meals=ep.meals,
+        duration_min=ep.duration_min, start_time_minutes=t0,
+        n_steps=bm.BENCHMARK_GATE_CALIBRATE_STEPS, lr=bm.BENCHMARK_GATE_CALIBRATE_LR,
+        l2_weight=l2, sleep_wake=sw, activity=act,
+        prior_mean=prior_mean, prior_std=prior_std, prior_weight=prior_weight,
+        max_norm=max_norm,
+    ).embedding
 
     with torch.no_grad():
         pred = integrate(model=model, initial_state=init, embedding=emb,
@@ -114,16 +114,18 @@ def _episode_scores(args):
     for obs in sorted(cal_obs, key=lambda o: o.time):
         last_cal[obs.marker_id] = obs.value
 
-    out: dict[str, list[tuple[float, float]]] = {}
+    # (model_mape, persistence_mape, model_abs_err, persistence_abs_err) per point;
+    # the episode-first, noise-floored skill (review 5.1/5.7) is computed in main.
+    out: dict[str, list[tuple[float, float, float, float]]] = {}
     for pt in ep.eval_measurements:
         idx = MARKER_INDEX.get(pt.marker_id)
         if idx is None:
             continue
         denom = max(abs(pt.value), 1e-6)
-        model_err = abs(float(pred[pt.time, idx]) - pt.value) / denom
+        model_abs = abs(float(pred[pt.time, idx]) - pt.value)
         base = last_cal.get(pt.marker_id, float(ep.initial_state[idx]))
-        pers_err = abs(base - pt.value) / denom
-        out.setdefault(pt.marker_id, []).append((model_err, pers_err))
+        pers_abs = abs(base - pt.value)
+        out.setdefault(pt.marker_id, []).append((model_abs / denom, pers_abs / denom, model_abs, pers_abs))
     return ep_index, float(emb.norm()), out
 
 
@@ -137,31 +139,33 @@ def main() -> None:
     eps = [e for e in bm.load_benchmark_dataset(args.benchmark) if e.source == "cgm_real"]
     print(f"{len(eps)} cgm_real episodes, {args.workers} workers\n")
     print(f"{'prior_w':>8}{'max_norm':>9}{'l2':>8} | "
-          f"{'hr mape':>9}{'hr skill':>9}{'glu mape':>10}{'glu skill':>10}{'@clamp':>8}")
-    print("-" * 74)
+          f"{'hr mae':>8}{'hr skill':>9}{'glu mae':>9}{'glu skill':>10}{'@clamp':>8}   "
+          f"(skill = 1 - MAE/max(persistence MAE, sigma_obs), episode-first; review 5.1)")
+    print("-" * 100)
 
     for prior_weight, max_norm, l2 in SETTINGS:
         jobs = [(args.model, i, e, prior_weight, max_norm, l2) for i, e in enumerate(eps)]
-        pooled: dict[str, list[tuple[float, float]]] = {}
+        per_episode: dict[str, list[tuple[float, float]]] = {}  # marker -> [(ep mae, ep pers mae)]
         at_clamp = 0
         with ProcessPoolExecutor(max_workers=args.workers) as pool:
             for _i, norm, per_marker in pool.map(_episode_scores, jobs):
                 if norm >= max_norm - 1e-3:
                     at_clamp += 1
-                for mk, pairs in per_marker.items():
-                    pooled.setdefault(mk, []).extend(pairs)
+                for mk, rows in per_marker.items():
+                    per_episode.setdefault(mk, []).append((
+                        float(np.mean([r[2] for r in rows])), float(np.mean([r[3] for r in rows]))))
         cells = {}
         for mk in ("hr", "glucose"):
-            pairs = pooled.get(mk, [])
-            if not pairs:
+            rows = per_episode.get(mk, [])
+            if not rows:
                 cells[mk] = (float("nan"), float("nan")); continue
-            m = float(np.mean([a for a, _ in pairs]))
-            p = float(np.mean([b for _, b in pairs]))
-            cells[mk] = (m, 1.0 - m / p if p > 0 else float("nan"))
+            mae = float(np.mean([a for a, _ in rows]))
+            pers = float(np.mean([b for _, b in rows]))
+            cells[mk] = (mae, 1.0 - mae / max(pers, bm.sigma_obs_for(mk)))
         tag = "   <- gate default" if (prior_weight, max_norm, l2) == SETTINGS[0] else ""
         print(f"{prior_weight:>8.2f}{max_norm:>9.1f}{l2:>8.3f} | "
-              f"{cells['hr'][0]:>9.4f}{cells['hr'][1]:>9.3f}"
-              f"{cells['glucose'][0]:>10.4f}{cells['glucose'][1]:>10.3f}"
+              f"{cells['hr'][0]:>8.3f}{cells['hr'][1]:>9.3f}"
+              f"{cells['glucose'][0]:>9.3f}{cells['glucose'][1]:>10.3f}"
               f"{at_clamp:>5}/{len(eps)}{tag}")
 
     print("\nPick the row that maximises BOTH skills, then pass it to the benchmark job:")
