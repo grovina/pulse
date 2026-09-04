@@ -34,7 +34,19 @@ class StatisticKind(str, Enum):
 
 @dataclass(frozen=True)
 class CohortArmSpec:
-    """One virtual arm: a protocol the model rolls forward to produce a statistic."""
+    """One virtual arm: a protocol the model rolls forward to produce a statistic.
+
+    ``sleep_wake`` / ``activity`` are per-minute series (1 = awake, 0 = asleep;
+    activity 0 = rest). When ``None`` the rollout uses the explicit frame
+    constants in ``pulse.cohort_loss`` (awake, rest) — the same frame the
+    teacher audits run in.
+
+    ``prefast_hours`` (iter 97, review 4.5): how long the subject has been
+    fasting when the arm STARTS. The cold initial state is then the teacher's
+    row after that many hours of meal-free rest, not its fed row 0 — so an arm
+    labelled "24 h -> 48 h fasted" really begins at 24 h fasted (liver glycogen
+    ~55 g, not 100 g). 0 keeps the legacy row-0 start.
+    """
 
     label: str
     duration_min: int
@@ -42,6 +54,7 @@ class CohortArmSpec:
     meals: tuple[tuple[float, float, float, float], ...]
     sleep_wake: tuple[float, ...] | None = None
     activity: tuple[float, ...] | None = None
+    prefast_hours: float = 0.0
 
 
 @dataclass(frozen=True)

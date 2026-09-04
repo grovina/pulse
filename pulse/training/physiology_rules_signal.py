@@ -31,8 +31,9 @@ from torch import nn
 from ..knowledge.cohort_types import InitMode
 from ..knowledge.full_body import PatientParams
 from ..knowledge.physiology_rules import PhysiologyRule
-from ..knowledge.textbook_scenarios.base import cold_model_trajectory
 from ..cohort_loss import _rollout_arm_batched
+from .adaptive_weights import adaptive_multipliers
+from .arm_init import cold_initial_state_for_arm
 from ..physiology_rules_loss import (
     physiology_rules_epoch_loss,  # noqa: F401 — kept for non-training callers / tests
     rule_context_for_arm,
@@ -83,6 +84,10 @@ class PhysiologyRulesSignal(TrainingSignal):
     # — once a rule is satisfied it stops generating gradient and cannot
     # recover if drift later re-violates it.
     ema_floor_frac: float = 0.02
+    # Iter 97 (review 4.6): no rule may take more than this share of the
+    # signal's weight budget, and the adaptive factor MULTIPLIES ``rule.weight``
+    # instead of replacing it (see ``training.adaptive_weights``).
+    adaptive_cap_share: float = 0.25
 
     name: str = "physiology_rules"
     source: str = "literature_plausibility_constraints"
@@ -93,6 +98,10 @@ class PhysiologyRulesSignal(TrainingSignal):
         # arm has its own protocol so the cold trajectory differs per
         # arm; keying by arm.label keeps this independent of how many
         # rules share an arm.
+        # Iter 97 (review 4.5 / 4.9): ONE frame for the cold init, shared with the
+        # teacher audit — the declared pre-fast is honoured (a "24 h fasted" arm
+        # starts from the teacher's 24 h-fasted row) and undeclared inputs mean
+        # awake / rest. See ``training.arm_init``.
         self._cold_init_np: dict[str, np.ndarray] = {}
         prng = np.random.default_rng(self.cold_init_seed)
         for rule in self.rules:
@@ -102,14 +111,9 @@ class PhysiologyRulesSignal(TrainingSignal):
                 if arm.label in self._cold_init_np:
                     continue
                 rule_rng = np.random.default_rng(prng.integers(0, 2**32))
-                traj = cold_model_trajectory(
-                    PatientParams(),
-                    list(arm.meals),
-                    arm.duration_min,
-                    arm.start_hour,
-                    rng=rule_rng,
+                self._cold_init_np[arm.label] = cold_initial_state_for_arm(
+                    arm, PatientParams(), rng=rule_rng,
                 )
-                self._cold_init_np[arm.label] = traj[0]
         self._cold_init_tensor: dict[tuple[str, str], torch.Tensor] = {}
         self._norm_center_np = np.array(NORM_CENTER, dtype=np.float32)
         self._norm_center_tensor: dict[str, torch.Tensor] = {}
@@ -119,11 +123,21 @@ class PhysiologyRulesSignal(TrainingSignal):
         # start doesn't zero-weight everything.
         self._violation_ema: dict[str, float] = {}
         self._base_weight_sum: float = sum(rule.weight for rule in self.rules)
+        self._scale_by_rule: dict[str, float] = {rule.name: float(rule.scale) for rule in self.rules}
+        self._base_weight_by_rule: dict[str, float] = {rule.name: float(rule.weight) for rule in self.rules}
 
     def _update_violation_ema(self, diags: dict[str, dict[str, float]]) -> None:
-        """Refresh the per-rule violation EMA from this epoch's diagnostics."""
+        """Refresh the per-rule violation EMA from this epoch's diagnostics.
+
+        Iter 97 (review 4.6): the EMA tracks ``violation_mean / rule.scale`` —
+        dimensionless — not the raw violation. Raw units let a timing rule
+        (minutes, violation ~100) out-rank a ketone rule (mmol/L, ~0.05) by
+        10^3 regardless of how badly either was missed; measured, three timing
+        rules took 52 % of the budget and 47 rules sat at the floor.
+        """
         for rname, d in diags.items():
-            v = float(d.get("violation_mean", 0.0))
+            scale = self._scale_by_rule.get(rname, 1.0) or 1.0
+            v = float(d.get("violation_mean", 0.0)) / scale
             prev = self._violation_ema.get(rname)
             self._violation_ema[rname] = (
                 v if prev is None else (1.0 - self.ema_alpha) * prev + self.ema_alpha * v
@@ -132,20 +146,16 @@ class PhysiologyRulesSignal(TrainingSignal):
     def _adaptive_weights_from_ema(self) -> dict[str, float]:
         """Adaptive per-rule weights from the current EMA.
 
-        Preserves ``sum(rule.weight)`` so the signal's overall pull on the
-        optimizer stays put — only the inter-rule distribution changes.
-        Rules absent from the EMA (no diagnostics yet) keep their base
-        weight via the override-fallback path in
-        ``physiology_rules_epoch_loss``.
+        ``rule.weight * multiplier``, preserving ``sum(rule.weight)`` and capping
+        any rule's share at ``adaptive_cap_share`` (``training.adaptive_weights``).
+        Rules absent from the EMA keep their base weight.
         """
         if not self._violation_ema:
             return {}
-        max_ema = max(self._violation_ema.values()) or 1.0
-        floor = self.ema_floor_frac * max_ema
-        floored = {k: max(v, floor) for k, v in self._violation_ema.items()}
-        ema_sum = sum(floored.values()) or 1.0
-        budget = self._base_weight_sum or 1.0
-        return {k: budget * v / ema_sum for k, v in floored.items()}
+        return adaptive_multipliers(
+            self._violation_ema, self._base_weight_by_rule,
+            cap_share=self.adaptive_cap_share, floor_frac=self.ema_floor_frac,
+        )
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)

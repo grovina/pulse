@@ -46,7 +46,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..knowledge.full_body import PatientParams
+from ..knowledge.full_body import PatientParams, glucose_fluxes
 from ..model import ModularPhysiologyNetwork
 from ..modules.base import compute_time_features
 from ..types import (
@@ -153,11 +153,23 @@ def _cold_metabolic_rates(
     All other inputs are pinned to a no-meal / no-stress / no-activity
     baseline:
 
-    * other species at their basal/typical values
+    * other species at their basal/typical values (glycogen pools at ``_b``)
     * gut absorption Ra = 0 (no carbs, fats, or proteins)
     * cortisol at Cort_b (no HPA deviation)
     * GLP-1 at GLP1_b (no incretin from a meal)
-    * activity = 0, X = 0 (no insulin-action transient)
+    * activity = 0, X = 0 (no insulin-action transient), and the slow
+      potentiation state at its equilibrium for this glucose (``Pot = (G-h)+``),
+      so the target is the teacher's STEADY-STATE rate at this operating point.
+
+    Iter 97 (teacher hand-off): the glucose and hepatic-output rates come from
+    the teacher's own ``full_body.glucose_fluxes`` — the single place its carbon
+    budget is written. Until now this function was a private copy of the
+    pre-iter-97 teacher (``hep_to_glucose``, ``cort_gluco``, ``cort_hep``,
+    ``gn_hep``, ``ins_hep`` — fields that no longer drive the teacher), so the
+    sweep was distilling a metabolic model the trajectory signal had stopped
+    teaching. The remaining species (I, Gn, FFA, BHB, Lac) mirror the per-step
+    block of ``simulate_full_body`` line for line; ``test_insulin_sweep_signal``
+    pins the fixed point and the monotonicities that block implies.
 
     Returns ``[7]`` in the order ``[dG, dI, dGn, dFFA, dBHB, dLac, dHep]``,
     matching the metabolic module's species ordering and ``MARKER_INDEX``
@@ -170,39 +182,36 @@ def _cold_metabolic_rates(
     Lac = params.Lac_b
     Hep = params.Hep_b
     Cort = params.Cort_b
-    GLP1 = params.GLP1_b
+    LGly = params.LGly_b
+    MGly = params.MGly_b
     Ra = 0.0
-    Ra_protein = 0.0
     act = 0.0
     X = 0.0
 
-    incretin_factor = 1.0 + GLP1 / (GLP1 + params.K_incretin)
+    # Glucose ledger + hepatic output target: the teacher's own function.
+    fl = glucose_fluxes(params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act)
+    dG = float(fl["dG"])
+    dHep = -params.k_hep * (Hep - float(fl["hep_target"]))
+
+    # Insulin: GLP-1 at basal -> incretin factor 1 (the teacher gates on GLP-1
+    # ABOVE basal); potentiation at its equilibrium for this glucose.
+    incretin_factor = 1.0
     glucose_ratio = min(G / max(params.Gb, 1.0), 1.0)
-    effective_Ib = params.Ib * glucose_ratio
-
-    dI = -params.n * (I - effective_Ib) + params.gamma * max(G - params.h, 0.0) * incretin_factor
-
-    dG = -(params.Sg + X) * (G - params.Gb) + Ra
-    dG += params.hep_to_glucose * Hep + params.cort_gluco * max(Cort - params.Cort_b, 0.0)
-    dG -= act * 0.02 * max(G - params.Gb * 0.8, 0.0)
-    dG += 0.02 * max(Gn - params.Gnb, 0.0)
+    effective_Ib = params.Ib * max(glucose_ratio ** params.fast_ins_exp, params.fast_ins_floor)
+    g_above = max(G - params.h, 0.0)
+    pot = g_above
+    w2 = params.ins_phase2_frac
+    dI = (-params.n * (I - effective_Ib)
+          + params.gamma * ((1.0 - w2) * g_above + w2 * pot) * incretin_factor)
 
     glucagon_stim = params.alpha_gn * max(params.Gb - G, 0.0) / max(params.Gb, 1.0)
-    glucagon_supp = 0.5 * I / (params.Ib + 10.0)
-    dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp + 0.02 * Ra_protein
-
-    hep_target = (
-        params.Hep_b
-        + params.cort_hep * max(Cort - params.Cort_b, 0.0)
-        + params.gn_hep * max(Gn - params.Gnb, 0.0)
-        - params.ins_hep * max(I - params.Ib, 0.0) / (params.Ib + 5.0)
-    )
-    hep_target = max(hep_target, 0.12)
-    dHep = -params.k_hep * (Hep - hep_target)
+    glucagon_supp = 0.4 * max(I - params.Ib, 0.0) / (params.Ib + 10.0)
+    dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp
 
     lipolysis = params.lip_max / (1.0 + I / params.IC50_lip)
     dFFA = lipolysis - params.k_ffa * FFA
 
+    # Liver pool at its basal level -> no glycogen-depletion boost on ketogenesis.
     ketogenesis = params.keto_max * FFA / (1.0 + I / params.IC50_keto)
     dBHB = ketogenesis - params.k_bhb * BHB
 

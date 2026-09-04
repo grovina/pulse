@@ -71,8 +71,8 @@ class TestColdTargets(unittest.TestCase):
 
     def test_hep_target_responds_to_insulin(self) -> None:
         """Hepatic glucose output target is suppressed by elevated insulin —
-        the cold model has ``-params.ins_hep * max(I - Ib, 0) / (Ib + 5.0)``
-        in ``hep_target``. dHep should decrease as I goes from Ib up."""
+        the teacher's ``glucose_fluxes`` gates glycogenolysis and GNG on insulin
+        above basal (``_glyc_ins_gate``). dHep should decrease as I goes from Ib up."""
         params = PatientParams()
         dhep = [
             float(_cold_metabolic_rates(params.Gb, i, params)[6])

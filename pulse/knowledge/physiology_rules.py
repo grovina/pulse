@@ -130,12 +130,22 @@ class PhysiologyRule:
     scale: float  # violation magnitude that yields loss=1
     weight: float = 1.0
     init_mode: InitMode = InitMode.COLD
+    # Iter 97 (review 4.5): a rule the TEACHER violates pulls the student two
+    # ways at once (trajectory imitation vs the rule). That is acceptable only
+    # when it is deliberate — the rule encodes literature the teacher gets wrong
+    # and is meant to correct it. Such rules are flagged here with the reason;
+    # ``scripts/rules_teacher_audit.py`` fails on any teacher violation that is
+    # NOT flagged, so a contradiction cannot enter the registry unnoticed.
+    teacher_correction: bool = False
+    teacher_correction_note: str = ""
 
     def __post_init__(self) -> None:
         if self.scale <= 0:
             raise ValueError(f"{self.name}: scale must be positive (got {self.scale})")
         if not self.arms:
             raise ValueError(f"{self.name}: at least one arm required")
+        if self.teacher_correction and not self.teacher_correction_note:
+            raise ValueError(f"{self.name}: teacher_correction needs a note saying why")
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +170,30 @@ def hinge_min_rise(traj: torch.Tensor, col: int, pre: slice, post: slice, min_ri
     return torch.relu(min_rise - delta)
 
 
+def _safe_window_corr(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Pearson correlation of two window series with a scale-free guard.
+
+    Add eps INSIDE the sqrt (not clamp_min on the result): when a marker's
+    window is perfectly flat (variance 0), sqrt(0) is finite in the forward but
+    its backward is 1/(2·sqrt(0)) = NaN, and clamping the sqrt OUTPUT leaves that
+    NaN gradient intact (this aborted iter 83/84, n_nan=111).
+
+    Iter 97 (review 4.6): the eps used to be an ABSOLUTE 1e-6 in squared marker
+    units, so it meant nothing for glucose (sum-of-squares ~1e4) and everything
+    for temp or bhb (~1e-2). It is now a fraction of the PARTNER's variance: a
+    flat series against a moving one yields corr ~ 0 with a gradient bounded
+    relative to the partner's scale, whatever the units.
+    """
+    a = a - a.mean()
+    b = b - b.mean()
+    aa = (a * a).sum()
+    bb = (b * b).sum()
+    rel = 1e-3
+    tiny = 1e-12
+    denom = torch.sqrt((aa + rel * bb + tiny) * (bb + rel * aa + tiny))
+    return (a * b).sum() / denom
+
+
 def hinge_max_correlation(
     traj: torch.Tensor, col_a: int, col_b: int, window: slice, max_corr: float,
 ) -> torch.Tensor:
@@ -168,20 +202,7 @@ def hinge_max_correlation(
     Use for "X and Y should be inversely related" rules with
     ``max_corr`` set negative (e.g. -0.3 means corr must be ≤ -0.3).
     """
-    a = traj[window, col_a]
-    b = traj[window, col_b]
-    a = a - a.mean()
-    b = b - b.mean()
-    # Add eps INSIDE the sqrt (not clamp_min on the result): when a marker's
-    # window is perfectly flat (variance 0), sqrt(0) is finite in the forward
-    # but its backward is 1/(2·sqrt(0)) = NaN, and clamping the sqrt OUTPUT
-    # leaves that NaN gradient intact. Iter-83/84's strong glucose setpoint (Sg
-    # floor) pins glucose dead-flat in some windows, which NaN'd these
-    # correlation rules' gradients and aborted training (n_nan=111, identical at
-    # Sg 0.5 and 0.8 — it was this, not Euler stiffness). eps inside keeps the
-    # gradient finite (a flat segment then yields corr≈0 with a small gradient).
-    denom = torch.sqrt(((a * a).sum() + 1e-6) * ((b * b).sum() + 1e-6))
-    corr = (a * b).sum() / denom
+    corr = _safe_window_corr(traj[window, col_a], traj[window, col_b])
     return torch.relu(corr - max_corr)
 
 
@@ -292,36 +313,48 @@ def hinge_a_precedes_b(
     return torch.relu(min_lead_min - lead) + torch.relu(lead - max_lead_min)
 
 
+def _soft_extremum(values: torch.Tensor, beta_scale: float, sign: float) -> torch.Tensor:
+    """Range-normalized soft max (``sign=+1``) / soft min (``sign=-1``).
+
+    Iter 97 (review 4.6): the iter-96 fix routed the ARGMAX helpers through
+    ``_range_normalized_softmax_weights`` but left the four VALUE helpers on an
+    absolute ``beta = 0.05``. Measured with that beta on realistic bumps: a
+    190 mg/dL glucose peak read 167 (violation 0 against a 180 ceiling), a
+    55 mg/dL dip read 69 (violation 0 against a 65 floor), and a 1.0 °C
+    temperature swing read 0.013 °C — the amplitude rule could never fire.
+    40 rule arms were scoring the window MEAN and calling it the extremum.
+    """
+    weights = _range_normalized_softmax_weights(values, beta_scale, sign=sign)
+    return (weights * values).sum()
+
+
 def hinge_max_value(
     traj: torch.Tensor, col: int, window: slice, ceiling: float,
-    softmax_beta: float = 0.05,
+    softmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when soft-max over ``window`` exceeds ``ceiling``.
 
     Use for upper-bound asymptotes: postprandial glucose < 180,
     glp1 peak below clinical-toxicity, etc. The soft-max keeps the
     gradient differentiable across all timesteps — argmax-style
-    hard predicates only reach the peak step.
+    hard predicates only reach the peak step. ``softmax_beta`` is a
+    RANGE-RELATIVE sharpness (iter 97) — see ``_soft_extremum``.
     """
     values = traj[window, col]
-    weights = torch.softmax(values * softmax_beta, dim=0)
-    soft_max = (weights * values).sum()
-    return torch.relu(soft_max - ceiling)
+    return torch.relu(_soft_extremum(values, softmax_beta, +1.0) - ceiling)
 
 
 def hinge_min_value(
     traj: torch.Tensor, col: int, window: slice, floor: float,
-    softmax_beta: float = 0.05,
+    softmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when soft-min over ``window`` drops below ``floor``.
 
-    Use for lower-bound asymptotes: fasting glucose > 65, etc.
-    Implemented as ``-soft_max(-values)`` for smooth gradients.
+    Use for lower-bound asymptotes: fasting glucose > 65, etc. Range-relative
+    sharpness (iter 97) — see ``_soft_extremum``.
     """
     values = traj[window, col]
-    weights = torch.softmax(-values * softmax_beta, dim=0)
-    soft_min = (weights * values).sum()
-    return torch.relu(floor - soft_min)
+    return torch.relu(floor - _soft_extremum(values, softmax_beta, -1.0))
 
 
 def hinge_min_ratio(
@@ -391,27 +424,14 @@ def hinge_min_correlation(
     be positively related" rules with ``min_corr`` set positive
     (e.g. +0.3 means corr must be ≥ +0.3).
     """
-    a = traj[window, col_a]
-    b = traj[window, col_b]
-    a = a - a.mean()
-    b = b - b.mean()
-    # Add eps INSIDE the sqrt (not clamp_min on the result): when a marker's
-    # window is perfectly flat (variance 0), sqrt(0) is finite in the forward
-    # but its backward is 1/(2·sqrt(0)) = NaN, and clamping the sqrt OUTPUT
-    # leaves that NaN gradient intact. Iter-83/84's strong glucose setpoint (Sg
-    # floor) pins glucose dead-flat in some windows, which NaN'd these
-    # correlation rules' gradients and aborted training (n_nan=111, identical at
-    # Sg 0.5 and 0.8 — it was this, not Euler stiffness). eps inside keeps the
-    # gradient finite (a flat segment then yields corr≈0 with a small gradient).
-    denom = torch.sqrt(((a * a).sum() + 1e-6) * ((b * b).sum() + 1e-6))
-    corr = (a * b).sum() / denom
+    corr = _safe_window_corr(traj[window, col_a], traj[window, col_b])
     return torch.relu(min_corr - corr)
 
 
 def hinge_circadian_amplitude(
     traj: torch.Tensor, col: int, window: slice, min_amplitude: float,
     max_amplitude: float | None = None,
-    softmax_beta: float = 0.05,
+    softmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when (soft-max − soft-min) over ``window`` leaves the band.
 
@@ -428,11 +448,7 @@ def hinge_circadian_amplitude(
     "there must be a rhythm".
     """
     values = traj[window, col]
-    w_max = torch.softmax(values * softmax_beta, dim=0)
-    w_min = torch.softmax(-values * softmax_beta, dim=0)
-    soft_max = (w_max * values).sum()
-    soft_min = (w_min * values).sum()
-    amplitude = soft_max - soft_min
+    amplitude = _soft_extremum(values, softmax_beta, +1.0) - _soft_extremum(values, softmax_beta, -1.0)
     violation = torch.relu(min_amplitude - amplitude)
     if max_amplitude is not None:
         violation = violation + torch.relu(amplitude - max_amplitude)
@@ -441,7 +457,7 @@ def hinge_circadian_amplitude(
 
 def hinge_max_drift(
     traj: torch.Tensor, col: int, window: slice, max_drift: float,
-    softmax_beta: float = 0.05,
+    softmax_beta: float = _SOFTARGMAX_BETA_SCALE,
 ) -> torch.Tensor:
     """Violation when (soft-max − soft-min) over ``window`` exceeds ``max_drift``.
 
@@ -450,11 +466,8 @@ def hinge_max_drift(
     drift, postprandial SpO2 stability.
     """
     values = traj[window, col]
-    w_max = torch.softmax(values * softmax_beta, dim=0)
-    w_min = torch.softmax(-values * softmax_beta, dim=0)
-    soft_max = (w_max * values).sum()
-    soft_min = (w_min * values).sum()
-    return torch.relu((soft_max - soft_min) - max_drift)
+    drift = _soft_extremum(values, softmax_beta, +1.0) - _soft_extremum(values, softmax_beta, -1.0)
+    return torch.relu(drift - max_drift)
 
 
 def hinge_argmin_in_band(
@@ -560,11 +573,18 @@ _CIRCADIAN_24H_WITH_MEALS_ARM = CohortArmSpec(
 # stay depleted, glucagon stays elevated. Cahill (1970) prolonged-
 # fast paradigm: by 48h essentially all hepatic glycogen is gone,
 # ketogenesis is in full swing.
+# Iter 97 (review 4.5): ``prefast_hours=24`` — the cold initial state is the
+# teacher's 24 h-fasted row (liver glycogen ~42 g, BHB ~1.3, insulin ~3.8), not
+# its fed row 0 (100 g). Before this the arm labelled "24-48 h" was really
+# "0-24 h", so ``liver_glycogen_depleted_prolonged_fast`` demanded < 30 g of a
+# pool the teacher itself only brings to 55 g in that time, and the rule read
+# as a 1.91 teacher violation that was entirely the frame.
 _FAST_24H_TO_48H_ARM = CohortArmSpec(
     label="fast_24h_to_48h",
     duration_min=24 * 60,  # 24h window starting at 24h fasted
     start_hour=6.0,
     meals=(),
+    prefast_hours=24.0,
 )
 
 
@@ -649,10 +669,15 @@ FFA_INVERSE_TO_INSULIN_POSTPRANDIAL = PhysiologyRule(
         "evening-meal arms (kinetics differ; relationship shouldn't)."
     ),
     arms=(_MIXED_MEAL_BREAKFAST_ARM, _OGTT_75G_ARM, _MIXED_MEAL_DINNER_ARM),
+    # Iter 97 (review 4.12): FFA suppression LAGS insulin (Frayn 2003, Fig. 3:
+    # insulin peaks ~45-60 min, FFA nadir ~120-180 min post-meal), so the LINEAR
+    # correlation over 0-180 min post-meal is modest even when the relation is
+    # perfect — the teacher's is -0.2. -0.3 was a shape claim the lag forbids;
+    # -0.15 still rules out zero or positive coupling.
     predicate=lambda traj, ctx: hinge_max_correlation(
         traj, ctx.col("ffa"), ctx.col("insulin"),
         window=ctx.window(60.0, 240.0),
-        max_corr=-0.3,
+        max_corr=-0.15,
     ),
     scale=0.5,  # correlation is unitless; scale=0.5 means full anti-corr violation ≈ loss 1
     # Iter 44: trim FFA's contribution. iter-43 diagnostic showed
@@ -674,11 +699,16 @@ GHRELIN_FALLS_AFTER_MEAL = PhysiologyRule(
         "drop reflects nutrient sensing rather than carb-only effects."
     ),
     arms=(_MIXED_MEAL_BREAKFAST_ARM, _OGTT_75G_ARM, _MIXED_MEAL_DINNER_ARM),
+    # Iter 97 (review 4.12): Cummings 2001 puts the postprandial NADIR at -30..
+    # -50 % (60-90 min post-meal). This rule's post window is 15-60 min after the
+    # meal — the descent, not the nadir — so its mean sits at roughly -20 %,
+    # 20 pg/mL at a typical 100. 30 pg/mL was the nadir value scored on the
+    # descent.
     predicate=lambda traj, ctx: hinge_min_drop(
         traj, ctx.col("ghrelin"),
         pre=ctx.window(30.0, 60.0),
         post=ctx.window(75.0, 120.0),
-        min_drop=30.0,
+        min_drop=20.0,
     ),
     scale=30.0,
 )
@@ -860,6 +890,17 @@ GHRELIN_RISES_PRE_MEAL = PhysiologyRule(
         min_rise=20.0,
     ),
     scale=20.0,
+    # Iter 97 (review 4.5): the teacher's fasting ghrelin is FLAT (100.0 at 12/24/
+    # 36/48 h of fasting, review 3.2) so it cannot show the pre-meal rise
+    # Cummings 2001 (Diabetes 50:1714) measured: +78 % from the post-meal nadir
+    # over the 1-2 h before a habitual meal, i.e. well over 20 pg/mL. The rule
+    # is right and the teacher is wrong; keep the pull. Re-audit after the
+    # teacher's rectifier fix lands and drop this flag when it passes.
+    teacher_correction=True,
+    teacher_correction_note=(
+        "teacher ghrelin has no anticipatory pre-meal rise (flat at basal while "
+        "fasting, review 3.2); Cummings 2001 measures +78% over the pre-meal 1-2 h"
+    ),
 )
 
 
@@ -910,11 +951,16 @@ FFA_RISES_DURING_FAST = PhysiologyRule(
         "magnitude and direction in a meal-free window."
     ),
     arms=(_FAST_8H_TO_16H_ARM, _FAST_12H_TO_24H_ARM),
+    # Iter 97 (review 4.12): 0.2 mmol/L was uncited and the same for an 8 h and a
+    # 12 h extension. Klein et al. 1993 (Am J Physiol 265:E801): plasma FFA
+    # ~0.5 mmol/L at 12 h -> ~0.9 at 36 h, ~0.017 mmol/L per hour. The floor is
+    # half that slope, 0.008/h (8 h -> 0.064, 12 h -> 0.096), so it rules out a
+    # flat fast without demanding the population mean of every patient.
     predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("ffa"),
         pre=ctx.window(0.0, 30.0),
         post=ctx.window(float(ctx.arm.duration_min) - 60.0, float(ctx.arm.duration_min)),
-        min_rise=0.2,
+        min_rise=0.008 * float(ctx.arm.duration_min) / 60.0,
     ),
     scale=0.2,
 )
@@ -1119,10 +1165,16 @@ INSULIN_FALLS_DURING_FAST = PhysiologyRule(
         "rising counter-regulatory tone)."
     ),
     arms=(_FAST_12H_TO_24H_ARM, _FAST_24H_TO_48H_ARM),
+    # Iter 97 (review 4.12): the ceiling of 8 uU/mL sat at the population MEAN
+    # of fasting insulin and was applied to the WHOLE 12-24 h window, whose first
+    # hour is the 12 h-fasted basal (Ib = 10 in the teacher). Healthy fasting
+    # insulin: mean ~6-8, upper reference ~12 uU/mL (Laakso 1993, Am J
+    # Epidemiol 137:959; HOMA reference cohorts). The rule now excludes the
+    # hyperinsulinaemic regime rather than half the healthy cohort.
     predicate=lambda traj, ctx: hinge_max_value(
         traj, ctx.col("insulin"),
         window=ctx.window(0.0, float(ctx.arm.duration_min)),
-        ceiling=8.0,
+        ceiling=12.0,
     ),
     scale=5.0,
 )
@@ -1137,13 +1189,26 @@ GLUCAGON_RISES_DURING_FAST = PhysiologyRule(
         "insulin falls. The mirror of glucagon_falls_postprandial."
     ),
     arms=(_FAST_8H_TO_16H_ARM, _FAST_12H_TO_24H_ARM),
+    # Iter 97 (review 4.12): the flat 10 pg/mL was an uncited round number
+    # applied to both an 8 h and a 12 h extension. Marliss et al. 1970 (J Clin
+    # Invest 49:2256): glucagon 108 -> 158 pg/mL over a 3-day fast, i.e.
+    # ~0.7 pg/mL per fasted hour; Aguilar-Parada 1969 (+50 % by 48-72 h) gives
+    # ~0.5/h. The floor is 0.5 pg/mL per hour of the arm (8 h -> 4, 12 h -> 6).
     predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("glucagon"),
         pre=ctx.window(0.0, 30.0),
         post=ctx.window(float(ctx.arm.duration_min) - 60.0, float(ctx.arm.duration_min)),
-        min_rise=10.0,
+        min_rise=0.5 * float(ctx.arm.duration_min) / 60.0,
     ),
     scale=10.0,
+    # The teacher's fasting glucagon rise is ~0.25 pg/mL/h (2.1 over 8 h, 3.5 over
+    # 12 h) — half the Marliss/Aguilar-Parada slope. Deliberate correction; re-audit
+    # after the teacher's counter-regulation work lands.
+    teacher_correction=True,
+    teacher_correction_note=(
+        "teacher fasting glucagon rises ~0.25 pg/mL/h vs the cited 0.5-0.7/h "
+        "(Marliss 1970; Aguilar-Parada 1969)"
+    ),
 )
 
 
@@ -1253,11 +1318,15 @@ FFA_RISES_WITH_EXERCISE = PhysiologyRule(
         "stored carb)."
     ),
     arms=(_MODERATE_EXERCISE_ARM,),
+    # Iter 97 (review 4.12): Romijn et al. 1993 (Am J Physiol 265:E380): at 65 %
+    # VO2max plasma FFA rises only modestly in the first hour (from ~0.4 to
+    # ~0.5-0.6 mmol/L; the large rise is at 25 % and after 2 h). 0.2 was the
+    # 2 h low-intensity value; the 60-min moderate-bout floor is 0.1.
     predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("ffa"),
         pre=ctx.window(0.0, 30.0),
         post=ctx.window(60.0, 90.0),
-        min_rise=0.2,
+        min_rise=0.1,
     ),
     scale=0.2,
 )
@@ -1352,10 +1421,15 @@ LEPTIN_STABLE_OVER_MEAL = PhysiologyRule(
         "marker, not a meal-response marker. Caps fast drift."
     ),
     arms=(_MIXED_MEAL_BREAKFAST_ARM, _MIXED_MEAL_DINNER_ARM),
+    # Iter 97 (review 4.12): the dinner arm runs 19:00-24:00, INSIDE the
+    # nocturnal leptin rise this file's own leptin_evening_peak demands. Sinha
+    # et al. 1996 (J Clin Invest 97:1344): nocturnal amplitude ~30-50 % of the
+    # daytime level, i.e. 3-5 ng/mL at a typical 10. A 3 ng/mL cap contradicted
+    # the rhythm rule; 5 caps meal-driven fast drift without forbidding it.
     predicate=lambda traj, ctx: hinge_max_drift(
         traj, ctx.col("leptin"),
         window=ctx.window(0.0, float(ctx.arm.duration_min)),
-        max_drift=3.0,
+        max_drift=5.0,
     ),
     scale=3.0,
 )
@@ -1411,11 +1485,16 @@ CORTISOL_EVENING_TROUGH = PhysiologyRule(
         "the diurnal swing."
     ),
     arms=(_CIRCADIAN_24H_ARM, _SLEEP_WAKE_24H_ARM),
+    # Iter 97 (review 4.6): the band ran to 26 h on a 24 h window — half of it
+    # was unreachable, and the trough straddles the arm boundary (these arms
+    # start at 00:00). Same fix as leptin in iter 96: window the reachable half
+    # of the claim, "cortisol is still falling into the late evening", so the
+    # soft-argmin over 16:00-24:00 must land in 22:00-24:00.
     predicate=lambda traj, ctx: hinge_argmin_in_band(
         traj, ctx.col("cortisol"),
-        window=ctx.window(0.0, 24 * 60.0),
-        target_min=22 * 60.0,
-        target_max=26 * 60.0,
+        window=ctx.window(16 * 60.0, 24 * 60.0),
+        target_min=6 * 60.0,   # 22:00
+        target_max=8 * 60.0,   # 24:00
         step_min=ctx.step_min,
     ),
     scale=120.0,
@@ -1450,11 +1529,15 @@ CORTISOL_RISES_WITH_EXERCISE = PhysiologyRule(
         "bout (acute HPA activation by physical stress)."
     ),
     arms=(_MODERATE_EXERCISE_ARM,),
+    # Iter 97 (review 4.12): Hill et al. 2008 (J Endocrinol Invest 31:587):
+    # cortisol rises at >= 60 % VO2max and does NOT rise at 40 %. The arm's
+    # activity 0.7 is ~50-60 % — the threshold intensity — so a 2 ug/dL rise
+    # (the 60 % mean) is not a lower bound there; 1 ug/dL is.
     predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("cortisol"),
         pre=ctx.window(0.0, 30.0),
         post=ctx.window(75.0, 105.0),
-        min_rise=2.0,
+        min_rise=1.0,
     ),
     scale=2.0,
 )
@@ -1470,11 +1553,12 @@ ACTH_EVENING_TROUGH = PhysiologyRule(
         "cortisol's)."
     ),
     arms=(_CIRCADIAN_24H_ARM, _SLEEP_WAKE_24H_ARM),
+    # Iter 97 (review 4.6): same 26 h-band fix as cortisol_evening_trough.
     predicate=lambda traj, ctx: hinge_argmin_in_band(
         traj, ctx.col("acth"),
-        window=ctx.window(0.0, 24 * 60.0),
-        target_min=22 * 60.0,
-        target_max=26 * 60.0,
+        window=ctx.window(16 * 60.0, 24 * 60.0),
+        target_min=6 * 60.0,   # 22:00
+        target_max=8 * 60.0,   # 24:00
         step_min=ctx.step_min,
     ),
     scale=120.0,
@@ -1618,20 +1702,28 @@ SBP_RISES_WITH_EXERCISE = PhysiologyRule(
 
 SBP_MORNING_SURGE = PhysiologyRule(
     name="sbp_morning_surge",
-    source="Kario et al. (2003); standard ambulatory BP literature",
+    source="Kario et al. (2003) Circulation 107:1401 — sleep-trough morning surge",
     description=(
-        "Systolic BP shows a morning surge — argmax over 24h "
-        "lands at 06:00–10:00 (sympathetic activation on waking)."
+        "Systolic BP shows a morning surge: the mean over the two hours after "
+        "waking (06:30–09:30) exceeds the lowest night hours (02:00–05:00) by "
+        "≥ 8 mmHg (sympathetic activation on waking)."
     ),
     arms=(_SLEEP_WAKE_24H_ARM,),
-    predicate=lambda traj, ctx: hinge_argmax_in_band(
+    # Iter 97 (review 4.12 / 1.2): the old predicate demanded that the 24 h
+    # ARGMAX of SBP fall at 06:00-10:00. Kario's morning surge is a RISE relative
+    # to the sleep trough (sleep-trough surge = post-wake 2 h mean minus lowest
+    # night hour; non-surge group mean 17 mmHg, surge >= 35), not the daily
+    # maximum, which ambulatory monitoring puts in the afternoon. Measured on the
+    # corrected sleep arm the teacher's SBP argmax is ~12:00 (a 124-min
+    # "violation") while its trough-to-morning rise is +15.6 mmHg — the old rule
+    # penalised correct physiology. Floor 8 sits under the non-surge mean.
+    predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("sbp"),
-        window=ctx.window(0.0, 24 * 60.0),
-        target_min=6 * 60.0,
-        target_max=10 * 60.0,
-        step_min=ctx.step_min,
+        pre=ctx.window(2 * 60.0, 5 * 60.0),
+        post=ctx.window(6.5 * 60.0, 9.5 * 60.0),
+        min_rise=8.0,
     ),
-    scale=120.0,
+    scale=10.0,
 )
 
 

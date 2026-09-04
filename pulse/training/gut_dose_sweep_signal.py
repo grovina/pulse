@@ -35,7 +35,7 @@ import torch.nn as nn
 
 from ..knowledge.full_body import PatientParams, compute_absorption_profile
 from ..model import ModularPhysiologyNetwork
-from ..modules.gut import GUT_OUTPUT_SCALE, MealEvent
+from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..types import GUT_OUTPUT_DIM
 from .embedding_sampler import select_supervised_embeddings
 from .safe_step import accumulate_grad
@@ -67,7 +67,14 @@ class GutDoseSweepProtocol:
     carb_doses_g: tuple[float, ...] = (0.0, 15.0, 30.0, 45.0, 60.0, 90.0, 120.0)
     fats_g: float = 5.0
     proteins_g: float = 10.0
-    post_window_min: int = 240
+    # Iter 97 (teacher hand-off): the teacher kernel is mass-conserving and active
+    # to 8/rate (~667 min at the default slow rate); over 240 min it delivers only
+    # 85 % of a 60 g dose (AUC 391 of 462 mg/dL-min). The sweep now covers the
+    # whole window the STUDENT kernel can express (MEAL_ACTIVE_WINDOW_MIN = 480,
+    # 97 % of the mass), so the AUC target is the ingested mass and not a
+    # truncation of it. The remaining 3 % tail is the student kernel's cutoff,
+    # which the student layer owns.
+    post_window_min: int = int(MEAL_ACTIVE_WINDOW_MIN)
     rank_margin: float = 0.3
 
 
