@@ -34,30 +34,67 @@ def _circadian(t_abs_min: float, amplitude: float, peak_hour: float) -> float:
     return amplitude * np.cos(2 * np.pi * (hour - peak_hour) / 24.0)
 
 
-# Iter 92: carb appearance gain, split out from the shared `* 3.0` the three
-# absorption kernels used to share. Sharpening the carb kernel (see
-# meal_absorption_fast_rate) advances the glucose peak but also raises its
-# amplitude, because a gamma-2 kernel's peak FLUX scales with rate while its
-# integral (3*carbs) does not. The excursion amplitude was already correct
-# (+45 mg/dL vs literature +40-50), so this gain absorbs the amplitude side
-# effect and leaves timing as the only thing the rate change moves.
-# 2.55 measured (N=30): rise +45.5 mg/dL, i.e. baseline amplitude preserved.
-# Fat and protein keep the original 3.0 -- their kernels are unchanged.
-#
-# TRADEOFF, stated honestly: holding the PEAK fixed costs ~10% of the 3 h
-# incremental AUC (5189 -> 4675 mg/dL*min). The alternative -- sharpen the kernel
-# and keep gain at 3.0 -- holds AUC (5343) but pushes the peak to +54 mg/dL, out of
-# the literature's +40-50 band. Peak excursion is the well-anchored observable and
-# AUC is not, so the peak wins. The absolute carb->appearance conversion implied by
-# this gain is still NOT independently validated against literature (it is a
-# phenomenological scale, not a mass-conserving one); that remains open.
-CARB_APPEARANCE_GAIN = 2.55
+def _hpa_drive(t_abs_min: float, rise_start_h: float, peak_h: float,
+               fall_tau_h: float = 6.0) -> float:
+    """Asymmetric 24 h HPA drive in [0, 1]: a half-cosine rise from `rise_start_h`
+    to `peak_h`, then an exponential decline (time constant `fall_tau_h`) that is
+    normalized to reach exactly 0 at the start of the next rise. Weitzman 1971:
+    cortisol is ~60% of its peak by noon, ~25% by 20:00, quiescent 20:00-02:00."""
+    hour = (t_abs_min / 60.0) % 24.0
+    rise = (peak_h - rise_start_h) % 24.0
+    fall = 24.0 - rise
+    since_start = (hour - rise_start_h) % 24.0
+    if since_start < rise:
+        return 0.5 * (1.0 - np.cos(np.pi * since_start / rise))
+    x = since_start - rise
+    e_end = np.exp(-fall / fall_tau_h)
+    return (np.exp(-x / fall_tau_h) - e_end) / (1.0 - e_end)
+
+
+# --- Iter 97: THE GLUCOSE LEDGER IS IN MASS UNITS ------------------------------
+# Glucose space is a distribution volume: Bergman's V_G ~ 1.85 dL/kg (the same
+# figure Cobelli/Dalla Man use for the oral minimal model). Every flux below is
+# expressed in mg/dL/min OF THAT SPACE, and every conversion goes through these
+# three constants, so a gram of carbohydrate eaten, a gram of glycogen stored and
+# a milligram of glucose in blood are the SAME CARBON on both sides of every
+# equation. Body mass is fixed at 70 kg for the teacher population (the literature
+# anchors are per-kg or 70-kg-normalized; a per-patient mass adds nothing that the
+# per-patient Gb/Si/Hep do not already carry).
+BODY_MASS_KG = 70.0
+VG_DL_PER_KG = 1.85                      # glucose distribution volume, dL per kg
+VG_DL = BODY_MASS_KG * VG_DL_PER_KG      # 129.5 dL
+MG_DL_PER_G = 1000.0 / VG_DL             # 7.72 mg/dL of glucose space per gram
+
+# Iter 97: the carbohydrate appearance kernel is MASS-CONSERVING. The integral of
+# `_meal_absorption` over all time is carbs (g) * MG_DL_PER_G, i.e. the whole
+# ingested carbohydrate appears in glucose space and nowhere else. Through iter 96
+# this gain was 2.55 -- a phenomenological scale that put 32% of the meal into
+# glucose space and left the other 68% unaccounted for -- because the kernel was
+# ~3x too peaky for a real absorption curve and the gain was the knob that held the
+# glucose excursion at the literature +40-60 mg/dL. Mass now comes from the kernel;
+# amplitude comes from where physiology puts it: hepatic first-pass uptake into
+# glycogen (`glyc_syn_frac_L`, debited from glucose -- see the metabolic block) and
+# insulin-stimulated disposal (`Si`), which is why both were re-sized in this
+# iteration (measured, see PatientParams).
+CARB_APPEARANCE_GAIN = MG_DL_PER_G
+
+# Iter 97: kernels integrate to >= 99.7% of their mass. A gamma-2 kernel
+# rate^2 t e^{-rate t} has retained 1 - (1 + x) e^{-x} of its mass at x = rate * t;
+# x = 8 gives 0.997. The fixed 300-min cutoff destroyed 12.6% of the slow fraction
+# at the default slow rate and 66% at the floor of the sampled range -- 3.8% of all
+# ingested carbohydrate on average across the population, 14.4% in the worst
+# patient, silently. The truncation is now a property of the kernel, not a number.
+_KERNEL_CUTOFF_X = 8.0
+
+
+def _kernel_cutoff_min(rate: float) -> float:
+    return _KERNEL_CUTOFF_X / max(rate, 1e-6)
 
 
 def _meal_absorption(t: float, meal_time: float, carbs: float,
                      rate: float = 0.03) -> float:
     dt = t - meal_time
-    if dt < 0 or dt > 300:
+    if dt < 0 or dt > _kernel_cutoff_min(rate):
         return 0.0
     return carbs * rate * rate * dt * np.exp(-rate * dt) * CARB_APPEARANCE_GAIN
 
@@ -65,7 +102,7 @@ def _meal_absorption(t: float, meal_time: float, carbs: float,
 def _fat_absorption(t: float, meal_time: float, fats: float,
                     rate: float = 0.015) -> float:
     dt = t - meal_time
-    if dt < 0 or dt > 420:
+    if dt < 0 or dt > _kernel_cutoff_min(rate):
         return 0.0
     return fats * rate * rate * dt * np.exp(-rate * dt) * 3.0
 
@@ -105,7 +142,7 @@ def _duodenal_delivery(t: float, meal_time: float, grams: float,
 def _protein_absorption(t: float, meal_time: float, proteins: float,
                         rate: float = 0.02) -> float:
     dt = t - meal_time
-    if dt < 0 or dt > 360:
+    if dt < 0 or dt > _kernel_cutoff_min(rate):
         return 0.0
     return proteins * rate * rate * dt * np.exp(-rate * dt) * 3.0
 
@@ -117,13 +154,81 @@ class PatientParams:
     # peak with DeFronzo (~60 uU/mL) and zero out GSIR at fasting glucose
     # so insulin can drop below Ib during a fast. Si 0.0002 -> 0.0004
     # tightens late-glucose clearance toward the OGTT 120-min target.
-    Sg: float = 0.018
+    # --- Iter 97: Gb IS A FIXED POINT, NOT AN ATTRACTOR -------------------------
+    # Through iter 96 the glucose ODE was `-(Sg + X)(G - Gb) + Ra + small terms`:
+    # the whole basal turnover (Sg*Gb ~ 222 mg/min) was implicit in one restoring
+    # term, hepatic output was booked a second time as a 5.8 mg/min `Hep` state and
+    # a third time as liver-glycogen breakdown that never reached blood, and the
+    # fasting fall was produced by MOVING the attractor (`Gb_fasted`), not by a flux
+    # deficit. Below the setpoint, insulin action was a glucose SOURCE (item 3.10).
+    #
+    # Now: dG = Ra - synthesis + EGP - uptake, with every term a mass flux (see the
+    # module constants), and Gb is the level at which EGP_b = k_ii * Gb -- the
+    # obligatory (insulin-independent) uptake balances basal hepatic output. `Sg`
+    # is DERIVED: the linearized restoring rate is the uptake constant plus the
+    # liver's own glucose suppression, Sg = uptake_ii * (1 + hep_autoreg_m).
+    # Default 0.01138 * 1.6 = 0.0182 -- the value iters 21-96 carried, now with
+    # its two halves named.
+    Sg: float = 0.0182
+    # Iter 97: UNCHANGED at 0.0004, and that is a finding. When the kernel first
+    # became mass-conserving the same +58.7 mg/dL excursion seemed to need Si 2-4x
+    # higher; it did not -- it needed the absorption curve to have its real shape
+    # (a plateau, not a spike), hepatic first-pass uptake to respond to the portal
+    # load from the first minute, and the second phase of secretion. With those
+    # three structures in place the swept optimum for Si is 3.5-5 x 10^-4 /min per
+    # uU/mL: Bergman's IVGTT range for healthy adults (Bergman 1979; 4-8 x 10^-4).
     Si: float = 0.0004
     Gb: float = 95.0
     Ib: float = 10.0
-    p2: float = 0.03
+    # Iter 97: 0.03 -> 0.02 (Bergman's p2 is 0.02-0.03; the slower remote-insulin
+    # lag holds the postprandial tail, measured across the sweep in the iter-97
+    # report).
+    p2: float = 0.02
     n: float = 0.15
-    gamma: float = 0.07
+    # Iter 97: 0.07 -> 0.05, re-sized with the incretin effect (see K_incretin):
+    # glucose-stimulated insulin release is now amplified up to 3.5x by ABOVE-BASAL
+    # GLP-1 rather than 1.4x by basal GLP-1, so the same ~55 uU/mL peak needs less
+    # gamma.
+    gamma: float = 0.05
+    # --- Iter 97: SECOND-PHASE INSULIN SECRETION ------------------------------
+    # Bergman's insulin equation is dI = -n(I - Ib) + gamma (G - h)+ * t: secretion
+    # grows with time above threshold (the second phase). The teacher had dropped
+    # the t, so insulin could only track instantaneous glucose and fell to ~17
+    # uU/mL by 90-240 min of an OGTT against 30-45 in the literature (the
+    # `ogtt_75g_insulin_mean_3h` anchor). Bergman's literal `t` integrates without
+    # bound (measured here: insulin 100+, glucose 60-70 at 180 min -- reactive
+    # hypoglycaemia by construction), which is why Toffolo & Cobelli (1980; 2001)
+    # replaced it with a DELAYED PROPORTIONAL static component:
+    #     dPot = -k_pot * (Pot - (G - h)+),
+    #     secretion = gamma * ((1 - w) * (G - h)+ + w * Pot) * incretin.
+    # Steady-state secretion is gamma * (G - h) either way; the response is spread
+    # over tau = 1/k_pot = 40 min, so insulin persists while glucose is already
+    # falling. w = 0.3: measured, it lifts 120-min OGTT insulin from 27 to 33 uU/mL
+    # with a 3-4 h dip to ~93 mg/dL (the mild late undershoot real OGTTs show);
+    # 0.5 deepens the dip to ~90 for another +3 uU/mL.
+    ins_phase2_frac: float = 0.3
+    k_pot: float = 0.025
+    # Iter 97: obligatory glucose uptake per mg/dL of glucose space (brain, blood
+    # cells, renal medulla -- the insulin-independent disposal). A POPULATION
+    # constant: it is what makes the prolonged-fast floor absolute (item 3.3), since
+    # at the floor EGP is gluconeogenesis alone and G_floor = GNG / uptake_ii
+    # regardless of the patient's fed setpoint. The value makes the typical patient
+    # (Gb 95) rest at the typical EGP of 2.0 mg/kg/min: 2.0 / (1.85 * 95).
+    uptake_ii: float = 2.0 / (VG_DL_PER_KG * 95.0)
+    # Fraction of basal disposal that sub-basal insulin can withdraw. Bergman's
+    # insulin action X is signed (it was rectified here in iter 80); brain uptake
+    # is not insulin-dependent, so the withdrawable part is small. 0.05: tracer
+    # studies find disposal per mg/dL at 22 h of fasting within a few percent of the
+    # post-absorptive value (Rd 1.8 at 82 mg/dL vs 2.0 at 92; Landau 1996), so the
+    # withdrawable share is near zero; measured here, 0.15 held the 24 h fasting
+    # glucose at 86 against Cahill's 70-80 by withdrawing 14% of uptake.
+    ins_dep_basal_frac: float = 0.05
+    # Hepatic autoregulation exponent: hyperglycaemia suppresses hepatic output as
+    # (Gb/G)^m ABOVE the setpoint (glucokinase sensing; ~50% suppression at +100
+    # mg/dL with basal insulin). Below the setpoint counter-regulation is hormonal
+    # (glucagon, cortisol -- both explicit gates), not autoregulatory, so the term
+    # is one-sided by physiology rather than by rectifier.
+    hep_autoreg_m: float = 0.6
     # Iter 96: `h` -- the glucose threshold above which glucose-stimulated insulin
     # release engages -- is now DERIVED per patient in resolve_derived_params as
     # Gb * h_frac, not held at the population 95. Iter 21 set 80 -> 95 precisely to
@@ -139,43 +244,28 @@ class PatientParams:
     h: float = 95.0
     h_frac: float = 1.0
 
-    # --- Iter 93: THE FASTED STATE NEVER ENGAGED ---------------------------
-    # Measured over 12 randomized patients, a 48 h fast produced: glucose
-    # 97.4 -> 99.9 mg/dL (literature: 70-80 by 24 h), insulin 16.0 uU/mL at
-    # 24 h (literature 3-5), FFA 0.50 -> 0.44 (literature 2-3x rise). One root
-    # cause, three symptoms: in `dG = -(Sg+X)(G-Gb) + Ra`, Gb is a HARD
-    # ATTRACTOR, so with no meal G cannot fall below it. Insulin's fasted
-    # setpoint keys off `min(G/Gb, 1)`, which therefore never leaves 1.0, so
-    # insulin never falls; and lipolysis is insulin-gated, so FFA never rises.
-    # The iter-21 comment above already INTENDED "insulin can drop below Ib
-    # during a fast" — the trigger simply could not fire.
+    # --- Iter 93 -> 97: THE FASTED STATE ---------------------------------------
+    # Iter 93 found the fasted state never engaged (48 h fast: glucose 97 -> 100,
+    # insulin 16 at 24 h) because Gb was a hard attractor, and fixed it by making
+    # the attractor itself fall with liver glycogen (`fast_gb_drop`, `fast_gb_floor
+    # _frac`). That reproduced the numbers but not the mechanism: the fall was
+    # PROPORTIONAL to Gb (a Gb-130 patient fasted to 97, a Gb-70 patient to 56 --
+    # item 3.3) and the glycogen pool still never touched blood glucose.
     #
-    # The minimal model is a 3-hour tool: over that span Gb genuinely is the
-    # defended level. Over a fast it is not — as hepatic glycogen empties,
-    # gluconeogenesis cannot fully replace glycogenolysis and the defended
-    # level itself falls (Cahill 2006). So Gb becomes glycogen-dependent,
-    # gated on the SAME `glyco_avail` the hepatic-output split and ketogenesis
-    # already read — which makes it exactly the IDENTITY at the fed
-    # calibration state (glyco_avail = 1), so no fed/postprandial behaviour
-    # moves. Confirmed against the user's own CGM: 14/14 overnight episodes
-    # fall, -2.37 mg/dL/h through 23:00-07:00.
-    # Calibrated on the DEFAULT (healthy) patient against five independent
-    # anchors at once — see the iter-93 spec. Population means are NOT used for
-    # this calibration: the population deliberately includes impaired/diabetic
-    # patients, so its mean fasting insulin is not what Polonsky measured.
-    fast_gb_drop: float = 0.55
-    # Prolonged starvation does not extrapolate to zero — glucose plateaus at
-    # ~60-70 mg/dL and holds there for weeks on gluconeogenesis alone (Cahill
-    # 2006). The floor makes that asymptote explicit rather than trusting the
-    # liver pool never to empty. It is slack in every protocol shorter than
-    # ~3 days; it exists so the linear law cannot run somewhere absurd.
-    fast_gb_floor_frac: float = 0.62
+    # Iter 97 removes both parameters. The fasting fall is now a flux deficit:
+    # glycogenolysis is first-order in the liver pool, so as the pool empties EGP
+    # falls toward gluconeogenesis alone and glucose settles where obligatory
+    # uptake balances it -- an ABSOLUTE floor of ~65-70 mg/dL (Cahill 2006) for
+    # every patient, because `uptake_ii` and `Gng_b` are population-level while
+    # only the glycogenolytic share of EGP scales with Gb.
+    #
     # Insulin's fall in fasting is far steeper than the glucose fall that
     # drives it (Polonsky 1988: basal insulin roughly halves while glucose
     # drops ~15%) because beta-cell secretion is sigmoid in glucose near
     # threshold. A linear ratio cannot express that; the exponent can.
-    # Identity whenever G >= Gb, so again the fed state is untouched.
+    # Identity whenever G >= Gb, so the fed state is untouched.
     fast_ins_exp: float = 5.0
+    fast_ins_floor: float = 0.25   # basal secretion never falls below this fraction of Ib
 
     # Glucagon
     Gnb: float = 70.0
@@ -272,7 +362,31 @@ class PatientParams:
     GB_max: float = 6.0           # mmol, capacity
     k_gb_eject: float = 0.030     # /min at saturating CCK -> ~35-40% ejected by 60 min
     K_cck_gb: float = 2.5         # pmol/L above basal for half-maximal ejection
-    k_gb_fill: float = 0.004      # /min, interdigestive refill toward GB_max
+    # --- Iter 97: THE ENTEROHEPATIC LOOP IS CLOSED ------------------------------
+    # Through iter 96 the gallbladder refilled from an infinite source
+    # (`k_gb_fill * (GB_max - GB)`) and the 90% of portal return the liver
+    # extracted vanished; the pools therefore rested at the CAP (gallbladder 5.97 =
+    # GB_max against a declared 4.0) and the intestine at 0.08 against 1.0. Now
+    # hepatic bile secretion = extracted portal return + cleared serum bile acids +
+    # de-novo synthesis, and it is DIVIDED between the gallbladder (a fraction
+    # `gb_divert_frac`, tapering to zero as the gallbladder fills -- bile bypasses a
+    # full gallbladder to the duodenum) and the duodenum directly. Interdigestive
+    # emptying `k_gb_basal` (the MMC-related partial emptying, 10-30% per ~100 min
+    # cycle) is DERIVED so that GB_b is the fasting fixed point; synthesis is
+    # derived to replace exactly the faecal loss at INT_b; the serum spill gain is
+    # derived so BA_b is the fixed point of a pure mass-action serum pool.
+    # Interdigestively ~70-80% of hepatic bile is diverted into the gallbladder
+    # (the sphincter of Oddi is closed between MMC phases); the remainder flows to
+    # the duodenum. 0.8 refills a 40%-emptied gallbladder in ~2-3 h, as measured by
+    # ultrasound (Howard 1991), now that MMC emptying is suppressed while fed.
+    gb_divert_frac: float = 0.8   # share of hepatic bile diverted to the gallbladder interdigestively
+    # Fed-state suppression of interdigestive (MMC) emptying: duodenal nutrient
+    # delivery (g/min) at which the MMC is half-suppressed. The MMC does not occur
+    # in the fed state (Vantrappen 1977); a 30 g course over an hour (~0.5 g/min)
+    # suppresses it ~90%.
+    K_mmc_fed: float = 0.05
+    gb_fill_width: float = 2.0    # mmol below GB_max over which diversion tapers to zero
+    k_gb_basal: float = 0.002     # /min, DERIVED (fasting fixed point at GB_b)
     # Intestine. Carries the transit delay AND the 95%/5% split, so the CCK-peak-at-10min
     # to serum-peak-at-75-120min gap is a CONSEQUENCE of transport in series rather than
     # a fitted lag. k_ileal = 1/tau of transit-to-ileal-uptake.
@@ -293,10 +407,16 @@ class PatientParams:
     # Serum. Fasting reference 4.4-14.1 umol/L; postprandial 4.7-20.2, peak 75-120 min.
     BA_b: float = 6.0             # umol/L
     k_ba: float = 0.030           # /min systemic clearance (tau ~ 33 min)
-    ba_spill_gain: float = 45.0   # umol/L per mmol/min of unextracted portal return
-    # Hepatic synthesis replaces faecal loss (~5% of the pool per cycle), holding the
-    # ~3 g total pool steady over a day.
-    k_ba_synth: float = 0.0010    # mmol/min
+    # umol/L per mmol/min of unextracted portal return. Iter 97: DERIVED as
+    # k_ba * BA_b / spillover_b, i.e. the serum pool is mass action with BA_b as its
+    # fixed point (it used to relax to BA_b with a non-negative source, the
+    # absorbing-floor pattern). Its reciprocal is an effective volume: 1000 /
+    # gain ~ 7 L, plasma plus the albumin-bound interstitial share.
+    ba_spill_gain: float = 45.0
+    # Hepatic de-novo synthesis, mmol/min. Iter 97: DERIVED as the faecal loss at
+    # the fixed point, (1 - f_ileal) * k_ileal * INT_b = 0.00065 -> 0.94 mmol/day
+    # ~ 0.4-0.5 g/day (literature 0.2-0.6 g/day).
+    k_ba_synth: float = 0.0010
 
     # Lactate. Iter 93: the drive was LINEAR in activity (`act * 0.3`), which
     # put a *moderate* 0.65 bout at 9.8 mmol/L — near-maximal, anaerobic
@@ -311,26 +431,84 @@ class PatientParams:
     lac_thresh: float = 0.45     # activity fraction at the lactate threshold
     lac_act_gain: float = 0.7    # supra-threshold production, quadratic in excess
 
-    # Hepatic endogenous glucose output (slow flux into glucose mass balance)
-    Hep_b: float = 1.2
+    # --- Iter 97: HEPATIC GLUCOSE OUTPUT, ONE FLUX ON TWO LEDGERS --------------
+    # `hepatic_output` is endogenous glucose production in mg/kg/min (its declared
+    # unit and typical, 2.0, are exactly the textbook basal EGP -- DeFronzo; Rothman
+    # 1991). It is the SUM of glycogenolysis and released gluconeogenesis, and the
+    # glycogenolytic part is the same number that leaves the liver-glycogen pool.
+    #
+    # Hep_b is DERIVED in resolve_derived_params as uptake_ii * Gb * VG_DL_PER_KG:
+    # the EGP that holds this patient's declared fasting glucose. That makes fasting
+    # hyperglycaemia an EGP excess (Gb 130 -> 2.7 mg/kg/min), which is what it is
+    # clinically (DeFronzo 1989: the fasting glucose of type-2 diabetes correlates
+    # with EGP, not with disposal).
+    Hep_b: float = 2.0
+    # Basal gluconeogenesis, mg/kg/min. Landau 1996 (JCI): 47% of EGP at 14 h of
+    # fasting, 67% at 22 h, 93% at 42 h; Rothman 1991 (Science): 64% at 22 h. 1.2
+    # is 60% of the typical EGP -- the post-absorptive share -- and it is
+    # POPULATION-level (varied only mildly), because it is what sets the absolute
+    # prolonged-fast glucose floor. Glycogenolysis at basal = Hep_b - Gng_b.
+    # 1.0 = 50% of the typical EGP (Landau's 47% at 14 h). MEASURED: at 1.2 the
+    # 48 h floor landed at 84 mg/dL because the glucagon/FFA/insulin gates lift GNG
+    # ~25% in the fast; at 1.0 it lands at ~67 (Cahill 65-70).
+    Gng_b: float = 1.0
+    # Hepatic response lag to its hormonal drive (tau 25 min: hepatic insulin
+    # action on glycogenolysis, Cherrington 1999). `hepatic_output` relaxes to the
+    # instantaneous target; BOTH ledgers use the lagged state, split in the same
+    # proportion, so carbon is closed at every step and not just on average.
     k_hep: float = 0.04
+    # Glycogenolysis insulin gate: the IC50 form NORMALIZED AT BASAL,
+    #     g = (1 + (Ib/K)^n) / (1 + (I/K)^n),
+    # equal to 1 at I = Ib, falling to ~0.1 at 5x basal insulin and RISING to
+    # 1 + (Ib/K)^n (1.44) as insulin falls toward zero. Sub-basal insulin therefore
+    # accelerates glycogenolysis instead of being invisible to it (item 3.2): the
+    # overnight fall in insulin is precisely the liver's cue to keep glucose up.
+    # K 25 uU/mL, n 2: glycogenolysis is half-suppressed at ~+15 uU/mL above basal
+    # (Rizza 1981 dose-response) and ~85% at +40; measured, the standard meal
+    # takes EGP to a nadir of ~0.3 mg/kg/min (85% suppression; literature 70-90%).
+    glyc_ins_K: float = 25.0
+    glyc_ins_n: float = 2.0
+    # Gluconeogenesis is far less insulin-sensitive than glycogenolysis (its
+    # suppression runs through substrate supply and glucagon; Gastaldelli 2001):
+    # first order, half-effect at +70 above basal; the same form's sub-basal boost
+    # saturates at 1 + Ib/K = 1.125, so the insulin of a deep fast cannot lift GNG
+    # by more than that (measured: at K 40 it added 22% and the floor sat at 76).
+    gng_ins_K: float = 80.0
+    gng_ins_n: float = 1.0
+    # Share of the gluconeogenic flux diverted into glycogen (the indirect pathway)
+    # as a function of insulin drive: ins_drive^0.25, so the modest insulin of the
+    # absorptive tail (+2..+10 uU/mL) already diverts 60-80% -- the fed liver is a
+    # net glucose consumer and routes its gluconeogenic carbon to glycogen (Katz &
+    # McGarry 1984). Taylor 1996: the indirect pathway supplies roughly as much
+    # postprandial hepatic glycogen as the direct one.
+    gng_divert_exp: float = 0.25
+    # Glucagon on hepatic output: a Hill centred at the patient's basal glucagon,
+    #     g = 2 / (1 + (Gnb/Gn)^n)  -- 1 at basal, -> 2 with rising glucagon,
+    # -> 0 as it falls. Glucagon acts fully on glycogenolysis and as sqrt on
+    # gluconeogenesis (Cherrington: the acute glucagon response is glycogenolytic;
+    # its gluconeogenic effect is slower and weaker).
+    hgo_gn_n: float = 2.0
+    # Cortisol on gluconeogenesis, SIGNED and saturating:
+    #     g = 1 + a * tanh(ln(Cort / Cort_b)),
+    # so the 14 h/day cortisol spends below its reference lower GNG (item 3.2),
+    # and the morning peak raises it. a = 0.2: the nadir (4 ug/dL) takes GNG to
+    # 0.84x and the peak (19) to 1.08x -- cortisol's whole diurnal swing moves EGP
+    # by ~+/-8%. Dinneen 1993: cortisol held at ~35 ug/dL for 5 h raised EGP 14%;
+    # Bolli 1984: the healthy dawn rise in glucose is +2-5 mg/dL.
+    gng_cort_amp: float = 0.2
+    # Gluconeogenic substrate: glycerol from lipolysis tracks FFA. (FFA/FFA_b)^0.2
+    # takes the 48-h doubling of FFA to +15% GNG; with glucagon's +7% and the
+    # weak insulin gate's +10% that is Landau's +25-30% rise in absolute
+    # gluconeogenesis over a 42 h fast.
+    gng_ffa_exp: float = 0.2
+    # LEGACY FIELDS -- no longer read by simulate_full_body. Retained because
+    # `pulse.training.insulin_sweep_signal._cold_metabolic_rates` still carries a
+    # copy of the iter-80 hepatic equations and reads them by name; that copy is
+    # outside the teacher's file ownership and is flagged for the student layer.
     cort_hep: float = 0.06
     ins_hep: float = 0.08
     gn_hep: float = 0.018
     hep_to_glucose: float = 0.038
-    meal_suppress_hep: float = 0.38
-    # Hepatic-output split (iter 80). The lumped `Hep` is partitioned into a
-    # glycogenolytic share (scaled by liver-glycogen availability) and a
-    # gluconeogenic share. CONSERVATION-EXACT at the fed calibration state
-    # (LGly = LGly_b): the two shares sum to the old `Hep`, so fed/acute
-    # trajectories are byte-identical to iter 79. They diverge only as the
-    # liver pool depletes (~12 h+ fast): the glycogenolytic component falls
-    # with availability, gluconeogenesis partially compensates, and net
-    # hepatic glucose output declines — the Cahill-2006 prolonged-fast
-    # picture, and the edge that finally makes glucose *downstream of* the
-    # slow glycogen pool (so glucose's strong gradient reaches LGly).
-    hep_glyco_frac: float = 0.6   # glycogenolytic share of basal hepatic output (early fast)
-    hep_gng_comp: float = 0.5     # gluconeogenic compensation as the liver empties (0..1)
 
     # Ghrelin
     Ghr_b: float = 100.0
@@ -343,8 +521,17 @@ class PatientParams:
     # elevated (the absorption kernel, already advanced this iteration), not ghrelin
     # kinetics.
     k_ghr: float = 0.02
-    IC50_ghr: float = 20.0
-    K_meal_ghr: float = 0.3
+    # Iter 97: insulin's action on ghrelin is a SIGNED saturating function centred
+    # at basal insulin (see the appetite block); the old `(I - Ib)+ / (.. + IC50)`
+    # rectifier made 24/36/48 h of fasting produce ghrelin = 100.000 exactly. The
+    # exponent sets the curvature: n = 1 reproduces the postprandial suppression at
+    # the old IC50 (half-suppression at 3x basal insulin) and gives +20% at the
+    # insulin of a 24 h fast (Espelund 2005: +15-30%).
+    ghr_ins_n: float = 1.0
+    # Half-saturation of the nutrient suppressor, now g/min of DUODENAL delivery
+    # (see the appetite block). A 75/5/10 standard meal delivers ~2.2 g/min at its
+    # 10-min peak, so 0.9 gives ~70% suppression drive at the peak.
+    K_meal_ghr: float = 0.9
     # Iter 92: cap on the fraction of basal ghrelin production a meal can suppress.
     # Cummings (2001) puts the postprandial nadir 30-50% below fasting; without a cap
     # the suppressors drove production to ~6% of basal (nadir -78%). See the appetite
@@ -369,14 +556,42 @@ class PatientParams:
     # is a new mechanism rather than a rate constant. Left as an open item.
     k_lep: float = 0.025
     lep_circ_amp: float = 2.0
+    # --- Iter 97: THE INSULIN -> LEPTIN COUPLING (the iter-96 open item) --------
+    # Leptin tracks insulin over HOURS, not minutes: Saad 1998 (JCEM 83:453) -- a
+    # day's leptin follows the day's insulin AUC with a ~4 h lag; Boden 1996 (JCEM
+    # 81:3419) / Kolaczynski 1996 -- a 16-24 h fast lowers leptin 30-50% while the
+    # circadian rhythm persists. The teacher had no meal coupling at all, so the
+    # `leptin_fed_vs_fasted` anchor was structurally 0.00 against +2. Now a slow
+    # insulin state (tau 4 h) moves the leptin target, SIGNED about basal insulin:
+    #     target = Lep_b + circ + lep_ins_gain * (Ins_slow / Ib - 1).
+    # A fed day (Ins_slow ~ 1.4 Ib) sits +1, a 16 h fast (~0.6 Ib) -1: the +2
+    # difference Boden/Kolaczynski report, and a 48 h fast (~0.35 Ib) gives -16%,
+    # the low end of the cited fall.
+    lep_ins_gain: float = 2.5
+    k_ins_slow: float = 1.0 / 240.0
 
     # GLP-1. Iter 21 recalibration: glp1_meal_gain 5.0 -> 1.5 to match
     # the large-meal GLP-1 peak of ~22 uU/mL (was overshooting to ~64
     # at the previous gain — z=4.76 vs the literature target).
     GLP1_b: float = 10.0
     k_glp1: float = 0.2
-    glp1_meal_gain: float = 1.5
-    K_incretin: float = 15.0
+    # Iter 97: 1.5 -> 0.7. Per unit of carbohydrate appearance, which tripled when
+    # the kernel became mass-conserving and then broadened (a lower, longer Ra);
+    # the realized GLP-1 peak for 75 g stays in the cited 20-25 pmol/L.
+    glp1_meal_gain: float = 0.7
+    # --- Iter 97: THE INCRETIN EFFECT WAS 7% ------------------------------------
+    # The incretin factor was `1 + GLP1 / (GLP1 + 15)` on ABSOLUTE GLP-1: basal
+    # GLP-1 (10) already gave 1.40, the meal peak (26.5) 1.64, so removing the meal
+    # rise changed the insulin AUC by 7%. Nauck 1986: the oral/IV isoglycaemic
+    # insulin ratio is 2-3, i.e. 50-70% of the oral insulin response is incretin.
+    # Same absolute-vs-above-basal shape iter 91 fixed for glucagon and ghrelin.
+    # Now `1 + incretin_gain * g / (g + K_incretin)` with g = GLP-1 above basal:
+    # 1.0 at basal, ~3.5 at the meal peak (GLP-1 +16 pmol/L). gamma was re-sized
+    # alongside. MEASURED as the share of glucose-stimulated secretion carried by
+    # the incretin factor along the standard-meal trajectory: 0.62 (Nauck 0.5-0.7);
+    # at 2.5 it was 0.50.
+    incretin_gain: float = 4.0
+    K_incretin: float = 10.0
 
     # HPA: ACTH drives cortisol; cortisol feeds back on ACTH
     Cort_b: float = 12.0
@@ -390,10 +605,35 @@ class PatientParams:
     # must be deep enough to move cortisol across its real 4-5x range. Measured: ACTH 12-46
     # pg/mL (physiological 10-60), giving cortisol nadir 4.2 / peak 18.2 / ratio 4.35.
     acth_circ_amp: float = 18.0
+    # --- Iter 97: THE HPA RHYTHM IS ASYMMETRIC AND SUPPRESSED ONCE --------------
+    # Through iter 96 the drive was a symmetric cosine peaking at 07:30 (trough
+    # 19:30) and the sleep suppression was applied to the ACTH target AND to the
+    # cortisol target, so cort/ACTH was 0.26 asleep and 0.47 awake and the correct
+    # nadir was two errors cancelling (item 3.9). Weitzman 1971 / Van Cauter 1996:
+    # ACTH and cortisol are QUIESCENT from ~20:00 to ~02:00, rise steeply from
+    # 02:00-03:00 to a peak at 07:00-08:00 that coincides with (and is amplified
+    # by) awakening, then decline through the day -- ~60% of the peak by noon, ~25%
+    # by 20:00. That is a half-cosine rise over ~5 h and an exponential fall with a
+    # ~6 h time constant (a 19 h half-cosine, tried first, left cortisol cresting at
+    # 09:40 because the drive was still at 97% two hours after its peak). ACTH_b
+    # and acth_circ_amp now mean the MID-RANGE and half-range (peak ACTH_b + amp,
+    # trough ACTH_b - amp); the 24 h MEAN ACTH is ~0.35 of the way up the range and
+    # the 24 h mean cortisol ~9 ug/dL, which is the literature's mean (Weitzman:
+    # nadir 2-4, peak 15-20, mean 7-10). Cort_b (12) stays the reference level
+    # for the downstream couplings, as before.
+    hpa_rise_start_h: float = 2.0
+    hpa_peak_h: float = 6.5      # ACTH crests ~07:15 with the 25-min lag; cortisol ~08:00
+    hpa_fall_tau_h: float = 6.0
+    # Sleep (NREM) suppression of ACTH release, applied ONCE, to ACTH; cortisol
+    # follows its secretagogue with a fixed ratio asleep and awake. 0.35 keeps the
+    # nadir at 3-5 ug/dL and leaves a +6 awakening response when it is lifted.
+    hpa_sleep_supp: float = 0.35
     k_acth_to_cort: float = 0.006   # legacy (iter<=90 additive ACTH->cortisol term; unused since iter 91)
     # Iter 91: cortisol's relaxation target is cort_per_acth * ACTH (see the HPA block). Set so
     # the ACTH rhythm carries cortisol across its physiological range; tuned by measurement below.
-    cort_per_acth: float = 0.42
+    # Iter 97: 0.42 -> 0.45 with the asymmetric drive (the mid-range ACTH is no
+    # longer the mean): peak 17-18 ug/dL, nadir 3.7, 24 h mean ~9.5.
+    cort_per_acth: float = 0.45
     cort_feedback_acth: float = 0.025
     hypo_acth: float = 0.025
     # Sympathetic / exercise-associated HPA drive on ACTH (activity in [0, 1])
@@ -413,7 +653,15 @@ class PatientParams:
     # activity WIDENS the contrast, 24.1 % -> 26.7 %, because it lifts the daytime mean.)
     # The whole-day HR contrast running ~25 % is a real open discrepancy — see
     # docs/iter94-spec.md; it needs a cited contribution, not a tuned constant.
-    hr_circ_amp: float = 5.0
+    # Iter 97: 5.0 -> 2.5. The cited contribution exists: under constant-routine
+    # conditions (posture, activity, meals and sleep all held constant) the
+    # ENDOGENOUS circadian amplitude of heart rate is 2-4 bpm (Krauchi & Wirz-
+    # Justice 1994; Hu et al. 2004, trough ~05:00). The rest of the ambulatory
+    # day/night swing is sleep, posture and activity, which this model carries
+    # separately (`sleep_hr_frac`, `act_hr_gain`). At 5.0 the cosine alone made 10
+    # bpm peak-to-trough and contributed +2.33 of the teacher's +2.64 bpm asleep
+    # 03:00-06:00 rise against a real +1.6 -- the current gate blocker window.
+    hr_circ_amp: float = 2.5
     HRV0: float = 40.0
     k_hrv: float = 0.1
     SBP0: float = 120.0
@@ -472,7 +720,14 @@ class PatientParams:
     # (postprandial HYPOtension is an autonomic-failure/elderly phenomenon,
     # not the healthy default), so adding one would assert an effect the
     # literature does not support at this population's age.
-    meal_hr_gain: float = 4.0
+    # Iter 97: 4.0 -> 3.0. Measured on the 75 g standard meal the rise was +12.1
+    # bpm against the cited +5-10 (Kearney 1995) and `postprandial_hr_rise` sat at
+    # z = +1.21; 3.0 lands the same probe at ~+9.
+    meal_hr_gain: float = 3.0
+    # Half-saturation of nutrient appearance for the HR meal drive, mg/dL/min of
+    # glucose space. Iter 97: 0.35 -> 1.06 with the mass-conserving kernel (x3.03),
+    # shape unchanged.
+    K_ra_norm: float = 1.06
 
     # Thermal
     T0: float = 37.0
@@ -484,7 +739,13 @@ class PatientParams:
     # Measured after the change: nadir -0.60 (z=-0.34), daily swing 0.61 °C.
     temp_circ_amp: float = 0.25
     temp_exercise_gain: float = 0.8
-    temp_dit_gain: float = 0.0008
+    # Iter 97: diet-induced thermogenesis is driven by the ENERGY absorbed, not by
+    # a sum of three kernels in three different units (the carbohydrate kernel's
+    # amplitude tripled this iteration and would have tripled DIT with it). Thermic
+    # effects: protein 25%, carbohydrate 8%, fat 3% of ingested energy (Westerterp
+    # 2004); gain in degC per (kcal/min of heat). Re-sized to hold the standard-meal
+    # rise at ~+0.2 degC (literature +0.1-0.3).
+    temp_dit_gain: float = 0.017
     sleep_temp_drop: float = 0.12
 
     # Sleep modulation
@@ -543,9 +804,16 @@ class PatientParams:
     # 126 min vs 60-90). 0.040 measured (N=30): glucose peak 57 min, insulin 62 min.
     # Total carb appearance is unchanged -- the kernel's integral is rate-independent
     # (see CARB_APPEARANCE_GAIN, which holds the excursion amplitude fixed).
-    meal_absorption_fast_rate: float = 0.040
+    # Iter 97: the kernel is now MASS-CONSERVING, so its shape has to be the shape
+    # of a real absorption curve rather than a peak scaled to fit. Tracer studies of
+    # a 75 g oral load (Dalla Man 2004/2005; Ferrannini 1985): Ra rises to 5-6
+    # mg/kg/min by 30-45 min, PLATEAUS there through ~90 min, is still ~3 at 120
+    # and ~1.5 at 180. A single gamma-2 cannot plateau. Two components: a fast
+    # gamma-2 at 0.030 (peak 33 min) carrying 30% and a slow one at 0.012 (peak 83
+    # min) carrying 70% reproduce that shape with the whole load.
+    meal_absorption_fast_rate: float = 0.030
     meal_absorption_slow_rate: float = 0.012
-    meal_absorption_slow_fraction: float = 0.25
+    meal_absorption_slow_fraction: float = 0.70
 
     # Glycogen pools (iter 76 — Move D first concrete step). Liver and muscle
     # glycogen as flux integrators (dGly/dt = synthesis − breakdown), no longer
@@ -572,20 +840,59 @@ class PatientParams:
     # obviously an error -- it is a low-carbohydrate day. What WAS an error was the
     # 9%-of-capacity throttle at the fed level, and the width taper fixes that
     # without touching the cap.
-    LGly_max: float = 110.0     # liver storage cap (synthesis tapers as it fills)
-    MGly_max: float = 450.0     # muscle storage cap
-    k_glyc_syn_L: float = 0.6   # liver synthesis gain (per unit carb-appearance·insulin-drive)
-    k_glyc_syn_M: float = 0.45  # muscle synthesis gain
-    k_glyc_brk_L: float = 0.062  # liver glycogenolysis gain (post-absorptive)
+    # Iter 97: 110 -> 150. LGly_b is the TYPICAL level, not the maximum: the liver
+    # holds up to ~120-150 g after large carbohydrate meals (Nilsson & Hultman
+    # 1973). With the cap 10 g above typical and a 30 g taper, synthesis was
+    # throttled to ~50% at the pool's own normal level -- the iter-96 defect
+    # again, one notch higher -- and the eucaloric pool drained to 51 g once the
+    # ledger was honest. The taper now closes over 120-150 g.
+    LGly_max: float = 150.0     # liver storage cap (synthesis tapers as it fills)
+    # --- Iter 97: GLYCOGEN SYNTHESIS IS DEBITED FROM GLUCOSE --------------------
+    # Liver: the direct pathway takes a FRACTION of portal carbohydrate appearance
+    # into glycogen under insulin drive: glyc_syn_frac_L * Ra_carb * ins_drive *
+    # fill. Taylor 1996 (JCI, 13C-NMR): 19% of meal carbohydrate is in liver
+    # glycogen by ~5 h. Net hepatic glucose uptake is driven by the PORTAL SIGNAL
+    # (the portal-arterial glucose gradient) as much as by insulin -- Cherrington
+    # 1999: the portal signal roughly doubles NHGU at a given insulin -- so the
+    # drive is (0.5 + 0.5 * ins_drive): half of the fraction is taken from the
+    # first minute of absorption, before insulin has risen. That front-loading is
+    # what lets `Si` sit in its measured range while the peak holds. ins_drive
+    # averages ~0.45 over the absorptive tail, so 0.30 * 0.72 lands ~21%. This flux
+    # is subtracted from the glucose ledger: it IS hepatic first-pass uptake, which
+    # is the physiological reason a 75 g load raises glucose by 60 and not by 180
+    # mg/dL. The indirect pathway -- gluconeogenic carbon diverted into glycogen
+    # while insulin is high (the "glucose paradox", Katz & McGarry 1984) -- is a
+    # share of the GNG flux booked into glycogen instead of blood (gng_divert_exp).
+    glyc_syn_frac_L: float = 0.30
+    # Muscle: glycogen synthesis is PART of insulin-stimulated disposal, booked
+    # here to a pool with its own ledger and debited from glucose so the two books
+    # agree. g/min per (mg/dL/min of appearance) at full insulin drive and full
+    # deficit. 0.08 gives ~0.25-0.4 g/min at peak absorption -- resynthesis of a
+    # 150 g exercise deficit over ~10-20 h on a carbohydrate diet (Ivy 1988).
+    k_glyc_syn_M: float = 0.08
+    # Iter 97: `k_glyc_brk_L` is gone -- basal glycogenolysis is DERIVED as
+    # Hep_b - Gng_b (mg/kg/min) and is first order in the pool (LGly / LGly_b), so
+    # that as the pool empties EGP falls toward gluconeogenesis alone. Landau
+    # 1996's fractions (glycogenolysis 1.06 -> 0.55 -> 0.1 mg/kg/min at 14 / 22 /
+    # 42 h while the pool goes ~75 -> 30 -> 10 g) are close to proportional.
     k_glyc_brk_M: float = 3.5   # muscle glycogenolysis gain (activity-driven)
-    glyc_ins_supp: float = 15.0  # above-basal insulin (µU/mL) that halves liver glycogenolysis
-    glyc_K_L: float = 35.0      # liver depletion-saturation constant (g)
+    # Liver saturation constant for the KETOGENESIS gate only (`glyco_avail`, the
+    # fraction of the pool the liver can still mobilize); the glycogenolysis flux
+    # itself no longer reads it.
+    glyc_K_L: float = 35.0
     glyc_K_M: float = 150.0     # muscle depletion-saturation constant (g)
     # Iter 96: width (g) over which synthesis tapers off as the pool approaches
     # its cap. See the dLGly block -- `1 - LGly/LGly_max` throttled refill to 9%
     # of capacity exactly at the fed level, which made a eucaloric day
     # glycogen-NEGATIVE and gave the pool an implicit setpoint near 51 g.
     glyc_fill_width_L: float = 30.0
+    # Iter 97: the MUSCLE taper closes at MGly_b, not at a cap 50 g above it.
+    # Muscle has no glycogenolysis at rest (by construction, below), so any resting
+    # synthesis accumulates until SOMETHING stops it -- and what stopped it was the
+    # cap: the teacher's muscle glycogen rested at 449.9 g against a declared
+    # typical of 400 (item 2.5). Glycogen synthase is allosterically inhibited by
+    # glycogen content, so the replete level is a genuine fixed point: synthesis
+    # runs only into a deficit below MGly_b. Supercompensation is not modelled.
     glyc_fill_width_M: float = 60.0
     act_rest_M: float = 0.10    # activity below this is rest — no muscle glycogenolysis (Coppack 1989)
 
@@ -635,8 +942,15 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
         z = shared + np.sqrt(resid_var) * rng.normal()
         return val * np.exp(spread * z)
 
-    # Glucose effectiveness falls with insulin resistance (Bergman: Sg and Si co-degrade).
-    p.Sg = vary(p.Sg, ir=-0.30)
+    # Iter 97: Sg is derived (uptake_ii * (1 + hep_autoreg_m)); the insulin-resistance
+    # loading it used to carry (Bergman: Sg and Si co-degrade) moves to the hepatic
+    # autoregulation exponent, which is the part of glucose effectiveness that lives
+    # in the liver. NB the ORDER and COUNT of `vary` calls below is preserved from
+    # iter 96 (one draw here where Sg was; five in the hepatic block where
+    # fast_gb_drop/Hep_b/k_hep/cort_hep/hep_to_glucose were) so that a seed still
+    # samples the same patient: the anchor audit is compared across iterations at a
+    # fixed seed, and a shifted stream would show up as a phantom HR change.
+    p.hep_autoreg_m = float(np.clip(vary(p.hep_autoreg_m, 0.3, ir=-0.30), 0.2, 1.5))
     # Insulin sensitivity: the defining axis of z_ir; training raises it.
     p.Si = vary(p.Si, 0.5, ir=-0.70, fit=0.40)
     # Iter 82: widen fasting-glucose baseline diversity 0.15 -> 0.25. The
@@ -671,14 +985,17 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # Fitter patients cross the lactate threshold later and clear lactate faster.
     p.lac_thresh = float(np.clip(vary(p.lac_thresh, 0.12, fit=0.45), 0.30, 0.65))
     p.lac_act_gain = vary(p.lac_act_gain, 0.2, fit=-0.30)
-    # How far the defended glucose level falls once the liver empties.
-    # Clip brackets the calibrated 0.55 default (see PatientParams); an
-    # insulin-resistant liver defends its glucose harder, hence ir=-0.30.
-    p.fast_gb_drop = float(np.clip(vary(p.fast_gb_drop, 0.25, ir=-0.30), 0.25, 0.90))
-    p.Hep_b = float(np.clip(vary(p.Hep_b, 0.3), 0.4, 3.5))
+    # Iter 97: Hep_b is derived from Gb (resolve_derived_params); the fasted fall
+    # is a flux deficit, so `fast_gb_drop` no longer exists. Five draws, as before.
+    # Obligatory uptake per mg/dL varies little between people.
+    p.uptake_ii = vary(p.uptake_ii, 0.06)
+    # Basal gluconeogenesis: mildly higher with insulin resistance (Magnusson 1992:
+    # the EGP excess of type-2 diabetes is largely gluconeogenic). Kept narrow because
+    # it sets the ABSOLUTE prolonged-fast glucose floor.
+    p.Gng_b = vary(p.Gng_b, 0.10, ir=0.40)
     p.k_hep = float(np.clip(vary(p.k_hep, 0.35), 0.02, 0.09))
-    p.cort_hep = float(np.clip(vary(p.cort_hep, 0.35), 0.02, 0.12))
-    p.hep_to_glucose = float(np.clip(vary(p.hep_to_glucose, 0.3), 0.018, 0.055))
+    p.glyc_ins_K = float(np.clip(vary(p.glyc_ins_K, 0.25, ir=0.40), 12.0, 50.0))  # hepatic insulin resistance
+    p.gng_cort_amp = float(np.clip(vary(p.gng_cort_amp, 0.3), 0.10, 0.45))
     p.Ghr_b = vary(p.Ghr_b, 0.3, ir=-0.25)    # ghrelin lower in obesity/IR
     p.Lep_b = vary(p.Lep_b, 0.5, ir=0.45)     # leptin tracks adiposity, co-travels with IR
     p.GLP1_b = vary(p.GLP1_b, 0.3)
@@ -730,15 +1047,14 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.SpO2_0 = min(100, max(94, p.SpO2_0 + rng.normal(0, 1)))
     p.meal_absorption_fast_rate = float(np.clip(vary(p.meal_absorption_fast_rate, 0.2), 0.01, 0.08))
     p.meal_absorption_slow_rate = float(np.clip(vary(p.meal_absorption_slow_rate, 0.25), 0.004, 0.04))
-    p.meal_absorption_slow_fraction = float(np.clip(vary(p.meal_absorption_slow_fraction, 0.3), 0.05, 0.6))
+    p.meal_absorption_slow_fraction = float(np.clip(vary(p.meal_absorption_slow_fraction, 0.2), 0.35, 0.8))
     # Glycogen pool sizes vary across patients (training/diet history); the
     # flux gains stay fixed so the dynamics shape is consistent. Caps track
     # the baselines so a larger pool can still fill. Cold-distill references
     # use PatientParams() defaults, so this only diversifies full_body episodes.
     p.LGly_b = float(np.clip(vary(p.LGly_b, 0.15), 70.0, 130.0))
     p.MGly_b = float(np.clip(vary(p.MGly_b, 0.15, fit=0.50), 300.0, 520.0))
-    p.LGly_max = p.LGly_b + 10.0
-    p.MGly_max = p.MGly_b + 50.0
+    p.LGly_max = 1.5 * p.LGly_b
     return resolve_derived_params(p)
 
 
@@ -754,12 +1070,124 @@ def resolve_derived_params(params: PatientParams) -> PatientParams:
     this would have left it defending a much LOWER FFA than the profile
     declares, i.e. the opposite of the phenotype it exists to represent.
 
+    Iter 97 extends the same discipline to every pool: the glucose, liver-
+    glycogen, gallbladder, intestinal-bile and serum-bile-acid fixed points are
+    all SOLVED from the declared ``_b`` levels here, so a declared typical is the
+    level the ODE actually rests at, by construction.
+
     Idempotent, so it is safe to call more than once.
     """
     params.lip_max = params.FFA_b * params.k_ffa * (1.0 + params.Ib / params.IC50_lip)
     # Iter 96: GSIR threshold tracks the patient's own defended fasting glucose.
     params.h = params.Gb * params.h_frac
+
+    # --- Glucose fixed point (iter 97) ---
+    # Basal EGP is what holds the declared fasting glucose against obligatory
+    # uptake; its glycogenolytic share is what is left after gluconeogenesis.
+    params.Hep_b = params.uptake_ii * params.Gb * VG_DL_PER_KG
+    params.Gng_b = float(min(params.Gng_b, 0.85 * params.Hep_b))   # glycogenolysis >= 15% of EGP
+    # Glucose effectiveness = obligatory uptake + hepatic autoregulation, linearized.
+    params.Sg = params.uptake_ii * (1.0 + params.hep_autoreg_m)
+
+    # --- Enterohepatic fixed points (iter 97) ---
+    # Ileal uptake at the fixed point is the whole recirculating flux.
+    ileal_b = params.k_ileal * params.INT_b                                  # mmol/min
+    params.k_ba_synth = (1.0 - params.f_ileal) * ileal_b                      # replaces faecal loss
+    extraction_b = min(max(params.hep_extraction, 0.0), 0.995)
+    spillover_b = (1.0 - extraction_b) * params.f_ileal * ileal_b             # mmol/min to serum
+    params.ba_spill_gain = params.k_ba * params.BA_b / max(spillover_b, 1e-9)  # BA_b is the serum fixed point
+    # Hepatic secretion at rest = extracted portal return + cleared serum + synthesis
+    # = ileal_b exactly (conservation), split between gallbladder and duodenum.
+    divert_b = params.gb_divert_frac * min(1.0, max(0.0, (params.GB_max - params.GB_b) / params.gb_fill_width))
+    params.k_gb_basal = ileal_b * divert_b / params.GB_b                      # GB_b is the fasting fixed point
     return params
+
+
+def _glyc_ins_gate(I: float, Ib: float, K: float, n: float) -> float:
+    """IC50 suppression normalized at basal insulin: 1 at I = Ib, -> 0 at high
+    insulin, -> 1 + (Ib/K)^n as insulin falls to zero (signed, saturating)."""
+    return (1.0 + (Ib / K) ** n) / (1.0 + (I / K) ** n)
+
+
+def _hill_centred(x: float, x_b: float, n: float) -> float:
+    """2 / (1 + (x_b/x)^n): 1 at basal, -> 2 above, -> 0 below. Signed, saturating."""
+    x = max(x, 1e-6)
+    return 2.0 / (1.0 + (x_b / x) ** n)
+
+
+def glucose_fluxes(
+    params: PatientParams,
+    G: float, I: float, X: float, Gn: float, Cort: float, FFA: float,
+    LGly: float, MGly: float, Hep: float, Ra_carb: float, act: float,
+) -> dict[str, float]:
+    """Every glucose-carbon flux at one instant, in ONE set of units.
+
+    Returns mg/dL/min of glucose space for the glucose ledger and g/min for the
+    glycogen ledgers, plus the hepatic target in mg/kg/min. This is the single
+    place the balance is written; ``simulate_full_body`` integrates it and the
+    iter-97 tests re-evaluate it along a trajectory to check that carbon closes.
+
+    Glucose ledger:   dG  = ra - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex
+    Liver ledger:     dLGly = syn_L + gng_divert - glycogenolysis
+    Muscle ledger:    dMGly = syn_M - brk_M   (brk_M is oxidized in situ, no G6Pase)
+    Hepatic output:   Hep -> glycogenolysis_target + gng_released_target (lagged);
+                      the realized glycogenolysis and released GNG are the lagged
+                      state split in the target's proportion, so the flux that
+                      leaves the pool is the flux that reaches blood.
+    """
+    Ib, Gb = params.Ib, params.Gb
+    ins_excess = max(I - Ib, 0.0)
+    ins_drive = ins_excess / (ins_excess + Ib)                      # 0 at basal -> 1
+
+    # --- uptake (mg/dL/min) ---
+    x_eff = max(X, -params.ins_dep_basal_frac * params.uptake_ii)  # signed insulin action, floored
+    uptake_ii = params.uptake_ii * G
+    uptake_id = x_eff * G
+    uptake_ex = act * 0.02 * max(G - Gb * 0.8, 0.0)
+
+    # --- glycogen synthesis, debited from glucose ---
+    fill_L = min(1.0, max(0.0, (params.LGly_max - LGly) / params.glyc_fill_width_L))
+    fill_M = min(1.0, max(0.0, (params.MGly_b - MGly) / params.glyc_fill_width_M))
+    syn_L = params.glyc_syn_frac_L * Ra_carb * (0.5 + 0.5 * ins_drive) * fill_L  # mg/dL/min
+    syn_M_g = params.k_glyc_syn_M * Ra_carb * ins_drive * fill_M                # g/min
+    syn_M = syn_M_g * MG_DL_PER_G                                               # mg/dL/min
+
+    # --- hepatic output target (mg/kg/min) ---
+    g_ins_glyco = _glyc_ins_gate(I, Ib, params.glyc_ins_K, params.glyc_ins_n)
+    g_ins_gng = _glyc_ins_gate(I, Ib, params.gng_ins_K, params.gng_ins_n)
+    g_gn = _hill_centred(Gn, params.Gnb, params.hgo_gn_n)
+    g_cort = 1.0 + params.gng_cort_amp * np.tanh(np.log(max(Cort, 0.05) / params.Cort_b))
+    g_ffa = (max(FFA, 1e-3) / params.FFA_b) ** params.gng_ffa_exp
+    g_G = (Gb / max(G, 1.0)) ** params.hep_autoreg_m if G > Gb else 1.0    # one-sided by physiology
+    glyco_b = params.Hep_b - params.Gng_b
+    glyco_t = glyco_b * (LGly / params.LGly_b) * g_ins_glyco * g_gn * g_G
+    gng_total = params.Gng_b * g_cort * np.sqrt(g_gn) * g_ffa * g_ins_gng * g_G
+    gng_divert = gng_total * ins_drive ** params.gng_divert_exp                 # indirect pathway -> glycogen
+    gng_rel_t = gng_total - gng_divert
+    hep_target = glyco_t + gng_rel_t
+
+    # --- realized (lagged) hepatic output, split in the target's proportion ---
+    f_glyco = glyco_t / hep_target if hep_target > 1e-9 else 0.0
+    glyco_flux = Hep * f_glyco                                                  # mg/kg/min
+    gng_rel_flux = Hep - glyco_flux
+    egp = Hep / VG_DL_PER_KG                                                    # mg/dL/min
+
+    # --- muscle glycogenolysis (activity-gated, oxidized locally) ---
+    act_ex = max(act - params.act_rest_M, 0.0)
+    brk_M_g = params.k_glyc_brk_M * act_ex * (MGly / (MGly + params.glyc_K_M))  # g/min
+
+    dG = Ra_carb - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex
+    dLGly = (syn_L / MG_DL_PER_G
+             + gng_divert * BODY_MASS_KG / 1000.0
+             - glyco_flux * BODY_MASS_KG / 1000.0)                              # g/min
+    dMGly = syn_M_g - brk_M_g
+    return {
+        "dG": dG, "dLGly": dLGly, "dMGly": dMGly, "hep_target": hep_target,
+        "ra": Ra_carb, "syn_L": syn_L, "syn_M": syn_M, "egp": egp,
+        "uptake_ii": uptake_ii, "uptake_id": uptake_id, "uptake_ex": uptake_ex,
+        "glyco_flux": glyco_flux, "gng_rel_flux": gng_rel_flux, "gng_divert": gng_divert,
+        "brk_M_g": brk_M_g, "ins_drive": ins_drive, "x_eff": x_eff,
+    }
 
 
 def generate_meal_plan(
@@ -809,7 +1237,12 @@ def generate_activity(
     start_hour: float,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    activity = np.full(duration_min, 0.05, dtype=np.float32)
+    # Iter 97: rest is 0. The 0.05 floor (applied even asleep) was worth +4.2 bpm
+    # HR, +2 mmHg SBP and +2.5 br/min of fictitious activity drive in every teacher
+    # episode, and `base.py` defines 0 = rest for the student's input. No awake
+    # NEAT floor either: a floor gated on sleep_wake would only re-encode
+    # sleep_wake in a second input.
+    activity = np.zeros(duration_min, dtype=np.float32)
     for day in range(n_days):
         day_offset = day * 1440
         if rng.random() > 0.4:
@@ -882,6 +1315,8 @@ def simulate_full_body(
     LGly, MGly = params.LGly_b, params.MGly_b
     CCK, GB, INT, BA = params.CCK_b, params.GB_b, params.INT_b, params.BA_b
     X = 0.0
+    Pot = 0.0   # delayed glucose signal for second-phase secretion (internal, see ins_phase2_frac)
+    Ins_slow = params.Ib   # 4 h low-pass of insulin (internal, see lep_ins_gain)
     ns = noise_scale
 
     # Iter 91: the `(1 + Ib/IC50_ghr)` factor was a COMPENSATION for the standing suppression
@@ -903,47 +1338,38 @@ def simulate_full_body(
         absorption_profile[t] = [Ra_carb, Ra_fat, Ra_protein, nutrient_flag]
         Ra = Ra_carb
 
-        # --- Metabolic (Bergman + glucagon + FFA + BHB + lactate) ---
+        # --- Metabolic: one carbon budget (iter 97; see glucose_fluxes) ---
         si_effective = params.Si * (1.0 + params.act_insulin_sens * act)
         p3 = si_effective * params.p2
-        incretin_factor = 1 + GLP1 / (GLP1 + params.K_incretin)
+        # Incretin effect on GLP-1 ABOVE basal (item 3.8).
+        glp1_excess = max(GLP1 - params.GLP1_b, 0.0)
+        incretin_factor = 1.0 + params.incretin_gain * glp1_excess / (glp1_excess + params.K_incretin)
 
-        # Iter 93: hoisted above the glucose ODE (it used to be computed with the
-        # hepatic split, further down) so the DEFENDED GLUCOSE LEVEL can read it.
-        # Depends only on LGly, which is a state carried in from the previous
-        # step, so hoisting changes no value — only availability.
+        # Ketogenesis gate: how much of the liver pool can still be mobilized.
         phi_L = LGly / (LGly + params.glyc_K_L)
         phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
         glyco_avail = min(phi_L / phi_L0, 1.0)
 
-        # Iter 93: the defended level falls as hepatic glycogen empties (see
-        # fast_gb_drop). Zero at the fed calibration state (LGly = LGly_b), so
-        # this is the IDENTITY there and the entire fed/postprandial regime —
-        # the regime the gate and the dose-response signals score — is
-        # unchanged.
-        #
-        # Keyed to LINEAR pool depletion, NOT to `glyco_avail`. glyco_avail is
-        # a saturating Michaelis ratio built to describe how much glycogen the
-        # liver can still RELEASE, and it stays near 1 while the pool halves
-        # (measured: LGly 100 -> 43.5 over 24 h moves glyco_avail only
-        # 1.00 -> 0.75). Reusing it here would have been convenient and wrong:
-        # what the defended level tracks is how much of the pool is GONE.
-        glyco_depleted = max(0.0, 1.0 - LGly / max(params.LGly_b, 1e-6))
-        Gb_fasted = max(
-            params.Gb * (1.0 - params.fast_gb_drop * glyco_depleted),
-            params.Gb * params.fast_gb_floor_frac,
-        )
-
-        dG = -(params.Sg + X) * (G - Gb_fasted) + Ra
-        dX = -params.p2 * X + p3 * max(I - params.Ib, 0)
-        # NB: the ratio stays referenced to the FED Gb, not Gb_fasted — it is
-        # what senses the fall. Referencing it to the falling level would
-        # cancel exactly the signal it exists to carry.
+        fl = glucose_fluxes(params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act)
+        dG = fl["dG"]
+        dLGly = fl["dLGly"]
+        dMGly = fl["dMGly"]
+        dHep = -params.k_hep * (Hep - fl["hep_target"])
+        # Bergman's remote insulin action is SIGNED (item 3.2/3.10): sub-basal insulin
+        # withdraws insulin-dependent disposal; the floor lives in glucose_fluxes.
+        dX = -params.p2 * X + p3 * (I - params.Ib)
         glucose_ratio = min(G / max(params.Gb, 1.0), 1.0)
-        effective_Ib = params.Ib * glucose_ratio ** params.fast_ins_exp
-        dI = -params.n * (I - effective_Ib) + params.gamma * max(G - params.h, 0) * incretin_factor
-        dG += params.hep_to_glucose * Hep + params.cort_gluco * max(Cort - params.Cort_b, 0)
-        dG -= act * 0.02 * max(G - params.Gb * 0.8, 0)
+        # Iter 97: floored at fast_ins_floor * Ib. With an absolute fasting floor a
+        # Gb-130 patient fasts to G/Gb = 0.6, and 0.6^5 = 0.08 took its insulin to
+        # 0.8 uU/mL and BHB to 6.7 mM at 48 h (a 5-7 day starvation value). Basal
+        # secretion never switches off entirely; fasted insulin in the insulin-
+        # resistant stays 3-5 (Polonsky 1988).
+        effective_Ib = params.Ib * max(glucose_ratio ** params.fast_ins_exp, params.fast_ins_floor)
+        g_above = max(G - params.h, 0.0)
+        dPot = -params.k_pot * (Pot - g_above)
+        w2 = params.ins_phase2_frac
+        dI = (-params.n * (I - effective_Ib)
+              + params.gamma * ((1.0 - w2) * g_above + w2 * Pot) * incretin_factor)
 
         glucagon_stim = params.alpha_gn * max(params.Gb - G, 0) / max(params.Gb, 1)
         # Iter 91: suppression responds to insulin ABOVE BASAL, not absolute insulin. With
@@ -952,30 +1378,13 @@ def simulate_full_body(
         # -- and the student faithfully distilled that 10-unit deficit. Physiologically,
         # alpha-cells are suppressed by a RISE in insulin (Unger & Orci); at basal insulin the
         # hormone sits AT its basal.
-        glucagon_supp = 0.5 * max(I - params.Ib, 0.0) / (params.Ib + 10.0)
+        # Iter 97: 0.5 -> 0.4. Measured with the 75 g standard meal the nadir was -56%
+        # against the cited -20..-30% (and the OGTT anchor's -25 +/- 12).
+        glucagon_supp = 0.4 * max(I - params.Ib, 0.0) / (params.Ib + 10.0)
         dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp + 0.02 * Ra_protein
-        dG += 0.02 * max(Gn - params.Gnb, 0)
-
-        hep_target = (
-            params.Hep_b
-            + params.cort_hep * max(Cort - params.Cort_b, 0)
-            + params.gn_hep * max(Gn - params.Gnb, 0)
-            - params.ins_hep * max(I - params.Ib, 0) / (params.Ib + 5.0)
-        )
-        ra_norm = Ra / (Ra + 0.35) if (Ra + 0.35) > 1e-9 else 0.0
-        hep_target *= max(0.2, 1.0 - params.meal_suppress_hep * min(ra_norm, 1.0))
-        hep_target = max(hep_target, 0.12)
-        # Iter-80 hepatic-output split. glyco_avail = 1 at the fed calibration
-        # state (LGly = LGly_b) and falls toward 0 as the liver depletes, so
-        # this partition is the IDENTITY until the pool empties (conservation-
-        # exact) and only then bends hepatic output downward.
-        hep_glyco = params.hep_glyco_frac * hep_target * glyco_avail
-        hep_gng = (
-            (1.0 - params.hep_glyco_frac) * hep_target
-            + params.hep_gng_comp * params.hep_glyco_frac * hep_target * (1.0 - glyco_avail)
-        )
-        hep_target = hep_glyco + hep_gng
-        dHep = -params.k_hep * (Hep - hep_target)
+        # Glucagon reaches glucose through hepatic output (g_gn in glucose_fluxes),
+        # not through a separate additive term.
+        ra_norm = Ra / (Ra + params.K_ra_norm)
 
         lipolysis = params.lip_max / (1 + I / params.IC50_lip)
         dFFA = lipolysis - params.k_ffa * FFA + 0.01 * Ra_fat
@@ -1008,6 +1417,11 @@ def simulate_full_body(
         prot_duo = sum(_duodenal_delivery(t, mt, mp, params.duo_fast_rate,
                                           params.duo_slow_rate, params.duo_slow_frac)
                        for mt, _mc, _mf, mp in meals)
+        carb_duo = sum(_duodenal_delivery(t, mt, mc, params.duo_fast_rate,
+                                          params.duo_slow_rate, params.duo_slow_frac)
+                       for mt, mc, _mf, _mp in meals)
+        duo_total = fat_duo + prot_duo + carb_duo                    # g/min into the duodenum
+        fed_gate = duo_total / (duo_total + params.K_mmc_fed)        # 0 fasted -> 1 fed
         cck_drive = (params.cck_fat_gain * fat_duo
                      + params.cck_prot_gain * prot_duo)
         dCCK = -params.k_cck * (CCK - params.CCK_b) + cck_drive
@@ -1018,17 +1432,16 @@ def simulate_full_body(
         # see docs/iter95-proposal.md 3.2.1.
         cck_excess = max(CCK - params.CCK_b, 0.0)
         contraction = cck_excess / (cck_excess + params.K_cck_gb)   # in [0, 1)
-        gb_empty = params.k_gb_eject * contraction * GB             # mmol/min
-        # Interdigestive refill from hepatic secretion, tapering as the store fills.
-        # Gated on canalicular export capacity — the cholestasis site.
-        gb_fill = (params.k_gb_fill * params.k_canalicular
-                   * max(params.GB_max - GB, 0.0))
-        dGB = gb_fill - gb_empty
+        # CCK-driven ejection plus the interdigestive (MMC) partial emptying that keeps
+        # the loop turning between meals; both proportional to content. The MMC is a
+        # FASTED-state motor pattern -- suppressed while nutrient is in the duodenum --
+        # which is what lets the gallbladder refill after a meal instead of leaking.
+        gb_empty = (params.k_gb_eject * contraction
+                    + params.k_gb_basal * (1.0 - fed_gate)) * GB          # mmol/min
         # Intestine: what the gallbladder delivers transits and is reabsorbed in the
         # ileum at ~95%; the remaining ~5% is the faecal loss that hepatic synthesis
         # replaces. This state is where the transit delay lives.
         ileal_uptake = params.k_ileal * INT                          # mmol/min
-        dINT = gb_empty + params.k_ba_synth - ileal_uptake
         portal_return = params.f_ileal * ileal_uptake                # mmol/min
         # Hepatic first pass. Extraction saturates against canalicular export capacity:
         # when k_canalicular falls (cholestasis), the liver cannot clear the portal
@@ -1041,7 +1454,32 @@ def simulate_full_body(
         ) / (1.0 / (1.0 + 0.15))     # == hep_extraction at k_canalicular = 1
         extraction = min(max(extraction, 0.0), 0.995)
         spillover = (1.0 - extraction) * portal_return               # mmol/min
-        dBA = params.ba_spill_gain * spillover - params.k_ba * (BA - params.BA_b)
+        # Serum: a mass-action pool. What the liver clears from serum returns to bile.
+        serum_return = params.k_ba * BA / params.ba_spill_gain       # mmol/min
+        dBA = params.ba_spill_gain * spillover - params.k_ba * BA
+        # De-novo synthesis under the FXR/FGF19 loop: ileal enterocytes secrete FGF19
+        # in proportion to the bile acids they absorb, and FGF19 represses hepatic
+        # CYP7A1. Synthesis therefore scales INVERSELY with the returning flux
+        # (Inagaki 2005) -- equal to the derived basal at the fixed point, falling
+        # while a meal's bolus is being reabsorbed, rising as the pool runs low. It is
+        # what holds the pool: faecal loss is 5% of whatever flux passes the ileum, so
+        # a fed day (three boluses) loses more than a constant synthesis replaces.
+        # Squared: CYP7A1 repression is steep (synthesis rises 2-3x with modest pool
+        # depletion, bile acid sequestrant studies); first order left the pool
+        # recovering a fed day's loss over ~5 days.
+        ileal_b = params.k_ileal * params.INT_b
+        ba_synth = params.k_ba_synth * (ileal_b / max(ileal_uptake, 0.25 * ileal_b)) ** 2
+        # Hepatic bile secretion = everything the liver takes up + de-novo synthesis
+        # (iter 97: the loop is closed; nothing enters from or leaves to nowhere).
+        # Canalicular export capacity gates how much of it reaches bile.
+        hep_secretion = (extraction * portal_return + serum_return + ba_synth)
+        hep_secretion *= min(params.k_canalicular, 1.0)
+        # Split between the gallbladder (interdigestive diversion, tapering to zero as it
+        # fills) and direct duodenal flow.
+        divert = params.gb_divert_frac * min(1.0, max(0.0, (params.GB_max - GB) / params.gb_fill_width))
+        gb_fill = hep_secretion * divert
+        dGB = gb_fill - gb_empty
+        dINT = gb_empty + hep_secretion * (1.0 - divert) - ileal_uptake
 
         # --- Glycogen pools (iter 76) ---
         # Flux integrators, not setpoints. Synthesis is gated on gut carb
@@ -1066,50 +1504,31 @@ def simulate_full_body(
         # got the SetpointHead pools off `typical` — the teacher had no signal
         # to give; now it does). The split is the IDENTITY at the fed
         # calibration state, so the acute/fed observed-marker ODE is unchanged.
-        ins_drive = max(I - params.Ib, 0.0) / (max(I - params.Ib, 0.0) + params.Ib)
-        # ITER 96 -- THE FILL TAPER GAVE THE POOL AN IMPLICIT SETPOINT.
-        # The taper used to be `1 - LGly/LGly_max`, which at the fed level
-        # LGly=100 with LGly_max=110 is 0.091: synthesis was throttled to 9% of
-        # capacity exactly where the pool is supposed to be refilling, while
-        # breakdown ran at LGly/(LGly+K) = 0.74 of its own. Measured on the
-        # eucaloric cohort day (175 g carbohydrate, 3 meals): synthesis totalled
-        # 21 g against 48 g of breakdown, i.e. **a normal eating day was
-        # glycogen-NEGATIVE by 27 g**, and the pool ran down to an implicit
-        # equilibrium of 51 g over five such days. A storage pool whose fed state
-        # cannot hold its own level has stopped being a storage pool: it no longer
-        # discriminates fed from fasted in EITHER direction, which is exactly what
-        # `extended_fast_liver_glycogen_overnight` had been reporting (teacher
-        # delta -7.8 g) and what the student inherited (its own pool drains to
-        # 19 g over five eucaloric days -- docs/iter95 notes).
-        #
-        # The taper is now a WIDTH: full synthesis through the working range,
-        # closing over the last `glyc_fill_width` grams before the cap. Same
-        # physical statement (you cannot overfill a liver), without the throttle
-        # that was ALSO applied through the whole normal operating range.
-        # Measured after the fix: the pool is stationary -- day-1 and day-5
-        # eucaloric levels agree to 0.1 g at every setting swept.
-        #
-        # This is the same shape error as the student's GlycogenFluxHead anabolic
-        # gate (`headroom` grows as the pool empties while `fullness` shrinks its
-        # breakdown authority) -- see the iter-96 proposal. Both are fixed here.
-        fill_L = min(1.0, max(0.0, (params.LGly_max - LGly) / params.glyc_fill_width_L))
-        fill_M = min(1.0, max(0.0, (params.MGly_max - MGly) / params.glyc_fill_width_M))
-        syn_L = params.k_glyc_syn_L * Ra_carb * ins_drive * fill_L
-        syn_M = params.k_glyc_syn_M * Ra_carb * ins_drive * fill_M
-        fast_gate_L = 1.0 / (1.0 + max(I - params.Ib, 0.0) / params.glyc_ins_supp)
-        brk_L = params.k_glyc_brk_L * fast_gate_L * (LGly / (LGly + params.glyc_K_L))
-        act_ex = max(act - params.act_rest_M, 0.0)  # only supra-rest activity spends muscle glycogen
-        brk_M = params.k_glyc_brk_M * act_ex * (MGly / (MGly + params.glyc_K_M))
-        dLGly = syn_L - brk_L
-        dMGly = syn_M - brk_M
+        # ITER 96 -- THE FILL TAPER GAVE THE POOL AN IMPLICIT SETPOINT (the taper
+        # `1 - LGly/LGly_max` throttled refill to 9% at the fed level; it is a WIDTH
+        # now). ITER 97 -- the pools are ledgers of the SAME fluxes the glucose
+        # balance books: dLGly, dMGly come out of glucose_fluxes above, together
+        # with dG. Synthesis is debited from glucose, glycogenolysis credited to it.
 
         # --- Appetite (ghrelin, leptin, GLP-1) ---
-        Ra_norm = Ra / (Ra + params.K_meal_ghr) if (Ra + params.K_meal_ghr) > 1e-9 else 0.0
+        # Iter 97: ghrelin's nutrient suppressor is DUODENAL delivery (g/min), the
+        # same signal CCK reads, not systemic appearance. Ghrelin is suppressed by
+        # nutrient sensing in the small intestine (Williams 2003: gastric distension
+        # alone does nothing; intestinal infusion does), so with the absorption curve
+        # now at its real breadth a systemic drive put the nadir at 130 min against
+        # Cummings' 60-90. Same half-saturation constant, now in g/min.
+        Ra_norm = duo_total / (duo_total + params.K_meal_ghr)
         # Iter 91: same fix as glucagon -- above-basal insulin, not absolute. At I=Ib the old
         # form gave 10/30 = 0.33 of standing suppression, so ghrelin rested at 94.9 against a
         # basal of 100. Ghrelin falls POSTPRANDIALLY (Cummings 2001), i.e. in response to the
         # insulin RISE, not to the existence of basal insulin.
-        insulin_supp_ghr = max(I - params.Ib, 0.0) / (max(I - params.Ib, 0.0) + params.IC50_ghr)
+        # Iter 97: and it RISES in fasting (item 3.2). The rectifier `(I - Ib)+` made
+        # ghrelin exactly 100.000 at 12/24/36/48 h of fasting. Signed saturating form
+        # centred at basal:  u = ((I/Ib)^n - 1) / ((I/Ib)^n + 1)  in (-1, 1),
+        # 0 at basal, half-suppression at 3x basal (the old IC50), -0.35 at the insulin
+        # of a 24 h fast -> ghrelin +21% (Espelund 2005 / Natalucci 2005: +15-30%).
+        ins_ratio_n = (max(I, 1e-3) / params.Ib) ** params.ghr_ins_n
+        insulin_supp_ghr = (ins_ratio_n - 1.0) / (ins_ratio_n + 1.0)
         # Iter 92 -- GHRELIN WAS OVER-SUPPRESSED (measured nadir -78% vs Cummings 2001's
         # -30 to -50%). Two independent causes, both fixed here:
         #
@@ -1134,7 +1553,9 @@ def simulate_full_body(
         dGhr = ghr_prod - params.k_ghr * Ghr
 
         circ_lep = _circadian(t_abs, params.lep_circ_amp, peak_hour=2.0)
-        dLep = -params.k_lep * (Lep - params.Lep_b - circ_lep)
+        dIns_slow = -params.k_ins_slow * (Ins_slow - I)
+        lep_ins = params.lep_ins_gain * (Ins_slow / params.Ib - 1.0)
+        dLep = -params.k_lep * (Lep - params.Lep_b - circ_lep - lep_ins)
 
         glp1_prod = glp1_base_prod + params.glp1_meal_gain * Ra
         dGLP1 = glp1_prod - params.k_glp1 * GLP1
@@ -1163,17 +1584,20 @@ def simulate_full_body(
         # Cort_b is RETAINED as the per-patient reference level -- it is the threshold for
         # cortisol's downstream effects (cort_feedback_acth, cort_gluco, cort_hr) and for the
         # student's normalization -- but it is no longer cortisol's relaxation target.
-        circ_acth = _circadian(t_abs, params.acth_circ_amp, peak_hour=7.5)
-        acth_target = max(params.ACTH_b + circ_acth, 5.0)
-        sleep_suppression = 1.0 - 0.3 * sleep_depth
+        # Iter 97 (item 3.9): asymmetric drive, quiescent evening, steep pre-dawn rise
+        # peaking at awakening; sleep suppression applied ONCE, to ACTH.
+        drive = _hpa_drive(t_abs, params.hpa_rise_start_h, params.hpa_peak_h, params.hpa_fall_tau_h)
+        acth_target = max(params.ACTH_b + params.acth_circ_amp * (2.0 * drive - 1.0), 5.0)
+        sleep_suppression = 1.0 - params.hpa_sleep_supp * sleep_depth
         dACTH = -params.k_acth * (ACTH - acth_target * sleep_suppression)
         dACTH += params.hypo_acth * max(70.0 - G, 0)
         dACTH += params.cort_activity * act
         dACTH -= params.cort_feedback_acth * max(Cort - params.Cort_b, 0)
 
-        # Cortisol tracks its secretagogue: target = cort_per_acth · ACTH.
+        # Cortisol tracks its secretagogue: target = cort_per_acth · ACTH, the same
+        # ratio asleep and awake (the suppression already lives in ACTH).
         cort_target = max(params.cort_per_acth * max(ACTH, 0.0), 0.5)
-        dCort = -params.k_cort * (Cort - cort_target * sleep_suppression)
+        dCort = -params.k_cort * (Cort - cort_target)
 
         cort_dev = Cort - params.Cort_b
 
@@ -1215,8 +1639,10 @@ def simulate_full_body(
                 + params.act_hr_gain * act
                 + params.meal_hr_gain * ra_norm)
         hrv_sleep_mult = 1.0 + (params.sleep_hrv_gain - 1.0) * sleep_depth
+        # Iter 97: cortisol's vagal effect is two-sided, as it already is for HR and BP
+        # (item 3.2): low overnight cortisol RAISES HRV instead of being invisible.
         dHRV = (-params.k_hrv * (HRV - params.HRV0 * params.HR0 / max(HR, 40) * hrv_sleep_mult)
-                 - params.cort_hrv * max(cort_dev, 0))
+                 - params.cort_hrv * cort_dev)
         sleep_sbp_shift = -params.sleep_bp_frac * params.SBP0 * sleep_depth
         sleep_dbp_shift = -params.sleep_bp_frac * params.DBP0 * sleep_depth
         dSBP = (-params.k_bp * (SBP - params.SBP0 - sleep_sbp_shift)
@@ -1226,8 +1652,13 @@ def simulate_full_body(
 
         # --- Thermoregulation ---
         circ_temp = _circadian(t_abs, params.temp_circ_amp, peak_hour=16.0)
-        Ra_total = Ra_carb + Ra_fat + Ra_protein
-        dit = params.temp_dit_gain * Ra_total
+        # Diet-induced thermogenesis from absorbed ENERGY (iter 97): kernels -> g/min
+        # (carb kernel integrates to grams x MG_DL_PER_G; fat/protein to 3 x grams),
+        # x kcal/g x thermic fraction (protein 25%, carbohydrate 8%, fat 3%).
+        dit_kcal = (0.08 * 4.0 * Ra_carb / MG_DL_PER_G
+                    + 0.03 * 9.0 * Ra_fat / 3.0
+                    + 0.25 * 4.0 * Ra_protein / 3.0)
+        dit = params.temp_dit_gain * dit_kcal
         sleep_temp_shift = -params.sleep_temp_drop * sleep_depth
         exercise_temp_target = params.temp_exercise_gain * act
         dT = (-params.k_temp * (T - params.T0 - circ_temp - sleep_temp_shift - exercise_temp_target)
@@ -1244,6 +1675,8 @@ def simulate_full_body(
         # Euler integration with process noise
         G = max(G + dG + rng.normal(0, ns * 2), 20)
         X = X + dX
+        Pot = max(Pot + dPot, 0.0)
+        Ins_slow = max(Ins_slow + dIns_slow, 0.1)
         I = max(I + dI + rng.normal(0, ns * 0.5), 0.1)
         Gn = max(Gn + dGn + rng.normal(0, ns * 1), 1)
         FFA = max(FFA + dFFA + rng.normal(0, ns * 0.01), 0.01)
@@ -1265,6 +1698,7 @@ def simulate_full_body(
         LGly = max(LGly + dLGly + rng.normal(0, ns * 0.5), 1.0)
         MGly = max(MGly + dMGly + rng.normal(0, ns * 0.5), 1.0)
         CCK = max(CCK + dCCK + rng.normal(0, ns * 0.05), 0.05)
+        # The diversion taper makes GB_max unreachable; the clip is a safety only.
         GB = min(max(GB + dGB, 0.0), params.GB_max)
         INT = max(INT + dINT, 0.0)
         BA = max(BA + dBA + rng.normal(0, ns * 0.2), 0.1)
