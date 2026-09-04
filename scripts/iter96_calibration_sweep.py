@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Sweep the gate's embedding-calibration regularization on the real overnight episodes.
+"""Sweep the gate's calibration knobs on the real overnight episodes.
 
 WHY THIS EXISTS. Measured on the iter-95 artifact over all 14 `cgm_real`
-episodes, with the gate-exact path (512 steps, lr 0.05, l2 0.003,
+episodes, with the gate-exact path of the time (512 steps, lr 0.05, l2 0.003,
 prior_weight 0.0) and both `sleep_wake` and `activity` passed:
 
     pooled MAPE     calibrated (= the gate)     uncalibrated prior mean
@@ -10,29 +10,34 @@ prior_weight 0.0) and both `sleep_wake` and `activity` passed:
       glucose            0.1057                        0.0717
     ||emb|| at the 3.0 clamp: 10 of 14 episodes
 
-Calibration is WORSE than not calibrating, on both gate-blocking markers. The
-mechanism is plain over-parameterization: 32 free embedding dimensions fitted to
-8-9 noisy check-ins on 2 markers over an 8 h window, then scored on the 3 h that
-follows. The clamp binding in 10 of 14 episodes is the tell -- a constraint that
-active is not regularization, it is a wall the optimizer is pressed against.
+Calibration was WORSE than not calibrating, on both gate-blocking markers.
+
+Iter 97 (review 1.3, 1.6, 5.3): three things about that measurement changed.
+The calibration objective was integrating a different forward map from the
+scorer (window > 0 re-integrated from t=0 with meals on the wrong clock) --
+fixed, eval-side. The sweep's `max_norm=1.5` row was a no-op (the module
+constant was bound at import) -- every knob is now passed explicitly through
+`CalibrationSettings`. And the gate now runs the SHARED calibration
+(pulse/calibration.py): chronological hold-out, early stop, acceptance only on
+held-out improvement, a prior toward the trained mean, a soft norm penalty.
+The knobs worth sweeping are therefore the prior weight and the soft-norm
+weight (the old l2 / hard-clamp rows are gone: the clamp is a safety net now).
+
+Skill is printed the way the gate scores it (review 5.1/5.7): episode-first,
+in physical units, floored by the device noise:
+    skill = 1 - MAE / max(persistence MAE, sigma_obs)
 
 WHY IT IS NOT SET IN THIS COMMIT. These are EVAL-TIME knobs, not trained ones,
-so the honest place to set them is on the artifact that will actually be scored.
-Tuning them against iter-95's weights and hoping they transfer through a
-retrain that changes two module shapes is how a "free win" turns into a
-regression. Run this after the iter-96 artifact lands and BEFORE the benchmark
-job, then pass the winning values to that job as env vars.
-
-Projected value, from the iter-95 measurement (an estimate, not a promise):
-glucose skill -0.694 -> about -0.15, hr -1.165 -> about -1.04. Real and free,
-but it clears NEITHER blocker on its own -- the rest is model quality.
+so the honest place to set them is on the artifact that will actually be
+scored. Run this on the artifact, then pass the winning values to the benchmark
+job as env vars.
 
 Usage:
     python scripts/iter96_calibration_sweep.py MODEL.pt BENCHMARK.json [--workers N]
 
-Run it on grovina-mini, not the laptop: 512-step calibration is ~30 min per
-episode per setting single-threaded (see the pulse-grovina-mini-compute-box
-note); 14 episodes x 6 settings is a fleet job, not a coffee break.
+Run it on grovina-mini, not the laptop: a full-length calibration is minutes per
+episode per setting single-threaded (early stopping makes it shorter than the
+old 512 steps, but 14 episodes x 7 settings is still a fleet job).
 """
 
 from __future__ import annotations
@@ -51,32 +56,35 @@ import numpy as np
 import torch
 
 from pulse import benchmark as bm
+from pulse.calibration import CalibrationSettings, calibrate_embedding
 from pulse.diagnostics.probe import load_model_from_checkpoint
 from pulse.model import integrate
 from pulse.types import MARKER_INDEX
 
-# (prior_weight, max_norm, l2_weight) -- the three ways to shrink the fit.
-# The first row is the current gate default, i.e. the control.
+# (prior_weight, soft_norm_weight, max_norm). The first row is the gate default
+# (CalibrationSettings defaults), i.e. the control. Every other knob (lr,
+# hold-out fraction, patience, Huber delta) is the gate's, from the env.
 SETTINGS: tuple[tuple[float, float, float], ...] = (
-    (0.0,  3.0,  0.003),   # control = what the gate does today
-    (0.0,  1.5,  0.003),   # tighter clamp only
-    (0.0,  3.0,  0.030),   # 10x L2 only
-    (0.25, 3.0,  0.003),   # light shrinkage toward the trained prior
-    (0.50, 3.0,  0.003),
-    (1.0,  3.0,  0.003),   # full prior -- iter-91 measured this as harmful on
-                           # the OLD ruler; re-measured here on the new one
+    (0.25, 0.10, 8.0),   # control = what the gate does today
+    (0.00, 0.10, 8.0),   # no prior, soft norm only
+    (0.00, 0.00, 3.0),   # closest to the pre-iter-97 gate (hard clamp does the work)
+    (0.10, 0.10, 8.0),
+    (0.50, 0.10, 8.0),
+    (1.00, 0.10, 8.0),   # full prior -- iter-91 measured this harmful on the OLD ruler
+    (0.25, 1.00, 8.0),   # stronger soft norm
 )
 
 
 def _episode_scores(args):
-    model_path, ep_index, ep, prior_weight, max_norm, l2 = args
+    model_path, ep_index, ep, prior_weight, soft_norm_weight, max_norm = args
     # Reconstruct with the checkpoint's TRAINING-TIME dims. Building
     # ModularPhysiologyNetwork() with library defaults does not load an iter-96
     # blob (hidden_dim=48 -> appetite/stress 24, thermoreg/respiratory 16), and
     # a default build fails on ~40 size mismatches.
     model, blob = load_model_from_checkpoint(model_path)
-    # The checkpoint stores the prior as plain lists; calibrate_embedding calls
-    # .detach() on it, so wrap exactly as train.py:1829 does.
+    for p in model.parameters():
+        p.requires_grad_(False)
+    # The checkpoint stores the prior as plain lists; wrap exactly as train.py does.
     for attr in ("_embedding_prior_mean", "_embedding_prior_std"):
         raw = blob.get(attr.lstrip("_")) if isinstance(blob, dict) else None
         if raw is not None:
@@ -92,18 +100,17 @@ def _episode_scores(args):
     prior_mean = getattr(model, "_embedding_prior_mean", None)
     prior_std = getattr(model, "_embedding_prior_std", None)
 
-    # Iter 97 (review 1.6): pass max_norm EXPLICITLY. Reassigning
-    # bm.BENCHMARK_GATE_CALIBRATE_MAX_NORM did nothing -- calibrate_embedding
-    # bound its default at import time -- so the max_norm=1.5 row re-measured
-    # the control.
-    emb = bm.calibrate_embedding(
-        model=model, observations=cal_obs, initial_state=init, meals=ep.meals,
-        duration_min=ep.duration_min, start_time_minutes=t0,
-        n_steps=bm.BENCHMARK_GATE_CALIBRATE_STEPS, lr=bm.BENCHMARK_GATE_CALIBRATE_LR,
-        l2_weight=l2, sleep_wake=sw, activity=act,
-        prior_mean=prior_mean, prior_std=prior_std, prior_weight=prior_weight,
-        max_norm=max_norm,
-    ).embedding
+    # Iter 97 (review 1.6): EVERY swept knob is passed explicitly; nothing is
+    # set by reassigning a module constant.
+    settings = CalibrationSettings.from_env(
+        prior_weight=prior_weight, soft_norm_weight=soft_norm_weight, max_norm=max_norm,
+    )
+    res = calibrate_embedding(
+        model, cal_obs, init, ep.meals, ep.duration_min,
+        start_time_minutes=t0, sleep_wake=sw, activity=act,
+        prior_mean=prior_mean, prior_std=prior_std, settings=settings,
+    )
+    emb = res.embedding
 
     with torch.no_grad():
         pred = integrate(model=model, initial_state=init, embedding=emb,
@@ -114,19 +121,17 @@ def _episode_scores(args):
     for obs in sorted(cal_obs, key=lambda o: o.time):
         last_cal[obs.marker_id] = obs.value
 
-    # (model_mape, persistence_mape, model_abs_err, persistence_abs_err) per point;
-    # the episode-first, noise-floored skill (review 5.1/5.7) is computed in main.
-    out: dict[str, list[tuple[float, float, float, float]]] = {}
+    # (model_abs_err, persistence_abs_err) per point; the episode-first,
+    # noise-floored skill (review 5.1/5.7) is computed in main.
+    out: dict[str, list[tuple[float, float]]] = {}
     for pt in ep.eval_measurements:
         idx = MARKER_INDEX.get(pt.marker_id)
         if idx is None:
             continue
-        denom = max(abs(pt.value), 1e-6)
         model_abs = abs(float(pred[pt.time, idx]) - pt.value)
         base = last_cal.get(pt.marker_id, float(ep.initial_state[idx]))
-        pers_abs = abs(base - pt.value)
-        out.setdefault(pt.marker_id, []).append((model_abs / denom, pers_abs / denom, model_abs, pers_abs))
-    return ep_index, float(emb.norm()), out
+        out.setdefault(pt.marker_id, []).append((model_abs, abs(base - pt.value)))
+    return ep_index, float(emb.norm()), bool(res.accepted), int(res.n_steps), out
 
 
 def main() -> None:
@@ -137,23 +142,28 @@ def main() -> None:
     args = ap.parse_args()
 
     eps = [e for e in bm.load_benchmark_dataset(args.benchmark) if e.source == "cgm_real"]
-    print(f"{len(eps)} cgm_real episodes, {args.workers} workers\n")
-    print(f"{'prior_w':>8}{'max_norm':>9}{'l2':>8} | "
-          f"{'hr mae':>8}{'hr skill':>9}{'glu mae':>9}{'glu skill':>10}{'@clamp':>8}   "
-          f"(skill = 1 - MAE/max(persistence MAE, sigma_obs), episode-first; review 5.1)")
-    print("-" * 100)
+    print(f"{len(eps)} cgm_real episodes (ONE subject; read as n=1), {args.workers} workers")
+    print(f"gate settings from env: {CalibrationSettings.from_env().as_dict()}\n")
+    print(f"{'prior_w':>8}{'soft_w':>8}{'clamp':>7} | "
+          f"{'hr mae':>8}{'hr skill':>9}{'glu mae':>9}{'glu skill':>10}"
+          f"{'accepted':>10}{'steps':>7}{'||emb||':>9}   "
+          f"(skill = 1 - MAE/max(persistence MAE, sigma_obs), episode-first)")
+    print("-" * 110)
 
-    for prior_weight, max_norm, l2 in SETTINGS:
-        jobs = [(args.model, i, e, prior_weight, max_norm, l2) for i, e in enumerate(eps)]
+    for prior_weight, soft_norm_weight, max_norm in SETTINGS:
+        jobs = [(args.model, i, e, prior_weight, soft_norm_weight, max_norm) for i, e in enumerate(eps)]
         per_episode: dict[str, list[tuple[float, float]]] = {}  # marker -> [(ep mae, ep pers mae)]
-        at_clamp = 0
+        accepted = 0
+        steps: list[int] = []
+        norms: list[float] = []
         with ProcessPoolExecutor(max_workers=args.workers) as pool:
-            for _i, norm, per_marker in pool.map(_episode_scores, jobs):
-                if norm >= max_norm - 1e-3:
-                    at_clamp += 1
+            for _i, norm, acc, n_steps, per_marker in pool.map(_episode_scores, jobs):
+                accepted += int(acc)
+                steps.append(n_steps)
+                norms.append(norm)
                 for mk, rows in per_marker.items():
                     per_episode.setdefault(mk, []).append((
-                        float(np.mean([r[2] for r in rows])), float(np.mean([r[3] for r in rows]))))
+                        float(np.mean([r[0] for r in rows])), float(np.mean([r[1] for r in rows]))))
         cells = {}
         for mk in ("hr", "glucose"):
             rows = per_episode.get(mk, [])
@@ -162,16 +172,18 @@ def main() -> None:
             mae = float(np.mean([a for a, _ in rows]))
             pers = float(np.mean([b for _, b in rows]))
             cells[mk] = (mae, 1.0 - mae / max(pers, bm.sigma_obs_for(mk)))
-        tag = "   <- gate default" if (prior_weight, max_norm, l2) == SETTINGS[0] else ""
-        print(f"{prior_weight:>8.2f}{max_norm:>9.1f}{l2:>8.3f} | "
+        tag = "   <- gate default" if (prior_weight, soft_norm_weight, max_norm) == SETTINGS[0] else ""
+        print(f"{prior_weight:>8.2f}{soft_norm_weight:>8.2f}{max_norm:>7.1f} | "
               f"{cells['hr'][0]:>8.3f}{cells['hr'][1]:>9.3f}"
               f"{cells['glucose'][0]:>9.3f}{cells['glucose'][1]:>10.3f}"
-              f"{at_clamp:>5}/{len(eps)}{tag}")
+              f"{accepted:>6}/{len(eps):<3}{np.mean(steps):>7.0f}{np.mean(norms):>9.2f}{tag}")
 
     print("\nPick the row that maximises BOTH skills, then pass it to the benchmark job:")
-    print("  PULSE_BENCHMARK_PRIOR_WEIGHT / PULSE_BENCHMARK_CALIBRATE_MAX_NORM"
-          " / PULSE_BENCHMARK_CALIBRATE_L2")
-    print("A row that only helps one marker is not a win -- the gate needs both.")
+    print("  PULSE_BENCHMARK_PRIOR_WEIGHT / PULSE_BENCHMARK_SOFT_NORM_WEIGHT"
+          " / PULSE_BENCHMARK_CALIBRATE_MAX_NORM")
+    print("A row that only helps one marker is not a win -- the gate needs both. A row where")
+    print("nothing is accepted means the prior mean is the best available embedding on this")
+    print("artifact: that is a model-quality finding, not a knob to hide.")
 
 
 if __name__ == "__main__":

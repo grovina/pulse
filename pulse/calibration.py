@@ -399,7 +399,7 @@ def calibrate_embedding(
             no_improvement = 0
         else:
             no_improvement += 1
-        final_loss = float(objective)
+        final_loss = float(objective.detach())
         if step == st.max_steps:
             break
         if n_val > 0 and st.patience > 0 and no_improvement >= st.patience:
