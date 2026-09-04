@@ -64,6 +64,7 @@ bench lands near; ``pool`` controls how broad the protocol coverage is.
 
 from __future__ import annotations
 
+import inspect
 import math
 from dataclasses import dataclass, field
 from typing import Any, Sequence
@@ -82,6 +83,12 @@ from ..knowledge.full_body import (
 )
 from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import MealEvent
+
+# Iter 97 (review 4.7): the student layer adds ``integrate(..., duodenal_outputs=)``
+# mirroring ``gut_outputs=``; until that lands we pass the WINDOW-SHIFTED meals,
+# which ``integrate`` on main turns into the duodenal drive itself. Either way the
+# biliary axis sees the meal stimulus the teacher's reference was produced under.
+_INTEGRATE_HAS_DUODENAL = "duodenal_outputs" in inspect.signature(integrate).parameters
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
@@ -460,6 +467,14 @@ class ColdModelDistillationSignal(TrainingSignal):
     # long window retains ~W steps of graph until backward.
     anchor_long_window: int = 0
     anchor_long_samples: int = 0
+    # Iter 97 (review 4.7): dead-zone on the level anchor, in the residual's own
+    # (normalized) units. A 1-sigma level offset used to cost 10-50x a 20 %
+    # amplitude error; inside the band the level is the teacher's uncertainty.
+    anchor_level_band: float = 0.0
+    # Iter 97 (review 4.7): jitter the level-window starts with the epoch rng
+    # (they were fixed at [0, 276, ...] for the whole run, so 0/6 short windows
+    # contained a meal in 8 of 11 protocols).
+    anchor_random_starts: bool = True
     # Embedding calibration (mirrors pulse.benchmark.calibrate_embedding).
     obs_markers: Sequence[str] = field(
         default_factory=lambda: ("glucose", "hr", "sbp", "dbp", "temp"),
@@ -858,6 +873,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         proto: _Protocol,
         emb: torch.Tensor,
         device: torch.device,
+        rng: np.random.Generator | None = None,
     ) -> dict[str, torch.Tensor]:
         """Iter 75: short-horizon free-running *level* anchor.
 
@@ -917,12 +933,28 @@ class ColdModelDistillationSignal(TrainingSignal):
         start_min = proto.start_hour * 60.0
 
         def _starts(W: int, n_max: int) -> list[int]:
-            """Evenly-spaced window starts over [0, T-W], capped at n_max."""
+            """Window starts over [0, T-W], capped at n_max.
+
+            Evenly spaced by default; with ``anchor_random_starts`` and an rng,
+            each start is jittered uniformly within its own slot so that over an
+            epoch the windows cover meals, fasts and transitions rather than the
+            same six minutes of the day every time (review 4.7).
+            """
             last_start = max(0, T - W)
             n = max(1, min(int(n_max), last_start // W + 1))
             if n == 1:
-                return [0]
-            return sorted({(last_start * k) // (n - 1) for k in range(n)})
+                base = [0]
+            else:
+                base = sorted({(last_start * k) // (n - 1) for k in range(n)})
+            if not (self.anchor_random_starts and rng is not None) or last_start == 0:
+                return base
+            slot = max(1, last_start // max(n, 1))
+            out = []
+            for b in base:
+                lo = max(0, b - slot // 2)
+                hi = min(last_start, b + slot // 2)
+                out.append(int(rng.integers(lo, hi + 1)) if hi > lo else int(b))
+            return sorted(set(out))
 
         # (window_length, starts) pairs. The long pass is skipped when unconfigured,
         # which reproduces the iter-75..93 behaviour exactly.
@@ -934,6 +966,15 @@ class ColdModelDistillationSignal(TrainingSignal):
             passes.append((W_long, _starts(W_long, self.anchor_long_samples)))
 
         floor_frac = float(self.anchor_local_scale_floor)
+        level_band = float(self.anchor_level_band)
+        meal_list = list(proto.meal_events)
+        # Iter 97 (review 4.7): the duodenal (fat/protein) delivery on the
+        # protocol clock, once per protocol; each window takes its slice.
+        duo_all = None
+        if meal_list and hasattr(model, "duodenal"):
+            duo_all = model.duodenal.forward_window(
+                torch.arange(T, dtype=torch.float32, device=device), meal_list,
+            ).detach()
         per_marker: dict[str, list[torch.Tensor]] = {m: [] for m, _ in self._marker_idx}
         for W, starts in passes:
             for t0 in starts:
@@ -942,14 +983,27 @@ class ColdModelDistillationSignal(TrainingSignal):
                     continue
                 # Roll out freely from the cold state at t0. gut_outputs carries the
                 # cold ODE's absorption so the rollout sees the same meal coupling
-                # the reference did (meals=[] — the gut appearance is already in
-                # gut_outputs; the unobserved markers couple to meals only through
-                # it). integrate returns out[0]=initial, out[k]≈ref[t0+k].
+                # the reference did. integrate returns out[0]=initial, out[k]≈ref[t0+k].
+                #
+                # Iter 97 (review 4.7): the meals are passed on the WINDOW-OFFSET clock
+                # (meal.time - t0) so the hepatobiliary axis gets its duodenal stimulus
+                # — with meals=[] the biliary markers' level was trained to reproduce
+                # meal-driven secretion with max |duodenal| = 0.0000. When the student
+                # layer's ``duodenal_outputs=`` exists the precomputed slice is passed
+                # explicitly (same frame contract as ``gut_outputs``).
+                win_meals = [
+                    MealEvent(time=m.time - t0, carbs=m.carbs, fats=m.fats, proteins=m.proteins)
+                    for m in meal_list
+                ]
+                extra_kw: dict[str, Any] = {}
+                if _INTEGRATE_HAS_DUODENAL and duo_all is not None:
+                    extra_kw["duodenal_outputs"] = duo_all[t0:t0 + w]
                 pred = integrate(
                     model, ref_all[t0], emb, w, dt=1.0,
-                    start_time_minutes=start_min + t0, meals=[],
+                    start_time_minutes=start_min + t0, meals=win_meals,
                     sleep_wake=sw_all[t0:t0 + w], activity=act_all[t0:t0 + w],
                     gut_outputs=absorp[t0:t0 + w],
+                    **extra_kw,
                 )
                 if not torch.isfinite(pred).all():
                     self._n_anchor_skips += 1
@@ -965,6 +1019,10 @@ class ColdModelDistillationSignal(TrainingSignal):
                     else:
                         denom = scale[midx]
                     resid = (pred[:L, midx] - ref_w) / denom
+                    if level_band > 0.0:
+                        # Dead-zone: the level inside the band is the teacher's own
+                        # uncertainty and costs nothing (review 4.7).
+                        resid = F.relu(resid.abs() - level_band)
                     per_marker[marker].append(
                         F.huber_loss(resid, torch.zeros_like(resid),
                                      delta=_HUBER_DELTA, reduction="mean")
@@ -1003,7 +1061,7 @@ class ColdModelDistillationSignal(TrainingSignal):
                     # one half (e.g. all level windows diverged) falls back to
                     # whichever half it has.
                     rate_t = self._rate_terms(model, proto, emb, device)
-                    lvl_t = self._level_terms(model, proto, emb, device)
+                    lvl_t = self._level_terms(model, proto, emb, device, rng=ctx.rng)
                     terms = {}
                     for marker, _ in self._marker_idx:
                         halves = [t for t in (rate_t.get(marker), lvl_t.get(marker)) if t is not None]
