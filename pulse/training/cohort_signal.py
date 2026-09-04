@@ -14,7 +14,7 @@ at evaluation time. See ``training.embedding_sampler``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 import torch
@@ -25,13 +25,84 @@ from ..cohort_loss import (
     cohort_statistic_loss_group,
     norm_center_initial_state,
 )
-from ..knowledge.cohort_types import CohortStatisticSpec, InitMode
+from ..knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode
 from ..knowledge.full_body import PatientParams
-from ..knowledge.textbook_scenarios.base import cold_model_trajectory
 from ..types import NORM_CENTER
+from .adaptive_weights import adaptive_multipliers
+from .arm_init import cold_initial_state_for_arm
 from .embedding_sampler import select_supervised_embeddings
 from .safe_step import finalize_aux_accumulation, grad_snapshot
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
+
+
+# Iter 97 (review 4.10): per-epoch protocol perturbation for the long arms.
+# The sleep cohort arm IS the gate episode benchmark-cohort-sleep-48h-adequate,
+# so training on it verbatim makes that score a memory test. Meal grams move
+# +/-20 %, meal times +/-30 min and the start hour +/-1 h — but a meal is never
+# allowed to cross a statistic-window boundary (that would change WHAT the
+# statistic measures, not just the protocol it is measured on), and only arms of
+# at least a day are perturbed (the 300-min OGTT/breakfast groups have windows
+# keyed to the minute of the meal). The fixed protocol stays one sample among
+# the perturbed ones.
+PERTURB_DOSE_FRAC = 0.20
+PERTURB_TIME_MIN = 30.0
+PERTURB_START_HOUR = 1.0
+PERTURB_MIN_DURATION = 1440
+
+
+def _windows_of(spec: CohortStatisticSpec, arm_idx: int) -> tuple[int, int]:
+    w = spec.per_arm_windows[arm_idx] if spec.per_arm_windows is not None else spec.window
+    return int(w.start_min), int(w.end_min)
+
+
+def _same_side(t: float, t_new: float, bounds: list[int]) -> bool:
+    return all((t < b) == (t_new < b) for b in bounds)
+
+
+def perturb_group_arms(
+    specs: list[CohortStatisticSpec],
+    rng: np.random.Generator,
+    *,
+    dose_frac: float = PERTURB_DOSE_FRAC,
+    time_min: float = PERTURB_TIME_MIN,
+    start_hour: float = PERTURB_START_HOUR,
+) -> tuple[CohortArmSpec, ...] | None:
+    """A perturbed copy of the group's arms, or ``None`` if the group is not
+    eligible (any arm shorter than a day). Meals equal across arms (a shared
+    schedule) get the SAME perturbation so a delta statistic still compares
+    like with like. A meal whose shifted time would cross any spec window
+    boundary keeps its original time (grams still move)."""
+    arms = specs[0].arms
+    if any(a.duration_min < PERTURB_MIN_DURATION for a in arms):
+        return None
+    d_start = float(rng.uniform(-start_hour, start_hour))
+    per_meal: dict[tuple[float, float, float, float], tuple[float, float, float, float]] = {}
+    out: list[CohortArmSpec] = []
+    for arm_idx, arm in enumerate(arms):
+        bounds: list[int] = []
+        for sp in specs:
+            lo, hi = _windows_of(sp, arm_idx)
+            bounds.extend((lo, hi))
+        new_meals = []
+        for m in arm.meals:
+            key = tuple(float(x) for x in m)
+            if key not in per_meal:
+                t, c, f, pr = key
+                scale = 1.0 + float(rng.uniform(-dose_frac, dose_frac))
+                t_new = t + float(rng.uniform(-time_min, time_min))
+                t_new = min(max(t_new, 0.0), float(arm.duration_min - 1))
+                per_meal[key] = (t_new, c * scale, f * scale, pr * scale)
+            t_new, c2, f2, p2 = per_meal[key]
+            t0 = key[0]
+            if not _same_side(t0, t_new, bounds):
+                t_new = t0
+            new_meals.append((t_new, c2, f2, p2))
+        out.append(replace(
+            arm,
+            meals=tuple(new_meals),
+            start_hour=(float(arm.start_hour) + d_start) % 24.0,
+        ))
+    return tuple(out)
 
 
 @dataclass
@@ -72,12 +143,26 @@ class CohortStatisticSignal(TrainingSignal):
     # spec keeps a residual pull and can recover if later drift re-violates it
     # — without it, a once-satisfied spec would zero-weight irreversibly.
     ema_floor_frac: float = 0.02
+    # Iter 97 (review 4.3): the adaptive factor MULTIPLIES ``spec.weight`` and
+    # no spec may take more than this share of the budget (one spec took 98.5 %
+    # on the iter-95 CCK case). See ``training.adaptive_weights``.
+    adaptive_cap_share: float = 0.25
+    # Iter 97 (review 4.10): perturb the long arms' protocols per epoch; the
+    # fixed protocol is drawn with ``perturb_fixed_prob``.
+    perturb_protocols: bool = False
+    perturb_fixed_prob: float = 0.25
+    # Iter 97 (review 4.9): how many arm-protocol groups to score per compute
+    # call (0 = all). With the interleaved aux cadence each call is one of
+    # many per epoch, so a slice of the specs per call covers them all.
+    groups_per_step: int = 0
 
     name: str = "cohort_statistic"
     source: str = "literature_effect_sizes"
     category: str = "cohort_statistic"
 
     def __post_init__(self) -> None:
+        # Iter 97 (review 4.5 / 4.9): the cold init comes from the shared arm
+        # frame (declared pre-fast honoured; awake / rest when undeclared).
         self._cold_init_np: dict[str, np.ndarray] = {}
         if self.use_cold_initial_state:
             prng = np.random.default_rng(self.cold_init_seed)
@@ -86,14 +171,9 @@ class CohortStatisticSignal(TrainingSignal):
                     continue
                 arm = spec.arms[0]
                 spec_rng = np.random.default_rng(prng.integers(0, 2**32))
-                traj = cold_model_trajectory(
-                    PatientParams(),
-                    list(arm.meals),
-                    arm.duration_min,
-                    arm.start_hour,
-                    rng=spec_rng,
+                self._cold_init_np[spec.name] = cold_initial_state_for_arm(
+                    arm, PatientParams(), rng=spec_rng,
                 )
-                self._cold_init_np[spec.name] = traj[0]
         self._cold_init_tensor: dict[tuple[str, str], torch.Tensor] = {}
         self._norm_center_np = np.array(NORM_CENTER, dtype=np.float32)
         self._norm_center_tensor: dict[str, torch.Tensor] = {}
@@ -103,6 +183,8 @@ class CohortStatisticSignal(TrainingSignal):
         # has flowed. Mirrors PhysiologyRulesSignal.
         self._violation_ema: dict[str, float] = {}
         self._base_weight_sum: float = sum(spec.weight for spec in self.specs)
+        self._base_weight_by_spec: dict[str, float] = {spec.name: float(spec.weight) for spec in self.specs}
+        self._group_cursor: int = 0
 
     def _update_violation_ema(self, loss_by_spec: dict[str, float]) -> None:
         """Refresh the per-spec discrepancy EMA from this epoch's losses."""
@@ -114,21 +196,17 @@ class CohortStatisticSignal(TrainingSignal):
             )
 
     def _adaptive_weights_from_ema(self) -> dict[str, float]:
-        """Adaptive per-spec weights from the current EMA.
-
-        Preserves ``sum(spec.weight)`` so the signal's overall pull on the
-        optimizer stays put — only the inter-spec distribution changes. Specs
-        absent from the EMA (no loss yet) fall back to their base weight in the
-        per-spec lookup below.
+        """Adaptive per-spec weights from the current EMA (of the z^2 loss —
+        already dimensionless): ``spec.weight * multiplier`` preserving
+        ``sum(spec.weight)``, share capped (``training.adaptive_weights``).
+        Specs absent from the EMA keep their base weight.
         """
         if not self._violation_ema:
             return {}
-        max_ema = max(self._violation_ema.values()) or 1.0
-        floor = self.ema_floor_frac * max_ema
-        floored = {k: max(v, floor) for k, v in self._violation_ema.items()}
-        ema_sum = sum(floored.values()) or 1.0
-        budget = self._base_weight_sum or 1.0
-        return {k: budget * v / ema_sum for k, v in floored.items()}
+        return adaptive_multipliers(
+            self._violation_ema, self._base_weight_by_spec,
+            cap_share=self.adaptive_cap_share, floor_frac=self.ema_floor_frac,
+        )
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
@@ -204,7 +282,11 @@ class CohortStatisticSignal(TrainingSignal):
             if sampled_pids is not None:
                 for pid in sampled_pids:
                     pid_t = torch.tensor(int(pid), dtype=torch.long, device=ctx.device)
-                    out.append(embeddings(pid_t))
+                    # Iter 97 (review 4.3): DETACHED. A population statistic says
+                    # nothing about which patient is which; letting it move the
+                    # embedding table pulled every sampled patient toward the
+                    # literature mean and entangled the codes calibration relies on.
+                    out.append(embeddings(pid_t).detach())
             if self.include_default_embedding:
                 out.append(torch.zeros(embeddings.embedding_dim, device=ctx.device))
             return out
@@ -260,15 +342,34 @@ class CohortStatisticSignal(TrainingSignal):
         groups: dict[tuple, list[CohortStatisticSpec]] = {}
         for spec in self.specs:
             groups.setdefault(spec.arms, []).append(spec)
+        group_list = list(groups.values())
+        # Iter 97 (review 4.9 / 4.1): a slice of the groups per call, round-robin,
+        # so every spec is visited across the interleaved aux steps of an epoch.
+        if self.groups_per_step > 0 and self.groups_per_step < len(group_list):
+            k = int(self.groups_per_step)
+            start = self._group_cursor % len(group_list)
+            idxs = [(start + i) % len(group_list) for i in range(k)]
+            self._group_cursor = (start + k) % len(group_list)
+            group_list = [group_list[i] for i in idxs]
+            total_weight = sum(
+                (override.get(spec.name, spec.weight) if override else spec.weight)
+                for g in group_list for spec in g
+            ) or 1e-8
 
         raw_weighted_sum = 0.0
         z_by_spec: dict[str, float] = {}
         loss_by_spec: dict[str, float] = {}
-        for group_specs in groups.values():
+        n_perturbed = 0
+        for group_specs in group_list:
             emb_list = build_emb_list()
             init_states = [init_fn(spec) for spec in group_specs]
+            arms_override = None
+            if self.perturb_protocols and ctx.rng.random() >= self.perturb_fixed_prob:
+                arms_override = perturb_group_arms(group_specs, ctx.rng)
+                if arms_override is not None:
+                    n_perturbed += 1
             results = cohort_statistic_loss_group(
-                model, emb_list, group_specs, init_states,
+                model, emb_list, group_specs, init_states, arms_override=arms_override,
             )
             group_loss = None
             for spec in group_specs:
@@ -298,6 +399,8 @@ class CohortStatisticSignal(TrainingSignal):
             self._update_violation_ema(loss_by_spec)
 
         sub_metrics: dict[str, float] = {f"z_{name}": z for name, z in z_by_spec.items()}
+        sub_metrics["n_groups"] = float(len(group_list))
+        sub_metrics["n_perturbed_groups"] = float(n_perturbed)
         if self.adaptive:
             for spec in self.specs:
                 sw = override.get(spec.name, spec.weight) if override else spec.weight

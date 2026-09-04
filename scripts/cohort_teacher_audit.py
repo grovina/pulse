@@ -23,23 +23,39 @@ if str(_ROOT) not in sys.path:
 
 import numpy as np
 
+import pulse
+
+assert pulse.__file__.startswith(str(_ROOT)), pulse.__file__
+
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-from pulse.knowledge.cohort_types import StatisticKind
+from pulse.knowledge.cohort_types import StatisticKind, TargetShape
+from pulse.training.arm_init import teacher_arm_trajectory
 from pulse.types import MARKER_INDEX
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 12
 
 
 def series(arm, params, marker, seed):
-    n = arm.duration_min
-    sw = np.array(arm.sleep_wake, dtype=float) if arm.sleep_wake is not None else np.ones(n)
-    act = np.array(arm.activity, dtype=float) if arm.activity is not None else np.zeros(n)
-    sw = np.resize(sw, n); act = np.resize(act, n)
-    traj, _ = fb.simulate_full_body(params, list(arm.meals), sw, act,
-                                    duration_min=n, start_hour=arm.start_hour,
-                                    noise_scale=0.0, rng=np.random.default_rng(seed))
+    # Iter 97 (review 4.9): ONE frame with training — ``teacher_arm_trajectory``
+    # is what the cohort signal's cold init and the rules audit use (declared
+    # pre-fast honoured; undeclared sleep = awake, activity = rest 0).
+    traj = teacher_arm_trajectory(arm, params, rng=np.random.default_rng(seed), noise_scale=0.0)
     return traj[:, MARKER_INDEX[marker]]
+
+
+def shaped_z(mean: float, spec) -> float:
+    """z of the batch mean after the spec's target shape (review 4.3), over the
+    individual sigma — the same number ``cohort_loss.score_batch_statistic``
+    reports as ``z``."""
+    d = mean - spec.target
+    if spec.shape is TargetShape.BAND:
+        d = np.sign(d) * max(abs(d) - spec.band_halfwidth, 0.0)
+    elif spec.shape is TargetShape.AT_MOST:
+        d = max(d, 0.0)
+    elif spec.shape is TargetShape.AT_LEAST:
+        d = min(d, 0.0)
+    return float(d / spec.sigma)
 
 
 def arm_stat(spec, arm_idx, arm, params, seed):
@@ -74,14 +90,17 @@ for spec in ALL_COHORT_STATISTICS:
     if not vals:
         continue
     m, sd = float(np.mean(vals)), float(np.std(vals))
-    z = (m - spec.target) / spec.sigma
+    z = shaped_z(m, spec)
     rows.append((abs(z), spec.name, spec.marker_id, m, sd, spec.target, spec.sigma, z))
 
 rows.sort(reverse=True)
 print(f"{'|z|':>6} {'statistic':44} {'marker':12} {'teacher':>10} {'sd':>7} "
       f"{'target':>9} {'sigma':>7}")
+shape_by_name = {s.name: s.shape.value for s in ALL_COHORT_STATISTICS}
 for az, name, marker, m, sd, tgt, sig, z in rows:
     flag = "  <<< CONTRADICTS" if az >= 2 else ("  <- watch" if az >= 1 else "")
-    print(f"{z:+6.2f} {name:44} {marker:12} {m:10.2f} {sd:7.2f} {tgt:9.2f} {sig:7.2f}{flag}")
+    shape = shape_by_name.get(name, "point")
+    shape_s = "" if shape == "point" else f" [{shape}]"
+    print(f"{z:+6.2f} {name:44} {marker:12} {m:10.2f} {sd:7.2f} {tgt:9.2f} {sig:7.2f}{shape_s}{flag}")
 print(f"\n{sum(1 for r in rows if r[0] >= 2)}/{len(rows)} statistics contradict the teacher "
       f"at |z|>=2 (N={N} randomized patients)")

@@ -166,7 +166,10 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
             )
         )
 
-    def test_positive_weight_changes_embedding(self) -> None:
+    def test_positive_weight_does_not_change_embedding(self) -> None:
+        """Iter 97 (review 4.3): the cohort loss reaches the MODEL, never the
+        embedding table. It used to (this test asserted the table moved), which
+        pulled every sampled patient's code toward the literature mean."""
         device = torch.device("cpu")
         torch.manual_seed(2)
         model = _tiny_model()
@@ -184,13 +187,18 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
             device=device, optimizer=opt, params=params, grad_clip=10.0,
         )
         before = emb.weight.detach().clone()
+        before_model = {n: p.detach().clone() for n, p in model.named_parameters()}
         result = sig.compute(model, emb, ctx)
         # iter 78: aux signals accumulate; the trainer applies the joint step.
         joint_aux_step(ctx)
         after = emb.weight.detach().clone()
 
         self.assertEqual(result.n_units, 1)
-        self.assertGreater(float((after - before).abs().sum()), 0.0)
+        self.assertEqual(float((after - before).abs().sum()), 0.0)
+        self.assertTrue(any(
+            float((p.detach() - before_model[n]).abs().sum()) > 0
+            for n, p in model.named_parameters()
+        ))
 
     def test_multi_spec_per_spec_backward_does_not_double_traverse_graph(self) -> None:
         # Regression for iter 68 r5 crash: when ``compute`` does per-spec
@@ -220,7 +228,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         )
         result = sig.compute(model, emb, ctx)
         self.assertEqual(result.n_units, 1)
-        self.assertEqual(len(result.sub_metrics), 2)
+        self.assertEqual(sum(1 for k in result.sub_metrics if k.startswith("z_")), 2)
 
 
 class TestCohortStatisticSignalAdaptive(unittest.TestCase):
@@ -385,8 +393,10 @@ class TestCohortStatisticProtocolBatchingEquivalence(unittest.TestCase):
         init_fn = sig._build_initial_state_fn(np.random.default_rng(0), device)
 
         def fresh_emb_list() -> list[torch.Tensor]:
+            # Iter 97 (review 4.3): the cohort path supervises DETACHED
+            # embeddings — a population statistic must not move the table.
             return [
-                emb(torch.tensor(0)), emb(torch.tensor(1)),
+                emb(torch.tensor(0)).detach(), emb(torch.tensor(1)).detach(),
                 torch.zeros(EMBEDDING_DIM),
             ]
 

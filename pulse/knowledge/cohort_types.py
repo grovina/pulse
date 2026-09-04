@@ -65,6 +65,24 @@ class StatisticWindow:
     end_min: int
 
 
+class TargetShape(str, Enum):
+    """How the batch-mean statistic is scored against ``target`` (iter 97, review 4.3).
+
+    * ``point`` — Gaussian: ``((mean - target) / sem)^2``. For a literature
+      mean with a standard error.
+    * ``band`` — zero loss while ``|mean - target| <= band_halfwidth``, Gaussian
+      on the excess outside. For "the literature puts it in a range".
+    * ``at_most`` / ``at_least`` — one-sided: zero loss on the allowed side.
+      For diagnostic criteria (a WHO 2-h OGTT glucose < 140 mg/dL is a ceiling,
+      not a target of 120 +/- 15).
+    """
+
+    POINT = "point"
+    BAND = "band"
+    AT_MOST = "at_most"
+    AT_LEAST = "at_least"
+
+
 class InitMode(str, Enum):
     """How to seed the integration starting state for one spec.
 
@@ -112,12 +130,28 @@ class CohortStatisticSpec:
     # doesn't match the cold-model fasting assumption can opt into
     # NORM_CENTER to avoid biasing the starting state.
     init_mode: InitMode = InitMode.COLD
+    # Iter 97 (review 4.3): scoring shape (see ``TargetShape``) and the band
+    # half-width used by ``TargetShape.BAND`` (marker units).
+    shape: TargetShape = TargetShape.POINT
+    band_halfwidth: float = 0.0
+    # Iter 97 (review 4.3): the loss scores the BATCH MEAN of the sampled
+    # patients against the target with ``sem = sigma / sqrt(n)``. ``n`` is the
+    # batch size by default (the arm the student's sample forms); a spec whose
+    # ``sigma`` is already a standard error of the published mean can pin
+    # ``n_arm=1`` so it is not tightened further.
+    n_arm: int | None = None
 
     def __post_init__(self) -> None:
         if not self.arms:
             raise ValueError(f"{self.name}: at least one arm required")
         if self.sigma <= 0:
             raise ValueError(f"{self.name}: sigma must be positive (got {self.sigma})")
+        if self.band_halfwidth < 0:
+            raise ValueError(f"{self.name}: band_halfwidth must be >= 0")
+        if self.shape is TargetShape.BAND and self.band_halfwidth <= 0:
+            raise ValueError(f"{self.name}: shape=band needs band_halfwidth > 0")
+        if self.n_arm is not None and self.n_arm < 1:
+            raise ValueError(f"{self.name}: n_arm must be >= 1")
         per_arm = (
             self.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS)
         )

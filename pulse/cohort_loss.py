@@ -25,6 +25,7 @@ from .knowledge.cohort_types import (
     CohortStatisticSpec,
     StatisticKind,
     StatisticWindow,
+    TargetShape,
 )
 from .model import ModularPhysiologyNetwork, integrate, precompute_gut_outputs
 from .modules.gut import MealEvent
@@ -37,6 +38,8 @@ __all__ = [
     "cohort_statistic_loss_group",
     "cohort_statistic_loss_one_spec",
     "norm_center_initial_state",
+    "score_batch_statistic",
+    "shaped_residual",
 ]
 
 InitialStateFn = Callable[[CohortStatisticSpec], torch.Tensor]
@@ -195,18 +198,65 @@ def _arm_statistic_batched(
     raise ValueError(f"Unknown statistic kind: {kind}")
 
 
+def shaped_residual(pred_mean: torch.Tensor, spec: CohortStatisticSpec) -> torch.Tensor:
+    """Signed residual of the batch-mean statistic after the spec's shape.
+
+    ``point``: ``mean - target``. ``band``: the excess outside
+    ``target +/- band_halfwidth`` (signed), zero inside. ``at_most`` /
+    ``at_least``: the excess on the forbidden side only, zero on the allowed side.
+    """
+    d = pred_mean - spec.target
+    if spec.shape is TargetShape.POINT:
+        return d
+    if spec.shape is TargetShape.BAND:
+        return torch.sign(d) * F.relu(d.abs() - spec.band_halfwidth)
+    if spec.shape is TargetShape.AT_MOST:
+        return F.relu(d)
+    if spec.shape is TargetShape.AT_LEAST:
+        return -F.relu(-d)
+    raise ValueError(f"Unknown target shape: {spec.shape}")
+
+
+def score_batch_statistic(
+    pred: torch.Tensor, spec: CohortStatisticSpec,
+) -> tuple[torch.Tensor, float, float]:
+    """Loss for a batch of per-embedding statistics ``pred[B]`` (iter 97, review 4.3).
+
+    A cohort statistic is a claim about a POPULATION MEAN. The loss therefore
+    scores the batch mean against the target with the standard error of a
+    mean of ``n`` subjects, ``sem = sigma / sqrt(n)`` (``n`` = ``spec.n_arm``
+    or the batch size). Until iter 97 every individual was scored against the
+    individual sigma, so between-patient spread that the literature itself
+    reports set an irreducible floor (``Var_between / sigma^2``: 4.8 for
+    small_carb_glucose_peak, 3.6 for ogtt_120min) that no correct model could
+    remove, and the gradient pushed every patient toward the mean.
+
+    Returns ``(loss, pred_mean, z)`` with ``z`` the shaped residual over the
+    INDIVIDUAL sigma — the same number the teacher audit reports.
+    """
+    B = int(pred.shape[0])
+    n = int(spec.n_arm) if spec.n_arm is not None else max(B, 1)
+    sem = float(spec.sigma) / (float(n) ** 0.5)
+    mean = pred.mean()
+    resid = shaped_residual(mean, spec)
+    loss = (resid / sem).pow(2)
+    pred_mean = float(mean.detach().item())
+    z = float(resid.detach().item()) / float(spec.sigma)
+    return loss, pred_mean, z
+
+
 def cohort_statistic_loss_one_spec(
     model: nn.Module,
     embeddings_to_supervise: list[torch.Tensor],
     spec: CohortStatisticSpec,
     initial_state: torch.Tensor,
 ) -> tuple[torch.Tensor, float, float]:
-    """Mean Gaussian-z² discrepancy across the supplied embeddings.
+    """Batch-mean statistic scored against the target at its SEM (iter 97).
 
     Embeddings are stacked into one batched forward pass per arm (B = len
     of ``embeddings_to_supervise``), so each arm calls ``integrate`` once
     instead of B times. Returns (loss_tensor, predicted_mean_detached,
-    residual_z_detached). The caller decides which embeddings deserve
+    residual_z_detached) — see ``score_batch_statistic``. The caller decides which embeddings deserve
     supervision (typically a sampled subset of patient embeddings plus the
     zero "default" embedding the benchmark uses) — see
     ``training.embedding_sampler``.
@@ -238,11 +288,7 @@ def cohort_statistic_loss_one_spec(
     else:
         raise ValueError(f"Unknown statistic kind: {spec.kind}")
 
-    z = (pred - spec.target) / spec.sigma  # [B]
-    loss = z.pow(2).mean()
-    pred_mean = float(pred.detach().mean().item())
-    z_mean = (pred_mean - spec.target) / spec.sigma
-    return loss, pred_mean, z_mean
+    return score_batch_statistic(pred, spec)
 
 
 def cohort_statistic_loss_group(
@@ -250,6 +296,7 @@ def cohort_statistic_loss_group(
     embeddings_to_supervise: list[torch.Tensor],
     specs: list[CohortStatisticSpec],
     initial_states: list[torch.Tensor],
+    arms_override: tuple[CohortArmSpec, ...] | None = None,
 ) -> dict[str, tuple[torch.Tensor, float, float]]:
     """Batched per-spec loss for specs that share one arm protocol (iter 79).
 
@@ -273,6 +320,11 @@ def cohort_statistic_loss_group(
         return {}
     arms = specs[0].arms
     assert all(s.arms == arms for s in specs), "group specs must share arms"
+    if arms_override is not None:
+        # Iter 97 (review 4.10): a per-epoch perturbed copy of the group's
+        # protocol (meal grams / timing / start hour). Windows stay the spec's.
+        assert len(arms_override) == len(arms)
+        arms = arms_override
 
     embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
     B = int(embs.shape[0])
@@ -304,11 +356,7 @@ def cohort_statistic_loss_group(
             pred = per_arm[1] - per_arm[0]
         else:
             pred = per_arm[0]
-        z = (pred - spec.target) / spec.sigma
-        loss = z.pow(2).mean()
-        pred_mean = float(pred.detach().mean().item())
-        z_mean = (pred_mean - spec.target) / spec.sigma
-        out[spec.name] = (loss, pred_mean, z_mean)
+        out[spec.name] = score_batch_statistic(pred, spec)
     return out
 
 
