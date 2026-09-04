@@ -32,8 +32,9 @@ from pulse.model import (
     integrate,
     precompute_gut_outputs,
 )
+from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
-from pulse.types import MARKER_INDEX, NORM_CENTER, STATE_DIM
+from pulse.types import MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, STATE_DIM
 from pulse.knowledge.full_body import PatientParams, simulate_full_body
 
 
@@ -56,18 +57,38 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
         self.assertGreater(float(ra), 0.0, "rate-of-appearance gain must be strictly positive")
 
     def test_silent_when_fasted(self) -> None:
-        """No meal => gut appearance ~0 => the Ra term must not move glucose.
+        """No meal => gut appearance ~0 => the Ra APPEARANCE term must not move glucose.
 
-        Compare a no-meal rollout at the default gain against the same rollout
-        with the gain driven to ~0; fasting glucose must be unchanged.
+        Iter 97: Ra is also the per-patient grams -> mg/dL conversion (c = Ra*U)
+        through which hepatic glycogenolysis is credited to plasma — that is what
+        closes the carbon budget (review 2026-09-04, item 2.2). So driving Ra to 0
+        now also removes the glycogenolysis credit and fasting glucose moves by
+        0.73 mg/dL at init (108.5 -> 107.8; measured 2026-09-04). The appearance
+        term itself is exactly zero without a meal, which is what this test pins;
+        the fasting difference is bounded to the size of that credit.
         """
         m = ModularPhysiologyNetwork()
+        emb = torch.zeros(m.embedding_dim)
+        init = torch.tensor(NORM_CENTER, dtype=torch.float32)
+        with torch.no_grad():
+            traj = integrate(m, init, emb, 180, dt=1.0, start_time_minutes=360.0, meals=[])
+            ns = (traj - m.norm_center) / m.norm_scale
+            met_idx = MODULE_MARKER_INDICES["metabolic"]
+            cort = ns[:, MARKER_INDEX["cortisol"]:MARKER_INDEX["cortisol"] + 1]
+            glp1 = ns[:, MARKER_INDEX["glp1"]:MARKER_INDEX["glp1"] + 1]
+            coupling = m.metabolic_coupling(torch.zeros(180, 4), cort, glp1)
+            ext = torch.tensor([[0.01, 0.5]]).expand(180, -1)
+            e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(180, -1)
+            tf = compute_time_features(torch.arange(180.0) + 360.0)
+            f = m.metabolic.fluxes(ns[:, met_idx], coupling, ext, e_met, tf)
+        self.assertEqual(float(f["appearance_plasma"].abs().sum()), 0.0,
+                         "Ra appearance term must be exactly silent with no meal")
         peak_default = _glucose_peak(m, carbs=0.0)
         with torch.no_grad():
             m.metabolic.log_ra.copy_(torch.tensor(-30.0))  # softplus ~ 0
         peak_off = _glucose_peak(m, carbs=0.0)
-        self.assertAlmostEqual(peak_default, peak_off, places=3,
-                               msg="Ra term changed fasting glucose; it must be silent with no meal")
+        self.assertLess(abs(peak_default - peak_off), 2.0,
+                        msg="only the glycogenolysis credit (c = Ra*U) may move fasting glucose")
 
     def test_amplitude_increases_with_gain(self) -> None:
         """A higher appearance gain must raise the postprandial glucose peak."""

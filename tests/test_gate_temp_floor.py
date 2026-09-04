@@ -41,11 +41,18 @@ class TestGateTempFloor(unittest.TestCase):
             if p.grad is not None:
                 self.assertTrue(torch.isfinite(p.grad).all().item(), f"{name} grad not finite")
 
-    def test_glycogen_flux_head_finite_grad_under_collapse(self) -> None:
-        head = GlycogenFluxHead(
-            input_dim=12, hidden_dim=16, anabolic_idx=0, catabolic_idx=1, catabolic_dir=-1.0
-        )
-        self._assert_finite_grads_under_collapse(head, input_dim=12)
+    def test_glycogen_flux_head_has_no_gate_temperature_to_collapse(self) -> None:
+        """Iter 97: the GlycogenFluxHead's learned catabolic gate (threshold +
+        temperature) is gone — the gates are structural (`relu(act − a_rest)`,
+        `1/(1 + relu(I − Ib)/K)`) in the metabolic module — so the iter-76 collapse
+        mode no longer exists for this head. Pin that no temperature came back."""
+        head = GlycogenFluxHead(input_dim=12, hidden_dim=16, init_store_logit=-1.0)
+        names = [n for n, _ in head.named_parameters()]
+        self.assertFalse(any("temp" in n or "thresh" in n for n in names), names)
+        x = torch.randn(8, 12, requires_grad=True)
+        prod, cons = head(x, torch.zeros(8))
+        (prod.pow(2) + cons.pow(2)).mean().backward()
+        self.assertTrue(torch.isfinite(x.grad).all().item())
 
     def test_glucose_gated_insulin_head_finite_grad_under_collapse(self) -> None:
         head = GlucoseGatedInsulinHead(input_dim=12, hidden_dim=16)
