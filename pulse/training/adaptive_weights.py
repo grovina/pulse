@@ -69,12 +69,12 @@ def adaptive_multipliers(
 
     # Cap any member's share and redistribute the excess over the uncapped ones.
     n = len(names)
-    # A cap below 1/n is infeasible, and a cap AT 1/n pins every member to the
-    # same weight (with two specs, 0.5 each) — which defeats the point of
-    # adapting. The cap binds only once there are enough members for one of
-    # them to hog the budget: never for n <= 2, half for n = 4, cap_share from
-    # n >= 2/cap_share (8 at the default 0.25 — the registries have 20-61).
-    cap = min(1.0, max(cap_share, 2.0 / n)) * budget
+    # A cap below 1/n is infeasible; raising it TO 1/n would pin every member
+    # to the same weight (two specs at 0.5 each), which defeats adapting. So the
+    # cap applies only when the member count can honour it (n >= 1/cap_share,
+    # i.e. 4 at the default 0.25 — the registries have 20-61); below that the
+    # budget is uncapped and only the EMA ordering moves it.
+    cap = (cap_share if cap_share * n >= 1.0 - 1e-9 else 1.0) * budget
     capped: set[str] = set()
     for _ in range(max_iter):
         over = {k for k in names if k not in capped and w[k] > cap * (1.0 + 1e-9)}
