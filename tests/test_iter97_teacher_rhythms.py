@@ -120,3 +120,36 @@ class TestGeneratorsAreViews(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCohortReencodings(unittest.TestCase):
+    """Iter 97 follow-up: the cohort registry encodes what its sources say."""
+
+    def test_ogtt_2h_is_a_ceiling(self):
+        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
+        from pulse.knowledge.cohort_types import TargetShape
+        spec = {s.name: s for s in ALL_COHORT_STATISTICS}["ogtt_75g_glucose_120min"]
+        self.assertIs(spec.shape, TargetShape.AT_MOST)
+        self.assertEqual(spec.target, 140.0)
+
+    def test_sem_sigmas_are_pinned(self):
+        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
+        pinned = {s.name for s in ALL_COHORT_STATISTICS if s.n_arm == 1}
+        for name in ("cck_fasting_basal", "cck_postprandial_peak", "postprandial_hr_rise",
+                     "leptin_fed_vs_fasted", "extended_fast_liver_glycogen_overnight",
+                     "fasting_breakfast_glucose_morning", "sleep_restriction_next_day_glucose"):
+            self.assertIn(name, pinned)
+
+    def test_every_24h_arm_sleeps_at_night_and_rests(self):
+        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
+        for s in ALL_COHORT_STATISTICS:
+            for a in s.arms:
+                if a.duration_min != 1440:
+                    continue
+                self.assertIsNotNone(a.sleep_wake, f"{s.name}/{a.label} has no sleep series")
+                sw = np.array(a.sleep_wake)
+                if a.start_hour == 6.0:
+                    self.assertLess(sw[20 * 60: 24 * 60].mean(), 0.05, f"{s.name}/{a.label} awake at 02:00-06:00")
+                    self.assertGreater(sw[4 * 60: 16 * 60].mean(), 0.95, f"{s.name}/{a.label} asleep by day")
+                if a.activity is not None:
+                    self.assertEqual(float(np.max(a.activity)), 0.0)

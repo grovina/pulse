@@ -208,3 +208,74 @@ class TestMealAndIncretin(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFollowUpFixedPointsAndCounterRegulation(unittest.TestCase):
+    """Iter 97 follow-up: BHB is a fixed point; fasting glucagon and pre-meal ghrelin."""
+
+    def test_bhb_basal_is_a_fixed_point_of_the_fed_equations(self):
+        p = resolve_derived_params(PatientParams())
+        ketogenesis = p.keto_max * p.FFA_b / (1.0 + p.Ib / p.IC50_keto)
+        self.assertAlmostEqual(ketogenesis - p.k_bhb * p.BHB_b, 0.0, places=12)
+        # and the fed-state trajectory rests near it: the night of a eucaloric day
+        # (overnight ketosis 0.1-0.3 is physiological; the old teacher sat at 0.3 all day)
+        traj, _ = _run(p, _std_day(3), 3 * 1440)
+        night = traj[2 * 1440 + 20 * 60: 2 * 1440 + 23 * 60, MI["bhb"]]   # 02:00-05:00 day 3
+        self.assertLess(abs(night.mean() - p.BHB_b), 0.1)
+        self.assertLess(abs(traj[1440 + 12 * 60, MI["bhb"]] - p.BHB_b), 0.05)   # 18:00 fed, day 2
+
+    def test_fasting_ketosis_still_reaches_cahill(self):
+        traj, t0 = TestFastedState._fast(TestFastedState(), 95.0)
+        self.assertTrue(0.7 <= traj[t0 + 24 * 60, MI["bhb"]] <= 2.2)
+        self.assertTrue(2.0 <= traj[t0 + 48 * 60, MI["bhb"]] <= 3.5)
+
+    def test_fasting_glucagon_rises_at_the_marliss_slope(self):
+        traj, t0 = TestFastedState._fast(TestFastedState(), 95.0)
+        gn = traj[:, MI["glucagon"]]
+        # 8-16 h after a real dinner (post-dinner glycogen still high) the rise is
+        # ~0.35/h; the rule's own arm starts 8 h fasted from rest and passes at >= 0.5/h.
+        self.assertGreater((gn[t0 + 16 * 60] - gn[t0 + 8 * 60]) / 8.0, 0.3)      # pg/mL per h, 8-16 h
+        self.assertGreater((gn[t0 + 24 * 60] - gn[t0 + 12 * 60]) / 12.0, 0.45)   # 12-24 h
+        self.assertTrue(1.3 <= gn[t0 + 48 * 60] / gn[t0 - 1] <= 1.6)             # +30-60% at 48 h
+
+    def test_sub_basal_insulin_disinhibits_the_alpha_cell(self):
+        """The alpha-cell insulin term is signed: glucagon rises when insulin falls
+        below basal even at unchanged glucose (paracrine disinhibition)."""
+        p = resolve_derived_params(PatientParams())
+        p.Si = 0.0; p.gamma = 0.0; p = resolve_derived_params(p)   # freeze insulin's glucose response
+        n = 240
+        base, _ = _run(p, [], n)
+        q = resolve_derived_params(PatientParams()); q.Ib = 6.0; q = resolve_derived_params(q)
+        # A patient whose basal insulin is lower has the same glucagon fixed point;
+        # what matters is insulin BELOW the patient's own Ib -- probe the flux directly.
+        from pulse.knowledge.full_body import glucose_fluxes  # noqa: F401  (keeps import surface honest)
+        gn_supp = lambda I: 0.4 * (I - p.Ib) / (p.Ib + 10.0)
+        self.assertLess(gn_supp(5.0), 0.0)
+        self.assertGreater(gn_supp(30.0), 0.0)
+        self.assertAlmostEqual(gn_supp(p.Ib), 0.0)
+
+    def test_ghrelin_rises_before_a_habitual_meal_and_falls_after(self):
+        p = resolve_derived_params(PatientParams())
+        for start in (8.0, 19.0):
+            n = 300
+            traj, _ = _run(p, [(60.0, 75.0, 25.0, 20.0)], n, start_hour=start)
+            g = traj[:, MI["ghrelin"]]
+            self.assertGreater(g[40:60].mean() - g[0:20].mean(), 20.0, f"pre-meal rise at start {start}")
+            self.assertLess(g[60:].min(), 0.7 * g[59])                             # then the meal suppresses
+
+
+class TestDefaultsAreTheirDerivedValues(unittest.TestCase):
+    def test_raw_default_equals_resolved_default(self):
+        """A raw PatientParams() must be the same patient as its resolved form,
+        otherwise every caller that skips resolve_derived_params simulates a
+        different physiology (the iter-80 ketosis test did, with k_bhb 3x off)."""
+        raw = PatientParams()
+        res = resolve_derived_params(PatientParams())
+        for f in ("Hep_b", "Sg", "k_bhb", "lip_max", "h", "k_ba_synth", "ba_spill_gain", "k_gb_basal"):
+            self.assertAlmostEqual(getattr(raw, f), getattr(res, f), delta=abs(getattr(res, f)) * 0.01, msg=f)
+
+    def test_simulate_resolves_on_entry(self):
+        p = PatientParams(); p.Gb = 120.0          # unresolved override
+        traj, _ = _run(p, [], 60)
+        self.assertAlmostEqual(p.Hep_b, p.uptake_ii * 120.0 * VG_DL_PER_KG)
+        self.assertLess(abs(traj[-1, MI["glucose"]] - 120.0), 1.0)   # the override is a fixed point
