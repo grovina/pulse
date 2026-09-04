@@ -58,6 +58,12 @@ class PostprandialRecoverySignal(TrainingSignal):
     """
 
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
+    # Iter 97 (review 4.10): the protocol IS the flow-story benchmark check.
+    # Perturb the meal (carbs +/-20 %, time +/-30 min) and the start hour
+    # (+/-1 h) per compute; the fixed protocol stays one sample in four. The
+    # baseline window ends 5 min before the (possibly shifted) meal.
+    perturb_protocols: bool = False
+    perturb_fixed_prob: float = 0.25
 
     name: str = "postprandial_recovery"
     source: str = "Pulse flow-story dietary-carbohydrate scenario (recovery window)"
@@ -65,6 +71,18 @@ class PostprandialRecoverySignal(TrainingSignal):
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
+
+    def protocol_for_step(self, rng) -> tuple[MealEvent, float, bool]:
+        """(meal, start_hour, perturbed) for one compute call (review 4.10)."""
+        if not self.perturb_protocols or rng.random() < self.perturb_fixed_prob:
+            return _MEAL, _START_HOUR, False
+        scale = 1.0 + float(rng.uniform(-0.2, 0.2))
+        t = float(_MEAL.time + rng.integers(-30, 31))
+        t = min(max(t, 10.0), float(_RECOVERY_START - 240))  # baseline before, >= 4 h to recovery
+        meal = MealEvent(time=t, carbs=_MEAL.carbs * scale, fats=_MEAL.fats * scale,
+                         proteins=_MEAL.proteins * scale)
+        start_hour = (_START_HOUR + float(rng.uniform(-1.0, 1.0))) % 24.0
+        return meal, start_hour, True
 
     def compute(
         self,
@@ -81,21 +99,23 @@ class PostprandialRecoverySignal(TrainingSignal):
         initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
         glc_idx = MARKER_INDEX["glucose"]
         glc_scale = float(NORM_SCALE[glc_idx])
-        start_min = _START_HOUR * 60.0
+        meal, start_hour, perturbed = self.protocol_for_step(ctx.rng)
+        start_min = start_hour * 60.0
+        baseline_end = max(5, int(round(meal.time)) - 5)
 
         # precompute_gut_outputs is the canonical path even for unbatched
         # rollouts — keeps the gut kernel call out of the per-step loop.
         gut = precompute_gut_outputs(
             model, embedding, _DURATION_MIN,
-            dt=1.0, start_time_minutes=start_min, meals=[_MEAL],
+            dt=1.0, start_time_minutes=start_min, meals=[meal],
         )
         pred = integrate(
             model, initial, embedding, _DURATION_MIN,
-            dt=1.0, start_time_minutes=start_min, meals=[_MEAL],
+            dt=1.0, start_time_minutes=start_min, meals=[meal],
             gut_outputs=gut,
         )
 
-        baseline = pred[:_BASELINE_END, glc_idx].mean()
+        baseline = pred[:baseline_end, glc_idx].mean()
         recovery = pred[_RECOVERY_START:_RECOVERY_END, glc_idx].mean()
         residual_norm = (recovery - baseline) / glc_scale
         loss = residual_norm.pow(2)
@@ -120,5 +140,6 @@ class PostprandialRecoverySignal(TrainingSignal):
                 "residual_mg_dl": float((recovery - baseline).detach().item()),
                 "baseline_mg_dl": float(baseline.detach().item()),
                 "recovery_mg_dl": float(recovery.detach().item()),
+                "perturbed": 1.0 if perturbed else 0.0,
             },
         )

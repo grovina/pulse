@@ -12,8 +12,9 @@ weight and a differentiable soft-peak per marker.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
+import numpy as np
 import torch
 from torch import nn
 
@@ -25,6 +26,26 @@ from ..dose_response import (
 from .embedding_sampler import select_supervised_embeddings
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
+
+
+def perturb_dose_response_protocol(
+    protocol: DoseResponseProtocol, rng: np.random.Generator,
+    *, dose_frac: float = 0.20, time_min: int = 30, start_hour: float = 1.0,
+) -> DoseResponseProtocol:
+    """A perturbed copy of the dose-response protocol (review 4.10).
+
+    One dose scale for the whole ladder (the ranking / slope targets need the
+    doses to stay ordered), a meal-offset shift that keeps the pre-meal
+    baseline and the post window inside the rollout, and a start-hour shift.
+    """
+    scale = 1.0 + float(rng.uniform(-dose_frac, dose_frac))
+    doses = tuple(float(d) * scale for d in protocol.carb_doses_g)
+    lo = int(protocol.pre_window)
+    hi = int(protocol.duration_min - protocol.post_window)
+    offset = int(protocol.meal_offset_min + rng.integers(-time_min, time_min + 1))
+    offset = int(min(max(offset, lo), hi))
+    sh = (float(protocol.start_hour) + float(rng.uniform(-start_hour, start_hour))) % 24.0
+    return replace(protocol, carb_doses_g=doses, meal_offset_min=offset, start_hour=sh)
 
 
 @dataclass
@@ -43,12 +64,26 @@ class DoseResponseSignal(TrainingSignal):
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     protocol: DoseResponseProtocol = field(default_factory=DoseResponseProtocol)
 
+    # Iter 97 (review 4.10): the protocol IS the textbook meal_dose_response
+    # scenario (30/90 g at 08:30). Perturb it per compute — doses +/-20 %, meal
+    # time +/-30 min, start hour +/-1 h — and keep the fixed protocol as one
+    # sample in ``1/perturb_fixed_prob``. The peak targets are per-gram lines
+    # through the origin, so a perturbed dose carries its own target.
+    perturb_protocols: bool = False
+    perturb_fixed_prob: float = 0.25
+
     name: str = "dose_response"
     source: str = "Wolever (1991, 1996) — glycemic response to carb dose"
     category: str = "dose_response"
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
+
+    def protocol_for_step(self, rng: np.random.Generator) -> DoseResponseProtocol:
+        """The (possibly perturbed) protocol for one compute call."""
+        if not self.perturb_protocols or rng.random() < self.perturb_fixed_prob:
+            return self.protocol
+        return perturb_dose_response_protocol(self.protocol, rng)
 
     def compute(
         self,
@@ -71,19 +106,22 @@ class DoseResponseSignal(TrainingSignal):
         if not emb_list:
             return SignalResult()
 
-        initial = cold_initial_state(self.protocol, rng=ctx.rng, device=ctx.device)
+        protocol = self.protocol_for_step(ctx.rng)
+        initial = cold_initial_state(protocol, rng=ctx.rng, device=ctx.device)
         loss, diagnostics = dose_response_epoch_loss(
             model=model,
             embeddings_to_supervise=emb_list,
-            protocol=self.protocol,
+            protocol=protocol,
             initial_state=initial,
             device=ctx.device,
         )
+        diagnostics = dict(diagnostics)
+        diagnostics["perturbed"] = 0.0 if protocol is self.protocol else 1.0
         # Flatten diagnostics into the safe_step extra dict (all floats).
         extra: dict[str, float] = {
             "raw_loss": float(loss.detach().item()),
             "weight": float(w),
-            "target_slope": float(self.protocol.target_slope),
+            "target_slope": float(protocol.target_slope),
             "n_emb": float(len(emb_list)),
         }
         extra.update(diagnostics)
