@@ -14,7 +14,9 @@ Sources (all under the directory passed via ``--source-dir``):
       (workout segments — walks/runs/biking/aerobics with start-end-type).
       Maps to per-minute ``activity[t]`` in [0, 1] matching the model's
       ``activity`` external input (0=rest, 1=vigorous). Resting minutes
-      default to 0.1, matching the model's learned ``default_activity``.
+      are 0 (iter 97, review 1.7: they used to be 0.1, which the teacher
+      reads as +4.2 bpm over rest; the output declares
+      ``meta.activity_rest_level`` so the benchmark loader knows).
 
 Output: a JSON file in the same shape as
 ``benchmark.dataset.generated.json``, so the existing bench loader
@@ -56,10 +58,12 @@ ACTIVITY_FILE = "Takeout/Fit/All data/derived_com.google.activity.segment_com.go
 # Google Fit activity codes → model ``activity[t]`` intensity (0=rest, 1=vigorous).
 # Codes from com.google.android.gms.fitness.FitnessActivities. Anything not
 # listed defaults to ``ACTIVITY_DEFAULT`` so unknown codes don't silently
-# raise the baseline. Resting / sleep / unrecognized → matches model's
-# learned ``default_activity = 0.1`` so activity-bearing episodes degrade
-# gracefully when no segment covers a minute.
-ACTIVITY_DEFAULT = 0.1
+# raise the baseline. Resting / sleep / unrecognized → REST = 0 (iter 97,
+# review 1.7). Through iter 96 this was 0.1 "to match the model's learned
+# default", which put +8.3 bpm of teacher-meaning drive on every real night;
+# the benchmark loader remaps that legacy 0.1 to 0 for files that do not
+# declare ``meta.activity_rest_level``.
+ACTIVITY_DEFAULT = 0.0
 ACTIVITY_INTENSITY: dict[int, float] = {
     1: 0.7,    # biking
     7: 0.4,    # walking
@@ -404,6 +408,8 @@ def main() -> int:
             "source": "real CGM + Oura HR + sleep (gabriel)",
             "duration_min": EPISODE_DURATION_MIN,
             "episodes": len(episodes),
+            # Declares the resting value so the benchmark loader applies no remap.
+            "activity_rest_level": ACTIVITY_DEFAULT,
         },
         "episodes": episodes,
     }

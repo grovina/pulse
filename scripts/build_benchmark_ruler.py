@@ -60,10 +60,11 @@ def build_cgm_episodes(source_dir: Path, max_episodes: int) -> list[dict]:
         if proc.returncode != 0:
             raise SystemExit(f"ingest_real_data.py failed:\n{proc.stdout}\n{proc.stderr}")
         print(proc.stdout.strip())
-        eps = json.loads(out.read_text())["episodes"]
+        payload = json.loads(out.read_text())
+        eps = payload["episodes"]
     for e in eps:
         e["source"] = CGM_SOURCE
-    return eps
+    return eps, payload.get("meta", {})
 
 
 def main() -> int:
@@ -84,8 +85,8 @@ def main() -> int:
         e["source"] = LEGACY_SOURCE
     print(f"legacy_static: {len(legacy)} episodes from {args.legacy}")
 
-    cgm = build_cgm_episodes(args.cgm_source_dir.expanduser(), args.max_cgm_episodes)
-    print(f"cgm_real: {len(cgm)} episodes")
+    cgm, cgm_meta = build_cgm_episodes(args.cgm_source_dir.expanduser(), args.max_cgm_episodes)
+    print(f"cgm_real: {len(cgm)} episodes (activity_rest_level={cgm_meta.get('activity_rest_level')})")
 
     ids = [e["user_id"] for e in legacy + cgm]
     if len(set(ids)) != len(ids):
@@ -94,10 +95,13 @@ def main() -> int:
     payload = {
         "meta": {
             "builtBy": "scripts/build_benchmark_ruler.py",
-            "iter": 94,
+            "iter": 97,
             "benchmark_source": LEGACY_SOURCE,  # default for anything untagged
             "composition": {LEGACY_SOURCE: len(legacy), CGM_SOURCE: len(cgm)},
             "legacy_meta": legacy_payload.get("meta", {}),
+            # Iter 97 (review 1.7): the ingest's resting activity, declared so the
+            # loader does not apply the legacy 0.1 -> 0 remap to this file.
+            "activity_rest_level": cgm_meta.get("activity_rest_level", 0.0),
             "note": (
                 "teacher / teacher_dynamic episodes are generated in-process by "
                 "pulse/knowledge/benchmark_extras.py and merged at benchmark time."

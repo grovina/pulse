@@ -206,6 +206,10 @@ class BayesianCalibrationResult:
     map_loss: float
 
 
+# The resting activity the pre-iter-97 ingest wrote for every minute without a
+# workout segment (scripts/ingest_real_data.py ACTIVITY_DEFAULT through iter 96).
+LEGACY_INGEST_REST_ACTIVITY = 0.1
+
 # Iter 97 (review 5.2): the last dataset file this process loaded, so the ruler
 # fingerprint can name it without every caller threading the path through.
 _LAST_DATASET: dict[str, Any] = {}
@@ -234,6 +238,7 @@ def load_benchmark_dataset(path: str) -> list[BenchmarkEpisode]:
     # explicitly tags them otherwise (per-episode "source" wins over the
     # payload-level default).
     default_source = str(payload.get("meta", {}).get("benchmark_source", "real"))
+    declared_rest = payload.get("meta", {}).get("activity_rest_level") if isinstance(payload.get("meta"), dict) else None
 
     for raw in episodes_raw:
         user_id = str(raw.get("user_id", "")).strip()
@@ -283,10 +288,22 @@ def load_benchmark_dataset(path: str) -> list[BenchmarkEpisode]:
         if isinstance(sw_raw, list) and len(sw_raw) == duration_min:
             sleep_wake = np.array(sw_raw, dtype=np.float32)
 
-        activity: np.ndarray | None = None
+        # Iter 97 (review 1.7): rest = 0. A missing activity array is REST, not
+        # "let the model pick its default" (which was 0.1 = +8.3 bpm of teacher-
+        # meaning drive on every cgm_real night). And the exported cgm_real
+        # dataset was ingested with a 0.1 resting default (no Google Fit code
+        # maps to 0.1; only the default does), so unless the file declares its
+        # own rest level in meta.activity_rest_level, minutes at exactly 0.1
+        # are remapped to 0. Re-export with scripts/ingest_real_data.py to get
+        # a file that declares activity_rest_level = 0.0 and needs no remap.
         act_raw = raw.get("activity")
         if isinstance(act_raw, list) and len(act_raw) == duration_min:
             activity = np.array(act_raw, dtype=np.float32)
+            if declared_rest is None:
+                activity = np.where(np.isclose(activity, LEGACY_INGEST_REST_ACTIVITY), 0.0, activity)
+                activity = activity.astype(np.float32)
+        else:
+            activity = np.zeros(duration_min, dtype=np.float32)
 
         episodes.append(BenchmarkEpisode(
             user_id=user_id, duration_min=duration_min, initial_state=initial_state,

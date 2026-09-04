@@ -55,6 +55,13 @@ from ..types import MARKER_INDEX
 _sleep_episodes_cache: list[BenchmarkEpisode] | None = None
 _meal_episodes_cache: list[BenchmarkEpisode] | None = None
 
+# Iter 97 (review 1.7): rest activity is 0 in every in-process episode. base.py:34
+# defines 0 = rest, yet these episodes were generated at 0.05 / 0.1 -- the
+# teacher reads 0.05 as +4.2 bpm HR, +2 mmHg SBP, +2.5 br/min RR over true rest,
+# so the truth arrays carried fictitious activity drive. The truth digests in
+# the ruler fingerprint change with this.
+REST_ACTIVITY = 0.0
+
 # Markers we add per-time-point on cohort episodes for unobserved-marker
 # visibility. Order chosen to span the 4 modules currently dead in the
 # iter-39 probe (metabolic counter-regulation, appetite, stress) plus
@@ -91,7 +98,7 @@ def cohort_sleep_48h_benchmark_episodes() -> list[BenchmarkEpisode]:
     start_hour = SLEEP_COHORT_48H_START_HOUR
     meals = list(SLEEP_COHORT_48H_MEALS)
     sw = np.array(sleep_two_nights_adequate(duration_min, start_hour), dtype=np.float32)
-    activity = np.full(duration_min, 0.05, dtype=np.float32)
+    activity = np.zeros(duration_min, dtype=np.float32)  # rest = 0 (review 1.7)
     rng = np.random.default_rng(20260412)
     params = PatientParams()
     traj, _abs = simulate_full_body(
@@ -189,7 +196,7 @@ def cohort_meal_postprandial_benchmark_episodes() -> list[BenchmarkEpisode]:
     start_hour = 7.0
     meals = list(_OGTT_MEALS)
     sw = np.zeros(duration_min, dtype=np.float32) + 1.0  # awake throughout
-    activity = np.full(duration_min, 0.1, dtype=np.float32)  # sedentary baseline
+    activity = np.zeros(duration_min, dtype=np.float32)  # rest = 0 (review 1.7)
     rng = np.random.default_rng(20260508)
     params = PatientParams()
     traj, _abs = simulate_full_body(
@@ -301,7 +308,7 @@ def cohort_meal_in_eval_window_episodes() -> list[BenchmarkEpisode]:
         params = PatientParams() if k == 0 else randomize_params(
             np.random.default_rng(94_100 + k))
         sw = np.ones(duration_min, dtype=np.float32)          # awake throughout
-        activity = np.full(duration_min, 0.05, dtype=np.float32)
+        activity = np.zeros(duration_min, dtype=np.float32)  # rest = 0 (review 1.7)
         traj, _abs = simulate_full_body(
             params, list(meals), sw, activity,
             duration_min, start_hour, noise_scale=0.001, rng=rng,
