@@ -50,10 +50,18 @@ def _safe_corr_torch(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return torch.where(denom < 1e-8, a.new_tensor(0.0), corr)
 
 
-def _mask_mean_torch(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    if mask.any():
+def _mask_mean_torch(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor | None:
+    """Mean over the mask, or ``None`` when the mask is empty.
+
+    Iter 97 (review 4.8, mirrors ``verifier._mask_mean``): the old fallback
+    returned the whole-window mean, so on a 240-min training window "morning
+    minus evening" became "morning minus everything" — a zero-gradient constant
+    (measured: loss 0.1780 on a flat window vs an analytic floor of 0.1766).
+    A phase that is not in the window is not evidence; the term is skipped.
+    """
+    if bool(mask.any()):
         return values[mask].mean()
-    return values.mean()
+    return None
 
 
 def _range_score(values: torch.Tensor, lo: float, hi: float) -> torch.Tensor:
@@ -143,28 +151,45 @@ def training_verifier_surrogate_loss(
     early_temp = _mask_mean_torch(temp, early_temp_mask)
     afternoon_temp = _mask_mean_torch(temp, afternoon_temp_mask)
 
-    s4 = torch.sigmoid((morning - evening - c.cortisol_morning_evening_min) / c.cortisol_soft_scale)
-    weighted_one_minus.append(c.cortisol_weight * (1.0 - s4))
-    weights.append(c.cortisol_weight)
+    # A circadian check needs BOTH phases inside the window (verifier.py does the
+    # same). On a 240-min training window that is rarely true; the term is then
+    # a no-op rather than a constant, and the long cohort/distillation windows
+    # are where circadian shape is actually supervised.
+    if morning is not None and evening is not None:
+        s4 = torch.sigmoid((morning - evening - c.cortisol_morning_evening_min) / c.cortisol_soft_scale)
+        weighted_one_minus.append(c.cortisol_weight * (1.0 - s4))
+        weights.append(c.cortisol_weight)
 
-    s5 = torch.sigmoid((afternoon_temp - early_temp - c.temp_afternoon_early_min) / c.temp_soft_scale)
-    weighted_one_minus.append(c.temp_weight * (1.0 - s5))
-    weights.append(c.temp_weight)
+    if early_temp is not None and afternoon_temp is not None:
+        s5 = torch.sigmoid((afternoon_temp - early_temp - c.temp_afternoon_early_min) / c.temp_soft_scale)
+        weighted_one_minus.append(c.temp_weight * (1.0 - s5))
+        weights.append(c.temp_weight)
 
+    # Sleep dip: same reference policy as ``verifier._sleep_checks`` — the awake
+    # reference is the daytime window when the trajectory covers it with enough
+    # samples, else the evening window; the night must be covered too. A window
+    # that cannot contain an awake reference AND a night contributes nothing
+    # (previously gated at T >= 1440, so the term never existed in training).
     slp = SLEEP
-    if T >= slp.min_trajectory_len:
-        hr_day = _mask_mean_torch(hr, (abs_hour >= slp.daytime_hour_lo) & (abs_hour <= slp.daytime_hour_hi))
-        hr_night = _mask_mean_torch(hr, (abs_hour >= slp.nighttime_hour_lo) & (abs_hour <= slp.nighttime_hour_hi))
-        sbp_day = _mask_mean_torch(sbp, (abs_hour >= slp.daytime_hour_lo) & (abs_hour <= slp.daytime_hour_hi))
-        sbp_night = _mask_mean_torch(sbp, (abs_hour >= slp.nighttime_hour_lo) & (abs_hour <= slp.nighttime_hour_hi))
-        hr_margin = hr_day - hr_night
-        sbp_margin = sbp_day - sbp_night
-        s6 = torch.sigmoid((hr_margin - slp.hr_dip_min) / slp.hr_dip_soft_scale)
-        weighted_one_minus.append(slp.hr_dip_weight * (1.0 - s6))
-        weights.append(slp.hr_dip_weight)
-        s7 = torch.sigmoid((sbp_margin - slp.sbp_dip_min) / slp.sbp_dip_soft_scale)
-        weighted_one_minus.append(slp.sbp_dip_weight * (1.0 - s7))
-        weights.append(slp.sbp_dip_weight)
+    if T >= min(slp.min_trajectory_len, slp.min_trajectory_len_evening_ref):
+        daytime = (abs_hour >= slp.daytime_hour_lo) & (abs_hour <= slp.daytime_hour_hi)
+        evening_m = (abs_hour >= slp.evening_hour_lo) & (abs_hour <= slp.evening_hour_hi)
+        night = (abs_hour >= slp.nighttime_hour_lo) & (abs_hour <= slp.nighttime_hour_hi)
+        awake = None
+        if int(night.sum()) >= slp.min_reference_samples:
+            if int(daytime.sum()) >= slp.min_reference_samples:
+                awake = daytime
+            elif int(evening_m.sum()) >= slp.min_reference_samples:
+                awake = evening_m
+        if awake is not None:
+            hr_margin = hr[awake].mean() - hr[night].mean()
+            sbp_margin = sbp[awake].mean() - sbp[night].mean()
+            s6 = torch.sigmoid((hr_margin - slp.hr_dip_min) / slp.hr_dip_soft_scale)
+            weighted_one_minus.append(slp.hr_dip_weight * (1.0 - s6))
+            weights.append(slp.hr_dip_weight)
+            s7 = torch.sigmoid((sbp_margin - slp.sbp_dip_min) / slp.sbp_dip_soft_scale)
+            weighted_one_minus.append(slp.sbp_dip_weight * (1.0 - s7))
+            weights.append(slp.sbp_dip_weight)
 
     for mid, spec in SANITY_RANGES:
         vals = pred_traj[:, MARKER_INDEX[mid]]

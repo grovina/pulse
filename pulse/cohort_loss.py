@@ -31,6 +31,8 @@ from .modules.gut import MealEvent
 from .types import MARKER_INDEX, NORM_CENTER
 
 __all__ = [
+    "ARM_DEFAULT_ACTIVITY",
+    "ARM_DEFAULT_SLEEP_WAKE",
     "cohort_statistic_epoch_loss",
     "cohort_statistic_loss_group",
     "cohort_statistic_loss_one_spec",
@@ -55,14 +57,36 @@ def _meals_from_spec(tuples: tuple[tuple[float, float, float, float], ...]) -> l
     ]
 
 
+# Iter 97 (review 1.7 / 4.9): the frame an arm runs in when it declares no
+# sleep or activity series. ``base.py`` defines activity 0 = rest and the
+# engine-wide sleep convention is 1 = awake; the cohort teacher audit
+# (scripts/cohort_teacher_audit.py) simulates undeclared arms at exactly these
+# values. Before this the student ran undeclared arms on its LEARNED scalar
+# defaults (activity init 0.1 = +8 bpm of teacher-meaning drive, sleep init 0.5),
+# so the student was scored against literature targets in a frame the teacher
+# audit never ran — 0.84 sigma of night_hr_level was frame, not physiology.
+ARM_DEFAULT_SLEEP_WAKE: float = 1.0   # awake
+ARM_DEFAULT_ACTIVITY: float = 0.0     # rest
+
+
 def _optional_series_tensor(
     name: str,
     series: tuple[float, ...] | None,
     n_steps: int,
     device: torch.device,
+    fill: float | None = None,
 ) -> torch.Tensor | None:
+    """Tensor for an arm's per-minute input series.
+
+    ``fill`` is the explicit constant used when the arm declares no series
+    (``None``). It is only ``None`` for callers that genuinely want "absent"
+    (the student's learned default); every cohort/rule rollout passes the
+    frame constants above so training and the teacher audits agree.
+    """
     if series is None:
-        return None
+        if fill is None:
+            return None
+        return torch.full((n_steps,), float(fill), dtype=torch.float32, device=device)
     if len(series) != n_steps:
         raise ValueError(f"CohortArmSpec {name} length {len(series)} must equal duration_min {n_steps}")
     return torch.tensor(series, dtype=torch.float32, device=device)
@@ -98,8 +122,12 @@ def _rollout_arm_states(
     t0 = float(arm.start_hour * 60.0)
     meals = _meals_from_spec(arm.meals)
     device = state_batch.device
-    sw = _optional_series_tensor(f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device)
-    act = _optional_series_tensor(f"{arm.label}.activity", arm.activity, n_steps, device)
+    sw = _optional_series_tensor(
+        f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device, fill=ARM_DEFAULT_SLEEP_WAKE,
+    )
+    act = _optional_series_tensor(
+        f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
+    )
     gut = precompute_gut_outputs(
         model, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,

@@ -584,10 +584,20 @@ _MODERATE_EXERCISE_ARM = CohortArmSpec(
 
 
 # Iter 66: full 24h with explicit sleep-wake schedule (22:00–06:00
-# asleep, sleep_wake=1; rest awake, sleep_wake=0). With realistic
-# meals layered on. Tests HR/BP drop during sleep, HRV rise during
-# sleep, temp trough pre-dawn, melatonin-coupled cortisol low at
-# sleep onset.
+# asleep). With realistic meals layered on. Tests HR/BP drop during
+# sleep, HRV rise during sleep, temp trough pre-dawn, melatonin-coupled
+# cortisol low at sleep onset.
+#
+# ITER 97 (review 1.2) — THE LITERAL WAS INVERTED. The convention everywhere
+# else in the engine is ``sleep_wake = 0`` asleep / ``1`` awake
+# (``model.py`` default_sleep_wake, ``full_body.py`` generate_sleep_wake,
+# every cohort arm in ``knowledge/cohorts``). This arm wrote 1.0 for the night
+# hours, so the teacher under it was AWAKE from 22:00 to 06:00 and ASLEEP from
+# 06:00 to 22:00: SBP was 15 mmHg HIGHER at 02-05 than at 15-18, and every
+# sleep/night rule that inherits this arm (15 of them) has been pushing the
+# student toward the wrong phase since iter 66. Measured on the teacher with
+# the mask corrected: sbp_falls_during_sleep violation 6.44 -> 0 (see
+# scripts/rules_teacher_audit.py for the full before/after).
 _SLEEP_WAKE_24H_ARM = CohortArmSpec(
     label="sleep_wake_24h",
     duration_min=24 * 60,
@@ -597,7 +607,11 @@ _SLEEP_WAKE_24H_ARM = CohortArmSpec(
         (13.0 * 60.0, 70.0, 25.0, 20.0),
         (19.0 * 60.0, 80.0, 30.0, 25.0),
     ),
-    sleep_wake=tuple(1.0 if (t < 6 * 60 or t >= 22 * 60) else 0.0 for t in range(24 * 60)),
+    # 0 = asleep (22:00-06:00), 1 = awake — the engine-wide convention.
+    sleep_wake=tuple(0.0 if (t < 6 * 60 or t >= 22 * 60) else 1.0 for t in range(24 * 60)),
+    # Rest = 0 (review 1.7): the arm says nothing about exercise, so it must not
+    # carry any. Explicit so the training frame equals the audit frame (4.9).
+    activity=tuple(0.0 for _ in range(24 * 60)),
 )
 
 

@@ -45,7 +45,7 @@ from ..knowledge.full_body import (
 )
 from ..landmarks import post_meal_landmark_loss
 from ..model import integrate, precompute_gut_outputs
-from ..modules.gut import GUT_OUTPUT_SCALE, MealEvent
+from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..training_verifier_loss import training_verifier_surrogate_loss
 from ..types import EMBEDDING_DIM, MARKERS, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .safe_step import safe_step
@@ -83,6 +83,29 @@ def sample_window_start(
                 if lo <= hi:
                     return int(rng.integers(lo, hi + 1))
     return int(rng.integers(0, max_start))
+
+
+def meals_in_window(
+    patient_meals: list[tuple[float, float, float, float]],
+    win_start: int,
+    win_end: int,
+    *,
+    lookback_min: float = MEAL_ACTIVE_WINDOW_MIN,
+) -> list[MealEvent]:
+    """Meals the student can see in ``[win_start, win_end)``, on the window-offset clock.
+
+    Iter 97 (review 1.4): a meal is visible for as long as the gut kernel is
+    active (``MEAL_ACTIVE_WINDOW_MIN`` = 480), not 120 min. With the 120-min
+    lookback, 67 % of sampled windows started from the teacher's FED state (the
+    initial row carries the meal) while the inputs said "fasted"; those meals
+    carried 47 % of the in-window nutrient flag. Same constant the benchmark and
+    calibration use, so the three frames agree.
+    """
+    return [
+        MealEvent(time=t - win_start, carbs=c, fats=f, proteins=p)
+        for t, c, f, p in patient_meals
+        if win_start - lookback_min <= t < win_end
+    ]
 
 
 # Favor full-body episodes; override at construction.
@@ -351,11 +374,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
                     assert pid_tensor is not None
                     embedding = embeddings(pid_tensor)
 
-                win_meals = [
-                    MealEvent(time=t - win_start, carbs=c, fats=f, proteins=p)
-                    for t, c, f, p in patient_meals
-                    if win_start - 120 <= t < win_end
-                ]
+                win_meals = meals_in_window(patient_meals, win_start, win_end)
 
                 sw_tensor = None
                 act_tensor = None

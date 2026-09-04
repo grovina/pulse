@@ -16,6 +16,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 # Iter 67 follow-up: epoch-scoped watchdog. cxtcj (iter 67 first run)
 # went silent at phase 1 epoch 5 and stayed silent until Cloud Run
@@ -1102,7 +1103,19 @@ def _run_benchmark(
     episodes = list(episodes) + all_cohort_benchmark_episodes()
 
     model.eval()
-    results = evaluate_model_against_benchmark(model, episodes, thresholds)
+    # Iter 97 (review 5.2): the ruler fingerprint records the dataset the run was
+    # scored against. ``evaluate_model_against_benchmark`` reads it from the
+    # environment (and hashes the local file it loaded); export the URI we were
+    # given so a gs:// path shows up verbatim rather than the tempfile name.
+    os.environ["PULSE_BENCHMARK_DATASET_URI"] = str(dataset_uri)
+    import inspect as _inspect
+    _eval_kwargs: dict[str, Any] = {}
+    _eval_params = _inspect.signature(evaluate_model_against_benchmark).parameters
+    if "dataset_uri" in _eval_params:
+        _eval_kwargs["dataset_uri"] = dataset_uri
+    if "dataset_local" in _eval_params:
+        _eval_kwargs["dataset_local"] = dataset_local
+    results = evaluate_model_against_benchmark(model, episodes, thresholds, **_eval_kwargs)
 
     from .knowledge.textbook_scenarios.neural_eval import run_textbook_scenarios_on_model
 
@@ -1259,7 +1272,9 @@ def _run_benchmark(
     return 0
 
 
-def main():
+def build_arg_parser() -> argparse.ArgumentParser:
+    """The trainer's CLI. Factored out of ``main`` (iter 97) so tests can pin the
+    argparse defaults against the ``train()`` defaults (review 1.5)."""
     parser = argparse.ArgumentParser(description="Train the modular physiology network")
     parser.add_argument(
         "--spec", type=str, default=None,
@@ -1304,8 +1319,10 @@ def main():
     parser.add_argument(
         "--verifier-loss-weight",
         type=float,
-        default=0.03,
-        help="Weight for training surrogate aligned with verifier.py (0 disables)",
+        default=None,
+        help="Weight for training surrogate aligned with verifier.py (0 disables). "
+             "Iter 97 (review 1.5): default None -> the train() default (0.02); the CLI "
+             "used to say 0.03 while the function said 0.02.",
     )
     parser.add_argument(
         "--huber-delta",
@@ -1589,29 +1606,26 @@ def main():
         type=float,
         default=0.0,
         help=(
-            "Weight for the cold-model distillation signal: normalized "
-            "trajectory MSE of the learned model (at the zero embedding) "
-            "against simulate_full_body on a broad protocol pool — standard "
-            "meal days, OGTT, 24h fast, high-fat meal, phase-shifted day, "
-            "grazing — for the unobserved counter-regulatory + circadian "
-            "markers (glucagon, ffa, ghrelin, leptin, acth, cortisol, bhb). "
-            "These markers are byte-identical across iters 38-46 because no "
-            "other training signal reaches the parameters that set their level "
-            "and shape; this signal is the structural fix. Active from epoch 0. "
-            "0 disables (default). Replaces the iter-39 marker-vitality "
-            "range-floor band-aid."
+            "Weight for the cold-model distillation signal: the learned model, at a "
+            "per-protocol embedding calibrated to the teacher's observed markers, is "
+            "matched to simulate_full_body over a broad protocol pool (standard meal "
+            "days, OGTT, 24h fast, high-fat meal, phase-shifted day, grazing, exercise "
+            "day) on the unobserved markers listed in --cold-distill-markers. Loss "
+            "shape is --cold-distill-mode (the dispatch recipe uses 'anchored' = "
+            "teacher-forced rate matching + free-rollout level anchors). Phase-2 "
+            "gated. 0 disables (default)."
         ),
     )
     parser.add_argument(
         "--cold-distill-markers",
         type=str,
-        default="glucagon,ffa,ghrelin,leptin,acth,cortisol,bhb",
+        default=None,
         help=(
-            "Comma-separated marker ids distilled from the cold model by "
-            "--cold-distill-weight. Default targets the unobserved counter-"
-            "regulatory + circadian markers. insulin/glp1 are deliberately "
-            "excluded — already constrained by the glucose-coupling, insulin-"
-            "sweep, and gut-dose-sweep signals."
+            "':'-separated marker ids distilled from the cold model by "
+            "--cold-distill-weight. Iter 97 (review 1.5): default None -> the train() "
+            "default (the 10-marker _DEFAULT_DISTILL_MARKERS set, glycogen pools and "
+            "mitochondrial_capacity included); the CLI used to carry a stale 7-marker "
+            "string that made the function default unreachable."
         ),
     )
     parser.add_argument(
@@ -1805,6 +1819,15 @@ def main():
     parser.add_argument("--benchmark-thresholds-uri", type=str, default=None)
     parser.add_argument("--benchmark-report-path", type=str, default=None)
     parser.add_argument(
+        "--frozen-ruler", type=str, default=None,
+        help=(
+            "Iter 97 (review 5.2): path to a frozen-ruler file; sets "
+            "PULSE_BENCHMARK_FROZEN_RULER so the benchmark re-scores against the "
+            "embedded truth arrays of a previous report and records it in the "
+            "ruler fingerprint. Same effect as exporting the env var."
+        ),
+    )
+    parser.add_argument(
         "--deterministic",
         action="store_true",
         help="Pin threads=1 and request deterministic PyTorch algorithms "
@@ -1820,6 +1843,11 @@ def main():
         ),
     )
 
+    return parser
+
+
+def main():
+    parser = build_arg_parser()
     # Inject the recipe (if any) as defaults *before* the explicit CLI flags so
     # an override on the command line still wins (argparse keeps the last value).
     spec_pre, _ = parser.parse_known_args()
@@ -1828,6 +1856,9 @@ def main():
         args = parser.parse_args(spec_args + sys.argv[1:])
     else:
         args = parser.parse_args()
+
+    if args.frozen_ruler:
+        os.environ["PULSE_BENCHMARK_FROZEN_RULER"] = str(args.frozen_ruler)
 
     if args.benchmark_only:
         if not args.gcs_bucket or not args.gcs_object:
@@ -1875,7 +1906,8 @@ def main():
         contribution_weights=cw,
         coupling_prior_weight=args.coupling_prior_weight,
         coupling_prior_samples=args.coupling_prior_samples,
-        verifier_loss_weight=args.verifier_loss_weight,
+        # Iter 97 (review 1.5): None on the CLI means "the train() default".
+        **({} if args.verifier_loss_weight is None else {"verifier_loss_weight": args.verifier_loss_weight}),
         huber_delta=args.huber_delta,
         cohort_statistic_weight=args.cohort_statistic_weight,
         cohort_sample_patients=args.cohort_sample_patients,
@@ -1908,7 +1940,8 @@ def main():
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,
         cold_distill_weight=args.cold_distill_weight,
-        cold_distill_markers=_split_markers(args.cold_distill_markers),
+        **({} if args.cold_distill_markers is None
+           else {"cold_distill_markers": _split_markers(args.cold_distill_markers)}),
         cold_distill_protocols_per_epoch=args.cold_distill_protocols_per_epoch,
         cold_distill_pool=args.cold_distill_pool,
         cold_distill_mode=args.cold_distill_mode,
