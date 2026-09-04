@@ -47,12 +47,108 @@ from ..landmarks import post_meal_landmark_loss
 from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..training_verifier_loss import training_verifier_surrogate_loss
-from ..types import EMBEDDING_DIM, MARKERS, NORM_CENTER, NORM_SCALE, STATE_DIM
+from ..types import EMBEDDING_DIM, MARKERS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
+
+MARKER_INDEX_IDS = set(MARKER_INDEX)
 from .safe_step import safe_step
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
 TRAIN_WINDOW = 240
+# Iter 97 (review 4.2): the soft-range term is a CATASTROPHE FENCE, not a pull.
+# It used to be ``0.001 * mean(((pred - typical)/scale)^2)`` at every step, i.e.
+# every marker was pulled toward its population typical inside the band the
+# trajectory loss had just declared free — a fasted BHB of 1.3 mmol/L (2.4 sigma
+# off typical) paid for being right. Now it is a dead-zone hinge: nothing inside
+# +/- SOFT_RANGE_DEADZONE normalized units of typical, quadratic beyond (the
+# integrator's hard clamp is at 20). Every physiological excursion in the
+# teacher's pool (48 h-fast BHB 3.5 = 6.8 sigma is the largest) sits inside 8.
 SOFT_RANGE_REG = 0.001
+SOFT_RANGE_DEADZONE = 8.0
+
+# Iter 97 (review 4.2): per-marker trajectory bands, in NORM_SCALE units. The
+# band is the teacher's uncertainty — the PRD's "fence": a residual inside it
+# costs nothing. The observed vitals are what the ruler scores against real
+# data and where the teacher is best (band 0.15 = 4.5 mg/dL glucose, 1.5 bpm);
+# every other marker is an unobserved hormone or pool the teacher gets
+# approximately right (0.30 = 2.4 ug/dL cortisol, 12 pg/mL ghrelin). The old
+# single band 0.08 was below the CGM noise floor on glucose (2.4 mg/dL) and
+# demanded 0.024 C on temperature.
+OBSERVED_VITALS: tuple[str, ...] = ("glucose", "hr", "sbp", "dbp", "temp")
+DEFAULT_BAND_OBSERVED = 0.15
+DEFAULT_BAND_UNOBSERVED = 0.30
+
+
+def default_band_per_marker() -> dict[str, float]:
+    return {
+        m.id: (DEFAULT_BAND_OBSERVED if m.id in OBSERVED_VITALS else DEFAULT_BAND_UNOBSERVED)
+        for m in MARKERS
+    }
+
+
+def parse_band_per_marker(raw: str | None) -> dict[str, float] | None:
+    """``"glucose:0.15;hr:0.15;*:0.3"`` -> per-marker band map (``*`` = the rest).
+
+    ``None`` / empty returns ``None`` (use the scalar bands). Unknown marker ids
+    raise so a typo cannot silently leave a marker on the default.
+    """
+    if raw is None or not raw.strip():
+        return None
+    out = default_band_per_marker()
+    star: float | None = None
+    explicit: dict[str, float] = {}
+    for item in raw.split(";"):
+        item = item.strip()
+        if not item:
+            continue
+        name, _, val = item.partition(":")
+        name = name.strip()
+        band = float(val)
+        if band < 0:
+            raise ValueError(f"trajectory band for {name!r} must be >= 0")
+        if name == "*":
+            star = band
+        elif name in MARKER_INDEX_IDS:
+            explicit[name] = band
+        else:
+            raise ValueError(f"unknown marker id in --trajectory-band-per-marker: {name!r}")
+    if star is not None:
+        out = {k: star for k in out}
+    out.update(explicit)
+    return out
+
+
+def band_vector(band_map: dict[str, float]) -> torch.Tensor:
+    return torch.tensor([float(band_map[m.id]) for m in MARKERS], dtype=torch.float32)
+
+
+def shape_marker_loss(
+    pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor, band: torch.Tensor,
+) -> torch.Tensor:
+    """Window-mean + trend-sign supervision for markers with known teacher defects (review 4.2).
+
+    ``pred`` / ``target`` are ``[T, K]`` normalized series for K such markers,
+    ``mask`` marks observed target entries, ``band`` is ``[K]``. Two terms per
+    marker: the window-MEAN residual (banded, squared) and a hinge on the
+    TREND: the sign of (last-quarter mean - first-quarter mean) must agree with
+    the teacher's, with the teacher's own trend magnitude as the margin. No
+    pointwise term, so the teacher's mis-timed arc does not get copied.
+    """
+    T = pred.shape[0]
+    m = mask.float()
+    cnt = m.sum(dim=0).clamp(min=1.0)
+    resid_mean = ((pred - target) * m).sum(dim=0) / cnt
+    mean_term = F.relu(resid_mean.abs() - band).pow(2)
+    q = max(1, T // 4)
+    def _q(x: torch.Tensor, sl: slice) -> torch.Tensor:
+        mm = m[sl]
+        return (x[sl] * mm).sum(dim=0) / mm.sum(dim=0).clamp(min=1.0)
+    t_pred = _q(pred, slice(T - q, T)) - _q(pred, slice(0, q))
+    t_ref = _q(target, slice(T - q, T)) - _q(target, slice(0, q))
+    sign = torch.sign(t_ref).detach()
+    margin = t_ref.abs().detach()
+    trend_term = F.relu(margin - t_pred * sign).pow(2)
+    valid = (cnt > 1.0).float()
+    return ((mean_term + trend_term) * valid).sum() / valid.sum().clamp(min=1.0)
 
 
 def sample_window_start(
@@ -262,6 +358,15 @@ class TrajectoryRolloutSignal(TrainingSignal):
     # of unforced glucose drift in 4h fasted at zero).
     trajectory_band: float = 0.0
     trajectory_band_default: float = 0.0
+    # Iter 97 (review 4.2): per-marker bands (NORM_SCALE units). When set, this
+    # map applies to EVERY episode — the band is the teacher's uncertainty, which
+    # does not depend on whose embedding is being fitted — and the two scalar
+    # bands above are ignored. ``shape_markers`` are supervised by window mean +
+    # trend sign instead of pointwise (markers the teacher is known to get wrong
+    # in shape: the review lists ghrelin's flat fast, the HPA rhythm, the
+    # hepatic ledger).
+    trajectory_band_per_marker: dict[str, float] | None = None
+    shape_markers: tuple[str, ...] = ()
     # Landmark distillation: per-meal Δpeak / time-to-peak / AUC supervision
     # on glucose+insulin around each carb meal in the window.
     landmark_weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
@@ -296,6 +401,19 @@ class TrajectoryRolloutSignal(TrainingSignal):
         )
         self._norm_scales = torch.tensor(NORM_SCALE, dtype=torch.float32)
         self._abs_scale = torch.tensor(GUT_OUTPUT_SCALE, dtype=torch.float32)
+        self._band_vec: torch.Tensor | None = (
+            band_vector(self.trajectory_band_per_marker)
+            if self.trajectory_band_per_marker else None
+        )
+        for m in self.shape_markers:
+            if m not in MARKER_INDEX:
+                raise ValueError(f"unknown shape marker {m!r}")
+        self._shape_idx = torch.tensor(
+            [MARKER_INDEX[m] for m in self.shape_markers], dtype=torch.long,
+        )
+        self._pointwise_mask = torch.ones(STATE_DIM, dtype=torch.float32)
+        if len(self.shape_markers):
+            self._pointwise_mask[self._shape_idx] = 0.0
 
     @property
     def dataset(self) -> list[dict]:
@@ -325,6 +443,9 @@ class TrajectoryRolloutSignal(TrainingSignal):
         lm_w = self.landmark_weight.at(ctx.epoch)
         band_patient = float(self.trajectory_band)
         band_default = float(self.trajectory_band_default)
+        band_vec = self._band_vec.to(device) if self._band_vec is not None else None
+        pointwise_mask = self._pointwise_mask.to(device)
+        shape_idx = self._shape_idx.to(device)
 
         loss_sum = 0.0
         gut_sum = 0.0
@@ -332,6 +453,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
         verifier_sum = 0.0
         landmark_sum = 0.0
         landmark_meals = 0
+        shape_sum = 0.0
         n_windows = 0
 
         for patient_idx, patient_data in enumerate(self._dataset):
@@ -415,11 +537,19 @@ class TrajectoryRolloutSignal(TrainingSignal):
                 mask = ~torch.isnan(target)
                 diff = (pred_traj - target) / norm_scales
                 diff = torch.where(mask, diff, torch.zeros_like(diff))
-                denom = mask.float().sum().clamp(min=1.0)
                 # Banded distillation: only excursions outside ±band cost.
                 # band=0 reduces to pure imitation (identical to plain MSE/Huber).
-                band = band_default if is_default else band_patient
-                excess = F.relu(diff.abs() - band)
+                # Iter 97: per-marker bands when configured (review 4.2); the
+                # shape markers drop out of the pointwise term entirely.
+                if band_vec is not None:
+                    band_t: torch.Tensor | float = band_vec
+                    band = float(band_vec.mean())
+                else:
+                    band = band_default if is_default else band_patient
+                    band_t = band
+                pw_mask = mask.float() * pointwise_mask
+                denom = pw_mask.sum().clamp(min=1.0)
+                excess = F.relu(diff.abs() - band_t) * pw_mask
                 if traj_mode == "huber":
                     d = torch.tensor(self.huber_delta, device=device, dtype=diff.dtype)
                     quad = 0.5 * excess.pow(2)
@@ -429,7 +559,23 @@ class TrajectoryRolloutSignal(TrainingSignal):
                 else:
                     loss = excess.pow(2).sum() / denom
 
-                deviation = ((pred_traj - typicals) / norm_scales).pow(2).mean()
+                shape_component = 0.0
+                if len(self.shape_markers):
+                    sh_pred = pred_traj[:, shape_idx] / norm_scales[shape_idx]
+                    sh_tgt = torch.where(
+                        mask[:, shape_idx], target[:, shape_idx], torch.zeros_like(target[:, shape_idx]),
+                    ) / norm_scales[shape_idx]
+                    sh_band = band_vec[shape_idx] if band_vec is not None else torch.full(
+                        (len(self.shape_markers),), float(band), device=device,
+                    )
+                    sh_loss = shape_marker_loss(sh_pred, sh_tgt, mask[:, shape_idx], sh_band)
+                    loss = loss + sh_loss
+                    shape_component = float(sh_loss.detach().item())
+                    shape_sum += shape_component
+
+                # Catastrophe fence, not a pull (see SOFT_RANGE_DEADZONE).
+                z_typ = (pred_traj - typicals) / norm_scales
+                deviation = F.relu(z_typ.abs() - SOFT_RANGE_DEADZONE).pow(2).mean()
                 loss = loss + SOFT_RANGE_REG * deviation
 
                 cpl_component = 0.0
@@ -512,6 +658,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
                         "verifier_loss": vloss_component,
                         "landmark_loss": lm_component,
                         "landmark_meals_window": float(lm_meals_window),
+                        "shape_loss": shape_component,
                     },
                 )
                 loss_sum += float(loss.detach().item())
@@ -528,6 +675,8 @@ class TrajectoryRolloutSignal(TrainingSignal):
         if lm_w > 0:
             sub["landmark"] = landmark_sum / max(n_windows, 1)
             sub["landmark_meals"] = float(landmark_meals)
+        if len(self.shape_markers):
+            sub["shape"] = shape_sum / max(n_windows, 1)
 
         return SignalResult(
             loss_sum=loss_sum,
