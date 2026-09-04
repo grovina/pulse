@@ -210,7 +210,7 @@ def meals_in_window(
     """Meals the student can see in ``[win_start, win_end)``, on the window-offset clock.
 
     Iter 97 (review 1.4): a meal is visible for as long as the gut kernel is
-    active (``MEAL_ACTIVE_WINDOW_MIN`` = 480), not 120 min. With the 120-min
+    active (``MEAL_ACTIVE_WINDOW_MIN``, 720 min since iter 97), not 120 min. With the 120-min
     lookback, 67 % of sampled windows started from the teacher's FED state (the
     initial row carries the meal) while the inputs said "fasted"; those meals
     carried 47 % of the in-window nutrient flag. Same constant the benchmark and

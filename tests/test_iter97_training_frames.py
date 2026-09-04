@@ -61,12 +61,16 @@ def test_sleep_arm_matches_the_cohort_files_convention() -> None:
 # --- 1.4: meal lookback ------------------------------------------------------
 
 def test_meal_lookback_equals_gut_active_window() -> None:
-    assert MEAL_ACTIVE_WINDOW_MIN == 480.0
+    # The lookback IS the kernel's active window (720 since the teacher's slow
+    # carbohydrate component was made mass-conserving), never a separate literal.
+    assert MEAL_ACTIVE_WINDOW_MIN >= 480.0
     meals = [(1000.0, 60.0, 10.0, 15.0)]  # 300 min before the window
     win = meals_in_window(meals, win_start=1300, win_end=1540)
     assert len(win) == 1 and win[0].time == pytest.approx(-300.0)
     # Just outside the kernel's active window: invisible, as it is to the kernel.
-    assert meals_in_window([(1300 - 481.0, 60.0, 0.0, 0.0)], 1300, 1540) == []
+    assert meals_in_window([(1300 - MEAL_ACTIVE_WINDOW_MIN - 1.0, 60.0, 0.0, 0.0)], 1300, 1540) == []
+    # Just inside it: visible.
+    assert len(meals_in_window([(1300 - MEAL_ACTIVE_WINDOW_MIN + 1.0, 60.0, 0.0, 0.0)], 1300, 1540)) == 1
     # The legacy 120-min lookback would have dropped it (the review's 67 %).
     assert meals_in_window(meals, 1300, 1540, lookback_min=120.0) == []
 
