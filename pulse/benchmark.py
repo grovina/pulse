@@ -16,7 +16,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
 import re
+import subprocess
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -189,8 +191,27 @@ class BayesianCalibrationResult:
     map_loss: float
 
 
+# Iter 97 (review 5.2): the last dataset file this process loaded, so the ruler
+# fingerprint can name it without every caller threading the path through.
+_LAST_DATASET: dict[str, Any] = {}
+
+
+def _md5_of_file(path: str | Path) -> str | None:
+    try:
+        return hashlib.md5(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
 def load_benchmark_dataset(path: str) -> list[BenchmarkEpisode]:
-    payload = json.loads(Path(path).read_text())
+    text = Path(path).read_text()
+    payload = json.loads(text)
+    _LAST_DATASET.clear()
+    _LAST_DATASET.update({
+        "path": str(path),
+        "md5": hashlib.md5(text.encode("utf-8")).hexdigest(),
+        "meta": payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {},
+    })
     episodes_raw = payload.get("episodes", [])
     episodes: list[BenchmarkEpisode] = []
 
@@ -787,6 +808,127 @@ def predictive_distribution(
     }
 
 
+def _canon(v: Any) -> Any:
+    """Canonical JSON-able form with floats rounded to 6 significant digits, so
+    an episode digests identically before and after a JSON round trip."""
+    if isinstance(v, (bool, str)) or v is None:
+        return v
+    if isinstance(v, (int, np.integer)):
+        return int(v)
+    if isinstance(v, (float, np.floating)):
+        return float(f"{float(v):.6g}")
+    if isinstance(v, np.ndarray):
+        return [_canon(x) for x in v.tolist()]
+    if isinstance(v, dict):
+        return {str(k): _canon(v[k]) for k in sorted(v)}
+    if isinstance(v, (list, tuple)):
+        return [_canon(x) for x in v]
+    return str(v)
+
+
+def episode_truth_digest(ep: BenchmarkEpisode) -> str:
+    """sha256 of everything the ruler holds fixed for one episode: inputs and truth.
+
+    Iter 97 (review 5.2): the `teacher*` persistence MAPE -- a property of the
+    truth alone -- changed between the iter-95 and iter-96 reports on the same
+    dataset file, and nothing in the report could say why. This digest changes
+    whenever the teacher, the protocol, the check-ins or the eval points do.
+    """
+    payload = {
+        "user_id": ep.user_id,
+        "duration_min": int(ep.duration_min),
+        "source": ep.source,
+        "start_time_minutes": ep.start_time_minutes,
+        "initial_state": ep.initial_state,
+        "meals": [(m.time, m.carbs, m.fats, m.proteins) for m in ep.meals],
+        "calibration_check_ins": [
+            {"time": c.get("time"), "measurements": c.get("measurements", {})}
+            for c in ep.calibration_check_ins if isinstance(c, dict)
+        ],
+        "eval_measurements": sorted(
+            (p.time, p.marker_id, p.value) for p in ep.eval_measurements),
+        "sleep_wake": ep.sleep_wake,
+        "activity": ep.activity,
+    }
+    blob = json.dumps(_canon(payload), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def source_truth_digests(episodes: list[BenchmarkEpisode]) -> dict[str, dict[str, Any]]:
+    """Per source: episode count and one sha256 over the sorted episode digests."""
+    by_src: dict[str, list[str]] = {}
+    for ep in episodes:
+        by_src.setdefault(ep.source, []).append(episode_truth_digest(ep))
+    out: dict[str, dict[str, Any]] = {}
+    for src, digests in sorted(by_src.items()):
+        h = hashlib.sha256("\n".join(sorted(digests)).encode("utf-8")).hexdigest()
+        out[src] = {"episodes": len(digests), "sha256": h}
+    return out
+
+
+def _git_sha() -> str:
+    env = os.environ.get("PULSE_GIT_SHA")
+    if env:
+        return env
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parents[1]),
+            capture_output=True, text=True, timeout=5,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            dirty = subprocess.run(
+                ["git", "status", "--porcelain", "--untracked-files=no"],
+                cwd=str(Path(__file__).resolve().parents[1]),
+                capture_output=True, text=True, timeout=5,
+            )
+            sha = out.stdout.strip()
+            return sha + ("-dirty" if dirty.returncode == 0 and dirty.stdout.strip() else "")
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return "unknown"
+
+
+def calibration_settings() -> dict[str, Any]:
+    """The eval-time calibration knobs as the gate will run them."""
+    return {
+        "steps": BENCHMARK_GATE_CALIBRATE_STEPS,
+        "lr": BENCHMARK_GATE_CALIBRATE_LR,
+        "l2_weight": BENCHMARK_GATE_CALIBRATE_L2,
+        "prior_weight": BENCHMARK_GATE_PRIOR_WEIGHT,
+        "max_norm": BENCHMARK_GATE_CALIBRATE_MAX_NORM,
+        "forward_map": "continuous [0, last_obs] in the episode frame (iter 97)",
+    }
+
+
+def ruler_fingerprint(
+    episodes: list[BenchmarkEpisode],
+    thresholds: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """What the ruler WAS when a number was produced (review 5.2).
+
+    git SHA, per-source sha256 of the truth arrays, dataset path + md5 (the
+    last file ``load_benchmark_dataset`` read; ``PULSE_BENCHMARK_DATASET_URI``
+    if the caller exported it), thresholds md5, calibration settings, the
+    frozen-ruler file if one was used, and the sigma_obs floors.
+    """
+    thr_blob = json.dumps(thresholds or {}, sort_keys=True, separators=(",", ":"))
+    return {
+        "git_sha": _git_sha(),
+        "sources": source_truth_digests(episodes),
+        "dataset_uri": os.environ.get("PULSE_BENCHMARK_DATASET_URI"),
+        "dataset_path": _LAST_DATASET.get("path"),
+        "dataset_md5": _LAST_DATASET.get("md5"),
+        "dataset_meta": _LAST_DATASET.get("meta"),
+        "thresholds_md5": hashlib.md5(thr_blob.encode("utf-8")).hexdigest(),
+        "calibration": calibration_settings(),
+        "frozen_ruler": os.environ.get("PULSE_BENCHMARK_FROZEN_RULER"),
+        "sigma_obs": dict(_DEFAULT_SIGMA_OBS),
+        "python": platform.python_version(),
+        "torch": str(getattr(torch, "__version__", "?")),
+        "numpy": str(np.__version__),
+    }
+
+
 def _build_observation_windows(
     observations: list[MeasurementPoint],
     duration_min: int,
@@ -1308,6 +1450,7 @@ def evaluate_model_against_benchmark(
 
     return {
         "episodes": len(episodes),
+        "ruler_fingerprint": ruler_fingerprint(episodes, thresholds),
         # Continuity line (legacy-dominated, point-pooled). Not the headline.
         "overall_weighted_mape": overall_weighted_mape,
         "headline": headline,

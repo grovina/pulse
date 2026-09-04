@@ -28,6 +28,12 @@ baseline numbers from iter 38.
 
 from __future__ import annotations
 
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 
 from .cohorts.sleep import (
@@ -36,7 +42,13 @@ from .cohorts.sleep import (
     sleep_two_nights_adequate,
 )
 from .full_body import PatientParams, randomize_params, simulate_full_body
-from ..benchmark import BenchmarkEpisode, MeasurementPoint
+from ..benchmark import (
+    BenchmarkEpisode,
+    MeasurementPoint,
+    episode_truth_digest,
+    load_benchmark_dataset,
+    source_truth_digests,
+)
 from ..modules.gut import MealEvent
 from ..types import MARKER_INDEX
 
@@ -356,8 +368,78 @@ def leaked_eval_points(ep: BenchmarkEpisode) -> list[MeasurementPoint]:
     return [p for p in ep.eval_measurements if p.time <= cutoff]
 
 
-def all_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
-    """All cohort episodes injected into the bench gate at runtime."""
+# Iter 97 (review 5.2): the in-process truth can be FROZEN to a file and
+# reloaded, so an old artifact can be re-scored on exactly the ruler a report
+# was produced with, even after the teacher changes. ``PULSE_BENCHMARK_FROZEN_RULER``
+# names the file; the report's ruler_fingerprint records it and the per-source
+# truth digests, which are identical for a file and the live generator that
+# produced it.
+FROZEN_RULER_ENV = "PULSE_BENCHMARK_FROZEN_RULER"
+IN_PROCESS_SOURCES: tuple[str, ...] = ("teacher", "teacher_dynamic")
+
+
+def _episode_to_json(ep: BenchmarkEpisode) -> dict[str, Any]:
+    return {
+        "user_id": ep.user_id,
+        "duration_min": int(ep.duration_min),
+        "source": ep.source,
+        "start_time_minutes": ep.start_time_minutes,
+        "initial_state": [float(x) for x in ep.initial_state],
+        "meals": [
+            {"time": m.time, "carbs": m.carbs, "fats": m.fats, "proteins": m.proteins}
+            for m in ep.meals
+        ],
+        "calibration_check_ins": [
+            {"time": c["time"], "measurements": dict(c.get("measurements", {}))}
+            for c in ep.calibration_check_ins if isinstance(c, dict)
+        ],
+        "eval_measurements": [
+            {"time": p.time, "marker_id": p.marker_id, "value": p.value}
+            for p in ep.eval_measurements
+        ],
+        "sleep_wake": [float(x) for x in ep.sleep_wake] if ep.sleep_wake is not None else None,
+        "activity": [float(x) for x in ep.activity] if ep.activity is not None else None,
+        "truth_digest": episode_truth_digest(ep),
+    }
+
+
+def export_frozen_ruler(path: str | Path, episodes: list[BenchmarkEpisode] | None = None,
+                        git_sha: str | None = None) -> dict[str, Any]:
+    """Write the in-process episodes (inputs + truth) to ``path``; returns the meta block."""
+    eps = list(episodes) if episodes is not None else _live_cohort_benchmark_episodes()
+    meta = {
+        "builtBy": "pulse.knowledge.benchmark_extras.export_frozen_ruler",
+        "frozen_at": datetime.now(timezone.utc).isoformat(),
+        "git_sha": git_sha,
+        "sources": source_truth_digests(eps),
+        "note": "In-process teacher truth, frozen. Load with PULSE_BENCHMARK_FROZEN_RULER=<path>.",
+    }
+    payload = {"meta": meta, "episodes": [_episode_to_json(e) for e in eps]}
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload))
+    return meta
+
+
+def load_frozen_ruler(path: str | Path) -> list[BenchmarkEpisode]:
+    """Reload a frozen ruler and verify every episode still digests as written."""
+    eps = load_benchmark_dataset(str(path))
+    raw = json.loads(Path(path).read_text())
+    expected = {e["user_id"]: e.get("truth_digest") for e in raw.get("episodes", [])}
+    for ep in eps:
+        want = expected.get(ep.user_id)
+        got = episode_truth_digest(ep)
+        if want is not None and want != got:
+            raise ValueError(
+                f"frozen ruler {path}: {ep.user_id} digests {got[:12]} but the file says "
+                f"{want[:12]} -- the file or the loader changed")
+        if ep.source not in IN_PROCESS_SOURCES:
+            raise ValueError(f"frozen ruler {path}: {ep.user_id} has source {ep.source!r}, "
+                             f"expected one of {IN_PROCESS_SOURCES}")
+    return eps
+
+
+def _live_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
     eps = distillation_pool_episodes() + cohort_meal_in_eval_window_episodes()
     for ep in eps:
         leaked = leaked_eval_points(ep)
@@ -366,3 +448,20 @@ def all_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
                 f"{ep.user_id}: {len(leaked)} eval point(s) at or before the last "
                 f"check-in (t={last_check_in_time(ep)}) -- see review 5.6")
     return eps
+
+
+def all_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
+    """All cohort episodes injected into the bench gate at runtime.
+
+    Generated live from the current teacher, unless ``PULSE_BENCHMARK_FROZEN_RULER``
+    names a file written by ``export_frozen_ruler`` -- then that file IS the
+    in-process ruler (review 5.2).
+    """
+    frozen = os.environ.get(FROZEN_RULER_ENV)
+    if frozen:
+        eps = load_frozen_ruler(frozen)
+        print(f"[bench] in-process ruler FROZEN from {frozen}: "
+              + ", ".join(f"{k}={v['episodes']}" for k, v in source_truth_digests(eps).items()),
+              flush=True)
+        return eps
+    return _live_cohort_benchmark_episodes()
