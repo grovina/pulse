@@ -88,6 +88,10 @@ class PhysiologyRulesSignal(TrainingSignal):
     # signal's weight budget, and the adaptive factor MULTIPLIES ``rule.weight``
     # instead of replacing it (see ``training.adaptive_weights``).
     adaptive_cap_share: float = 0.25
+    # Iter 97 (review 4.1 / 4.9): how many arm groups to roll per compute call
+    # (0 = all), round-robin, so the interleaved aux steps of an epoch cover
+    # every arm while each step stays cheap.
+    arms_per_step: int = 0
 
     name: str = "physiology_rules"
     source: str = "literature_plausibility_constraints"
@@ -122,6 +126,7 @@ class PhysiologyRulesSignal(TrainingSignal):
         # lazily on the first epoch the rules produce diagnostics so a cold
         # start doesn't zero-weight everything.
         self._violation_ema: dict[str, float] = {}
+        self._arm_cursor: int = 0
         self._base_weight_sum: float = sum(rule.weight for rule in self.rules)
         self._scale_by_rule: dict[str, float] = {rule.name: float(rule.scale) for rule in self.rules}
         self._base_weight_by_rule: dict[str, float] = {rule.name: float(rule.weight) for rule in self.rules}
@@ -288,20 +293,34 @@ class PhysiologyRulesSignal(TrainingSignal):
         for rule in self.rules:
             for arm in rule.arms:
                 groups.setdefault((arm.label, rule.init_mode), []).append((rule, arm))
+        group_items = list(groups.items())
+        if self.arms_per_step > 0 and self.arms_per_step < len(group_items):
+            k = int(self.arms_per_step)
+            start = self._arm_cursor % len(group_items)
+            group_items = [group_items[(start + i) % len(group_items)] for i in range(k)]
+            self._arm_cursor = (start + k) % len(groups)
 
         # Per-rule detached accumulators — reconstruct the exact per-rule
-        # reported loss + diagnostics from the arm-grouped passes.
+        # reported loss + diagnostics from the arm-grouped passes. ``n_units``
+        # counts the rule's arms over ALL groups, so a slice of the groups
+        # contributes the matching fraction of the rule's full loss (its
+        # expectation over the round-robin is the full loss); diagnostics are
+        # over the arms actually visited this call.
         n_units = {rule.name: len(rule.arms) * B for rule in self.rules}
+        visited = {rule.name: 0 for rule in self.rules}
         sq_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
         v_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
         sat_count: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
 
-        for (label, _init_mode), members in groups.items():
+        for (label, _init_mode), members in group_items:
             rule_repr, arm_repr = members[0]
             init_state = init_fn(rule_repr, arm_repr)
             emb_list = build_emb_list()
             embs = torch.stack(emb_list, dim=0)  # [B, EMB]
-            traj = _rollout_arm_batched(model, embs, arm_repr, init_state)  # [B, T, STATE]
+            traj = _rollout_arm_batched(
+                model, embs, arm_repr, init_state,
+                input_dropout=float(ctx.input_dropout), rng=ctx.rng,
+            )  # [B, T, STATE]
             rule_ctx = rule_context_for_arm(arm_repr)
 
             arm_loss = None
@@ -328,6 +347,7 @@ class PhysiologyRulesSignal(TrainingSignal):
                 sq_sum[rule.name] += float((vs_d / rule.scale).pow(2).sum().item())
                 v_sum[rule.name] += float(vs_d.sum().item())
                 sat_count[rule.name] += float((vs_d <= 0).float().sum().item())
+                visited[rule.name] += B
 
             if arm_loss is not None:
                 arm_loss.backward()
@@ -337,13 +357,15 @@ class PhysiologyRulesSignal(TrainingSignal):
         raw_weighted_sum = 0.0
         diags: dict[str, dict[str, float]] = {}
         for rule in self.rules:
-            n_R = n_units[rule.name] or 1
-            loss_R = sq_sum[rule.name] / n_R
+            n_V = visited[rule.name]
+            if n_V == 0:
+                continue  # not visited this call (arm slice); EMA keeps its value
+            loss_R = sq_sum[rule.name] / n_V
             rw = applied_weight(rule)
             raw_weighted_sum += loss_R * rw
             diags[rule.name] = {
-                "violation_mean": v_sum[rule.name] / n_R,
-                "satisfied_fraction": sat_count[rule.name] / n_R,
+                "violation_mean": v_sum[rule.name] / n_V,
+                "satisfied_fraction": sat_count[rule.name] / n_V,
                 "applied_weight": float(rw),
             }
 
@@ -354,7 +376,7 @@ class PhysiologyRulesSignal(TrainingSignal):
         if self.adaptive:
             self._update_violation_ema(diags)
 
-        sub_metrics: dict[str, float] = {}
+        sub_metrics: dict[str, float] = {"n_arm_groups": float(len(group_items))}
         for rname, d in diags.items():
             sub_metrics[f"viol_{rname}"] = d["violation_mean"]
             sub_metrics[f"sat_{rname}"] = d["satisfied_fraction"]

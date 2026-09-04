@@ -62,6 +62,25 @@ class SignalContext:
     # epoch, so the trainer knows to apply one joint clip+step. Reset per epoch
     # (a fresh SignalContext is built each epoch).
     aux_accumulated: bool = False
+    # Iter 97 (review 4.11): per-signal gradient bookkeeping. ``aux_grad_norms``
+    # collects the L2 norm of EACH aux signal's own (weighted) gradient
+    # contribution, before the joint clip; ``traj_grad_norms`` the per-window
+    # pre-clip norm of the trajectory signal. ``aux_signal_clip`` > 0 rescales a
+    # single signal's contribution to at most that norm before it joins the
+    # bundle, so one loud signal cannot make the joint clip erase the others.
+    aux_grad_norms: dict[str, list[float]] = field(default_factory=dict)
+    traj_grad_norms: list[float] = field(default_factory=list)
+    aux_signal_clip: float = 0.0
+    # Iter 97 (review 4.1): cumulative optimizer steps that carried each aux
+    # signal's gradient, across the whole run (the trainer passes one dict for
+    # the run's lifetime and records it in the checkpoint).
+    aux_steps_by_signal: dict[str, int] = field(default_factory=dict)
+    # Iter 97 (review 4.9): probability that an arm rollout drops its sleep /
+    # activity series (phase 3 input dropout for the cohort / rules signals).
+    input_dropout: float = 0.0
+
+    def record_aux_grad(self, signal: str, norm: float) -> None:
+        self.aux_grad_norms.setdefault(signal, []).append(float(norm))
 
 
 @dataclass

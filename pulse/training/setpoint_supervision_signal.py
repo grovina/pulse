@@ -108,9 +108,14 @@ class SetpointSupervisionSignal(TrainingSignal):
             model.metabolic.glucose_baseline_net(e_met).squeeze(-1)
         )  # [P]
         e_cvs = model.embedding_projections["cardiovascular"](emb)
-        pred_cvs_z = _cvs._CVS_BASELINE_MAX_Z * torch.tanh(
-            model.cardiovascular.setpoint_net(e_cvs)
-        )  # [P, 4]
+        cvs = model.cardiovascular
+        if hasattr(cvs, "setpoints_z"):
+            # Iter 97 (student hand-off): the CVS setpoint head no longer emits four
+            # z-scores — HRV and pulse pressure are LOG offsets and SBP = DBP + PP by
+            # construction. The module owns the decode; we compare in its z frame.
+            pred_cvs_z = cvs.setpoints_z(e_cvs)  # [P, 4] = (hr, hrv, sbp, dbp)
+        else:  # pre-iter-97 head: four tanh-bounded z-scores
+            pred_cvs_z = _cvs._CVS_BASELINE_MAX_Z * torch.tanh(cvs.setpoint_net(e_cvs))
         # Iter 91: thermoreg now has a per-patient setpoint head too (it was a bare MLP with no
         # restoring structure — the same gap CVS had until iter 89).
         e_thm = model.embedding_projections["thermoreg"](emb)

@@ -135,10 +135,39 @@ def safe_step(
             loss_value=float(loss.detach().item()),
             extra=merged,
         )
-    nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
+    total_norm = nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
+    ctx.traj_grad_norms.append(float(total_norm))
     ctx.optimizer.step()
     ctx.optimizer.zero_grad()
     return float(loss.detach().item())
+
+
+def _delta_norm_and_clip(
+    ctx: SignalContext,
+    snapshot: list[torch.Tensor | None],
+    *,
+    signal: str,
+) -> float:
+    """Norm of THIS signal's gradient contribution (grad minus the snapshot
+    taken before its backward), recorded per signal; rescaled in place to
+    ``ctx.aux_signal_clip`` when that is set (iter 97, review 4.11)."""
+    sum_sq = 0.0
+    deltas: list[tuple[torch.nn.Parameter, torch.Tensor | None, torch.Tensor]] = []
+    for p, g0 in zip(ctx.params, snapshot):
+        if p.grad is None:
+            continue
+        d = p.grad.detach() if g0 is None else p.grad.detach() - g0
+        sum_sq += float(d.pow(2).sum().item())
+        deltas.append((p, g0, d))
+    norm = math.sqrt(sum_sq)
+    ctx.record_aux_grad(signal, norm)
+    clip = float(ctx.aux_signal_clip)
+    if clip > 0.0 and norm > clip:
+        f = clip / (norm + 1e-12)
+        for p, g0, d in deltas:
+            base = torch.zeros_like(p.grad) if g0 is None else g0
+            p.grad.copy_(base + d * f)
+    return norm
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +254,9 @@ def accumulate_grad(
             f"n_nan={gstats['n_nan_params']:.0f} n_inf={gstats['n_inf_params']:.0f}",
         )
         return lv
+    _delta_norm_and_clip(ctx, snapshot, signal=signal)
     ctx.aux_accumulated = True
+    ctx.aux_steps_by_signal[signal] = ctx.aux_steps_by_signal.get(signal, 0) + 1
     return lv
 
 
@@ -251,7 +282,9 @@ def finalize_aux_accumulation(
             f"n_nan={gstats['n_nan_params']:.0f} n_inf={gstats['n_inf_params']:.0f}",
         )
         return False
+    _delta_norm_and_clip(ctx, snapshot, signal=signal)
     ctx.aux_accumulated = True
+    ctx.aux_steps_by_signal[signal] = ctx.aux_steps_by_signal.get(signal, 0) + 1
     return True
 
 
@@ -272,7 +305,9 @@ def joint_aux_step(ctx: SignalContext, *, signal: str = "joint_aux") -> dict[str
             loss_value=float("nan"),
             extra=gstats,
         )
-    nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
+    total_norm = nn.utils.clip_grad_norm_(ctx.params, max_norm=ctx.grad_clip)
+    gstats["joint_grad_norm_pre_clip"] = float(total_norm)
     ctx.optimizer.step()
     ctx.optimizer.zero_grad()
+    ctx.aux_accumulated = False
     return gstats

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -107,6 +108,9 @@ def _rollout_arm_states(
     embeddings: torch.Tensor,
     arm: CohortArmSpec,
     state_batch: torch.Tensor,
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
 ) -> torch.Tensor:
     """Roll one arm forward for ``N`` (embedding, initial-state) pairs.
 
@@ -131,6 +135,15 @@ def _rollout_arm_states(
     act = _optional_series_tensor(
         f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
     )
+    # Iter 97 (review 4.9): phase-3 input dropout — with probability
+    # ``input_dropout`` each series is withheld and the model runs on its learned
+    # default, so "no sleep log / no activity log" is a trained condition for the
+    # literature signals too, not only for trajectory imitation.
+    if input_dropout > 0.0 and rng is not None:
+        if rng.random() < input_dropout:
+            sw = None
+        if rng.random() < input_dropout:
+            act = None
     gut = precompute_gut_outputs(
         model, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
@@ -160,6 +173,9 @@ def _rollout_arm_batched(
     embeddings: torch.Tensor,
     arm: CohortArmSpec,
     initial_state: torch.Tensor,
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
 ) -> torch.Tensor:
     """Roll one arm forward for ``B`` embeddings sharing one initial state.
 
@@ -168,7 +184,7 @@ def _rollout_arm_batched(
     wrapper over ``_rollout_arm_states`` that broadcasts the single state.
     """
     state_b = initial_state.unsqueeze(0).expand(int(embeddings.shape[0]), -1)
-    return _rollout_arm_states(model, embeddings, arm, state_b)
+    return _rollout_arm_states(model, embeddings, arm, state_b, input_dropout=input_dropout, rng=rng)
 
 
 def _arm_window(spec: CohortStatisticSpec, arm_idx: int) -> StatisticWindow:
@@ -297,6 +313,9 @@ def cohort_statistic_loss_group(
     specs: list[CohortStatisticSpec],
     initial_states: list[torch.Tensor],
     arms_override: tuple[CohortArmSpec, ...] | None = None,
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
 ) -> dict[str, tuple[torch.Tensor, float, float]]:
     """Batched per-spec loss for specs that share one arm protocol (iter 79).
 
@@ -335,7 +354,9 @@ def cohort_statistic_loss_group(
     state_batch = init_stack.repeat_interleave(B, dim=0)  # [S*B, STATE]
 
     arm_trajs: list[torch.Tensor] = [
-        _rollout_arm_states(model, emb_batch, arm, state_batch)  # [S*B, T, STATE]
+        _rollout_arm_states(
+            model, emb_batch, arm, state_batch, input_dropout=input_dropout, rng=rng,
+        )  # [S*B, T, STATE]
         for arm in arms
     ]
 

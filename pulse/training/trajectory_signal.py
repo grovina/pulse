@@ -117,6 +117,25 @@ def parse_band_per_marker(raw: str | None) -> dict[str, float] | None:
     return out
 
 
+# Iter 97 (review 4.9): "meal logged, macros unknown". With probability
+# ``meal_macro_dropout`` a window's meals keep their TIME but their macros are
+# replaced by the population-typical meal (the mean of the teacher's meal
+# generator: ~60 g carbohydrate, 20 g fat, 25 g protein), i.e. the student sees
+# the nutrient flag and a default composition, not the true grams. The target
+# trajectory still carries the true meal, so the band absorbs the difference
+# and the student learns to be robust to unquantified meals — the PRD's
+# "missing inputs are a normal condition". Dropping the meal entirely would
+# ask the student to produce a meal response it cannot know about, which
+# trains hallucination; a true "macros unknown" input flag is the student
+# layer's to add.
+DEFAULT_MEAL_MACROS: tuple[float, float, float] = (60.0, 20.0, 25.0)
+
+
+def meals_with_default_macros(meals: list[MealEvent]) -> list[MealEvent]:
+    c, f, p = DEFAULT_MEAL_MACROS
+    return [MealEvent(time=m.time, carbs=c, fats=f, proteins=p) for m in meals]
+
+
 def band_vector(band_map: dict[str, float]) -> torch.Tensor:
     return torch.tensor([float(band_map[m.id]) for m in MARKERS], dtype=torch.float32)
 
@@ -367,6 +386,10 @@ class TrajectoryRolloutSignal(TrainingSignal):
     # hepatic ledger).
     trajectory_band_per_marker: dict[str, float] | None = None
     shape_markers: tuple[str, ...] = ()
+    # Iter 97 (review 4.9): probability that a window's meals are reduced to
+    # "logged, macros unknown" (see DEFAULT_MEAL_MACROS). The trainer raises
+    # this (and ``input_dropout``) for phase 3.
+    meal_macro_dropout: float = 0.0
     # Landmark distillation: per-meal Δpeak / time-to-peak / AUC supervision
     # on glucose+insulin around each carb meal in the window.
     landmark_weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
@@ -433,6 +456,29 @@ class TrajectoryRolloutSignal(TrainingSignal):
         embeddings: nn.Embedding,
         ctx: SignalContext,
     ) -> SignalResult:
+        """Run every window this epoch; see ``iter_windows`` for the interleaved form."""
+        for _ in self.iter_windows(model, embeddings, ctx):
+            pass
+        return self.last_result
+
+    @property
+    def last_result(self) -> SignalResult:
+        return getattr(self, "_last_result", SignalResult())
+
+    def iter_windows(
+        self,
+        model: nn.Module,
+        embeddings: nn.Embedding,
+        ctx: SignalContext,
+    ):
+        """Generator: one per-window optimizer step per ``yield``.
+
+        Iter 97 (review 4.1): the trainer drives this generator and interleaves
+        one joint auxiliary step every k windows, instead of running all ~96
+        windows and then a single aux step per epoch (25 literature steps in a
+        whole run vs ~5,300 imitation steps). ``last_result`` holds the epoch's
+        aggregate once the generator is exhausted.
+        """
         device = ctx.device
         rng = ctx.rng
         norm_scales = self._norm_scales.to(device)
@@ -455,6 +501,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
         landmark_meals = 0
         shape_sum = 0.0
         n_windows = 0
+        n_defaulted = 0
 
         for patient_idx, patient_data in enumerate(self._dataset):
             is_default = bool(patient_data.get("is_default", False))
@@ -497,6 +544,10 @@ class TrajectoryRolloutSignal(TrainingSignal):
                     embedding = embeddings(pid_tensor)
 
                 win_meals = meals_in_window(patient_meals, win_start, win_end)
+                meals_defaulted = False
+                if win_meals and self.meal_macro_dropout > 0.0 and rng.random() < self.meal_macro_dropout:
+                    win_meals = meals_with_default_macros(win_meals)
+                    meals_defaulted = True
 
                 sw_tensor = None
                 act_tensor = None
@@ -659,11 +710,14 @@ class TrajectoryRolloutSignal(TrainingSignal):
                         "landmark_loss": lm_component,
                         "landmark_meals_window": float(lm_meals_window),
                         "shape_loss": shape_component,
+                        "meals_defaulted": float(meals_defaulted),
                     },
                 )
                 loss_sum += float(loss.detach().item())
                 gut_sum += float(gut_loss.detach().item())
                 n_windows += 1
+                n_defaulted += int(meals_defaulted)
+                yield n_windows
 
         sub: dict[str, float] = {
             "gut": gut_sum / max(n_windows, 1),
@@ -677,8 +731,9 @@ class TrajectoryRolloutSignal(TrainingSignal):
             sub["landmark_meals"] = float(landmark_meals)
         if len(self.shape_markers):
             sub["shape"] = shape_sum / max(n_windows, 1)
+        sub["meals_defaulted"] = float(n_defaulted)
 
-        return SignalResult(
+        self._last_result = SignalResult(
             loss_sum=loss_sum,
             n_units=n_windows,
             sub_metrics=sub,

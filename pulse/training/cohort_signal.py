@@ -370,6 +370,7 @@ class CohortStatisticSignal(TrainingSignal):
                     n_perturbed += 1
             results = cohort_statistic_loss_group(
                 model, emb_list, group_specs, init_states, arms_override=arms_override,
+                input_dropout=float(ctx.input_dropout), rng=ctx.rng,
             )
             group_loss = None
             for spec in group_specs:

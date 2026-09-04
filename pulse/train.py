@@ -127,6 +127,7 @@ from .training.trajectory_signal import (
     DEFAULT_CONTRIBUTION_WEIGHTS,
     TRAIN_WINDOW,
     normalize_contribution_weights,
+    parse_band_per_marker,
 )
 from .types import EMBEDDING_DIM, MARKERS
 
@@ -198,6 +199,42 @@ def _split_markers(raw: str) -> tuple[str, ...]:
     backward compat (where ``,`` happens not to be present)."""
     pieces = raw.replace(",", ":").split(":")
     return tuple(p.strip() for p in pieces if p.strip())
+
+
+def _parse_aux_cadence(raw: str | None) -> dict[str, int]:
+    """``"cold_model_distillation:3;carb_mass_balance:4"`` -> {name: every_n_aux_steps}.
+
+    Iter 97 (review 4.1): with one joint aux step every k trajectory windows,
+    an expensive signal can run on every n-th aux step instead of every one so
+    the epoch's wall-clock stays flat while the cheap signals get every step.
+    """
+    out: dict[str, int] = {}
+    if not raw or not raw.strip():
+        return out
+    for item in raw.split(";"):
+        item = item.strip()
+        if not item:
+            continue
+        name, _, val = item.partition(":")
+        n = int(val)
+        if n < 1:
+            raise ValueError(f"aux cadence for {name!r} must be >= 1")
+        out[name.strip()] = n
+    return out
+
+
+def _merge_results(parts: list[SignalResult]) -> SignalResult:
+    """Sum losses / units over the aux steps of an epoch; average sub-metrics."""
+    if not parts:
+        return SignalResult()
+    loss_sum = sum(float(r.loss_sum) for r in parts)
+    n_units = sum(int(r.n_units) for r in parts)
+    keys: dict[str, list[float]] = {}
+    for r in parts:
+        for k, v in r.sub_metrics.items():
+            keys.setdefault(k, []).append(float(v))
+    sub = {k: float(np.mean(v)) for k, v in keys.items()}
+    return SignalResult(loss_sum=loss_sum, n_units=n_units, sub_metrics=sub)
 
 
 def _load_contribution_weights_json(path: str | None) -> dict[str, float] | None:
@@ -338,6 +375,34 @@ def train(
     phase1_epochs: int | None = None,
     phase2_epochs: int = 0,
     phase2_lr: float | None = None,
+    # Iter 97 (review 4.1): phase 2's cosine floor (absolute LR); None keeps
+    # the legacy 5 % of phase2_lr.
+    phase2_lr_floor: float | None = None,
+    # Iter 97 (review 4.9): phase 3 = "diversity and stress-testing" (PRD phased
+    # training, stage 4): every signal stays on, input dropout is raised on ALL
+    # inputs (sleep, activity, and meal macros), at its own LR.
+    phase3_epochs: int = 0,
+    phase3_lr: float | None = None,
+    phase3_input_dropout: float | None = None,
+    phase3_meal_dropout: float = 0.0,
+    # Iter 97 (review 4.1): one joint aux step every k trajectory windows
+    # (0 = once per epoch, the pre-97 cadence); per-signal cadence in aux steps.
+    aux_every_k_windows: int = 0,
+    aux_cadence: dict[str, int] | None = None,
+    # Iter 97 (review 4.11): per-signal contribution clip before the joint clip.
+    aux_signal_clip: float = 0.0,
+    cohort_groups_per_step: int = 0,
+    rules_arms_per_step: int = 0,
+    # Iter 97 (review 4.2): per-marker trajectory bands and shape-only markers.
+    trajectory_band_per_marker: dict[str, float] | None = None,
+    trajectory_shape_markers: tuple[str, ...] = (),
+    # Iter 97 (review 4.7 / 4.10).
+    cold_distill_level_band: float = 0.0,
+    perturb_protocols: bool = False,
+    # Iter 97 (review 1.5): the resolved configuration, recorded verbatim in
+    # the checkpoint so a run can be checked against its recipe.
+    train_config: dict[str, Any] | None = None,
+    spec_path: str | None = None,
     gcs_bucket: str | None = None,
     gcs_object: str | None = None,
     benchmark_dataset_uri: str | None = None,
@@ -365,6 +430,13 @@ def train(
         p2_lr = lr
         total_epochs = n_epochs
         phase_boundary = 0
+    # Iter 97: phase 3 (input-dropout stress-test) follows phase 2.
+    p3_epochs = int(phase3_epochs) if phased else 0
+    p3_lr = phase3_lr if phase3_lr is not None else p2_lr
+    p3_start = total_epochs
+    total_epochs += p3_epochs
+    p2_floor = float(phase2_lr_floor) if phase2_lr_floor is not None else p2_lr * 0.05
+    aux_cadence = dict(aux_cadence or {})
 
     enable_at = phase_boundary if phased else 0
 
@@ -388,6 +460,8 @@ def train(
         landmark_post_window=landmark_post_window,
         landmark_min_carbs=landmark_min_carbs,
         n_default_patients=n_default_patients,
+        trajectory_band_per_marker=trajectory_band_per_marker,
+        shape_markers=tuple(trajectory_shape_markers),
     )
     cohort_signal = CohortStatisticSignal(
         specs=list(ALL_COHORT_STATISTICS),
@@ -396,6 +470,8 @@ def train(
         weight=WeightSchedule(cohort_statistic_weight, enable_at_epoch=enable_at),
         use_cold_initial_state=cohort_use_cold_init,
         adaptive=cohort_statistic_adaptive,
+        perturb_protocols=perturb_protocols,
+        groups_per_step=cohort_groups_per_step,
     )
     dose_response_protocol = DoseResponseProtocol(
         marker_targets=tuple(dose_response_markers),
@@ -405,6 +481,7 @@ def train(
         sample_patients=dose_response_sample_patients,
         weight=WeightSchedule(dose_response_weight, enable_at_epoch=enable_at),
         protocol=dose_response_protocol,
+        perturb_protocols=perturb_protocols,
     )
     gut_dose_sweep_protocol = GutDoseSweepProtocol()
     gut_dose_sweep_signal = GutDoseSweepSignal(
@@ -429,6 +506,7 @@ def train(
     )
     postprandial_recovery_signal = PostprandialRecoverySignal(
         weight=WeightSchedule(postprandial_recovery_weight, enable_at_epoch=0),
+        perturb_protocols=perturb_protocols,
     )
     default_baseline_signal = DefaultBaselineSignal(
         weight=WeightSchedule(default_baseline_weight, enable_at_epoch=0),
@@ -493,6 +571,7 @@ def train(
         anchor_local_scale_floor=cold_distill_anchor_local_scale_floor,
         anchor_long_window=cold_distill_anchor_long_window,
         anchor_long_samples=cold_distill_anchor_long_samples,
+        anchor_level_band=cold_distill_level_band,
     )
     physiology_rules_signal = PhysiologyRulesSignal(
         rules=list(PHYSIOLOGY_RULES),
@@ -500,6 +579,7 @@ def train(
         sample_patients=physiology_rules_sample_patients,
         weight=WeightSchedule(physiology_rules_weight, enable_at_epoch=enable_at),
         adaptive=physiology_rules_adaptive,
+        arms_per_step=rules_arms_per_step,
     )
     signals: list[TrainingSignal] = [
         trajectory_signal,
@@ -596,6 +676,17 @@ def train(
         f"Default-patient distillation: {n_default_patients} extra cold-model episode(s) "
         f"supervised at zero embedding; cohort cold initial state: {cohort_use_cold_init}",
     )
+    print(
+        f"Aux cadence (iter 97): one joint aux step every {aux_every_k_windows} trajectory "
+        f"window(s) (0 = once per epoch); per-signal cadence={aux_cadence or '{}'}; "
+        f"per-signal clip={aux_signal_clip}; cohort groups/step={cohort_groups_per_step}; "
+        f"rule arm groups/step={rules_arms_per_step}",
+    )
+    print(
+        f"Trajectory bands per marker: {trajectory_band_per_marker or 'scalar'}; "
+        f"shape markers={tuple(trajectory_shape_markers)}; distill level band={cold_distill_level_band}; "
+        f"perturb protocols={perturb_protocols}",
+    )
 
     model = ModularPhysiologyNetwork(
         metabolic_hidden=hidden_dim,
@@ -634,7 +725,9 @@ def train(
     if phased:
         print(
             f"Phased training: Phase 1 = {p1_epochs} epochs (distillation), "
-            f"Phase 2 = {phase2_epochs} epochs (full)",
+            f"Phase 2 = {phase2_epochs} epochs (full, lr {p2_lr} -> floor {p2_floor})"
+            + (f", Phase 3 = {p3_epochs} epochs (input dropout {phase3_input_dropout}, "
+               f"meal-macro dropout {phase3_meal_dropout}, lr {p3_lr})" if p3_epochs else ""),
         )
     print(f"Training: {total_epochs} epochs, {windows_per_patient} windows/patient, window={TRAIN_WINDOW} min")
     print(
@@ -652,15 +745,34 @@ def train(
 
     cur_phase = 1
     epoch = 0
+    # Iter 97 (review 4.1): cumulative aux steps per signal for the whole run.
+    aux_steps_by_signal: dict[str, int] = {}
+    aux_signals = [sig for sig in signals if sig is not trajectory_signal]
+    cur_input_dropout_arms = 0.0
     try:
         for epoch in range(total_epochs):
             if phased and epoch == phase_boundary:
                 cur_phase = 2
                 optimizer = torch.optim.Adam(params, lr=p2_lr)
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=phase2_epochs, eta_min=p2_lr * 0.05,
+                    optimizer, T_max=phase2_epochs, eta_min=p2_floor,
                 )
-                print(f"\n--- Phase 2: {phase2_epochs} epochs, lr={p2_lr} ---\n")
+                print(f"\n--- Phase 2: {phase2_epochs} epochs, lr={p2_lr} (floor {p2_floor}) ---\n")
+            if phased and p3_epochs > 0 and epoch == p3_start:
+                cur_phase = 3
+                optimizer = torch.optim.Adam(params, lr=p3_lr)
+                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, T_max=p3_epochs, eta_min=min(p2_floor, p3_lr),
+                )
+                if phase3_input_dropout is not None:
+                    trajectory_signal.input_dropout = float(phase3_input_dropout)
+                    cur_input_dropout_arms = float(phase3_input_dropout)
+                trajectory_signal.meal_macro_dropout = float(phase3_meal_dropout)
+                print(
+                    f"\n--- Phase 3: {p3_epochs} epochs, lr={p3_lr}, input dropout "
+                    f"{trajectory_signal.input_dropout} on sleep/activity (trajectory + arms), "
+                    f"meal-macro dropout {phase3_meal_dropout} ---\n",
+                )
 
             epoch_start = time.time()
             if _WATCHDOG_TIMEOUT_S > 0:
@@ -674,6 +786,9 @@ def train(
                 optimizer=optimizer,
                 params=params,
                 grad_clip=grad_clip,
+                aux_signal_clip=float(aux_signal_clip),
+                aux_steps_by_signal=aux_steps_by_signal,
+                input_dropout=cur_input_dropout_arms,
             )
 
             # Iter 25: time each signal explicitly. The iter-24 NaN-skip
@@ -691,33 +806,79 @@ def train(
             # so the noise is acceptable; gated by PULSE_INTRA_EPOCH_MEMPROF
             # so we can disable when not debugging.
             results: dict[str, SignalResult] = {}
-            signal_times: dict[str, float] = {}
+            parts: dict[str, list[SignalResult]] = {sig.name: [] for sig in signals}
+            signal_times: dict[str, float] = {sig.name: 0.0 for sig in signals}
             intra_memprof = os.environ.get("PULSE_INTRA_EPOCH_MEMPROF", "1") != "0"
-            for sig in signals:
-                t0 = time.time()
-                results[sig.name] = sig.compute(model, embeddings, ctx)
-                signal_times[sig.name] = time.time() - t0
-                if intra_memprof:
-                    m = _memory_stats()
-                    print(
-                        f"[MEMPROF-SIG] epoch={epoch:3d} phase={cur_phase} sig={sig.name} "
-                        f"dt={signal_times[sig.name]:.1f}s rss_mb={m['rss_mb']:.1f} "
-                        f"tensors={m['n_tensors']} grad_tensors={m['n_grad_tensors']} "
-                        f"elems_m={m['total_elems_m']:.2f} grad_elems_m={m['grad_elems_m']:.2f}",
-                        flush=True,
-                    )
+            joint_norms: list[float] = []
+            aux_step_idx = 0
 
-            # iter 78: one joint clip+step over the auxiliary signals' accumulated
-            # gradient. The trajectory signal already stepped per-window inside
-            # its compute (the main data fit, untouched); every other signal
-            # accumulated its weighted gradient via accumulate_grad /
-            # finalize_aux_accumulation without a solo step, so their weights
-            # compose instead of each taking a solo clipped step that erased its
-            # weight and let one unstable signal fight the rest or abort the run.
-            if ctx.aux_accumulated:
-                joint_aux_step(ctx)
+            def _run_aux_step() -> None:
+                """Iter 97 (review 4.1): one joint auxiliary step — every aux
+                signal whose cadence is due accumulates its weighted gradient
+                (per-signal clipped), then ONE joint clip + optimizer step. The
+                trajectory signal steps per window on its own; this used to run
+                once per epoch after all windows."""
+                nonlocal aux_step_idx
+                for sig in aux_signals:
+                    every = aux_cadence.get(sig.name, 1)
+                    if aux_step_idx % every != 0:
+                        continue
+                    t0 = time.time()
+                    parts[sig.name].append(sig.compute(model, embeddings, ctx))
+                    signal_times[sig.name] += time.time() - t0
+                    if intra_memprof and aux_step_idx == 0:
+                        m = _memory_stats()
+                        print(
+                            f"[MEMPROF-SIG] epoch={epoch:3d} phase={cur_phase} sig={sig.name} "
+                            f"dt={time.time() - t0:.1f}s rss_mb={m['rss_mb']:.1f} "
+                            f"tensors={m['n_tensors']} grad_tensors={m['n_grad_tensors']} "
+                            f"elems_m={m['total_elems_m']:.2f} grad_elems_m={m['grad_elems_m']:.2f}",
+                            flush=True,
+                        )
+                # iter 78: one joint clip+step over the auxiliary signals'
+                # accumulated gradient, so their weights compose instead of each
+                # taking a solo clipped step that erased its weight.
+                if ctx.aux_accumulated:
+                    st = joint_aux_step(ctx)
+                    joint_norms.append(float(st.get("joint_grad_norm_pre_clip", 0.0)))
+                aux_step_idx += 1
+
+            t_traj = time.time()
+            n_win = 0
+            for n_win in trajectory_signal.iter_windows(model, embeddings, ctx):
+                if aux_every_k_windows > 0 and n_win % aux_every_k_windows == 0:
+                    t_pause = time.time()
+                    _run_aux_step()
+                    t_traj += time.time() - t_pause  # aux time is booked to the aux signals
+            signal_times[trajectory_signal.name] = time.time() - t_traj
+            results[trajectory_signal.name] = trajectory_signal.last_result
+            if aux_step_idx == 0:
+                # Legacy cadence (k = 0), or fewer windows than k: once per epoch.
+                _run_aux_step()
+            for sig in aux_signals:
+                results[sig.name] = _merge_results(parts[sig.name])
 
             scheduler.step()
+
+            # Iter 97 (review 4.11): the gradient balance, visible every epoch.
+            _tn = np.asarray(ctx.traj_grad_norms, dtype=np.float64)
+            _aux_desc = " ".join(
+                f"{nm}={np.mean(v):.3f}x{len(v)}"
+                for nm, v in sorted(ctx.aux_grad_norms.items())
+            )
+            print(
+                f"[GRADNORM] epoch={epoch:3d} phase={cur_phase} "
+                f"traj_mean={_tn.mean() if _tn.size else 0.0:.3f} traj_max={_tn.max() if _tn.size else 0.0:.3f} "
+                f"traj_frac_clipped={(float((_tn > grad_clip).mean()) if _tn.size else 0.0):.2f} "
+                f"joint_pre_clip_mean={np.mean(joint_norms) if joint_norms else 0.0:.3f} "
+                f"aux_steps={aux_step_idx} | {_aux_desc}",
+                flush=True,
+            )
+            print(
+                "[AUXSTEPS] cumulative: "
+                + " ".join(f"{k}={v}" for k, v in sorted(aux_steps_by_signal.items())),
+                flush=True,
+            )
 
             elapsed = time.time() - epoch_start
             mem = _memory_stats()
@@ -735,6 +896,8 @@ def train(
                 "phase": float(cur_phase),
                 "lr": float(scheduler.get_last_lr()[0]),
                 "elapsed_s": float(elapsed),
+                "aux_steps_epoch": float(aux_step_idx),
+                "traj_grad_norm_mean": float(_tn.mean()) if _tn.size else 0.0,
                 "trajectory_avg_loss": float(traj.avg_loss),
                 "trajectory_n_windows": float(traj.n_units),
                 "cohort_loss": float(cohort.loss_sum) if cohort.n_units > 0 else 0.0,
@@ -746,6 +909,8 @@ def train(
             }
             for sig_name, t in signal_times.items():
                 metrics_summary[f"time_{sig_name}_s"] = float(t)
+            for sig_name, v in ctx.aux_grad_norms.items():
+                metrics_summary[f"gradnorm_{sig_name}"] = float(np.mean(v))
             for k, v in mem.items():
                 metrics_summary[f"mem_{k}"] = float(v)
             recent_metrics.append(metrics_summary)
@@ -908,6 +1073,9 @@ def train(
 
     checkpoint = {
         "model_state": model.state_dict(),
+        # Iter 97 (student hand-off): every constructor argument, so the exact
+        # module layout can be rebuilt without re-deriving widths from hidden_dim.
+        "model_config": getattr(model, "constructor_kwargs", None),
         "hidden_dim": hidden_dim,
         "marker_ids": [m.id for m in MARKERS],
         "model_version": datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S"),
@@ -983,8 +1151,29 @@ def train(
             "phase1_epochs": phase_boundary if phased else total_epochs,
             "phase2_epochs": phase2_epochs,
             "phase2_lr": phase2_lr,
+            "phase2_lr_floor": p2_floor if phased else None,
+            "phase3_epochs": p3_epochs,
+            "phase3_lr": p3_lr if p3_epochs else None,
+            "phase3_input_dropout": phase3_input_dropout,
+            "phase3_meal_dropout": phase3_meal_dropout,
         },
         "meal_window_bias": meal_window_bias,
+        # Iter 97 (review 4.1 / 4.11 / 1.5).
+        "aux_every_k_windows": aux_every_k_windows,
+        "aux_cadence": dict(aux_cadence),
+        "aux_signal_clip": aux_signal_clip,
+        "aux_steps_by_signal": dict(aux_steps_by_signal),
+        "cohort_groups_per_step": cohort_groups_per_step,
+        "rules_arms_per_step": rules_arms_per_step,
+        "trajectory_band_per_marker": dict(trajectory_band_per_marker) if trajectory_band_per_marker else None,
+        "trajectory_shape_markers": list(trajectory_shape_markers),
+        "cold_distill_level_band": cold_distill_level_band,
+        "perturb_protocols": perturb_protocols,
+        "grad_clip": grad_clip,
+        "seed": seed,
+        "input_dropout": input_dropout,
+        "train_config": dict(train_config) if train_config else None,
+        "spec_path": spec_path,
         "trained_at": datetime.now(timezone.utc).isoformat(),
     }
     torch.save(checkpoint, output_path)
@@ -1272,6 +1461,29 @@ def _run_benchmark(
     return 0
 
 
+# Run plumbing: flags that say WHERE a run reads/writes or whether it
+# benchmarks, not WHAT it trains. These may differ from the recipe.
+_RUN_PLUMBING_KEYS = frozenset({
+    "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
+    "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
+    "frozen_ruler", "deterministic", "allow_spec_override",
+})
+
+
+def resolved_train_config(args: argparse.Namespace) -> dict[str, Any]:
+    """The run's training configuration: every non-plumbing flag, resolved."""
+    return {k: v for k, v in sorted(vars(args).items()) if k not in _RUN_PLUMBING_KEYS}
+
+
+def spec_config_divergence(
+    spec_only: argparse.Namespace, resolved: argparse.Namespace,
+) -> list[tuple[str, Any, Any]]:
+    """(key, spec value, resolved value) for every non-plumbing flag that differs."""
+    a = resolved_train_config(spec_only)
+    b = resolved_train_config(resolved)
+    return [(k, a[k], b[k]) for k in a if a[k] != b.get(k)]
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     """The trainer's CLI. Factored out of ``main`` (iter 97) so tests can pin the
     argparse defaults against the ``train()`` defaults (review 1.5)."""
@@ -1287,6 +1499,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--hidden-dim", type=int, default=48)
     parser.add_argument("--lr", type=float, default=3e-3)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--grad-clip", type=float, default=10.0,
+        help="Joint gradient-norm clip for every optimizer step (iter 97: was a "
+             "train() default with no flag, so the recipe could not pin it).",
+    )
     parser.add_argument("--windows-per-patient", type=int, default=3)
     parser.add_argument(
         "--meal-window-bias",
@@ -1813,6 +2030,76 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Learning rate for Phase 2; defaults to --lr",
     )
+    parser.add_argument(
+        "--phase2-lr-floor", type=float, default=None,
+        help="Iter 97 (review 4.1): absolute floor of phase 2's cosine schedule. The "
+             "literature stack used to get 25 steps at an LR decaying to 1.5e-5; "
+             "None keeps the legacy 5%% of --phase2-lr.",
+    )
+    parser.add_argument(
+        "--phase3-epochs", type=int, default=0,
+        help="Iter 97 (review 4.9): phase 3 = diversity / stress-testing (PRD stage 4): "
+             "all signals on, input dropout raised on sleep, activity AND meal macros.",
+    )
+    parser.add_argument("--phase3-lr", type=float, default=None, help="Phase 3 LR; defaults to --phase2-lr")
+    parser.add_argument(
+        "--phase3-input-dropout", type=float, default=None,
+        help="Phase 3 dropout probability on sleep/activity (trajectory windows AND cohort/rule arms).",
+    )
+    parser.add_argument(
+        "--phase3-meal-dropout", type=float, default=0.0,
+        help="Phase 3 probability that a window's meals keep their time but lose their macros "
+             "(replaced by the population-typical meal): 'logged, quantity unknown'.",
+    )
+    parser.add_argument(
+        "--aux-every-k-windows", type=int, default=0,
+        help="Iter 97 (review 4.1): one joint auxiliary step every k trajectory windows "
+             "(0 = once per epoch, the pre-97 cadence: 25 literature steps per run).",
+    )
+    parser.add_argument(
+        "--aux-cadence", type=str, default="",
+        help="Per-signal cadence in aux steps, 'name:n;name:n' — an expensive signal runs "
+             "on every n-th aux step so the epoch's wall-clock stays flat.",
+    )
+    parser.add_argument(
+        "--aux-signal-clip", type=float, default=0.0,
+        help="Iter 97 (review 4.11): clip each aux signal's OWN gradient contribution to this "
+             "norm before the joint clip (0 = off). Per-signal norms are logged every epoch either way.",
+    )
+    parser.add_argument(
+        "--cohort-groups-per-step", type=int, default=0,
+        help="Cohort arm-protocol groups scored per aux step, round-robin (0 = all).",
+    )
+    parser.add_argument(
+        "--rules-arms-per-step", type=int, default=0,
+        help="Physiology-rule arm groups rolled per aux step, round-robin (0 = all).",
+    )
+    parser.add_argument(
+        "--trajectory-band-per-marker", type=str, default="",
+        help="Iter 97 (review 4.2): per-marker trajectory bands in NORM_SCALE units, "
+             "'glucose:0.15;hr:0.15;*:0.3' ('*' = every other marker). When set it applies to "
+             "every episode and the scalar --trajectory-band flags are ignored.",
+    )
+    parser.add_argument(
+        "--trajectory-shape-markers", type=str, default="",
+        help="Iter 97 (review 4.2): ':'-separated markers supervised by window mean + trend sign "
+             "instead of pointwise (markers the teacher is known to get wrong in shape).",
+    )
+    parser.add_argument(
+        "--cold-distill-level-band", type=float, default=0.0,
+        help="Iter 97 (review 4.7): dead-zone on the distillation level anchor (normalized units).",
+    )
+    parser.add_argument(
+        "--perturb-protocols", action="store_true",
+        help="Iter 97 (review 4.10): perturb the postprandial-recovery, dose-response and long "
+             "cohort protocols per step (dose +/-20%%, timing +/-30 min, start +/-1 h), keeping "
+             "the fixed protocol as one sample in four.",
+    )
+    parser.add_argument(
+        "--allow-spec-override", action="store_true",
+        help="Iter 97 (review 1.5): permit CLI flags that change a value the --spec sets. "
+             "Without it a divergence between the recipe and the run is an error.",
+    )
     parser.add_argument("--gcs-bucket", type=str, default=None)
     parser.add_argument("--gcs-object", type=str, default=None)
     parser.add_argument("--benchmark-dataset-uri", type=str, default=None)
@@ -1854,6 +2141,19 @@ def main():
     if spec_pre.spec:
         spec_args = _load_spec_train_args(spec_pre.spec)
         args = parser.parse_args(spec_args + sys.argv[1:])
+        # Iter 97 (review 1.5): the recipe IS the configuration. Anything on the
+        # command line that changes a value the spec sets (other than run
+        # plumbing: where to read/write, whether to benchmark) is a silent fork of
+        # the experiment — refuse it unless --allow-spec-override says so.
+        spec_only = parser.parse_args(spec_args + ["--spec", spec_pre.spec])
+        diverged = spec_config_divergence(spec_only, args)
+        if diverged and not args.allow_spec_override:
+            parser.error(
+                "CLI flags diverge from --spec (pass --allow-spec-override to fork the recipe): "
+                + ", ".join(f"{k}: spec={sv!r} cli={av!r}" for k, sv, av in diverged),
+            )
+        elif diverged:
+            print("[SPEC-OVERRIDE] " + ", ".join(f"{k}: {sv!r} -> {av!r}" for k, sv, av in diverged))
     else:
         args = parser.parse_args()
 
@@ -1891,11 +2191,15 @@ def main():
     if args.equal_contribution_weights:
         cw = {c.name: 1.0 for c in ALL_CONTRIBUTIONS}
 
+    train_config = resolved_train_config(args)
+    print("[CONFIG] " + json.dumps(train_config, sort_keys=True, default=str), flush=True)
+
     exit_code = train(
         n_patients=args.n_patients,
         n_epochs=args.n_epochs,
         hidden_dim=args.hidden_dim,
         lr=args.lr,
+        grad_clip=args.grad_clip,
         seed=args.seed,
         windows_per_patient=args.windows_per_patient,
         meal_window_bias=args.meal_window_bias,
@@ -1958,6 +2262,22 @@ def main():
         phase1_epochs=args.phase1_epochs,
         phase2_epochs=args.phase2_epochs,
         phase2_lr=args.phase2_lr,
+        phase2_lr_floor=args.phase2_lr_floor,
+        phase3_epochs=args.phase3_epochs,
+        phase3_lr=args.phase3_lr,
+        phase3_input_dropout=args.phase3_input_dropout,
+        phase3_meal_dropout=args.phase3_meal_dropout,
+        aux_every_k_windows=args.aux_every_k_windows,
+        aux_cadence=_parse_aux_cadence(args.aux_cadence),
+        aux_signal_clip=args.aux_signal_clip,
+        cohort_groups_per_step=args.cohort_groups_per_step,
+        rules_arms_per_step=args.rules_arms_per_step,
+        trajectory_band_per_marker=parse_band_per_marker(args.trajectory_band_per_marker),
+        trajectory_shape_markers=_split_markers(args.trajectory_shape_markers),
+        cold_distill_level_band=args.cold_distill_level_band,
+        perturb_protocols=args.perturb_protocols,
+        train_config=train_config,
+        spec_path=args.spec,
         gcs_bucket=args.gcs_bucket,
         gcs_object=args.gcs_object,
         benchmark_dataset_uri=args.benchmark_dataset_uri,
