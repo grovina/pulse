@@ -59,13 +59,9 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
     def test_silent_when_fasted(self) -> None:
         """No meal => gut appearance ~0 => the Ra APPEARANCE term must not move glucose.
 
-        Iter 97: Ra is also the per-patient grams -> mg/dL conversion (c = Ra*U)
-        through which hepatic glycogenolysis is credited to plasma — that is what
-        closes the carbon budget (review 2026-09-04, item 2.2). So driving Ra to 0
-        now also removes the glycogenolysis credit and fasting glucose moves by
-        0.73 mg/dL at init (108.5 -> 107.8; measured 2026-09-04). The appearance
-        term itself is exactly zero without a meal, which is what this test pins;
-        the fasting difference is bounded to the size of that credit.
+        Iter 97: Ra is ONLY the meal-appearance gain (grams <-> mg/dL is the
+        constant MG_DL_PER_G for everyone), so a no-meal rollout is byte-identical
+        for any Ra; the appearance flux itself is pinned at exactly zero as well.
         """
         m = ModularPhysiologyNetwork()
         emb = torch.zeros(m.embedding_dim)
@@ -87,8 +83,8 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
         with torch.no_grad():
             m.metabolic.log_ra.copy_(torch.tensor(-30.0))  # softplus ~ 0
         peak_off = _glucose_peak(m, carbs=0.0)
-        self.assertLess(abs(peak_default - peak_off), 2.0,
-                        msg="only the glycogenolysis credit (c = Ra*U) may move fasting glucose")
+        self.assertAlmostEqual(peak_default, peak_off, places=3,
+                               msg="Ra term changed fasting glucose; it must be silent with no meal")
 
     def test_amplitude_increases_with_gain(self) -> None:
         """A higher appearance gain must raise the postprandial glucose peak."""

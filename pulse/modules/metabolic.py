@@ -8,62 +8,62 @@ equilibrium; explicit structural forms where it is not (glucose, the pools,
 hepatic output, insulin action — the PRD's "relaxation (c)"). Receives nutrient
 appearance from Gut, cortisol from Stress and GLP-1 from Appetite.
 
-ITER 97 — THE CARBON BUDGET CLOSES, AND EVERY GLUCOSE-SIDE GATE IS PER PATIENT
-(review 2026-09-04, items 2.2, 2.6, 3.4, 3.10, 3.11). What was wrong, measured
-on the iter-96 artifact:
+ITER 97 — Gb IS A DERIVED FIXED POINT, AND THE CARBON BUDGET CLOSES IN ONE UNIT
+(review 2026-09-04, items 2.2, 2.6, 3.3, 3.4, 3.10, 3.11; mirrors the teacher's
+iter-97 ``glucose_fluxes`` / ``resolve_derived_params``).
 
-  * Glycogen was a SHADOW POOL: synthesis consumed ``relu(appearance)`` without
-    debiting glucose, and breakdown reached glucose only through the setpoint
-    drop. On a eucaloric day the liver "synthesised" 77 g of a 210 g
-    carbohydrate intake (37 %; Taylor 1996: 19 %) and none of it left plasma.
-  * Muscle glycogen was spent AT REST (learned catabolic gate 0.40 at activity
-    0): a 36 h resting fast took it 400 -> 184 g. The teacher is
-    ``k·max(act − 0.10, 0)`` — zero at rest by construction. Liver breakdown
-    was 86 % ungated.
-  * Gates used POPULATION thresholds (insulin gate at 116.5 mg/dL, glucagon at
-    83.4, FFA at insulin 7.8, ``insulin_action`` lagging ``relu(I − 10)``)
-    while the setpoints were per patient: Gb = 120 fasted with insulin 23.75
-    and a standing +34 % clearance; Gb = 75 fasted to 54 mg/dL.
-  * ``−(Sg + X)(G − Gb)`` made insulin action a glucose SOURCE below the
-    setpoint (+0.087 mg/dL/min at G = 85, Gb = 95, insulin 30). Bergman is
-    ``−(Sg + X)·G + Sg·Gb``.
-  * ``mitochondrial_capacity`` — an unsupervised weeks-τ latent — was an input
-    to all 11 heads; 1.0 -> 0.7 moved the insulin rate by +28/h.
-  * BHB had no substrate term: a 36 h fast reached 0.12 vs the teacher's 1.3.
+What was wrong, measured on the iter-96 artifact: glycogen was a shadow pool
+(synthesis took ``relu(appearance)`` without debiting glucose; breakdown reached
+blood only by moving the setpoint), muscle glycogen was spent at rest (400 ->
+184 g in a resting fast), every glucose gate was a POPULATION threshold while
+the setpoints were per patient (Gb = 120 fasted with insulin 23.75; Gb = 75 to
+54 mg/dL), ``-(Sg + X)(G - Gb)`` made insulin action a glucose SOURCE below the
+setpoint, ``mitochondrial_capacity`` fed all 11 heads, and BHB had no substrate
+term. And once the units became mass-conserving, a restoring term
+``-Sg(G - Gb_fasted)`` plus an absolute hepatic source could not have Gb as a
+fixed point at all: the standing glycogenolysis credit had no counterpart at
+rest and glucose sat at Gb + credit/Sg (Gb 75 -> 87.6).
 
-The structural forms now (raw units throughout; ``fluxes`` returns every term):
+The balance now, in ONE unit (mg/dL of glucose space per minute; grams for the
+pools via ``MG_DL_PER_G``):
 
-    dG  = −Sg·(G − Gb_fasted) − X·G                       clearance (Bergman)
-          + c·app_g·(1 − f_L·fill_L − f_M·fill_M)          appearance NOT stored
-          + c·brk_L                                        hepatic glycogenolysis
-          + EGP_extra(cortisol, glucagon) − exercise uptake
-    dLGly = f_L·fill_L·app_g − brk_L      brk_L = F_L·softplus(net)·ins_gate·avail_L
-    dMGly = f_M·fill_M·app_g − brk_M      brk_M = F_M·softplus(net)·relu(act − a_rest)·avail_M
-    dHep  = k·(HEP_PER_G·brk_L + GNG(net) − Hep)          hepatic output READS breakdown
-    dXa   = p2·(relu((I − Ib)/10) − Xa)                    per-patient Ib
-    dBHB  = basal(net) + k_keto·relu(FFA − FFA_b)·keto_ins_gate − clearance·mito·BHB
-    dFFA, dLac: production(net) − clearance(net)·mito·X    (mito's ONE role)
+    dG    = ra·app·f_plasma                       meal appearance not stored
+            + glyco + gng                          hepatic output (two fluxes, below)
+            − k_ii·G − X·G − uptake_ex             obligatory, insulin-dependent, exercise
+    dLGly = f_liver·app_g − glyco / MG_DL_PER_G
+    dMGly = f_muscle·app_g − brk_M
+    dHep  = k·((glyco + gng)·VG_DL/BODY_MASS_KG − Hep)   a lagged mg/kg/min readout
 
-with ``(f_L, f_M, f_plasma) = softmax(store logits, 0)`` so the three
-destinations of absorbed carbohydrate sum to exactly one, ``app_g`` the gut
-appearance in grams/min, and ``c = Ra·U`` the per-patient conversion from grams
-to mg/dL (``U`` = the gut's appearance-units-per-gram). So
+    EGP_b   = k_ii · Gb_emb                          per patient (basal EGP scales with Gb)
+    glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G · mod_L/mod_L_ref
+    gng     =      f_gng ·EGP_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G · mod_H/mod_H_ref
 
-    d(G/c) + dLGly + dMGly = app_g − (clearances + exercise − EGP_extra)/c − brk_M
+``k_ii`` (obligatory uptake per mg/dL) and ``f_gng`` are learnable POPULATION
+scalars; every structural gate is normalized to exactly 1 at the patient's basal
+state (``g_ins`` at I = Ib, ``g_gn`` at Gn = Gnb, ``g_cort`` at Cort_b, ``g_ffa``
+at FFA_b, ``g_G`` at G ≤ Gb), and each learned modulation ``mod`` is the head's
+output DIVIDED by the same head evaluated at the patient's fasted reference
+state (typicals with Gb_emb / Ib_emb; not detached — the level is pinned to the
+setpoint by construction and the head learns only shape). So at the fasted
+reference ``dG = EGP_b − k_ii·Gb = 0`` exactly: Gb is the fixed point, not an
+attractor. The fasting fall EMERGES from pool depletion — glycogenolysis is
+first order in ``LGly`` so EGP falls toward GNG alone and glucose settles where
+obligatory uptake balances it, an absolute floor ``gng/k_ii`` the same for
+every Gb (item 3.3). ``Gb_fasted``, the drop and the floor are gone.
 
-holds identically — carbon that leaves plasma into a pool is debited, carbon
-that leaves a pool into plasma is credited, and muscle glycogen is oxidised
-locally (no G6Pase). ``tests/test_iter97_student_metabolic.py`` integrates a
-eucaloric day and checks the ledger.
+Carbon: ``d(G/MG_DL_PER_G) + dLGly + dMGly = app_g − brk_M − (k_ii·G + X·G +
+uptake_ex − gng)/MG_DL_PER_G`` identically — one gram of glycogen is 7.72 mg/dL
+for everyone; ``ra`` is only the meal-appearance gain it always was.
 
 Gates: insulin and glucagon fire on ``(G − Gb)/30``, FFA on ``(I − Ib)/10``,
 with ``Ib = 10·exp(±0.9·tanh(head))`` a zero-init per-patient head like Gb.
-The fasting drop is ADDITIVE with an ABSOLUTE floor
-(``Gb_fasted = max(Gb − drop·depleted, 60)``) so it no longer scales with Gb.
-Thresholds that previously leaked (the glycogen catabolic gates) are DELETED,
-not clamped: the liver gate is the teacher's saturating
-``1/(1 + relu(I − Ib)/K)`` with K learned, the muscle gate is ``relu(act −
-0.10)``.
+Basal insulin secretion falls with sub-Gb glucose through a Hill centred at
+Gb with learnable steepness, applied to the BASAL term only (the ``(G/Gb)^5``
+on total production cut insulin 41 % at 0.9·Gb — a x5 amplifier of any Gb_emb
+error). The thresholds that leaked (glycogen catabolic gates) are DELETED, not
+clamped: muscle breakdown is ``relu(act − 0.10)``, liver breakdown is the
+insulin gate above. ``mitochondrial_capacity`` has ONE role — a scale on the
+clearance of FFA, lactate and BHB — and no other head sees it.
 """
 
 import math
@@ -74,14 +74,17 @@ import torch.nn as nn
 from .base import (
     BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule, SpeciesHead, gate_temp,
 )
-from .gut import APPEARANCE_UNITS_PER_G
-from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..types import (
+    BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_MARKER_INDICES,
+    NORM_CENTER, NORM_SCALE, VG_DL,
+)
 
 _GLUCOSE_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
 _GLUCOSE_CENTER = NORM_CENTER[MARKER_INDEX["glucose"]]
 _INSULIN_NORM_SCALE = NORM_SCALE[MARKER_INDEX["insulin"]]
 _INSULIN_CENTER = NORM_CENTER[MARKER_INDEX["insulin"]]
 _CORT_NORM_SCALE = NORM_SCALE[MARKER_INDEX["cortisol"]]
+_CORT_CENTER = NORM_CENTER[MARKER_INDEX["cortisol"]]
 _GN_CENTER = NORM_CENTER[MARKER_INDEX["glucagon"]]
 _FFA_CENTER = NORM_CENTER[MARKER_INDEX["ffa"]]
 
@@ -127,12 +130,14 @@ _GUT_GLUCOSE_COUPLING_IDX = 0
 # cortisol is metabolic coupling[GUT_OUTPUT_DIM]; activity is external[0].
 _CORTISOL_COUPLING_IDX = GUT_OUTPUT_DIM
 _ACTIVITY_EXTERNAL_IDX = 0
+_SLEEP_EXTERNAL_IDX = 1
 
-# Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 ≈ 0.03,
-# τ ≈ 33 min). Floored so the state can't freeze; capped so it can't collapse to the
+# Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 = 0.02,
+# τ = 50 min). Floored so the state can't freeze; capped so it can't collapse to the
 # old instantaneous behaviour. Euler-stable (p2·dt ≤ 0.25 ≪ 2).
 _P2_MIN = 0.01
 _P2_RANGE = 0.24
+_P2_INIT = 0.02  # teacher full_body.py PatientParams.p2
 # Max per-patient fasting-glucose offset, z-score units around 95 mg/dL (iter 90: ±2.2
 # gives Gb ∈ [29, 161], covering the teacher's lognormal spread and the benchmark's 60-120).
 _GLUCOSE_BASELINE_MAX_Z = 2.2
@@ -142,81 +147,75 @@ _GLUCOSE_BASELINE_MAX_Z = 2.2
 _IB_LOG_MAX = 0.9
 # Max per-patient meal-appearance (Ra) log-gain offset, pre-softplus units (iter 88).
 _RA_BASELINE_MAX_Z = 1.0
-# Sg: RAW per-minute glucose effectiveness, literature band [0.005, 0.05]/min (τ 20-200
-# min), init 0.018 (the teacher's value). See the iter-90 frame fix history in git.
-_SG_MIN = 0.005
-_SG_RANGE = 0.045
-_SG_INIT = 0.018  # teacher full_body.py PatientParams.Sg
+# Iter 97: `ra` is the per-patient gain on the (now mass-conserving) gut appearance —
+# 1.0 means the kernel's bioavailable mass appears in glucose space as-is. Init below 1
+# so an UNTRAINED student's 75 g meal lands near the teacher's +56.6 mg/dL at 55 min
+# (the teacher clears its load with a trained second-phase insulin response and
+# first-pass hepatic uptake that the fresh student's heads cannot yet supply); the
+# dose-response and mass-balance signals move it from here. Measured at init across
+# 0.3/0.5/0.7/1.0: peak +19/+33/+47/+70 mg/dL; 0.8 lands +56 (the untrained peak
+# sits at ~90 min, not 55 — the fresh insulin head has no second phase yet).
+_RA_INIT = 0.8
+# Iter 97: obligatory (insulin-independent) glucose uptake per mg/dL of glucose space —
+# brain, blood cells, renal medulla. A POPULATION scalar, learnable within a band, init
+# at the teacher's uptake_ii = 2.0 mg/kg/min / (1.85 dL/kg · 95 mg/dL) = 0.0114/min, i.e.
+# the typical patient rests at the typical EGP of 2.0 mg/kg/min. Band [0.004, 0.03]/min.
+_KII_MIN = 0.004
+_KII_RANGE = 0.026
+_KII_INIT = 2.0 / (1.85 * 95.0)
 # Si: RAW per-minute per normalized-insulin-unit; X = Si·Xa with Xa the lagged
 # relu((I − Ib)/10). Band brackets the Bergman literature range with margin.
 _SI_MIN = 0.0005
 _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
-# Counter-regulatory gains (iter 90), raw per-minute, init at the teacher's values.
-_KCORT_MIN, _KCORT_RANGE, _KCORT_INIT = 0.0, 0.006, 0.0012    # teacher cort_gluco
-_KGN_MIN, _KGN_RANGE, _KGN_INIT = 0.0, 0.10, 0.02             # teacher glucagon->glucose
 _KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
-# OFF-MANIFOLD SAFETY RAIL on the counter-regulatory extras (mg/dL/min) — NOT a
-# physiological law; inactive in distribution (≤0.5 % deviation across the teacher's
-# 0-1.8 range) and only bounds an untrained glucagon pinned at its state clamp, which at
-# k_gn = 0.02 alone injected 8 mg/dL/min (the iter-83-85 runaway class).
-_EGP_MAX = 8.0
-
-# Iter 97 (was iter 95 A1): the defended level falls as the liver pool empties — Cahill
-# 2006: as hepatic glycogen empties, gluconeogenesis cannot fully replace glycogenolysis.
-#     Gb_fasted = max(Gb − drop·glyco_depleted, GB_FLOOR)      glyco_depleted = relu(1 − LGly/LGly_b)
-# The drop is now ABSOLUTE (mg/dL, learned, init 35 = the teacher's 0.55·(1 − 0.62)·Gb at
-# a typical Gb, where its own floor binds) and the floor is ABSOLUTE (60 mg/dL — the
-# brain's floor is not a fraction of the setpoint; the teacher's own hypoglycemia response
-# uses an absolute 70). Through iter 96 both scaled WITH Gb (`Gb·(1 − drop)`, floor
-# `0.62·Gb`), so a Gb = 75 patient fasted to 54 mg/dL by construction. Identity at the fed
-# state (LGly = LGly_b) either way, so the fed regime is untouched.
-_GB_DROP_ABS_INIT = 35.0
-_GB_FLOOR_ABS = 60.0
-# Insulin's setpoint falls with the glucose ratio (iter 95 A5, Polonsky 1988):
-# effective production ∝ min(G/Gb, 1)^5. Identity whenever G ≥ Gb. Kept at the
-# teacher's calibrated shape; referenced to the FED gb, not to the falling one.
-_FAST_INS_EXP = 5.0
+# Fraction of basal EGP that is gluconeogenesis at the fasted reference (teacher
+# Gng_b / Hep_b = 1.0 / 2.0; Landau 1996: 47 % at 14 h). Learnable population scalar.
+_F_GNG_INIT = 0.5
+# Structural gate constants (teacher iter 97). K's are learnable (softplus, init here);
+# the Hill exponents are shapes and stay fixed.
+_GLYC_INS_K_INIT, _GLYC_INS_N = 25.0, 2.0     # glycogenolysis insulin gate
+_GNG_INS_K_INIT, _GNG_INS_N = 80.0, 1.0       # gluconeogenesis insulin gate
+_HGO_GN_N = 2.0                               # glucagon Hill exponent on hepatic output
+_GNG_CORT_AMP = 0.2                           # ±20 % GNG per e-fold of cortisol
+_GNG_FFA_EXP = 0.2                            # (FFA/FFA_b)^0.2 substrate push on GNG
+_HEP_AUTOREG_M = 0.6                          # (Gb/G)^m suppression above Gb, one-sided
+# Withdrawable share of obligatory uptake at sub-basal insulin (teacher 0.05; Landau
+# 1996). The student's insulin_action is rectified (its state floor is 0), so this is
+# retained as documentation of the bound the signed form would use.
+_INS_DEP_BASAL_FRAC = 0.05
+# Basal insulin secretion vs sub-Gb glucose: 2/(1 + (Gb/G)^n) on the BASAL term — 1 at
+# Gb, 0.79 at 0.9·Gb, 0.23 at 0.6·Gb (the teacher's floor). Learnable steepness, init 4
+# (Polonsky 1988: basal insulin roughly halves while glucose falls ~15 %).
+_INS_BASAL_HILL_N_INIT = 4.0
+# mg/kg/min per mg/dL/min of glucose space (hepatic_output's unit is mg/kg/min).
+_MG_KG_PER_MG_DL = VG_DL / BODY_MASS_KG
 
 # --- glycogen pools --------------------------------------------------------------------
 _LIVER_GLY_CENTER = NORM_CENTER[MARKER_INDEX["liver_glycogen"]]      # 100 g
 _MUSCLE_GLY_CENTER = NORM_CENTER[MARKER_INDEX["muscle_glycogen"]]    # 400 g
 # Store capacity as a multiple of typical (supercompensation, Bergstrom & Hultman 1966 —
 # a real ~20-40 % overshoot) and the WIDTH over which synthesis closes as the store nears
-# capacity. Iter 97: the taper is `sigmoid((cap − pool)/width)` — 0.95 at typical, 0.5 at
-# the cap — instead of `relu(1 − pool/cap)`, which was 0.23 AT THE FED LEVEL and gave the
-# pool an implicit setpoint below typical (the shape error the teacher fixed in iter 96 and
-# the review notes the student still carried).
+# capacity: `sigmoid((cap − pool)/width)` — 0.95 at typical, 0.5 at the cap.
 _GLY_CAPACITY_FRAC = 1.3
 _GLY_FILL_WIDTH_FRAC = 0.1
-# Breakdown availability: Michaelis in the pool, `pool/(pool + K)`, zero at zero by
-# construction (the pool cannot go negative) — the teacher's form and constants.
-_LIVER_GLY_K = 35.0    # teacher glyc_K_L (g)
+# Muscle breakdown availability: Michaelis in the pool, zero at zero by construction.
 _MUSCLE_GLY_K = 150.0  # teacher glyc_K_M (g)
-# Breakdown flux scales (g/min per unit of the head's softplus drive, ≈0.7 at init).
-#   Liver: 0.08·0.7·0.74 ≈ 0.041 g/min at a full store = 59 g/day, the teacher's
-#   post-absorptive glycogenolysis (0.062·0.74 = 0.046).
-#   Muscle: 3.0·0.7·0.73·relu(1 − 0.1) ≈ 1.4 g/min at a maximal bout, i.e. the −150 g /
-#   2 h cohort target (teacher k = 3.5).
-_LIVER_GLY_FLUX = 0.08
+# Muscle breakdown flux scale (g/min per unit of the head's softplus drive, ≈0.7 at
+# init): 3.0·0.7·0.73·relu(1 − 0.1) ≈ 1.4 g/min at a maximal bout, i.e. the −150 g / 2 h
+# cohort target (teacher k = 3.5).
 _MUSCLE_GLY_FLUX = 3.0
 # Activity at or below this is rest for muscle glycogen: `relu(act − a_rest)` is zero by
 # construction there (Coppack 1989; teacher act_rest_M). A CONSTANT, not a learned
 # threshold — iter 96's S1 lesson is that a learnable threshold cannot be stopped from
 # leaking (the previous gate learned its way to 40 % open at activity 0).
 _MUSCLE_ACT_REST = 0.10
-# Above-basal insulin (µU/mL) that halves hepatic glycogenolysis; learned, init teacher.
-_GLYC_INS_SUPP_INIT = 15.0  # teacher glyc_ins_supp
-# Prior fractions of absorbed carbohydrate stored: liver ~20 % (Taylor 1996: 19 %), muscle
-# ~15 %, the rest to plasma. Softmax logits relative to the plasma reference (logit 0).
-_LIVER_STORE_FRAC_INIT = 0.20
+# Prior fractions of absorbed carbohydrate stored: liver 30 % (teacher glyc_syn_frac_L;
+# Taylor 1996: 19 % of the meal by 5 h once the insulin drive is averaged in), muscle
+# 15 %, the rest to plasma. Softmax logits relative to the plasma reference (logit 0).
+_LIVER_STORE_FRAC_INIT = 0.30
 _MUSCLE_STORE_FRAC_INIT = 0.15
 _PLASMA_FRAC_INIT = 1.0 - _LIVER_STORE_FRAC_INIT - _MUSCLE_STORE_FRAC_INIT
-# hepatic_output is reported in the teacher's unit (≈ mg/kg/min at 70 kg): 1 g/min of
-# hepatic glucose release = 1000/70 of those units. Its GNG component is the head's learned
-# production scaled by the marker's typical, so at init GNG ≈ 1.4 and glycogenolysis ≈ 0.6
-# sum to the typical 2.0 (teacher hep_glyco_frac 0.6 early in a fast).
-_HEP_UNITS_PER_G_MIN = 1000.0 / 70.0
 
 # --- ketogenesis -----------------------------------------------------------------------
 # Structural substrate term: production ∝ FFA above basal, suppressed by above-basal
@@ -225,7 +224,6 @@ _HEP_UNITS_PER_G_MIN = 1000.0 / 70.0
 # of FFA excess → 0.01/min per mmol/L.
 _K_KETO_INIT = 0.01
 _KETO_INS_SUPP_INIT = 15.0  # teacher IC50_keto
-_GLUCOSE_APPEARANCE_UNITS_PER_G = float(APPEARANCE_UNITS_PER_G[0])
 
 
 def _logit(p: float) -> float:
@@ -237,18 +235,31 @@ def _inverse_softplus(y: float) -> float:
     return math.log(math.expm1(y))
 
 
+def _ins_gate(i: torch.Tensor, ib: torch.Tensor, k: torch.Tensor, n: float) -> torch.Tensor:
+    """IC50 suppression normalized at basal insulin: 1 at I = Ib, → 0 at high insulin,
+    → 1 + (Ib/K)^n as insulin falls to zero (signed, saturating). Teacher `_glyc_ins_gate`."""
+    return (1.0 + (ib / k) ** n) / (1.0 + (i / k) ** n)
+
+
+def _hill_centred(x: torch.Tensor, x_b: float, n: float) -> torch.Tensor:
+    """2/(1 + (x_b/x)^n): 1 at basal, → 2 above, → 0 below. Teacher `_hill_centred`."""
+    return 2.0 / (1.0 + (x_b / x.clamp(min=1e-6)) ** n)
+
+
 class GlucoseGatedInsulinHead(nn.Module):
     """Insulin production = basal floor + glucose-gated peak amplitude.
 
     Iter-23 intervention C. A single learned scale cannot satisfy basal-low *and*
     peak-high, so the head structurally separates them:
 
-        prod = softplus(raw_basal) + softplus(raw_peak) · σ((g − g_thresh) / g_temp)
+        prod = basal · basal_gate + softplus(raw_peak) · σ((g − g_thresh) / g_temp)
 
     Iter 97: ``g`` is the PER-PATIENT deviation ``(G − Gb)/NORM_SCALE`` handed in by
-    the module as ``stimulus`` (a population-frame read of ``x`` is the fallback).
-    Init ``g_thresh`` = 0.5 z (+15 mg/dL above the patient's own Gb) with a ~15 mg/dL
-    transition width, so the gate already separates fasting from postprandial.
+    the module as ``stimulus`` (a population-frame read of ``x`` is the fallback), and
+    ``basal_gate`` (handed in by the module) is the Hill-centred fall of basal secretion
+    with sub-Gb glucose. Init ``g_thresh`` = 0.5 z (+15 mg/dL above the patient's own
+    Gb) with a ~15 mg/dL transition width, so the gate already separates fasting from
+    postprandial.
     """
 
     def __init__(self, input_dim: int, hidden_dim: int):
@@ -268,12 +279,15 @@ class GlucoseGatedInsulinHead(nn.Module):
         x: torch.Tensor,
         state_self: torch.Tensor,
         stimulus: torch.Tensor | None = None,
+        basal_gate: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if stimulus is None:
             stimulus = x[..., _GLUCOSE_IDX]
         gate = torch.sigmoid((stimulus - self.g_thresh) / gate_temp(self.log_g_temp))
         raw = self.network(x)
         basal = nn.functional.softplus(raw[..., 0])
+        if basal_gate is not None:
+            basal = basal * basal_gate
         peak = nn.functional.softplus(raw[..., 1])
         cons = nn.functional.softplus(raw[..., 2])
         prod = basal + peak * gate
@@ -283,23 +297,23 @@ class GlucoseGatedInsulinHead(nn.Module):
 class GlycogenFluxHead(nn.Module):
     """Glycogen as a flux integrator: the head emits the two learned GAINS of
 
-        synthesis = f_store · fill · appearance_g        (f_store from a softmax the
-                                                          module takes over both pools
-                                                          and plasma — see forward)
-        breakdown = flux_scale · softplus(net) · structural gate · availability
+        synthesis   = f_store · fill · appearance_g        (f_store from a softmax the
+                                                            module takes over both pools
+                                                            and plasma — see fluxes)
+        breakdown   = structural flux · mod / mod_ref      (liver: the derived basal
+                                                            glycogenolysis times gates;
+                                                            muscle: activity-gated)
 
     In the ``(prod, cons)`` protocol: ``prod`` is the STORE LOGIT (unbounded; the
     module softmaxes it against the other pool and a zero plasma reference so the
-    fractions sum to one) and ``cons`` is the non-negative breakdown drive.
+    fractions sum to one) and ``cons`` is the non-negative breakdown modulation.
 
     Iter 97: the learned catabolic gate (``σ((s − c_thresh)/τ)``) is gone. It leaked
     the way every learned threshold here has leaked — 40 % open at activity 0 for
-    muscle, 86 % ungated for liver — and the module now applies the gate
-    structurally (``relu(act − a_rest)`` / ``1/(1 + relu(I − Ib)/K)``). The head
-    still sees insulin, activity, sleep and the embedding in ``x``, so the
-    modulation the physiology genuinely has (insulin drive on synthesis, training
-    status on breakdown capacity) remains learnable; only the zero-at-rest
-    guarantee is taken out of the optimizer's hands.
+    muscle, 86 % ungated for liver — and the module now applies the gates
+    structurally (``relu(act − a_rest)`` / the basal-normalized insulin gate). The
+    liver's modulation is further divided by its own value at the patient's fasted
+    reference state, so it can only reshape the flux, never move its basal level.
     """
 
     def __init__(self, input_dim: int, hidden_dim: int, *, init_store_logit: float):
@@ -316,8 +330,8 @@ class GlycogenFluxHead(nn.Module):
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         raw = self.network(x)
         store_logit = raw[..., 0] + self.init_store_logit
-        break_drive = nn.functional.softplus(raw[..., 1])
-        return store_logit, break_drive
+        break_mod = nn.functional.softplus(raw[..., 1])
+        return store_logit, break_mod
 
 
 def _without_mito(head_cls):
@@ -354,6 +368,8 @@ class MetabolicModule(MassActionModule):
                 ),
                 _BHB_IDX: _without_mito(SpeciesHead),
                 _LACTATE_IDX: _without_mito(SpeciesHead),
+                # hepatic_output: prod = GNG modulation (normalized at the reference),
+                # cons = the readout's relaxation rate.
                 _HEPATIC_IDX: _without_mito(SpeciesHead),
                 _LIVER_GLYCOGEN_IDX: lambda inp, hd: GlycogenFluxHead(
                     inp - 1, hd,
@@ -369,22 +385,19 @@ class MetabolicModule(MassActionModule):
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
-        self.log_sg = nn.Parameter(torch.tensor(_logit((_SG_INIT - _SG_MIN) / _SG_RANGE)))
+        # Population scalars of the glucose balance (see the module docstring).
+        self.log_k_ii = nn.Parameter(torch.tensor(_logit((_KII_INIT - _KII_MIN) / _KII_RANGE)))
+        self.logit_f_gng = nn.Parameter(torch.tensor(_logit(_F_GNG_INIT)))
+        self.log_glyc_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GLYC_INS_K_INIT)))
+        self.log_gng_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GNG_INS_K_INIT)))
+        self.log_ins_basal_n = nn.Parameter(torch.tensor(_inverse_softplus(_INS_BASAL_HILL_N_INIT)))
         # Structural rate-of-appearance gain Ra on the gut glucose-appearance flux
-        # (iter 80): Ra·appearance is the minimal-model Ra(t) source, and Ra·U is this
-        # patient's grams → mg/dL conversion for the carbon budget.
-        self.log_ra = nn.Parameter(torch.tensor(math.log(0.55)))
+        # (iter 80): the meal-appearance gain, and nothing else (iter 97).
+        self.log_ra = nn.Parameter(torch.tensor(_inverse_softplus(_RA_INIT)))
         self.log_si = nn.Parameter(torch.tensor(_logit((_SI_INIT - _SI_MIN) / _SI_RANGE)))
-        _p2_p0 = (0.03 - _P2_MIN) / _P2_RANGE
-        self.log_p2 = nn.Parameter(torch.tensor(math.log(_p2_p0 / (1.0 - _p2_p0))))
-        self.log_k_cort = nn.Parameter(torch.tensor(_logit((_KCORT_INIT - _KCORT_MIN) / _KCORT_RANGE)))
-        self.log_k_gn = nn.Parameter(torch.tensor(_logit((_KGN_INIT - _KGN_MIN) / _KGN_RANGE)))
+        self.log_p2 = nn.Parameter(torch.tensor(_logit((_P2_INIT - _P2_MIN) / _P2_RANGE)))
         self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
-        # Iter 97: absolute fasting drop (mg/dL), softplus-positive.
-        self.log_gb_drop_abs = nn.Parameter(torch.tensor(_inverse_softplus(_GB_DROP_ABS_INIT)))
-        # Iter 97: half-suppression constants (µU/mL above Ib) for hepatic glycogenolysis
-        # and ketogenesis, and the ketogenic substrate gain.
-        self.log_glyc_ins_supp = nn.Parameter(torch.tensor(_inverse_softplus(_GLYC_INS_SUPP_INIT)))
+        # Ketogenesis: half-suppression constant (µU/mL above Ib) and substrate gain.
         self.log_keto_ins_supp = nn.Parameter(torch.tensor(_inverse_softplus(_KETO_INS_SUPP_INIT)))
         self.log_k_keto = nn.Parameter(torch.tensor(_inverse_softplus(_K_KETO_INIT)))
 
@@ -417,7 +430,16 @@ class MetabolicModule(MassActionModule):
         ra_emb = _RA_BASELINE_MAX_Z * torch.tanh(self.ra_baseline_net(embedding).squeeze(-1))
         return nn.functional.softplus(self.log_ra + ra_emb)
 
+    def k_ii(self) -> torch.Tensor:
+        return _KII_MIN + _KII_RANGE * torch.sigmoid(self.log_k_ii)
+
     # ---- heads -----------------------------------------------------------------------
+
+    @staticmethod
+    def _head_input(state, coupling, external, embedding, time_features):
+        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
+        x_no_mito = torch.cat([x[..., :_MITO_IDX], x[..., _MITO_IDX + 1:]], dim=-1)
+        return x, x_no_mito
 
     def species_fluxes(
         self,
@@ -429,17 +451,20 @@ class MetabolicModule(MassActionModule):
         *,
         glucose_dev: torch.Tensor | None = None,
         insulin_dev: torch.Tensor | None = None,
+        basal_gate: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Per-species head outputs. ``glucose_dev`` / ``insulin_dev`` are the
         per-patient deviations ``(G − Gb)/30`` and ``(I − Ib)/10`` that gate insulin,
-        glucagon and FFA; without them the gates fall back to the population frame."""
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        x_no_mito = torch.cat([x[..., :_MITO_IDX], x[..., _MITO_IDX + 1:]], dim=-1)
+        glucagon and FFA; ``basal_gate`` scales basal insulin secretion. Without them
+        the gates fall back to the population frame."""
+        x, x_no_mito = self._head_input(state, coupling, external, embedding, time_features)
         prods: list[torch.Tensor] = []
         conss: list[torch.Tensor] = []
         for i, head in enumerate(self.heads):
             xi = x if i == _MITO_IDX else x_no_mito
-            if i in (_INSULIN_IDX, _GLUCAGON_IDX):
+            if i == _INSULIN_IDX:
+                p, c = head(xi, state[..., i], stimulus=glucose_dev, basal_gate=basal_gate)
+            elif i == _GLUCAGON_IDX:
                 p, c = head(xi, state[..., i], stimulus=glucose_dev)
             elif i == _FFA_IDX:
                 p, c = head(xi, state[..., i], stimulus=insulin_dev)
@@ -448,6 +473,30 @@ class MetabolicModule(MassActionModule):
             prods.append(p)
             conss.append(c)
         return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+
+    def reference_modulations(
+        self,
+        gb: torch.Tensor,
+        ib: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """The liver-breakdown and GNG head modulations at the patient's FASTED
+        REFERENCE state: every species at typical except glucose at Gb_emb and insulin
+        at Ib_emb, no appearance, cortisol and GLP-1 at basal, awake at rest, at the
+        current time of day (so time-of-day cancels and cannot move the basal level).
+        Not detached: the head learns shape only; the level is the setpoint's."""
+        batch_shape = gb.shape
+        state = torch.zeros(*batch_shape, _N_SPECIES, dtype=gb.dtype, device=gb.device)
+        state[..., _GLUCOSE_IDX] = (gb - _GLUCOSE_CENTER) / _GLUCOSE_NORM_SCALE
+        state[..., _INSULIN_IDX] = (ib - _INSULIN_CENTER) / _INSULIN_NORM_SCALE
+        coupling = torch.zeros(*batch_shape, _N_COUPLING, dtype=gb.dtype, device=gb.device)
+        external = torch.zeros(*batch_shape, _N_EXTERNAL, dtype=gb.dtype, device=gb.device)
+        external[..., _SLEEP_EXTERNAL_IDX] = 1.0
+        _, x_ref = self._head_input(state, coupling, external, embedding, time_features)
+        _, mod_liver_ref = self.heads[_LIVER_GLYCOGEN_IDX](x_ref, state[..., _LIVER_GLYCOGEN_IDX])
+        mod_gng_ref, _ = self.heads[_HEPATIC_IDX](x_ref, state[..., _HEPATIC_IDX])
+        return mod_liver_ref, mod_gng_ref
 
     # ---- fluxes ----------------------------------------------------------------------
 
@@ -459,8 +508,9 @@ class MetabolicModule(MassActionModule):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> dict[str, torch.Tensor]:
-        """Every named term of the metabolic ODE, in raw units. ``forward`` assembles the
-        rates from these; the carbon-budget test and the probes read them directly."""
+        """Every named term of the metabolic ODE, in raw units (mg/dL/min of glucose
+        space; g/min for the pools). ``forward`` assembles the rates from these; the
+        carbon-budget test and the probes read them directly."""
         relu = nn.functional.relu
         raw = self.raw_state(state)
         g = raw[..., _GLUCOSE_IDX]
@@ -472,6 +522,8 @@ class MetabolicModule(MassActionModule):
         mgly = raw[..., _MUSCLE_GLYCOGEN_IDX]
         mito = raw[..., _MITO_IDX]
         xa = raw[..., _INSULIN_ACTION_IDX]
+        cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
+        act = external[..., _ACTIVITY_EXTERNAL_IDX]
 
         gb = self.glucose_setpoint_raw(embedding)
         ib = self.insulin_setpoint_raw(embedding)
@@ -479,19 +531,22 @@ class MetabolicModule(MassActionModule):
         glucose_dev = (g - gb) / _GLUCOSE_NORM_SCALE
         insulin_dev = (ins - ib) / _INSULIN_NORM_SCALE
         ins_excess = relu(ins - ib)
+        ins_basal_n = nn.functional.softplus(self.log_ins_basal_n)
+        # Basal secretion falls with sub-Gb glucose (1 at and above Gb, on the basal term).
+        ins_basal_gate = _hill_centred(torch.minimum(g, gb), gb, ins_basal_n)
 
         prod_raw, cons_raw = self.species_fluxes(
             state, coupling, external, embedding, time_features,
-            glucose_dev=glucose_dev, insulin_dev=insulin_dev)
+            glucose_dev=glucose_dev, insulin_dev=insulin_dev, basal_gate=ins_basal_gate)
+        mod_liver_ref, mod_gng_ref = self.reference_modulations(gb, ib, embedding, time_features)
 
-        # --- appearance and its three destinations -------------------------------------
-        app = coupling[..., _GUT_GLUCOSE_COUPLING_IDX]           # teacher units (≥ 0)
-        app_g = app / _GLUCOSE_APPEARANCE_UNITS_PER_G           # g/min
-        c_plasma = ra * _GLUCOSE_APPEARANCE_UNITS_PER_G          # mg/dL per gram, per patient
+        # --- appearance and its three destinations (mg/dL/min; grams via MG_DL_PER_G) ---
+        app_eff = ra * coupling[..., _GUT_GLUCOSE_COUPLING_IDX]     # bioavailable appearance
+        app_g = app_eff / MG_DL_PER_G                               # g/min
         store_logits = torch.stack([
             prod_raw[..., _LIVER_GLYCOGEN_IDX],
             prod_raw[..., _MUSCLE_GLYCOGEN_IDX],
-            torch.zeros_like(app),
+            torch.zeros_like(app_eff),
         ], dim=-1)
         frac = torch.softmax(store_logits, dim=-1)
         fill_l = torch.sigmoid(
@@ -500,50 +555,51 @@ class MetabolicModule(MassActionModule):
             (_GLY_CAPACITY_FRAC * _MUSCLE_GLY_CENTER - mgly) / (_GLY_FILL_WIDTH_FRAC * _MUSCLE_GLY_CENTER))
         f_liver = frac[..., 0] * fill_l
         f_muscle = frac[..., 1] * fill_m
-        f_plasma = 1.0 - f_liver - f_muscle                      # ≥ frac[..., 2] > 0
-        syn_liver = f_liver * app_g                              # g/min
+        f_plasma = 1.0 - f_liver - f_muscle                          # ≥ frac[..., 2] > 0
+        syn_liver = f_liver * app_g                                  # g/min
         syn_muscle = f_muscle * app_g
-        appearance_plasma = c_plasma * f_plasma * app_g          # mg/dL/min (= ra·app·f_plasma)
+        appearance_plasma = app_eff * f_plasma                       # mg/dL/min
 
-        # --- glycogen breakdown ----------------------------------------------------------
-        glyc_ins_supp = nn.functional.softplus(self.log_glyc_ins_supp)
-        liver_ins_gate = 1.0 / (1.0 + ins_excess / glyc_ins_supp)
-        avail_l = lgly / (lgly + _LIVER_GLY_K)
+        # --- hepatic glucose output: two fluxes from a derived basal EGP ----------------
+        k_ii = self.k_ii()
+        egp_b = k_ii * gb                                            # mg/dL/min, per patient
+        f_gng = torch.sigmoid(self.logit_f_gng)
+        glyc_k = nn.functional.softplus(self.log_glyc_ins_k)
+        gng_k = nn.functional.softplus(self.log_gng_ins_k)
+        g_ins_glyco = _ins_gate(ins, ib, glyc_k, _GLYC_INS_N)
+        g_ins_gng = _ins_gate(ins, ib, gng_k, _GNG_INS_N)
+        g_gn = _hill_centred(gn, _GN_CENTER, _HGO_GN_N)
+        g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
+        g_ffa = (ffa.clamp(min=1e-3) / _FFA_CENTER) ** _GNG_FFA_EXP
+        g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M       # one-sided: 1 at G ≤ Gb
+        mod_liver = cons_raw[..., _LIVER_GLYCOGEN_IDX] / mod_liver_ref
+        mod_gng = prod_raw[..., _HEPATIC_IDX] / mod_gng_ref
+        glycogenolysis_plasma = ((1.0 - f_gng) * egp_b * (lgly / _LIVER_GLY_CENTER)
+                                 * g_ins_glyco * g_gn * g_g * mod_liver)
+        gng_plasma = (f_gng * egp_b * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g
+                      * mod_gng)
+        brk_liver = glycogenolysis_plasma / MG_DL_PER_G             # g/min, the same flux
+
+        # --- muscle glycogenolysis (activity-gated, oxidized in situ) ------------------
         avail_m = mgly / (mgly + _MUSCLE_GLY_K)
-        act = external[..., _ACTIVITY_EXTERNAL_IDX]
-        brk_liver = _LIVER_GLY_FLUX * cons_raw[..., _LIVER_GLYCOGEN_IDX] * liver_ins_gate * avail_l
         brk_muscle = (_MUSCLE_GLY_FLUX * cons_raw[..., _MUSCLE_GLYCOGEN_IDX]
                       * relu(act - _MUSCLE_ACT_REST) * avail_m)
-        glycogenolysis_plasma = c_plasma * brk_liver             # mg/dL/min
 
-        # --- glucose clearance and counter-regulation ------------------------------------
-        sg = _SG_MIN + _SG_RANGE * torch.sigmoid(self.log_sg)
+        # --- glucose uptake --------------------------------------------------------------
         si = _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si)
-        x_ins = si * xa
-        glyco_depleted = relu(1.0 - lgly / _LIVER_GLY_CENTER)
-        gb_drop = nn.functional.softplus(self.log_gb_drop_abs)
-        gb_fasted = torch.maximum(gb - gb_drop * glyco_depleted, torch.full_like(gb, _GB_FLOOR_ABS))
-        clearance_sg = sg * (g - gb_fasted)                      # signed: restoring toward Gb_fasted
-        clearance_ins = x_ins * g                                # ≥ 0: insulin action is a SINK
-        k_cort = _KCORT_MIN + _KCORT_RANGE * torch.sigmoid(self.log_k_cort)
-        k_gn = _KGN_MIN + _KGN_RANGE * torch.sigmoid(self.log_k_gn)
+        uptake_ii = k_ii * g                                         # obligatory
+        uptake_id = si * xa * g                                      # insulin-dependent, a sink
         k_act = _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act)
-        cort_excess = _CORT_NORM_SCALE * relu(coupling[..., _CORTISOL_COUPLING_IDX])
-        gn_excess = relu(gn - _GN_CENTER)
-        egp_extra = k_cort * cort_excess + k_gn * gn_excess
-        egp_extra = _EGP_MAX * torch.tanh(egp_extra / _EGP_MAX)
         exercise_uptake = k_act * act * relu(g - 0.8 * gb)
 
         # --- insulin, insulin action -----------------------------------------------------
-        fast_ins_supp = torch.clamp(g / gb, min=0.0, max=1.0) ** _FAST_INS_EXP
-        ins_production = prod_raw[..., _INSULIN_IDX] * fast_ins_supp * self.prod_scale[_INSULIN_IDX]
+        ins_production = prod_raw[..., _INSULIN_IDX] * self.prod_scale[_INSULIN_IDX]
         ins_clearance = cons_raw[..., _INSULIN_IDX] * self.cons_scale[_INSULIN_IDX] * ins
         p2 = _P2_MIN + _P2_RANGE * torch.sigmoid(self.log_p2)
         xa_rate = p2 * (relu(insulin_dev) - xa)
 
-        # --- hepatic output: a lagged readout of glycogenolysis + learned GNG -----------
-        hep_target = (_HEP_UNITS_PER_G_MIN * brk_liver
-                      + _TYPICALS[_HEPATIC_IDX] * prod_raw[..., _HEPATIC_IDX])
+        # --- hepatic output readout (mg/kg/min), lagged ----------------------------------
+        hep_target = (glycogenolysis_plasma + gng_plasma) * _MG_KG_PER_MG_DL
         hep_rate = cons_raw[..., _HEPATIC_IDX] * self.cons_scale[_HEPATIC_IDX] * (hep_target - hep)
 
         # --- ketogenesis -------------------------------------------------------------------
@@ -552,17 +608,20 @@ class MetabolicModule(MassActionModule):
                        / (1.0 + ins_excess / keto_ins_supp))
 
         return {
-            "gb": gb, "ib": ib, "ra": ra, "gb_fasted": gb_fasted,
+            "gb": gb, "ib": ib, "ra": ra, "egp_b": egp_b, "k_ii": k_ii, "f_gng": f_gng,
             "glucose_dev": glucose_dev, "insulin_dev": insulin_dev,
+            "ins_basal_gate": ins_basal_gate,
             "prod_raw": prod_raw, "cons_raw": cons_raw, "mito": mito,
-            "app_g": app_g, "c_plasma": c_plasma,
+            "app_eff": app_eff, "app_g": app_g,
             "f_liver": f_liver, "f_muscle": f_muscle, "f_plasma": f_plasma,
             "syn_liver": syn_liver, "syn_muscle": syn_muscle,
             "brk_liver": brk_liver, "brk_muscle": brk_muscle,
             "appearance_plasma": appearance_plasma,
-            "glycogenolysis_plasma": glycogenolysis_plasma,
-            "clearance_sg": clearance_sg, "clearance_ins": clearance_ins,
-            "egp_extra": egp_extra, "exercise_uptake": exercise_uptake,
+            "glycogenolysis_plasma": glycogenolysis_plasma, "gng_plasma": gng_plasma,
+            "g_ins_glyco": g_ins_glyco, "g_ins_gng": g_ins_gng, "g_gn": g_gn,
+            "g_cort": g_cort, "g_ffa": g_ffa, "g_g": g_g,
+            "mod_liver": mod_liver, "mod_gng": mod_gng,
+            "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
             "ins_production": ins_production, "ins_clearance": ins_clearance,
             "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis,
@@ -589,9 +648,8 @@ class MetabolicModule(MassActionModule):
                              - cons_raw[..., idx] * self.cons_scale[idx] * mito * raw[..., idx])
         out[..., _BHB_IDX] = out[..., _BHB_IDX] + f["ketogenesis"]
         out[..., _GLUCOSE_IDX] = (
-            -f["clearance_sg"] - f["clearance_ins"]
-            + f["appearance_plasma"] + f["glycogenolysis_plasma"]
-            + f["egp_extra"] - f["exercise_uptake"]
+            f["appearance_plasma"] + f["glycogenolysis_plasma"] + f["gng_plasma"]
+            - f["uptake_ii"] - f["uptake_id"] - f["exercise_uptake"]
         )
         out[..., _INSULIN_IDX] = f["ins_production"] - f["ins_clearance"]
         out[..., _INSULIN_ACTION_IDX] = f["xa_rate"]
