@@ -559,10 +559,13 @@ class GutModuleBase(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, output_dim),
         )
-        # Zero output weights + prior biases: every patient starts on the same
-        # physiological curve; the embedding's authority grows from zero.
+        # Near-zero output weights + prior biases: every patient starts on (almost)
+        # the same physiological curve and the embedding's authority grows from
+        # there. NOT exactly zero: with a zero output layer the gut embedding
+        # projection receives no gradient at step 0, and the dose-sweep signal
+        # (which never calls integrate) would see a dead path on its first step.
         with torch.no_grad():
-            self.kernel[-1].weight.zero_()
+            nn.init.normal_(self.kernel[-1].weight, std=0.01)
             bias = torch.zeros(output_dim)
             logits = torch.zeros(self.N_MACROS, self.N_APPEARANCE, self.n_basis)
             f_raw = torch.full(
