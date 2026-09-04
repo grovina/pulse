@@ -164,27 +164,34 @@ def _circadian_checks(
     abs_hour = ((start_hour * 60.0 + timeline_offset_min + minutes) % 1440.0) / 60.0
 
     c = CIRCADIAN
+    # Iter 97 (review 5.8): a check whose time mask is empty is SKIPPED, not
+    # scored against the whole-window mean. legacy_static (03:30-15:30) has no
+    # evening samples and cgm_real (19:00-07:00) no afternoon ones; the old
+    # fallback compared "morning" to the whole window, which a flat trajectory
+    # passes at score 0.4-0.5 for free.
     morning = _mask_mean(cortisol, (abs_hour >= c.morning_hour_lo) & (abs_hour <= c.morning_hour_hi))
     evening = _mask_mean(cortisol, (abs_hour >= c.evening_hour_lo) & (abs_hour <= c.evening_hour_hi))
     early_temp = _mask_mean(temp, (abs_hour >= c.early_temp_hour_lo) & (abs_hour <= c.early_temp_hour_hi))
     afternoon_temp = _mask_mean(temp, (abs_hour >= c.afternoon_temp_hour_lo) & (abs_hour <= c.afternoon_temp_hour_hi))
 
-    return [
-        _build_threshold_check(
+    out: list[WeakCheckResult] = []
+    if morning is not None and evening is not None:
+        out.append(_build_threshold_check(
             key="circadian_cortisol_morning_peak",
             label="Cortisol should be higher in morning than evening",
             category="circadian", metric=morning - evening, pass_threshold=c.cortisol_morning_evening_min,
             soft_scale=c.cortisol_soft_scale, weight=c.cortisol_weight,
             details={"morning": morning, "evening": evening},
-        ),
-        _build_threshold_check(
+        ))
+    if early_temp is not None and afternoon_temp is not None:
+        out.append(_build_threshold_check(
             key="circadian_temp_afternoon_higher",
             label="Core temp should be higher in afternoon than early morning",
             category="circadian", metric=afternoon_temp - early_temp, pass_threshold=c.temp_afternoon_early_min,
             soft_scale=c.temp_soft_scale, weight=c.temp_weight,
             details={"afternoon": afternoon_temp, "early_morning": early_temp},
-        ),
-    ]
+        ))
+    return out
 
 
 def _sleep_checks(
@@ -192,9 +199,16 @@ def _sleep_checks(
     start_hour: float,
     timeline_offset_min: float = 0.0,
 ) -> list[WeakCheckResult]:
-    """Sleep physiology: HR/BP should dip during typical sleep hours (0-5 AM)."""
+    """Sleep physiology: HR/BP should dip during sleep hours (0-5 AM).
+
+    The awake reference is the daytime window (10-16) when the trajectory
+    covers it, else the evening window (18-23). Iter 97 (review 5.8): the
+    daytime-only rule made the sleep category n = 1 episode (the 48-h cohort);
+    a 12-h overnight episode (19:00-07:00, every cgm_real night) has an
+    evening and a night and is exactly where the dip should be scored.
+    """
     s = SLEEP
-    if len(trajectory) < s.min_trajectory_len:
+    if len(trajectory) < min(s.min_trajectory_len, s.min_trajectory_len_evening_ref):
         return []
 
     hr = trajectory[:, MARKER_INDEX["hr"]]
@@ -204,30 +218,37 @@ def _sleep_checks(
     abs_hour = ((start_hour * 60.0 + timeline_offset_min + minutes) % 1440.0) / 60.0
 
     daytime = (abs_hour >= s.daytime_hour_lo) & (abs_hour <= s.daytime_hour_hi)
+    evening = (abs_hour >= s.evening_hour_lo) & (abs_hour <= s.evening_hour_hi)
     nighttime = (abs_hour >= s.nighttime_hour_lo) & (abs_hour <= s.nighttime_hour_hi)
 
-    if not np.any(daytime) or not np.any(nighttime):
+    if not np.any(nighttime) or int(nighttime.sum()) < s.min_reference_samples:
+        return []
+    if np.any(daytime) and int(daytime.sum()) >= s.min_reference_samples:
+        awake, ref_label = daytime, "day"
+    elif np.any(evening) and int(evening.sum()) >= s.min_reference_samples:
+        awake, ref_label = evening, "evening"
+    else:
         return []
 
-    hr_day = _mask_mean(hr, daytime)
-    hr_night = _mask_mean(hr, nighttime)
-    sbp_day = _mask_mean(sbp, daytime)
-    sbp_night = _mask_mean(sbp, nighttime)
+    hr_awake = float(np.mean(hr[awake]))
+    hr_night = float(np.mean(hr[nighttime]))
+    sbp_awake = float(np.mean(sbp[awake]))
+    sbp_night = float(np.mean(sbp[nighttime]))
 
     return [
         _build_threshold_check(
             key="sleep_hr_dip",
-            label="HR should be lower during sleep than daytime",
-            category="sleep", metric=hr_day - hr_night, pass_threshold=s.hr_dip_min,
+            label="HR should be lower during sleep than awake",
+            category="sleep", metric=hr_awake - hr_night, pass_threshold=s.hr_dip_min,
             soft_scale=s.hr_dip_soft_scale, weight=s.hr_dip_weight,
-            details={"hr_day": hr_day, "hr_night": hr_night},
+            details={"hr_awake": hr_awake, "hr_night": hr_night, "reference": ref_label},
         ),
         _build_threshold_check(
             key="sleep_sbp_dip",
             label="SBP should dip during sleep",
-            category="sleep", metric=sbp_day - sbp_night, pass_threshold=s.sbp_dip_min,
+            category="sleep", metric=sbp_awake - sbp_night, pass_threshold=s.sbp_dip_min,
             soft_scale=s.sbp_dip_soft_scale, weight=s.sbp_dip_weight,
-            details={"sbp_day": sbp_day, "sbp_night": sbp_night},
+            details={"sbp_awake": sbp_awake, "sbp_night": sbp_night, "reference": ref_label},
         ),
     ]
 
@@ -272,8 +293,18 @@ def _aggregate_by_category(checks: list[WeakCheckResult]) -> dict[str, float]:
 def _safe_corr(a: np.ndarray, b: np.ndarray) -> float:
     if len(a) < 2 or float(np.std(a)) < 1e-8 or float(np.std(b)) < 1e-8:
         return 0.0
-    return float(np.corrcoef(a, b)[0, 1])
+    # float32 rounding can leave a "constant" series with std ~1e-7 and a
+    # 0/0 inside corrcoef (seen on a 2880-min flat trajectory): NaN would
+    # poison the category and the overall score, so treat it as no coupling.
+    c = float(np.corrcoef(a.astype(np.float64), b.astype(np.float64))[0, 1])
+    return c if np.isfinite(c) else 0.0
 
 
-def _mask_mean(values: np.ndarray, mask: np.ndarray) -> float:
-    return float(np.mean(values[mask])) if np.any(mask) else float(np.mean(values))
+def _mask_mean(values: np.ndarray, mask: np.ndarray) -> float | None:
+    """Mean over the mask, or None when the mask is empty.
+
+    Iter 97 (review 5.8): the old fallback returned the whole-window mean for
+    an empty mask, which silently turned "morning vs evening" into "morning vs
+    everything" on episodes that never see an evening.
+    """
+    return float(np.mean(values[mask])) if np.any(mask) else None

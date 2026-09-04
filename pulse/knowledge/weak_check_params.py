@@ -12,10 +12,17 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class MealWeakCheckParams:
-    glucose_slope_per_g_carb: float = 0.045
-    glucose_floor: float = 2.8
-    insulin_slope_per_g_carb: float = 0.014
-    insulin_floor: float = 1.1
+    # Iter 97 (review 5.8): the fences were 0.045 mg/dL/g glucose and 0.014
+    # uU/mL/g insulin -- 3.4 mg/dL and 1.05 uU/mL for a 75 g meal, 6-15x looser
+    # than the textbook OGTT check (>20 mg/dL for 75 g = 0.27/g) and the Wolever
+    # dose slope (0.7/g). A flat trajectory scored the meal category 0.42 and
+    # the whole verifier 0.66-0.82 against a 0.70 gate. The teacher's 75 g
+    # response is +58.7 mg/dL / +44 uU/mL. These are still fences, not targets:
+    # a 75 g meal must move glucose >= 18.75 mg/dL and insulin >= 7.5 uU/mL.
+    glucose_slope_per_g_carb: float = 0.25
+    glucose_floor: float = 5.0
+    insulin_slope_per_g_carb: float = 0.10
+    insulin_floor: float = 3.0
     pre_window: int = 15
     post_start: int = 15
     post_end: int = 120
@@ -73,9 +80,19 @@ CIRCADIAN = CircadianWeakCheckParams()
 
 @dataclass(frozen=True)
 class SleepWeakCheckParams:
+    # Iter 97 (review 5.8): the verifier scores 12-h overnight episodes too
+    # (``min_trajectory_len_evening_ref``). The awake reference is daytime
+    # (10-16) when covered, else evening (18-23); each reference window needs
+    # at least an hour of samples. ``min_trajectory_len`` (1440) is left as the
+    # training surrogate's gate (training_verifier_loss.py still uses the
+    # daytime reference with a whole-window fallback -- another layer).
     min_trajectory_len: int = 1440
+    min_trajectory_len_evening_ref: int = 720
+    min_reference_samples: int = 60
     daytime_hour_lo: float = 10.0
     daytime_hour_hi: float = 16.0
+    evening_hour_lo: float = 18.0
+    evening_hour_hi: float = 23.0
     nighttime_hour_lo: float = 0.0
     nighttime_hour_hi: float = 5.0
     hr_dip_min: float = 3.0
