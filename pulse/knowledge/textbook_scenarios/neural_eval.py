@@ -30,6 +30,9 @@ def _scenario_to_dict(r: ScenarioResult) -> dict[str, Any]:
         "source": r.source,
         "description": r.description,
         "pass_rate": r.pass_rate,
+        # Iter 97 (review 5.9): soft margins next to the binary rate.
+        "soft_score": float(np.mean([c.soft_score() for c in r.checks])) if r.checks else 0.0,
+        "hairline": [c.name for c in r.checks if c.is_hairline()],
         "checks": [
             {
                 "name": c.name,
@@ -37,6 +40,11 @@ def _scenario_to_dict(r: ScenarioResult) -> dict[str, Any]:
                 "passed": c.passed,
                 "value": float(c.value),
                 "threshold": float(c.threshold),
+                "direction": c.direction,
+                "signed_margin": float(c.signed_margin),
+                "relative_margin": float(c.relative_margin),
+                "soft_score": float(c.soft_score()),
+                "hairline": bool(c.is_hairline()),
             }
             for c in r.checks
         ],
@@ -72,7 +80,18 @@ def run_textbook_scenarios_on_model(
     ]
 
     mean_pass = float(np.mean([r.pass_rate for r in results])) if results else 0.0
+    blocks = [_scenario_to_dict(r) for r in results]
+    hairline = [
+        {"scenario": b["name"], "check": c["name"], "passed": c["passed"],
+         "value": c["value"], "threshold": c["threshold"], "relative_margin": c["relative_margin"]}
+        for b in blocks for c in b["checks"] if c["hairline"]
+    ]
     return {
         "textbook_mean_pass_rate": mean_pass,
-        "textbook_scenarios": [_scenario_to_dict(r) for r in results],
+        # Iter 97 (review 5.9): mean sigmoid(relative margin / 0.1) over checks per
+        # scenario, averaged over scenarios. Reported, NOT gated -- the binary
+        # rate keeps its threshold and its meaning.
+        "textbook_mean_soft_score": float(np.mean([b["soft_score"] for b in blocks])) if blocks else 0.0,
+        "textbook_hairline": hairline,
+        "textbook_scenarios": blocks,
     }

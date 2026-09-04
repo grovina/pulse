@@ -1183,6 +1183,9 @@ def _run_benchmark(
             "category_mean": results.get("verifier_category_mean", {}),
         },
         "textbook_mean_pass_rate": textbook_block["textbook_mean_pass_rate"],
+        # Iter 97 (5.9): soft margins reported next to the binary rate; not gated.
+        "textbook_mean_soft_score": textbook_block.get("textbook_mean_soft_score"),
+        "textbook_hairline": textbook_block.get("textbook_hairline", []),
         "textbook_scenarios": textbook_block["textbook_scenarios"],
         "gate": {
             "passed": gate_passed,
@@ -1228,7 +1231,9 @@ def _run_benchmark(
                 + ", ".join(f"{m}={skills[m]:+.2f}" for m in sorted(skills)),
             )
     print(f"  verifier.overall_score={results['verifier_overall']:.4f}")
-    print(f"  textbook_mean_pass_rate={textbook_block['textbook_mean_pass_rate']:.4f}")
+    print(f"  textbook_mean_pass_rate={textbook_block['textbook_mean_pass_rate']:.4f}"
+          f"  soft_score={textbook_block.get('textbook_mean_soft_score', float('nan')):.4f}"
+          f"  hairline={[(h['scenario'], h['check'], 'pass' if h['passed'] else 'MISS') for h in textbook_block.get('textbook_hairline', [])]}")
     if failures:
         print(f"  failures: {failures}")
 
