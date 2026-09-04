@@ -18,6 +18,7 @@ penalizes it.
 from __future__ import annotations
 
 from ..cohort_types import (
+    TargetShape,
     CohortArmSpec,
     CohortStatisticSpec,
     InitMode,
@@ -56,20 +57,22 @@ OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
 # 75 g OGTT → glucose at 120 min returns to ≈ 120 mg/dL
 # ---------------------------------------------------------------------------
 # WHO OGTT criterion: 2-h plasma glucose < 140 mg/dL is normal glucose
-# tolerance. Pin the late window mean at 120 ± 15 mg/dL to anchor the
-# clearance dynamics — this is what most clearance failures show up as.
+# tolerance. Iter 97 (review 4.3): that is a CEILING, not a target — the old
+# 120 ± 15 point target penalized a healthy 105 as much as a 135. Encoded as
+# AT_MOST 140 with the same sigma on the excess.
 OGTT_GLUCOSE_LATE = CohortStatisticSpec(
     name="ogtt_75g_glucose_120min",
     source="WHO (1999); ADA OGTT criteria",
-    description="75 g OGTT → mean glucose ≈ 120 mg/dL in the 90–150 min window (healthy clearance)",
+    description="75 g OGTT → mean glucose < 140 mg/dL in the 90–150 min window (normal glucose tolerance)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
     ),
     marker_id="glucose",
     kind=StatisticKind.MEAN_IN_WINDOW,
     window=StatisticWindow(start_min=150, end_min=210),
-    target=120.0,
+    target=140.0,
     sigma=15.0,
+    shape=TargetShape.AT_MOST,
 )
 
 

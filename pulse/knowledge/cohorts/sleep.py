@@ -90,6 +90,9 @@ SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE = CohortStatisticSpec(
     window=StatisticWindow(start_min=1500, end_min=1740),
     target=6.0,
     sigma=4.0,
+    # Spiegel 1999 / Donga 2010 report the group effect +/- SEM (n = 9-11); the
+    # individual sd of a next-day glucose mean is ~10 -- pin n_arm = 1.
+    n_arm=1,
 )
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [

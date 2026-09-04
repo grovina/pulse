@@ -890,17 +890,13 @@ GHRELIN_RISES_PRE_MEAL = PhysiologyRule(
         min_rise=20.0,
     ),
     scale=20.0,
-    # Iter 97 (review 4.5): the teacher's fasting ghrelin is FLAT (100.0 at 12/24/
-    # 36/48 h of fasting, review 3.2) so it cannot show the pre-meal rise
+    # Iter 97 (review 4.5): the teacher's fasting ghrelin was FLAT (100.0 at 12/24/
+    # 36/48 h of fasting, review 3.2) so it could not show the pre-meal rise
     # Cummings 2001 (Diabetes 50:1714) measured: +78 % from the post-meal nadir
-    # over the 1-2 h before a habitual meal, i.e. well over 20 pg/mL. The rule
-    # is right and the teacher is wrong; keep the pull. Re-audit after the
-    # teacher's rectifier fix lands and drop this flag when it passes.
-    teacher_correction=True,
-    teacher_correction_note=(
-        "teacher ghrelin has no anticipatory pre-meal rise (flat at basal while "
-        "fasting, review 3.2); Cummings 2001 measures +78% over the pre-meal 1-2 h"
-    ),
+    # over the 1-2 h before a habitual meal. FIXED in the teacher (iter 97
+    # follow-up): an entrained anticipatory drive at habitual meal hours
+    # (Natalucci 2005) gives +22.8 pg/mL over the pre-meal hour on both arms and
+    # a fed-day peak/nadir ratio of 1.9; the correction flag is dropped.
 )
 
 
@@ -1201,14 +1197,12 @@ GLUCAGON_RISES_DURING_FAST = PhysiologyRule(
         min_rise=0.5 * float(ctx.arm.duration_min) / 60.0,
     ),
     scale=10.0,
-    # The teacher's fasting glucagon rise is ~0.25 pg/mL/h (2.1 over 8 h, 3.5 over
-    # 12 h) — half the Marliss/Aguilar-Parada slope. Deliberate correction; re-audit
-    # after the teacher's counter-regulation work lands.
-    teacher_correction=True,
-    teacher_correction_note=(
-        "teacher fasting glucagon rises ~0.25 pg/mL/h vs the cited 0.5-0.7/h "
-        "(Marliss 1970; Aguilar-Parada 1969)"
-    ),
+    # The teacher's fasting glucagon rise was ~0.25 pg/mL/h (2.1 over 8 h, 3.5 over
+    # 12 h) — half the Marliss/Aguilar-Parada slope. FIXED in the teacher (iter 97
+    # follow-up): the alpha cell's insulin term is signed about basal (paracrine
+    # disinhibition as insulin falls) and its glucose sensing gain re-sized to the
+    # Marliss 3-day rise; measured +0.5 pg/mL/h over 8-16 h, +19% at 24 h, +43% at
+    # 48 h. The correction flag is dropped.
 )
 
 

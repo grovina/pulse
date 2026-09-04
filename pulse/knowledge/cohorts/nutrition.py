@@ -14,6 +14,33 @@ from ..cohort_types import (
     StatisticWindow,
 )
 
+
+def nocturnal_sleep_wake(duration_min: int, start_hour: float, bed_hour: float = 23.0,
+                         wake_hour: float = 7.0) -> tuple[float, ...]:
+    """1 = awake, 0 = asleep, asleep bed_hour..wake_hour every night, 20-min smoothed.
+
+    Iter 97 follow-up: the 24 h nutrition arms carried no sleep series, so in
+    training and in the teacher audit their subjects were awake all night and
+    the overnight windows (22:00-04:00) were scored in a state nobody is in.
+    """
+    import numpy as np
+    n = duration_min
+    sw = np.ones(n, dtype=np.float32)
+    for day in range(n // 1440 + 2):
+        for h0, h1 in ((bed_hour, wake_hour + 24.0), (bed_hour - 24.0, wake_hour)):
+            lo = int((h0 - start_hour) * 60) + day * 1440
+            hi = int((h1 - start_hour) * 60) + day * 1440
+            lo, hi = max(0, lo), min(n, hi)
+            if lo < hi:
+                sw[lo:hi] = 0.0
+    kernel = np.ones(20, dtype=np.float32) / 20.0
+    sw = np.clip(np.convolve(sw, kernel, mode="same"), 0.0, 1.0)
+    return tuple(float(v) for v in sw)
+
+
+_REST_24H = tuple([0.0] * 1440)          # activity 0 = rest, explicit (review 1.7)
+_SLEEP_24H_FROM_6 = nocturnal_sleep_wake(1440, 6.0)
+
 # ---------------------------------------------------------------------------
 # Skipped breakfast → lower morning mean glucose vs control breakfast
 # ---------------------------------------------------------------------------
@@ -42,10 +69,12 @@ FASTING_BREAKFAST_GLUCOSE = CohortStatisticSpec(
         CohortArmSpec(
             label="control_breakfast",
             duration_min=1440, start_hour=6.0, meals=_BREAKFAST_CTRL_MEALS,
+        sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H,
         ),
         CohortArmSpec(
             label="skipped_breakfast",
             duration_min=1440, start_hour=6.0, meals=_BREAKFAST_SKIP_MEALS,
+        sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H,
         ),
     ),
     marker_id="glucose",
@@ -53,6 +82,9 @@ FASTING_BREAKFAST_GLUCOSE = CohortStatisticSpec(
     window=StatisticWindow(start_min=120, end_min=300),
     target=-15.0,
     sigma=6.0,
+    # sigma is the spread of the published GROUP difference (Betts 2014 reports the
+    # arm contrast with its CI), not an individual sd -- do not tighten by sqrt(n).
+    n_arm=1,
 )
 
 # ---------------------------------------------------------------------------
@@ -80,8 +112,10 @@ EXTENDED_FAST_BHB = CohortStatisticSpec(
     source="Cahill (2006); Owen (1969) — fuel metabolism in fasting",
     description="Skipping dinner (≈16 h fast) → +0.2 mmol/L BHB in late-night/morning window",
     arms=(
-        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING),
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="bhb",
     kind=StatisticKind.DELTA_MEANS,
@@ -137,14 +171,19 @@ EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
     source="Taylor et al. (1996) J Clin Invest 97:126-132 — 13C NMR; net hepatic glycogen storage = 19 % of meal carbohydrate",
     description="Skipping a 60 g-carbohydrate dinner → −13 g mean liver_glycogen in the late-fast window",
     arms=(
-        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING),
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="liver_glycogen",
     kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=960, end_min=1320),
     target=-13.0,
     sigma=6.0,
+    # Taylor 1996 reports the mean deposition +/- SEM (n = 7 subjects, NMR); 6 g is
+    # that SEM scaled to a 60 g meal, not an individual sd -- pin n_arm = 1.
+    n_arm=1,
 )
 
 # The absolute depletion the −60 g was reaching for. Cahill (2006): the hepatic
@@ -159,7 +198,8 @@ EXTENDED_FAST_GLYCOGEN_LEVEL = CohortStatisticSpec(
     source="Cahill (2006); Rothman et al. (1991) Science 254:573 — 13C NMR hepatic glycogenolysis",
     description="≈16 h fast → liver_glycogen ≈ 60 g in the late-fast window (absolute hepatic depletion)",
     arms=(
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="liver_glycogen",
     kind=StatisticKind.MEAN_IN_WINDOW,
@@ -178,8 +218,10 @@ EXTENDED_FAST_GLUCOSE = CohortStatisticSpec(
     source="Cahill (2006); Browning et al. (2012) — fasting glycemia",
     description="Skipping dinner → −8 mg/dL mean glucose in overnight/morning window",
     arms=(
-        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING),
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="glucose",
     kind=StatisticKind.DELTA_MEANS,
@@ -201,8 +243,10 @@ EXTENDED_FAST_FFA = CohortStatisticSpec(
     source="Cahill (2006); Coppack (1989); Frayn (2002) — fasting lipolysis",
     description="Skipping dinner (≈16 h fast) → +0.4 mmol/L FFA in late-night/morning window",
     arms=(
-        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING),
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="ffa",
     kind=StatisticKind.DELTA_MEANS,
@@ -223,7 +267,8 @@ EXTENDED_FAST_INSULIN = CohortStatisticSpec(
     source="Polonsky et al. (1988); Tabák et al. (2009) — basal insulin physiology",
     description="≈16 h fast → mean insulin ≈ 7 µU/mL in late-night/morning window",
     arms=(
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="insulin",
     kind=StatisticKind.MEAN_IN_WINDOW,

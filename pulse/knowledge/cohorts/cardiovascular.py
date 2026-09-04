@@ -53,6 +53,9 @@ POSTPRANDIAL_HR_RISE = CohortStatisticSpec(
     window=StatisticWindow(start_min=90, end_min=180),
     target=7.0,
     sigma=3.0,
+    # 3 bpm is the spread of the three studies' GROUP means (5-10 bpm), i.e. a
+    # standard error of the effect, not the ~8 bpm individual sd -- pin n_arm = 1.
+    n_arm=1,
 )
 
 

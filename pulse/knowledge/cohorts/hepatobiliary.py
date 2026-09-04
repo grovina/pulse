@@ -85,6 +85,9 @@ CCK_FASTING = CohortStatisticSpec(
     window=StatisticWindow(start_min=0, end_min=55),
     target=1.0,
     sigma=0.2,
+    # Liddle 1985 reports fasting CCK as mean +/- SEM over ~10 subjects; the
+    # individual sd (~0.5) is 2-3x this -- pin n_arm = 1 (review 4.12).
+    n_arm=1,
     init_mode=InitMode.NORM_CENTER,
 )
 
@@ -98,6 +101,10 @@ CCK_POSTPRANDIAL_PEAK = CohortStatisticSpec(
     window=StatisticWindow(start_min=60, end_min=180),
     target=6.8,
     sigma=0.4,
+    # Liddle 1985 peak 6.5-7.1 is a range of study MEANS (+/- SEM); the individual
+    # sd of a CCK peak is ~2 pmol/L -- pin n_arm = 1 (review 4.12: "6.8 +/- 0.4 per
+    # individual" was the smell).
+    n_arm=1,
     init_mode=InitMode.NORM_CENTER,
 )
 

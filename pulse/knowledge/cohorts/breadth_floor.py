@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from .nutrition import _REST_24H, _SLEEP_24H_FROM_6
 from ..cohort_types import (
     CohortArmSpec,
     CohortStatisticSpec,
@@ -284,12 +285,17 @@ LEPTIN_FED_FASTED = CohortStatisticSpec(
     source="Boden et al. (1996); Kolaczynski et al. (1996) — leptin and fasting",
     description="Fed-state late-day mean leptin +2 ng/mL vs ≈16 h-fasted",
     arms=(
-        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_FASTED_DAY),
-        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_FED_DAY),
+        CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_FASTED_DAY,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
+        CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_FED_DAY,
+                     sleep_wake=_SLEEP_24H_FROM_6, activity=_REST_24H),
     ),
     marker_id="leptin", kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=960, end_min=1320),
     target=2.0, sigma=1.0, weight=12.0,
+    # Boden 1996 / Kolaczynski 1996 give the fed-fasted difference as a group mean
+    # +/- SEM; individual leptin sd is ~3-5 ng/mL, so 1.0 is a standard error.
+    n_arm=1,
 )
 
 
