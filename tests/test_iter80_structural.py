@@ -117,11 +117,11 @@ def _run_teacher(duration_min, meals, params):
     return traj
 
 
-# A "pre-iter-80" teacher: the hepatic split is the identity (no glycogenolytic
-# share) and the ketosis coupling is off — i.e. the iter-79 teacher.
+# A teacher with the ketosis coupling off. Iter 97: `hep_glyco_frac` no longer
+# exists -- hepatic output is glycogenolysis + gluconeogenesis on one carbon
+# budget (see glucose_fluxes) -- so only the ketosis gain is switched off here.
 def _pre_iter80_params() -> PatientParams:
     p = PatientParams()
-    p.hep_glyco_frac = 0.0
     p.keto_glyc_gain = 0.0
     return p
 
@@ -133,8 +133,8 @@ class TestTeacherHepaticGlycogenCoupling(unittest.TestCase):
     LGI = MARKER_INDEX["liver_glycogen"]
 
     def test_acute_protocol_conservation_exact(self) -> None:
-        """A single OGTT (3 h, liver barely moves) must be byte-identical to the
-        pre-iter-80 teacher — the split is the identity until the pool depletes,
+        """A single OGTT (3 h, liver barely moves) must be byte-identical with the
+        ketosis coupling on or off — the fuel switch is gated on liver depletion,
         so the acute gate sees no change."""
         meals = [(30.0, 75.0, 0.0, 0.0)]
         old = _run_teacher(180, meals, _pre_iter80_params())
