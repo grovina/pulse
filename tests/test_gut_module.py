@@ -6,6 +6,14 @@ This test pins down that the batched outputs match the reference
 loop-based implementation within float-reduction tolerance — vectorized
 gut is the new spine of the gut-loss path, so a regression here would
 silently corrupt every future training iter.
+
+Iter 97: the kernel is ``f_bio(emb) · density(t; emb)`` (see
+``base.GutModuleBase``); the appearance channels are still additive across
+meals, while ``nutrient_flag`` combines as ``1 − Π(1 − flag_m)`` — the same
+statement about the SUMMED unabsorbed mass — so the per-meal reference below
+combines the flag that way. The structural guarantees this file pins (zero at
+zero dose, dose-linearity) are unchanged; the new ones (K(0) = 0, unit mass,
+no cliff at the window) live in ``tests/test_iter97_student_gut.py``.
 """
 
 from __future__ import annotations
@@ -14,7 +22,16 @@ import unittest
 
 import torch
 
-from pulse.modules.gut import GutModule, MEAL_ACTIVE_WINDOW_MIN, MealEvent
+from pulse.modules.gut import GutModule, MEAL_ACTIVE_WINDOW_MIN, MealEvent, combine_meals
+
+
+def _perturb(gut: GutModule, std: float = 0.5, seed: int = 0) -> None:
+    """The kernel's output layer is zero-init (every embedding starts on the same
+    curve). Perturb it so the embedding actually matters in these tests."""
+    g = torch.Generator().manual_seed(seed)
+    with torch.no_grad():
+        w = gut.kernel.kernel[-1].weight
+        w.add_(std * torch.randn(w.shape, generator=g))
 
 
 def _reference_forward_window(
@@ -34,9 +51,9 @@ def _per_meal_forward(
     meals: list[MealEvent],
     embedding: torch.Tensor,
 ) -> torch.Tensor:
-    """Reference: kernel called once per active meal, then summed.
-    Mirrors the pre-vectorization ``forward`` body."""
-    total = torch.zeros(4)
+    """Reference: kernel called once per active meal, then combined
+    (appearance summed, flags as 1 − Π(1 − f))."""
+    rows = []
     for meal in meals:
         dt = t - meal.time
         if dt < 0 or dt > MEAL_ACTIVE_WINDOW_MIN:
@@ -46,9 +63,10 @@ def _per_meal_forward(
         ).unsqueeze(0)
         dt_t = torch.tensor(dt, dtype=torch.float32).unsqueeze(0)
         emb_b = embedding.unsqueeze(0)
-        appearance = gut.kernel.forward_single_meal(macros, dt_t, emb_b).squeeze(0)
-        total = total + appearance
-    return total
+        rows.append(gut.kernel.forward_single_meal(macros, dt_t, emb_b).squeeze(0))
+    if not rows:
+        return torch.zeros(4)
+    return combine_meals(torch.stack(rows, dim=0))
 
 
 class TestGutForwardEquivalence(unittest.TestCase):
@@ -58,6 +76,7 @@ class TestGutForwardEquivalence(unittest.TestCase):
     def setUp(self) -> None:
         torch.manual_seed(0)
         self.gut = GutModule(embedding_dim=8, hidden_dim=16)
+        _perturb(self.gut)
         self.gut.eval()
         self.embedding = torch.randn(8)
         self.meals = [
@@ -84,13 +103,18 @@ class TestGutForwardEquivalence(unittest.TestCase):
         self.assertEqual(float(out.abs().sum()), 0.0)
 
     def test_meal_just_outside_active_window(self) -> None:
-        """A meal at age = MEAL_ACTIVE_WINDOW_MIN + 1 must not contribute."""
+        """A meal at age = MEAL_ACTIVE_WINDOW_MIN + 1 must not contribute — and,
+        iter 97, the kernel just INSIDE the window is already negligible, so the
+        mask is a no-op rather than a cliff."""
         meals = [MealEvent(time=0.0, carbs=50.0, fats=10.0, proteins=20.0)]
         t = MEAL_ACTIVE_WINDOW_MIN + 1.0
         out = self.gut(t, meals, self.embedding)
         ref = _per_meal_forward(self.gut, t, meals, self.embedding)
         torch.testing.assert_close(out, ref, atol=1e-6, rtol=1e-5)
         self.assertEqual(float(out.abs().sum()), 0.0)
+        inside = self.gut(MEAL_ACTIVE_WINDOW_MIN - 1.0, meals, self.embedding)
+        peak = self.gut.forward_window(torch.arange(0, 480.0), meals, self.embedding).amax(dim=0)
+        self.assertTrue(bool((inside[:3] < 0.01 * peak[:3]).all()), msg=f"{inside} vs peak {peak}")
 
 
 class TestGutForwardWindowEquivalence(unittest.TestCase):
@@ -101,6 +125,7 @@ class TestGutForwardWindowEquivalence(unittest.TestCase):
     def setUp(self) -> None:
         torch.manual_seed(1)
         self.gut = GutModule(embedding_dim=8, hidden_dim=16)
+        _perturb(self.gut, seed=1)
         self.gut.eval()
         self.embedding = torch.randn(8)
         self.meals = [
@@ -114,6 +139,14 @@ class TestGutForwardWindowEquivalence(unittest.TestCase):
         out = self.gut.forward_window(times, self.meals, self.embedding)
         ref = _reference_forward_window(self.gut, times, self.meals, self.embedding)
         torch.testing.assert_close(out, ref, atol=1e-5, rtol=1e-5)
+
+    def test_batched_window_matches_per_row(self) -> None:
+        times = torch.arange(0, 240, dtype=torch.float32)
+        embs = torch.randn(3, 8)
+        out = self.gut.forward_window(times, self.meals, embs)
+        for b in range(3):
+            ref = self.gut.forward_window(times, self.meals, embs[b])
+            torch.testing.assert_close(out[b], ref, atol=1e-5, rtol=1e-5)
 
     def test_window_handles_zero_active_meals(self) -> None:
         """All times before any meal → zero output."""
@@ -154,19 +187,17 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
     2. ``appearance(α·macros) == α·appearance(macros)`` — dose-linearity
        (which also implies dose-monotonicity).
 
-    nutrient_flag must also vanish at zero macros (gated by analytic
-    presence factor), but it is non-linear in dose by design.
+    nutrient_flag must also vanish at zero macros (gated by the unabsorbed
+    mass), but it is non-linear in dose by design.
     """
 
     def setUp(self) -> None:
         torch.manual_seed(7)
         self.gut = GutModule(embedding_dim=8, hidden_dim=16)
+        _perturb(self.gut, seed=7)
         self.gut.eval()
 
     def test_zero_macros_gives_zero_output(self) -> None:
-        """At every (t, embedding), zero macros must yield zero appearance
-        AND zero nutrient_flag. This kills the chronic ~40 mg-min/min
-        baseline offset that bled glucose_mape across iters 13-15."""
         emb = torch.randn(8)
         for t in [0.0, 30.0, 90.0, 240.0, 480.0]:
             macros = torch.zeros(1, 3)
@@ -176,21 +207,14 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
                 msg=f"non-zero output at zero macros, t={t}: {out}")
 
     def test_appearance_is_linear_in_dose(self) -> None:
-        """Doubling carbs/fats/proteins must exactly double the appearance
-        rate channels (channels 0-2). This kills the saturation that
-        capped iter 15's response at ~130 AUC for any dose ≥30 g."""
         emb = torch.randn(8)
         macros = torch.tensor([[60.0, 12.0, 20.0]])
         dt = torch.tensor([45.0])
         out_1x = self.gut.kernel.forward_single_meal(macros, dt, emb.unsqueeze(0)).squeeze(0)
         out_2x = self.gut.kernel.forward_single_meal(2 * macros, dt, emb.unsqueeze(0)).squeeze(0)
-        # First three channels: appearance rates — must scale linearly.
         torch.testing.assert_close(out_2x[:3], 2 * out_1x[:3], atol=1e-6, rtol=1e-5)
 
     def test_appearance_scales_with_arbitrary_dose_factor(self) -> None:
-        """Stronger version: across a sweep of factors, appearance is
-        exactly proportional. Catches any sneaky non-linearity that
-        might pass the 1×/2× check."""
         emb = torch.randn(8)
         base = torch.tensor([[50.0, 10.0, 15.0]])
         dt = torch.tensor([30.0])
@@ -206,9 +230,6 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
             )
 
     def test_nutrient_flag_vanishes_at_zero_macros(self) -> None:
-        """The flag presence-gate ``1 − exp(−total_macro / scale)`` must
-        force nutrient_flag to exactly zero when no food is present,
-        regardless of (t, embedding) and learned weights."""
         emb = torch.randn(8)
         for t in [0.0, 60.0, 240.0]:
             macros = torch.zeros(1, 3)
@@ -217,9 +238,6 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
             self.assertEqual(float(out[3].detach()), 0.0)
 
     def test_nutrient_flag_saturates_with_increasing_dose(self) -> None:
-        """nutrient_flag is binary fed/fasted and must rise toward 1 as
-        food increases (not strict monotone, since the sigmoid-on-(t,emb)
-        factor can be small, but the presence gate is monotone)."""
         emb = torch.randn(8)
         dt = torch.tensor([45.0])
         flags = []
@@ -232,20 +250,15 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
                 flags[i], flags[i + 1] + 1e-6,
                 msg=f"flag not monotone at index {i}: {flags}",
             )
+        self.assertLess(flags[-1], 1.0)
 
     def test_dose_sweep_via_forward_window_is_exactly_proportional(self) -> None:
-        """End-to-end dose sweep through the public forward_window API
-        (the path gut_dose_sweep_signal exercises) must produce AUCs
-        that are exactly proportional to dose. This is the structural
-        guarantee that retires the dose-ranking penalty as a corrective
-        device — it now serves only as defense in depth."""
         emb = torch.randn(8)
         times = torch.arange(0, 300, dtype=torch.float32)
         meals_a = [MealEvent(time=0.0, carbs=30.0, fats=6.0, proteins=10.0)]
         meals_b = [MealEvent(time=0.0, carbs=120.0, fats=24.0, proteins=40.0)]
         out_a = self.gut.forward_window(times, meals_a, emb)
         out_b = self.gut.forward_window(times, meals_b, emb)
-        # 4× macros → 4× appearance rates at every time.
         torch.testing.assert_close(
             out_b[..., :3], 4 * out_a[..., :3], atol=1e-4, rtol=1e-4,
         )
@@ -254,7 +267,7 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
 class TestGutForwardWindowSpeedup(unittest.TestCase):
     """Sanity check: ``forward_window`` is meaningfully faster than the
     per-step loop. Not a strict performance gate (CI machines vary), but
-    if it ever regresses below 2x we want to know."""
+    if it ever regresses below 1.5x we want to know."""
 
     def test_window_faster_than_per_step_loop(self) -> None:
         import time
@@ -274,7 +287,6 @@ class TestGutForwardWindowSpeedup(unittest.TestCase):
         ]
         times = torch.arange(0, 240, dtype=torch.float32)
 
-        # Warm-up.
         gut.forward_window(times, meals, emb)
         _reference_forward_window(gut, times, meals, emb)
 
@@ -289,8 +301,6 @@ class TestGutForwardWindowSpeedup(unittest.TestCase):
                 _reference_forward_window(gut, times, meals, emb)
             t_loop = time.perf_counter() - t0
 
-        # Loop must be slower than window. Headroom of 1.5x to avoid
-        # flakiness on contended CI; observed locally is typically 5-15x.
         self.assertGreater(t_loop, 1.5 * t_window)
 
 

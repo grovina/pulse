@@ -10,12 +10,16 @@ Two batched APIs share one underlying kernel:
   the active meal list, so the kernel runs once on ``(M_active, ...)``
   instead of M_active sequential calls.
 - ``forward_window(times, meals, embedding)``: every time-point in a
-  window at once. Vectorizes across both T and M (one kernel call on
-  ``(T*M_active, ...)`` then masked + summed). Replaces the per-step
+  window at once. Vectorizes across both T and M. Replaces the per-step
   Python loop the trajectory signal used for gut-loss supervision.
 
-Both paths are bit-equivalent to the previous looped implementation
-modulo float-reduction order (≤1e-5 differences in practice).
+Iter 97: the kernel is ``f_bio(emb) · density(t; emb)`` with an analytic,
+normalized, zero-at-origin basis (see ``base.GutModuleBase``), so the
+learned MLP runs once per patient and time enters only through the basis.
+The appearance channels are additive across meals; ``nutrient_flag`` is
+``1 − exp(−unabsorbed_mass / 10 g)`` and combines across meals as
+``1 − Π(1 − flag_m)`` (which is the same statement about the summed
+unabsorbed mass), so it stays in [0, 1) for any number of meals.
 """
 
 from dataclasses import dataclass
@@ -36,7 +40,14 @@ class MealEvent:
 
 
 # Maximum age of a meal that still contributes to absorption (minutes).
-# Beyond this the kernel output is treated as zero.
+#
+# Iter 97: a NUMERICAL NO-OP, not a cliff. Every component of the kernel's basis
+# bank carries < 1 % of its mass beyond this age by construction
+# (``GutModuleBase._KERNEL_BASIS``; asserted in tests/test_gut_module.py), so the
+# mask only saves compute on long-dead meals. Through iter 96 the kernel ended in
+# a hard step here (0.49 → 0 at 479 → 481 min for a 60 g meal), which for a 19:00
+# dinner put a −8 mg/dL/h glucose cliff at 03:00 — inside the scored pre-dawn
+# window. Raising this constant is safe; lowering it below ~480 is not.
 MEAL_ACTIVE_WINDOW_MIN: float = 480.0
 
 
@@ -50,6 +61,11 @@ MEAL_ACTIVE_WINDOW_MIN: float = 480.0
 # inherited from blood-state (mg/dL) units flattened gut MSE by ~225-1000x
 # per channel — see iter 12 → iter 13 handoff.
 GUT_OUTPUT_SCALE: tuple[float, float, float, float] = (2.0, 0.3, 0.5, 1.0)
+
+# Appearance units per gram of macro (teacher convention), re-exported so the
+# metabolic module can recover grams for its carbon budget without reaching
+# into the kernel class.
+APPEARANCE_UNITS_PER_G: tuple[float, float, float] = GutModuleBase.APPEARANCE_UNITS_PER_G
 
 
 def _active_meal_tensors(
@@ -71,6 +87,16 @@ def _active_meal_tensors(
     macros = torch.tensor(rows, dtype=torch.float32, device=device)
     dt_tensor = torch.tensor(dts, dtype=torch.float32, device=device)
     return macros, dt_tensor
+
+
+def combine_meals(per_meal: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+    """Sum the appearance channels over the meal axis (dim −2) and combine the
+    flags as ``1 − Π(1 − flag_m)``. ``per_meal[..., M, 4]`` → ``[..., 4]``."""
+    if mask is not None:
+        per_meal = per_meal * mask.unsqueeze(-1).to(per_meal.dtype)
+    appearance = per_meal[..., :3].sum(dim=-2)
+    flag = 1.0 - torch.prod(1.0 - per_meal[..., 3], dim=-1)
+    return torch.cat([appearance, flag.unsqueeze(-1)], dim=-1)
 
 
 class GutModule(nn.Module):
@@ -99,8 +125,8 @@ class GutModule(nn.Module):
             return self._zero_output.clone()
         macros, dt = active
         emb_batch = embedding.unsqueeze(0).expand(macros.shape[0], -1)
-        appearance = self.kernel.forward_single_meal(macros, dt, emb_batch)
-        return appearance.sum(dim=0)
+        per_meal = self.kernel.forward_single_meal(macros, dt, emb_batch)  # [M, 4]
+        return combine_meals(per_meal)
 
     def forward_window(
         self,
@@ -124,13 +150,12 @@ class GutModule(nn.Module):
         here shifts every meal's absorption curve by the window start and
         crushes post-meal amplitude — this was the iter-87 frame bug. Length
         T, shared across batch members (gut depends on (t, meals, emb), not on
-        state, so per-batch times aren't useful here). Output is
-        bit-equivalent (modulo float-reduction order) to stacking
-        ``forward(t, meals, embedding)`` for each ``t`` and each batch row.
+        state, so per-batch times aren't useful here). Output equals combining
+        ``forward(t, meals, embedding)`` over ``t`` for each batch row (modulo
+        float-reduction order).
 
-        Vectorizes across B, T, and the meal list, so the kernel runs once
-        on ``(B·T·M, ...)`` with masking — one kernel call per window
-        regardless of batch size.
+        The learned part of the kernel runs ONCE per batch row; the analytic
+        basis runs once per (t, meal); the two meet in one einsum.
         """
         unbatched = embedding.dim() == 1
         if unbatched:
@@ -152,25 +177,19 @@ class GutModule(nn.Module):
         )  # [M]
 
         dt = times.unsqueeze(1) - meal_times.unsqueeze(0)  # [T, M]
-        mask = (dt >= 0.0) & (dt <= MEAL_ACTIVE_WINDOW_MIN)  # [T, M]
+        mask = ((dt >= 0.0) & (dt <= MEAL_ACTIVE_WINDOW_MIN)).to(torch.float32)  # [T, M]
 
-        M = int(macros.shape[0])
-        # One kernel call on (B*T*M, ...) — broadcast B and T across the
-        # meal-and-embedding axes, then reshape back at the end.
-        dt_flat = dt.unsqueeze(0).expand(B, -1, -1).reshape(-1)
-        macros_flat = (
-            macros.unsqueeze(0).unsqueeze(0)
-            .expand(B, T, -1, -1)
-            .reshape(B * T * M, 3)
-        )
-        emb_flat = (
-            embedding.unsqueeze(1).unsqueeze(2)
-            .expand(-1, T, M, -1)
-            .reshape(B * T * M, -1)
-        )
+        weights, f_bio = self.kernel.mixture(embedding)      # [B,3,3,K], [B,3,3]
+        density = self.kernel.basis_density(dt)              # [T, M, K]
+        survival = self.kernel.basis_survival(dt)            # [T, M, K]
 
-        appearance = self.kernel.forward_single_meal(macros_flat, dt_flat, emb_flat)
-        appearance = appearance.reshape(B, T, M, GUT_OUTPUT_DIM)
-        appearance = appearance * mask.unsqueeze(0).unsqueeze(-1).to(appearance.dtype)
-        out = appearance.sum(dim=2)  # [B, T, GUT_OUTPUT_DIM]
+        # appearance[b,t,m,j] = Σ_i macros[m,i] · f_bio[b,i,j] · Σ_k w[b,i,j,k] · basis_k(dt[t,m])
+        appearance = torch.einsum("bijk,tmk,mi,bij->btmj", weights, density, macros, f_bio)
+        # unabsorbed[b,t,m] = Σ_i macros[m,i] · Σ_k w[b,i,i,k] · Q_k(dt[t,m])
+        w_diag = torch.diagonal(weights, dim1=1, dim2=2).movedim(-1, 1)  # [B, 3, K]
+        unabsorbed = torch.einsum("bik,tmk,mi->btm", w_diag, survival, macros)
+        m = mask.unsqueeze(0)
+        appearance = (appearance * m.unsqueeze(-1)).sum(dim=2)               # [B, T, 3]
+        flag = 1.0 - torch.exp(-(unabsorbed * m).sum(dim=2) / self.kernel.FLAG_GATE_SCALE_G)
+        out = torch.cat([appearance, flag.unsqueeze(-1)], dim=-1)            # [B, T, 4]
         return out.squeeze(0) if unbatched else out

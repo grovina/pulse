@@ -331,7 +331,12 @@ STATE_DIM = len(MARKERS)
 # metabolic 20, appetite 16, stress 12, cardiovascular 16, thermoreg 8, respiratory 8}) keep
 # their widths, so iter-60's actual fix survives intact.
 EMBEDDING_DIM = 32
-TIME_FEATURES_DIM = 3
+# Iter 97: [sin, cos, sin 2x, cos 2x] of the 24 h clock. The linear `(t_hours-12)/12` ramp
+# is gone — it was a sawtooth (+1 -> -1 at midnight) that put a vector-field jump of
+# -116 bpm/h on HR and -9 C/h on temperature across 00:00 (review 2026-09-04, item 3.1).
+# The second harmonic is what lets a module express a dawn ASYMMETRY (a rise that is
+# steeper than the fall) without a discontinuity. See modules/base.py:compute_time_features.
+TIME_FEATURES_DIM = 4
 EXTERNAL_INPUT_DIM = 2  # sleep_wake, activity
 
 # Gut module outputs (not part of the ODE state)

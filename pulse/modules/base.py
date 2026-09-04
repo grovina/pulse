@@ -21,6 +21,8 @@ from typing import Callable, Optional
 import torch
 import torch.nn as nn
 
+from ..types import TIME_FEATURES_DIM
+
 # Floor on every sigmoid-gate temperature (the ``/ exp(log_temp)`` divisor).
 # The gate gradient w.r.t. its inputs scales as 1/temp and the gradient w.r.t.
 # log_temp scales as exp(-log_temp); if the optimizer drives the temperature
@@ -75,6 +77,25 @@ class SpeciesHead(nn.Module):
         prod = nn.functional.softplus(raw[..., 0:1]).squeeze(-1)
         cons = nn.functional.softplus(raw[..., 1:2]).squeeze(-1)
         return prod, cons
+
+
+class ConstantFluxHead(nn.Module):
+    """A parameter-free head that emits ``(1, 1)``.
+
+    Iter 97. Several species have STRUCTURAL rates assembled in their module's
+    ``forward`` (glucose, insulin_action, intestinal_bile) and never read their
+    head's output. Through iter 96 those species still constructed a full
+    ``SpeciesHead`` — 4,514 parameters each at hidden 48 — that no loss could
+    reach: 12,555 of 75,914 parameters (16.5 %) had no gradient path (review
+    2026-09-04, end of section 3). A parameter that cannot move is not
+    "learned"; it is dead weight in every optimizer step and every checkpoint.
+    This head takes the species' slot in the ``(prod, cons)`` protocol and costs
+    nothing.
+    """
+
+    def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        ones = torch.ones_like(state_self)
+        return ones, ones
 
 
 # ITER 95 — `SetpointHead` REMOVED (was here, iters 51-94).
@@ -141,6 +162,15 @@ class BasalPlusGatedPeakHead(nn.Module):
     ``x`` (state-self || coupling || external || embedding || time)
     that selects the stimulus. The parent module's input layout is:
     state[0:n_species], coupling[n_species:n_species+n_coupling], ...
+
+    Iter 97: ``forward`` also accepts an explicit ``stimulus`` tensor which
+    overrides the ``x[..., stimulus_idx]`` read. A module that knows a
+    per-patient reference (the metabolic module's Gb / Ib heads) passes the
+    DEVIATION from that reference here, so the gate fires relative to the
+    patient's own baseline instead of the population's (review 2026-09-04,
+    item 3.4: population thresholds put the insulin gate at 116.5 mg/dL for
+    everyone, so a Gb=120 patient fasted with a standing +34 % clearance and
+    a Gb=75 patient fasted to 54 mg/dL).
     """
 
     def __init__(
@@ -167,8 +197,14 @@ class BasalPlusGatedPeakHead(nn.Module):
         self.g_thresh = nn.Parameter(torch.tensor(float(init_thresh)))
         self.log_g_temp = nn.Parameter(torch.tensor(float(init_log_temp)))
 
-    def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        stimulus = x[..., self.stimulus_idx]
+    def forward(
+        self,
+        x: torch.Tensor,
+        state_self: torch.Tensor,
+        stimulus: Optional[torch.Tensor] = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if stimulus is None:
+            stimulus = x[..., self.stimulus_idx]
         gate = torch.sigmoid(self.gate_dir * (stimulus - self.g_thresh) / gate_temp(self.log_g_temp))
         raw = self.network(x)
         basal = nn.functional.softplus(raw[..., 0])
@@ -255,7 +291,7 @@ class MassActionModule(nn.Module):
         super().__init__()
         self.n_species = n_species
 
-        input_dim = n_species + n_coupling + n_external + embedding_dim + 3  # 3 = time features
+        input_dim = n_species + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
         self._input_dim = input_dim
 
         factories = head_factories or {}
@@ -346,7 +382,7 @@ class LearnedDynamicsModule(nn.Module):
         super().__init__()
         self.n_state = n_state
 
-        input_dim = n_state + n_coupling + n_external + embedding_dim + 3
+        input_dim = n_state + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
 
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -355,6 +391,17 @@ class LearnedDynamicsModule(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, n_state),
         )
+        # Iter 97: the output layer starts at zero, so a freshly built module rests at
+        # its setpoint (cardiovascular / thermoreg) or holds level (respiratory) until
+        # training gives the drivers authority. PyTorch's default init put an O(0.3)/min
+        # driver on every vital — for temperature (k = 0.025/min) that is a +12 C
+        # equilibrium offset: a fresh model integrated 24 h ran core temperature to
+        # 41.4 C at the zero embedding. The weight gradient of a zero output layer is the
+        # hidden activation, so nothing is starved; this is the same init the setpoint
+        # heads already use.
+        with torch.no_grad():
+            self.network[-1].weight.zero_()
+            self.network[-1].bias.zero_()
 
     def forward(
         self,
@@ -371,28 +418,66 @@ class LearnedDynamicsModule(nn.Module):
 class GutModuleBase(nn.Module):
     """Learned absorption kernel for the gut module.
 
-    Factorized form: appearance rates are linear in meal macros, with a
-    learned per-gram time-and-embedding-conditional response matrix. The
-    kernel emits
+    Iter 97 — THE KERNEL IS A NORMALIZED DENSITY TIMES A LEARNED MASS GAIN.
 
-        K(t, emb) ∈ R^{3 macros × 3 channels}_{≥0}
+        K_ij(t; emb) = f_bio_ij(emb) · density_ij(t; emb)
+        appearance_j(t) = Σ_i  macros_i · K_ij(t)
 
-    and appearance is computed as ``macros @ K``. Two physical
-    properties hold by construction (not by SGD):
+    where ``density_ij`` is a learned MIXTURE over a fixed bank of gamma
+    shapes (``_KERNEL_BASIS``), every one of which is zero at t = 0, integrates
+    to exactly 1 over [0, ∞), and decays smoothly. So, by construction and not
+    by SGD:
 
-    * ``appearance(macros=0) == 0``  — no food, no nutrient appearance.
-    * ``appearance(α·macros) == α·appearance(macros)`` — dose-linearity,
-      which also implies dose-monotonicity.
+    * ``K(0) = 0``                       — nothing appears at the instant of the meal;
+    * ``∫ K_ij dt = f_bio_ij``           — the integral of appearance is the ingested
+                                           mass times a learned per-patient gain;
+    * ``K -> 0`` smoothly               — and every basis component has < 1 % of its
+                                           mass beyond ``MEAL_ACTIVE_WINDOW_MIN``
+                                           (asserted in tests), so the active-window
+                                           mask in ``modules/gut.py`` is a numerical
+                                           no-op rather than a cliff.
 
-    These are the two pathologies that broke iters 13–15 (chronic
-    nonzero baseline at zero dose; tanh-induced saturation past ~30 g).
-    Solving them structurally costs zero parameters (kernel hypothesis
-    space actually shrinks: macros no longer enter the MLP).
+    Through iter 96 the kernel was an MLP on (t, emb) with softplus outputs.
+    Nothing forced any of the three properties, and none held: for a 60/20/25 g
+    meal the untrained kernel's appearance at dt = 0 was its MAXIMUM, its AUC
+    was 3.5x the teacher's, 23 % of it lay beyond 240 min, and it stepped
+    0.49 -> 0 at 480 min — which, for a 19:00 dinner, put an artificial
+    -8 mg/dL/h glucose cliff at 03:00, inside the scored pre-dawn window
+    (review 2026-09-04, item 2.3). A ``carb_mass_balance`` LOSS existed and
+    still left the AUC 3.5x off; the only thing that makes conservation hold is
+    to build it in.
 
-    The 4th output channel, ``nutrient_flag``, is a binary "fed-state"
-    indicator that is *not* per-gram. It uses a separate sigmoid head
-    on (t, emb), gated by an analytic ``1 − exp(−total_macro / 10g)``
-    presence factor so it also vanishes at zero dose.
+    The two properties the previous kernel DID guarantee are kept: appearance
+    is exactly zero at zero dose and exactly linear in dose (macros never enter
+    the MLP), and gradients flow straight through to the embedding and the
+    kernel parameters.
+
+    Because the MLP sees ONLY the embedding — time enters through the analytic
+    basis — it runs once per (meal, patient) rather than once per time step,
+    and a freshly built kernel is already a plausible absorption curve: the
+    output layer starts at zero with its bias set to the priors in
+    ``_INIT_MIXTURE`` / ``_INIT_F_BIO`` (carbohydrate peaking ~25 min with a
+    slower tail, fat ~60-90 min, protein ~40-60 min), so training starts in
+    the right regime and the embedding's authority over shape and gain grows
+    from zero.
+
+    ``f_bio`` is in APPEARANCE UNITS PER GRAM. The teacher (and every training
+    target derived from it) reports carbohydrate appearance as
+    ``2.55 × g/min`` and fat/protein as ``3.0 × g/min`` — a phenomenological
+    gain, not a mass-conserving one (``knowledge/full_body.py``
+    ``CARB_APPEARANCE_GAIN``; review item 2.4 proposes making it
+    ``(1-f_hep)·1000/V_G``). The student's kernel therefore carries that unit
+    convention in ``APPEARANCE_UNITS_PER_G`` and initializes ``f_bio`` at it;
+    the metabolic module divides by the same constant to recover grams for
+    its carbon budget. When the teacher's units change, only this constant
+    and the init move.
+
+    The 4th output channel, ``nutrient_flag``, is no longer a separate MLP.
+    It is ``1 − exp(−unabsorbed_mass / FLAG_GATE_SCALE_G)`` where
+    ``unabsorbed_mass`` is the ingested mass whose kernel has NOT yet
+    appeared (the mixture's survival function) — a physical "fed state" that
+    is 0 at zero dose, ~1 just after a real meal, and decays smoothly to 0 as
+    the meal is absorbed, with no cliff at the window edge.
 
     Outputs: [glucose_appearance, lipid_appearance, amino_appearance, nutrient_flag]
     """
@@ -404,28 +489,162 @@ class GutModuleBase(nn.Module):
     N_APPEARANCE: int = 3
 
     # Characteristic macro mass (grams) for the nutrient_flag presence
-    # gate. The gate ``1 − exp(−total_macro / FLAG_GATE_SCALE_G)`` is 0
+    # gate. The gate ``1 − exp(−unabsorbed / FLAG_GATE_SCALE_G)`` is 0
     # at zero dose, 0.63 at 10 g, 0.95 at 30 g, 0.9999 at 100 g. Set
     # small enough that even a snack pushes the flag toward saturation.
     FLAG_GATE_SCALE_G: float = 10.0
 
+    # Appearance units per gram of macro, per channel — the teacher's convention
+    # (see the class docstring). Order: (glucose, lipid, amino).
+    APPEARANCE_UNITS_PER_G: tuple[float, float, float] = (2.55, 3.0, 3.0)
+
+    # The basis bank as (gamma shape, gamma rate /min). Each component is chosen by
+    # its PEAK time ``(shape − 1) / rate`` and its shape is raised for the slow
+    # components so that the mass beyond 480 min stays below 1 % for every one
+    # of them (shape-2 at a 180-min peak would leave 31 % beyond 480). Peaks:
+    # 15, 25, 40, 60, 90, 130, 180 min — spanning the teacher's fast carbohydrate
+    # (0.04/min → 25 min) through its slow fat/carbohydrate tails (0.012-0.015/min
+    # → 67-83 min) with room on both sides for the mixture to learn.
+    _KERNEL_BASIS: tuple[tuple[float, float], ...] = (
+        (2.0, 1.0 / 15.0),
+        (2.0, 1.0 / 25.0),
+        (2.0, 1.0 / 40.0),
+        (2.0, 1.0 / 60.0),
+        (3.0, 2.0 / 90.0),
+        (4.0, 3.0 / 130.0),
+        (6.0, 5.0 / 180.0),
+    )
+    # Prior mixture weights per (macro -> channel) diagonal entry, over the basis
+    # bank above. Off-diagonal entries start uniform with a tiny f_bio.
+    #   carbs -> glucose : teacher 75 % fast (peak 25) + 25 % slow (peak 83)
+    #   fats  -> lipid   : teacher rate 0.015 (peak 67)
+    #   prot  -> amino   : teacher rate 0.02 (peak 50)
+    _INIT_MIXTURE: tuple[tuple[float, ...], ...] = (
+        (0.05, 0.55, 0.15, 0.05, 0.15, 0.05, 0.00),
+        (0.00, 0.00, 0.05, 0.45, 0.35, 0.15, 0.00),
+        (0.00, 0.05, 0.40, 0.40, 0.15, 0.00, 0.00),
+    )
+    _INIT_F_BIO_OFF_DIAGONAL: float = 0.01
+
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__()
-        # Input is now ONLY (t/60, embedding) — macros are factored out
-        # of the MLP and applied as a multiplicative outer factor.
-        input_dim = 1 + embedding_dim
-        # Output: N_MACROS × N_APPEARANCE response matrix entries, plus
-        # one scalar logit for the nutrient_flag head.
-        n_response = self.N_MACROS * self.N_APPEARANCE
-        output_dim = n_response + 1
+        n_pairs = self.N_MACROS * self.N_APPEARANCE
+        self.n_basis = len(self._KERNEL_BASIS)
+        self.register_buffer(
+            "basis_shape",
+            torch.tensor([s for s, _ in self._KERNEL_BASIS], dtype=torch.float32),
+        )
+        self.register_buffer(
+            "basis_rate",
+            torch.tensor([r for _, r in self._KERNEL_BASIS], dtype=torch.float32),
+        )
+        # log-normalizer of each gamma density: shape·log(rate) − lgamma(shape)
+        self.register_buffer(
+            "basis_log_norm",
+            self.basis_shape * torch.log(self.basis_rate) - torch.lgamma(self.basis_shape),
+        )
+        self.register_buffer(
+            "appearance_units_per_g",
+            torch.tensor(self.APPEARANCE_UNITS_PER_G, dtype=torch.float32),
+        )
 
+        # Input is ONLY the embedding; time enters through the analytic basis and
+        # macros through the outer product. Output: mixture logits for every
+        # (macro, channel) pair over the basis, plus one f_bio pre-softplus per pair.
+        output_dim = n_pairs * self.n_basis + n_pairs
         self.kernel = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
+            nn.Linear(embedding_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, output_dim),
         )
+        # Zero output weights + prior biases: every patient starts on the same
+        # physiological curve; the embedding's authority grows from zero.
+        with torch.no_grad():
+            self.kernel[-1].weight.zero_()
+            bias = torch.zeros(output_dim)
+            logits = torch.zeros(self.N_MACROS, self.N_APPEARANCE, self.n_basis)
+            f_raw = torch.full(
+                (self.N_MACROS, self.N_APPEARANCE),
+                _inverse_softplus(self._INIT_F_BIO_OFF_DIAGONAL),
+            )
+            for i in range(self.N_MACROS):
+                w = torch.tensor(self._INIT_MIXTURE[i], dtype=torch.float32)
+                logits[i, i] = torch.log(w + 1e-3)
+                f_raw[i, i] = _inverse_softplus(self.APPEARANCE_UNITS_PER_G[i])
+            bias[: n_pairs * self.n_basis] = logits.reshape(-1)
+            bias[n_pairs * self.n_basis:] = f_raw.reshape(-1)
+            self.kernel[-1].bias.copy_(bias)
+
+    # ---- the analytic basis ---------------------------------------------------
+
+    def basis_density(self, dt: torch.Tensor) -> torch.Tensor:
+        """Gamma densities of the bank at ``dt`` minutes → ``[..., n_basis]``.
+
+        Each integrates to 1 over [0, ∞) and is exactly 0 at dt = 0 (all shapes
+        > 1). Negative ``dt`` is treated as 0 (the caller masks it anyway).
+        """
+        t = dt.clamp(min=0.0).unsqueeze(-1)
+        log_t = torch.log(t)  # -inf at t = 0 → density exactly 0 there
+        log_d = self.basis_log_norm + (self.basis_shape - 1.0) * log_t - self.basis_rate * t
+        return torch.exp(log_d)
+
+    def basis_survival(self, dt: torch.Tensor) -> torch.Tensor:
+        """Fraction of each basis component's mass NOT yet appeared by ``dt``.
+
+        The regularized upper incomplete gamma for integer shape k:
+        ``Q(k, x) = e^{-x} Σ_{j<k} x^j / j!`` with ``x = rate · dt``.
+        """
+        x = self.basis_rate * dt.clamp(min=0.0).unsqueeze(-1)
+        k_max = int(self.basis_shape.max().item())
+        term = torch.ones_like(x)
+        total = torch.zeros_like(x)
+        for j in range(k_max):
+            total = total + term * (self.basis_shape > j).to(x.dtype)
+            term = term * x / float(j + 1)
+        return torch.exp(-x) * total
+
+    def kernel_tail_mass(self, t_minutes: float) -> torch.Tensor:
+        """Mass beyond ``t_minutes`` for every basis component (for the window test)."""
+        return self.basis_survival(torch.tensor(float(t_minutes))).squeeze(0)
+
+    # ---- the learned part -----------------------------------------------------
+
+    def mixture(self, embedding: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(weights[..., 3, 3, n_basis], f_bio[..., 3, 3])`` from the embedding."""
+        raw = self.kernel(embedding)
+        n_pairs = self.N_MACROS * self.N_APPEARANCE
+        logits = raw[..., : n_pairs * self.n_basis].reshape(
+            *raw.shape[:-1], self.N_MACROS, self.N_APPEARANCE, self.n_basis)
+        weights = torch.softmax(logits, dim=-1)
+        f_bio = nn.functional.softplus(raw[..., n_pairs * self.n_basis:]).reshape(
+            *raw.shape[:-1], self.N_MACROS, self.N_APPEARANCE)
+        return weights, f_bio
+
+    def response_and_flag(
+        self,
+        macros: torch.Tensor,
+        weights: torch.Tensor,
+        f_bio: torch.Tensor,
+        density: torch.Tensor,
+        survival: torch.Tensor,
+    ) -> torch.Tensor:
+        """Assemble ``[..., 4]`` from broadcast-compatible pieces.
+
+        macros ``[..., 3]``; weights ``[..., 3, 3, K]``; f_bio ``[..., 3, 3]``;
+        density / survival ``[..., K]``.
+        """
+        # K_ij(t) = f_bio_ij · Σ_k w_ijk · basis_k(t)
+        dens = (weights * density.unsqueeze(-2).unsqueeze(-2)).sum(dim=-1)  # [..., 3, 3]
+        kernel = f_bio * dens
+        appearance = torch.einsum("...m,...mn->...n", macros, kernel)
+        # Unabsorbed mass of macro i follows its own (diagonal) mixture's survival.
+        w_diag = torch.diagonal(weights, dim1=-3, dim2=-2).movedim(-1, -2)  # [..., 3, K]
+        surv_i = (w_diag * survival.unsqueeze(-2)).sum(dim=-1)              # [..., 3]
+        unabsorbed = (macros * surv_i).sum(dim=-1)
+        nutrient_flag = 1.0 - torch.exp(-unabsorbed / self.FLAG_GATE_SCALE_G)
+        return torch.cat([appearance, nutrient_flag.unsqueeze(-1)], dim=-1)
 
     def forward_single_meal(
         self,
@@ -436,39 +655,33 @@ class GutModuleBase(nn.Module):
         """Compute appearance rates for a single meal.
 
         macros: ``[..., 3]`` (carbs, fats, proteins) in grams
-        time_since_meal: ``[...]`` minutes (will be normalized internally)
+        time_since_meal: ``[...]`` minutes
         embedding: ``[..., embedding_dim]``
         Returns: ``[..., 4]`` = (glucose, lipid, amino, nutrient_flag)
         """
-        t_norm = time_since_meal / 60.0
-        x = torch.cat([t_norm.unsqueeze(-1), embedding], dim=-1)
-        raw = self.kernel(x)
+        weights, f_bio = self.mixture(embedding)
+        density = self.basis_density(time_since_meal)
+        survival = self.basis_survival(time_since_meal)
+        return self.response_and_flag(macros, weights, f_bio, density, survival)
 
-        n_response = self.N_MACROS * self.N_APPEARANCE
-        # Per-gram response matrix K ∈ R_{≥0}^{N_MACROS × N_APPEARANCE}.
-        # softplus keeps every entry non-negative so appearance rates
-        # cannot flip sign, and provides smooth gradients near zero.
-        K = nn.functional.softplus(
-            raw[..., :n_response].reshape(*raw.shape[:-1], self.N_MACROS, self.N_APPEARANCE)
-        )
-        # appearance[..., j] = Σ_i macros[..., i] · K[..., i, j]
-        appearance = torch.einsum("...m,...mn->...n", macros, K)
 
-        # nutrient_flag head: sigmoid on (t, emb), analytically gated by
-        # meal-presence so it vanishes at zero dose.
-        flag_logit = raw[..., n_response]
-        total_macro = macros.sum(dim=-1)
-        presence = 1.0 - torch.exp(-total_macro / self.FLAG_GATE_SCALE_G)
-        nutrient_flag = (torch.sigmoid(flag_logit) * presence).unsqueeze(-1)
-
-        return torch.cat([appearance, nutrient_flag], dim=-1)
+def _inverse_softplus(y: float) -> float:
+    return math.log(math.expm1(y))
 
 
 def compute_time_features(t_minutes: torch.Tensor) -> torch.Tensor:
-    """Cyclic time encoding: linear hour + sin/cos with 24h period."""
-    t_hours = t_minutes / 60.0
+    """Cyclic time encoding: first and second harmonic of the 24 h clock.
+
+    ``[sin θ, cos θ, sin 2θ, cos 2θ]`` with ``θ = 2π·hour/24``. Iter 97 dropped
+    the leading ``(t_hours − 12)/12`` ramp: a sawtooth that jumped +1 → −1 at
+    midnight and gave every module a vector-field discontinuity there (see
+    ``types.TIME_FEATURES_DIM``). Continuous and periodic by construction; the
+    second harmonic is what makes a dawn asymmetry expressible.
+    """
+    theta = 2 * math.pi * (t_minutes / 60.0) / 24.0
     return torch.stack([
-        (t_hours - 12.0) / 12.0,
-        torch.sin(2 * math.pi * t_hours / 24.0),
-        torch.cos(2 * math.pi * t_hours / 24.0),
+        torch.sin(theta),
+        torch.cos(theta),
+        torch.sin(2 * theta),
+        torch.cos(2 * theta),
     ], dim=-1)
