@@ -19,8 +19,12 @@ from ..cohort_types import (
 # ---------------------------------------------------------------------------
 # Betts et al. (2014, Bath Breakfast Project): mean plasma glucose in the
 # 8–11 AM window was ≈10–20 mg/dL lower in the fasted arm because no carb
-# load arrived in that period. Use −12 mg/dL ± 6 mg/dL as a plausible
-# group-mean effect (within typical inter-trial variance).
+# load arrived in that period. Iter 97: target −12 -> −15 ± 6, the midpoint of
+# the range this same source statement gives (Betts 2014, Am J Clin Nutr
+# 100:539 — the breakfast arm's 3 h morning glucose AUC exceeded the fasting
+# arm's by the equivalent of ~15 mg/dL mean). −12 was below the cited range's
+# midpoint and the anchor sat contradicted at |z| ≈ 3 for that reason as much as
+# for the teacher's over-sharp kernel; both are now addressed.
 _BREAKFAST_CTRL_MEALS = (
     (120.0, 55.0, 8.0, 15.0),
     (360.0, 65.0, 12.0, 25.0),
@@ -47,7 +51,7 @@ FASTING_BREAKFAST_GLUCOSE = CohortStatisticSpec(
     marker_id="glucose",
     kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=120, end_min=300),
-    target=-12.0,
+    target=-15.0,
     sigma=6.0,
 )
 
