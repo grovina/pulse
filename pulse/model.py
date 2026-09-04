@@ -11,8 +11,10 @@ Architecture constraints:
   - Vital signs (Cardiovascular, Thermoreg, Respiratory) have learned dynamics
   - The Gut module is a learned absorption kernel, not an ODE
 
-External inputs (sleep/wake, activity) are optional. When missing, each
-module uses a learned default conditioned on embedding and time.
+External inputs (sleep/wake, activity) are optional. When missing, the
+network substitutes a learned default conditioned on the person embedding and
+the time of day (``default_external_inputs``); asleep implies rest (activity 0)
+by construction, and 0 means rest everywhere.
 """
 
 import math
@@ -22,7 +24,7 @@ import torch
 import torch.nn as nn
 
 from .types import (
-    STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM,
+    STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM, TIME_FEATURES_DIM,
     MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES,
     NORM_CENTER, NORM_SCALE,
     PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX,
@@ -44,6 +46,40 @@ from .modules.gut import MealEvent
 # PHYSIOLOGICAL_MIN/MAX in types.py for the derivation and rationale.
 _PHYS_MIN = torch.tensor(PHYSIOLOGICAL_MIN, dtype=torch.float32)
 _PHYS_MAX = torch.tensor(PHYSIOLOGICAL_MAX, dtype=torch.float32)
+
+# Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
+# stay strictly positive along every trajectory (review 2026-09-04, items 3.5/3.7). The
+# cardiovascular module writes HRV's and pulse pressure's dynamics in log space and
+# returns them as raw rates `x·dlog x/dt`; this step is the same first-order update as
+# `x + rate·dt` and cannot cross zero. Pulse pressure is SBP − DBP, so SBP is rebuilt as
+# DBP + PP after the step, which is what makes SBP > DBP hold by construction rather
+# than by docstring.
+_HRV_IDX = MARKER_INDEX["hrv"]
+_SBP_IDX = MARKER_INDEX["sbp"]
+_DBP_IDX = MARKER_INDEX["dbp"]
+
+
+def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float) -> torch.Tensor:
+    """`x·exp(rate·dt/x)` for x > 0; falls back to `x + rate·dt` at x <= 0 (an initial
+    state handed in at zero — never produced by the step itself)."""
+    positive = x > 0
+    denom = torch.where(positive, x, torch.ones_like(x))
+    return torch.where(positive, x * torch.exp(rate * dt / denom), x + rate * dt)
+
+
+def euler_step(state: torch.Tensor, rates: torch.Tensor, dt: float) -> torch.Tensor:
+    """One forward-Euler step of the raw state, with the positive-by-construction
+    markers (HRV, pulse pressure) stepped multiplicatively. Shared by ``integrate``
+    and anyone who steps the model by hand."""
+    new_state = state + rates * dt
+    hrv_new = _exp_step(state[..., _HRV_IDX], rates[..., _HRV_IDX], dt)
+    pp = state[..., _SBP_IDX] - state[..., _DBP_IDX]
+    pp_new = _exp_step(pp, rates[..., _SBP_IDX] - rates[..., _DBP_IDX], dt)
+    dbp_new = new_state[..., _DBP_IDX]
+    new_state = new_state.clone()
+    new_state[..., _HRV_IDX] = hrv_new
+    new_state[..., _SBP_IDX] = dbp_new + pp_new
+    return new_state
 
 
 class ModularPhysiologyNetwork(nn.Module):
@@ -101,9 +137,38 @@ class ModularPhysiologyNetwork(nn.Module):
         # appearance channels. Takes no embedding, so it needs no precompute path.
         self.duodenal = DuodenalDeliveryKernel()
 
-        # Learned defaults for missing external inputs
-        self.default_sleep_wake = nn.Parameter(torch.tensor(0.5))
-        self.default_activity = nn.Parameter(torch.tensor(0.1))
+        # Every constructor argument, so a checkpoint can rebuild the exact layout
+        # without re-deriving module widths from `hidden_dim` (see `from_checkpoint`).
+        self.constructor_kwargs = {
+            "embedding_dim": int(embedding_dim),
+            "metabolic_hidden": int(metabolic_hidden),
+            "appetite_hidden": int(appetite_hidden),
+            "stress_hidden": int(stress_hidden),
+            "cardiovascular_hidden": int(cardiovascular_hidden),
+            "thermoreg_hidden": int(thermoreg_hidden),
+            "respiratory_hidden": int(respiratory_hidden),
+            "gut_hidden": int(gut_hidden),
+            "hepatobiliary_hidden": int(hepatobiliary_hidden),
+        }
+
+        # Learned defaults for missing external inputs (iter 97; review item 1.7 and
+        # student-review item 13). Through iter 96 these were two GLOBAL scalars,
+        # `default_sleep_wake = 0.5` and `default_activity = 0.1` — the PRD and the
+        # docstring above promised a default "conditioned on embedding and time", and
+        # 0.1 is not rest: at the teacher's meaning it is +8.3 bpm of activity drive on
+        # every real-data night scored at that default. The default is now a small head
+        # on (embedding, time features) emitting
+        #     sleep_wake = σ(a),   activity = sleep_wake · σ(b)
+        # so a default that says "asleep" implies rest, and rest = 0 is representable
+        # (σ(b) → 0). Zero-init output weights; biases give sleep_wake 0.5 and an awake
+        # NEAT floor of 0.02 at cold start (so activity 0.01 — not 0.1).
+        self.default_inputs_net = nn.Sequential(
+            nn.Linear(embedding_dim + TIME_FEATURES_DIM, 16), nn.Tanh(), nn.Linear(16, 2),
+        )
+        with torch.no_grad():
+            self.default_inputs_net[-1].weight.zero_()
+            self.default_inputs_net[-1].bias.copy_(
+                torch.tensor([0.0, math.log(0.02 / 0.98)]))
 
         # State indices per module
         self._met_idx = MODULE_MARKER_INDICES["metabolic"]
@@ -124,6 +189,44 @@ class ModularPhysiologyNetwork(nn.Module):
 
         self.register_buffer("norm_center", torch.tensor(NORM_CENTER, dtype=torch.float32))
         self.register_buffer("norm_scale", torch.tensor(NORM_SCALE, dtype=torch.float32))
+
+    @classmethod
+    def from_checkpoint(cls, checkpoint: dict, strict: bool = True) -> "ModularPhysiologyNetwork":
+        """Rebuild the model a checkpoint was trained with.
+
+        Prefers ``checkpoint["model_config"]`` (the ``constructor_kwargs`` this class
+        records; ``train.py`` should save it alongside ``model_state``). Falls back to
+        the historical derivation of every module width from ``hidden_dim`` so older
+        artifacts still load.
+        """
+        cfg = checkpoint.get("model_config")
+        if cfg is None:
+            h = int(checkpoint.get("hidden_dim", 48))
+            cfg = {
+                "embedding_dim": int(checkpoint.get("embedding_dim", EMBEDDING_DIM)),
+                "metabolic_hidden": h,
+                "appetite_hidden": max(24, h // 2),
+                "stress_hidden": max(24, h // 2),
+                "cardiovascular_hidden": h,
+                "thermoreg_hidden": max(16, h // 3),
+                "respiratory_hidden": max(16, h // 3),
+            }
+        model = cls(**cfg)
+        model.load_state_dict(checkpoint.get("model_state", checkpoint), strict=strict)
+        return model
+
+    def default_external_inputs(
+        self,
+        embedding: torch.Tensor,
+        time_feats: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Learned ``(sleep_wake, activity)`` defaults for ``embedding[B, E]`` at
+        ``time_feats[B, TIME_FEATURES_DIM]``. ``activity`` is gated by ``sleep_wake``
+        (asleep ⇒ rest); both in [0, 1)."""
+        out = self.default_inputs_net(torch.cat([embedding, time_feats], dim=-1))
+        sw = torch.sigmoid(out[..., 0])
+        act = sw * torch.sigmoid(out[..., 1])
+        return sw, act
 
     def metabolic_coupling(
         self,
@@ -188,21 +291,30 @@ class ModularPhysiologyNetwork(nn.Module):
 
         batch = state.shape[0]
 
-        # Resolve external inputs (use learned defaults when missing)
-        sw = sleep_wake if sleep_wake is not None else self.default_sleep_wake.expand(batch)
-        act = activity if activity is not None else self.default_activity.expand(batch)
+        # Compute time features
+        time_feats = compute_time_features(t_minutes)
+        if time_feats.dim() == 1:
+            time_feats = time_feats.unsqueeze(0).expand(batch, -1)
+
+        # Resolve external inputs (learned defaults, conditioned on embedding and time,
+        # when missing). A provided sleep_wake still gates a defaulted activity, so a
+        # sleeping patient with no activity log is at rest.
+        if sleep_wake is None or activity is None:
+            sw_default, act_default = self.default_external_inputs(embedding, time_feats)
+        sw = sleep_wake if sleep_wake is not None else sw_default
         if sw.dim() == 0:
             sw = sw.expand(batch)
+        if activity is not None:
+            act = activity
+        elif sleep_wake is None:
+            act = act_default
+        else:
+            act = sw * act_default / torch.clamp(sw_default, min=1e-6)
         if act.dim() == 0:
             act = act.expand(batch)
 
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
-
-        # Compute time features
-        time_feats = compute_time_features(t_minutes)
-        if time_feats.dim() == 1:
-            time_feats = time_feats.unsqueeze(0).expand(batch, -1)
 
         # Project embeddings per module
         emb = {name: proj(embedding) for name, proj in self.embedding_projections.items()}
@@ -396,6 +508,7 @@ def integrate(
     activity: Optional[torch.Tensor] = None,
     gut_outputs: Optional[torch.Tensor] = None,
     checkpoint_segments: int = 0,
+    duodenal_outputs: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """Integrate the modular ODE forward in time.
 
@@ -416,6 +529,11 @@ def integrate(
     sleep_wake: [n_steps] tensor or None — per-step sleep/wake state
     activity: [n_steps] tensor or None — per-step activity level
     gut_outputs: [T, GUT_OUTPUT_DIM] or [B, T, GUT_OUTPUT_DIM] or None
+    duodenal_outputs: [T, 2] duodenal (fat, protein) delivery on the WINDOW-OFFSET clock,
+        as returned by :func:`precompute_duodenal_outputs`, or None to compute it here
+        from ``meals`` (iter 97 — mirrors ``gut_outputs`` so a training signal that
+        assembles its own window, e.g. the distillation's level anchors, can hand the
+        biliary axis its meal stimulus instead of zeros; review item 4.7).
 
     checkpoint_segments: if > 0 and grad is enabled, split the n_steps loop
         into roughly this many chunks and use torch.utils.checkpoint on each.
@@ -489,7 +607,7 @@ def integrate(
         # never zeros the gradient at the boundary — early training (when random
         # rollouts transiently hit the bounds) is not starved. In-distribution
         # the clamp never binds, so this is exactly `state + rates*dt`.
-        new_state = state + rates * dt
+        new_state = euler_step(state, rates, dt)
         clamped = torch.clamp(
             new_state,
             _PHYS_MIN.to(new_state.device),
@@ -502,13 +620,9 @@ def integrate(
     # reason: meal.time is a window offset while the model's t_minutes is absolute time
     # of day, and mixing them is the iter-87 bug. Embedding-independent, so one call
     # covers every batch member.
-    duo_outputs = None
-    if meals and hasattr(model, "duodenal"):
-        duo_outputs = model.duodenal.forward_window(
-            torch.arange(n_steps, dtype=torch.float32,
-                         device=initial_state.device) * dt,
-            meals,
-        )
+    duo_outputs = duodenal_outputs
+    if duo_outputs is None and meals and hasattr(model, "duodenal"):
+        duo_outputs = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
 
     use_checkpointing = (
         checkpoint_segments > 0
@@ -560,6 +674,27 @@ def integrate(
         chunk_outputs.append(chunk_states)
     out = torch.cat(chunk_outputs, dim=1)  # [B, T, STATE_DIM]
     return out.squeeze(0) if unbatched else out
+
+
+def precompute_duodenal_outputs(
+    model: ModularPhysiologyNetwork,
+    n_steps: int,
+    dt: float = 1.0,
+    meals: Optional[list[MealEvent]] = None,
+) -> torch.Tensor:
+    """Duodenal (fat, protein) delivery for a whole window → ``[T, 2]``.
+
+    Same WINDOW-OFFSET frame contract as :func:`precompute_gut_outputs`: ``meal.time``
+    is an offset from the window start, so the clock is ``arange(n_steps)·dt`` with no
+    ``start_time_minutes`` and no daily wrap. Embedding-independent (the kernel takes
+    none), so one call covers every batch member. Pass the result to
+    ``integrate(..., duodenal_outputs=...)``.
+    """
+    if meals is None:
+        meals = []
+    device = model.duodenal.log_fast_rate.device
+    times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
+    return model.duodenal.forward_window(times, meals)
 
 
 def precompute_gut_outputs(
