@@ -28,7 +28,14 @@ from typing import Any
 import numpy as np
 import torch
 
-from .modules.gut import MEAL_ACTIVE_WINDOW_MIN, MealEvent
+from .calibration import (
+    CalibrationSettings,
+    MeasurementPoint,
+    SoftEvidence,
+    active_meals,
+    calibrate_embedding as _shared_calibrate_embedding,
+)
+from .modules.gut import MealEvent
 from .model import ModularPhysiologyNetwork, integrate
 from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .verifier import evaluate_weak_checks
@@ -67,9 +74,14 @@ def _env_float(name: str, default: float) -> float:
     return float(v) if v else default
 
 
-BENCHMARK_GATE_CALIBRATE_STEPS = _env_int("PULSE_BENCHMARK_CALIBRATE_STEPS", 512)
-BENCHMARK_GATE_CALIBRATE_LR = _env_float("PULSE_BENCHMARK_CALIBRATE_LR", 0.05)
-BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
+# Iter 97 (review 5.3 / 5.4): the gate's calibration lives in pulse/calibration.py,
+# shared with the server. The constants below are read from CalibrationSettings
+# (env-overridable there) and kept as names for the sweep and older probes; the
+# history that follows explains how each number got where it is.
+_GATE_SETTINGS = CalibrationSettings.from_env()
+BENCHMARK_GATE_CALIBRATE_STEPS = _GATE_SETTINGS.max_steps
+BENCHMARK_GATE_CALIBRATE_LR = _GATE_SETTINGS.lr
+BENCHMARK_GATE_CALIBRATE_L2 = _GATE_SETTINGS.l2_weight
 # Iter 61: when the checkpoint carries embedding_prior_{mean,std} (the
 # trained-table per-dim statistics), calibrate_embedding can switch from
 # the legacy isotropic L2 to a diagonal Gaussian prior matched to the
@@ -120,7 +132,13 @@ BENCHMARK_GATE_CALIBRATE_L2 = _env_float("PULSE_BENCHMARK_CALIBRATE_L2", 0.003)
 # The prior DOES still help the near-mean synthetic cohort episodes (glucose 0.03->0.15 on 2 teacher
 # cohorts), so an anisotropic prior (weak on identifiable CVS dirs, strong on underdetermined glucose)
 # could get both — but w=0 already passes the gate and lowers real-user bias.
-BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
+# Iter 97: default 0.25 (CalibrationSettings.prior_weight). Both sweeps above were
+# run through the windowed forward map (review 1.3) with the hard clamp doing the
+# prior's job; neither number transfers. The PRD asks for a prior ("no single
+# observation should cause a large model update") and the iter-96 measurement
+# (step 1 moves ||emb|| by 1.9x the prior-mean norm) says it was missing. The
+# iter-97 sweep re-measures it on the corrected ruler.
+BENCHMARK_GATE_PRIOR_WEIGHT = _GATE_SETTINGS.prior_weight
 
 # Iter 81: hard leash on the calibrated embedding norm. Calibration is 512 Adam
 # steps at lr=0.05 with only a 0.003 iso-L2 penalty and (previously) no bound —
@@ -133,14 +151,11 @@ BENCHMARK_GATE_PRIOR_WEIGHT = _env_float("PULSE_BENCHMARK_PRIOR_WEIGHT", 0.0)
 # back to ||emb|| <= R after each Adam step keeps personalization on the stable
 # manifold (R = 3.0 is ~2.6x the trained norm — ample patient-specific freedom;
 # the meal stability probe shows zero blowups at ||emb|| <= 3). R <= 0 disables.
-BENCHMARK_GATE_CALIBRATE_MAX_NORM = _env_float("PULSE_BENCHMARK_CALIBRATE_MAX_NORM", 3.0)
-
-
-@dataclass
-class MeasurementPoint:
-    time: int
-    marker_id: str
-    value: float
+# Iter 97: 8.0 (CalibrationSettings.max_norm) -- a SAFETY clamp only. 3.0 was
+# ~19 sigma of the trained prior and was binding in 9-10 of 14 real episodes,
+# i.e. it was the regularizer; that job now belongs to the prior and the soft
+# norm penalty beyond CalibrationSettings.soft_norm_radius (3.0).
+BENCHMARK_GATE_CALIBRATE_MAX_NORM = _GATE_SETTINGS.max_norm
 
 
 @dataclass
@@ -398,19 +413,6 @@ def _parse_points_list(raw_points: list[Any], duration_min: int) -> list[Measure
     return points
 
 
-def active_meals(meals: list[MealEvent], t_start: float, t_end: float) -> list[MealEvent]:
-    """Meals whose absorption can touch the span ``[t_start, t_end)`` (episode frame).
-
-    Iter 97 (review 1.4): the lookback is the gut kernel's own active window,
-    ``MEAL_ACTIVE_WINDOW_MIN`` (480 min), not a hand-written 120. A meal older
-    than that contributes nothing; a younger one still delivers nutrient.
-    """
-    return [
-        m for m in meals
-        if m.time < t_end and m.time + MEAL_ACTIVE_WINDOW_MIN >= t_start
-    ]
-
-
 def _calibration_forward(
     embedding: torch.Tensor,
     *,
@@ -537,64 +539,29 @@ def calibrate_embedding(
     prior_weight: float = 1.0,
     max_norm: float = BENCHMARK_GATE_CALIBRATE_MAX_NORM,
 ) -> CalibrationResult:
-    """Optimize embedding to best explain sparse observations.
+    """Fixed-step MAP fit of the embedding (legacy signature).
 
-    Iter 97: one continuous integration over ``[0, last_observation]`` per
-    Adam step (``_calibration_forward``) — the same forward map the scorer
-    runs. ``window_size`` is accepted for compatibility and ignored.
-    L2 regularization prevents extreme embeddings that distort
-    unobserved markers while fitting observed ones.
-
-    Iter 61: when ``prior_mean`` and ``prior_std`` are supplied (the
-    trained-table per-dim mean/std saved on the checkpoint), the prior
-    becomes a diagonal Gaussian matched to the training distribution
-    instead of an isotropic L2. Init shifts to ``prior_mean`` so the
-    MAP-fit starts from the population-average of trained codes.
-    Without the prior args (legacy checkpoints), the old isotropic L2
-    behavior is preserved.
+    Iter 97: a thin wrapper over :func:`pulse.calibration.calibrate_embedding`
+    in its no-hold-out mode (``holdout_fraction=0``: run ``n_steps``, keep the
+    result), with plain MSE and no soft norm penalty -- what
+    ``bayesian_calibrate`` needs for a MAP point and what the pre-iter-97 gate
+    ran. The GATE itself uses the shared function with
+    ``CalibrationSettings.from_env()`` (hold-out, acceptance, prior, soft
+    norm); see ``_evaluate_one_episode``. ``window_size`` is ignored.
     """
-    if prior_mean is not None:
-        embedding = prior_mean.detach().clone().requires_grad_(True)
-    else:
-        embedding = torch.zeros(EMBEDDING_DIM, requires_grad=True)
-    optimizer = torch.optim.Adam([embedding], lr=lr)
-    norm_scale = torch.tensor(NORM_SCALE, dtype=torch.float32)
-
-    model.eval()
-    final_loss = float("inf")
-
-    del duration_min, window_size  # continuous map: no windows (iter 97)
-
-    for step in range(n_steps):
-        optimizer.zero_grad()
-        with torch.enable_grad():
-            loss, n_obs = _calibration_loss(
-                embedding,
-                model=model, observations=observations,
-                initial_state=initial_state, meals=meals,
-                start_time_minutes=start_time_minutes,
-                sleep_wake=sleep_wake, activity=activity,
-                l2_weight=l2_weight, norm_scale=norm_scale,
-                prior_mean=prior_mean, prior_std=prior_std,
-                prior_weight=prior_weight,
-            )
-        if n_obs > 0:
-            loss.backward()
-            optimizer.step()
-            final_loss = loss.item()
-            # Iter 81: project back onto the ||emb|| <= max_norm ball so 512
-            # weakly-leashed Adam steps cannot walk the embedding off the
-            # trained manifold into the integrator's blow-up regime.
-            if max_norm > 0.0:
-                with torch.no_grad():
-                    norm = float(embedding.norm())
-                    if norm > max_norm:
-                        embedding.mul_(max_norm / norm)
-
+    del window_size
+    settings = CalibrationSettings(
+        max_steps=int(n_steps), lr=float(lr), prior_weight=float(prior_weight),
+        l2_weight=float(l2_weight), soft_norm_weight=0.0, max_norm=float(max_norm),
+        holdout_fraction=0.0, patience=0, huber_delta=float("inf"),
+    )
+    res = _shared_calibrate_embedding(
+        model, observations, initial_state, meals, duration_min,
+        start_time_minutes=start_time_minutes, sleep_wake=sleep_wake, activity=activity,
+        prior_mean=prior_mean, prior_std=prior_std, settings=settings,
+    )
     return CalibrationResult(
-        embedding=embedding.detach(),
-        final_loss=final_loss,
-        n_steps=n_steps,
+        embedding=res.embedding, final_loss=res.final_loss, n_steps=res.n_steps,
     )
 
 
@@ -890,14 +857,9 @@ def _git_sha() -> str:
 
 def calibration_settings() -> dict[str, Any]:
     """The eval-time calibration knobs as the gate will run them."""
-    return {
-        "steps": BENCHMARK_GATE_CALIBRATE_STEPS,
-        "lr": BENCHMARK_GATE_CALIBRATE_LR,
-        "l2_weight": BENCHMARK_GATE_CALIBRATE_L2,
-        "prior_weight": BENCHMARK_GATE_PRIOR_WEIGHT,
-        "max_norm": BENCHMARK_GATE_CALIBRATE_MAX_NORM,
-        "forward_map": "continuous [0, last_obs] in the episode frame (iter 97)",
-    }
+    d = CalibrationSettings.from_env().as_dict()
+    d["steps"] = d["max_steps"]  # the name older reports used
+    return d
 
 
 def ruler_fingerprint(
@@ -960,6 +922,11 @@ def _build_observation_windows(
         windows.append((current_start, current_obs))
 
     return windows
+
+
+# The gate's calibration IS the shared one (review 5.4): server.py binds the same
+# object. Kept as a module name so a test can assert identity.
+_gate_calibrate = _shared_calibrate_embedding
 
 
 # Process-pool worker state. Set by _benchmark_worker_init at worker startup
@@ -1028,30 +995,25 @@ def _evaluate_one_episode(
         [c for c in episode.calibration_check_ins if isinstance(c, dict)],
         episode.duration_min,
     )
+    calibration_report: dict[str, Any] | None = None
     if cal_obs:
         # Iter 61: pick up the trained-table prior stats if attached to
         # the model (set by train.py at end-of-train and in the standalone
         # --benchmark-only path). Absent on legacy checkpoints, in which
-        # case we fall through to the isotropic L2 path inside
-        # calibrate_embedding.
+        # case the shared calibration falls back to the isotropic L2 path.
+        # Iter 97 (5.3/5.4): the SAME function the server runs -- continuous
+        # forward map, chronological hold-out, early stop, acceptance, prior,
+        # soft norm -- with the knobs from CalibrationSettings.from_env().
         prior_mean = getattr(model, "_embedding_prior_mean", None)
         prior_std = getattr(model, "_embedding_prior_std", None)
-        initial_embedding = calibrate_embedding(
-            model=model,
-            observations=cal_obs,
-            initial_state=initial_state_t,
-            meals=episode.meals,
-            duration_min=episode.duration_min,
-            start_time_minutes=t0,
-            n_steps=BENCHMARK_GATE_CALIBRATE_STEPS,
-            lr=BENCHMARK_GATE_CALIBRATE_LR,
-            l2_weight=BENCHMARK_GATE_CALIBRATE_L2,
-            sleep_wake=sw,
-            activity=act,
-            prior_mean=prior_mean,
-            prior_std=prior_std,
-            prior_weight=BENCHMARK_GATE_PRIOR_WEIGHT,
-        ).embedding
+        cal = _gate_calibrate(
+            model, cal_obs, initial_state_t, episode.meals, episode.duration_min,
+            start_time_minutes=t0, sleep_wake=sw, activity=act,
+            prior_mean=prior_mean, prior_std=prior_std,
+            settings=CalibrationSettings.from_env(),
+        )
+        initial_embedding = cal.embedding
+        calibration_report = cal.as_report()
     else:
         # Iter 97 (5.11): with nothing to calibrate on, the honest answer is the
         # population prior, not a user-id-seeded random vector.
@@ -1124,6 +1086,7 @@ def _evaluate_one_episode(
         "eval_points": eval_points,
         "embedding_norm": float(initial_embedding.norm()),
         "n_calibration_obs": len(cal_obs),
+        "calibration": calibration_report,
         "verifier_overall": float(verifier_report["overall_score"]),
         "verifier_categories": cat_scores,
     }
@@ -1228,14 +1191,16 @@ def evaluate_model_against_benchmark(
         getattr(model, "_embedding_prior_mean", None) is not None
         and getattr(model, "_embedding_prior_std", None) is not None
     )
-    if _has_learned_prior and BENCHMARK_GATE_PRIOR_WEIGHT > 0.0:
-        _prior_desc = f"prior=diag-gauss(w={BENCHMARK_GATE_PRIOR_WEIGHT})"
+    _cs = CalibrationSettings.from_env()
+    if _has_learned_prior and _cs.prior_weight > 0.0:
+        _prior_desc = f"prior=diag-gauss(w={_cs.prior_weight})"
     else:
-        _prior_desc = f"prior=iso-L2({BENCHMARK_GATE_CALIBRATE_L2})"
+        _prior_desc = f"prior=iso-L2({_cs.l2_weight})"
     print(
         f"[bench] {n} episodes, parallel={n_workers}, "
-        f"calibrate=(steps={BENCHMARK_GATE_CALIBRATE_STEPS} "
-        f"lr={BENCHMARK_GATE_CALIBRATE_LR} {_prior_desc})",
+        f"calibrate=(max_steps={_cs.max_steps} lr={_cs.lr} {_prior_desc} "
+        f"holdout={_cs.holdout_fraction} patience={_cs.patience} "
+        f"soft_norm={_cs.soft_norm_weight}@{_cs.soft_norm_radius} clamp={_cs.max_norm})",
         flush=True,
     )
 
@@ -1418,14 +1383,23 @@ def evaluate_model_against_benchmark(
         ),
     }
 
-    source_summary = {
-        src: {
+    source_summary: dict[str, dict[str, Any]] = {}
+    for src in sorted(episodes_by_source):
+        cals = [r.get("calibration") for r in per_episode
+                if str(r.get("source", "real")) == src and r.get("calibration")]
+        reasons: dict[str, int] = {}
+        for c in cals:
+            reasons[str(c.get("reason"))] = reasons.get(str(c.get("reason")), 0) + 1
+        source_summary[src] = {
             "episodes": episodes_by_source.get(src, 0),
             "subjects": len(subjects_by_source.get(src, set())),
             "subject_ids": sorted(subjects_by_source.get(src, set())),
+            "calibration_accepted": sum(1 for c in cals if c.get("accepted")),
+            "calibration_reasons": reasons,
+            "calibration_mean_steps": float(np.mean([c["steps"] for c in cals])) if cals else None,
+            "embedding_norm_mean": float(np.mean(
+                [r["embedding_norm"] for r in per_episode if str(r.get("source", "real")) == src])),
         }
-        for src in sorted(episodes_by_source)
-    }
 
     verifier_overall = float(np.mean(verifier_episode_scores)) if verifier_episode_scores else 0.0
 
@@ -1442,9 +1416,11 @@ def evaluate_model_against_benchmark(
             for m, e in pm.items() if m in gate_marker_set and "mae" in e
         ]
         if cells:
-            print(f"[bench] {src} (n_ep={source_summary[src]['episodes']}, "
-                  f"subjects={source_summary[src]['subjects']}): " + "; ".join(cells),
-                  flush=True)
+            ss = source_summary[src]
+            print(f"[bench] {src} (n_ep={ss['episodes']}, subjects={ss['subjects']}, "
+                  f"calibration accepted {ss['calibration_accepted']}/{ss['episodes']} "
+                  f"{ss['calibration_reasons']}, ||emb|| mean {ss['embedding_norm_mean']:.2f}): "
+                  + "; ".join(cells), flush=True)
     print(f"[bench] headline normalized_mae={headline_value:.4f} over {headline['sources']}; "
           f"overall_weighted_mape={overall_weighted_mape:.4f} (continuity line)", flush=True)
 
@@ -1465,6 +1441,7 @@ def evaluate_model_against_benchmark(
                 "user_id": r["user_id"], "source": r["source"],
                 "embedding_norm": r.get("embedding_norm"),
                 "n_calibration_obs": r.get("n_calibration_obs"),
+                "calibration": r.get("calibration"),
                 "markers": _episode_marker_stats(r.get("eval_points", [])),
             }
             for r in sorted(per_episode, key=lambda r: (r["source"], r["user_id"]))

@@ -7,10 +7,16 @@ from typing import Any
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from fastapi import FastAPI  # type: ignore[import-not-found]
 from pydantic import BaseModel, Field
 
+from .calibration import (
+    CalibrationSettings,
+    MeasurementPoint,
+    SoftEvidence,
+    calibrate_embedding as shared_calibrate,
+    evaluate_data_loss,
+)
 from .knowledge.textbook_scenarios.flow_story_protocol import dietary_carb_flow_phases_for_ui
 from .model import ModularPhysiologyNetwork, integrate
 from .modules.gut import MealEvent
@@ -53,6 +59,15 @@ class SimulateRequest(BaseModel):
     baseline: dict[str, float] | None = None
     calibrate: bool = False
     model_version: str | None = None
+    # Iter 97 (review 5.4): the real clock and the real masks. ``start_time_minutes``
+    # is the minute-of-day at t=0 (the server used to hard-code 06:00);
+    # ``sleep_wake`` / ``activity`` are per-minute arrays (1 = awake / 0 = rest ..
+    # 1 = vigorous). When absent they are forward-filled from the check-ins'
+    # ``sleepWake`` / ``activity`` fields; when those are absent too the model
+    # falls back to its learned defaults (None), exactly as the benchmark does.
+    start_time_minutes: float | None = None
+    sleep_wake: list[float] | None = None
+    activity: list[float] | None = None
 
 
 class LoadedModel(BaseModel):
@@ -96,6 +111,9 @@ def simulate(body: SimulateRequest):
     initial_baseline = normalize_baseline(body.baseline)
     initial_state = initial_state_from_baseline(initial_baseline)
     initial_embedding = get_initial_embedding(user_id=body.user_id, embedding=body.embedding)
+    start_time_minutes = resolve_start_time_minutes(body.start_time_minutes)
+    sleep_wake = build_minute_mask(body.sleep_wake, body.check_ins, "sleepWake", duration_min)
+    activity = build_minute_mask(body.activity, body.check_ins, "activity", duration_min)
 
     calibration = calibrate_embedding(
         model=model,
@@ -107,6 +125,9 @@ def simulate(body: SimulateRequest):
         meals=meals,
         initial_state=initial_state,
         enabled=body.calibrate,
+        start_time_minutes=start_time_minutes,
+        sleep_wake=sleep_wake,
+        activity=activity,
     )
 
     predicted = predict_with_model(
@@ -115,11 +136,14 @@ def simulate(body: SimulateRequest):
         duration_min=duration_min,
         meals=meals,
         initial_state=initial_state,
+        start_time_minutes=start_time_minutes,
+        sleep_wake=sleep_wake,
+        activity=activity,
     )
 
     sample_times = list(range(0, duration_min, sample_interval))
     gut_full = gut_profile_for_simulation(
-        model, calibration.embedding, duration_min, meals, start_time_minutes=360.0,
+        model, calibration.embedding, duration_min, meals, start_time_minutes=start_time_minutes,
     )
     meal_t = _first_carb_meal_time_min(meals)
     carb_flow = {
@@ -162,7 +186,11 @@ def simulate(body: SimulateRequest):
             "quality": calibration.quality,
             "accepted": calibration.accepted,
             "steps": calibration.steps,
+            "reason": calibration.reason,
+            "baseline_val_loss": calibration.baseline_val_loss,
+            "embedding_norm": calibration.embedding_norm,
         },
+        "start_time_minutes": start_time_minutes,
         "times_min": sample_times,
         "series": predicted[sample_times].tolist(),
         "carb_flow": carb_flow,
@@ -202,6 +230,13 @@ def get_model() -> ModularPhysiologyNetwork:
     for param in model.parameters():
         param.requires_grad_(False)
     model.eval()
+    # Iter 97: the trained-table prior the gate calibrates against; the shared
+    # calibration shrinks toward it (isotropic L2 fallback on older checkpoints).
+    pm = checkpoint.get("embedding_prior_mean")
+    ps = checkpoint.get("embedding_prior_std")
+    if pm is not None and ps is not None:
+        model._embedding_prior_mean = torch.tensor(pm, dtype=torch.float32)
+        model._embedding_prior_std = torch.tensor(ps, dtype=torch.float32)
 
     _MODEL = model
     _MODEL_META = LoadedModel(hidden_dim=hidden_dim, marker_ids=marker_ids, model_version=model_version)
@@ -254,6 +289,9 @@ def predict_with_model(
     duration_min: int,
     meals: list[MealEvent],
     initial_state: np.ndarray,
+    start_time_minutes: float = 360.0,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
 ) -> np.ndarray:
     initial_state_t = torch.tensor(initial_state, dtype=torch.float32)
 
@@ -264,10 +302,59 @@ def predict_with_model(
             embedding,
             n_steps=duration_min,
             dt=1.0,
-            start_time_minutes=360.0,
+            start_time_minutes=start_time_minutes,
             meals=meals,
+            sleep_wake=sleep_wake,
+            activity=activity,
         )
     return predicted_t.numpy()
+
+
+def resolve_start_time_minutes(raw: float | None) -> float:
+    """Minute-of-day at t=0; 06:00 only when the client sent nothing."""
+    if raw is None or isinstance(raw, bool):
+        return 360.0
+    return float(raw) % 1440.0
+
+
+def build_minute_mask(
+    explicit: list[float] | None,
+    check_ins: list[CheckInInput],
+    field: str,
+    duration_min: int,
+) -> torch.Tensor | None:
+    """Per-minute external input for the whole window.
+
+    An explicit per-minute array wins (padded/truncated to ``duration_min`` by
+    holding the last value). Otherwise the check-ins' per-check-in value is
+    forward-filled from each check-in time to the next (the first value also
+    fills the minutes before the first check-in). No data -> None, so the
+    model uses its learned default -- the same contract as the benchmark.
+    """
+    if explicit:
+        vals = [float(v) for v in explicit[:duration_min]]
+        if len(vals) < duration_min:
+            vals = vals + [vals[-1]] * (duration_min - len(vals))
+        return torch.tensor(vals, dtype=torch.float32)
+    stamped: list[tuple[int, float]] = []
+    for ci in check_ins:
+        if ci.time is None:
+            continue
+        v = as_float(getattr(ci, field, None))
+        if v is None:
+            continue
+        t = int(round(float(ci.time)))
+        if 0 <= t < duration_min:
+            stamped.append((t, float(v)))
+    if not stamped:
+        return None
+    stamped.sort(key=lambda x: x[0])
+    mask = np.empty(duration_min, dtype=np.float32)
+    mask[: stamped[0][0]] = stamped[0][1]
+    for k, (t, v) in enumerate(stamped):
+        t_next = stamped[k + 1][0] if k + 1 < len(stamped) else duration_min
+        mask[t:t_next] = v
+    return torch.tensor(mask, dtype=torch.float32)
 
 
 def _first_carb_meal_time_min(meals: list[MealEvent]) -> float | None:
@@ -308,6 +395,9 @@ class CalibrationResult:
     quality: float
     accepted: bool
     steps: int
+    reason: str = ""
+    baseline_val_loss: float = float("nan")
+    embedding_norm: float = float("nan")
 
 
 def calibrate_embedding(
@@ -320,21 +410,33 @@ def calibrate_embedding(
     meals: list[MealEvent],
     initial_state: np.ndarray,
     enabled: bool,
+    start_time_minutes: float = 360.0,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
+    settings: CalibrationSettings | None = None,
 ) -> CalibrationResult:
-    updated_baseline = estimate_updated_baseline(initial_baseline, check_ins)
-    observations = build_observations(check_ins, duration_min)
-    soft_evidence = build_subjective_targets(check_ins, duration_min)
+    """Personalize the embedding from check-ins -- the SAME algorithm as the gate.
 
-    if not enabled or (len(observations) + len(soft_evidence)) < 2:
-        baseline_loss = float(compute_observation_loss(
-            model=model,
-            embedding=initial_embedding,
-            observations=observations,
-            subjective_targets=soft_evidence,
-            duration_min=duration_min,
-            meals=meals,
-            initial_state=initial_state,
-        ))
+    Iter 97 (review 5.4): this used to be a second, different calibration
+    (60 steps, 80/20 split, whole-trajectory integration at 06:00, no masks).
+    It now builds measured points + soft evidence from the check-ins and calls
+    :func:`pulse.calibration.calibrate_embedding` with the real start time and
+    per-minute masks; ``pulse.benchmark`` binds the very same function.
+    """
+    del user_id
+    updated_baseline = estimate_updated_baseline(initial_baseline, check_ins)
+    observations = build_measurement_points(check_ins, duration_min)
+    soft_evidence = build_subjective_targets(check_ins, duration_min)
+    initial_state_t = torch.tensor(initial_state, dtype=torch.float32)
+    st = settings or CalibrationSettings.from_env()
+
+    n_items = len(observations) + len(soft_evidence)
+    if not enabled or n_items < 2:
+        baseline_loss = evaluate_data_loss(
+            model, initial_embedding, observations, initial_state_t, meals, duration_min,
+            start_time_minutes=start_time_minutes, sleep_wake=sleep_wake, activity=activity,
+            soft_evidence=soft_evidence, huber_delta=st.huber_delta,
+        )
         return CalibrationResult(
             embedding=initial_embedding,
             baseline=updated_baseline,
@@ -343,88 +445,40 @@ def calibrate_embedding(
             quality=to_quality_score(baseline_loss),
             accepted=False,
             steps=0,
+            reason="disabled" if not enabled else "too_few_observations",
+            baseline_val_loss=baseline_loss,
+            embedding_norm=float(initial_embedding.norm()),
         )
 
-    all_items: list[tuple[int, str, int]] = \
-        [(o[0], "obs", i) for i, o in enumerate(observations)] + \
-        [(s.time, "sub", i) for i, s in enumerate(soft_evidence)]
-    all_items.sort(key=lambda x: x[0])
-
-    split_idx = max(1, int(len(all_items) * 0.8))
-    train_items = all_items[:split_idx]
-    val_items = all_items[split_idx:] if split_idx < len(all_items) else all_items[-1:]
-
-    train_obs = [observations[e[2]] for e in train_items if e[1] == "obs"]
-    train_sub = [soft_evidence[e[2]] for e in train_items if e[1] == "sub"]
-    val_obs = [observations[e[2]] for e in val_items if e[1] == "obs"]
-    val_sub = [soft_evidence[e[2]] for e in val_items if e[1] == "sub"]
-
-    baseline_val = float(compute_observation_loss(
-        model=model, embedding=initial_embedding,
-        observations=val_obs, subjective_targets=val_sub,
-        duration_min=duration_min, meals=meals, initial_state=initial_state,
-    ))
-    initial_train = float(compute_observation_loss(
-        model=model, embedding=initial_embedding,
-        observations=train_obs, subjective_targets=train_sub,
-        duration_min=duration_min, meals=meals, initial_state=initial_state,
-    ))
-
-    candidate = torch.nn.Parameter(initial_embedding.clone())
-    optimizer = torch.optim.Adam([candidate], lr=0.03)
-    best_embedding = initial_embedding.clone()
-    best_val = baseline_val
-    best_train = initial_train
-    patience = 8
-    no_improvement = 0
-    max_steps = 60
-    ran_steps = 0
-
-    for step in range(max_steps):
-        ran_steps = step + 1
-        optimizer.zero_grad()
-        train_loss = compute_observation_loss(
-            model=model, embedding=candidate,
-            observations=train_obs, subjective_targets=train_sub,
-            duration_min=duration_min, meals=meals, initial_state=initial_state,
-            requires_grad=True,
-        )
-        prior_loss = (candidate - initial_embedding).pow(2).mean()
-        norm_excess = torch.relu(torch.norm(candidate) - 2.5)
-        objective = train_loss + 0.01 * prior_loss + 0.001 * norm_excess.pow(2)
-        objective.backward()
-        optimizer.step()
-
-        with torch.no_grad():
-            val_loss = float(compute_observation_loss(
-                model=model, embedding=candidate,
-                observations=val_obs, subjective_targets=val_sub,
-                duration_min=duration_min, meals=meals, initial_state=initial_state,
-            ))
-            if val_loss < best_val:
-                best_val = val_loss
-                best_train = float(train_loss.item())
-                best_embedding = candidate.detach().clone()
-                no_improvement = 0
-            else:
-                no_improvement += 1
-                if no_improvement >= patience:
-                    break
-
-    accepted = bool(best_val <= baseline_val * 0.98)
-    selected = best_embedding if accepted else initial_embedding
-    final_train = best_train if accepted else initial_train
-    final_val = best_val if accepted else baseline_val
-
-    return CalibrationResult(
-        embedding=selected.detach(),
-        baseline=updated_baseline if accepted else initial_baseline,
-        train_loss=float(final_train),
-        val_loss=float(final_val),
-        quality=to_quality_score(float(final_val)),
-        accepted=accepted,
-        steps=ran_steps,
+    prior_mean = getattr(model, "_embedding_prior_mean", None)
+    prior_std = getattr(model, "_embedding_prior_std", None)
+    res = shared_calibrate(
+        model, observations, initial_state_t, meals, duration_min,
+        start_time_minutes=start_time_minutes, sleep_wake=sleep_wake, activity=activity,
+        prior_mean=prior_mean, prior_std=prior_std,
+        initial_embedding=initial_embedding, soft_evidence=soft_evidence, settings=st,
     )
+    return CalibrationResult(
+        embedding=res.embedding,
+        baseline=updated_baseline if res.accepted else initial_baseline,
+        train_loss=float(res.train_loss),
+        val_loss=float(res.val_loss),
+        quality=to_quality_score(float(res.val_loss)),
+        accepted=bool(res.accepted),
+        steps=int(res.n_steps),
+        reason=res.reason,
+        baseline_val_loss=float(res.baseline_val_loss),
+        embedding_norm=res.embedding_norm,
+    )
+
+
+def build_measurement_points(check_ins: list[CheckInInput], duration_min: int) -> list[MeasurementPoint]:
+    """One MeasurementPoint per measured marker per check-in (physical units)."""
+    points: list[MeasurementPoint] = []
+    for t, indices, values in build_observations(check_ins, duration_min):
+        for idx, value in zip(indices, values):
+            points.append(MeasurementPoint(time=int(t), marker_id=MARKER_IDS[idx], value=float(value)))
+    return points
 
 
 def build_observations(check_ins: list[CheckInInput], duration_min: int) -> list[tuple[int, list[int], list[float]]]:
@@ -449,16 +503,6 @@ def build_observations(check_ins: list[CheckInInput], duration_min: int) -> list
             observations.append((t, indices, values))
     observations.sort(key=lambda item: item[0])
     return observations
-
-
-@dataclass(frozen=True)
-class SoftEvidence:
-    time: int
-    marker_id: str
-    direction: str
-    threshold: float
-    specificity: float
-    scale: float
 
 
 @dataclass(frozen=True)
@@ -569,58 +613,25 @@ def compute_observation_loss(
     meals: list[MealEvent],
     initial_state: np.ndarray,
     requires_grad: bool = False,
-) -> float | torch.Tensor:
-    has_obs = len(observations) > 0
-    has_sub = len(subjective_targets) > 0
-    if not has_obs and not has_sub:
-        return 0.0 if not requires_grad else torch.tensor(0.0, dtype=torch.float32)
+    start_time_minutes: float = 360.0,
+    sleep_wake: torch.Tensor | None = None,
+    activity: torch.Tensor | None = None,
+) -> float:
+    """Mean data loss of ``embedding`` on grouped observations (compat helper).
 
-    initial_state_t = torch.tensor(initial_state, dtype=torch.float32)
-
-    if requires_grad:
-        predicted = integrate(
-            model, initial_state_t, embedding,
-            n_steps=duration_min, dt=1.0, start_time_minutes=360.0,
-            meals=meals,
-        )
-    else:
-        with torch.no_grad():
-            predicted = integrate(
-                model, initial_state_t, embedding,
-                n_steps=duration_min, dt=1.0, start_time_minutes=360.0,
-                meals=meals,
-            )
-
-    losses = []
-    norm_scale = torch.tensor(NORM_SCALE, dtype=torch.float32)
-
-    for time_idx, marker_indices, marker_values in observations:
-        pred_values = predicted[time_idx, marker_indices]
-        target = torch.tensor(marker_values, dtype=torch.float32)
-        scale = norm_scale[marker_indices]
-        diff = (pred_values - target) / scale
-        losses.append(F.huber_loss(diff, torch.zeros_like(diff), delta=1.0, reduction="mean"))
-
-    for evidence in subjective_targets:
-        idx = MARKER_INDEX.get(evidence.marker_id)
-        if idx is None:
-            continue
-        pred_value = predicted[evidence.time, idx]
-        threshold_t = torch.tensor(evidence.threshold, dtype=torch.float32)
-        if evidence.direction == "above":
-            margin = (pred_value - threshold_t) / evidence.scale
-        else:
-            margin = (threshold_t - pred_value) / evidence.scale
-        nll = -F.logsigmoid(margin)
-        losses.append(evidence.specificity * nll)
-
-    if not losses:
-        return 0.0 if not requires_grad else torch.tensor(0.0, dtype=torch.float32)
-
-    stacked = torch.stack(losses).mean()
-    if requires_grad:
-        return stacked
-    return float(stacked.item())
+    Iter 97: delegates to :func:`pulse.calibration.evaluate_data_loss` so the
+    number is the one the shared calibration optimizes. Always no-grad.
+    """
+    del requires_grad
+    points = [
+        MeasurementPoint(time=int(t), marker_id=MARKER_IDS[idx], value=float(v))
+        for t, indices, values in observations for idx, v in zip(indices, values)
+    ]
+    return evaluate_data_loss(
+        model, embedding, points, torch.tensor(initial_state, dtype=torch.float32), meals,
+        duration_min, start_time_minutes=start_time_minutes, sleep_wake=sleep_wake,
+        activity=activity, soft_evidence=subjective_targets,
+    )
 
 
 def to_quality_score(loss_value: float) -> float:
