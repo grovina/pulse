@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -910,7 +911,13 @@ def _evaluate_one_episode(
             prior_weight=BENCHMARK_GATE_PRIOR_WEIGHT,
         ).embedding
     else:
-        initial_embedding = deterministic_user_embedding(episode.user_id)
+        # Iter 97 (5.11): with nothing to calibrate on, the honest answer is the
+        # population prior, not a user-id-seeded random vector.
+        prior_mean = getattr(model, "_embedding_prior_mean", None)
+        initial_embedding = (
+            prior_mean.detach().clone() if prior_mean is not None
+            else deterministic_user_embedding(episode.user_id)
+        )
 
     with torch.no_grad():
         predicted = integrate(
@@ -943,6 +950,9 @@ def _evaluate_one_episode(
 
     marker_errors: list[tuple[str, float]] = []
     persistence_errors: list[tuple[str, float]] = []
+    # Iter 97 (5.1/5.7): keep the raw points so the aggregator can score in
+    # physical units (MAE, truth sd, sigma_obs floor) and per episode first.
+    eval_points: list[dict[str, Any]] = []
     for point in episode.eval_measurements:
         idx = MARKER_INDEX.get(point.marker_id)
         if idx is None:
@@ -952,6 +962,10 @@ def _evaluate_one_episode(
         marker_errors.append((point.marker_id, abs(pred - point.value) / denom))
         baseline = last_cal.get(point.marker_id, float(episode.initial_state[idx]))
         persistence_errors.append((point.marker_id, abs(baseline - point.value) / denom))
+        eval_points.append({
+            "marker_id": point.marker_id, "time": int(point.time),
+            "truth": float(point.value), "pred": pred, "baseline": float(baseline),
+        })
 
     cat_scores_raw = verifier_report.get("category_scores") or {}
     cat_scores: dict[str, float] = {}
@@ -965,9 +979,59 @@ def _evaluate_one_episode(
         "source": episode.source,
         "marker_errors": marker_errors,
         "persistence_errors": persistence_errors,
+        "eval_points": eval_points,
+        "embedding_norm": float(initial_embedding.norm()),
+        "n_calibration_obs": len(cal_obs),
         "verifier_overall": float(verifier_report["overall_score"]),
         "verifier_categories": cat_scores,
     }
+
+
+def sigma_obs_for(marker_id: str) -> float:
+    """Observation noise floor for a marker (physical units).
+
+    Home-device noise for the five measured markers (``_DEFAULT_SIGMA_OBS``);
+    40% of NORM_SCALE for everything else, as ``predictive_distribution`` does.
+    """
+    if marker_id in _DEFAULT_SIGMA_OBS:
+        return float(_DEFAULT_SIGMA_OBS[marker_id])
+    idx = MARKER_INDEX.get(marker_id)
+    return float(0.4 * NORM_SCALE[idx]) if idx is not None else 1.0
+
+
+_SUBJECT_SUFFIX = re.compile(r"-(?:night|day|ep|episode)-?\d+$")
+
+
+def subject_of(user_id: str) -> str:
+    """Collapse per-episode ids (``gabriel-night-03``) to the subject behind them.
+
+    Iter 97 (5.10): cgm_real is 14 nights of ONE person; the report should say
+    so rather than let 14 ids read as 14 subjects.
+    """
+    return _SUBJECT_SUFFIX.sub("", str(user_id))
+
+
+def _episode_marker_stats(points: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+    """Per-marker statistics of ONE episode: point-mean MAPE/MAE for the model
+    and the persistence baseline, and the within-episode sd of the truth."""
+    by_marker: dict[str, list[dict[str, Any]]] = {}
+    for pt in points:
+        by_marker.setdefault(str(pt["marker_id"]), []).append(pt)
+    out: dict[str, dict[str, float]] = {}
+    for marker_id, pts in by_marker.items():
+        truth = np.array([p["truth"] for p in pts], dtype=np.float64)
+        pred = np.array([p["pred"] for p in pts], dtype=np.float64)
+        base = np.array([p["baseline"] for p in pts], dtype=np.float64)
+        denom = np.maximum(np.abs(truth), 1e-6)
+        out[marker_id] = {
+            "n": float(len(pts)),
+            "mape": float(np.mean(np.abs(pred - truth) / denom)),
+            "mae": float(np.mean(np.abs(pred - truth))),
+            "persistence_mape": float(np.mean(np.abs(base - truth) / denom)),
+            "persistence_mae": float(np.mean(np.abs(base - truth))),
+            "truth_sd": float(truth.std()) if len(pts) > 1 else 0.0,
+        }
+    return out
 
 
 def _worker_eval_one(episode: BenchmarkEpisode) -> dict[str, Any]:
@@ -1070,25 +1134,45 @@ def evaluate_model_against_benchmark(
     # ("real" measured data vs "teacher" cold-model cohorts). The headline
     # real-vs-teacher split keeps circular distillation-fidelity numbers out
     # of the measured-data read (iter-77 honest benchmark).
+    #
+    # Iter 97 (5.1 / 5.5 / 5.7): every (source, marker) cell is aggregated PER
+    # EPISODE FIRST (one row per episode, equal weight) and the skill is scored
+    # in physical units with a noise floor:
+    #     skill = 1 - MAE / max(persistence_MAE, sigma_obs)
+    # Without the floor the dynamic BP truth (sd 0.13-0.26 mmHg per episode)
+    # made a HALVED absolute error (3.1 -> 1.5 mmHg) read as skill +0.21 -> -1.82,
+    # and a zero-persistence cell scored 0.0 = pass. The old point-pooled ratio is
+    # kept under ``skill_vs_persistence_mape`` for continuity.
     persistence_errors: dict[str, list[float]] = {m: [] for m in MARKER_IDS}
     errors_by_source: dict[str, dict[str, list[float]]] = {}
     persist_by_source: dict[str, dict[str, list[float]]] = {}
+    episode_stats: dict[str, list[dict[str, float]]] = {}
+    episode_stats_by_source: dict[str, dict[str, list[dict[str, float]]]] = {}
+    subjects_by_source: dict[str, set[str]] = {}
+    episodes_by_source: dict[str, int] = {}
     for r in per_episode:
         src = str(r.get("source", "real"))
         src_me = errors_by_source.setdefault(src, {})
         src_pe = persist_by_source.setdefault(src, {})
+        src_es = episode_stats_by_source.setdefault(src, {})
+        subjects_by_source.setdefault(src, set()).add(subject_of(r.get("user_id", "")))
+        episodes_by_source[src] = episodes_by_source.get(src, 0) + 1
         for marker_id, mape in r["marker_errors"]:
             marker_errors[marker_id].append(mape)
             src_me.setdefault(marker_id, []).append(mape)
         for marker_id, pe in r.get("persistence_errors", []):
             persistence_errors[marker_id].append(pe)
             src_pe.setdefault(marker_id, []).append(pe)
+        for marker_id, st in _episode_marker_stats(r.get("eval_points", [])).items():
+            episode_stats.setdefault(marker_id, []).append(st)
+            src_es.setdefault(marker_id, []).append(st)
         verifier_episode_scores.append(r["verifier_overall"])
         for cat, sc in r["verifier_categories"].items():
             verifier_category_episode_scores.setdefault(cat, []).append(sc)
 
     def _build_per_marker(
         errs: dict[str, list[float]], persist: dict[str, list[float]],
+        ep_stats: dict[str, list[dict[str, float]]],
     ) -> tuple[dict[str, dict[str, Any]], float]:
         """per-marker table (with persistence skill) + gate-weighted overall.
 
@@ -1115,26 +1199,91 @@ def evaluate_model_against_benchmark(
             if pvals:
                 persist_mape = float(np.mean(pvals))
                 entry["persistence_mape"] = persist_mape
-                # Skill: fraction of the persistence-baseline error removed.
-                # 1 = perfect, 0 = no better than carrying the last reading
-                # forward, <0 = worse than persistence (the model is hurting).
-                entry["skill_vs_persistence"] = (
+                # Continuity column: the pre-iter-97 point-pooled ratio, no floor.
+                entry["skill_vs_persistence_mape"] = (
                     1.0 - mean_mape / persist_mape if persist_mape > 1e-9 else 0.0
                 )
+            stats = ep_stats.get(marker_id) or []
+            if stats:
+                sigma = sigma_obs_for(marker_id)
+                mae = float(np.mean([st["mae"] for st in stats]))
+                pers_mae = float(np.mean([st["persistence_mae"] for st in stats]))
+                ep_mape = np.array([st["mape"] for st in stats], dtype=np.float64)
+                entry.update({
+                    "episodes": len(stats),
+                    "mae": mae,
+                    "persistence_mae": pers_mae,
+                    "truth_sd": float(np.mean([st["truth_sd"] for st in stats])),
+                    "sigma_obs": sigma,
+                    "mae_over_sigma_obs": mae / sigma,
+                    # THE gate skill: episode-first, physical units, noise-floored.
+                    "skill_vs_persistence": 1.0 - mae / max(pers_mae, sigma),
+                    "skill_floor_active": bool(pers_mae < sigma),
+                    "episode_mape_mean": float(ep_mape.mean()),
+                    "episode_mape_sd": float(ep_mape.std()) if len(stats) > 1 else 0.0,
+                })
             out[marker_id] = entry
             if marker_id in gate_marker_set:
                 wsum += mean_mape * int(arr.shape[0])
                 wcount += int(arr.shape[0])
         return out, wsum / max(wcount, 1)
 
-    per_marker, overall_weighted_mape = _build_per_marker(marker_errors, persistence_errors)
+    per_marker, overall_weighted_mape = _build_per_marker(
+        marker_errors, persistence_errors, episode_stats)
 
     per_marker_by_source: dict[str, dict[str, Any]] = {}
     overall_by_source: dict[str, float] = {}
     for src in sorted(errors_by_source):
-        pm, ow = _build_per_marker(errors_by_source[src], persist_by_source.get(src, {}))
+        pm, ow = _build_per_marker(
+            errors_by_source[src], persist_by_source.get(src, {}),
+            episode_stats_by_source.get(src, {}))
         per_marker_by_source[src] = pm
         overall_by_source[src] = ow
+
+    # Iter 97 (5.5): the headline. ``overall_weighted_mape`` was 57-61%
+    # legacy_static (24 copies of one synthetic protocol); iter 95 -> 96 read
+    # "best ever" while both dynamic sources got worse. The headline is now the
+    # per-source mean over gate markers of MAE / sigma_obs, averaged with EQUAL
+    # source weight; legacy_static is a continuity line only unless the
+    # thresholds file lists it.
+    headline_sources = thresholds.get("headline_sources")
+    if not isinstance(headline_sources, list) or not headline_sources:
+        headline_sources = [s for s in sorted(per_marker_by_source) if s != "legacy_static"]
+    headline_by_source: dict[str, dict[str, Any]] = {}
+    for src in headline_sources:
+        pm = per_marker_by_source.get(src) or {}
+        cells = {
+            m: float(e["mae_over_sigma_obs"])
+            for m, e in pm.items()
+            if m in gate_marker_set and "mae_over_sigma_obs" in e
+        }
+        if cells:
+            headline_by_source[src] = {
+                "normalized_mae": float(np.mean(list(cells.values()))),
+                "markers": cells,
+            }
+    headline_value = (
+        float(np.mean([v["normalized_mae"] for v in headline_by_source.values()]))
+        if headline_by_source else float("nan")
+    )
+    headline = {
+        "normalized_mae": headline_value,
+        "sources": list(headline_by_source),
+        "by_source": headline_by_source,
+        "definition": (
+            "mean over sources (equal weight) of mean over gate markers of "
+            "episode-first MAE / sigma_obs; 1.0 = error equal to device noise"
+        ),
+    }
+
+    source_summary = {
+        src: {
+            "episodes": episodes_by_source.get(src, 0),
+            "subjects": len(subjects_by_source.get(src, set())),
+            "subject_ids": sorted(subjects_by_source.get(src, set())),
+        }
+        for src in sorted(episodes_by_source)
+    }
 
     verifier_overall = float(np.mean(verifier_episode_scores)) if verifier_episode_scores else 0.0
 
@@ -1144,14 +1293,39 @@ def evaluate_model_against_benchmark(
         if vals
     }
 
+    for src, pm in sorted(per_marker_by_source.items()):
+        cells = [
+            f"{m}: mae={e['mae']:.3g}/pers={e['persistence_mae']:.3g}/sd={e['truth_sd']:.3g}"
+            f"/sig={e['sigma_obs']:.3g} skill={e['skill_vs_persistence']:+.2f}"
+            for m, e in pm.items() if m in gate_marker_set and "mae" in e
+        ]
+        if cells:
+            print(f"[bench] {src} (n_ep={source_summary[src]['episodes']}, "
+                  f"subjects={source_summary[src]['subjects']}): " + "; ".join(cells),
+                  flush=True)
+    print(f"[bench] headline normalized_mae={headline_value:.4f} over {headline['sources']}; "
+          f"overall_weighted_mape={overall_weighted_mape:.4f} (continuity line)", flush=True)
+
     return {
         "episodes": len(episodes),
+        # Continuity line (legacy-dominated, point-pooled). Not the headline.
         "overall_weighted_mape": overall_weighted_mape,
+        "headline": headline,
         "per_marker": per_marker,
         # Honest split: measured-data numbers vs circular cold-model-teacher
         # numbers, never mixed in the headline.
         "overall_weighted_mape_by_source": overall_by_source,
         "per_marker_by_source": per_marker_by_source,
+        "source_summary": source_summary,
+        "per_episode": [
+            {
+                "user_id": r["user_id"], "source": r["source"],
+                "embedding_norm": r.get("embedding_norm"),
+                "n_calibration_obs": r.get("n_calibration_obs"),
+                "markers": _episode_marker_stats(r.get("eval_points", [])),
+            }
+            for r in sorted(per_episode, key=lambda r: (r["source"], r["user_id"]))
+        ],
         "verifier_overall": verifier_overall,
         "verifier_category_mean": verifier_category_mean,
     }
@@ -1239,8 +1413,15 @@ def evaluate_calibration_sparsity(
 
 
 _FALLBACK_THRESHOLDS: dict[str, Any] = {
+    # Iter 97 (5.11): kept IDENTICAL to benchmark.thresholds.json. The textbook
+    # floor here read 0.45 while the JSON said 0.75.
+    "min_samples_per_marker": 50,
     "marker_mape_max": {"glucose": 0.20, "hr": 0.15, "sbp": 0.12, "dbp": 0.12, "temp": 0.02},
     "overall_weighted_mape_max": 0.16,
+    "skill_vs_persistence_min_by_source": {
+        "cgm_real": {"glucose": 0.0, "hr": 0.0},
+        "teacher_dynamic": {"glucose": 0.0, "hr": 0.0, "sbp": 0.0, "dbp": 0.0, "temp": 0.0},
+    },
     "verifier_overall_min": 0.70,
     "verifier_category_min": {
         "meal": 0.65,
@@ -1249,7 +1430,7 @@ _FALLBACK_THRESHOLDS: dict[str, Any] = {
         "sleep": 0.55,
         "sanity": 0.85,
     },
-    "textbook_mean_pass_rate_min": 0.45,
+    "textbook_mean_pass_rate_min": 0.75,
 }
 
 

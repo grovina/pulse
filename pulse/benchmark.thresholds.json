@@ -9,7 +9,13 @@
     "temp": 0.02
   },
   "overall_weighted_mape_max": 0.16,
-  "_comment_skill": "skill = 1 - mape/persistence_mape. 0.0 is the natural zero — 'exactly as good as predicting no change' — NOT a tuned number, which is why it is the same for every marker and source. Applied only to sources whose scored window actually moves; legacy_static is excluded by omission because its ground truth barely varies (within-episode sd ~1 mg/dL glucose, 0.035 C temp) and the ratio there is a structural artifact, not a model property (see docs/iter94-proposal.md 0.6 and the iter-77/87 notes). Expect iter 94 to FAIL this: on the legacy ruler the model sits at -7.2 on glucose, i.e. 8.2x worse than persistence. Making that visible is the point.",
+  "_comment_headline": "Iter 97 (review 5.5): the headline is 'headline.normalized_mae' = mean over these sources (equal weight) of the mean over gate markers of episode-first MAE / sigma_obs. overall_weighted_mape was 57-61% legacy_static (24 copies of one synthetic protocol) and read 'best ever' for iter 96 while both dynamic sources got worse; it is kept as a continuity line only. legacy_static is deliberately not a headline source. No threshold on the headline yet: the first honest value is the iter-96 re-score.",
+  "headline_sources": [
+    "cgm_real",
+    "teacher_dynamic",
+    "teacher"
+  ],
+  "_comment_skill": "Iter 97 (review 5.1/5.7): skill = 1 - MAE / max(persistence_MAE, sigma_obs), in PHYSICAL units, aggregated per EPISODE first (equal weight per episode, so teacher_dynamic has n=8 not 88). sigma_obs is the home-device noise floor in benchmark.py (_DEFAULT_SIGMA_OBS: glucose 8 mg/dL, hr 3 bpm, sbp/dbp 4 mmHg, temp 0.15 C). The floor exists because a truth that moves less than the device noise cannot be tracked better than persistence by anything: on the iter-96 report the dynamic BP truth moved sd 0.13-0.26 mmHg per episode, the student's absolute error HALVED (3.1 -> 1.5 mmHg) and the unfloored skill went +0.21 -> -1.82; a zero-persistence cell scored 0.0 = pass. 0.0 is still the natural zero ('as good as carrying the last reading forward, or as good as the noise'). The old point-pooled unfloored ratio is reported as skill_vs_persistence_mape for continuity. legacy_static is excluded by omission because its scored window barely moves (see docs/iter94-proposal.md 0.6). NOTE cgm_real is ONE subject (source_summary.subjects); read its skill as n=1.",
   "skill_vs_persistence_min_by_source": {
     "cgm_real": {
       "glucose": 0.0,

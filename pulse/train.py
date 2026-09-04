@@ -1168,10 +1168,16 @@ def _run_benchmark(
 
     report = {
         "episodes": results["episodes"],
+        # Iter 97 (5.2 / 5.5): what the ruler was, and the honest headline.
+        "ruler_fingerprint": results.get("ruler_fingerprint", {}),
+        "headline": results.get("headline", {}),
+        "source_summary": results.get("source_summary", {}),
+        # Continuity line: point-pooled, legacy-dominated. Not the headline.
         "overall_weighted_mape": results["overall_weighted_mape"],
         "overall_weighted_mape_by_source": results.get("overall_weighted_mape_by_source", {}),
         "per_marker": results["per_marker"],
         "per_marker_by_source": results.get("per_marker_by_source", {}),
+        "per_episode": results.get("per_episode", []),
         "verifier": {
             "overall_score": results["verifier_overall"],
             "category_mean": results.get("verifier_category_mean", {}),
@@ -1186,7 +1192,18 @@ def _run_benchmark(
 
     report_json = json.dumps(report, indent=2)
     print(f"\nBenchmark: gate.passed={gate_passed}")
-    print(f"  overall_weighted_mape={results['overall_weighted_mape']:.4f}")
+    _hl = results.get("headline") or {}
+    if _hl:
+        print(f"  headline normalized_mae={_hl.get('normalized_mae', float('nan')):.4f} "
+              f"over {_hl.get('sources')} (MAE/sigma_obs, equal source weight)")
+        for _s, _v in sorted((_hl.get("by_source") or {}).items()):
+            print(f"    {_s}: {_v['normalized_mae']:.4f}  "
+                  + ", ".join(f"{m}={x:.3f}" for m, x in sorted(_v["markers"].items())))
+    _fp = results.get("ruler_fingerprint") or {}
+    if _fp:
+        print(f"  ruler: git={_fp.get('git_sha')} dataset_md5={_fp.get('dataset_md5')} "
+              f"thresholds_md5={_fp.get('thresholds_md5')} frozen={_fp.get('frozen_ruler')}")
+    print(f"  overall_weighted_mape={results['overall_weighted_mape']:.4f} (continuity line, legacy-dominated)")
     by_src = results.get("overall_weighted_mape_by_source", {})
     if by_src:
         print(
