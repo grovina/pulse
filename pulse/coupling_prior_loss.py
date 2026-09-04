@@ -56,6 +56,42 @@ def _eps_for_marker(marker_id: str) -> float:
     return max(scale * 0.04, 1e-4)
 
 
+def normalized_sensitivity(sens_raw: torch.Tensor, source_marker: str, target_marker: str) -> torch.Tensor:
+    """``d(rate_target)/d(state_source)`` in NORMALIZED units (iter 97, review 4.4).
+
+    ``sens_raw`` is in target-units/min per source-unit. Multiplying by
+    ``NORM_SCALE[source] / NORM_SCALE[target]`` gives "normalized target units
+    per minute per normalized source unit", the frame every ``magnitude_range``
+    in ``knowledge/coupling_priors`` is read in. Without this a cortisol->hr edge
+    (ug/dL -> bpm) and a glucose->insulin edge (mg/dL -> uU/mL) were compared to
+    their ranges in unrelated raw units.
+    """
+    si = MARKER_INDEX[source_marker]
+    ti = MARKER_INDEX[target_marker]
+    return sens_raw * (float(NORM_SCALE[si]) / float(NORM_SCALE[ti]))
+
+
+def coupling_band_hinge(sens_norm: torch.Tensor, prior: CouplingPrior) -> torch.Tensor:
+    """Two-sided band hinge on the declared magnitude range (iter 97, review 4.4).
+
+    ``s = sens_norm * sign`` must lie in ``[lo, hi]``: zero loss inside, a
+    Huber-shaped penalty on the distance outside measured in units of the band
+    width. The pre-iter-97 form was ``softplus(-20 * sens * sign)`` — a
+    sign-only hinge that ignored ``magnitude_range`` entirely and kept pushing
+    every edge STRONGER until the sensitivity was 7-250x above its declared
+    range (22 of 32 edges, including cortisol->hr, the coupling iter 96 cut).
+    """
+    lo, hi = float(prior.magnitude_range[0]), float(prior.magnitude_range[1])
+    if hi < lo:
+        lo, hi = hi, lo
+    width = max(hi - lo, 1e-6)
+    s = sens_norm * float(prior.sign)
+    excess = (F.relu(lo - s) + F.relu(s - hi)) / width
+    # Huber: quadratic inside one band width, linear beyond (a wrong-signed
+    # edge is many widths out and must not dominate the window loss).
+    return torch.where(excess < 1.0, 0.5 * excess.pow(2), excess - 0.5)
+
+
 def coupling_prior_loss_at_step(
     model: torch.nn.Module,
     state: torch.Tensor,
@@ -108,9 +144,8 @@ def coupling_prior_loss_at_step(
         ).squeeze(0)
 
         sens = (r1[ti] - r0[ti]) / eps
-        # Encourage sens * sign > 0 (soft hinge)
-        margin = sens * float(prior.sign)
-        total = total + F.softplus(-margin * 20.0)
+        sens_n = normalized_sensitivity(sens, prior.source_marker, prior.target_marker)
+        total = total + coupling_band_hinge(sens_n, prior)
 
     return total / max(len(priors), 1)
 
