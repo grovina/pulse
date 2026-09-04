@@ -100,8 +100,13 @@ def cohort_sleep_48h_benchmark_episodes() -> list[BenchmarkEpisode]:
             for m in mids
         ]
 
+    # Iter 97 (review 5.6): calibration ends at 1440 and EVERY eval point is
+    # strictly after it. Through iter 96 the check-in at 1560 was also an eval
+    # point (6/13 glucose, 6/12 hr, 1/1 sbp samples on the `teacher` source were
+    # fitted check-ins) -- the `sbp persistence 0.0 / skill 0.0` line in the
+    # iter-96 report was that leakage.
     calibration_check_ins = []
-    for t in (480, 960, 1440, 1560):
+    for t in (480, 960, 1440):
         calibration_check_ins.append({
             "time": t,
             "measurements": {
@@ -119,12 +124,12 @@ def cohort_sleep_48h_benchmark_episodes() -> list[BenchmarkEpisode]:
         + pt(1620, ("glucose", "hr"))
         + pt(1680, ("glucose", "temp"))
     )
-    # Unobserved-marker eval block — 11 timestamps spanning both protocol days
-    # (pre-meal, postprandial peaks, overnight fasting trough, awakening).
-    # 11 × 9 = 99 new eval samples per cohort episode.
+    # Unobserved-marker eval block — timestamps on day 2 only (after the last
+    # check-in): postprandial peaks, overnight fasting trough, awakening.
+    # 7 × 9 = 63 eval samples per cohort episode.
     eval_measurements = eval_measurements + _eval_block(
         traj,
-        times=(360, 720, 840, 1080, 1500, 1560, 1620, 1800, 2160, 2280, 2640),
+        times=(1500, 1560, 1620, 1800, 2160, 2280, 2640),
         markers=_DEAD_PATHWAY_MARKERS,
     )
 
@@ -187,10 +192,13 @@ def cohort_meal_postprandial_benchmark_episodes() -> list[BenchmarkEpisode]:
         for t, c, f, p in meals
     ]
 
-    # Calibration check-ins: pre-meal baseline + each meal landmark, on the
-    # standard 5 measured markers (matches what real users would log).
+    # Calibration check-ins: pre-meal baseline + the FIRST meal's landmarks, on
+    # the standard 5 measured markers (matches what real users would log).
+    # Iter 97 (review 5.6): calibration ends at 180; the second meal (t=300)
+    # and everything scored come strictly after it. Through iter 96 four of the
+    # ten eval timestamps were fitted check-ins.
     calibration_check_ins = []
-    for t in (30, 90, 120, 180, 330, 420):
+    for t in (30, 90, 120, 180):
         calibration_check_ins.append({
             "time": t,
             "measurements": {
@@ -202,9 +210,9 @@ def cohort_meal_postprandial_benchmark_episodes() -> list[BenchmarkEpisode]:
             },
         })
 
-    # Eval block — pre-meal, peak (60min), recovery (120min), inter-meal trough,
-    # second-meal peak, and end-of-window.
-    eval_times = (45, 90, 120, 150, 180, 240, 330, 360, 420, 470)
+    # Eval block — inter-meal trough, second-meal rise (t=330), peak (360),
+    # recovery (420), end-of-window. All after the last check-in at 180.
+    eval_times = (240, 330, 360, 420, 470)
     eval_measurements = (
         # Standard markers — sparse, matching real-user style
         _eval_block(traj, eval_times, ("glucose", "hr"))
@@ -329,6 +337,32 @@ def distillation_pool_episodes() -> list[BenchmarkEpisode]:
     )
 
 
+def last_check_in_time(ep: BenchmarkEpisode) -> int:
+    """Time of the last calibration check-in (-1 if there are none)."""
+    times = [int(round(float(c["time"]))) for c in ep.calibration_check_ins
+             if isinstance(c, dict) and c.get("time") is not None]
+    return max(times) if times else -1
+
+
+def leaked_eval_points(ep: BenchmarkEpisode) -> list[MeasurementPoint]:
+    """Eval points at or before the last calibration check-in.
+
+    Iter 97 (review 5.6): scoring a fitted check-in is not a prediction. The
+    in-process episodes are asserted leak-free at build time; the loader does
+    not rewrite exported datasets, but the benchmark report can call this on
+    any episode.
+    """
+    cutoff = last_check_in_time(ep)
+    return [p for p in ep.eval_measurements if p.time <= cutoff]
+
+
 def all_cohort_benchmark_episodes() -> list[BenchmarkEpisode]:
     """All cohort episodes injected into the bench gate at runtime."""
-    return distillation_pool_episodes() + cohort_meal_in_eval_window_episodes()
+    eps = distillation_pool_episodes() + cohort_meal_in_eval_window_episodes()
+    for ep in eps:
+        leaked = leaked_eval_points(ep)
+        if leaked:  # pragma: no cover - construction bug, not a data condition
+            raise AssertionError(
+                f"{ep.user_id}: {len(leaked)} eval point(s) at or before the last "
+                f"check-in (t={last_check_in_time(ep)}) -- see review 5.6")
+    return eps
