@@ -34,6 +34,23 @@ def _circadian(t_abs_min: float, amplitude: float, peak_hour: float) -> float:
     return amplitude * np.cos(2 * np.pi * (hour - peak_hour) / 24.0)
 
 
+def _anticipation_drive(t_abs_min: float, meal_hours, ramp_h: float, decay_h: float) -> float:
+    """Entrained pre-meal drive in [0, 1]: half-cosine ramp over `ramp_h` before
+    each habitual meal hour, half-cosine decay over `decay_h` after it."""
+    hour = (t_abs_min / 60.0) % 24.0
+    best = 0.0
+    for hm in meal_hours:
+        dt = (hour - hm + 12.0) % 24.0 - 12.0        # signed hours from the habitual hour
+        if -ramp_h <= dt <= 0.0:
+            v = 0.5 * (1.0 - np.cos(np.pi * (dt + ramp_h) / ramp_h))
+        elif 0.0 < dt <= decay_h:
+            v = 0.5 * (1.0 + np.cos(np.pi * dt / decay_h))
+        else:
+            v = 0.0
+        best = max(best, v)
+    return best
+
+
 def _hpa_drive(t_abs_min: float, rise_start_h: float, peak_h: float,
                fall_tau_h: float = 6.0) -> float:
     """Asymmetric 24 h HPA drive in [0, 1]: a half-cosine rise from `rise_start_h`
@@ -269,7 +286,13 @@ class PatientParams:
     # Glucagon
     Gnb: float = 70.0
     k_gn: float = 0.03
-    alpha_gn: float = 1.5
+    # Iter 97 follow-up: 1.5 -> 3.5. The alpha cell's response to glucose falling
+    # below the setpoint is what carries the EARLY fasting rise (8-16 h, before
+    # insulin has fallen much): Marliss 1970 108 -> 158 pg/mL over 3 days (+46%),
+    # Aguilar-Parada 1969 +50% by 48-72 h. Measured after: +0.5 pg/mL/h over
+    # 8-16 h, +19% at 24 h, +43% at 48 h. Zero above Gb, so postprandial
+    # suppression (the OGTT anchors) is untouched.
+    alpha_gn: float = 3.5
 
     # Free fatty acids. Iter 93: FFA was very nearly INERT — measured across a
     # 48 h fast it moved 0.50 -> 0.44 mmol/L (literature: a 2-3x RISE, Cahill
@@ -305,7 +328,13 @@ class PatientParams:
     BHB_b: float = 0.1
     keto_max: float = 0.005
     IC50_keto: float = 15.0
-    k_bhb: float = 0.005
+    # Iter 97 follow-up: DERIVED in resolve_derived_params so that BHB_b is the
+    # fixed point of the fed equations: k_bhb = keto_max * FFA_b / (1 + Ib/IC50)
+    # / BHB_b. At the old 0.005 the fed state produced +0.001 mmol/L/min and the
+    # "basal" BHB actually rested at 0.3 (typical 0.1). The derived value, 0.015
+    # /min, is also the physiological one: ketone-body MCR is ~20 mL/kg/min at
+    # low concentration (Balasse & Fery 1989), i.e. tau ~1 h, not 200 min.
+    k_bhb: float = 0.015           # default = derived value
     # Iter 80: hepatic ketogenesis ramps as the liver glycogen pool empties —
     # the prolonged-fast fuel switch (Cahill 2006: BHB ~1-2 mM by 24 h fast,
     # the teacher previously plateaued ~0.25). Gated on liver-glycogen
@@ -323,7 +352,15 @@ class PatientParams:
     # to 3.66 mmol/L against Cahill's 0.8-2.2. Retuned so BHB lands 0.55 / 1.32
     # / 3.51 mmol/L at 12 / 24 / 48 h, and it now rises for the RIGHT reason —
     # substrate supply — rather than being driven open-loop by the glycogen pool.
-    keto_glyc_gain: float = 5.0
+    # Iter 97 follow-up: 5 -> 13, and the gate now reads LINEAR pool depletion
+    # (1 - LGly/LGly_b)+ rather than the saturating `glyco_avail` ratio, which the
+    # iter-93 comment already noted "stays near 1 while the pool halves". With
+    # BHB_b a true fixed point (clearance derived, 3x faster than before) the
+    # fed-state BHB is 0.1 rather than 0.3, and the fuel switch has to come from
+    # the pool running down: measured ~0.75 at 24 h and ~2.2 at 48 h after a
+    # dinner, ~2.6 at 24 h when the fast starts from a full liver at dawn
+    # (Cahill 0.8-2.2 at 24 h, 2-3 at 48 h).
+    keto_glyc_gain: float = 13.0
 
     # --- Hepatobiliary / enterohepatic circulation (iter 95) ---------------------
     # Sourced anchors and the design rationale: docs/iter95-biliary-anchors.md.
@@ -385,7 +422,7 @@ class PatientParams:
     # suppresses it ~90%.
     K_mmc_fed: float = 0.05
     gb_fill_width: float = 2.0    # mmol below GB_max over which diversion tapers to zero
-    k_gb_basal: float = 0.002     # /min, DERIVED (fasting fixed point at GB_b)
+    k_gb_basal: float = 0.0026    # /min, DERIVED (fasting fixed point at GB_b); default = derived value
     # Intestine. Carries the transit delay AND the 95%/5% split, so the CCK-peak-at-10min
     # to serum-peak-at-75-120min gap is a CONSEQUENCE of transport in series rather than
     # a fitted lag. k_ileal = 1/tau of transit-to-ileal-uptake.
@@ -411,11 +448,11 @@ class PatientParams:
     # fixed point (it used to relax to BA_b with a non-negative source, the
     # absorbing-floor pattern). Its reciprocal is an effective volume: 1000 /
     # gain ~ 7 L, plasma plus the albumin-bound interstitial share.
-    ba_spill_gain: float = 45.0
+    ba_spill_gain: float = 145.7   # default = derived value
     # Hepatic de-novo synthesis, mmol/min. Iter 97: DERIVED as the faecal loss at
     # the fixed point, (1 - f_ileal) * k_ileal * INT_b = 0.00065 -> 0.94 mmol/day
     # ~ 0.4-0.5 g/day (literature 0.2-0.6 g/day).
-    k_ba_synth: float = 0.0010
+    k_ba_synth: float = 0.00065   # default = derived value
 
     # Lactate. Iter 93: the drive was LINEAR in activity (`act * 0.3`), which
     # put a *moderate* 0.65 bout at 9.8 mmol/L — near-maximal, anaerobic
@@ -531,6 +568,21 @@ class PatientParams:
     # (see the appetite block). A 75/5/10 standard meal delivers ~2.2 g/min at its
     # 10-min peak, so 0.9 gives ~70% suppression drive at the peak.
     K_meal_ghr: float = 0.9
+    # --- Iter 97 follow-up: THE ANTICIPATORY PRE-MEAL RISE --------------------
+    # Ghrelin rises before HABITUAL meal times independently of the previous
+    # meal's suppression wearing off: Natalucci 2005 (Eur J Endocrinol 152:845)
+    # saw the meal-locked pattern persist through a 33 h fast; Cummings 2001
+    # (Diabetes 50:1714) measured +78% from the post-meal nadir over the 1-2 h
+    # before a habitual meal; Frecka & Mattes 2008 showed it entrains to feeding
+    # schedule. Basal production is multiplied by 1 + a * ramp(t), a half-cosine
+    # ramp over the `ghr_antic_ramp_h` hours before each habitual meal hour that
+    # decays over the hour after it (the meal itself then suppresses). a = 0.55
+    # gives +21 pg/mL over the pre-meal hour and ~+30% at the habitual hour when
+    # no meal comes -- Natalucci's fasting-day amplitude.
+    ghr_antic_amp: float = 0.55
+    ghr_antic_ramp_h: float = 2.0
+    ghr_antic_decay_h: float = 1.0
+    habitual_meal_hours: tuple[float, ...] = (9.0, 13.0, 20.0)
     # Iter 92: cap on the fraction of basal ghrelin production a meal can suppress.
     # Cummings (2001) puts the postprandial nadir 30-50% below fasting; without a cap
     # the suppressors drove production to ~6% of basal (nadir -78%). See the appetite
@@ -1080,6 +1132,9 @@ def resolve_derived_params(params: PatientParams) -> PatientParams:
     # Iter 96: GSIR threshold tracks the patient's own defended fasting glucose.
     params.h = params.Gb * params.h_frac
 
+    # --- Ketone fixed point (iter 97 follow-up): clearance from the declared basal ---
+    params.k_bhb = (params.keto_max * params.FFA_b / (1.0 + params.Ib / params.IC50_keto)) / params.BHB_b
+
     # --- Glucose fixed point (iter 97) ---
     # Basal EGP is what holds the declared fasting glucose against obligatory
     # uptake; its glycogenolytic share is what is left after gluconeogenesis.
@@ -1299,6 +1354,16 @@ def simulate_full_body(
     """
     if rng is None:
         rng = np.random.default_rng(42)
+    # Iter 97 follow-up: a PatientParams is only a patient once its derived fields
+    # are resolved (Hep_b, Sg, k_bhb, the enterohepatic constants). Callers that
+    # build a raw ``PatientParams()`` or override a field after ``randomize_params``
+    # (tests, textbook scenarios, synthetic profiles) used to run a subtly different
+    # patient -- the iter-80 ketosis test ran with a 3x slower ketone clearance
+    # than the population. Resolving here is idempotent and makes the invariant
+    # "declared setpoints are the fixed points" hold by construction for every
+    # caller; the dataclass defaults are also set to their derived values so a raw
+    # default and a resolved default are the same patient.
+    params = resolve_derived_params(params)
 
     trajectory = np.zeros((duration_min, STATE_DIM))
     absorption_profile = np.zeros((duration_min, 4))
@@ -1379,7 +1444,13 @@ def simulate_full_body(
         # hormone sits AT its basal.
         # Iter 97: 0.5 -> 0.4. Measured with the 75 g standard meal the nadir was -56%
         # against the cited -20..-30% (and the OGTT anchor's -25 +/- 12).
-        glucagon_supp = 0.4 * max(I - params.Ib, 0.0) / (params.Ib + 10.0)
+        # Iter 97 follow-up: SIGNED about basal. Intra-islet insulin tonically
+        # restrains the alpha cell, so insulin falling BELOW basal disinhibits it
+        # (Unger & Orci 1981; the "switch-off" signal). That disinhibition is what
+        # carries the fasting glucagon rise -- Marliss 1970: 108 -> 158 pg/mL over
+        # 3 days, ~0.5-0.7 pg/mL per fasted hour -- which a rectified term could not
+        # produce (the teacher rose 0.25/h, from the glucose signal alone).
+        glucagon_supp = 0.4 * (I - params.Ib) / (params.Ib + 10.0)
         dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp + 0.02 * Ra_protein
         # Glucagon reaches glucose through hepatic output (g_gn in glucose_fluxes),
         # not through a separate additive term.
@@ -1390,7 +1461,7 @@ def simulate_full_body(
 
         # glyco_depletion ∈ [0,1): 0 when the liver is full (fed calibration —
         # ketosis unchanged), rising as it empties to drive the fuel switch.
-        glyco_depletion = max(0.0, 1.0 - glyco_avail)
+        glyco_depletion = max(0.0, 1.0 - LGly / params.LGly_b)   # linear (see keto_glyc_gain)
         ketogenesis = (
             params.keto_max * FFA / (1 + I / params.IC50_keto)
             * (1.0 + params.keto_glyc_gain * glyco_depletion)
@@ -1548,7 +1619,10 @@ def simulate_full_body(
         # nutrient signal alone) so the registered insulin->ghrelin -1 coupling prior
         # continues to be supported by the trajectory signal.
         meal_supp_ghr = 1.0 - (1.0 - insulin_supp_ghr) * (1.0 - Ra_norm)
-        ghr_prod = ghr_base_prod * (1.0 - params.ghr_supp_max * meal_supp_ghr)
+        antic = _anticipation_drive(t_abs, params.habitual_meal_hours,
+                                    params.ghr_antic_ramp_h, params.ghr_antic_decay_h)
+        ghr_prod = (ghr_base_prod * (1.0 + params.ghr_antic_amp * antic)
+                    * (1.0 - params.ghr_supp_max * meal_supp_ghr))
         dGhr = ghr_prod - params.k_ghr * Ghr
 
         circ_lep = _circadian(t_abs, params.lep_circ_amp, peak_hour=2.0)
