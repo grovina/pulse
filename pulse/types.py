@@ -337,6 +337,18 @@ EMBEDDING_DIM = 32
 # The second harmonic is what lets a module express a dawn ASYMMETRY (a rise that is
 # steeper than the fall) without a discontinuity. See modules/base.py:compute_time_features.
 TIME_FEATURES_DIM = 4
+
+# Glucose space (iter 97). The teacher's carbohydrate kernel is mass-conserving
+# in this unit: one gram of ingested carbohydrate integrates to MG_DL_PER_G of
+# glucose appearance over all time (Bergman V_G 1.85 dL/kg, 70 kg). The student's
+# gut kernel initializes its per-gram gain at the same constant and the metabolic
+# module divides by it to recover grams for its carbon ledger, so a gram eaten, a
+# gram stored as glycogen and a mg/dL in blood are the same carbon in BOTH models.
+# Defined here (not in the teacher) so modules never import knowledge code.
+BODY_MASS_KG = 70.0
+VG_DL_PER_KG = 1.85
+VG_DL = BODY_MASS_KG * VG_DL_PER_KG          # 129.5 dL
+MG_DL_PER_G = 1000.0 / VG_DL                 # 7.72 mg/dL per gram
 EXTERNAL_INPUT_DIM = 2  # sleep_wake, activity
 
 # Gut module outputs (not part of the ODE state)

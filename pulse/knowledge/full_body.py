@@ -60,10 +60,9 @@ def _hpa_drive(t_abs_min: float, rise_start_h: float, peak_h: float,
 # equation. Body mass is fixed at 70 kg for the teacher population (the literature
 # anchors are per-kg or 70-kg-normalized; a per-patient mass adds nothing that the
 # per-patient Gb/Si/Hep do not already carry).
-BODY_MASS_KG = 70.0
-VG_DL_PER_KG = 1.85                      # glucose distribution volume, dL per kg
-VG_DL = BODY_MASS_KG * VG_DL_PER_KG      # 129.5 dL
-MG_DL_PER_G = 1000.0 / VG_DL             # 7.72 mg/dL of glucose space per gram
+# The four constants live in ``pulse.types`` so the student's gut kernel and
+# metabolic ledger share them without importing teacher code.
+from ..types import BODY_MASS_KG, VG_DL_PER_KG, VG_DL, MG_DL_PER_G  # noqa: E402
 
 # Iter 97: the carbohydrate appearance kernel is MASS-CONSERVING. The integral of
 # `_meal_absorption` over all time is carbs (g) * MG_DL_PER_G, i.e. the whole

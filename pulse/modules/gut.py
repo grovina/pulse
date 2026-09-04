@@ -48,7 +48,13 @@ class MealEvent:
 # a hard step here (0.49 → 0 at 479 → 481 min for a 60 g meal), which for a 19:00
 # dinner put a −8 mg/dL/h glucose cliff at 03:00 — inside the scored pre-dawn
 # window. Raising this constant is safe; lowering it below ~480 is not.
-MEAL_ACTIVE_WINDOW_MIN: float = 480.0
+#
+# 720, not 480: the teacher's mass-conserving kernels (iter 97) run to 8/rate,
+# and its slow carbohydrate component still holds ~1.5 % of a meal at 480 min
+# (15 % of a 60 g load appears after 240 min). The window — which is ALSO the
+# meal lookback used by the trajectory signal and the benchmark — must cover
+# what the teacher absorbs, or the student sees a fasted input on a fed state.
+MEAL_ACTIVE_WINDOW_MIN: float = 720.0
 
 
 # Per-channel typical-excursion scale for gut appearance outputs (mg/min for

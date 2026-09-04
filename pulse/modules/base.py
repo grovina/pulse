@@ -21,7 +21,7 @@ from typing import Callable, Optional
 import torch
 import torch.nn as nn
 
-from ..types import TIME_FEATURES_DIM
+from ..types import MG_DL_PER_G, TIME_FEATURES_DIM
 
 # Floor on every sigmoid-gate temperature (the ``/ exp(log_temp)`` divisor).
 # The gate gradient w.r.t. its inputs scales as 1/temp and the gradient w.r.t.
@@ -456,18 +456,17 @@ class GutModuleBase(nn.Module):
     basis — it runs once per (meal, patient) rather than once per time step,
     and a freshly built kernel is already a plausible absorption curve: the
     output layer starts at zero with its bias set to the priors in
-    ``_INIT_MIXTURE`` / ``_INIT_F_BIO`` (carbohydrate peaking ~25 min with a
-    slower tail, fat ~60-90 min, protein ~40-60 min), so training starts in
+    ``_INIT_MIXTURE`` / ``_INIT_F_BIO`` (fitted to the teacher: carbohydrate
+    peaking ~45 min with a slow tail, fat ~65 min, protein ~50 min), so training starts in
     the right regime and the embedding's authority over shape and gain grows
     from zero.
 
-    ``f_bio`` is in APPEARANCE UNITS PER GRAM. The teacher (and every training
-    target derived from it) reports carbohydrate appearance as
-    ``2.55 × g/min`` and fat/protein as ``3.0 × g/min`` — a phenomenological
-    gain, not a mass-conserving one (``knowledge/full_body.py``
-    ``CARB_APPEARANCE_GAIN``; review item 2.4 proposes making it
-    ``(1-f_hep)·1000/V_G``). The student's kernel therefore carries that unit
-    convention in ``APPEARANCE_UNITS_PER_G`` and initializes ``f_bio`` at it;
+    ``f_bio`` is in APPEARANCE UNITS PER GRAM. Since iter 97 the teacher's
+    carbohydrate kernel is MASS-CONSERVING: one gram integrates to
+    ``MG_DL_PER_G`` (= 1000 / V_G = 7.72 mg/dL of glucose space,
+    ``pulse.types``) and fat/protein appear as ``3.0 × g/min``. The student's
+    kernel carries the same convention in ``APPEARANCE_UNITS_PER_G`` and
+    initializes ``f_bio`` at it (so ``f_bio = 1`` means "all of it appears");
     the metabolic module divides by the same constant to recover grams for
     its carbon budget. When the teacher's units change, only this constant
     and the init move.
@@ -496,7 +495,7 @@ class GutModuleBase(nn.Module):
 
     # Appearance units per gram of macro, per channel — the teacher's convention
     # (see the class docstring). Order: (glucose, lipid, amino).
-    APPEARANCE_UNITS_PER_G: tuple[float, float, float] = (2.55, 3.0, 3.0)
+    APPEARANCE_UNITS_PER_G: tuple[float, float, float] = (MG_DL_PER_G, 3.0, 3.0)
 
     # The basis bank as (gamma shape, gamma rate /min). Each component is chosen by
     # its PEAK time ``(shape − 1) / rate`` and its shape is raised for the slow
@@ -519,10 +518,16 @@ class GutModuleBase(nn.Module):
     #   carbs -> glucose : teacher 75 % fast (peak 25) + 25 % slow (peak 83)
     #   fats  -> lipid   : teacher rate 0.015 (peak 67)
     #   prot  -> amino   : teacher rate 0.02 (peak 50)
+    # Iter 97: fitted (non-negative least squares over the basis) to the teacher's
+    # actual `compute_absorption_profile` for a 60/20/25 g meal at default
+    # PatientParams, AFTER its kernels became mass-conserving: carbohydrate peaks
+    # at 46 min with a 15 % slow tail beyond 240 min (fit: 45 min, 12 %), fat at
+    # 67 min (fit 66), protein at 50 min (fit 50). A fresh kernel therefore starts
+    # on the teacher's curve, not on a guess about it.
     _INIT_MIXTURE: tuple[tuple[float, ...], ...] = (
-        (0.05, 0.55, 0.15, 0.05, 0.15, 0.05, 0.00),
-        (0.00, 0.00, 0.05, 0.45, 0.35, 0.15, 0.00),
-        (0.00, 0.05, 0.40, 0.40, 0.15, 0.00, 0.00),
+        (0.00, 0.00, 0.48, 0.27, 0.00, 0.00, 0.25),
+        (0.00, 0.00, 0.18, 0.41, 0.28, 0.00, 0.13),
+        (0.00, 0.00, 0.64, 0.01, 0.35, 0.00, 0.00),
     )
     _INIT_F_BIO_OFF_DIAGONAL: float = 0.01
 

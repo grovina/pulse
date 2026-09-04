@@ -64,9 +64,9 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
         the mask at 480 removes nothing an integrator can see (the iter-96 kernel
         stepped 0.49 -> 0 there and put a -8 mg/dL/h glucose cliff at 03:00)."""
         gut = _perturbed_gut(2)
-        times = torch.arange(0, 600, dtype=torch.float32)
-        long = torch.arange(0, 3000, dtype=torch.float32)
         edge = int(MEAL_ACTIVE_WINDOW_MIN)
+        times = torch.arange(0, edge + 120, dtype=torch.float32)
+        long = torch.arange(0, 4 * edge, dtype=torch.float32)
         for _ in range(6):
             emb = 3.0 * torch.randn(8)
             with torch.no_grad():
@@ -111,8 +111,10 @@ class TestFreshKernelIsPhysiological(unittest.TestCase):
         self.teacher = np.array(
             [compute_absorption_profile(float(t), [(0.0, 60.0, 20.0, 25.0)], p) for t in range(600)])
 
-    def test_carbohydrate_peaks_at_20_to_40_minutes(self) -> None:
-        self.assertTrue(20 <= int(self.student[:, 0].argmax()) <= 40)
+    def test_carbohydrate_peaks_at_30_to_60_minutes(self) -> None:
+        # Oral glucose appearance peaks at 30-60 min (Dalla Man 2007; the teacher's
+        # two-component kernel puts a 60 g load at 46 min).
+        self.assertTrue(30 <= int(self.student[:, 0].argmax()) <= 60)
 
     def test_fat_and_protein_are_slower_than_carbohydrate(self) -> None:
         t_glu = int(self.student[:, 0].argmax())
