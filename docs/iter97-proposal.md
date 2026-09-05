@@ -142,6 +142,27 @@ against iter 96 (mean |z| on the 40 anchors at the prior-mean embedding), then
 "a parameter no strong gradient reaches" was not the disease and the next iteration is
 about representational capacity, not supervision.
 
+## Baselines measured before dispatch
+
+**iter 96 re-scored on the corrected ruler** (tree `77e02d5`: frame-fixed calibration
+with the OLD 512-step / prior-0 algorithm, noise-floored skill, frozen old-teacher truth;
+grovina-mini, 2026-09-05):
+
+| | iter-96 report | iter-96 re-scored |
+|---|---|---|
+| gate failures | 6 | **2** (cgm_real glucose −0.05, hr −0.14) |
+| skill cgm_real glucose / hr | −0.58 / −0.39 | **−0.05 / −0.14** |
+| skill teacher_dynamic glucose / hr / sbp / dbp | −0.28 / −0.23 / −1.82 / −2.26 | +0.67 / +0.53 / +0.66 / +0.83 |
+| cgm_real MAE glucose / hr | — | 8.37 mg/dL / 3.42 bpm (σ_obs 8 / 3) |
+| headline normalized MAE | — | 0.608 |
+| textbook / verifier | 0.8625 / 0.906 | 0.8625 / 0.852 |
+
+Reading: fixing the calibration frame alone (the embedding was being fitted to a
+trajectory the scorer never ran) took the real-data blockers from clearly negative to
+within noise of zero, and the teacher_dynamic failures were the ruler. The iter-97
+artifact is compared against THIS row (and against the second re-score on the final
+teacher's frozen truth, `ruler.frozen.iter97-final.json`, queued behind the sweep).
+
 ## Run plan
 
 1. iter-96 re-score on the frozen old-teacher ruler at `77e02d5` (grovina-mini): the
