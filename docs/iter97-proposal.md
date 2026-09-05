@@ -166,6 +166,17 @@ moved (the new teacher's hr truth sd 1.87 vs 3.77) — which is exactly what the
 fingerprint is for. A third re-score with the NEW calibration (prior 1.0, the setting the
 iter-97 job's benchmark uses) on this same ruler is the calibration-matched baseline.
 
+**iter 96, calibration-matched baseline** (NEW calibration, prior 1.0 as the iter-97 job's
+benchmark runs, final teacher's frozen truth; tree b17bb14): failures = cgm_real hr
+−0.005 and teacher_dynamic glucose −0.06; cgm_real glucose **+0.35** (MAE 5.21 mg/dL),
+hr MAE 3.02 bpm; teacher_dynamic glucose MAE 12.0 (was 5.2 under the old calibration —
+the strong prior under-personalizes the meal episodes), hr +0.10, sbp +0.48, dbp +0.75;
+headline normalized MAE 0.831; textbook 0.8625 (soft 0.856, two hairline misses);
+verifier 0.942. **Reading: the prior weight trades sources** — 1.0 was picked on the
+cgm_real-only sweep and costs teacher_dynamic glucose. iter 97's artifact should be
+re-scored at prior 0.25 as well before any verdict; the right eval-time setting is a
+ruler question the sweep must answer over ALL gated sources, not one.
+
 Reading: fixing the calibration frame alone (the embedding was being fitted to a
 trajectory the scorer never ran) took the real-data blockers from clearly negative to
 within noise of zero, and the teacher_dynamic failures were the ruler. The iter-97
