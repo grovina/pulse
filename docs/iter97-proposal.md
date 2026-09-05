@@ -157,6 +157,15 @@ grovina-mini, 2026-09-05):
 | headline normalized MAE | — | 0.608 |
 | textbook / verifier | 0.8625 / 0.906 | 0.8625 / 0.852 |
 
+**iter 96 re-scored on the FINAL iter-97 teacher's frozen truth** (same tree and old
+calibration; `ruler.frozen.iter97-final.json`, git 4495d75): the same two failures
+(cgm_real glucose −0.05, hr −0.14); teacher_dynamic glucose +0.54, hr +0.17, sbp +0.66,
+dbp +0.83, temp +0.63; headline normalized MAE 0.701; textbook 0.8625; verifier 0.847.
+The teacher_dynamic numbers are lower than on the old-teacher ruler because the truth
+moved (the new teacher's hr truth sd 1.87 vs 3.77) — which is exactly what the
+fingerprint is for. A third re-score with the NEW calibration (prior 1.0, the setting the
+iter-97 job's benchmark uses) on this same ruler is the calibration-matched baseline.
+
 Reading: fixing the calibration frame alone (the embedding was being fitted to a
 trajectory the scorer never ran) took the real-data blockers from clearly negative to
 within noise of zero, and the teacher_dynamic failures were the ruler. The iter-97
