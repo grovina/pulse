@@ -68,6 +68,32 @@ class TestHPARhythm(unittest.TestCase):
         self.assertLess(c[night].mean(), self.p.Cort_b)
         self.assertGreater(hrv[night].mean(), self.p.HRV0 * self.p.sleep_hrv_gain)
 
+    def test_crh_is_simulated_not_padded(self):
+        crh = self.traj[self.day, MI["crh"]]
+        self.assertGreater(float(crh.std()), 5.0)
+        self.assertFalse(np.allclose(crh, 100.0))
+
+
+class TestEnergyAndMitoAreSimulated(unittest.TestCase):
+    def test_fat_mass_falls_on_a_fast(self):
+        p = resolve_derived_params(PatientParams())
+        n = 1440
+        traj, _ = simulate_full_body(
+            p, [], np.ones(n, dtype=np.float32), np.zeros(n, dtype=np.float32), n,
+            noise_scale=0.0, rng=np.random.default_rng(0),
+        )
+        self.assertLess(traj[-1, MI["fat_mass"]], traj[0, MI["fat_mass"]] - 0.05)
+
+    def test_mitochondrial_capacity_rises_with_training(self):
+        p = resolve_derived_params(PatientParams())
+        n = 1440
+        act = np.full(n, 0.8, dtype=np.float32)
+        traj, _ = simulate_full_body(
+            p, [], np.ones(n, dtype=np.float32), act, n,
+            noise_scale=0.0, rng=np.random.default_rng(0),
+        )
+        self.assertGreater(traj[-1, MI["mitochondrial_capacity"]], traj[0, MI["mitochondrial_capacity"]])
+
 
 class TestRestIsZero(unittest.TestCase):
     def test_generated_activity_is_zero_at_rest(self):

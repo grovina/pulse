@@ -73,14 +73,15 @@ class TestOneFluxTwoLedgers(unittest.TestCase):
         for k in range(len(I)):
             X[k] = x
             x += -p.p2 * x + p.Si * p.p2 * (I[k] - p.Ib)
-        acc = {k: 0.0 for k in ("ra", "uptake_ii", "uptake_id", "uptake_ex", "gng_rel_flux", "gng_divert", "brk_M_g")}
+        acc = {k: 0.0 for k in ("ra", "uptake_ii", "uptake_id", "uptake_ex", "gng_rel_flux", "gng_divert", "brk_M_g", "syn_M_id")}
         for k in range(len(G)):
             fl = glucose_fluxes(p, G[k], I[k], X[k], Gn[k], Cort[k], FFA[k], LG[k], MG[k], Hep[k], Ra[k], 0.0)
             for kk in acc:
                 acc[kk] += fl[kk]
         kg = BODY_MASS_KG / 1000.0
         booked = ((acc["ra"] - acc["uptake_ii"] - acc["uptake_id"] - acc["uptake_ex"]) / MG_DL_PER_G
-                  + (acc["gng_rel_flux"] + acc["gng_divert"]) * kg - acc["brk_M_g"])
+                  + (acc["gng_rel_flux"] + acc["gng_divert"]) * kg - acc["brk_M_g"]
+                  + acc["syn_M_id"])
         pools = (G[-1] - G[0]) / MG_DL_PER_G + (LG[-1] - LG[0]) + (MG[-1] - MG[0])
         self.assertLess(abs(pools - booked), 1.0, f"carbon residual {pools - booked:.3f} g/day")
         # And the day is not glycogen-negative by construction: the pool cycles around its typical.

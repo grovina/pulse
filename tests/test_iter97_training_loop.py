@@ -206,18 +206,17 @@ def test_spec_pins_every_load_bearing_flag_and_parses_without_divergence() -> No
     assert spec_only.phase3_epochs > 0 and spec_only.phase3_input_dropout > 0.3
     assert "hr" not in spec_only.default_baseline_markers.split(":")
     assert "insulin" not in spec_only.cold_distill_markers.split(":")
+    for marker in ("crh", "insulin_action", "fat_mass", "insulin_slow"):
+        assert marker in spec_only.cold_distill_markers.split(":")
     assert spec_only.perturb_protocols and spec_only.trajectory_band_per_marker
 
 
 # --- student hand-off: the CVS setpoint frame ------------------------------------------
 
 def test_setpoint_supervision_decodes_cvs_through_the_module() -> None:
-    """Guarded until the student layer's setpoints_z lands on main."""
     from pulse.training import SetpointSupervisionSignal
     torch.manual_seed(0)
     model = _tiny_model()
-    if not hasattr(model.cardiovascular, "setpoints_z"):
-        pytest.skip("student layer's setpoints_z not on main yet")
     emb = nn.Embedding(2, EMBEDDING_DIM)
     nn.init.normal_(emb.weight, std=0.3)
     params = list(model.parameters()) + list(emb.parameters())

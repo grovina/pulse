@@ -41,7 +41,7 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
             self.assertEqual(float(out[0, :3].abs().sum()), 0.0, msg=str(out))
 
     def test_integral_equals_f_bio_times_ingested_mass(self) -> None:
-        """∫ appearance_j dt = Σ_i macros_i · f_bio_ij, for random embeddings."""
+        """∫ appearance_j dt = macros_j · f_bio_j (diagonal: carbs do not appear as lipid)."""
         gut = _perturbed_gut(1)
         times = torch.arange(0, 3000, dtype=torch.float32)  # long enough for every tail
         for _ in range(6):
@@ -51,7 +51,7 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
                     _MACROS.expand(times.shape[0], -1), times, emb.unsqueeze(0).expand(times.shape[0], -1))
                 _, f_bio = gut.kernel.mixture(emb)
             auc = curve[:, :3].sum(dim=0)
-            expected = _MACROS[0] @ f_bio
+            expected = _MACROS[0] * f_bio
             torch.testing.assert_close(auc, expected, rtol=2e-3, atol=1e-3)
 
     def test_every_basis_component_has_under_one_percent_beyond_the_window(self) -> None:
@@ -94,6 +94,18 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
             peak_t = int(out.argmax())
             tail = out[peak_t:]
             self.assertTrue(bool((tail[1:] <= tail[:-1] + 1e-7).all()))
+
+    def test_kernel_is_diagonal(self) -> None:
+        """Carbohydrate does not appear on the lipid or amino channel."""
+        gut = GutModule(embedding_dim=8, hidden_dim=16)
+        gut.eval()
+        meal = [MealEvent(time=0.0, carbs=60.0, fats=0.0, proteins=0.0)]
+        times = torch.arange(0, 400, dtype=torch.float32)
+        with torch.no_grad():
+            out = gut.forward_window(times, meal, torch.zeros(8))
+        self.assertGreater(float(out[:, 0].max()), 0.1)
+        self.assertLess(float(out[:, 1].abs().max()), 1e-6)
+        self.assertLess(float(out[:, 2].abs().max()), 1e-6)
 
 
 class TestFreshKernelIsPhysiological(unittest.TestCase):

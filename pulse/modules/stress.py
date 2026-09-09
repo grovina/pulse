@@ -1,95 +1,74 @@
 """
 Stress / HPA Axis module.
 
-Iter 64 introduced "Move B compact" — mechanistic priors that closed the
-EMBEDDING_DIM=64 shortcut directions on ACTH and cortisol. The plain
-SetpointHead architecture lets the patient embedding bypass the canonical
-HPA cascade — ACTH and cortisol fit as semi-independent free-floating
-species via embedding shortcut directions, surfacing as the 0.65 / 0.49
-mape regression that iter 61's eval-time diag-Gauss prior tried (and failed)
-to fix at eval time.
-
-Iter 64's mechanism (four sign-constrained terms on top of SetpointHead):
-
-    cortisol_rate +=  α * relu((acth - typical_acth) / typical_acth) * prod_scale_cortisol
-                  +   δ * (1 + diurnal_carrier(t, phase(emb)))      * prod_scale_cortisol
-    acth_rate     +=  γ * (1 + diurnal_carrier(t, phase(emb)))      * prod_scale_acth
-                  −   β * relu((cortisol - typical_cortisol) / typical_cortisol) * prod_scale_acth
-
-with α, β, γ, δ ≥ 0 (softplus parameterised) and ``phase`` projected from
-the embedding. Per-patient diurnal phase carries population-relative
-OFFSET; the SetpointHead's time-feature input supplies the population-
-level phase. The relu makes the prior surgical: baseline behaviour stays
-with the SetpointHead, the architectural prior fires only when ACTH is
-above typical (→ cortisol drive) or cortisol is above typical (→ ACTH
-feedback). Iter 66 added the δ cosinor on cortisol — the adrenal cortex
-has a direct ACTH-sensitivity rhythm on top of the cascade.
-
-**Iter 73 reverts the CRH cascade for good** — back to iter-64 compact.
-The CRH cascade (``diurnal → CRH → ACTH``) has now failed THREE distinct
-ways: iter 69 (full replace: ACTH 0.091 → 0.761), iter 71 (indirect: ACTH
-0.0755 → 0.8331), iter 72 (additive/dormant redundancy: ACTH 0.0755 →
-0.3618 — drifted, not collapsed). The root cause is structural and is not
-fixable by re-parameterising the cascade: **the cold knowledge model does
-not simulate CRH** (see ``knowledge/full_body.py`` — CRH is padded with
-the constant typical 100.0). CRH is therefore an unsupervised latent — the
-cold-model-distillation signal supervises ACTH and cortisol directly (they
-ARE in the cold ODE, with diurnal curves) but never CRH. Any ``λ·crh →
-ACTH`` term lets ACTH's rate be explained by a free-floating variable with
-no ground truth, so gradient drags it off the iter-64-proven direct
-γ·(1+diurnal) drive. Three failures confirm: do not add an unsupervised
-latent into a load-bearing rate. The iter-64 compact cascade mirrors the
-cold model's own two-state ACTH/cortisol structure — which is exactly why
-it lands ACTH ≈ 0.0755.
-
-CRH is retained as a typed state at idx 22 (n_species stays at 3) — this
-keeps the iter-69 benchmark dataset (23-D initial_state) working without
-regeneration. CRH carries no term in the iter-64 mechanism, though
-its head (a plain SpeciesHead since iter 95) reads it like any other state. No
-participation in the ACTH/cortisol cascade. A CRH cascade could only be
-re-introduced once the cold model is taught to simulate CRH (giving it
-direct distillation supervision) — until then it stays inert.
-
-Iter 97: the cascade reads the RAW cortisol/ACTH via ``raw_state`` — through
-iter 96 it read the normalized state as if it were raw, which made the whole
-mechanism inert at runtime (see the comment in ``forward``).
-
-Couplings (n_coupling=2): glucose, cortisol_feedback (legacy — duplicated
-by our explicit β-feedback term; kept for parity with the rest of the
-coupling graph and because the cohort generator still supplies it).
-External inputs (n_external=2): sleep_wake, activity.
+The cascade is CRH → ACTH → cortisol. Circadian drive, sleep suppression,
+hypoglycaemia and activity enter at CRH; ACTH tracks CRH; cortisol tracks ACTH.
+Cortisol's negative feedback on CRH is one-sided saturating about the
+patient's basal: high cortisol suppresses CRH; the nocturnal nadir is
+sleep's. A rectifier at 12 µg/dL would leave the whole overnight range
+inert.
 """
+
+import math
 
 import torch
 import torch.nn as nn
 
-from .base import MassActionModule, SpeciesHead
-from ..types import MODULE_MARKER_INDICES, NORM_SCALE
+from .base import ConstantFluxHead, MassActionModule
+from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
-# Coupling inputs: glucose (1) + cortisol feedback (1)
-_N_COUPLING = 2
-
-# External inputs: sleep_wake (1) + activity (1)
+_N_COUPLING = len(MODULE_COUPLING_CHANNELS["stress"])
 _N_EXTERNAL = 2
 
-# Order matches MODULE_MARKER_INDICES["stress"] — defined by the order of
-# System.STRESS entries in pulse.types.MARKERS. Currently: cortisol (idx
-# 10), acth (idx 11), crh (idx 22 — internal tail). The module receives
-# state[:, [10, 11, 22]] which becomes state[:, 0:3] locally with the
-# below indices.
 _CORTISOL_IDX = 0
 _ACTH_IDX = 1
 _CRH_IDX = 2
 
-# Typicals (μg/dL for cortisol; pg/mL for ACTH and CRH).
-_TYPICALS = [12.0, 30.0, 100.0]
-# Iter 95: NORM_SCALE per species, for the raw-concentration consumption term.
+_TYPICALS = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["stress"]]
 _NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["stress"]]
-# cons_scale per species (inverse time-constant proxy; SetpointHead uses
-# this as base decay).
-_CONS_SCALES = [0.02, 0.03, 0.04]
+_CONS_SCALES = [0.02, 0.04, 0.08]
 
-_MECHANISM_INIT_RAW = -3.0
+_CORT_B = float(_TYPICALS[_CORTISOL_IDX])
+_ACTH_B = float(_TYPICALS[_ACTH_IDX])
+_CRH_B = float(_TYPICALS[_CRH_IDX])
+
+_GLUCOSE_CENTER = NORM_CENTER[MARKER_INDEX["glucose"]]
+_GLUCOSE_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
+
+_K_CORT = 0.02
+_K_ACTH = 0.04
+_K_CRH = 0.08
+_ACTH_PER_CRH = _ACTH_B / _CRH_B
+_CORT_PER_ACTH = 0.45
+_CRH_CIRC_AMP = 18.0 / _ACTH_PER_CRH   # same ACTH swing as the teacher
+_HPA_SLEEP_SUPP = 0.35
+_HPA_RISE_START_H = 2.0
+_HPA_PEAK_H = 6.5
+_HPA_FALL_TAU_H = 6.0
+_FB_AMP = 0.35
+_CORT_LOG_MAX = 0.5
+_HYPO_GAIN = 0.025 * _K_CRH / (_K_ACTH * _ACTH_PER_CRH)
+_ACT_GAIN = 0.35 * _K_CRH / (_K_ACTH * _ACTH_PER_CRH)
+
+
+def _hpa_drive(hour: torch.Tensor) -> torch.Tensor:
+    """Asymmetric 24 h HPA drive in [0, 1] (Weitzman 1971), matching the teacher."""
+    rise = (_HPA_PEAK_H - _HPA_RISE_START_H) % 24.0
+    fall = 24.0 - rise
+    since_start = (hour - _HPA_RISE_START_H) % 24.0
+    rising = since_start < rise
+    rise_val = 0.5 * (1.0 - torch.cos(math.pi * since_start / rise))
+    x = since_start - rise
+    e_end = math.exp(-fall / _HPA_FALL_TAU_H)
+    fall_val = (torch.exp(-x / _HPA_FALL_TAU_H) - e_end) / (1.0 - e_end)
+    return torch.where(rising, rise_val, fall_val)
+
+
+def _hour_from_time_features(time_features: torch.Tensor) -> torch.Tensor:
+    sin_t = time_features[..., 0]
+    cos_t = time_features[..., 1]
+    theta = torch.atan2(sin_t, cos_t)
+    return (theta / (2.0 * math.pi) * 24.0) % 24.0
 
 
 class StressModule(MassActionModule):
@@ -103,28 +82,35 @@ class StressModule(MassActionModule):
             typicals=_TYPICALS,
             norm_scales=_NORM_SCALES,
             head_factories={
-                _CORTISOL_IDX: SpeciesHead,  # iter 95: was SetpointHead
-                _ACTH_IDX: SpeciesHead,  # iter 95: was SetpointHead
-                _CRH_IDX: SpeciesHead,  # iter 95: was SetpointHead
+                _CORTISOL_IDX: lambda inp, hd: ConstantFluxHead(),
+                _ACTH_IDX: lambda inp, hd: ConstantFluxHead(),
+                _CRH_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
-        # Iter 64 compact mechanism — restored after iter 69's Move B FULL
-        # regressed ACTH (0.091→0.761) by diluting the direct γ·diurnal drive.
-        self._alpha_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))   # ACTH → cortisol drive
-        self._gamma_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))   # diurnal → ACTH drive
-        self._beta_raw = nn.Parameter(torch.tensor(_MECHANISM_INIT_RAW))    # cortisol → ACTH neg feedback
-        # ITER 96 -- `_delta_raw` (diurnal → cortisol) IS GONE. See forward().
-
-        # Per-patient diurnal phase (scalar) projected from the embedding.
-        # Carries population-relative OFFSET; the SetpointHead's time-feature
-        # input supplies the population-level phase.
         self.phase_proj = nn.Linear(embedding_dim, 1)
         nn.init.normal_(self.phase_proj.weight, std=0.01)
         nn.init.zeros_(self.phase_proj.bias)
+        self.log_k_crh = nn.Parameter(torch.tensor(math.log(_K_CRH)))
+        self.log_k_acth = nn.Parameter(torch.tensor(math.log(_K_ACTH)))
+        self.log_k_cort = nn.Parameter(torch.tensor(math.log(_K_CORT)))
+        self._fb_raw = nn.Parameter(torch.tensor(math.log(math.expm1(_FB_AMP))))
+        self._hypo_raw = nn.Parameter(torch.tensor(math.log(math.expm1(_HYPO_GAIN))))
+        self._act_raw = nn.Parameter(torch.tensor(math.log(math.expm1(_ACT_GAIN))))
+        _bh = max(8, hidden_dim // 4)
+        self.cort_baseline_net = nn.Sequential(
+            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
+        )
+        with torch.no_grad():
+            self.cort_baseline_net[-1].weight.zero_()
+            self.cort_baseline_net[-1].bias.zero_()
+
+    def cort_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
+        return _CORT_B * torch.exp(
+            _CORT_LOG_MAX * torch.tanh(self.cort_baseline_net(embedding).squeeze(-1)))
 
     def forward(
         self,
@@ -134,77 +120,39 @@ class StressModule(MassActionModule):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
-        base_rate = super().forward(state, coupling, external, embedding, time_features)
-
-        # ITER 97 -- THE CASCADE READ THE NORMALIZED STATE AS RAW (review 2026-09-04, 1.1).
-        #
-        # Through iter 96 the two lines below were `state[..., idx]`, but model.py hands
-        # every module the NORMALIZED state `(raw - typical) / NORM_SCALE`. So
-        # `relu(acth / 30)` was really `relu((ACTH - 30) / 540)` -- exactly zero for every
-        # ACTH <= 30 pg/mL, i.e. the whole overnight range the cortisol nadir lives in --
-        # and the cortisol feedback `relu((cort - 12) / 12)` needed cortisol > 108 ug/dL
-        # to fire at all. `_beta_raw` in the iter-96 checkpoint was -3.000000, bit-
-        # identical to its init after 21 h of training: no gradient path had ever reached
-        # it. The iter-96 claim that the ACTH->cortisol drive was "proportional" was true
-        # of the source and false at runtime; the nadir gain that iter measured came from
-        # removing the delta floor alone. The fifth frame bug of this family (iter-90 Sg,
-        # iter-95 consumption, ...): the helper that rebuilds raw concentration has been
-        # in base.py since iter 95 and this module never called it.
         raw = self.raw_state(state)
-        cortisol_raw = raw[..., _CORTISOL_IDX]
-        acth_raw = raw[..., _ACTH_IDX]
-        typical_cortisol = float(_TYPICALS[_CORTISOL_IDX])
-        typical_acth = float(_TYPICALS[_ACTH_IDX])
+        cort = raw[..., _CORTISOL_IDX]
+        acth = raw[..., _ACTH_IDX]
+        crh = raw[..., _CRH_IDX]
+        g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
+        sw = external[..., 0]
+        act = external[..., 1]
+        sleep_depth = 1.0 - sw
 
-        # ITER 96 -- CORTISOL WAS DOUBLE-DRIVEN IN THE STUDENT. This is iter-91's
-        # TEACHER fix, which was never ported across.
-        #
-        # Through iter 95 the student had BOTH `cortisol_drive = α·relu(ACTH−typ)`
-        # AND `cortisol_diurnal = δ·(1+diurnal)·prod_scale`. The teacher stopped
-        # doing exactly this in iter 91 (full_body.py, the HPA block): ACTH is
-        # itself circadian, so a second circadian on cortisol injects the same
-        # rhythm twice and — because `diurnal_carrier` ∈ [0,2] and δ = softplus(·)
-        # ≥ 0 — adds a STRICTLY NON-NEGATIVE standing offset on top. A rectified
-        # source term is a production FLOOR, the same shape of error iter 95 found
-        # in the mass-action frame: cortisol could not fall below what δ·prod_scale
-        # sustains. Measured on the iter-95 artifact across the 14 real overnight
-        # episodes, the student's hourly cortisol nadir sat at 10.3-12.0 µg/dL
-        # against the teacher's 4.4 and a physiological 3-5 (Weitzman 1971).
-        #
-        # The cascade the model claims to implement is ACTH → cortisol. So:
-        #   - `cortisol_diurnal` is REMOVED. The circadian lives in ACTH alone,
-        #     which is where the SCN→PVN→pituitary pathway puts it.
-        #   - the ACTH → cortisol drive is now PROPORTIONAL to the secretagogue
-        #     (`ACTH/typical`), matching the teacher's `cort_target =
-        #     cort_per_acth · ACTH`, instead of rectified at typical. Rectifying
-        #     made the map FLAT below typical ACTH — cortisol could not tell an
-        #     ACTH of 5 from an ACTH of 12, which is precisely the overnight
-        #     range the nadir lives in.
-        # ACTH's own drive keeps the [0,2] carrier, which reaches 0 at the trough,
-        # so ACTH retains a real nadir of its own.
-        acth_norm = torch.relu(acth_raw / typical_acth)
-        cortisol_excess = torch.relu((cortisol_raw - typical_cortisol) / typical_cortisol)
+        hour = _hour_from_time_features(time_features)
+        phase_h = 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1))
+        drive = _hpa_drive((hour - phase_h) % 24.0)
+        sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
+        cort_b = self.cort_setpoint_raw(embedding)
+        fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / cort_b))
+        fb = torch.relu(fb)
+        fb_amp = nn.functional.softplus(self._fb_raw)
+        crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
+        crh_target = crh_target * sleep_suppression * (1.0 - fb_amp * fb)
 
-        # Diurnal carrier with per-patient phase offset.
-        # Iter 97: time_features = [sin θ, cos θ, sin 2θ, cos 2θ] (the linear ramp is gone,
-        # see base.compute_time_features), so the first harmonic is at indices 0 and 1.
-        phase = self.phase_proj(embedding).squeeze(-1)
-        sin_t = time_features[..., 0]
-        cos_t = time_features[..., 1]
-        diurnal = sin_t * torch.cos(phase) - cos_t * torch.sin(phase)
-        diurnal_carrier = 1.0 + diurnal  # range [0, 2]
+        k_crh = torch.exp(self.log_k_crh)
+        k_acth = torch.exp(self.log_k_acth)
+        k_cort = torch.exp(self.log_k_cort)
+        hypo = nn.functional.softplus(self._hypo_raw) * torch.relu(70.0 - g)
+        act_drive = nn.functional.softplus(self._act_raw) * act
 
-        alpha = nn.functional.softplus(self._alpha_raw)
-        gamma = nn.functional.softplus(self._gamma_raw)
-        beta = nn.functional.softplus(self._beta_raw)
+        d_crh = -k_crh * (crh - crh_target) + hypo + act_drive
+        d_acth = -k_acth * (acth - _ACTH_PER_CRH * crh)
+        cort_target = (_CORT_PER_ACTH * acth.clamp(min=0.0)).clamp(min=0.5)
+        d_cort = -k_cort * (cort - cort_target)
 
-        cortisol_drive = alpha * acth_norm * self.prod_scale[_CORTISOL_IDX]
-        acth_drive = gamma * diurnal_carrier * self.prod_scale[_ACTH_IDX]
-        acth_feedback = -beta * cortisol_excess * self.prod_scale[_ACTH_IDX]
-
-        adjustments = torch.zeros_like(base_rate)
-        adjustments[..., _CORTISOL_IDX] = cortisol_drive
-        adjustments[..., _ACTH_IDX] = acth_drive + acth_feedback
-        # _CRH_IDX: no mechanism adjustment — inert this iter.
-
-        return base_rate + adjustments
+        rates = torch.zeros_like(state)
+        rates[..., _CORTISOL_IDX] = d_cort
+        rates[..., _ACTH_IDX] = d_acth
+        rates[..., _CRH_IDX] = d_crh
+        return rates

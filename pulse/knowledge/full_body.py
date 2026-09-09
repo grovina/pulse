@@ -108,11 +108,11 @@ def _kernel_cutoff_min(rate: float) -> float:
 
 
 def _meal_absorption(t: float, meal_time: float, carbs: float,
-                     rate: float = 0.03) -> float:
+                     rate: float = 0.03, gain: float = CARB_APPEARANCE_GAIN) -> float:
     dt = t - meal_time
     if dt < 0 or dt > _kernel_cutoff_min(rate):
         return 0.0
-    return carbs * rate * rate * dt * np.exp(-rate * dt) * CARB_APPEARANCE_GAIN
+    return carbs * rate * rate * dt * np.exp(-rate * dt) * gain
 
 
 def _fat_absorption(t: float, meal_time: float, fats: float,
@@ -148,7 +148,7 @@ def _duodenal_delivery(t: float, meal_time: float, grams: float,
     moved together and no (rate, gain) pair satisfied both anchors at once.
     """
     dt = t - meal_time
-    if dt < 0 or dt > 480:
+    if dt < 0:
         return 0.0
     fast = fast_rate * fast_rate * dt * np.exp(-fast_rate * dt)
     slow = slow_rate * np.exp(-slow_rate * dt)
@@ -620,6 +620,16 @@ class PatientParams:
     # the low end of the cited fall.
     lep_ins_gain: float = 2.5
     k_ins_slow: float = 1.0 / 240.0
+    body_mass_kg: float = 70.0
+    Fat_b: float = 18.0
+    bmr_kcal_per_min: float = 1.15
+    act_kcal_per_min: float = 4.0
+    kcal_per_kg_fat: float = 7700.0
+    mito_0: float = 1.0
+    k_mito: float = 1.0 / (14.0 * 1440.0)
+    mito_train_gain: float = 2.0e-5
+    id_store_frac: float = 0.25
+    lac_glyco_gain: float = 0.02
 
     # GLP-1. Iter 21 recalibration: glp1_meal_gain 5.0 -> 1.5 to match
     # the large-meal GLP-1 peak of ~22 uU/mL (was overshooting to ~64
@@ -687,6 +697,11 @@ class PatientParams:
     cort_per_acth: float = 0.45
     cort_feedback_acth: float = 0.025
     hypo_acth: float = 0.025
+    CRH_b: float = 100.0
+    k_crh: float = 0.08
+    acth_per_crh: float = 0.30
+    crh_circ_amp: float = 60.0
+    crh_fb_amp: float = 0.35
     # Sympathetic / exercise-associated HPA drive on ACTH (activity in [0, 1])
     cort_activity: float = 0.35
 
@@ -947,6 +962,12 @@ class PatientParams:
     glyc_fill_width_M: float = 60.0
     act_rest_M: float = 0.10    # activity below this is rest — no muscle glycogenolysis (Coppack 1989)
 
+    def vg_dl(self) -> float:
+        return self.body_mass_kg * VG_DL_PER_KG
+
+    def mg_dl_per_g(self) -> float:
+        return 1000.0 / self.vg_dl()
+
 
 def randomize_params(rng: np.random.Generator) -> PatientParams:
     """Sample a virtual patient.
@@ -1106,6 +1127,10 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.LGly_b = float(np.clip(vary(p.LGly_b, 0.15), 70.0, 130.0))
     p.MGly_b = float(np.clip(vary(p.MGly_b, 0.15, fit=0.50), 300.0, 520.0))
     p.LGly_max = 1.5 * p.LGly_b
+    p.body_mass_kg = float(np.clip(vary(p.body_mass_kg, 0.12, ir=0.30), 52.0, 110.0))
+    p.Fat_b = float(np.clip(vary(p.Fat_b, 0.35, ir=0.50), 8.0, 40.0))
+    p.mito_0 = float(np.clip(vary(p.mito_0, 0.15, fit=0.70), 0.6, 1.6))
+    p.CRH_b = vary(p.CRH_b, 0.20)
     return resolve_derived_params(p)
 
 
@@ -1142,6 +1167,8 @@ def resolve_derived_params(params: PatientParams) -> PatientParams:
     params.Gng_b = float(min(params.Gng_b, 0.85 * params.Hep_b))   # glycogenolysis >= 15% of EGP
     # Glucose effectiveness = obligatory uptake + hepatic autoregulation, linearized.
     params.Sg = params.uptake_ii * (1.0 + params.hep_autoreg_m)
+    params.acth_per_crh = params.ACTH_b / max(params.CRH_b, 1e-6)
+    params.crh_circ_amp = params.acth_circ_amp / max(params.acth_per_crh, 1e-6)
 
     # --- Enterohepatic fixed points (iter 97) ---
     # Ileal uptake at the fixed point is the whole recirculating flux.
@@ -1190,6 +1217,8 @@ def glucose_fluxes(
                       leaves the pool is the flux that reaches blood.
     """
     Ib, Gb = params.Ib, params.Gb
+    mg = params.mg_dl_per_g()
+    mass = params.body_mass_kg
     ins_excess = max(I - Ib, 0.0)
     ins_drive = ins_excess / (ins_excess + Ib)                      # 0 at basal -> 1
 
@@ -1204,7 +1233,7 @@ def glucose_fluxes(
     fill_M = min(1.0, max(0.0, (params.MGly_b - MGly) / params.glyc_fill_width_M))
     syn_L = params.glyc_syn_frac_L * Ra_carb * (0.5 + 0.5 * ins_drive) * fill_L  # mg/dL/min
     syn_M_g = params.k_glyc_syn_M * Ra_carb * ins_drive * fill_M                # g/min
-    syn_M = syn_M_g * MG_DL_PER_G                                               # mg/dL/min
+    syn_M = syn_M_g * mg                                                        # mg/dL/min
 
     # --- hepatic output target (mg/kg/min) ---
     g_ins_glyco = _glyc_ins_gate(I, Ib, params.glyc_ins_K, params.glyc_ins_n)
@@ -1229,18 +1258,20 @@ def glucose_fluxes(
     # --- muscle glycogenolysis (activity-gated, oxidized locally) ---
     act_ex = max(act - params.act_rest_M, 0.0)
     brk_M_g = params.k_glyc_brk_M * act_ex * (MGly / (MGly + params.glyc_K_M))  # g/min
+    syn_M_id = params.id_store_frac * max(x_eff, 0.0) * G / mg * fill_M
 
     dG = Ra_carb - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex
-    dLGly = (syn_L / MG_DL_PER_G
-             + gng_divert * BODY_MASS_KG / 1000.0
-             - glyco_flux * BODY_MASS_KG / 1000.0)                              # g/min
-    dMGly = syn_M_g - brk_M_g
+    dLGly = (syn_L / mg
+             + gng_divert * mass / 1000.0
+             - glyco_flux * mass / 1000.0)
+    dMGly = syn_M_g + syn_M_id - brk_M_g
     return {
         "dG": dG, "dLGly": dLGly, "dMGly": dMGly, "hep_target": hep_target,
         "ra": Ra_carb, "syn_L": syn_L, "syn_M": syn_M, "egp": egp,
         "uptake_ii": uptake_ii, "uptake_id": uptake_id, "uptake_ex": uptake_ex,
         "glyco_flux": glyco_flux, "gng_rel_flux": gng_rel_flux, "gng_divert": gng_divert,
         "brk_M_g": brk_M_g, "ins_drive": ins_drive, "x_eff": x_eff,
+        "syn_M_id": syn_M_id, "mg_dl_per_g": mg,
     }
 
 
@@ -1327,8 +1358,8 @@ def compute_absorption_profile(
     fat_total = 0.0
     protein_total = 0.0
     for mt, mc, mf, mp in meals:
-        carb_total += fast_frac * _meal_absorption(t, mt, mc, fast_rate)
-        carb_total += slow_frac * _meal_absorption(t, mt, mc, slow_rate)
+        carb_total += fast_frac * _meal_absorption(t, mt, mc, fast_rate, params.mg_dl_per_g())
+        carb_total += slow_frac * _meal_absorption(t, mt, mc, slow_rate, params.mg_dl_per_g())
         fat_total += _fat_absorption(t, mt, mf)
         protein_total += _protein_absorption(t, mt, mp)
 
@@ -1379,8 +1410,11 @@ def simulate_full_body(
     LGly, MGly = params.LGly_b, params.MGly_b
     CCK, GB, INT, BA = params.CCK_b, params.GB_b, params.INT_b, params.BA_b
     X = 0.0
-    Pot = 0.0   # delayed glucose signal for second-phase secretion (internal, see ins_phase2_frac)
-    Ins_slow = params.Ib   # 4 h low-pass of insulin (internal, see lep_ins_gain)
+    Pot = 0.0
+    Ins_slow = params.Ib
+    CRH = params.CRH_b
+    Mito = params.mito_0
+    Fat = params.Fat_b
     ns = noise_scale
 
     # Iter 91: the `(1 + Ib/IC50_ghr)` factor was a COMPENSATION for the standing suppression
@@ -1470,7 +1504,9 @@ def simulate_full_body(
 
         # Iter 93: thresholded, not linear — see lac_thresh / lac_act_gain.
         lac_supra = max(act - params.lac_thresh, 0.0)
-        dLac = -params.k_lac * (Lac - params.Lac_b) + params.lac_act_gain * lac_supra ** 2
+        dLac = (-params.k_lac * (Lac - params.Lac_b)
+                + params.lac_act_gain * lac_supra ** 2
+                + params.lac_glyco_gain * fl["brk_M_g"])
 
         # --- Hepatobiliary: the enterohepatic circulation (iter 95) ---
         # Four states in series. The delay structure is the point: CCK peaks ~10 min
@@ -1628,7 +1664,7 @@ def simulate_full_body(
         circ_lep = _circadian(t_abs, params.lep_circ_amp, peak_hour=2.0)
         dIns_slow = -params.k_ins_slow * (Ins_slow - I)
         lep_ins = params.lep_ins_gain * (Ins_slow / params.Ib - 1.0)
-        dLep = -params.k_lep * (Lep - params.Lep_b - circ_lep - lep_ins)
+        dLep = -params.k_lep * (Lep - params.Lep_b * (Fat / params.Fat_b) - circ_lep - lep_ins)
 
         glp1_prod = glp1_base_prod + params.glp1_meal_gain * Ra
         dGLP1 = glp1_prod - params.k_glp1 * GLP1
@@ -1658,14 +1694,19 @@ def simulate_full_body(
         # cortisol's downstream effects (cort_feedback_acth, cort_gluco, cort_hr) and for the
         # student's normalization -- but it is no longer cortisol's relaxation target.
         # Iter 97 (item 3.9): asymmetric drive, quiescent evening, steep pre-dawn rise
-        # peaking at awakening; sleep suppression applied ONCE, to ACTH.
+        # peaking at awakening; sleep suppression applied ONCE, to CRH.
         drive = _hpa_drive(t_abs, params.hpa_rise_start_h, params.hpa_peak_h, params.hpa_fall_tau_h)
-        acth_target = max(params.ACTH_b + params.acth_circ_amp * (2.0 * drive - 1.0), 5.0)
+        crh_target = max(params.CRH_b + params.crh_circ_amp * (2.0 * drive - 1.0), 20.0)
         sleep_suppression = 1.0 - params.hpa_sleep_supp * sleep_depth
-        dACTH = -params.k_acth * (ACTH - acth_target * sleep_suppression)
-        dACTH += params.hypo_acth * max(70.0 - G, 0)
-        dACTH += params.cort_activity * act
-        dACTH -= params.cort_feedback_acth * max(Cort - params.Cort_b, 0)
+        fb = np.tanh(np.log(max(Cort, 0.05) / params.Cort_b))
+        fb = max(fb, 0.0)  # one-sided: high cortisol suppresses CRH; the nadir is sleep's
+        crh_target = crh_target * sleep_suppression * (1.0 - params.crh_fb_amp * fb)
+        hypo_crh = params.hypo_acth * params.k_crh / (params.k_acth * max(params.acth_per_crh, 1e-6))
+        act_crh = params.cort_activity * params.k_crh / (params.k_acth * max(params.acth_per_crh, 1e-6))
+        dCRH = -params.k_crh * (CRH - crh_target)
+        dCRH += hypo_crh * max(70.0 - G, 0)
+        dCRH += act_crh * act
+        dACTH = -params.k_acth * (ACTH - params.acth_per_crh * max(CRH, 0.0))
 
         # Cortisol tracks its secretagogue: target = cort_per_acth · ACTH, the same
         # ratio asleep and awake (the suppression already lives in ACTH).
@@ -1728,7 +1769,7 @@ def simulate_full_body(
         # Diet-induced thermogenesis from absorbed ENERGY (iter 97): kernels -> g/min
         # (carb kernel integrates to grams x MG_DL_PER_G; fat/protein to 3 x grams),
         # x kcal/g x thermic fraction (protein 25%, carbohydrate 8%, fat 3%).
-        dit_kcal = (0.08 * 4.0 * Ra_carb / MG_DL_PER_G
+        dit_kcal = (0.08 * 4.0 * Ra_carb / params.mg_dl_per_g()
                     + 0.03 * 9.0 * Ra_fat / 3.0
                     + 0.25 * 4.0 * Ra_protein / 3.0)
         dit = params.temp_dit_gain * dit_kcal
@@ -1744,6 +1785,16 @@ def simulate_full_body(
         dRR = -params.k_rr * (RR - params.RR0 - sleep_rr_shift) + act * 5.0 + lactate_drive
         spo2_exercise_effect = params.spo2_exercise_dip * max(act - 0.5, 0)
         dSpO2 = -params.k_spo2 * (SpO2 - params.SpO2_0) - spo2_exercise_effect
+
+        carb_g = Ra_carb / params.mg_dl_per_g()
+        fat_g = Ra_fat / 3.0
+        prot_g = Ra_protein / 3.0
+        kcal_in = 4.0 * carb_g + 9.0 * fat_g + 4.0 * prot_g
+        kcal_out = (params.bmr_kcal_per_min * (params.body_mass_kg / BODY_MASS_KG)
+                    + params.act_kcal_per_min * act)
+        dFat = (kcal_in - kcal_out) / params.kcal_per_kg_fat
+        dMito = (-params.k_mito * (Mito - params.mito_0)
+                 + params.mito_train_gain * max(act - 0.2, 0.0))
 
         # Euler integration with process noise
         G = max(G + dG + rng.normal(0, ns * 2), 20)
@@ -1775,6 +1826,9 @@ def simulate_full_body(
         GB = min(max(GB + dGB, 0.0), params.GB_max)
         INT = max(INT + dINT, 0.0)
         BA = max(BA + dBA + rng.normal(0, ns * 0.2), 0.1)
+        CRH = max(CRH + dCRH + rng.normal(0, ns * 0.8), 10.0)
+        Mito = max(Mito + dMito, 0.2)
+        Fat = max(Fat + dFat, 4.0)
 
         trajectory[t] = [
             G, I, Gn, FFA, BHB, Lac, Hep,
@@ -1784,37 +1838,17 @@ def simulate_full_body(
             # SIMULATED flux integrators (see the glycogen block above), giving
             # cold-model distillation a real trajectory target for the slow
             # pools — the measurement that iters 55-57 lacked.
-            LGly,  # liver_glycogen (g) — overnight-depleting fast pool
-            MGly,  # muscle_glycogen (g) — rest-preserved, exercise-coupled
-            # mitochondrial_capacity stays padded: its τ ≈ weeks means a ≤1-day
-            # distillation protocol can't exercise it — it needs the chronic-
-            # block protocols (the next Move D iter), so simulating it here
-            # would only emit a flat reference. crh likewise stays padded (the
-            # cold ODE does not simulate it; see the HPA note below).
-            1.0,    # mitochondrial_capacity (× population mean)
-            # Iter 69 Move B FULL — CRH as latent first stage of the
-            # HPA cascade. The cold model does not simulate CRH, so it
-            # is padded with the population-typical value; the learned
-            # model discovers CRH dynamics by satisfying the cascade-
-            # derived ACTH and cortisol trajectories (which the cold
-            # model does simulate).
-            100.0,  # crh (pg/mL) — typical resting level
-            # Iter 89 — insulin_action (remote insulin) latent. The cold ODE
-            # DOES track a remote-insulin X internally (dX above), but the
-            # student's insulin_action is a differently-scaled low-pass of
-            # relu(insulin_above_baseline) and is unsupervised (not a
-            # cold-distill marker), so this is padded at the student's fasting
-            # equilibrium (0) — the value only seeds a rollout start-state, and
-            # 0 = relu(insulin-baseline) at rest, matching the benchmark loader's
-            # typical-padding of the same index.
-            0.0,    # insulin_action (a.u.) — fasting equilibrium
-            # Iter 95 — hepatobiliary. SIMULATED (not padded): the whole point of the
-            # axis is that it is dynamic and meal-locked, so the distillation gets a
-            # real trajectory target from day one rather than a flat reference.
-            CCK,    # cck (pmol/L)
-            GB,     # gallbladder_bile (mmol) — the pool
-            INT,    # intestinal_bile (mmol) — transit delay + the 95%/5% split
-            BA,     # bile_acids (µmol/L) — the observable
+            LGly,  # liver_glycogen (g)
+            MGly,  # muscle_glycogen (g)
+            Mito,  # mitochondrial_capacity
+            CRH,   # crh (pg/mL)
+            X / (params.Si * 10.0) if params.Si != 0.0 else 0.0,
+            CCK,
+            GB,
+            INT,
+            BA,
+            Fat,
+            Ins_slow,
         ]
 
     return trajectory, absorption_profile

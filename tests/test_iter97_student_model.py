@@ -13,13 +13,13 @@ import unittest
 import torch
 
 from pulse.model import (
-    ModularPhysiologyNetwork, integrate, precompute_duodenal_outputs, precompute_gut_outputs,
+    ModularPhysiologyNetwork, euler_step, integrate, precompute_duodenal_outputs, precompute_gut_outputs,
 )
 from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
 from pulse.types import (
-    EMBEDDING_DIM, MARKER_INDEX as MI, NORM_CENTER, PHYSIOLOGICAL_MAX, PHYSIOLOGICAL_MIN,
-    TIME_FEATURES_DIM,
+    EMBEDDING_DIM, MARKER_INDEX as MI, MODULE_COUPLING_CHANNELS, NORM_CENTER,
+    PHYSIOLOGICAL_MAX, PHYSIOLOGICAL_MIN, STATE_DIM, TIME_FEATURES_DIM,
 )
 
 _MEALS = [MealEvent(120, 60, 20, 25), MealEvent(420, 80, 25, 30), MealEvent(780, 70, 25, 35)]
@@ -57,7 +57,7 @@ class TestTimeFeatures(unittest.TestCase):
         typ = torch.tensor(NORM_CENTER).unsqueeze(0)
         emb = torch.randn(1, EMBEDDING_DIM)
         kw = dict(sleep_wake=torch.zeros(1), activity=torch.zeros(1),
-                  gut_override=torch.zeros(1, 4), duodenal_override=torch.zeros(1, 2))
+                  gut_override=torch.zeros(1, 4), duodenal_override=torch.zeros(1, 3))
         with torch.no_grad():
             before = m(typ, emb, torch.tensor([1439.99]), [], **kw)
             after = m(typ, emb, torch.tensor([0.01]), [], **kw)
@@ -99,7 +99,7 @@ class TestDefaultInputs(unittest.TestCase):
         m = _small(4, perturb=1.0)
         typ = torch.tensor(NORM_CENTER).unsqueeze(0).expand(2, -1)
         emb = torch.randn(2, EMBEDDING_DIM)
-        kw = dict(gut_override=torch.zeros(2, 4), duodenal_override=torch.zeros(2, 2))
+        kw = dict(gut_override=torch.zeros(2, 4), duodenal_override=torch.zeros(2, 3))
         with torch.no_grad():
             r_default = m(typ, emb, torch.full((2,), 120.0), [], sleep_wake=torch.zeros(2), **kw)
             r_rest = m(typ, emb, torch.full((2,), 120.0), [], sleep_wake=torch.zeros(2), activity=torch.zeros(2), **kw)
@@ -124,11 +124,11 @@ class TestIntegrateDuodenalOutputs(unittest.TestCase):
         typ = torch.tensor(NORM_CENTER)
         emb = torch.zeros(EMBEDDING_DIM)
         duo = precompute_duodenal_outputs(m, n, meals=_MEALS[:1])
-        self.assertEqual(tuple(duo.shape), (n, 2))
+        self.assertEqual(tuple(duo.shape), (n, 3))
         with torch.no_grad():
             a = integrate(m, typ, emb, n, meals=_MEALS[:1])
             b = integrate(m, typ, emb, n, meals=_MEALS[:1], duodenal_outputs=duo)
-            c = integrate(m, typ, emb, n, meals=_MEALS[:1], duodenal_outputs=torch.zeros(n, 2))
+            c = integrate(m, typ, emb, n, meals=_MEALS[:1], duodenal_outputs=torch.zeros(n, 3))
         torch.testing.assert_close(a, b)
         self.assertGreater(float((a[:, MI["cck"]] - c[:, MI["cck"]]).abs().max()), 0.1)
 
@@ -205,8 +205,6 @@ class TestFromInitSanity(unittest.TestCase):
         self.assertFalse(bool(torch.isnan(tr).any()))
         lo = torch.tensor(PHYSIOLOGICAL_MIN); hi = torch.tensor(PHYSIOLOGICAL_MAX)
         at_clamp = ((tr <= lo + 1e-6) | (tr >= hi - 1e-6)).any(dim=0)
-        # insulin_action's floor IS its fasting value (0); every other marker must be free.
-        at_clamp[MI["insulin_action"]] = False
         self.assertFalse(bool(at_clamp.any()), msg=f"at clamp: {[i for i in range(len(at_clamp)) if at_clamp[i]]}")
         g, hr, temp = tr[:, MI["glucose"]], tr[:, MI["hr"]], tr[:, MI["temp"]]
         self.assertTrue(60 <= float(g.min()) and float(g.max()) <= 180, msg=f"glucose {float(g.min())}-{float(g.max())}")
@@ -221,6 +219,28 @@ class TestFromInitSanity(unittest.TestCase):
 
     def test_no_meal_day(self) -> None:
         self._check(self.fasted)
+
+
+class TestConstruction(unittest.TestCase):
+    def test_spo2_cannot_leave_70_100(self) -> None:
+        state = torch.tensor(NORM_CENTER, dtype=torch.float32)
+        rates = torch.zeros(STATE_DIM)
+        rates[MI["spo2"]] = 80.0
+        s = state
+        for _ in range(200):
+            s = euler_step(s, rates, 1.0)
+        self.assertTrue(70.0 < float(s[MI["spo2"]]) < 100.0)
+        rates[MI["spo2"]] = -80.0
+        for _ in range(200):
+            s = euler_step(s, rates, 1.0)
+        self.assertTrue(70.0 < float(s[MI["spo2"]]) < 100.0)
+
+    def test_module_coupling_widths_match_the_declared_layout(self) -> None:
+        m = ModularPhysiologyNetwork()
+        for name, mod in m._modules_by_name.items():
+            self.assertEqual(
+                int(mod.n_coupling), len(MODULE_COUPLING_CHANNELS[name]), name,
+            )
 
 
 if __name__ == "__main__":

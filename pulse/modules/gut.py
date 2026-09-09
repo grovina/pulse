@@ -57,15 +57,14 @@ class MealEvent:
 MEAL_ACTIVE_WINDOW_MIN: float = 720.0
 
 
-# Per-channel typical-excursion scale for gut appearance outputs (mg/min for
-# the macro channels, dimensionless for nutrient_flag). Used by every signal
-# that supervises ``forward_window`` so MSE on the gut kernel has comparable
-# magnitude across channels and to typical state MSE in mg/dL after dividing
-# by NORM_SCALE. Numbers were chosen from cold-model peaks across the meal
-# distribution we train on (typical mixed-meal peaks: glucose ~2 mg/min,
-# lipid ~0.3, amino ~0.5; nutrient_flag is binary). The previous scale
-# inherited from blood-state (mg/dL) units flattened gut MSE by ~225-1000x
-# per channel — see iter 12 → iter 13 handoff.
+# Per-channel typical-excursion scale for gut appearance outputs (mg/dL/min in
+# the 70 kg reference space for glucose; appearance-units/min for lipid/amino;
+# dimensionless for nutrient_flag). Used by every signal that supervises
+# ``forward_window`` so MSE on the gut kernel has comparable magnitude across
+# channels and to typical state MSE in mg/dL after dividing by NORM_SCALE.
+# Numbers were chosen from cold-model peaks across the meal distribution we
+# train on (typical mixed-meal peaks: glucose ~2 mg/dL/min, lipid ~0.3, amino
+# ~0.5; nutrient_flag is binary).
 GUT_OUTPUT_SCALE: tuple[float, float, float, float] = (2.0, 0.3, 0.5, 1.0)
 
 # Appearance units per gram of macro (teacher convention), re-exported so the
@@ -185,15 +184,13 @@ class GutModule(nn.Module):
         dt = times.unsqueeze(1) - meal_times.unsqueeze(0)  # [T, M]
         mask = ((dt >= 0.0) & (dt <= MEAL_ACTIVE_WINDOW_MIN)).to(torch.float32)  # [T, M]
 
-        weights, f_bio = self.kernel.mixture(embedding)      # [B,3,3,K], [B,3,3]
+        weights, f_bio = self.kernel.mixture(embedding)      # [B, 3, K], [B, 3]
         density = self.kernel.basis_density(dt)              # [T, M, K]
         survival = self.kernel.basis_survival(dt)            # [T, M, K]
 
-        # appearance[b,t,m,j] = Σ_i macros[m,i] · f_bio[b,i,j] · Σ_k w[b,i,j,k] · basis_k(dt[t,m])
-        appearance = torch.einsum("bijk,tmk,mi,bij->btmj", weights, density, macros, f_bio)
-        # unabsorbed[b,t,m] = Σ_i macros[m,i] · Σ_k w[b,i,i,k] · Q_k(dt[t,m])
-        w_diag = torch.diagonal(weights, dim1=1, dim2=2).movedim(-1, 1)  # [B, 3, K]
-        unabsorbed = torch.einsum("bik,tmk,mi->btm", w_diag, survival, macros)
+        # appearance[b,t,m,j] = macros[m,j] · f_bio[b,j] · Σ_k w[b,j,k] · basis_k(dt[t,m])
+        appearance = torch.einsum("bjk,tmk,mj,bj->btmj", weights, density, macros, f_bio)
+        unabsorbed = torch.einsum("bjk,tmk,mj->btm", weights, survival, macros)
         m = mask.unsqueeze(0)
         appearance = (appearance * m.unsqueeze(-1)).sum(dim=2)               # [B, T, 3]
         flag = 1.0 - torch.exp(-(unabsorbed * m).sum(dim=2) / self.kernel.FLAG_GATE_SCALE_G)

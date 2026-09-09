@@ -358,6 +358,7 @@ def train(
     cold_distill_markers: tuple[str, ...] = (
         "glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb",
         "liver_glycogen", "muscle_glycogen", "mitochondrial_capacity",
+        "crh", "insulin_action", "fat_mass", "insulin_slow",
     ),
     cold_distill_protocols_per_epoch: int = 4,
     cold_distill_pool: str = "synthetic",
@@ -1839,10 +1840,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "':'-separated marker ids distilled from the cold model by "
-            "--cold-distill-weight. Iter 97 (review 1.5): default None -> the train() "
-            "default (the 10-marker _DEFAULT_DISTILL_MARKERS set, glycogen pools and "
-            "mitochondrial_capacity included); the CLI used to carry a stale 7-marker "
-            "string that made the function default unreachable."
+            "--cold-distill-weight. Default None uses train()'s marker list "
+            "(glycogen, mito, CRH, insulin_action, fat_mass, insulin_slow included)."
         ),
     )
     parser.add_argument(

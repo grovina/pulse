@@ -290,6 +290,7 @@ class MassActionModule(nn.Module):
     ):
         super().__init__()
         self.n_species = n_species
+        self.n_coupling = n_coupling
 
         input_dim = n_species + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
         self._input_dim = input_dim
@@ -381,6 +382,7 @@ class LearnedDynamicsModule(nn.Module):
     ):
         super().__init__()
         self.n_state = n_state
+        self.n_coupling = n_coupling
 
         input_dim = n_state + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
 
@@ -421,7 +423,7 @@ class GutModuleBase(nn.Module):
     Iter 97 — THE KERNEL IS A NORMALIZED DENSITY TIMES A LEARNED MASS GAIN.
 
         K_ij(t; emb) = f_bio_ij(emb) · density_ij(t; emb)
-        appearance_j(t) = Σ_i  macros_i · K_ij(t)
+        appearance_j(t) = Σ_i  macros_i · K_ij(t) with K diagonal (carbs→glucose, fat→lipid, protein→amino).
 
     where ``density_ij`` is a learned MIXTURE over a fixed bank of gamma
     shapes (``_KERNEL_BASIS``), every one of which is zero at t = 0, integrates
@@ -513,27 +515,18 @@ class GutModuleBase(nn.Module):
         (4.0, 3.0 / 130.0),
         (6.0, 5.0 / 180.0),
     )
-    # Prior mixture weights per (macro -> channel) diagonal entry, over the basis
-    # bank above. Off-diagonal entries start uniform with a tiny f_bio.
+    # Prior mixture weights per diagonal channel over the basis bank.
     #   carbs -> glucose : teacher 75 % fast (peak 25) + 25 % slow (peak 83)
     #   fats  -> lipid   : teacher rate 0.015 (peak 67)
     #   prot  -> amino   : teacher rate 0.02 (peak 50)
-    # Iter 97: fitted (non-negative least squares over the basis) to the teacher's
-    # actual `compute_absorption_profile` for a 60/20/25 g meal at default
-    # PatientParams, AFTER its kernels became mass-conserving: carbohydrate peaks
-    # at 46 min with a 15 % slow tail beyond 240 min (fit: 45 min, 12 %), fat at
-    # 67 min (fit 66), protein at 50 min (fit 50). A fresh kernel therefore starts
-    # on the teacher's curve, not on a guess about it.
     _INIT_MIXTURE: tuple[tuple[float, ...], ...] = (
         (0.00, 0.00, 0.48, 0.27, 0.00, 0.00, 0.25),
         (0.00, 0.00, 0.18, 0.41, 0.28, 0.00, 0.13),
         (0.00, 0.00, 0.64, 0.01, 0.35, 0.00, 0.00),
     )
-    _INIT_F_BIO_OFF_DIAGONAL: float = 0.01
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__()
-        n_pairs = self.N_MACROS * self.N_APPEARANCE
         self.n_basis = len(self._KERNEL_BASIS)
         self.register_buffer(
             "basis_shape",
@@ -553,10 +546,9 @@ class GutModuleBase(nn.Module):
             torch.tensor(self.APPEARANCE_UNITS_PER_G, dtype=torch.float32),
         )
 
-        # Input is ONLY the embedding; time enters through the analytic basis and
-        # macros through the outer product. Output: mixture logits for every
-        # (macro, channel) pair over the basis, plus one f_bio pre-softplus per pair.
-        output_dim = n_pairs * self.n_basis + n_pairs
+        # Input is ONLY the embedding. Output: mixture logits for each of the
+        # three diagonal channels over the basis, plus one f_bio per channel.
+        output_dim = self.N_MACROS * self.n_basis + self.N_MACROS
         self.kernel = nn.Sequential(
             nn.Linear(embedding_dim, hidden_dim),
             nn.Tanh(),
@@ -564,25 +556,18 @@ class GutModuleBase(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, output_dim),
         )
-        # Near-zero output weights + prior biases: every patient starts on (almost)
-        # the same physiological curve and the embedding's authority grows from
-        # there. NOT exactly zero: with a zero output layer the gut embedding
-        # projection receives no gradient at step 0, and the dose-sweep signal
-        # (which never calls integrate) would see a dead path on its first step.
         with torch.no_grad():
             nn.init.normal_(self.kernel[-1].weight, std=0.01)
             bias = torch.zeros(output_dim)
-            logits = torch.zeros(self.N_MACROS, self.N_APPEARANCE, self.n_basis)
-            f_raw = torch.full(
-                (self.N_MACROS, self.N_APPEARANCE),
-                _inverse_softplus(self._INIT_F_BIO_OFF_DIAGONAL),
-            )
+            logits = torch.zeros(self.N_MACROS, self.n_basis)
+            f_raw = torch.zeros(self.N_MACROS)
             for i in range(self.N_MACROS):
                 w = torch.tensor(self._INIT_MIXTURE[i], dtype=torch.float32)
-                logits[i, i] = torch.log(w + 1e-3)
-                f_raw[i, i] = _inverse_softplus(self.APPEARANCE_UNITS_PER_G[i])
-            bias[: n_pairs * self.n_basis] = logits.reshape(-1)
-            bias[n_pairs * self.n_basis:] = f_raw.reshape(-1)
+                logits[i] = torch.log(w + 1e-3)
+                f_raw[i] = _inverse_softplus(self.APPEARANCE_UNITS_PER_G[i])
+            n_logit = self.N_MACROS * self.n_basis
+            bias[:n_logit] = logits.reshape(-1)
+            bias[n_logit:] = f_raw
             self.kernel[-1].bias.copy_(bias)
 
     # ---- the analytic basis ---------------------------------------------------
@@ -620,14 +605,13 @@ class GutModuleBase(nn.Module):
     # ---- the learned part -----------------------------------------------------
 
     def mixture(self, embedding: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """``(weights[..., 3, 3, n_basis], f_bio[..., 3, 3])`` from the embedding."""
+        """``(weights[..., 3, n_basis], f_bio[..., 3])`` — one mixture per macro."""
         raw = self.kernel(embedding)
-        n_pairs = self.N_MACROS * self.N_APPEARANCE
-        logits = raw[..., : n_pairs * self.n_basis].reshape(
-            *raw.shape[:-1], self.N_MACROS, self.N_APPEARANCE, self.n_basis)
+        n_logit = self.N_MACROS * self.n_basis
+        logits = raw[..., :n_logit].reshape(*raw.shape[:-1], self.N_MACROS, self.n_basis)
         weights = torch.softmax(logits, dim=-1)
-        f_bio = nn.functional.softplus(raw[..., n_pairs * self.n_basis:]).reshape(
-            *raw.shape[:-1], self.N_MACROS, self.N_APPEARANCE)
+        f_bio = nn.functional.softplus(raw[..., n_logit:]).reshape(
+            *raw.shape[:-1], self.N_MACROS)
         return weights, f_bio
 
     def response_and_flag(
@@ -640,16 +624,13 @@ class GutModuleBase(nn.Module):
     ) -> torch.Tensor:
         """Assemble ``[..., 4]`` from broadcast-compatible pieces.
 
-        macros ``[..., 3]``; weights ``[..., 3, 3, K]``; f_bio ``[..., 3, 3]``;
-        density / survival ``[..., K]``.
+        macros ``[..., 3]``; weights ``[..., 3, K]``; f_bio ``[..., 3]``;
+        density / survival ``[..., K]``. Appearance is diagonal: carbs feed
+        glucose, fat lipid, protein amino.
         """
-        # K_ij(t) = f_bio_ij · Σ_k w_ijk · basis_k(t)
-        dens = (weights * density.unsqueeze(-2).unsqueeze(-2)).sum(dim=-1)  # [..., 3, 3]
-        kernel = f_bio * dens
-        appearance = torch.einsum("...m,...mn->...n", macros, kernel)
-        # Unabsorbed mass of macro i follows its own (diagonal) mixture's survival.
-        w_diag = torch.diagonal(weights, dim1=-3, dim2=-2).movedim(-1, -2)  # [..., 3, K]
-        surv_i = (w_diag * survival.unsqueeze(-2)).sum(dim=-1)              # [..., 3]
+        dens = (weights * density.unsqueeze(-2)).sum(dim=-1)
+        appearance = macros * f_bio * dens
+        surv_i = (weights * survival.unsqueeze(-2)).sum(dim=-1)
         unabsorbed = (macros * surv_i).sum(dim=-1)
         nutrient_flag = 1.0 - torch.exp(-unabsorbed / self.FLAG_GATE_SCALE_G)
         return torch.cat([appearance, nutrient_flag.unsqueeze(-1)], dim=-1)

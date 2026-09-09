@@ -77,7 +77,7 @@ MARKERS = [
     MarkerDef(
         "hepatic_output",
         "Hepatic glucose output",
-        "mg/min",
+        "mg/kg/min",
         System.METABOLIC,
         2.0,
         "metabolic",
@@ -190,22 +190,9 @@ MARKERS = [
         "#78350f",
         "Atom",
     ),
-    # Iter 69 "Move B FULL" — CRH as a latent first stage of the HPA
-    # cascade (CRH → ACTH → cortisol). The iter 64 prior collapsed the
-    # cascade into ACTH(diurnal) → cortisol; iter 66 added the cortisol
-    # cosinor. Both still place the entire delay structure in a single
-    # 1-stage rate equation, so the model has no way to express the
-    # Gamma-shape transduction kernel that the literature actually
-    # characterises (CRH peaks lead ACTH by ~10-20 min, ACTH peaks lead
-    # cortisol by ~10-15 min — two sequential first-order stages =
-    # Gamma shape 2). Adding CRH as a state variable lets the cascade
-    # express that delay structurally; cortisol's negative feedback now
-    # hits CRH (anatomically correct — the dominant negative feedback
-    # target is the hypothalamic PVN, not the corticotrophs), and the
-    # diurnal drive enters CRH (still anatomically correct — SCN→PVN
-    # is the canonical pathway). Internal/unobserved: the cold model
-    # pads typical (no CRH simulation), the learned model discovers
-    # its shape from the cascade-derived ACTH/cortisol matches.
+    # First HPA stage. Circadian drive, sleep, hypoglycaemia and activity
+    # enter CRH; ACTH tracks CRH; cortisol tracks ACTH. Simulated in the
+    # teacher — not a padded typical.
     MarkerDef(
         "crh",
         "CRH",
@@ -218,19 +205,8 @@ MARKERS = [
         "#9f1239",
         "Wave",
     ),
-    # Iter 89 — dynamic insulin action (remote insulin) as a latent metabolic
-    # state. The teacher (full_body.py) drives glucose clearance with a LAGGED
-    # remote-insulin state X (dX = -p2·X + p3·max(I-Ib,0), τ ≈ 33 min, Bergman
-    # minimal model), but through iter 88 the student's clearance used an
-    # INSTANTANEOUS x_ins = Si·relu(insulin) — no delay, so meal glucose fell
-    # too fast relative to the teacher. This state gives the student the same
-    # first-order lag: insulin_action low-passes relu(insulin_above_baseline),
-    # and glucose clearance reads the lagged state instead of instantaneous
-    # insulin. Internal/unobserved (no ground truth): the cold model pads it at
-    # typical=0 (fasting equilibrium, where relu(insulin-baseline)=0, so glucose
-    # dynamics are byte-identical to iter 88 at rest); the lag manifests only
-    # during meals. Appended at the tail so all prior marker indices are
-    # preserved (mirrors crh iter-69). NORM_SCALE 1.0 so raw == normalized.
+    # Lagged remote insulin, signed: xa low-passes (I − Ib)/10. Sub-basal
+    # insulin withdraws a bounded share of disposal. Fasting equilibrium 0.
     MarkerDef(
         "insulin_action",
         "Insulin action (remote)",
@@ -238,7 +214,7 @@ MARKERS = [
         System.METABOLIC,
         0.0,
         "internal",
-        0,
+        -5,
         5,
         "#c2410c",
         "Timer",
@@ -300,7 +276,19 @@ MARKERS = [
         # why impaired canalicular export raises it.
         "bile_acids", "Serum total bile acids", "µmol/L",
         System.HEPATOBILIARY, 6.0,
-        "internal", 0, 100, "#a3e635", "Waves",
+        "metabolic", 0, 100, "#a3e635", "Waves",
+    ),
+    # Energy store the PRD north-star (weeks–months) actually needs. Leptin
+    # reads it; a eucaloric day is near-neutral and a fast draws it down.
+    MarkerDef(
+        "fat_mass", "Fat mass", "kg", System.METABOLIC, 18.0,
+        "internal", 4, 60, "#78350f", "Scale",
+    ),
+    # 4 h low-pass of insulin (Saad 1998). Plasma leptin clears in ~30 min;
+    # this is the slow target, not a slow species.
+    MarkerDef(
+        "insulin_slow", "Insulin (slow)", "μU/mL", System.APPETITE, 10.0,
+        "internal", 0, 80, "#c2410c", "Timer",
     ),
 ]
 
@@ -353,6 +341,22 @@ EXTERNAL_INPUT_DIM = 2  # sleep_wake, activity
 
 # Gut module outputs (not part of the ODE state)
 GUT_OUTPUT_DIM = 4  # glucose_appearance, lipid_appearance, amino_appearance, nutrient_flag
+# Duodenal delivery (gastric emptying), g/min: fat, protein, carbohydrate.
+DUODENAL_DIM = 3
+
+GUT_CHANNEL_IDS: tuple[str, ...] = (
+    "gut.glucose_appearance",
+    "gut.lipid_appearance",
+    "gut.amino_appearance",
+    "gut.nutrient_flag",
+)
+DUODENAL_CHANNEL_IDS: tuple[str, ...] = (
+    "duodenal.fat",
+    "duodenal.protein",
+    "duodenal.carb",
+)
+GUT_CHANNEL_INDEX = {ch: i for i, ch in enumerate(GUT_CHANNEL_IDS)}
+DUODENAL_CHANNEL_INDEX = {ch: i for i, ch in enumerate(DUODENAL_CHANNEL_IDS)}
 
 MARKER_IDS = [m.id for m in MARKERS]
 MARKER_INDEX = {m.id: i for i, m in enumerate(MARKERS)}
@@ -399,7 +403,7 @@ NORM_SCALE = [
     100.0,  # muscle_glycogen: ±100 g (typical ~400 g; rest-preserved over 1-day fast, depletes with exercise)
     0.3,    # mitochondrial_capacity: ±0.3 (typical=1.0; 8w training adds ~30%, so ±0.3 covers training-induced range)
     40.0,   # crh: ±40 pg/mL (typical=100; latent first stage of HPA cascade, circadian + stress amplitude)
-    1.0,    # insulin_action: dimensionless latent (raw==normalized); low-passes relu(insulin_norm) ∈ ~[0,5]
+    1.0,    # insulin_action: lagged (I − Ib)/10, signed; fasting equilibrium 0
     # --- Hepatobiliary (iter 95). Each is a TYPICAL EXCURSION, not a reference range:
     # the iter-95 bhb lesson is that a NORM_SCALE far below the marker's real swing puts
     # the catastrophe clamp inside physiology and drives every head's tanh into
@@ -408,6 +412,8 @@ NORM_SCALE = [
     1.5,    # gallbladder_bile: ±1.5 mmol (typical 4.0; a >=35% ejection is ~-1σ)
     1.0,    # intestinal_bile: ±1.0 mmol (typical 1.0; fills to several mmol after emptying)
     4.0,    # bile_acids: ±4 µmol/L (typical 6.0; fasting interval 4.4-14.1, postprandial to 20.2)
+    3.0,    # fat_mass: ±3 kg (weeks-scale; a 24 h fast is ~0.2 kg)
+    10.0,   # insulin_slow: same excursion as insulin, lagged
 ]
 
 # Hard physiological bounds for the integrator's state clamp (iter 81).
@@ -425,7 +431,8 @@ NORM_SCALE = [
 # catastrophic) for every marker regardless of which internal term diverged.
 #
 # Anchored to the model's OWN scale (NORM_CENTER ± K·NORM_SCALE), floored at 0
-# (no marker is physically negative). K is deliberately large so the clamp is
+# except insulin_action (signed remote insulin) and SpO₂ which the integrator
+# keeps in (70, 100). K is deliberately large so the clamp is
 # INACTIVE in-distribution and only catches divergence. NOT anchored to the
 # clinical [min, max]: the internal/unobserved markers (liver_glycogen,
 # muscle_glycogen, …) carry no ground truth, so the model learned its own scale
@@ -440,13 +447,27 @@ NORM_SCALE = [
 # keeps training rollouts from exploding.
 PHYSIOLOGICAL_LIMIT_K = 20.0
 
+def _physiological_min(marker: MarkerDef, center: float, scale: float) -> float:
+    if marker.id == "spo2":
+        return 70.0
+    if marker.id == "insulin_action":
+        return center - PHYSIOLOGICAL_LIMIT_K * scale
+    return max(0.0, center - PHYSIOLOGICAL_LIMIT_K * scale)
+
+
+def _physiological_max(marker: MarkerDef, center: float, scale: float) -> float:
+    if marker.id == "spo2":
+        return 100.0
+    return center + PHYSIOLOGICAL_LIMIT_K * scale
+
+
 PHYSIOLOGICAL_MIN = [
-    max(0.0, c - PHYSIOLOGICAL_LIMIT_K * s)
-    for c, s in zip(NORM_CENTER, NORM_SCALE)
+    _physiological_min(m, c, s)
+    for m, c, s in zip(MARKERS, NORM_CENTER, NORM_SCALE)
 ]
 PHYSIOLOGICAL_MAX = [
-    c + PHYSIOLOGICAL_LIMIT_K * s
-    for c, s in zip(NORM_CENTER, NORM_SCALE)
+    _physiological_max(m, c, s)
+    for m, c, s in zip(MARKERS, NORM_CENTER, NORM_SCALE)
 ]
 
 # Which markers belong to each module (as indices into the state vector)
@@ -461,27 +482,52 @@ MODULE_MARKER_IDS: dict[str, list[str]] = {
     for system, indices in MODULE_MARKER_INDICES.items()
 }
 
-# The coupling graph — anatomical connections between modules.
-# Existence is structural (architecture). Sign is a medical prior (regularized).
-# Strength is learned from data.
+# Anatomy as a coupling layout. `model.forward` assembles each module's
+# coupling vector from this table — it is not a comment. Channels that are
+# not ODE markers (gut.*, duodenal.*) are the absorption clocks.
+MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
+    "metabolic": GUT_CHANNEL_IDS + ("cortisol", "glp1"),
+    "appetite": (
+        "insulin", "duodenal.fat", "duodenal.protein", "duodenal.carb",
+        "fat_mass", "gut.glucose_appearance",
+    ),
+    "stress": ("glucose", "cortisol"),
+    "cardiovascular": ("cortisol", "temp", "glucose", "insulin"),
+    "thermoreg": (
+        "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance", "cortisol",
+    ),
+    "respiratory": ("lactate", "temp"),
+    "hepatobiliary": ("duodenal.fat", "duodenal.protein"),
+}
+
+_MARKER_SYSTEM = {m.id: m.system.value for m in MARKERS}
+
+# Sign of a marker→module edge. Used to build COUPLING_GRAPH from the layout
+# above; the training prior registry is the magnitude source of truth.
+_COUPLING_SIGN: dict[tuple[str, str], int] = {
+    ("cortisol", "metabolic"): +1,
+    ("glp1", "metabolic"): +1,
+    ("insulin", "appetite"): -1,
+    ("fat_mass", "appetite"): +1,
+    ("glucose", "stress"): -1,
+    ("cortisol", "stress"): -1,
+    ("cortisol", "cardiovascular"): +1,
+    ("temp", "cardiovascular"): +1,
+    ("glucose", "cardiovascular"): +1,
+    ("insulin", "cardiovascular"): +1,
+    ("cortisol", "thermoreg"): +1,
+    ("lactate", "respiratory"): +1,
+    ("temp", "respiratory"): +1,
+}
+
 COUPLING_GRAPH = [
-    # Cortisol drives hepatic glucose output
-    CouplingEdge("stress", "cortisol", "metabolic", sign_prior=+1),
-    # Insulin suppresses ghrelin; nutrient sensing triggers GLP-1
-    CouplingEdge("metabolic", "insulin", "appetite", sign_prior=-1),
-    # Hypoglycemia triggers cortisol release
-    CouplingEdge("metabolic", "glucose", "stress", sign_prior=-1),
-    # Cortisol negative feedback on pituitary ACTH
-    CouplingEdge("stress", "cortisol", "stress", sign_prior=-1),
-    # Cortisol raises HR/BP via sympathetic activation
-    CouplingEdge("stress", "cortisol", "cardiovascular", sign_prior=+1),
-    # Temperature affects cardiovascular dynamics
-    CouplingEdge("thermoreg", "temp", "cardiovascular", sign_prior=+1),
-    # Cortisol and metabolic rate affect temperature
-    CouplingEdge("stress", "cortisol", "thermoreg", sign_prior=+1),
-    CouplingEdge("metabolic", "glucose", "thermoreg", sign_prior=+1),
-    # Lactate (metabolic demand proxy) drives respiratory rate
-    CouplingEdge("metabolic", "lactate", "respiratory", sign_prior=+1),
+    CouplingEdge(
+        _MARKER_SYSTEM[channel], channel, target,
+        _COUPLING_SIGN.get((channel, target), 0),
+    )
+    for target, channels in MODULE_COUPLING_CHANNELS.items()
+    for channel in channels
+    if channel in _MARKER_SYSTEM
 ]
 
 # Training observation intervals (minutes between samples)

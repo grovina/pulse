@@ -1,7 +1,8 @@
 """
 Thermoregulation module.
 
-Core temperature. Receives metabolic rate proxy (glucose) and cortisol from other modules.
+Core temperature. Receives gut appearance (diet-induced thermogenesis from
+carb/fat/protein) and cortisol.
 
 Iter 91 — PER-PATIENT SETPOINT. Through iter 90 this was a bare learned MLP with no restoring
 structure at all: temperature had to hold its own resting level through 12h of integrated rate,
@@ -36,10 +37,10 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..types import MARKER_INDEX, NORM_SCALE
+from ..types import MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS, NORM_SCALE
 
-# Coupling inputs: glucose (metabolic rate proxy) (1) + cortisol (1) = 2
-_N_COUPLING = 2
+# Coupling: gut glucose/lipid/amino appearance + cortisol.
+_N_COUPLING = len(MODULE_COUPLING_CHANNELS["thermoreg"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
@@ -61,6 +62,8 @@ _TEMP_LOG_K_INIT = math.log(
     ((_TEMP_K_INIT - _TEMP_K_MIN) / _TEMP_K_RANGE)
     / (1.0 - (_TEMP_K_INIT - _TEMP_K_MIN) / _TEMP_K_RANGE)
 )
+_TEMP_DIT_GAIN = 0.017
+_LIPID_UNITS_PER_G = 3.0
 
 
 class ThermoregModule(LearnedDynamicsModule):
@@ -93,11 +96,14 @@ class ThermoregModule(LearnedDynamicsModule):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
-        # Learned drivers (circadian via time_features, exercise via activity, sleep, and the
-        # glucose/cortisol couplings). The MLP is unchanged and still sees UNCENTERED normalized
-        # state — the iter-36 frame-consistency requirement.
+        # Learned drivers (circadian, exercise, sleep, cortisol) plus structural
+        # diet-induced thermogenesis from gut appearance in grams.
         driver = super().forward(state, coupling, external, embedding, time_features)
         setpoint = _TEMP_SETPOINT_MAX_Z * torch.tanh(self.setpoint_net(embedding))  # [..., 1]
         k = _TEMP_K_MIN + _TEMP_K_RANGE * torch.sigmoid(self.log_k)
-        # rate = driver - k*(state_raw - setpoint_raw), with k a true per-minute constant.
-        return driver - k * (state - setpoint) * _TEMP_NORM_SCALE
+        carb_g = coupling[..., 0:1].clamp(min=0.0) / MG_DL_PER_G
+        fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        prot_g = coupling[..., 2:3].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        dit_kcal = 0.08 * 4.0 * carb_g + 0.03 * 9.0 * fat_g + 0.25 * 4.0 * prot_g
+        dit = _TEMP_DIT_GAIN * dit_kcal
+        return driver - k * (state - setpoint) * _TEMP_NORM_SCALE + dit

@@ -70,9 +70,7 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
             traj = integrate(m, init, emb, 180, dt=1.0, start_time_minutes=360.0, meals=[])
             ns = (traj - m.norm_center) / m.norm_scale
             met_idx = MODULE_MARKER_INDICES["metabolic"]
-            cort = ns[:, MARKER_INDEX["cortisol"]:MARKER_INDEX["cortisol"] + 1]
-            glp1 = ns[:, MARKER_INDEX["glp1"]:MARKER_INDEX["glp1"] + 1]
-            coupling = m.metabolic_coupling(torch.zeros(180, 4), cort, glp1)
+            coupling = m.coupling_for("metabolic", ns, torch.zeros(180, 4), torch.zeros(180, 3))
             ext = torch.tensor([[0.01, 0.5]]).expand(180, -1)
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(180, -1)
             tf = compute_time_features(torch.arange(180.0) + 360.0)

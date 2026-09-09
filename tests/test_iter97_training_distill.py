@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import inspect
 import os
 
 import numpy as np
-import pytest
 import torch
 
 import pulse
@@ -46,10 +44,6 @@ def test_level_anchor_rollouts_carry_the_duodenal_stimulus() -> None:
     assert max(seen) > 0.0
 
 
-@pytest.mark.skipif(
-    "duodenal_outputs" not in inspect.signature(integrate).parameters,
-    reason="student layer's integrate(duodenal_outputs=) not merged yet",
-)
 def test_level_anchor_passes_precomputed_duodenal_outputs(monkeypatch) -> None:
     import pulse.training.cold_model_distillation_signal as mod
     captured: list[dict] = []
@@ -60,7 +54,6 @@ def test_level_anchor_passes_precomputed_duodenal_outputs(monkeypatch) -> None:
         return real(*a, **kw)
 
     monkeypatch.setattr(mod, "integrate", spy)
-    monkeypatch.setattr(mod, "_INTEGRATE_HAS_DUODENAL", True)
     sig = _sig()
     model = ModularPhysiologyNetwork().eval()
     with torch.no_grad():

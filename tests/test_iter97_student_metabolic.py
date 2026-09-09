@@ -57,8 +57,8 @@ def _inputs(m, batch=32, seed=0, app=None, act=None):
 
 
 class TestCarbonBudget(unittest.TestCase):
-    """2.2: d(G/MG) + dLGly + dMGly = app_g − brk_M − (uptake_ii + uptake_id + exercise − gng)/MG,
-    with MG = MG_DL_PER_G the one grams ↔ mg/dL constant for everyone."""
+    """2.2: d(G/mg) + dLGly + dMGly = app_g − brk_M − (uptake_ii + uptake_id + exercise − gng − syn_id)/mg,
+    with mg the patient's 1000/(mass·1.85)."""
 
     def test_ledger_closes_pointwise_for_random_states(self) -> None:
         m = _model(0)
@@ -68,9 +68,9 @@ class TestCarbonBudget(unittest.TestCase):
             with torch.no_grad():
                 f = met.fluxes(state, coupling, external, emb, tf)
                 rates = met(state, coupling, external, emb, tf)
-            c = MG_DL_PER_G
+            c = f["mg_dl_per_g"]
             lhs = rates[:, M._GLUCOSE_IDX] / c + rates[:, M._LIVER_GLYCOGEN_IDX] + rates[:, M._MUSCLE_GLYCOGEN_IDX]
-            uptake = f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"]
+            uptake = f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"] - f["syn_muscle_id"] * c
             rhs = f["app_g"] - f["brk_muscle"] - uptake / c
             torch.testing.assert_close(lhs, rhs, atol=1e-6, rtol=1e-5)
 
@@ -92,19 +92,22 @@ class TestCarbonBudget(unittest.TestCase):
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(n, -1)
             tf = compute_time_features(torch.tensor([(360 + s) % 1440.0 for s in range(n)]))
             f = met.fluxes(ns[:, _MET], coupling, external, e_met, tf)
-        c = MG_DL_PER_G
-        d_pool = (float(tr[-1, MI["glucose"]] - tr[0, MI["glucose"]]) / c
-                  + float(tr[-1, MI["liver_glycogen"]] - tr[0, MI["liver_glycogen"]])
-                  + float(tr[-1, MI["muscle_glycogen"]] - tr[0, MI["muscle_glycogen"]]))
-        # Trajectory holds states BEFORE each step, so sum the rates over steps 0..n-2.
         sl = slice(0, n - 1)
-        uptake = (f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"])[sl].sum() / c
-        rhs = float(f["app_g"][sl].sum() - f["brk_muscle"][sl].sum() - uptake)
+        mg = f["mg_dl_per_g"][sl]
+        d_pool = float((
+            (tr[1:, MI["glucose"]] - tr[:-1, MI["glucose"]]) / mg
+            + (tr[1:, MI["liver_glycogen"]] - tr[:-1, MI["liver_glycogen"]])
+            + (tr[1:, MI["muscle_glycogen"]] - tr[:-1, MI["muscle_glycogen"]])
+        ).sum())
+        uptake = (
+            (f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"])[sl]
+            - f["syn_muscle_id"][sl] * mg
+        )
+        rhs = float((f["app_g"][sl] - f["brk_muscle"][sl] - uptake / mg).sum())
         total_in = float(f["app_g"][sl].sum())
-        self.assertGreater(total_in, 50.0)   # the day's carbohydrate actually arrived (ra·210 g)
+        self.assertGreater(total_in, 50.0)
         self.assertAlmostEqual(d_pool, rhs, delta=1e-3 * total_in)
-        # and storage is a FRACTION of what arrived
-        stored = float((f["syn_liver"] + f["syn_muscle"])[sl].sum())
+        stored = float((f["syn_liver"] + f["syn_muscle_oral"])[sl].sum())
         self.assertLess(stored, total_in)
         self.assertGreater(stored, 0.0)
 
@@ -115,11 +118,11 @@ class TestCarbonBudget(unittest.TestCase):
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
         self.assertEqual(float(f["syn_liver"].abs().sum()), 0.0)
-        self.assertEqual(float(f["syn_muscle"].abs().sum()), 0.0)
+        self.assertEqual(float(f["syn_muscle_oral"].abs().sum()), 0.0)
         state, coupling, external, emb, tf = _inputs(m, seed=5)
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
-        self.assertTrue(bool((f["syn_liver"] + f["syn_muscle"] <= f["app_g"] + 1e-7).all()))
+        self.assertTrue(bool((f["syn_liver"] + f["syn_muscle_oral"] <= f["app_g"] + 1e-7).all()))
         self.assertTrue(bool((f["f_plasma"] > 0).all()))
 
 
@@ -158,7 +161,7 @@ class TestGlycogenGates(unittest.TestCase):
             expected = ((1 - f["f_gng"]) * f["egp_b"] * (100.0 + 60.0 * s[:, M._LIVER_GLYCOGEN_IDX]).clamp(min=0) / 100.0
                         * f["g_ins_glyco"] * f["g_gn"] * f["g_g"] * f["mod_liver"])
             torch.testing.assert_close(f["glycogenolysis_plasma"], expected, atol=1e-6, rtol=1e-5)
-            torch.testing.assert_close(f["brk_liver"], f["glycogenolysis_plasma"] / MG_DL_PER_G, atol=1e-7, rtol=1e-6)
+            torch.testing.assert_close(f["brk_liver"], f["glycogenolysis_plasma"] / f["mg_dl_per_g"], atol=1e-7, rtol=1e-6)
         self.assertLess(float(f["g_ins_glyco"].max()), 0.02)
 
     def test_no_learned_catabolic_threshold_exists(self) -> None:
@@ -214,7 +217,7 @@ class TestPerPatientGates(unittest.TestCase):
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
         self.assertTrue(bool((f["ib"] > 15.0).all()))
-        self.assertEqual(float(f["xa_rate"].abs().sum()), 0.0)  # relu((15 − Ib)/10) = 0
+        self.assertTrue(bool((f["xa_rate"] < 0).all()))  # signed: I < Ib drives X down
 
     @staticmethod
     def _reference_state(m, gb: float, lgly: float = 100.0):
@@ -226,6 +229,11 @@ class TestPerPatientGates(unittest.TestCase):
         state = torch.zeros(1, len(_MET))
         state[0, M._GLUCOSE_IDX] = (gb - 95.0) / 30.0
         state[0, M._INSULIN_IDX] = (ib - 10.0) / 10.0
+        with torch.no_grad():
+            ffa_b = float(m.metabolic.ffa_setpoint_raw(emb))
+            gn_b = float(m.metabolic.gn_setpoint_raw(emb))
+        state[0, M._FFA_IDX] = (ffa_b - 0.5) / 0.2
+        state[0, M._GLUCAGON_IDX] = (gn_b - 70.0) / 20.0
         state[0, M._LIVER_GLYCOGEN_IDX] = (lgly - 100.0) / 60.0
         coupling = torch.zeros(1, M._N_COUPLING)
         external = torch.tensor([[0.0, 1.0]])
@@ -250,9 +258,15 @@ class TestPerPatientGates(unittest.TestCase):
             self.assertAlmostEqual(float(f["glycogenolysis_plasma"]), float((1 - f["f_gng"]) * f["egp_b"]), places=6)
             self.assertAlmostEqual(float(f["gng_plasma"]), float(f["f_gng"] * f["egp_b"]), places=6)
             self.assertAlmostEqual(float(f["egp_b"]), float(f["k_ii"]) * gb, places=6)
+            args_half = self._reference_state(m, gb, lgly=50.0)
             with torch.no_grad():
-                rate_half = met(*self._reference_state(m, gb, lgly=50.0))[0, M._GLUCOSE_IDX]
-            self.assertLess(float(rate_half), 0.0)
+                f_half = met.fluxes(*args_half)
+            # First-order in the pool, independent of the learned modulation.
+            self.assertAlmostEqual(
+                float(f_half["glycogenolysis_plasma"] / f_half["mod_liver"]),
+                float(0.5 * (1 - f_half["f_gng"]) * f_half["egp_b"]),
+                places=5, msg=f"Gb={gb}",
+            )
 
     def test_basal_insulin_gate_is_gentle_below_gb(self) -> None:
         """2/(1 + (Gb/G)^n) on the basal term: 1 at Gb, ~0.79 at 0.9·Gb (not 0.59), and it
@@ -290,7 +304,7 @@ class TestPerPatientGates(unittest.TestCase):
             ib = float(m.metabolic.insulin_setpoint_raw(
                 m.embedding_projections["metabolic"](torch.zeros(EMBEDDING_DIM))))
             # (tau = 1/p2 = 50 min, so the lag trails a still-drifting insulin by a little)
-            self.assertAlmostEqual(xa, max(ins - ib, 0.0) / 10.0, delta=0.05, msg=f"Gb={gb}")
+            self.assertAlmostEqual(xa, (ins - ib) / 10.0, delta=0.08, msg=f"Gb={gb}")
 
 
 class TestBergmanClearance(unittest.TestCase):
@@ -331,7 +345,10 @@ class TestMitochondrialRole(unittest.TestCase):
                 continue
             torch.testing.assert_close(p0[:, i], p1[:, i], atol=0, rtol=0)
             torch.testing.assert_close(c0[:, i], c1[:, i], atol=0, rtol=0)
-        self.assertFalse(torch.equal(p0[:, M._MITO_IDX], p1[:, M._MITO_IDX]))
+        with torch.no_grad():
+            f0 = met.fluxes(state, coupling, external, emb, tf)
+            f1 = met.fluxes(s1, coupling, external, emb, tf)
+        self.assertFalse(torch.equal(f0["mito_rate"], f1["mito_rate"]))
 
     def test_mito_scales_oxidative_clearance(self) -> None:
         m = _model(13, perturb=0.5)
@@ -353,11 +370,15 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
         m = _model(14, perturb=0.5)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
-        low = state.clone(); low[:, M._FFA_IDX] = -0.5      # FFA 0.4 ≤ basal 0.5
+        with torch.no_grad():
+            ffa_b = met.ffa_setpoint_raw(emb)
+        low = state.clone()
+        low[:, M._FFA_IDX] = (0.5 * ffa_b - M._FFA_CENTER) / M._FFA_SCALE
         with torch.no_grad():
             f = met.fluxes(low, coupling, external, emb, tf)
         self.assertEqual(float(f["ketogenesis"].abs().sum()), 0.0)
-        hi = state.clone(); hi[:, M._FFA_IDX] = (1.2 - 0.5) / 0.2
+        hi = state.clone()
+        hi[:, M._FFA_IDX] = (2.0 * ffa_b - M._FFA_CENTER) / M._FFA_SCALE
         hi[:, M._INSULIN_IDX] = (4.0 - 10.0) / 10.0
         hi_ins = hi.clone(); hi_ins[:, M._INSULIN_IDX] = (60.0 - 10.0) / 10.0
         with torch.no_grad():
@@ -385,7 +406,7 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
 class TestNoDeadHeads(unittest.TestCase):
     def test_structural_species_own_no_parameters(self) -> None:
         m = _model(16)
-        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX):
+        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX):
             self.assertEqual(sum(p.numel() for p in m.metabolic.heads[idx].parameters()), 0)
 
     def test_every_metabolic_parameter_receives_gradient(self) -> None:
@@ -398,6 +419,32 @@ class TestNoDeadHeads(unittest.TestCase):
         rates.abs().sum().backward()
         dead = [n for n, p in met.named_parameters() if p.grad is None or float(p.grad.abs().max()) == 0.0]
         self.assertEqual(dead, [])
+
+
+class TestVolumeAndEnergy(unittest.TestCase):
+    def test_a_gram_of_carbohydrate_is_fewer_mg_dl_in_a_heavier_person(self) -> None:
+        m = _model(0, perturb=0.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, batch=1, app=2.0)
+        with torch.no_grad():
+            f70 = met.fluxes(state, coupling, external, emb, tf)
+            met.body_mass_net[-1].bias.fill_(1.0)
+            f_hi = met.fluxes(state, coupling, external, emb, tf)
+        self.assertGreater(float(f_hi["body_mass_kg"]), float(f70["body_mass_kg"]))
+        self.assertLess(float(f_hi["mg_dl_per_g"]), float(f70["mg_dl_per_g"]))
+        self.assertAlmostEqual(float(f70["app_g"]), float(f_hi["app_g"]), places=5)
+        self.assertLess(float(f_hi["app_eff"]), float(f70["app_eff"]))
+
+    def test_fat_mass_falls_on_a_fast(self) -> None:
+        m = _model(0, perturb=0.0)
+        n = 1440
+        with torch.no_grad():
+            tr = integrate(
+                m, _CENTER, torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=360, meals=[],
+                sleep_wake=torch.ones(n), activity=torch.zeros(n),
+            )
+        self.assertLess(float(tr[-1, MI["fat_mass"]]), float(tr[0, MI["fat_mass"]]) - 0.05)
 
 
 if __name__ == "__main__":

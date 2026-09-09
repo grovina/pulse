@@ -29,10 +29,14 @@ shape must match what the state physically IS:
                     HEPATIC EXPORT (portal return + synthesis), emptied by a CCK gate.
   intestinal_bile   a transit compartment. Receives what the gallbladder ejects plus
                     the export that bypasses a full/contracting gallbladder; drains at
-                    the ileal-uptake rate. Its rate has no learned part, so it owns no
-                    head (`ConstantFluxHead`).
-  bile_acids        a serum concentration — TRUE mass action (learned basal, learned
-                    clearance × concentration) plus the structural spillover source.
+                    the ileal-uptake rate. ConstantFluxHead — pure transport.
+  bile_acids        serum concentration. Spillover of unextracted portal return is the
+                    source; clearance returns to hepatic secretion. ConstantFluxHead.
+                    Lowering canalicular extraction raises serum (cholestasis).
+
+Portal return is partitioned: extraction·portal is re-secreted, (1−extraction)·portal
+spills to serum, serum clearance returns to bile. Conservation:
+d(GB + INT) + dBA/spill_gain = synthesis − faecal loss.
 
 ITER 97 — TWO FIXES FROM THE 2026-09-04 REVIEW (items 3.6 and 2.5):
 
@@ -45,14 +49,13 @@ ITER 97 — TWO FIXES FROM THE 2026-09-04 REVIEW (items 3.6 and 2.5):
      per patient (it reads the embedding), so a below-typical fasting level is
      representable, and the relaxation rate is the learned clearance.
   2. The loop was not closed: `gb_fill` came from nothing (`k_fill·capacity·headroom`)
-     and the 95 % portal return fed only the serum readout. Now hepatic export =
-     portal return + synthesis (a learned rate that at init replaces the 5 % faecal
-     loss), routed to the gallbladder while it is relaxed and has headroom and
-     straight to the intestine otherwise. Conservation of the mmol pool holds by
-     construction: d(gallbladder + intestine)/dt = synthesis − faecal loss.
+     and the 95 % portal return fed only the serum readout. Hepatic export is now
+     extracted portal + returned serum clearance + synthesis. Conservation of the
+     mmol pool holds by construction:
+     d(gallbladder + intestine)/dt + dBA/spill_gain = synthesis − faecal loss.
 
 So the two heads whose outputs were unreachable by any loss (intestinal_bile and
-bile_acids; 3,524 parameters at hidden 32) are gone or live.
+bile_acids) are ConstantFluxHead.
 """
 
 import math
@@ -61,7 +64,7 @@ import torch
 import torch.nn as nn
 
 from .base import ConstantFluxHead, MassActionModule, SpeciesHead
-from ..types import MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..types import DUODENAL_DIM, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
 # Species order matches MODULE_MARKER_INDICES["hepatobiliary"]:
 #   0: cck, 1: gallbladder_bile, 2: intestinal_bile, 3: bile_acids
@@ -74,10 +77,8 @@ _TYPICALS = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["hepatobiliary"]]
 _NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["hepatobiliary"]]
 _CONS_SCALES = [0.35, 0.02, 0.02, 0.03]
 
-# Coupling inputs: duodenal fat delivery (1) + duodenal protein delivery (1) = 2.
-# These come from the DuodenalDeliveryKernel below, not from the gut module's
-# appearance channels — see that class for why the distinction is load-bearing.
-_N_COUPLING = 2
+# Coupling: duodenal fat, protein (carbohydrate is delivered but I-cells ignore it).
+_N_COUPLING = len(MODULE_COUPLING_CHANNELS["hepatobiliary"])
 _FAT_DUO_IDX = 0
 _PROT_DUO_IDX = 1
 
@@ -101,9 +102,14 @@ _F_ILEAL = 0.95          # ileal reabsorption efficiency; the 5% remainder is fa
 # content (1 mmol, k_ileal 0.013) replaces the faecal loss (0.05·0.013·1 = 0.65e-3), so
 # the loop is stationary at typical from the start.
 _SYNTH_SCALE = 1.0e-3
-# Serum spillover gain: µmol/L per (mmol/min) of unextracted portal return, times the
-# unextracted fraction at healthy canalicular export (1 - 0.90).
-_BA_SPILL_GAIN_INIT = 45.0 * (1.0 - 0.90)
+_K_BASAL_MIN, _K_BASAL_RANGE, _K_BASAL_INIT = 0.0004, 0.008, 0.0026
+_K_MMC_FED = 0.05
+_HEP_EXTRACTION = 0.90
+_CANALICULAR_OFFSET = 0.15
+# µmol/L per mmol/min of unextracted portal return. Teacher derives this so BA_b
+# is the mass-action fixed point; 145.7 is that derived default.
+_BA_SPILL_GAIN_INIT = 145.7
+_CCK_LOG_MAX = 0.7  # CCK_b = 1 · exp(±0.7 tanh) ∈ [0.50, 2.01]
 
 
 def _logit(p: float) -> float:
@@ -155,45 +161,41 @@ class DuodenalDeliveryKernel(nn.Module):
         return fast, slow, frac
 
     def forward_window(self, times: torch.Tensor, meals: list) -> torch.Tensor:
-        """Delivery at every time in ``times`` at once -> ``[T, 2]`` (fat, protein).
+        """Delivery at every time in ``times`` at once -> ``[T, 3]`` (fat, protein, carb).
 
-        ``times`` are WINDOW-OFFSET minutes, the same frame as ``meal.time``. Vectorized
-        over both T and the meal list, so every caller that already has a whole window
-        (the distillation's teacher-forced rate matching, ``integrate``'s precompute)
-        pays one kernel evaluation instead of T*M small ones.
+        ``times`` are WINDOW-OFFSET minutes, the same frame as ``meal.time``.
+        No hard age mask: both components decay smoothly (gamma-2 and exponential),
+        so a late dinner cannot cliff CCK the way the old 480-min step did.
         """
         device = self.log_fast_rate.device
         T = int(times.shape[0])
         if not meals:
-            return torch.zeros(T, 2, dtype=torch.float32, device=device)
+            return torch.zeros(T, DUODENAL_DIM, dtype=torch.float32, device=device)
         fast_rate, slow_rate, slow_frac = self.rates()
         meal_times = torch.tensor([m.time for m in meals], dtype=torch.float32,
-                                  device=device)                       # [M]
-        macros = torch.tensor([(m.fats, m.proteins) for m in meals],
-                              dtype=torch.float32, device=device)      # [M, 2]
-        dt = times.to(device).unsqueeze(1) - meal_times.unsqueeze(0)   # [T, M]
-        mask = ((dt >= 0.0) & (dt <= 480.0)).to(torch.float32)
+                                  device=device)
+        macros = torch.tensor(
+            [(m.fats, m.proteins, m.carbs) for m in meals],
+            dtype=torch.float32, device=device)
+        dt = times.to(device).unsqueeze(1) - meal_times.unsqueeze(0)
+        active = (dt >= 0.0).to(torch.float32)
         dt = dt.clamp(min=0.0)
         fast = fast_rate * fast_rate * dt * torch.exp(-fast_rate * dt)
         slow = slow_rate * torch.exp(-slow_rate * dt)
-        shape = ((1.0 - slow_frac) * fast + slow_frac * slow) * mask    # [T, M]
-        return shape @ macros                                          # [T, 2]
+        shape = ((1.0 - slow_frac) * fast + slow_frac * slow) * active
+        return shape @ macros
 
     def forward(self, t_minutes: torch.Tensor, meals: list) -> torch.Tensor:
-        """Return ``[fat_delivery, protein_delivery]`` in g/min at ``t_minutes``.
-
-        ``meals`` carry WINDOW-OFFSET times, the same frame as the gut kernel — the
-        iter-87 frame bug was passing an absolute minute-of-day clock here.
-        """
+        """Return ``[fat, protein, carb]`` delivery in g/min at ``t_minutes``."""
         device = self.log_fast_rate.device
-        out = torch.zeros(2, dtype=torch.float32, device=device)
+        out = torch.zeros(DUODENAL_DIM, dtype=torch.float32, device=device)
         if not meals:
             return out
         fast_rate, slow_rate, slow_frac = self.rates()
         t = float(t_minutes) if not torch.is_tensor(t_minutes) else float(t_minutes.item())
         for m in meals:
             dt = t - m.time
-            if dt < 0.0 or dt > 480.0:
+            if dt < 0.0:
                 continue
             dt_t = torch.as_tensor(dt, dtype=torch.float32, device=device)
             fast = fast_rate * fast_rate * dt_t * torch.exp(-fast_rate * dt_t)
@@ -202,6 +204,7 @@ class DuodenalDeliveryKernel(nn.Module):
             out = out + shape * torch.stack([
                 torch.as_tensor(float(m.fats), dtype=torch.float32, device=device),
                 torch.as_tensor(float(m.proteins), dtype=torch.float32, device=device),
+                torch.as_tensor(float(m.carbs), dtype=torch.float32, device=device),
             ])
         return out
 
@@ -214,7 +217,7 @@ class HepatobiliaryModule(MassActionModule):
       cck               prod = basal secretion, cons = clearance         (mass action)
       gallbladder_bile  prod = ejection gain,   cons = hepatic synthesis gain
       intestinal_bile   no head (ConstantFluxHead) — pure transport
-      bile_acids        prod = basal production, cons = clearance        (mass action)
+      bile_acids        no head (ConstantFluxHead) — spillover minus clearance
     """
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
@@ -230,7 +233,7 @@ class HepatobiliaryModule(MassActionModule):
                 _CCK_IDX: SpeciesHead,
                 _GB_IDX: SpeciesHead,
                 _INT_IDX: lambda inp, hd: ConstantFluxHead(),
-                _BA_IDX: SpeciesHead,
+                _BA_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
@@ -248,6 +251,21 @@ class HepatobiliaryModule(MassActionModule):
             torch.tensor(_logit((_K_ILEAL_INIT - _K_ILEAL_MIN) / _K_ILEAL_RANGE)))
         self.log_ba_spill_gain = nn.Parameter(
             torch.tensor(math.log(_BA_SPILL_GAIN_INIT)))
+        self.log_k_ba = nn.Parameter(torch.tensor(math.log(0.03)))
+        self.log_k_canalicular = nn.Parameter(torch.tensor(0.0))  # exp(0) = 1, healthy
+        self.log_k_gb_basal = nn.Parameter(
+            torch.tensor(_logit((_K_BASAL_INIT - _K_BASAL_MIN) / _K_BASAL_RANGE)))
+        _bh = max(8, hidden_dim // 4)
+        self.cck_baseline_net = nn.Sequential(
+            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
+        )
+        with torch.no_grad():
+            self.cck_baseline_net[-1].weight.zero_()
+            self.cck_baseline_net[-1].bias.zero_()
+
+    def cck_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
+        return _TYPICALS[_CCK_IDX] * torch.exp(
+            _CCK_LOG_MAX * torch.tanh(self.cck_baseline_net(embedding).squeeze(-1)))
 
     def fluxes(
         self,
@@ -269,54 +287,56 @@ class HepatobiliaryModule(MassActionModule):
         ba_raw = raw[..., _BA_IDX]
         fat_duo = coupling[..., _FAT_DUO_IDX]
         prot_duo = coupling[..., _PROT_DUO_IDX]
+        duo_total = fat_duo + prot_duo
+        cck_b = self.cck_setpoint_raw(embedding)
 
-        # --- CCK: learned basal + structural secretion, learned clearance -----------
         cck_secretion = (torch.exp(self.log_cck_fat_gain) * fat_duo
                          + torch.exp(self.log_cck_prot_gain) * prot_duo)
         cck_basal = prod_raw[..., _CCK_IDX] * self.prod_scale[_CCK_IDX]
         cck_clearance = cons_raw[..., _CCK_IDX] * self.cons_scale[_CCK_IDX] * cck_raw
 
-        # --- Gallbladder: emptying gated by CCK, proportional to content -----------
-        # Exponential emptying gives the early-rapid/late-slow shape without a second
-        # mechanism, and is why a second meal 90 min later ejects far less.
-        cck_excess = relu(cck_raw - _TYPICALS[_CCK_IDX])
+        cck_excess = relu(cck_raw - cck_b)
         contraction = cck_excess / (cck_excess + _K_CCK_GB)
         k_eject = _K_EJECT_MIN + _K_EJECT_RANGE * torch.sigmoid(self.log_k_eject)
-        gb_empty = k_eject * contraction * gb_raw * prod_raw[..., _GB_IDX]
+        k_basal = _K_BASAL_MIN + _K_BASAL_RANGE * torch.sigmoid(self.log_k_gb_basal)
+        fed_gate = duo_total / (duo_total + _K_MMC_FED)
+        gb_empty = (
+            k_eject * contraction * gb_raw * prod_raw[..., _GB_IDX]
+            + k_basal * (1.0 - fed_gate) * gb_raw
+        )
 
-        # --- Intestine: transit + the 95 %/5 % split ---------------------------------
         k_ileal = _K_ILEAL_MIN + _K_ILEAL_RANGE * torch.sigmoid(self.log_k_ileal)
         ileal_uptake = k_ileal * int_raw
         portal_return = _F_ILEAL * ileal_uptake
         fecal_loss = ileal_uptake - portal_return
 
-        # --- Hepatic export closes the loop -------------------------------------------
-        # What returns through the portal vein is re-secreted into bile, topped up by
-        # de-novo synthesis. It is stored in the gallbladder while that is relaxed and
-        # has headroom; otherwise it flows straight to the duodenum.
+        k_can = torch.exp(self.log_k_canalicular)
+        extraction = (_HEP_EXTRACTION * (k_can / (k_can + _CANALICULAR_OFFSET))
+                      / (1.0 / (1.0 + _CANALICULAR_OFFSET)))
+        extraction = extraction.clamp(0.0, 0.995)
+        spillover = (1.0 - extraction) * portal_return
+        extracted = extraction * portal_return
+
+        spill_gain = torch.exp(self.log_ba_spill_gain)
+        ba_clearance = torch.exp(self.log_k_ba) * ba_raw
+        serum_return = ba_clearance / spill_gain
+        ba_spill = spill_gain * spillover
         synthesis = _SYNTH_SCALE * cons_raw[..., _GB_IDX]
-        export = portal_return + synthesis
+        export = extracted + serum_return + synthesis
         capacity = _GB_CAPACITY_FRAC * _TYPICALS[_GB_IDX]
         headroom = relu(1.0 - gb_raw / capacity)
         to_gallbladder = export * headroom * (1.0 - contraction)
         to_intestine = export - to_gallbladder
 
-        # --- Serum: learned basal + spillover of what escapes first pass -------------
-        # The spill gain stands in for (1 - hepatic extraction). Lowering it is the
-        # student-side analogue of the teacher's canalicular-export impairment, which
-        # is the hook ALP/GGT/bilirubin will hang off in a later iteration.
-        ba_basal = prod_raw[..., _BA_IDX] * self.prod_scale[_BA_IDX]
-        ba_spill = torch.exp(self.log_ba_spill_gain) * portal_return
-        ba_clearance = cons_raw[..., _BA_IDX] * self.cons_scale[_BA_IDX] * ba_raw
-
         return {
             "cck_secretion": cck_secretion, "cck_basal": cck_basal,
             "cck_clearance": cck_clearance, "contraction": contraction,
-            "gb_empty": gb_empty, "ileal_uptake": ileal_uptake,
+            "cck_b": cck_b, "gb_empty": gb_empty, "ileal_uptake": ileal_uptake,
             "portal_return": portal_return, "fecal_loss": fecal_loss,
-            "synthesis": synthesis, "export": export,
+            "extraction": extraction, "spillover": spillover, "extracted": extracted,
+            "synthesis": synthesis, "export": export, "serum_return": serum_return,
             "to_gallbladder": to_gallbladder, "to_intestine": to_intestine,
-            "ba_basal": ba_basal, "ba_spill": ba_spill, "ba_clearance": ba_clearance,
+            "ba_spill": ba_spill, "ba_clearance": ba_clearance, "spill_gain": spill_gain,
         }
 
     def forward(
@@ -332,5 +352,5 @@ class HepatobiliaryModule(MassActionModule):
         rates[..., _CCK_IDX] = f["cck_basal"] + f["cck_secretion"] - f["cck_clearance"]
         rates[..., _GB_IDX] = f["to_gallbladder"] - f["gb_empty"]
         rates[..., _INT_IDX] = f["gb_empty"] + f["to_intestine"] - f["ileal_uptake"]
-        rates[..., _BA_IDX] = f["ba_basal"] + f["ba_spill"] - f["ba_clearance"]
+        rates[..., _BA_IDX] = f["ba_spill"] - f["ba_clearance"]
         return rates

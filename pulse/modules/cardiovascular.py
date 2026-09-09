@@ -79,15 +79,15 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..types import MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
 # Per-vital NORM_CENTER / NORM_SCALE for [hr, hrv, sbp, dbp] (iter 90: k is a true
 # per-minute constant, so the normalized deviation is converted back to raw units).
 _CVS_NORM_CENTER = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["cardiovascular"]]
 _CVS_NORM_SCALE = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["cardiovascular"]]
 
-# Coupling inputs: cortisol (1) + temperature (1) + glucose (1) + insulin (1) = 4
-_N_COUPLING = 4
+# Coupling inputs from MODULE_COUPLING_CHANNELS["cardiovascular"].
+_N_COUPLING = len(MODULE_COUPLING_CHANNELS["cardiovascular"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
@@ -204,8 +204,9 @@ class CardiovascularModule(LearnedDynamicsModule):
         rate_hr = driver[..., _HR] - k[_HR] * (hr - hr_sp)
         rate_dbp = driver[..., _DBP] - k[_DBP] * (dbp - dbp_sp)
         # Log-space relaxations, returned as RAW rates (x · d log x / dt).
+        hrv_target = hrv_sp * hr_sp / hr.clamp(min=40.0)
         dlog_hrv = driver[..., _HRV] / _HRV_CENTER - k[_HRV] * (
-            torch.log(hrv.clamp(min=_LOG_EPS)) - torch.log(hrv_sp))
+            torch.log(hrv.clamp(min=_LOG_EPS)) - torch.log(hrv_target))
         dlog_pp = driver[..., _SBP] / _PP_CENTER - k[_SBP] * (
             torch.log(pp.clamp(min=_LOG_EPS)) - torch.log(pp_sp))
         rate_hrv = hrv * dlog_hrv

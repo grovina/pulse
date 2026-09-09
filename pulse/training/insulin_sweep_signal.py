@@ -50,6 +50,7 @@ from ..knowledge.full_body import PatientParams, glucose_fluxes
 from ..model import ModularPhysiologyNetwork
 from ..modules.base import compute_time_features
 from ..types import (
+    DUODENAL_DIM,
     EXTERNAL_INPUT_DIM,
     GUT_OUTPUT_DIM,
     MARKER_INDEX,
@@ -339,14 +340,6 @@ class InsulinSweepSignal(TrainingSignal):
         B = int(embeddings.shape[0])
 
         met_idx = list(MODULE_MARKER_INDICES["metabolic"])
-        cortisol_idx = MARKER_INDEX["cortisol"]
-        # Iter 90: metabolic coupling gained a glp1 channel (the incretin path). This
-        # signal builds the metabolic coupling vector by hand instead of going through
-        # ModularPhysiologyNetwork.forward, so it must mirror that layout exactly:
-        # [gut_outputs(4), cortisol(1), glp1(1)]. Omitting it made metabolic's input 41
-        # wide against a 42-wide first layer, which killed the iter-90 dispatch at epoch 0.
-        glp1_idx = MARKER_INDEX["glp1"]
-
         # Project embedding once per metabolic call — one [B, EMB_MET] tensor.
         emb_met = net.embedding_projections["metabolic"](embeddings)
 
@@ -370,14 +363,10 @@ class InsulinSweepSignal(TrainingSignal):
             full_state_b = full_state.unsqueeze(0).expand(B, -1)
             norm_state = (full_state_b - net.norm_center) / net.norm_scale
             met_state = norm_state[:, met_idx]  # [B, n_species]
-            cortisol = norm_state[:, cortisol_idx: cortisol_idx + 1]
-            glp1 = norm_state[:, glp1_idx: glp1_idx + 1]
-            # Iter 91: ask the model for its coupling layout instead of rebuilding it. This
-            # signal hand-built [gut(4), cortisol(1)] and silently missed iter-90's new glp1
-            # channel, which killed the first iter-90 dispatch at epoch 0. There is now exactly
-            # one definition of this vector (ModularPhysiologyNetwork.metabolic_coupling), so a
-            # future coupling change cannot drift out of sync with it again.
-            coupling = net.metabolic_coupling(zero_gut, cortisol, glp1)
+            coupling = net.coupling_for(
+                "metabolic", norm_state, zero_gut,
+                torch.zeros(B, DUODENAL_DIM, dtype=torch.float32, device=device),
+            )
             rates = net.metabolic(met_state, coupling, zero_external, emb_met, time_feats)
             # Drop internal slow-state rate outputs (iter 55+): no cold target.
             per_point.append(rates[..., :_N_COLD_METABOLIC])

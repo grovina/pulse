@@ -123,8 +123,8 @@ OGTT_INSULIN_MEAN = CohortStatisticSpec(
 # ---------------------------------------------------------------------------
 # Rizza et al. (1981); Basu et al. (2000): physiological postprandial
 # hyperinsulinemia suppresses endogenous glucose production by ≈60–80%
-# within 60–180 min post-meal. From a fasted basal of ≈2.0 mg/min,
-# HGO drops by ≈-1.0 mg/min over the post-meal window. We use a 75 g
+# within 60–180 min post-meal. From a fasted basal of ≈2.0 mg/kg/min,
+# HGO drops by ≈-1.0 mg/kg/min over the post-meal window. We use a 75 g
 # carb-rich mixed meal to drive a clean hyperinsulinemic episode, then
 # encode the HGO contrast vs a same-duration fasted arm.
 _HGO_FASTED: tuple[tuple[float, float, float, float], ...] = ()
@@ -132,7 +132,7 @@ _HGO_MEAL = ((60.0, 75.0, 15.0, 25.0),)
 MEAL_HGO_SUPPRESSION = CohortStatisticSpec(
     name="meal_hgo_suppression",
     source="Rizza et al. (1981); Basu et al. (2000) — postprandial HGO suppression",
-    description="Mixed meal (75 g carb) → HGO ≈ -1.0 mg/min lower vs fasted in 90–180 min post-meal",
+    description="Mixed meal (75 g carb) → HGO ≈ -1.0 mg/kg/min lower vs fasted in 90–180 min post-meal",
     arms=(
         CohortArmSpec(label="fasted", duration_min=300, start_hour=8.0, meals=_HGO_FASTED),
         CohortArmSpec(label="meal", duration_min=300, start_hour=8.0, meals=_HGO_MEAL),

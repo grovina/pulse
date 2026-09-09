@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 import unittest
 
 import torch
@@ -10,6 +11,8 @@ import torch
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.modules import hepatobiliary as H
 from pulse.modules.base import compute_time_features
+from pulse.modules.hepatobiliary import DuodenalDeliveryKernel
+from pulse.modules.gut import MealEvent
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX as MI, NORM_CENTER
 
 
@@ -44,8 +47,8 @@ class TestLoopConservation(unittest.TestCase):
         with torch.no_grad():
             f = hb.fluxes(state, coupling, external, emb, tf)
             rates = hb(state, coupling, external, emb, tf)
-        lhs = rates[:, H._GB_IDX] + rates[:, H._INT_IDX]
-        torch.testing.assert_close(lhs, f["synthesis"] - f["fecal_loss"], atol=1e-7, rtol=1e-5)
+        lhs = rates[:, H._GB_IDX] + rates[:, H._INT_IDX] + rates[:, H._BA_IDX] / f["spill_gain"]
+        torch.testing.assert_close(lhs, f["synthesis"] - f["fecal_loss"], atol=1e-6, rtol=1e-5)
 
     def test_gallbladder_fills_only_from_hepatic_export(self) -> None:
         m = _model(1)
@@ -60,6 +63,25 @@ class TestLoopConservation(unittest.TestCase):
     def test_intestinal_bile_owns_no_parameters(self) -> None:
         m = _model(2)
         self.assertEqual(sum(p.numel() for p in m.hepatobiliary.heads[H._INT_IDX].parameters()), 0)
+        self.assertEqual(sum(p.numel() for p in m.hepatobiliary.heads[H._BA_IDX].parameters()), 0)
+
+    def test_lowering_canalicular_export_raises_serum_spillover(self) -> None:
+        m = _model(0, perturb=0.0)
+        hb = m.hepatobiliary
+        state, coupling, external, emb, tf = _inputs(m, batch=8)
+        with torch.no_grad():
+            f_h = hb.fluxes(state, coupling, external, emb, tf)
+            hb.log_k_canalicular.fill_(-2.0)
+            f_l = hb.fluxes(state, coupling, external, emb, tf)
+        self.assertTrue(bool((f_l["extraction"] < f_h["extraction"]).all()))
+        self.assertTrue(bool((f_l["spillover"] > f_h["spillover"]).all()))
+
+    def test_duodenal_kernel_has_no_hard_age_mask(self) -> None:
+        k = DuodenalDeliveryKernel()
+        meals = [MealEvent(time=0.0, carbs=0.0, fats=20.0, proteins=0.0)]
+        with torch.no_grad():
+            out = k.forward_window(torch.tensor([500.0]), meals)
+        self.assertGreater(float(out[0].sum()), 0.0)
 
 
 class TestBelowTypicalIsRepresentable(unittest.TestCase):
@@ -74,7 +96,7 @@ class TestBelowTypicalIsRepresentable(unittest.TestCase):
         hb = m.hepatobiliary
         with torch.no_grad():
             hb.heads[H._CCK_IDX].network[-1].bias[0] = -3.0   # low basal production
-            hb.heads[H._BA_IDX].network[-1].bias[0] = -3.0
+            hb.log_k_ba.fill_(math.log(0.12))               # faster serum clearance
         tr = self._rollout(m)
         self.assertLess(float(tr[-1, MI["cck"]]), 0.9 * NORM_CENTER[MI["cck"]])
         self.assertLess(float(tr[-1, MI["bile_acids"]]), 0.9 * NORM_CENTER[MI["bile_acids"]])
@@ -84,7 +106,7 @@ class TestBelowTypicalIsRepresentable(unittest.TestCase):
         hb = m.hepatobiliary
         with torch.no_grad():
             hb.heads[H._CCK_IDX].network[-1].bias[0] = 2.0
-            hb.heads[H._BA_IDX].network[-1].bias[0] = 2.0
+            hb.log_k_ba.fill_(math.log(0.008))
         tr = self._rollout(m)
         self.assertGreater(float(tr[-1, MI["cck"]]), 1.1 * NORM_CENTER[MI["cck"]])
         self.assertGreater(float(tr[-1, MI["bile_acids"]]), 1.1 * NORM_CENTER[MI["bile_acids"]])

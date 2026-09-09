@@ -22,7 +22,7 @@ from pulse.benchmark import MeasurementPoint, calibrate_embedding
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.modules.gut import MealEvent
 from pulse.types import (
-    MARKER_INDEX, NORM_CENTER, STATE_DIM,
+    MARKER_INDEX, MARKERS, NORM_CENTER, STATE_DIM,
     PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX,
 )
 
@@ -31,9 +31,15 @@ class TestPhysiologicalBounds(unittest.TestCase):
     def test_bounds_wellformed(self) -> None:
         self.assertEqual(len(PHYSIOLOGICAL_MIN), STATE_DIM)
         self.assertEqual(len(PHYSIOLOGICAL_MAX), STATE_DIM)
-        for lo, hi in zip(PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX):
-            self.assertGreaterEqual(lo, 0.0)        # no marker is physically negative
+        for marker, lo, hi in zip(MARKERS, PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX):
             self.assertGreater(hi, lo)
+            if marker.id == "insulin_action":
+                self.assertLess(lo, 0.0)
+            elif marker.id == "spo2":
+                self.assertEqual(lo, 70.0)
+                self.assertEqual(hi, 100.0)
+            else:
+                self.assertGreaterEqual(lo, 0.0)
 
 
 class TestIntegratorClamp(unittest.TestCase):

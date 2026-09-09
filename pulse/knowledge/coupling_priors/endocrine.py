@@ -35,4 +35,7 @@ COUPLING_PRIORS: list[CouplingPrior] = [
     _p("temp", "rr", +1, (0.02, 0.3)),
     _p("glucose", "cortisol", -1, (0.001, 0.015)),
     _p("glucose", "acth", -1, (0.001, 0.02)),
+    _p("crh", "acth", +1, (0.002, 0.03)),
+    _p("fat_mass", "leptin", +1, (0.001, 0.02)),
+    _p("insulin_slow", "leptin", +1, (0.001, 0.02)),
 ]

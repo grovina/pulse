@@ -42,8 +42,6 @@ COUPLING_PRIORS: list[CouplingPrior] = [
     _p("cortisol", "ffa", +1, (0.002, 0.02)),
     _p("glp1", "insulin", +1, (0.001, 0.02)),
     # Holloszy (1967): trained mitochondrial / fat-oxidation capacity
-    # raises the ceiling on FFA utilisation. Sign-only floor anchor for
-    # the otherwise-unsupervised mitochondrial_capacity latent
-    # (docs/physiology-coverage.md breadth floor).
-    _p("mitochondrial_capacity", "ffa", +1, (0.0005, 0.01)),
+    # raises FFA utilisation, so FFA falls. Mito scales clearance.
+    _p("mitochondrial_capacity", "ffa", -1, (0.0005, 0.01)),
 ]

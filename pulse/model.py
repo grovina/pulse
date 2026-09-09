@@ -24,8 +24,9 @@ import torch
 import torch.nn as nn
 
 from .types import (
-    STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM, TIME_FEATURES_DIM,
-    MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES,
+    STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM, TIME_FEATURES_DIM, DUODENAL_DIM,
+    MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES, MODULE_COUPLING_CHANNELS,
+    GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE,
     PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX,
 )
@@ -57,6 +58,10 @@ _PHYS_MAX = torch.tensor(PHYSIOLOGICAL_MAX, dtype=torch.float32)
 _HRV_IDX = MARKER_INDEX["hrv"]
 _SBP_IDX = MARKER_INDEX["sbp"]
 _DBP_IDX = MARKER_INDEX["dbp"]
+_SPO2_IDX = MARKER_INDEX["spo2"]
+_SPO2_LO = 70.0
+_SPO2_HI = 100.0
+_SPO2_EPS = 1e-4
 
 
 def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float) -> torch.Tensor:
@@ -67,18 +72,35 @@ def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float) -> torch.Tensor:
     return torch.where(positive, x * torch.exp(rate * dt / denom), x + rate * dt)
 
 
+def _logit_interval_step(
+    x: torch.Tensor, rate: torch.Tensor, dt: float, lo: float, hi: float,
+) -> torch.Tensor:
+    """Step ``x`` in logit coordinates of ``(x − lo)/(hi − lo)`` so it stays in ``(lo, hi)``."""
+    width = hi - lo
+    x_c = x.clamp(lo + _SPO2_EPS, hi - _SPO2_EPS)
+    u = (x_c - lo) / width
+    logit = torch.log(u / (1.0 - u))
+    dsdlogit = (x_c - lo) * (hi - x_c) / width
+    logit_new = logit + rate * dt / dsdlogit.clamp(min=_SPO2_EPS)
+    return (lo + width * torch.sigmoid(logit_new)).clamp(lo + _SPO2_EPS, hi - _SPO2_EPS)
+
+
 def euler_step(state: torch.Tensor, rates: torch.Tensor, dt: float) -> torch.Tensor:
     """One forward-Euler step of the raw state, with the positive-by-construction
-    markers (HRV, pulse pressure) stepped multiplicatively. Shared by ``integrate``
-    and anyone who steps the model by hand."""
+    markers (HRV, pulse pressure) stepped multiplicatively and SpO₂ stepped in
+    logit coordinates of (70, 100). Shared by ``integrate`` and anyone who steps
+    the model by hand."""
     new_state = state + rates * dt
     hrv_new = _exp_step(state[..., _HRV_IDX], rates[..., _HRV_IDX], dt)
     pp = state[..., _SBP_IDX] - state[..., _DBP_IDX]
     pp_new = _exp_step(pp, rates[..., _SBP_IDX] - rates[..., _DBP_IDX], dt)
     dbp_new = new_state[..., _DBP_IDX]
+    spo2_new = _logit_interval_step(
+        state[..., _SPO2_IDX], rates[..., _SPO2_IDX], dt, _SPO2_LO, _SPO2_HI)
     new_state = new_state.clone()
     new_state[..., _HRV_IDX] = hrv_new
     new_state[..., _SBP_IDX] = dbp_new + pp_new
+    new_state[..., _SPO2_IDX] = spo2_new
     return new_state
 
 
@@ -137,6 +159,24 @@ class ModularPhysiologyNetwork(nn.Module):
         # appearance channels. Takes no embedding, so it needs no precompute path.
         self.duodenal = DuodenalDeliveryKernel()
 
+        self._modules_by_name = {
+            "metabolic": self.metabolic,
+            "appetite": self.appetite,
+            "stress": self.stress,
+            "cardiovascular": self.cardiovascular,
+            "thermoreg": self.thermoreg,
+            "respiratory": self.respiratory,
+            "hepatobiliary": self.hepatobiliary,
+        }
+        for name, mod in self._modules_by_name.items():
+            n_expected = len(MODULE_COUPLING_CHANNELS[name])
+            n_got = int(mod.n_coupling)
+            if n_got != n_expected:
+                raise ValueError(
+                    f"{name} coupling width {n_got} != MODULE_COUPLING_CHANNELS "
+                    f"({n_expected}: {MODULE_COUPLING_CHANNELS[name]})"
+                )
+
         # Every constructor argument, so a checkpoint can rebuild the exact layout
         # without re-deriving module widths from `hidden_dim` (see `from_checkpoint`).
         self.constructor_kwargs = {
@@ -185,7 +225,8 @@ class ModularPhysiologyNetwork(nn.Module):
         self._lactate_idx = MARKER_INDEX["lactate"]
         self._cortisol_idx = MARKER_INDEX["cortisol"]
         self._temp_idx = MARKER_INDEX["temp"]
-        self._glp1_idx = MARKER_INDEX["glp1"]  # iter 90: incretin path glp1 -> insulin
+        self._glp1_idx = MARKER_INDEX["glp1"]
+        self._fat_mass_idx = MARKER_INDEX["fat_mass"]
 
         self.register_buffer("norm_center", torch.tensor(NORM_CENTER, dtype=torch.float32))
         self.register_buffer("norm_scale", torch.tensor(NORM_SCALE, dtype=torch.float32))
@@ -228,27 +269,32 @@ class ModularPhysiologyNetwork(nn.Module):
         act = sw * torch.sigmoid(out[..., 1])
         return sw, act
 
-    def metabolic_coupling(
+    def coupling_for(
         self,
+        module: str,
+        norm_state: torch.Tensor,
         gut_outputs: torch.Tensor,
-        cortisol: torch.Tensor,
-        glp1: torch.Tensor,
+        duodenal: torch.Tensor,
     ) -> torch.Tensor:
-        """Assemble the metabolic module's coupling vector: [gut(4), cortisol(1), glp1(1)].
+        """Assemble ``module``'s coupling vector from ``MODULE_COUPLING_CHANNELS``.
 
-        Iter 91: THE SINGLE SOURCE OF TRUTH for this layout. It used to be assembled inline in
-        ``forward`` and, independently, by hand in ``training/insulin_sweep_signal.py``, which
-        calls ``model.metabolic(...)`` directly. When iter 90 added the glp1 incretin channel,
-        ``forward`` got it and the hand-built copy did not — 5 channels into a 6-channel module.
-        That killed the first iter-90 dispatch at epoch 0 (``mat1 and mat2 shapes cannot be
-        multiplied (5x41 and 42x48)``).
-
-        The architecture review had already named the disease: "the coupling story is told in
-        three places that have drifted apart." It was four, and nothing forced them to agree, so
-        the next coupling change would have broken it again. Any caller that needs metabolic's
-        coupling vector must call THIS method rather than rebuild the layout.
+        ``norm_state`` is the full normalized ODE state. Gut and duodenal
+        channels are the absorption clocks (not ODE markers). Callers that
+        invoke a module directly must use this rather than rebuilding the
+        layout by hand.
         """
-        return torch.cat([gut_outputs, cortisol, glp1], dim=-1)
+        pieces = []
+        for ch in MODULE_COUPLING_CHANNELS[module]:
+            if ch in GUT_CHANNEL_INDEX:
+                i = GUT_CHANNEL_INDEX[ch]
+                pieces.append(gut_outputs[..., i:i + 1])
+            elif ch in DUODENAL_CHANNEL_INDEX:
+                i = DUODENAL_CHANNEL_INDEX[ch]
+                pieces.append(duodenal[..., i:i + 1])
+            else:
+                i = MARKER_INDEX[ch]
+                pieces.append(norm_state[..., i:i + 1])
+        return torch.cat(pieces, dim=-1)
 
     def forward(
         self,
@@ -270,13 +316,10 @@ class ModularPhysiologyNetwork(nn.Module):
         meals: list of MealEvent
         sleep_wake: [batch] or None — 0=asleep, 1=awake
         activity: [batch] or None — 0=rest, 1=vigorous
-        duodenal_override: [batch, 2] duodenal (fat, protein) delivery for this step,
-            computed by ``integrate`` on the WINDOW-OFFSET clock. Same frame contract as
-            ``gut_override`` and for the same reason: ``t_minutes`` here is ABSOLUTE
-            time of day while ``meal.time`` is a window offset, so computing meal-dt
-            from ``t_minutes`` re-introduces the iter-87 shift. When absent (a caller
-            outside ``integrate``), delivery falls back to zero rather than being
-            computed on the wrong clock — a silently-shifted meal is worse than none.
+        duodenal_override: [batch, DUODENAL_DIM] duodenal (fat, protein, carb) delivery
+            for this step, computed by ``integrate`` on the WINDOW-OFFSET clock. Same
+            frame contract as ``gut_override``. When absent, delivery is zero rather
+            than being computed on the absolute ``t_minutes`` clock.
         gut_clock_exempt: opt out of the meal frame-contract guard below. ONLY for
             callers whose result is provably independent of gut timing (the
             coupling-prior finite-difference probe, where the gut term is
@@ -378,117 +421,36 @@ class ModularPhysiologyNetwork(nn.Module):
                 "and pass gut_outputs[:, step] each step.",
             )
 
-        # --- Extract coupling values from current state ---
-        glucose = norm_state[:, self._glucose_idx: self._glucose_idx + 1]
-        insulin = norm_state[:, self._insulin_idx: self._insulin_idx + 1]
-        lactate = norm_state[:, self._lactate_idx: self._lactate_idx + 1]
-        cortisol = norm_state[:, self._cortisol_idx: self._cortisol_idx + 1]
-        temperature = norm_state[:, self._temp_idx: self._temp_idx + 1]
-        glp1 = norm_state[:, self._glp1_idx: self._glp1_idx + 1]
-        nutrient_flag = gut_out_batch[:, 3:4]
-        # Iter 90: the gut's glucose-appearance channel is dose-LINEAR by construction
-        # (macros @ K). nutrient_flag saturates (1 - exp(-total/10g)), so it is the only
-        # meal signal that can tell a 30 g meal from a 90 g one.
-        gut_glucose_appearance = gut_out_batch[:, 0:1]
-
-        # --- Compute rates per module ---
-        rates = torch.zeros_like(state)
-
-        # Metabolic: coupling = [gut_outputs(4), cortisol(1), glp1(1)]
-        # glp1 last (iter 90 incretin path) so gut/cortisol coupling indices are unchanged.
-        met_coupling = self.metabolic_coupling(gut_out_batch, cortisol, glp1)
-        met_external = torch.stack([act, sw], dim=-1)
-        met_rates = self.metabolic(
-            norm_state[:, self._met_idx],
-            met_coupling, met_external,
-            emb["metabolic"], time_feats,
-        )
-        for i, idx in enumerate(self._met_idx):
-            rates[:, idx] = met_rates[:, i]
-
-        # Appetite: coupling = [insulin(1), nutrient_flag(1), gut_glucose_appearance(1)]
-        # Iter 90: appearance added because nutrient_flag saturates, leaving the module
-        # dose-blind — GLP-1 then tracked (insulin-suppressed) dose and came out
-        # WRONG-SIGNED (glp1_dose_response = -0.656 on iter-89). See modules/appetite.py.
-        app_coupling = torch.cat([insulin, nutrient_flag, gut_glucose_appearance], dim=-1)
-        app_external = sw.unsqueeze(-1)
-        app_rates = self.appetite(
-            norm_state[:, self._app_idx],
-            app_coupling, app_external,
-            emb["appetite"], time_feats,
-        )
-        for i, idx in enumerate(self._app_idx):
-            rates[:, idx] = app_rates[:, i]
-
-        # Stress: coupling = [glucose, cortisol]; external = sleep_wake, activity
-        str_coupling = torch.cat([glucose, cortisol], dim=-1)
-        str_external = torch.stack([sw, act], dim=-1)
-        str_rates = self.stress(
-            norm_state[:, self._str_idx],
-            str_coupling, str_external,
-            emb["stress"], time_feats,
-        )
-        for i, idx in enumerate(self._str_idx):
-            rates[:, idx] = str_rates[:, i]
-
-        # Cardiovascular: coupling = [cortisol(1), temperature(1), glucose(1), insulin(1)]
-        cvs_coupling = torch.cat([cortisol, temperature, glucose, insulin], dim=-1)
-        cvs_external = torch.stack([act, sw], dim=-1)
-        cvs_rates = self.cardiovascular(
-            norm_state[:, self._cvs_idx],
-            cvs_coupling, cvs_external,
-            emb["cardiovascular"], time_feats,
-        )
-        for i, idx in enumerate(self._cvs_idx):
-            rates[:, idx] = cvs_rates[:, i]
-
-        # Thermoreg: coupling = [glucose(1), cortisol(1)]
-        thm_coupling = torch.cat([glucose, cortisol], dim=-1)
-        thm_external = torch.stack([act, sw], dim=-1)
-        thm_rates = self.thermoreg(
-            norm_state[:, self._thm_idx],
-            thm_coupling, thm_external,
-            emb["thermoreg"], time_feats,
-        )
-        for i, idx in enumerate(self._thm_idx):
-            rates[:, idx] = thm_rates[:, i]
-
-        # Respiratory: coupling = [lactate(1)]
-        rsp_coupling = lactate
-        rsp_external = torch.stack([act, sw], dim=-1)
-        rsp_rates = self.respiratory(
-            norm_state[:, self._rsp_idx],
-            rsp_coupling, rsp_external,
-            emb["respiratory"], time_feats,
-        )
-        for i, idx in enumerate(self._rsp_idx):
-            rates[:, idx] = rsp_rates[:, i]
-
-        # Hepatobiliary: coupling = [duodenal fat delivery(1), duodenal protein(1)].
-        # Deliberately NOT the gut appearance channels — those are systemic (fat peaks
-        # ~60 min via chylomicrons) whereas duodenal I-cells see nutrient within
-        # minutes. Using appearance put the TEACHER's CCK peak at +68 min against a
-        # literature +10, and the student would inherit the same error.
-        # FRAME CONTRACT: duodenal delivery MUST come from ``integrate`` on the
-        # window-offset clock (see ``duodenal_override``). Falling back to zero rather
-        # than computing it from the absolute ``t_minutes`` is deliberate — that was
-        # the iter-87 bug, and a silently-shifted meal response is worse than none.
         if duodenal_override is not None:
-            hpb_coupling = duodenal_override
-            if hpb_coupling.dim() == 1:
-                hpb_coupling = hpb_coupling.unsqueeze(0)
-            if hpb_coupling.shape[0] != batch:
-                hpb_coupling = hpb_coupling.expand(batch, -1)
+            duo = duodenal_override
+            if duo.dim() == 1:
+                duo = duo.unsqueeze(0)
+            if duo.shape[0] != batch:
+                duo = duo.expand(batch, -1)
         else:
-            hpb_coupling = torch.zeros(batch, 2, dtype=state.dtype, device=state.device)
-        hpb_external = torch.stack([act, sw], dim=-1)
-        hpb_rates = self.hepatobiliary(
-            norm_state[:, self._hpb_idx],
-            hpb_coupling, hpb_external,
-            emb["hepatobiliary"], time_feats,
+            duo = torch.zeros(batch, DUODENAL_DIM, dtype=state.dtype, device=state.device)
+
+        rates = torch.zeros_like(state)
+        ext_as = torch.stack([act, sw], dim=-1)   # [activity, sleep_wake]
+        ext_sa = torch.stack([sw, act], dim=-1)   # [sleep_wake, activity]
+        ext_s = sw.unsqueeze(-1)
+
+        module_specs = (
+            ("metabolic", self._met_idx, ext_as),
+            ("appetite", self._app_idx, ext_s),
+            ("stress", self._str_idx, ext_sa),
+            ("cardiovascular", self._cvs_idx, ext_as),
+            ("thermoreg", self._thm_idx, ext_as),
+            ("respiratory", self._rsp_idx, ext_as),
+            ("hepatobiliary", self._hpb_idx, ext_as),
         )
-        for i, idx in enumerate(self._hpb_idx):
-            rates[:, idx] = hpb_rates[:, i]
+        for name, idx, external in module_specs:
+            coupling = self.coupling_for(name, norm_state, gut_out_batch, duo)
+            mod_rates = self._modules_by_name[name](
+                norm_state[:, idx], coupling, external, emb[name], time_feats,
+            )
+            for i, state_idx in enumerate(idx):
+                rates[:, state_idx] = mod_rates[:, i]
 
         if is_unbatched:
             rates = rates.squeeze(0)
@@ -529,7 +491,7 @@ def integrate(
     sleep_wake: [n_steps] tensor or None — per-step sleep/wake state
     activity: [n_steps] tensor or None — per-step activity level
     gut_outputs: [T, GUT_OUTPUT_DIM] or [B, T, GUT_OUTPUT_DIM] or None
-    duodenal_outputs: [T, 2] duodenal (fat, protein) delivery on the WINDOW-OFFSET clock,
+    duodenal_outputs: [T, 3] duodenal (fat, protein, carb) delivery on the WINDOW-OFFSET clock,
         as returned by :func:`precompute_duodenal_outputs`, or None to compute it here
         from ``meals`` (iter 97 — mirrors ``gut_outputs`` so a training signal that
         assembles its own window, e.g. the distillation's level anchors, can hand the
