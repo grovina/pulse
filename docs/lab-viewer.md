@@ -54,6 +54,7 @@ have the weather and the graph already. The stage can wait.
 | Sensory frame | Meals, sleep, activity, check-ins |
 | `[REFLEX]` | Clamp, default input, derived feeling |
 | Identity color | Which embedding / which patient |
+| Lagrangian tracer | A labeled parcel on a conserved loop (this plate, this dye) |
 
 ## Surfaces (increments)
 
@@ -81,15 +82,56 @@ have the weather and the graph already. The stage can wait.
    student is a separate matter. Pass `--model path.pt` when a 30-D
    checkpoint exists; until then the lab runs the current architecture
    untrained.
-4. **Anatomical stage (optional).** A dozen BodyParts3D organs, Pulse
+4. **Tracers (next).** Lagrangian layer on the same carbon and bile
+   loops. Eulerian weather stays: nodes are pools, edges are fluxes.
+   Tracers ask where *this* parcel goes. Not a new ODE and not identity
+   the student owns — pathlines of the live flux field, like CFD on a
+   velocity snapshot. Physiological minutes are the clock.
+5. **Anatomical stage (optional).** A dozen BodyParts3D organs, Pulse
    system layers, nodes parented to meshes. CC BY attribution required.
-   Adult male reference only — say so on the about sheet. The graph and
-   telemetry do not change.
-5. **Agent tools.** `find_marker`, `inspect_module`, `play_protocol`,
+   Adult male reference only — say so on the about sheet. The graph,
+   tracers, and telemetry do not change; tracers parent to the same
+   waypoint coordinates.
+6. **Agent tools.** `find_marker`, `inspect_module`, `play_protocol`,
    `isolate_pathway` — the atlas WebMCP pattern, aimed at this inspector.
-6. **Not this surface.** Consumer 3D body, 2,234 selectable meshes,
-   Minecraft, real-time 50 ms. Physiological minutes are the clock.
-   Play speeds them up. Do not skip physiological time.
+7. **Not this surface.** Consumer 3D body, 2,234 selectable meshes,
+   Minecraft, real-time 50 ms, ballistic dots along anatomy. Physiological
+   minutes are the clock. Play speeds them up. Do not skip physiological
+   time.
+
+## Tracers (Lagrangian)
+
+The graph is Eulerian. A tracer is the dual: follow a labeled parcel.
+
+Pulse is thirty well-mixed markers plus a gut kernel. It does not
+simulate particles. A tracer layer visualizes the fluxes already on the
+loop (`glucose_fluxes` / `bile_fluxes`, student gut appearance). Same
+waypoints, holes, and inlets.
+
+**Compartmental, not a conveyor.** A pool is mixed. A marked glucose
+does not march through blood in a line. It sits in the glucose node with
+residence time ~ pool / outflow, then branches with probabilities
+proportional to the live fluxes (appearance vs liver glycogen vs
+oxidation; emptying vs ileal vs faecal). Holes are deaths (oxidized,
+faecal). Inlets are births (appearance, GNG, bile synthesis).
+
+**Spawn on appearance, not on Eat.** The gut kernel is already
+Lagrangian in time: appearance is minutes-since-meal. The plate is not
+in plasma at the click. Particles are born on `ra` / duodenal delivery
+as the meal appears.
+
+**Demo.** Eat a plate → a cloud at gut → drip into glucose along the
+appearance curve → some park in liver glycogen, some burn at the
+oxidized hole; a walk pulls more toward muscle oxidation. Same
+machinery for a dye in the glucose pool (marked glucose, not a meal) and
+for an arbitrary bolus (carb / fat / protein / bile as species on the
+loops). Carbon is the one you feel. Bile is the prettier closed
+circulation.
+
+**Honesty.** Particles ≠ molecules. No ballistic fly-along-anatomy. No
+50 ms game loop. If we are decorating rather than tracking identity the
+student owns, say so (the `[REFLEX]` pattern). Eulerian weather stays
+on; tracers are a toggle, not a replacement.
 
 ## Telemetry
 
@@ -97,7 +139,8 @@ have the weather and the graph already. The stage can wait.
 channel. The lab packet is state, z, rates, gut appearance, duodenal
 delivery, carbon and bile fluxes, sleep/activity, meals, clamps, and
 derived feelings. The viewer talks to a local student session through
-`integrate()`. Play is the clock.
+`integrate()`. Play is the clock. Tracers are a viewer of the flux
+field, not extra student state.
 
 ## How to look
 
