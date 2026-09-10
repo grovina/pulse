@@ -2,14 +2,18 @@
   const W = 1100, H = 860, PAD = 70;
   const state = {
     graph: null,
-    runs: [],
     run: null,
     frame: 0,
     explode: 0,
     selected: null,
     playing: false,
     lastTs: 0,
+    playTimer: 0,
     playhead: 0,
+    physAcc: 0,
+    busy: false,
+    followLive: true,
+    asleep: false,
     markerIndex: {},
     gutIndex: {},
     duoIndex: {},
@@ -132,18 +136,19 @@
         const [x2, y2] = waypointPos(b);
         const v = Math.abs(pack[flow.id] ?? 0);
         const act = Math.min(1, v / loop.scale);
+        const leak = Math.abs(pack.residual ?? 0) > loop.residual_warn;
         if (act < 0.02 && a.kind !== "hole" && b.kind !== "hole" && a.kind !== "inlet") {
           if (act < 0.004) return;
         }
         const path = svgEl("path", {
           d: quad(x1, y1, x2, y2, ((fi % 5) - 2) * 18),
           fill: "none",
-          stroke: hexAlpha(loop.color, 0.18 + act * 0.72),
+          stroke: leak ? "#c24a3a" : hexAlpha(loop.color, 0.18 + act * 0.72),
           "stroke-width": String(1.1 + act * 5.2),
           "stroke-linecap": "round",
-          class: act > 0.06 ? "flow" : "",
+          class: leak ? "flow broken" : (act > 0.06 ? "flow" : ""),
         });
-        if (act > 0.06) {
+        if (!leak && act > 0.06) {
           path.style.setProperty("--flow-ms", `${Math.round(1400 - act * 850)}ms`);
         }
         path.setAttribute("aria-hidden", "true");
@@ -303,7 +308,7 @@
           fill: marker ? marker.color : "#c9a227",
           opacity: String(0.35 + act * 0.65),
         }));
-        const t = svgEl("text", {
+        const txt = svgEl("text", {
           x: x + (x >= mx ? 10 : -10),
           y: y + 3,
           "text-anchor": x >= mx ? "start" : "end",
@@ -311,8 +316,8 @@
           "font-size": "10",
           "font-family": "Public Sans, sans-serif",
         });
-        t.textContent = label;
-        satsG.appendChild(t);
+        txt.textContent = label;
+        satsG.appendChild(txt);
       });
     }
   }
@@ -340,30 +345,17 @@
       return out.join(" ");
     };
     const iNow = Math.max(0, Math.min(n - 1, at));
-    if (iNow < n - 1) {
-      svg.appendChild(svgEl("polyline", {
-        class: "future",
-        points: pts(iNow, n - 1),
-        fill: "none",
-      }));
-    }
-    if (iNow > 0) {
+    if (n > 1) {
       svg.appendChild(svgEl("polyline", {
         class: "past",
-        points: pts(0, iNow),
+        points: pts(0, n - 1),
         fill: "none",
       }));
     }
     const x = xOf(iNow);
     const y = yOf(values[iNow]);
-    svg.appendChild(svgEl("line", {
-      class: "now",
-      x1: x, x2: x, y1: 0, y2: h,
-    }));
-    svg.appendChild(svgEl("circle", {
-      class: "tip",
-      cx: x, cy: y, r: 1.8,
-    }));
+    svg.appendChild(svgEl("line", { class: "now", x1: x, x2: x, y1: 0, y2: h }));
+    svg.appendChild(svgEl("circle", { class: "tip", cx: x, cy: y, r: 1.8 }));
     return svg;
   }
 
@@ -394,19 +386,84 @@
     return v.toExponential(1);
   }
 
+  function feelingRow(axis, feel) {
+    const el = document.createElement("div");
+    const label = feel?.label || "";
+    el.className = `feeling is-${label.toLowerCase()}`;
+    const word = document.createElement("span");
+    word.className = "word";
+    word.textContent = label;
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    if (axis === "sleep" && feel?.kind === "derived") {
+      meta.textContent = "from the clock";
+    } else if (feel?.derived) {
+      meta.textContent = "derived";
+    } else if (axis === "sleep") {
+      meta.textContent = "you set this";
+    } else {
+      meta.textContent = axis;
+    }
+    el.append(word, meta);
+    return el;
+  }
+
+  function drawFeelings(frame) {
+    const box = $("feelings");
+    box.replaceChildren();
+    const f = frame.feelings;
+    if (!f) return;
+    box.append(
+      feelingRow("hunger", f.hunger),
+      feelingRow("heat", f.heat),
+      feelingRow("tired", f.tired),
+      feelingRow("sleep", f.sleep),
+    );
+  }
+
   function drawReadout() {
     const run = state.run;
     if (!run) return;
     const frame = run.frames[state.frame];
     $("clock").textContent = clock(frame.clock_min);
-    $("run-blurb").textContent = `${run.blurb} Teacher, default patient.`;
+    const eaten = (run.meals || []).some((m) => m.t <= frame.t);
+    const hours = frame.feelings?.hours_since_meal;
+    let since = "";
+    if (!eaten) since = "No meal yet.";
+    else if (hours != null && hours < 0.2) since = "Just ate.";
+    else if (hours != null) since = `${fmt(hours)} h since the last meal.`;
+    const f = frame.feelings;
+    const words = f
+      ? [f.hunger?.label, f.heat?.label, f.tired?.label, f.sleep?.label].filter(Boolean).join(", ")
+      : "";
+    const looking = !state.followLive && state.frame < run.frames.length - 1;
+    $("run-blurb").textContent = looking
+      ? `Looking back. Play continues from now. ${since}`.trim()
+      : `${words}${since ? `. ${since}` : ""}`.trim();
+    const kicker = document.querySelector(".kicker");
+    if (kicker && state.model) {
+      kicker.textContent = state.model.trained
+        ? `Pulse lab · ${state.model.version}`
+        : "Pulse lab · untrained student";
+    }
     const phase = (run.phases || []).find((p) => frame.t >= p.start_min && frame.t < p.end_min);
     $("phase").textContent = phase ? phase.label : "";
+    drawFeelings(frame);
+
+    if (state.busy) {
+      $("hint").textContent = "The body is catching up.";
+    } else if (state.asleep) {
+      $("hint").textContent = "Asleep. Wake to eat or walk.";
+    } else if (frame.appearing) {
+      $("hint").textContent = "The meal is appearing. Play to live the next minutes.";
+    } else {
+      $("hint").textContent = "Eat, walk, or lie down. Play steps the model. Nothing past now is shown.";
+    }
 
     const badges = [];
     if (frame.sleep_wake < 0.5) badges.push(["Asleep", "on"]);
     if (frame.appearing) badges.push(["Meal appearing", "on"]);
-    if (frame.activity > 0.2) badges.push(["Active", "on"]);
+    if (frame.activity > 0.2) badges.push(["Walking", "on"]);
     const lastMeal = (run.meals || []).filter((m) => m.t <= frame.t).at(-1);
     if (!lastMeal || frame.t - lastMeal.t >= 480) badges.push(["Fasting", "on"]);
     if (frame.clamped.length) {
@@ -431,7 +488,7 @@
     for (const id of state.graph.readout) {
       const i = state.markerIndex[id];
       const m = state.graph.markers[i];
-      const series = run.frames.map((f) => f.state[i]);
+      const series = run.frames.map((fr) => fr.state[i]);
       rows.appendChild(seriesRow(m.label, fmt(frame.state[i]), m.unit, series));
     }
 
@@ -445,7 +502,7 @@
       h.textContent = `${loop.name} ledger`;
       ledger.appendChild(h);
       for (const row of loop.ledger) {
-        const series = run.frames.map((f) => f.flux?.[loop.id]?.[row.id] ?? 0);
+        const series = run.frames.map((fr) => fr.flux?.[loop.id]?.[row.id] ?? 0);
         ledger.appendChild(seriesRow(row.name, fmtFlux(pack[row.id] ?? 0), loop.unit, series));
       }
     }
@@ -462,7 +519,7 @@
     for (const id of mod.markers) {
       const i = state.markerIndex[id];
       const m = state.graph.markers.find((x) => x.id === id);
-      const series = run.frames.map((f) => f.state[i]);
+      const series = run.frames.map((fr) => fr.state[i]);
       mrows.appendChild(seriesRow(m.label, fmt(frame.state[i]), m.unit, series));
     }
     for (const id of mod.channels) {
@@ -471,11 +528,11 @@
       let v = 0;
       if (id in state.gutIndex) {
         const gi = state.gutIndex[id];
-        series = run.frames.map((f) => f.gut[gi]);
+        series = run.frames.map((fr) => fr.gut[gi]);
         v = frame.gut[gi];
       } else if (id in state.duoIndex) {
         const di = state.duoIndex[id];
-        series = run.frames.map((f) => f.duo?.[di] ?? 0);
+        series = run.frames.map((fr) => fr.duo?.[di] ?? 0);
         v = frame.duo?.[di] ?? 0;
       } else {
         continue;
@@ -488,59 +545,115 @@
     if (!state.run) return;
     const last = state.run.frames.length - 1;
     state.frame = Math.max(0, Math.min(last, i));
-    if (!fromPlayhead) state.playhead = state.frame;
+    if (!fromPlayhead) {
+      state.playhead = state.frame;
+      state.followLive = state.frame >= last;
+    }
     $("scrub").value = String(state.frame);
+    const frame = state.run.frames[state.frame];
+    const live = state.run.frames[state.run.frames.length - 1];
+    state.asleep = live.sleep_wake < 0.5;
+    syncRestButton();
     drawGraph();
     drawReadout();
   }
 
-  function tick(ts) {
+  function tick() {
     if (!state.playing) return;
+    const ts = performance.now();
     const dt = (ts - state.lastTs) / 1000;
     state.lastTs = ts;
     const speed = Number($("speed").value);
-    const every = state.run.sample_every_min;
-    state.playhead += (speed * dt) / every;
-    const last = state.run.frames.length - 1;
-    if (state.playhead >= last) {
-      setFrame(last);
-      setPlaying(false);
-      return;
+    state.physAcc += speed * Math.min(dt, 0.25);
+    const step = state.run?.sample_every_min || 5;
+    const horizon = (state.run?.duration_min ?? 1) - 1;
+    if (!state.busy && state.physAcc >= step) {
+      const minutes = Math.min(Math.floor(state.physAcc), step);
+      state.physAcc -= minutes;
+      advanceBy(minutes).then((snap) => {
+        if (!state.playing) return;
+        if (!snap || snap.t >= horizon) setPlaying(false);
+      });
     }
-    setFrame(Math.floor(state.playhead), true);
-    requestAnimationFrame(tick);
   }
 
   function setPlaying(on) {
     state.playing = on;
     $("play").textContent = on ? "Pause" : "Play";
     $("play").setAttribute("aria-pressed", on ? "true" : "false");
+    if (state.playTimer) {
+      clearInterval(state.playTimer);
+      state.playTimer = 0;
+    }
     if (on) {
+      state.followLive = true;
+      state.physAcc = 0;
       state.lastTs = performance.now();
-      if (state.frame >= (state.run?.frames.length ?? 1) - 1) {
-        state.frame = 0;
-        state.playhead = 0;
-      }
-      requestAnimationFrame(tick);
+      state.playTimer = setInterval(tick, 50);
+      tick();
     }
   }
 
-  async function loadRun(id) {
-    const meta = state.runs.find((r) => r.id === id);
-    const run = await (await fetch(meta.file)).json();
+  async function advanceBy(minutes) {
+    const snap = await post("/api/advance", { minutes });
+    if (snap) applySnapshot(snap, true);
+    return snap;
+  }
+
+  function applySnapshot(snap, followLive = true) {
+    const run = snap.run;
     state.run = run;
+    state.model = snap.model;
+    state.asleep = snap.asleep;
+    state.followLive = followLive;
     state.gutIndex = Object.fromEntries(run.gut_channel_ids.map((id, i) => [id, i]));
     state.duoIndex = Object.fromEntries((run.duodenal_channel_ids || []).map((id, i) => [id, i]));
-    state.frame = 0;
-    state.playhead = 0;
-    $("scrub").max = String(run.frames.length - 1);
-    $("scrub").value = "0";
+    const last = run.frames.length - 1;
+    state.frame = last;
+    state.playhead = last;
+    $("scrub").max = String(last);
+    $("scrub").value = String(state.frame);
     for (const btn of $("protocols").querySelectorAll("button")) {
-      btn.setAttribute("aria-pressed", btn.dataset.id === id ? "true" : "false");
+      btn.setAttribute("aria-pressed", btn.dataset.id === snap.protocol_id ? "true" : "false");
     }
-    setPlaying(false);
+    syncRestButton();
     drawGraph();
     drawReadout();
+  }
+
+  function syncRestButton() {
+    const rest = $("rest");
+    rest.textContent = state.asleep ? "Wake" : "Lie down";
+    $("eat").disabled = state.asleep;
+    $("walk").disabled = state.asleep;
+  }
+
+  async function post(path, extra = {}) {
+    if (state.busy) return null;
+    state.busy = true;
+    if (state.run) drawReadout();
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(extra),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = body.detail;
+        $("hint").textContent = typeof detail === "string" ? detail : "The body did not take that.";
+        return null;
+      }
+      return body;
+    } finally {
+      state.busy = false;
+    }
+  }
+
+  async function resetProtocol(id) {
+    setPlaying(false);
+    const snap = await post("/api/reset", { protocol: id });
+    if (snap) applySnapshot(snap, true);
   }
 
   function bindLayers() {
@@ -577,11 +690,35 @@
       state.explode = Number(e.target.value) / 100;
       drawGraph();
     });
+    $("eat").addEventListener("click", async () => {
+      const snap = await post("/api/eat", { plate: $("plate").value });
+      if (snap) applySnapshot(snap, true);
+    });
+    $("walk").addEventListener("click", async () => {
+      const snap = await post("/api/walk", { minutes: 30, intensity: 0.45 });
+      if (snap) applySnapshot(snap, true);
+    });
+    $("rest").addEventListener("click", async () => {
+      const snap = await post(state.asleep ? "/api/wake" : "/api/rest");
+      if (snap) applySnapshot(snap, true);
+    });
     window.addEventListener("keydown", (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
       if (e.key === " ") {
         e.preventDefault();
         setPlaying(!state.playing);
+      }
+      if (e.key === "e" || e.key === "E") {
+        e.preventDefault();
+        $("eat").click();
+      }
+      if (e.key === "w" || e.key === "W") {
+        e.preventDefault();
+        $("walk").click();
+      }
+      if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        $("rest").click();
       }
       if (e.key === "ArrowRight") {
         setPlaying(false);
@@ -596,23 +733,29 @@
 
   async function main() {
     bind();
-    state.graph = await (await fetch("graph.json")).json();
-    state.runs = await (await fetch("runs.json")).json();
+    const graphRes = await fetch("/api/graph");
+    if (!graphRes.ok) {
+      $("run-blurb").textContent = "Start the lab with uv run python scripts/lab_viewer.py";
+      return;
+    }
+    state.graph = await graphRes.json();
     state.graph.markers.forEach((m, i) => { state.markerIndex[m.id] = i; });
     bindLayers();
-    const protocols = $("protocols");
-    for (const run of state.runs) {
+    const protocols = await (await fetch("/api/protocols")).json();
+    const nav = $("protocols");
+    for (const p of protocols) {
       const b = document.createElement("button");
       b.type = "button";
-      b.dataset.id = run.id;
-      b.textContent = run.title;
-      b.addEventListener("click", () => loadRun(run.id));
-      protocols.appendChild(b);
+      b.dataset.id = p.id;
+      b.textContent = p.title;
+      b.addEventListener("click", () => resetProtocol(p.id));
+      nav.appendChild(b);
     }
-    await loadRun(state.runs[0].id);
+    const snap = await (await fetch("/api/snapshot")).json();
+    applySnapshot(snap, true);
   }
 
   main().catch((err) => {
-    $("run-blurb").textContent = `Could not load the lab data: ${err.message}`;
+    $("run-blurb").textContent = `Could not start the lab: ${err.message}`;
   });
 })();

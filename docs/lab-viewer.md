@@ -52,7 +52,7 @@ have the weather and the graph already. The stage can wait.
 | Spike | `|dx/dt|` or a named flux |
 | Motor channel | Readouts a person would notice (glucose, HR, ghrelin, …) |
 | Sensory frame | Meals, sleep, activity, check-ins |
-| `[REFLEX]` | Clamp, default input, rejected calibration, teacher overlay |
+| `[REFLEX]` | Clamp, default input, derived feeling |
 | Identity color | Which embedding / which patient |
 
 ## Surfaces (increments)
@@ -64,17 +64,23 @@ have the weather and the graph already. The stage can wait.
    buttons (day, fast, dawn, meal). Badges for asleep, meal appearing,
    clamp, fasting. Graph schema is generated from `types.py`, so a
    layout change in the model is a layout change in the picture.
-2. **Flux weather (this increment).** Carbon and bile are conserved
+2. **Flux weather.** Carbon and bile are conserved
    loops on the same graph. Appearance travels gut → glucose; oxidation
    and faecal loss are drawn as holes (open rings). A ledger residual
    that fails to close is a leak badge — the teacher should not fire
-   it; a later student overlay will. Layer toggles: Coupling, Carbon,
-   Bile. Duodenal delivery lights `duodenal.*` edges. Fluxes are
-   reconstructed each frame from `glucose_fluxes` / `bile_fluxes` plus
-   the trajectory; `simulate_full_body` still returns `(traj, absorption)`.
-3. **Student overlay.** Same graph, teacher vs student vs prior-mean
-   embedding. Construction pins as visible properties (SpO2 cannot paint
-   outside (70, 100); bile is a loop or the loop is drawn broken).
+   it; a later student might. Layer toggles: Coupling, Carbon,
+   Bile. Duodenal delivery lights `duodenal.*` edges. Fluxes come from
+   `glucose_fluxes` / `bile_fluxes`. `simulate_full_body` still returns
+   `(traj, absorption)`.
+3. **Live body (this increment).** One student simulation, interactive.
+   Eat / Walk / Lie down write meals, activity, and sleep at *now*. Play
+   steps the model forward. Nothing past now is computed or shown.
+   Feelings on the readout (hungry, warm/cold, tired, sleepy) are derived
+   from markers, not extra ODE states. Sleepy is clock + cortisol; Asleep
+   is an input you set. The teacher is not this surface; accuracy of the
+   student is a separate matter. Pass `--model path.pt` when a 30-D
+   checkpoint exists; until then the lab runs the current architecture
+   untrained.
 4. **Anatomical stage (optional).** A dozen BodyParts3D organs, Pulse
    system layers, nodes parented to meshes. CC BY attribution required.
    Adult male reference only — say so on the about sheet. The graph and
@@ -82,26 +88,28 @@ have the weather and the graph already. The stage can wait.
 5. **Agent tools.** `find_marker`, `inspect_module`, `play_protocol`,
    `isolate_pathway` — the atlas WebMCP pattern, aimed at this inspector.
 6. **Not this surface.** Consumer 3D body, 2,234 selectable meshes,
-   Minecraft, real-time 50 ms. Playback of a finished integrate is the
-   clock. Do not skip physiological time.
+   Minecraft, real-time 50 ms. Physiological minutes are the clock.
+   Play speeds them up. Do not skip physiological time.
 
 ## Telemetry
 
 `/simulate` today returns `series[t, marker]` plus a carb-flow side
-channel. The lab run file is the proto-packet: state, z, rates, gut
-appearance, duodenal delivery, carbon and bile fluxes, sleep/activity,
-meals, which clamps fired. The viewer consumes files; it does not own
-`integrate()`. Later the engine can stream the same shape.
+channel. The lab packet is state, z, rates, gut appearance, duodenal
+delivery, carbon and bile fluxes, sleep/activity, meals, clamps, and
+derived feelings. The viewer talks to a local student session through
+`integrate()`. Play is the clock.
 
 ## How to look
 
-From the repo root, after generating runs:
+From the repo root:
 
 ```
-uv run python scripts/export_lab_viewer.py
-uv run python -m http.server 8765 --directory lab
+uv run python scripts/lab_viewer.py
 ```
 
-Open http://localhost:8765. Regenerating overwrites `lab/graph.json` and
-`lab/runs/*.json` from the live types and teacher. The committed copies
-are the last exported snapshot so the page works without a sim.
+Optional checkpoint: `uv run python scripts/lab_viewer.py --model path/to/model.pt`.
+
+Open http://127.0.0.1:8765. Eat, Walk, and Lie down poke the running
+student at now. Play lives the next physiological minutes. Starting
+scenes (Morning, Day, Fast, …) reset to t=0. `graph.json` is regenerated
+on boot from live types. Do not commit `*.pt`.

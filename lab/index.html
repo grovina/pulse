@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pulse lab — coupling graph</title>
+  <title>The body</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,10 +14,25 @@
     <header class="top">
       <div class="identity">
         <p class="kicker">Pulse lab</p>
-        <h1>Coupling graph</h1>
-        <p class="lede" id="run-blurb">Teacher, default patient.</p>
+        <h1>The body</h1>
+        <p class="lede" id="run-blurb">The model. Play lives the next minutes. Feelings are read off the markers.</p>
       </div>
-      <nav class="protocols" id="protocols" aria-label="Protocols"></nav>
+      <div class="chrome">
+        <nav class="stimuli" aria-label="What the body does">
+          <label class="plate-wrap">
+            <span class="sr">Plate</span>
+            <select id="plate">
+              <option value="plate" selected>Plate 50/12/18</option>
+              <option value="snack">Snack 20/4/4</option>
+              <option value="rich">Rich 40/25/25</option>
+            </select>
+          </label>
+          <button type="button" id="eat">Eat</button>
+          <button type="button" id="walk">Walk</button>
+          <button type="button" id="rest">Lie down</button>
+        </nav>
+        <nav class="protocols" id="protocols" aria-label="Starting scenes"></nav>
+      </div>
     </header>
 
     <div class="work">
@@ -32,12 +47,13 @@
           <g id="waypoints"></g>
           <g id="sats"></g>
         </svg>
-        <p class="hint" id="hint">Carbon and bile are conserved loops. Oxidation and faecal loss are holes.</p>
+        <p class="hint" id="hint">Eat, walk, or lie down. Play steps the model. Nothing past now is shown.</p>
       </section>
 
       <aside class="readout" aria-label="Readout">
-        <h2>Readout</h2>
-        <p class="clock" id="clock">06:00</p>
+        <h2>Now</h2>
+        <p class="clock" id="clock">08:00</p>
+        <div class="feelings" id="feelings"></div>
         <p class="phase" id="phase"></p>
         <div id="readout-rows"></div>
         <div id="ledger"></div>

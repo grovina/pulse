@@ -66,11 +66,20 @@ h1 {
   max-width: 36rem;
 }
 
-.protocols {
+.chrome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.protocols,
+.stimuli {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .layers {
@@ -100,6 +109,27 @@ h1 {
   border-color: var(--bone);
 }
 
+.stimuli button,
+.stimuli select {
+  font: inherit;
+  color: var(--drum);
+  background: var(--bone);
+  border: 1px solid var(--bone);
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.stimuli #eat {
+  background: var(--carmine);
+  border-color: var(--carmine);
+  color: var(--bone);
+}
+
+.stimuli button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .protocols button,
 .transport button,
 .transport select {
@@ -123,6 +153,8 @@ h1 {
 }
 
 .protocols button:focus-visible,
+.stimuli button:focus-visible,
+.stimuli select:focus-visible,
 .layers button:focus-visible,
 .transport button:focus-visible,
 .transport input:focus-visible,
@@ -213,6 +245,41 @@ h1 {
   margin: 0;
 }
 
+.feelings {
+  margin: 0.7rem 0 0.85rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.feeling {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.feeling .word {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.55rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.feeling .meta {
+  color: var(--mute);
+  font-size: 0.72rem;
+}
+
+.feeling.is-hungry .word { color: var(--carmine); }
+.feeling.is-full .word { color: var(--verdigris); }
+.feeling.is-tired .word { color: var(--gold); }
+.feeling.is-asleep .word,
+.feeling.is-sleepy .word { color: #7a93b0; }
+.feeling.is-cold .word { color: #6b8cae; }
+.feeling.is-hot .word { color: var(--carmine); }
+
 .phase {
   margin: 0.15rem 0 0.8rem;
   color: var(--mute);
@@ -244,14 +311,6 @@ h1 {
   display: block;
   width: 100%;
   height: 1.35rem;
-}
-
-.spark .future {
-  fill: none;
-  stroke: #3a322c;
-  stroke-width: 1.15;
-  stroke-linejoin: round;
-  stroke-linecap: round;
 }
 
 .spark .past {
@@ -308,7 +367,8 @@ h1 {
 
 @media (max-width: 860px) {
   .top { flex-direction: column; align-items: stretch; }
-  .protocols { justify-content: flex-start; }
+  .chrome { align-items: stretch; }
+  .protocols, .stimuli { justify-content: flex-start; }
   .work { grid-template-columns: 1fr; }
   .readout { border-left: 0; border-top: 1px solid var(--line); max-height: 18rem; }
   .field svg { height: 26rem; }
@@ -318,6 +378,12 @@ h1 {
 .flow {
   stroke-dasharray: 7 13;
   animation: flow-dash var(--flow-ms, 900ms) linear infinite;
+}
+
+.flow.broken {
+  stroke: var(--carmine);
+  stroke-dasharray: 4 6;
+  animation: none;
 }
 
 #loops, #waypoints {

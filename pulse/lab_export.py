@@ -1,8 +1,9 @@
-"""Lab-viewer graph and teacher runs. Schema follows `types.py`."""
+"""Lab-viewer graph, derived feelings, and frame packing."""
 
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -310,6 +311,7 @@ def build_graph() -> dict[str, Any]:
         "edges": edges,
         "loops": _loops(),
         "readout": ["glucose", "hr", "ghrelin", "cortisol", "temp"],
+        "engine": "student",
     }
 
 
@@ -333,6 +335,94 @@ def _clock_minutes(start_hour: float, t: int) -> float:
     return (start_hour * 60.0 + t) % 1440.0
 
 
+def _sat(x: float) -> float:
+    if x > 20.0:
+        return 1.0
+    if x < -20.0:
+        return 0.0
+    return 1.0 / (1.0 + math.exp(-x))
+
+
+def hours_since_meal(t: float, meals: list[tuple[float, float, float, float]]) -> float:
+    past = [m[0] for m in meals if m[0] <= t]
+    if not past:
+        return 12.0
+    return (t - max(past)) / 60.0
+
+
+def derive_feelings(
+    state: np.ndarray,
+    gut: np.ndarray,
+    sleep_wake: float,
+    activity: float,
+    clock_min: float,
+    hours_since: float,
+) -> dict[str, Any]:
+    """Words a person already knows, read off markers. Not extra ODE states."""
+    mi = MARKER_INDEX
+    appearing = float(gut[3]) > 0.5
+    ghr = float(state[mi["ghrelin"]])
+    glu = float(state[mi["glucose"]])
+    glp = float(state[mi["glp1"]])
+    temp = float(state[mi["temp"]])
+    hrv = float(state[mi["hrv"]])
+    lac = float(state[mi["lactate"]])
+    cort = float(state[mi["cortisol"]])
+
+    hungry = (
+        0.4 * _sat((ghr - 108.0) / 16.0)
+        + 0.3 * _sat((90.0 - glu) / 12.0)
+        + 0.3 * _sat((hours_since - 3.5) / 1.2)
+    )
+    if appearing:
+        hungry *= 0.4
+    full = 0.55 * _sat((glp - 13.0) / 5.0) + (0.45 if appearing else 0.0)
+    if full >= hungry and full >= 0.42:
+        hunger_label, hunger_level = "Full", full
+    elif hungry >= 0.5:
+        hunger_label, hunger_level = "Hungry", hungry
+    else:
+        hunger_label, hunger_level = "Settled", max(0.15, 1.0 - max(hungry, full))
+
+    dtemp = temp - 37.0
+    if dtemp >= 0.28:
+        heat_label, heat_level = "Hot", _sat((dtemp - 0.15) / 0.2)
+    elif dtemp <= -0.22:
+        heat_label, heat_level = "Cold", _sat((-dtemp - 0.1) / 0.2)
+    else:
+        heat_label, heat_level = "Warm", 1.0 - min(1.0, abs(dtemp) / 0.28)
+
+    tired_n = (
+        0.4 * _sat((34.0 - hrv) / 8.0)
+        + 0.35 * _sat((lac - 1.35) / 0.5)
+        + 0.25 * float(activity)
+    )
+    tired_label = "Tired" if tired_n >= 0.48 else "Steady"
+
+    hour = (clock_min / 60.0) % 24.0
+    night = hour >= 22.0 or hour < 6.5
+    sleepy_n = (0.55 if night else 0.08) + 0.45 * _sat((8.5 - cort) / 2.5)
+    if sleep_wake < 0.5:
+        sleep = {"label": "Asleep", "level": 1.0, "derived": False, "kind": "input"}
+    elif sleepy_n >= 0.55:
+        sleep = {"label": "Sleepy", "level": _r(sleepy_n, 3), "derived": True, "kind": "derived"}
+    else:
+        sleep = {
+            "label": "Awake",
+            "level": _r(1.0 - sleepy_n, 3),
+            "derived": True,
+            "kind": "derived",
+        }
+
+    return {
+        "hunger": {"label": hunger_label, "level": _r(hunger_level, 3), "derived": True},
+        "heat": {"label": heat_label, "level": _r(heat_level, 3), "derived": True},
+        "tired": {"label": tired_label, "level": _r(tired_n, 3), "derived": True},
+        "sleep": sleep,
+        "hours_since_meal": _r(hours_since, 2),
+    }
+
+
 def _protocol_specs() -> dict[str, dict[str, Any]]:
     day_meals = [
         (120.0, 50.0, 12.0, 18.0),
@@ -340,6 +430,14 @@ def _protocol_specs() -> dict[str, dict[str, Any]]:
         (780.0, 80.0, 25.0, 30.0),
     ]
     return {
+        "morning": {
+            "title": "Morning",
+            "blurb": "Fasted at 08:00. Eat, walk, or lie down.",
+            "duration_min": 960,
+            "start_hour": 8.0,
+            "meals": [],
+            "walk": None,
+        },
         "day": {
             "title": "Eucaloric day",
             "blurb": "Three meals, overnight sleep, a walk at 17:00.",
@@ -452,7 +550,7 @@ def _flux_pack(d: dict[str, float]) -> dict[str, float]:
     return {k: _r(v, 6) for k, v in d.items()}
 
 
-def build_run(protocol_id: str, sample_every: int = SAMPLE_EVERY_MIN) -> dict[str, Any]:
+def _protocol_env(protocol_id: str) -> dict[str, Any]:
     spec = _protocol_specs()[protocol_id]
     duration_min = int(spec["duration_min"])
     start_hour = float(spec["start_hour"])
@@ -463,74 +561,149 @@ def build_run(protocol_id: str, sample_every: int = SAMPLE_EVERY_MIN) -> dict[st
     if walk is not None:
         s, dur, intensity = walk
         activity[s:s + dur] = float(intensity)
-        activity *= sleep_wake  # rest is 0 while asleep
+        activity *= sleep_wake
+    return {
+        "spec": spec,
+        "duration_min": duration_min,
+        "start_hour": start_hour,
+        "meals": meals,
+        "sleep_wake": sleep_wake,
+        "activity": activity,
+    }
 
+
+def pack_frame(
+    t: int,
+    state: np.ndarray,
+    gut: np.ndarray,
+    duo: np.ndarray,
+    sleep_wake: float,
+    activity: float,
+    start_hour: float,
+    meals: list[tuple[float, float, float, float]],
+    prev_state: np.ndarray | None = None,
+    dt: float = 1.0,
+    params: PatientParams | None = None,
+) -> dict[str, Any]:
+    """One lived minute: markers, gut, feelings, conservation weather."""
+    params = params or resolve_derived_params(PatientParams())
+    n_m = len(MARKERS)
+    state = np.asarray(state, dtype=np.float64)
+    gut = np.asarray(gut, dtype=np.float64)
+    duo = np.asarray(duo, dtype=np.float64)
+    if prev_state is None or dt <= 0:
+        rate = np.zeros(n_m, dtype=np.float64)
+    else:
+        rate = (state - np.asarray(prev_state, dtype=np.float64)) / float(dt)
+    z = (state - np.asarray(NORM_CENTER, dtype=np.float64)) / np.asarray(NORM_SCALE, dtype=np.float64)
+    phys_lo = np.asarray(PHYSIOLOGICAL_MIN, dtype=np.float64)
+    phys_hi = np.asarray(PHYSIOLOGICAL_MAX, dtype=np.float64)
+    clamped = [
+        MARKERS[i].id
+        for i in range(n_m)
+        if state[i] <= phys_lo[i] + 1e-6 or state[i] >= phys_hi[i] - 1e-6
+    ]
+    duo_pack = {
+        "fat": float(duo[0]) if duo.size > 0 else 0.0,
+        "protein": float(duo[1]) if duo.size > 1 else 0.0,
+        "carb": float(duo[2]) if duo.size > 2 else 0.0,
+    }
+    return {
+        "t": int(t),
+        "clock_min": _r(_clock_minutes(start_hour, t), 1),
+        "sleep_wake": _r(float(sleep_wake), 3),
+        "activity": _r(float(activity), 3),
+        "state": [_r(x) for x in state],
+        "z": [_r(x, 3) for x in z],
+        "rate": [_r(x, 5) for x in rate],
+        "gut": [_r(x, 5) for x in gut],
+        "duo": [_r(x, 5) for x in duo],
+        "appearing": float(gut[3]) > 0.5 if gut.size > 3 else False,
+        "clamped": clamped,
+        "feelings": derive_feelings(
+            state, gut, float(sleep_wake), float(activity),
+            _clock_minutes(start_hour, t),
+            hours_since_meal(t, meals),
+        ),
+        "flux": {
+            "carbon": _flux_pack(_carbon_flux(params, state, float(gut[0]), float(activity))),
+            "bile": _flux_pack(_bile_flux(params, state, duo_pack)),
+        },
+    }
+
+
+def _pack_frames(
+    traj: np.ndarray,
+    gut: np.ndarray,
+    duo: np.ndarray,
+    sleep_wake: np.ndarray,
+    activity: np.ndarray,
+    start_hour: float,
+    sample_every: int,
+    meals: list[tuple[float, float, float, float]] | None = None,
+) -> list[dict[str, Any]]:
+    params = resolve_derived_params(PatientParams())
+    meal_list = meals or []
+    times = list(range(0, traj.shape[0], sample_every))
+    frames = []
+    for t in times:
+        prev_t = max(0, t - sample_every)
+        frames.append(pack_frame(
+            t, traj[t], gut[t], duo[t],
+            float(sleep_wake[t]), float(activity[t]), start_hour, meal_list,
+            prev_state=None if t == 0 else traj[prev_t],
+            dt=float(sample_every),
+            params=params,
+        ))
+    return frames
+
+
+def _teacher_traj(env: dict[str, Any]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     params = resolve_derived_params(PatientParams())
     traj, absorption = simulate_full_body(
         params,
-        meals,
-        sleep_wake,
-        activity,
-        duration_min,
-        start_hour=start_hour,
+        env["meals"],
+        env["sleep_wake"],
+        env["activity"],
+        env["duration_min"],
+        start_hour=env["start_hour"],
         noise_scale=0.0,
         rng=np.random.default_rng(42),
     )
+    duo = np.zeros((env["duration_min"], 3), dtype=np.float64)
+    for t in range(env["duration_min"]):
+        d = duodenal_delivery(float(t), env["meals"], params)
+        duo[t] = [d["fat"], d["protein"], d["carb"]]
+    return traj, absorption, duo
 
-    times = list(range(0, duration_min, sample_every))
-    n_m = len(MARKERS)
-    center = np.asarray(NORM_CENTER, dtype=np.float64)
-    scale = np.asarray(NORM_SCALE, dtype=np.float64)
-    phys_lo = np.asarray(PHYSIOLOGICAL_MIN, dtype=np.float64)
-    phys_hi = np.asarray(PHYSIOLOGICAL_MAX, dtype=np.float64)
 
-    frames = []
-    for t in times:
-        state = traj[t].astype(np.float64)
-        if t == 0:
-            rate = np.zeros(n_m, dtype=np.float64)
-        else:
-            prev = traj[max(0, t - sample_every)].astype(np.float64)
-            rate = (state - prev) / float(sample_every)
-        z = (state - center) / scale
-        gut = absorption[t]
-        clamped = [
-            MARKERS[i].id
-            for i in range(n_m)
-            if state[i] <= phys_lo[i] + 1e-6 or state[i] >= phys_hi[i] - 1e-6
-        ]
-        appearing = float(gut[3]) > 0.5
-        duo = duodenal_delivery(float(t), meals, params)
-        frames.append({
-            "t": t,
-            "clock_min": _r(_clock_minutes(start_hour, t), 1),
-            "sleep_wake": _r(float(sleep_wake[t]), 3),
-            "activity": _r(float(activity[t]), 3),
-            "state": [_r(x) for x in state],
-            "z": [_r(x, 3) for x in z],
-            "rate": [_r(x, 5) for x in rate],
-            "gut": [_r(x, 5) for x in gut],
-            "duo": [_r(duo["fat"], 5), _r(duo["protein"], 5), _r(duo["carb"], 5)],
-            "appearing": appearing,
-            "clamped": clamped,
-            "flux": {
-                "carbon": _flux_pack(_carbon_flux(params, state, float(gut[0]), float(activity[t]))),
-                "bile": _flux_pack(_bile_flux(params, state, duo)),
-            },
-        })
-
+def run_from_env(
+    protocol_id: str,
+    env: dict[str, Any],
+    sample_every: int = SAMPLE_EVERY_MIN,
+) -> dict[str, Any]:
+    """Pack a full canned trajectory. Tests use this; the live lab does not."""
+    traj, gut, duo = _teacher_traj(env)
+    frames = _pack_frames(
+        traj, gut, duo, env["sleep_wake"], env["activity"],
+        env["start_hour"], sample_every, meals=env["meals"],
+    )
+    spec = env["spec"]
+    meals = env["meals"]
     meal_t = meals[0][0] if meals else None
-    phases = dietary_carb_flow_phases_for_ui(duration_min, meal_t) if protocol_id == "meal" else []
-
+    phases = (
+        dietary_carb_flow_phases_for_ui(env["duration_min"], meal_t)
+        if protocol_id == "meal" else []
+    )
     return {
         "schema": "pulse.lab.run.v2",
         "id": protocol_id,
         "title": spec["title"],
         "blurb": spec["blurb"],
-        "source": "teacher",
+        "engine": "teacher",
         "patient": "default",
-        "duration_min": duration_min,
-        "start_hour": start_hour,
+        "duration_min": env["duration_min"],
+        "start_hour": env["start_hour"],
         "sample_every_min": sample_every,
         "marker_ids": [m.id for m in MARKERS],
         "gut_channel_ids": list(GUT_CHANNEL_IDS),
@@ -544,22 +717,24 @@ def build_run(protocol_id: str, sample_every: int = SAMPLE_EVERY_MIN) -> dict[st
     }
 
 
+def build_run(protocol_id: str, sample_every: int = SAMPLE_EVERY_MIN) -> dict[str, Any]:
+    """Full canned trajectory for packer tests. The live lab steps the student."""
+    return run_from_env(protocol_id, _protocol_env(protocol_id), sample_every)
+
+
 def write_lab(lab_dir: Path | None = None) -> Path:
+    """Write graph.json. Live runs come from the lab server, not snapshot files."""
     root = lab_dir or LAB_DIR
     runs_dir = root / "runs"
-    runs_dir.mkdir(parents=True, exist_ok=True)
-    graph = build_graph()
-    (root / "graph.json").write_text(json.dumps(graph, indent=2) + "\n")
-    index = []
-    for pid in _protocol_specs():
-        run = build_run(pid)
-        (runs_dir / f"{pid}.json").write_text(json.dumps(run) + "\n")
-        index.append({
-            "id": run["id"],
-            "title": run["title"],
-            "blurb": run["blurb"],
-            "duration_min": run["duration_min"],
-            "file": f"runs/{pid}.json",
-        })
-    (root / "runs.json").write_text(json.dumps(index, indent=2) + "\n")
+    if runs_dir.exists():
+        for stale in runs_dir.glob("*.json"):
+            stale.unlink()
+        try:
+            next(runs_dir.iterdir())
+        except StopIteration:
+            runs_dir.rmdir()
+    runs_json = root / "runs.json"
+    if runs_json.exists():
+        runs_json.unlink()
+    (root / "graph.json").write_text(json.dumps(build_graph(), indent=2) + "\n")
     return root

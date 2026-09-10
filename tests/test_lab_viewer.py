@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pulse.lab_export import build_graph, build_run
+from pulse.lab_export import build_graph, build_run, write_lab
+from pulse.lab_sim import LabSession
 from pulse.types import (
     COUPLING_GRAPH,
     DUODENAL_CHANNEL_IDS,
@@ -17,6 +18,7 @@ from pulse.types import (
 def test_graph_covers_every_runtime_edge() -> None:
     graph = build_graph()
     assert graph["schema"] == "pulse.lab.graph.v2"
+    assert graph["engine"] == "student"
     module_ids = [m["id"] for m in graph["modules"]]
     assert module_ids == ["gut", *[s.value for s in System]]
     assert {m["id"] for m in graph["markers"]} == {m.id for m in MARKERS}
@@ -37,6 +39,7 @@ def test_graph_covers_every_runtime_edge() -> None:
             expected.add((ch, target, sign))
     assert exported == expected
     assert {lp["id"] for lp in graph["loops"]} == {"carbon", "bile"}
+    assert "sources" not in graph
     assert all("label" in m and "_" not in m["label"] for m in graph["markers"])
     assert all("label" in c and "_" not in c["label"] for c in graph["channels"])
     labels = {m["id"]: m["label"] for m in graph["markers"]}
@@ -77,6 +80,7 @@ def test_meal_protocol_glucose_rises() -> None:
     for f in run["frames"]:
         assert abs(f["flux"]["carbon"]["residual"]) < 1e-5
         assert abs(f["flux"]["bile"]["residual"]) < 1e-5
+        assert "hunger" in f["feelings"]
 
 
 def test_fast_raises_ketones() -> None:
@@ -91,3 +95,57 @@ def test_fast_raises_ketones() -> None:
     assert fat1 < fat0
     assert max(f["flux"]["carbon"]["ra"] for f in run["frames"]) < 0.01
     assert run["frames"][-1]["flux"]["carbon"]["oxidized"] > 0.0
+
+
+def test_write_lab_is_graph_only(tmp_path) -> None:
+    write_lab(tmp_path)
+    assert (tmp_path / "graph.json").exists()
+    assert not (tmp_path / "runs.json").exists()
+    stale = tmp_path / "runs"
+    stale.mkdir()
+    (stale / "day.teacher.json").write_text("{}")
+    write_lab(tmp_path)
+    assert not stale.exists()
+
+
+def test_live_session_does_not_simulate_the_future() -> None:
+    session = LabSession(sample_every=5)
+    session.reset("morning")
+    assert session.run["engine"] == "student"
+    assert session.t == 0
+    assert session.run["frames"][-1]["t"] == 0
+    assert len(session.run["frames"]) == 1
+    hungry0 = session.run["frames"][0]["feelings"]["hunger"]["label"]
+    assert hungry0 == "Hungry"
+    session.eat_plate("plate")
+    assert session.t == 0
+    assert session.run["frames"][-1]["t"] == 0
+    assert len(session.run["frames"]) == 1
+    assert session.run["meals"][0]["carbs"] == 50.0
+    assert session.run["frames"][0]["feelings"]["hours_since_meal"] < 0.2
+    session.advance(60)
+    assert session.t == 60
+    assert session.run["frames"][-1]["t"] == 60
+    assert session.run["frames"][-1]["t"] < session.run["duration_min"]
+    session.walk(minutes=30)
+    assert session.run["frames"][-1]["activity"] > 0.2
+    session.lie_down()
+    asleep = session.run["frames"][-1]
+    assert asleep["sleep_wake"] < 0.5
+    assert asleep["feelings"]["sleep"]["label"] == "Asleep"
+    try:
+        session.eat_plate("snack")
+        raise AssertionError("eat while asleep should fail")
+    except ValueError as exc:
+        assert str(exc) == "asleep"
+
+
+def test_dawn_starts_asleep() -> None:
+    session = LabSession(sample_every=5)
+    session.reset("dawn")
+    assert session.snapshot()["asleep"] is True
+    try:
+        session.eat_plate("snack")
+        raise AssertionError("eat while asleep should fail")
+    except ValueError as exc:
+        assert str(exc) == "asleep"

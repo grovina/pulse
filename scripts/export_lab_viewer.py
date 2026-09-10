@@ -1,4 +1,4 @@
-"""Export the lab-viewer graph and teacher protocol runs."""
+"""Write lab/graph.json from live types."""
 
 from __future__ import annotations
 
@@ -9,14 +9,11 @@ from pulse.lab_export import LAB_DIR, write_lab
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Write lab/graph.json and lab/runs/*.json")
-    parser.add_argument(
-        "--out", type=Path, default=LAB_DIR,
-        help="Lab directory (default: repo lab/)",
-    )
+    parser = argparse.ArgumentParser(description="Write lab/graph.json")
+    parser.add_argument("--out", type=Path, default=LAB_DIR, help="Lab directory")
     args = parser.parse_args()
     root = write_lab(args.out)
-    print(f"wrote graph and runs under {root}")
+    print(f"wrote graph under {root}")
 
 
 if __name__ == "__main__":
