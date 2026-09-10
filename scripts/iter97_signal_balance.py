@@ -153,6 +153,11 @@ def main() -> int:
                                         anchor_local_scale_floor=args.cold_distill_anchor_local_scale_floor,
                                         anchor_long_window=args.cold_distill_anchor_long_window,
                                         anchor_long_samples=args.cold_distill_anchor_long_samples,
+                                        **({} if not args.cold_distill_anchor_long_only else {
+                                            "anchor_long_only_markers": tuple(
+                                                args.cold_distill_anchor_long_only.split(":"),
+                                            )
+                                        }),
                                         anchor_level_band=args.cold_distill_level_band),
             PhysiologyRulesSignal(rules=list(PHYSIOLOGY_RULES), n_patients=N,
                                   sample_patients=args.physiology_rules_sample_patients,

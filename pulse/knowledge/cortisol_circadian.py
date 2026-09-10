@@ -15,14 +15,14 @@ full_body's 4), ghrelin suppressed by ABSOLUTE insulin (night ghrelin 66 against
 trajectory distillation weight and taught the student exactly what iters 91 and
 96 had removed from the coupled teacher (item 3.12 of the 2026-09-04 review).
 It now generates its episodes by running `simulate_full_body` and exposing only
-the stress and appetite markers. Contribution NAME and loss mode are unchanged.
+the stress and appetite markers. It is a diagnostic view, not a training
+contribution.
 """
 
 import numpy as np
 
-from ..types import STATE_DIM, MARKER_INDEX
 from .base import Episode, KnowledgeContribution
-from .bergman_glucose_insulin import _masked_view
+from .evidence import mask_trajectory
 from .full_body import (
     randomize_params, generate_meal_plan, generate_sleep_wake, generate_activity,
     simulate_full_body,
@@ -54,7 +54,7 @@ class CortisolCircadian(KnowledgeContribution):
                 params, meals, sleep_wake, activity, duration_min, start_hour, rng=prng,
             )
             episodes.append(Episode(
-                trajectory=_masked_view(trajectory, VIEW_MARKERS),
+                trajectory=mask_trajectory(trajectory, VIEW_MARKERS),
                 meals=meals,
                 duration_min=duration_min,
                 start_hour=start_hour,

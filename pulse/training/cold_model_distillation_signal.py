@@ -73,6 +73,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..knowledge.evidence import TEACHER_DISTILL_LONG_ONLY, TEACHER_DISTILL_MARKERS
 from ..knowledge.full_body import (
     PatientParams,
     generate_activity,
@@ -86,31 +87,9 @@ from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
-# Markers distilled from the cold model. These are the unobserved-but-load-
-# bearing counter-regulatory + circadian markers — the ones with no real-user
-# ground truth and no other supervision reaching them. (insulin / glp1 are
-# deliberately excluded: they are already well-constrained by the glucose
-# coupling, insulin-sweep, and gut-dose-sweep signals — re-distilling them here
-# would just add a competing pull on already-calibrated dynamics.)
-#
-# Iter 76 (Move D): liver_glycogen + muscle_glycogen join the set. The cold
-# ODE now SIMULATES them as flux integrators (full_body.py), so for the first
-# time the slow pools have a real trajectory target — the measurement iters
-# 55-57 lacked (those tried to drive a SetpointHead pool off `typical` via an
-# indirect cohort window-mean delta, ~6700× weaker than the glucose spec on the
-# same arms, and never moved it). Glycogen is a slow free-running LEVEL, so it
-# is distilled in mode="anchored" (the rate term carries the synthesis/
-# breakdown flux gradient through the strong gut-coupling path; the level
-# anchor pins the integrated pool depth that teacher-forced rate matching is
-# blind to).
-#
-# Mitochondrial_capacity, CRH, insulin_action, fat_mass and insulin_slow are
-# simulated in the teacher and distilled with the same list.
-_DEFAULT_DISTILL_MARKERS: tuple[str, ...] = (
-    "glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb",
-    "liver_glycogen", "muscle_glycogen", "mitochondrial_capacity",
-    "crh", "insulin_action", "fat_mass", "insulin_slow",
-)
+# Teacher-only internals. Hormones and pools the literature already reports
+# are not distilled — cohort stats and physiology rules own those.
+_DEFAULT_DISTILL_MARKERS: tuple[str, ...] = TEACHER_DISTILL_MARKERS
 
 # Huber transition on the NORM_SCALE-normalized residual. The dead markers
 # start grossly wrong (ghrelin ~1.9× off, glucagon ~0.4× off), so a plain
@@ -449,6 +428,10 @@ class ColdModelDistillationSignal(TrainingSignal):
     # long window retains ~W steps of graph until backward.
     anchor_long_window: int = 0
     anchor_long_samples: int = 0
+    # Slow states: skip teacher-forced rate matching and short level windows
+    # whenever a longer level pass exists. Without a long pass they still get
+    # the short level so they are not silently dropped.
+    anchor_long_only_markers: tuple[str, ...] = TEACHER_DISTILL_LONG_ONLY
     # Iter 97 (review 4.7): dead-zone on the level anchor, in the residual's own
     # (normalized) units. A 1-sigma level offset used to cost 10-50x a 20 %
     # amplitude error; inside the band the level is the teacher's uncertainty.
@@ -498,6 +481,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         self._marker_idx: list[tuple[str, int]] = [
             (m, MARKER_INDEX[m]) for m in self.markers if m in MARKER_INDEX
         ]
+        self._long_only: frozenset[str] = frozenset(self.anchor_long_only_markers)
         self._obs_idx: list[int] = [
             MARKER_INDEX[m] for m in self.obs_markers if m in MARKER_INDEX
         ]
@@ -509,6 +493,14 @@ class ColdModelDistillationSignal(TrainingSignal):
         # an early-training divergence on an untrained head is expected and
         # transient, unlike the teacher-forced rate path's hard NaN guard).
         self._n_anchor_skips = 0
+
+    def _score_rate(self, marker: str) -> bool:
+        return marker not in self._long_only
+
+    def _score_level(self, marker: str, window: int, short_window: int, has_longer: bool) -> bool:
+        if marker not in self._long_only or not has_longer:
+            return True
+        return window > short_window
 
     def _build_synthetic_protocols(self) -> list[_Protocol]:
         rng = np.random.default_rng(_PROTOCOL_SEED)
@@ -844,6 +836,8 @@ class ColdModelDistillationSignal(TrainingSignal):
             )
         out: dict[str, torch.Tensor] = {}
         for marker, midx in self._marker_idx:
+            if not self._score_rate(marker):
+                continue
             pred_dr = rates[:, midx] * _RATE_NORM_MINUTES / scale[midx]
             cold_dr = cold_rate[:, midx] * _RATE_NORM_MINUTES / scale[midx]
             out[marker] = F.huber_loss(pred_dr, cold_dr, delta=_HUBER_DELTA, reduction="mean")
@@ -946,6 +940,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         if self.anchor_long_window > W_short and self.anchor_long_samples > 0:
             W_long = min(int(self.anchor_long_window), T)
             passes.append((W_long, _starts(W_long, self.anchor_long_samples)))
+        has_longer = any(W > W_short for W, _ in passes)
 
         floor_frac = float(self.anchor_local_scale_floor)
         level_band = float(self.anchor_level_band)
@@ -993,6 +988,8 @@ class ColdModelDistillationSignal(TrainingSignal):
                 seg = ref_all[t0:t0 + w]
                 L = min(pred.shape[0], seg.shape[0])
                 for marker, midx in self._marker_idx:
+                    if not self._score_level(marker, W, W_short, has_longer):
+                        continue
                     ref_w = seg[:L, midx]
                     if floor_frac > 0.0:
                         # What this marker actually does in THIS window, floored.

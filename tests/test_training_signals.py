@@ -112,8 +112,9 @@ class TestColdModelDistillationSignal(unittest.TestCase):
         result = sig.compute(model, embeddings, ctx)
         self.assertEqual(result.n_units, 3)
         self.assertTrue(np.isfinite(result.loss_sum))
-        # All seven default distill markers report a per-marker term.
-        for m in ("glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb"):
+        # All default distill markers report a per-marker term.
+        from pulse.knowledge.evidence import TEACHER_DISTILL_MARKERS
+        for m in TEACHER_DISTILL_MARKERS:
             self.assertIn(f"dist_{m}", result.sub_metrics)
 
     def test_rate_matching_mode(self) -> None:
@@ -161,7 +162,8 @@ class TestColdModelDistillationSignal(unittest.TestCase):
         self.assertEqual(result.sub_metrics.get("mode"), 2.0)
         self.assertIn("anchor_skips", result.sub_metrics)
         # Every default distill marker still reports a (combined rate+level) term.
-        for m in ("glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb"):
+        from pulse.knowledge.evidence import TEACHER_DISTILL_MARKERS
+        for m in TEACHER_DISTILL_MARKERS:
             self.assertIn(f"dist_{m}", result.sub_metrics)
         # The level anchor must contribute gradient to the model params (the
         # whole point — rate-only matching is offset-invariant). Backprop and

@@ -36,6 +36,7 @@ import torch.nn.functional as F
 from ..coupling_prior_loss import coupling_prior_loss_on_window, merge_coupling_priors
 from ..knowledge import ALL_CONTRIBUTIONS, FullBody
 from ..knowledge.base import CouplingPrior, Episode
+from ..knowledge.evidence import TEACHER_TAPE_MARKERS, mask_trajectory
 from ..knowledge.full_body import (
     PatientParams,
     generate_activity,
@@ -73,7 +74,9 @@ SOFT_RANGE_DEADZONE = 8.0
 # approximately right (0.30 = 2.4 ug/dL cortisol, 12 pg/mL ghrelin). The old
 # single band 0.08 was below the CGM noise floor on glucose (2.4 mg/dL) and
 # demanded 0.024 C on temperature.
-OBSERVED_VITALS: tuple[str, ...] = ("glucose", "hr", "sbp", "dbp", "temp")
+# Wearable-frequency vitals the teacher tape is allowed to supervise.
+# Same set as TEACHER_TAPE_MARKERS; imported name kept for the band map.
+OBSERVED_VITALS: tuple[str, ...] = TEACHER_TAPE_MARKERS
 DEFAULT_BAND_OBSERVED = 0.15
 DEFAULT_BAND_UNOBSERVED = 0.30
 
@@ -223,12 +226,10 @@ def meals_in_window(
     ]
 
 
-# Favor full-body episodes; override at construction.
+# One generator. Views that used to dump dense hormone tapes are not
+# training contributions.
 DEFAULT_CONTRIBUTION_WEIGHTS: dict[str, float] = {
-    "full_body": 0.45,
-    "bergman_glucose_insulin": 0.22,
-    "cortisol_circadian": 0.18,
-    "cardiovascular_dynamics": 0.15,
+    "full_body": 1.0,
 }
 
 
@@ -266,7 +267,7 @@ def _default_patient_episode(n_days: int, prng: np.random.Generator) -> Episode:
         duration_min, start_hour, rng=prng,
     )
     return Episode(
-        trajectory=trajectory,
+        trajectory=mask_trajectory(trajectory, TEACHER_TAPE_MARKERS),
         meals=meals,
         duration_min=duration_min,
         start_hour=start_hour,

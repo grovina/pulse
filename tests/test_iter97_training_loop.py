@@ -206,8 +206,12 @@ def test_spec_pins_every_load_bearing_flag_and_parses_without_divergence() -> No
     assert spec_only.phase3_epochs > 0 and spec_only.phase3_input_dropout > 0.3
     assert "hr" not in spec_only.default_baseline_markers.split(":")
     assert "insulin" not in spec_only.cold_distill_markers.split(":")
+    assert "glucagon" not in spec_only.cold_distill_markers.split(":")
     for marker in ("crh", "insulin_action", "fat_mass", "insulin_slow"):
         assert marker in spec_only.cold_distill_markers.split(":")
+    assert spec_only.cold_distill_anchor_long_only.split(":") == [
+        "mitochondrial_capacity", "fat_mass",
+    ]
     assert spec_only.perturb_protocols and spec_only.trajectory_band_per_marker
 
 

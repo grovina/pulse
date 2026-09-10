@@ -5,6 +5,12 @@ piece of literature into Pulse. The goal is to turn a paper, textbook
 chapter, or RCT result into something the model can be supervised
 against — i.e. a differentiable loss landed on the right module.
 
+The native training example is a sparse **evidence item** (protocol +
+observation operator + reliability + authority), not a dense 30-D
+minute tape. Literature and real measurements outrank the teacher. Do not
+add a teacher curve for a marker a cohort statistic or physiology rule
+already owns.
+
 The core principle: **every form of medical knowledge is a gradient
 signal**. Architecture, priors, training data, and cohort statistics
 are all the same thing on different time-scales — they shape the
@@ -25,6 +31,20 @@ Is the finding "X causes Y to go up/down by some plausible amount"?
 Is the finding "in cohort C, marker M had statistic S over window W
 (with reported sigma)"?
 └─ Yes → CohortStatisticSpec (knowledge/cohorts/*.py)
+   It is also an EvidenceItem (authority=literature).
+
+Is the finding a direction, floor, ceiling, or timing hinge on one
+trajectory?
+└─ Yes → PhysiologyRule (knowledge/physiology_rules.py)
+
+Is the finding a wearable-frequency vital the generator may tape?
+└─ Yes → it is already on TEACHER_TAPE_MARKERS. Do not add hormone
+   columns to the tape.
+
+Is the finding an unobserved generator internal with no published
+time series (CRH, remote insulin, mito, fat mass, bile pools)?
+└─ Yes → TEACHER_DISTILL_MARKERS (rate), or TEACHER_DISTILL_LONG_ONLY
+   for day-scale states. Do not distill a marker a cohort statistic owns.
 
 Is the finding "in this scenario, marker M follows roughly this
 trajectory shape"?

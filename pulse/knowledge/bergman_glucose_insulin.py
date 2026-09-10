@@ -12,28 +12,20 @@ iter-92 kernel rate and gain, no glycogen pool, no incretin. It contributed 22%
 of the trajectory distillation weight (item 3.12 of the 2026-09-04 review). The
 PRD calls generators expendable: this one now generates its episodes by running
 `simulate_full_body` and exposing only the metabolic markers, so the metabolic
-view and the coupled teacher can never disagree again. Its contribution NAME,
-loss mode and coupling priors are unchanged, so training specs keep working.
+view and the coupled teacher can never disagree again. It is a diagnostic view,
+not a training contribution.
 """
 
 import numpy as np
 
-from ..types import STATE_DIM, MARKER_INDEX
 from .base import Episode, KnowledgeContribution, CouplingPrior
+from .evidence import mask_trajectory
 from .full_body import (
     randomize_params, generate_meal_plan, generate_sleep_wake, generate_activity,
     simulate_full_body,
 )
 
 VIEW_MARKERS = ("glucose", "insulin", "glucagon", "ffa", "bhb", "lactate")
-
-
-def _masked_view(trajectory: np.ndarray, markers: tuple[str, ...]) -> np.ndarray:
-    """Keep only `markers`; every other column is NaN (unsupervised in this view)."""
-    view = np.full_like(trajectory, np.nan)
-    for m in markers:
-        view[:, MARKER_INDEX[m]] = trajectory[:, MARKER_INDEX[m]]
-    return view
 
 
 class BergmanGlucoseInsulin(KnowledgeContribution):
@@ -59,7 +51,7 @@ class BergmanGlucoseInsulin(KnowledgeContribution):
                 params, meals, sleep_wake, activity, duration_min, start_hour, rng=prng,
             )
             episodes.append(Episode(
-                trajectory=_masked_view(trajectory, VIEW_MARKERS),
+                trajectory=mask_trajectory(trajectory, VIEW_MARKERS),
                 meals=meals,
                 duration_min=duration_min,
                 start_hour=start_hour,

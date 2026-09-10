@@ -95,7 +95,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .knowledge import ALL_CONTRIBUTIONS, ALL_COHORT_STATISTICS
+from .knowledge import (
+    ALL_CONTRIBUTIONS, ALL_COHORT_STATISTICS,
+    TEACHER_DISTILL_LONG_ONLY, TEACHER_DISTILL_MARKERS,
+)
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES
 from .model import ModularPhysiologyNetwork
 from .dose_response import DoseResponseProtocol, MarkerDoseTarget
@@ -352,14 +355,7 @@ def train(
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
     cold_distill_weight: float = 0.0,
-    # Iter 96: brought in line with _DEFAULT_DISTILL_MARKERS. The dispatch recipe
-    # has passed the glycogen pools explicitly since iter 76; this default had
-    # silently lagged it, which is a trap for any run that does NOT pass the flag.
-    cold_distill_markers: tuple[str, ...] = (
-        "glucagon", "ffa", "ghrelin", "leptin", "acth", "cortisol", "bhb",
-        "liver_glycogen", "muscle_glycogen", "mitochondrial_capacity",
-        "crh", "insulin_action", "fat_mass", "insulin_slow",
-    ),
+    cold_distill_markers: tuple[str, ...] = TEACHER_DISTILL_MARKERS,
     cold_distill_protocols_per_epoch: int = 4,
     cold_distill_pool: str = "synthetic",
     cold_distill_mode: str = "trajectory",
@@ -368,6 +364,7 @@ def train(
     cold_distill_anchor_local_scale_floor: float = 0.0,
     cold_distill_anchor_long_window: int = 0,
     cold_distill_anchor_long_samples: int = 0,
+    cold_distill_anchor_long_only: tuple[str, ...] = TEACHER_DISTILL_LONG_ONLY,
     physiology_rules_weight: float = 0.0,
     physiology_rules_sample_patients: int = 4,
     physiology_rules_adaptive: bool = False,
@@ -572,6 +569,7 @@ def train(
         anchor_local_scale_floor=cold_distill_anchor_local_scale_floor,
         anchor_long_window=cold_distill_anchor_long_window,
         anchor_long_samples=cold_distill_anchor_long_samples,
+        anchor_long_only_markers=tuple(cold_distill_anchor_long_only),
         anchor_level_band=cold_distill_level_band,
     )
     physiology_rules_signal = PhysiologyRulesSignal(
@@ -660,12 +658,12 @@ def train(
         # the run is over.
         f"{f'(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}'
            f' long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}'
+           f' long_only={tuple(cold_distill_anchor_long_only)}'
            f' local_scale_floor={cold_distill_anchor_local_scale_floor})'
            if cold_distill_mode == 'anchored' else ''} "
         f"markers={tuple(cold_distill_markers)} "
         f"protocols/epoch={cold_distill_protocols_per_epoch}/{len(cold_distill_signal._protocols)} "
-        f"(zero-embedding trajectory MSE vs simulate_full_body on a broad "
-        f"protocol pool; 0=disabled)",
+        f"(rate + long-level on teacher internals; 0=disabled)",
     )
     print(
         f"Physiology rules: weight={physiology_rules_weight} "
@@ -1142,6 +1140,7 @@ def train(
         "cold_distill_anchor_local_scale_floor": cold_distill_anchor_local_scale_floor,
         "cold_distill_anchor_long_window": cold_distill_anchor_long_window,
         "cold_distill_anchor_long_samples": cold_distill_anchor_long_samples,
+        "cold_distill_anchor_long_only": list(cold_distill_anchor_long_only),
         "physiology_rules_weight": physiology_rules_weight,
         "physiology_rules_sample_patients": physiology_rules_sample_patients,
         "physiology_rules_adaptive": physiology_rules_adaptive,
@@ -1826,12 +1825,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help=(
             "Weight for the cold-model distillation signal: the learned model, at a "
             "per-protocol embedding calibrated to the teacher's observed markers, is "
-            "matched to simulate_full_body over a broad protocol pool (standard meal "
-            "days, OGTT, 24h fast, high-fat meal, phase-shifted day, grazing, exercise "
-            "day) on the unobserved markers listed in --cold-distill-markers. Loss "
-            "shape is --cold-distill-mode (the dispatch recipe uses 'anchored' = "
-            "teacher-forced rate matching + free-rollout level anchors). Phase-2 "
-            "gated. 0 disables (default)."
+            "matched to simulate_full_body over a broad protocol pool on teacher-internal "
+            "markers listed in --cold-distill-markers (not hormones a cohort statistic "
+            "already owns). Loss shape is --cold-distill-mode (the dispatch recipe uses "
+            "'anchored' = teacher-forced rate matching + free-rollout level anchors; "
+            "slow states in --cold-distill-anchor-long-only skip rate and short level). "
+            "Phase-2 gated. 0 disables (default)."
         ),
     )
     parser.add_argument(
@@ -1840,8 +1839,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "':'-separated marker ids distilled from the cold model by "
-            "--cold-distill-weight. Default None uses train()'s marker list "
-            "(glycogen, mito, CRH, insulin_action, fat_mass, insulin_slow included)."
+            "--cold-distill-weight. Default None uses the teacher-internal set "
+            "(CRH, insulin_action, insulin_slow, mito, fat_mass, bile pools)."
         ),
     )
     parser.add_argument(
@@ -1938,6 +1937,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help=(
             "mode='anchored' only: how many long windows per protocol per epoch. "
             "Keep small — each retains ~window steps of autograd graph."
+        ),
+    )
+    parser.add_argument(
+        "--cold-distill-anchor-long-only",
+        type=str,
+        default=None,
+        help=(
+            "':'-separated markers scored only on long level windows (no rate "
+            "matching, no 60-minute level). Default is mitochondrial_capacity "
+            "and fat_mass. Empty string disables."
         ),
     )
     parser.add_argument(
@@ -2253,6 +2262,8 @@ def main():
         cold_distill_anchor_local_scale_floor=args.cold_distill_anchor_local_scale_floor,
         cold_distill_anchor_long_window=args.cold_distill_anchor_long_window,
         cold_distill_anchor_long_samples=args.cold_distill_anchor_long_samples,
+        **({} if args.cold_distill_anchor_long_only is None
+           else {"cold_distill_anchor_long_only": _split_markers(args.cold_distill_anchor_long_only)}),
         physiology_rules_weight=args.physiology_rules_weight,
         physiology_rules_sample_patients=args.physiology_rules_sample_patients,
         physiology_rules_adaptive=args.physiology_rules_adaptive,

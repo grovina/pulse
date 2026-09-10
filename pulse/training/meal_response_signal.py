@@ -123,8 +123,8 @@ class MealResponseSignal(TrainingSignal):
             return SignalResult()
 
         device = ctx.device
-        # Sample from the patients that actually HAVE a teacher meal-response target (only
-        # full_body simulates a whole patient, ~45% of the mix). The shared
+        # Sample from the patients that actually HAVE a teacher meal-response target
+        # (FullBody is the training mix). The shared
         # select_supervised_embeddings helper samples over all n_patients and prepends the zero
         # embedding, neither of which is right here: a patient without a target has nothing to
         # supervise, and the default patient's amplitude is already covered by dose-response.

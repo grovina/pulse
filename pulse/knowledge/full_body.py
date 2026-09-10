@@ -27,6 +27,7 @@ import numpy as np
 
 from ..types import STATE_DIM, MARKER_INDEX
 from .base import Episode, KnowledgeContribution, CouplingPrior
+from .evidence import TEACHER_TAPE_MARKERS, mask_trajectory
 
 
 def _circadian(t_abs_min: float, amplitude: float, peak_hour: float) -> float:
@@ -1950,7 +1951,7 @@ class FullBody(KnowledgeContribution):
             )
 
             episodes.append(Episode(
-                trajectory=trajectory,
+                trajectory=mask_trajectory(trajectory, TEACHER_TAPE_MARKERS),
                 meals=meals,
                 duration_min=duration_min,
                 start_hour=start_hour,

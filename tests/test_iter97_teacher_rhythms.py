@@ -130,17 +130,25 @@ class TestGeneratorsAreViews(unittest.TestCase):
         self.assertEqual(ep.source, "cardiovascular_dynamics")
 
     def test_views_are_bit_identical_to_the_coupled_teacher(self):
-        """Same seed -> the view IS the coupled teacher's episode, masked. The old
-        standalone generator taught a cortisol nadir of 16.5 against full_body's ~4."""
+        """Same seed -> the view IS the coupled teacher's episode, masked.
+
+        FullBody's *training tape* is wearable vitals only; views still expose
+        generator internals. Overlapping columns must match; hormones on the
+        tape must be NaN.
+        """
+        from pulse.knowledge.evidence import TEACHER_TAPE_MARKERS
         from pulse.knowledge.full_body import FullBody
         for cls, view in ((CortisolCircadian, CC_VIEW), (BergmanGlucoseInsulin, BG_VIEW),
                           (CardiovascularDynamics, CV_VIEW)):
             ep = cls().generate_episodes(1, np.random.default_rng(5))[0]
             ref = FullBody(n_days=3).generate_episodes(1, np.random.default_rng(5))[0]
             for m in view:
-                np.testing.assert_array_equal(ep.trajectory[:, MI[m]], ref.trajectory[:, MI[m]])
-        c = ep.trajectory[1440:2880, MI["cortisol"]] if False else \
-            CortisolCircadian().generate_episodes(1, np.random.default_rng(5))[0].trajectory[1440:2880, MI["cortisol"]]
+                if m in TEACHER_TAPE_MARKERS:
+                    np.testing.assert_array_equal(ep.trajectory[:, MI[m]], ref.trajectory[:, MI[m]])
+                else:
+                    self.assertTrue(np.isnan(ref.trajectory[:, MI[m]]).all(), m)
+                    self.assertFalse(np.isnan(ep.trajectory[:, MI[m]]).any(), m)
+        c = CortisolCircadian().generate_episodes(1, np.random.default_rng(5))[0].trajectory[1440:2880, MI["cortisol"]]
         self.assertLess(c.min(), 7.0)
 
 
