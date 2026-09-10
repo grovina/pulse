@@ -492,7 +492,9 @@ MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
         "fat_mass", "gut.glucose_appearance",
     ),
     "stress": ("glucose", "cortisol"),
-    "cardiovascular": ("cortisol", "temp", "glucose", "insulin"),
+    "cardiovascular": (
+        "cortisol", "temp", "glucose", "insulin", "gut.glucose_appearance",
+    ),
     "thermoreg": (
         "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance", "cortisol",
     ),

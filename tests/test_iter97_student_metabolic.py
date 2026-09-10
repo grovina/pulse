@@ -447,5 +447,42 @@ class TestVolumeAndEnergy(unittest.TestCase):
         self.assertLess(float(tr[-1, MI["fat_mass"]]), float(tr[0, MI["fat_mass"]]) - 0.05)
 
 
+class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
+    """Lipid and amino appearance already sit on the metabolic coupling vector.
+    They used to affect only the fat-mass calorie residual; the teacher also
+    puts them on FFA and glucagon."""
+
+    def test_lipid_appearance_is_an_ffa_source_amino_is_a_glucagon_source(self) -> None:
+        m = _model(0, perturb=0.5)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, app=0.0)
+        coupling[:, M._LIPID_COUPLING_IDX] = 0.4
+        coupling[:, M._AMINO_COUPLING_IDX] = 0.6
+        with torch.no_grad():
+            f = met.fluxes(state, coupling, external, emb, tf)
+            rate = met(state, coupling, external, emb, tf)
+            prod, cons = f["prod_raw"], f["cons_raw"]
+            mito, raw = f["mito"], met.raw_state(state)
+        torch.testing.assert_close(f["ffa_from_lipid"], M._FFA_FROM_LIPID * coupling[:, M._LIPID_COUPLING_IDX])
+        torch.testing.assert_close(f["glucagon_from_amino"], M._GN_FROM_AMINO * coupling[:, M._AMINO_COUPLING_IDX])
+        ffa_ma = (prod[:, M._FFA_IDX] * met.prod_scale[M._FFA_IDX]
+                  - cons[:, M._FFA_IDX] * met.cons_scale[M._FFA_IDX] * mito * raw[:, M._FFA_IDX])
+        gn_ma = (prod[:, M._GLUCAGON_IDX] * met.prod_scale[M._GLUCAGON_IDX]
+                 - cons[:, M._GLUCAGON_IDX] * met.cons_scale[M._GLUCAGON_IDX] * raw[:, M._GLUCAGON_IDX])
+        torch.testing.assert_close(rate[:, M._FFA_IDX], ffa_ma + f["ffa_from_lipid"], atol=1e-6, rtol=1e-5)
+        torch.testing.assert_close(rate[:, M._GLUCAGON_IDX], gn_ma + f["glucagon_from_amino"], atol=1e-6, rtol=1e-5)
+
+    def test_carb_appearance_does_not_create_those_terms(self) -> None:
+        m = _model(1, perturb=0.5)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, app=2.0)
+        self.assertEqual(float(coupling[:, M._LIPID_COUPLING_IDX].abs().sum()), 0.0)
+        self.assertEqual(float(coupling[:, M._AMINO_COUPLING_IDX].abs().sum()), 0.0)
+        with torch.no_grad():
+            f = met.fluxes(state, coupling, external, emb, tf)
+        self.assertEqual(float(f["ffa_from_lipid"].abs().sum()), 0.0)
+        self.assertEqual(float(f["glucagon_from_amino"].abs().sum()), 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

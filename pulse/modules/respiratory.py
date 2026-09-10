@@ -4,6 +4,9 @@ Respiratory module.
 Respiratory rate and SpO₂. Lactate and temperature are the coupling inputs.
 RR relaxes to a per-patient setpoint; SpO₂ is stepped in logit coordinates of
 (70, 100) by the integrator so saturation cannot leave that interval.
+Above moderate effort, SpO₂ has the teacher's exercise dip
+(``spo2_exercise_dip * relu(activity − 0.5)``) so the marker is not a
+constant that a 95–100 band can pass.
 """
 
 import math
@@ -29,6 +32,10 @@ _K_MIN, _K_RANGE, _K_INIT = 0.02, 0.20, 0.08
 _LOG_K_INIT = math.log(
     ((_K_INIT - _K_MIN) / _K_RANGE) / (1.0 - (_K_INIT - _K_MIN) / _K_RANGE)
 )
+_ACTIVITY_EXTERNAL_IDX = 0
+# Teacher PatientParams.spo2_exercise_dip. Zero at rest and easy activity.
+_SPO2_EXERCISE_DIP = 1.5
+_SPO2_ACT_THRESH = 0.5
 
 
 class RespiratoryModule(LearnedDynamicsModule):
@@ -69,4 +76,8 @@ class RespiratoryModule(LearnedDynamicsModule):
         k = _K_MIN + _K_RANGE * torch.sigmoid(self.log_k)
         sp = self.setpoints_raw(embedding)
         raw = self.rsp_center + self.rsp_scale * state
-        return driver - k * (raw - sp)
+        rate = driver - k * (raw - sp)
+        act = external[..., _ACTIVITY_EXTERNAL_IDX]
+        spo2_ex = _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH)
+        rate_spo2 = rate[..., _SPO2] - spo2_ex
+        return torch.stack([rate[..., _RR], rate_spo2], dim=-1)

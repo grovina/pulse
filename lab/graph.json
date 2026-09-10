@@ -764,6 +764,12 @@
     {
       "source": "gut.glucose_appearance",
       "source_module": "gut",
+      "target_module": "cardiovascular",
+      "sign": 1
+    },
+    {
+      "source": "gut.glucose_appearance",
+      "source_module": "gut",
       "target_module": "thermoreg",
       "sign": 1
     },

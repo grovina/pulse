@@ -17,6 +17,7 @@ from pulse.model import (
 )
 from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
+from pulse.modules import respiratory as R
 from pulse.types import (
     EMBEDDING_DIM, MARKER_INDEX as MI, MODULE_COUPLING_CHANNELS, NORM_CENTER,
     PHYSIOLOGICAL_MAX, PHYSIOLOGICAL_MIN, STATE_DIM, TIME_FEATURES_DIM,
@@ -241,6 +242,31 @@ class TestConstruction(unittest.TestCase):
             self.assertEqual(
                 int(mod.n_coupling), len(MODULE_COUPLING_CHANNELS[name]), name,
             )
+        self.assertIn("gut.glucose_appearance", MODULE_COUPLING_CHANNELS["cardiovascular"])
+
+    def test_spo2_falls_only_above_moderate_effort(self) -> None:
+        """Teacher dSpO2 -= spo2_exercise_dip * relu(act − 0.5). MLP is zero-init."""
+        m = ModularPhysiologyNetwork(respiratory_hidden=16)
+        rsp = m.respiratory
+        emb = torch.zeros(1, rsp.setpoint_net[0].in_features)
+        state = torch.zeros(1, 2)
+        coupling = torch.zeros(1, R._N_COUPLING)
+        tf = torch.tensor([[0.0, 1.0, 0.0, 1.0]])
+        rest = torch.tensor([[0.0, 1.0]])
+        easy = torch.tensor([[0.4, 1.0]])
+        hard = torch.tensor([[1.0, 1.0]])
+        with torch.no_grad():
+            r_rest = rsp(state, coupling, rest, emb, tf)
+            r_easy = rsp(state, coupling, easy, emb, tf)
+            r_hard = rsp(state, coupling, hard, emb, tf)
+        self.assertAlmostEqual(float(r_rest[0, 1]), 0.0, places=5)
+        self.assertAlmostEqual(float(r_easy[0, 1]), 0.0, places=5)
+        self.assertAlmostEqual(
+            float(r_hard[0, 1] - r_rest[0, 1]),
+            -R._SPO2_EXERCISE_DIP * (1.0 - R._SPO2_ACT_THRESH),
+            places=5,
+        )
+        torch.testing.assert_close(r_hard[0, 0], r_rest[0, 0], atol=1e-6, rtol=0)
 
 
 if __name__ == "__main__":

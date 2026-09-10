@@ -7,6 +7,9 @@ remote-insulin latent. Mass-action kinetics where the state IS a species in
 equilibrium; explicit structural forms where it is not (glucose, the pools,
 hepatic output, insulin action — the PRD's "relaxation (c)"). Receives nutrient
 appearance from Gut, cortisol from Stress and GLP-1 from Appetite.
+Lipid appearance is an FFA source and amino appearance a glucagon source
+(the teacher's ``0.01 * Ra_fat`` / ``0.02 * Ra_protein``), not just calories
+into fat mass.
 
 ITER 97 — Gb IS A DERIVED FIXED POINT, AND THE CARBON BUDGET CLOSES IN ONE UNIT
 (review 2026-09-04, items 2.2, 2.6, 3.3, 3.4, 3.10, 3.11; mirrors the teacher's
@@ -196,6 +199,11 @@ _KCAL_PER_KG_FAT = 7700.0
 _BMR_KCAL_PER_MIN = 1.15
 _ACT_KCAL_PER_MIN = 4.0
 _LIPID_UNITS_PER_G = 3.0
+# Teacher full_body.py: dFFA += 0.01 * Ra_fat, dGn += 0.02 * Ra_protein.
+# Lipid/amino appearance already arrive on the coupling vector; without these
+# terms they only entered the fat-mass calorie residual.
+_FFA_FROM_LIPID = 0.01
+_GN_FROM_AMINO = 0.02
 _K_MITO = 1.0 / (14.0 * 1440.0)
 _MITO_TRAIN_GAIN = 2.0e-5
 _MITO_LOG_MAX = 0.4
@@ -654,11 +662,15 @@ class MetabolicModule(MassActionModule):
         ketogenesis = (nn.functional.softplus(self.log_k_keto) * relu(ffa - ffa_b)
                        / (1.0 + ins_excess / keto_ins_supp))
 
-        lipid_g = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
-        amino_g = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        lipid_app = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0)
+        amino_app = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0)
+        lipid_g = lipid_app / _LIPID_UNITS_PER_G
+        amino_g = amino_app / _LIPID_UNITS_PER_G
         kcal_in = 4.0 * app_g + 9.0 * lipid_g + 4.0 * amino_g
         kcal_out = _BMR_KCAL_PER_MIN * (mass_kg / BODY_MASS_KG) + _ACT_KCAL_PER_MIN * act
         fat_rate = (kcal_in - kcal_out) / _KCAL_PER_KG_FAT
+        ffa_from_lipid = _FFA_FROM_LIPID * lipid_app
+        glucagon_from_amino = _GN_FROM_AMINO * amino_app
 
         mito_rate = -_K_MITO * (mito - mito_sp) + _MITO_TRAIN_GAIN * relu(act - 0.2)
         lactate_from_glyco = _LAC_GLYCO_GAIN * brk_muscle
@@ -684,6 +696,7 @@ class MetabolicModule(MassActionModule):
             "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis, "fat_rate": fat_rate, "mito_rate": mito_rate,
             "lactate_from_glyco": lactate_from_glyco, "mito_sp": mito_sp,
+            "ffa_from_lipid": ffa_from_lipid, "glucagon_from_amino": glucagon_from_amino,
         }
 
     def forward(
@@ -702,6 +715,8 @@ class MetabolicModule(MassActionModule):
         for idx in (_FFA_IDX, _BHB_IDX, _LACTATE_IDX):
             out[..., idx] = (prod_raw[..., idx] * self.prod_scale[idx]
                              - cons_raw[..., idx] * self.cons_scale[idx] * mito * raw[..., idx])
+        out[..., _FFA_IDX] = out[..., _FFA_IDX] + f["ffa_from_lipid"]
+        out[..., _GLUCAGON_IDX] = out[..., _GLUCAGON_IDX] + f["glucagon_from_amino"]
         out[..., _BHB_IDX] = out[..., _BHB_IDX] + f["ketogenesis"]
         out[..., _LACTATE_IDX] = out[..., _LACTATE_IDX] + f["lactate_from_glyco"]
         out[..., _GLUCOSE_IDX] = (

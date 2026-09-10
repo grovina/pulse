@@ -2,9 +2,11 @@
 Cardiovascular module.
 
 Heart rate, HRV, systolic BP, diastolic BP.
-Receives cortisol from Stress, temperature from Thermoregulation, and
-glucose + insulin from Metabolic so postprandial sympathetic / autonomic
-effects can reach HR and BP.
+Receives cortisol from Stress, temperature from Thermoregulation,
+glucose + insulin from Metabolic, and gut glucose appearance. Meal HR is
+driven by appearance (``meal_hr_gain * Ra / (Ra + K_ra)``), the same
+stimulus the teacher uses — glucose and insulin lag absorption, so they
+cannot time the +5–10 bpm rise.
 
 Architectural constraints (iter 97 — now actually enforced, see below):
   SBP > DBP  (physical — systolic is during contraction, diastolic during
@@ -34,8 +36,9 @@ gate failure through iter 88). The TEACHER (full_body.py) models every vital
 with an explicit per-patient setpoint — dHR = -k_hr·(HR − HR0 − circ − sleep)
 + drivers — and this module mirrors that: an ADDITIVE first-order restoring
 term toward a per-patient setpoint, on top of the learned MLP which carries
-the autonomic DRIVERS (cortisol / temperature / glucose / insulin / activity /
-circadian). The MLP still sees UNCENTERED normalized state, so nothing shifts
+the autonomic DRIVERS (cortisol / temperature / glucose / insulin / appearance /
+activity / circadian). Meal HR is a structural term on appearance, matching the
+teacher; the MLP still sees UNCENTERED normalized state, so nothing shifts
 between training and zero-embedding calibration; only an explicit
 ``-k·(state − setpoint)`` force is added, with a zero-init setpoint head so
 the default patient rests at NORM_CENTER and per-patient authority grows from
@@ -127,6 +130,14 @@ _CVS_LOG_K_INIT = math.log(
     ((_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE) / (1.0 - (_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE)
 )
 
+# Teacher PatientParams.meal_hr_gain / K_ra_norm. Appearance is mg/dL/min
+# in the 70 kg reference space (same units as the gut glucose channel).
+_MEAL_HR_GAIN = 3.0
+_K_RA_NORM = 1.06
+_APPEARANCE_COUPLING_IDX = MODULE_COUPLING_CHANNELS["cardiovascular"].index(
+    "gut.glucose_appearance"
+)
+
 
 class CardiovascularModule(LearnedDynamicsModule):
     def __init__(self, embedding_dim: int, hidden_dim: int = 48):
@@ -201,7 +212,9 @@ class CardiovascularModule(LearnedDynamicsModule):
         hr_sp, hrv_sp, sbp_sp, dbp_sp = sp[..., 0], sp[..., 1], sp[..., 2], sp[..., 3]
         pp_sp = sbp_sp - dbp_sp
 
-        rate_hr = driver[..., _HR] - k[_HR] * (hr - hr_sp)
+        ra = coupling[..., _APPEARANCE_COUPLING_IDX].clamp(min=0.0)
+        meal_hr = _MEAL_HR_GAIN * ra / (ra + _K_RA_NORM)
+        rate_hr = driver[..., _HR] - k[_HR] * (hr - hr_sp) + meal_hr
         rate_dbp = driver[..., _DBP] - k[_DBP] * (dbp - dbp_sp)
         # Log-space relaxations, returned as RAW rates (x · d log x / dt).
         hrv_target = hrv_sp * hr_sp / hr.clamp(min=40.0)

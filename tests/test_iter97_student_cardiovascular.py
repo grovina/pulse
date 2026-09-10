@@ -79,7 +79,7 @@ class TestSetpointsAreOrdered(unittest.TestCase):
         state = torch.zeros(1, 4)
         state[0, 1] = 0.4 / 15.0   # HRV = 40.4 ms (setpoint 40)
         with torch.no_grad():
-            rate = cvs(state, torch.zeros(1, 4), torch.zeros(1, 2), emb, torch.tensor([[0.0, 1.0, 0.0, 1.0]]))
+            rate = cvs(state, torch.zeros(1, C._N_COUPLING), torch.zeros(1, 2), emb, torch.tensor([[0.0, 1.0, 0.0, 1.0]]))
             k = C._CVS_K_MIN + C._CVS_K_RANGE * torch.sigmoid(cvs.log_k)
         self.assertAlmostEqual(float(rate[0, 1]), float(-k[1] * 0.4), delta=0.01 * float(k[1] * 0.4))
 
@@ -120,6 +120,63 @@ class TestTrajectoriesStayOrderedAndPositive(unittest.TestCase):
         rates[0, _HRV] = 0.3; rates[0, _SBP] = -0.2; rates[0, _DBP] = 0.1
         new = euler_step(state, rates, 1.0)
         torch.testing.assert_close(new, state + rates, atol=2e-3, rtol=0)
+
+
+class TestMealAppearanceDrivesHeartRate(unittest.TestCase):
+    """Teacher dHR += meal_hr_gain * Ra / (Ra + K_ra). The MLP is zero-init,
+    so the structural term is the whole meal effect at a fresh module."""
+
+    def test_appearance_raises_hr_rate_by_the_teacher_term(self) -> None:
+        m = ModularPhysiologyNetwork(metabolic_hidden=16, cardiovascular_hidden=16)
+        cvs = m.cardiovascular
+        emb = torch.zeros(1, cvs.setpoint_net[0].in_features)
+        state = torch.zeros(1, 4)
+        tf = torch.tensor([[0.0, 1.0, 0.0, 1.0]])
+        ext = torch.zeros(1, 2)
+        c0 = torch.zeros(1, C._N_COUPLING)
+        c1 = c0.clone()
+        c1[0, C._APPEARANCE_COUPLING_IDX] = 2.0
+        with torch.no_grad():
+            r0 = cvs(state, c0, ext, emb, tf)
+            r1 = cvs(state, c1, ext, emb, tf)
+        expected = C._MEAL_HR_GAIN * 2.0 / (2.0 + C._K_RA_NORM)
+        self.assertAlmostEqual(float(r1[0, 0] - r0[0, 0]), expected, places=5)
+        torch.testing.assert_close(r1[0, 1:], r0[0, 1:], atol=1e-6, rtol=0)
+
+    def test_zero_appearance_adds_nothing(self) -> None:
+        m = ModularPhysiologyNetwork(metabolic_hidden=16, cardiovascular_hidden=16)
+        cvs = m.cardiovascular
+        emb = torch.zeros(1, cvs.setpoint_net[0].in_features)
+        with torch.no_grad():
+            r = cvs(
+                torch.zeros(1, 4), torch.zeros(1, C._N_COUPLING),
+                torch.zeros(1, 2), emb, torch.tensor([[0.0, 1.0, 0.0, 1.0]]),
+            )
+        self.assertAlmostEqual(float(r[0, 0]), 0.0, places=5)
+
+    def test_carb_meal_raises_hr_through_integrate_fat_meal_does_not(self) -> None:
+        from pulse.modules.gut import MealEvent
+        m = ModularPhysiologyNetwork(metabolic_hidden=16, cardiovascular_hidden=16)
+        n = 90
+        start = 480
+        typ = torch.tensor(NORM_CENTER)
+        emb = torch.zeros(EMBEDDING_DIM)
+        sw = torch.ones(n)
+        act = torch.zeros(n)
+
+        def _peak(meals):
+            with torch.no_grad():
+                tr = integrate(
+                    m, typ, emb, n, start_time_minutes=start, meals=meals,
+                    sleep_wake=sw, activity=act,
+                )
+            return float(tr[:, _HR].max())
+
+        fasted = _peak([])
+        carb = _peak([MealEvent(5.0, 75.0, 0.0, 0.0)])
+        fat = _peak([MealEvent(5.0, 0.0, 40.0, 0.0)])
+        self.assertGreater(carb - fasted, 2.0)
+        self.assertLess(abs(fat - fasted), 0.3)
 
 
 if __name__ == "__main__":
