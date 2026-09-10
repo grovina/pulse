@@ -11,7 +11,7 @@ import numpy as np
 
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.full_body import (
-    PatientParams, glucose_fluxes, resolve_derived_params, randomize_params,
+    PatientParams, glucose_fluxes, bile_fluxes, resolve_derived_params, randomize_params,
     simulate_full_body, MG_DL_PER_G, BODY_MASS_KG, VG_DL_PER_KG, _meal_absorption,
     _kernel_cutoff_min,
 )
@@ -140,6 +140,18 @@ class TestDerivedFixedPoints(unittest.TestCase):
         total = (traj[:, MI["gallbladder_bile"]] + traj[:, MI["intestinal_bile"]]
                  + traj[:, MI["bile_acids"]] / p.ba_spill_gain)
         self.assertLess(total.max() - total.min(), 1e-3 * total[0])
+
+    def test_bile_fluxes_close_at_the_fixed_point(self):
+        p = resolve_derived_params(PatientParams())
+        fl = bile_fluxes(p, p.CCK_b, p.GB_b, p.INT_b, p.BA_b, 0.0, 0.0, 0.0)
+        self.assertAlmostEqual(fl["residual"], 0.0, places=9)
+        self.assertAlmostEqual(fl["synth"], fl["faecal"], places=9)
+
+    def test_cholestasis_opens_a_hole_in_the_bile_ledger(self):
+        p = resolve_derived_params(PatientParams())
+        p.k_canalicular = 0.2
+        fl = bile_fluxes(p, p.CCK_b, p.GB_b, p.INT_b, p.BA_b, 0.0, 0.0, 0.0)
+        self.assertGreater(abs(fl["residual"]), 1e-4)
 
 
 class TestFastedState(unittest.TestCase):

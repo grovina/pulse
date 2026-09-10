@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pulse lab — coupling graph</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <div class="stage">
+    <header class="top">
+      <div class="identity">
+        <p class="kicker">Pulse lab</p>
+        <h1>Coupling graph</h1>
+        <p class="lede" id="run-blurb">Teacher, default patient.</p>
+      </div>
+      <nav class="protocols" id="protocols" aria-label="Protocols"></nav>
+    </header>
+
+    <div class="work">
+      <section class="field" aria-label="Module coupling graph">
+        <div class="badges" id="badges" aria-live="polite"></div>
+        <nav class="layers" id="layers" aria-label="Layers"></nav>
+        <svg id="graph" viewBox="0 0 1100 860" role="img" aria-labelledby="graph-title">
+          <title id="graph-title">Pulse modules, couplings, and conserved loops</title>
+          <g id="edges"></g>
+          <g id="loops"></g>
+          <g id="nodes"></g>
+          <g id="waypoints"></g>
+          <g id="sats"></g>
+        </svg>
+        <p class="hint" id="hint">Carbon and bile are conserved loops. Oxidation and faecal loss are holes.</p>
+      </section>
+
+      <aside class="readout" aria-label="Readout">
+        <h2>Readout</h2>
+        <p class="clock" id="clock">06:00</p>
+        <p class="phase" id="phase"></p>
+        <div id="readout-rows"></div>
+        <div id="ledger"></div>
+        <h3 id="module-heading">Module</h3>
+        <div id="module-rows"></div>
+      </aside>
+    </div>
+
+    <footer class="transport">
+      <button type="button" id="play" aria-pressed="false">Play</button>
+      <label class="time-wrap">
+        <span class="sr">Time</span>
+        <input id="scrub" type="range" min="0" max="0" value="0" step="1">
+      </label>
+      <label class="num">
+        Speed
+        <select id="speed">
+          <option value="20">20×</option>
+          <option value="80" selected>80×</option>
+          <option value="240">240×</option>
+          <option value="720">720×</option>
+        </select>
+      </label>
+      <label class="explode-wrap">
+        Explode
+        <input id="explode" type="range" min="0" max="100" value="0" step="1">
+      </label>
+    </footer>
+  </div>
+  <script src="viewer.js"></script>
+</body>
+</html>

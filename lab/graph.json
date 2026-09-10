@@ -1,0 +1,1072 @@
+{
+  "schema": "pulse.lab.graph.v2",
+  "modules": [
+    {
+      "id": "gut",
+      "name": "Gut",
+      "kind": "kernel",
+      "x": 0.5,
+      "y": 0.7,
+      "markers": [],
+      "channels": [
+        "gut.glucose_appearance",
+        "gut.lipid_appearance",
+        "gut.amino_appearance",
+        "gut.nutrient_flag",
+        "duodenal.fat",
+        "duodenal.protein",
+        "duodenal.carb"
+      ]
+    },
+    {
+      "id": "metabolic",
+      "name": "Metabolic",
+      "kind": "mass_action",
+      "x": 0.5,
+      "y": 0.52,
+      "markers": [
+        "glucose",
+        "insulin",
+        "glucagon",
+        "ffa",
+        "bhb",
+        "lactate",
+        "hepatic_output",
+        "liver_glycogen",
+        "muscle_glycogen",
+        "mitochondrial_capacity",
+        "insulin_action",
+        "fat_mass"
+      ],
+      "channels": []
+    },
+    {
+      "id": "appetite",
+      "name": "Appetite",
+      "kind": "mass_action",
+      "x": 0.22,
+      "y": 0.52,
+      "markers": [
+        "ghrelin",
+        "leptin",
+        "glp1",
+        "insulin_slow"
+      ],
+      "channels": []
+    },
+    {
+      "id": "stress",
+      "name": "Stress",
+      "kind": "mass_action",
+      "x": 0.5,
+      "y": 0.16,
+      "markers": [
+        "cortisol",
+        "acth",
+        "crh"
+      ],
+      "channels": []
+    },
+    {
+      "id": "cardiovascular",
+      "name": "Heart",
+      "kind": "learned",
+      "x": 0.34,
+      "y": 0.34,
+      "markers": [
+        "hr",
+        "hrv",
+        "sbp",
+        "dbp"
+      ],
+      "channels": []
+    },
+    {
+      "id": "thermoreg",
+      "name": "Heat",
+      "kind": "learned",
+      "x": 0.22,
+      "y": 0.78,
+      "markers": [
+        "temp"
+      ],
+      "channels": []
+    },
+    {
+      "id": "respiratory",
+      "name": "Breath",
+      "kind": "learned",
+      "x": 0.66,
+      "y": 0.34,
+      "markers": [
+        "rr",
+        "spo2"
+      ],
+      "channels": []
+    },
+    {
+      "id": "hepatobiliary",
+      "name": "Bile",
+      "kind": "mass_action",
+      "x": 0.78,
+      "y": 0.52,
+      "markers": [
+        "cck",
+        "gallbladder_bile",
+        "intestinal_bile",
+        "bile_acids"
+      ],
+      "channels": []
+    }
+  ],
+  "markers": [
+    {
+      "id": "glucose",
+      "name": "Blood Glucose",
+      "label": "Glucose",
+      "unit": "mg/dL",
+      "module": "metabolic",
+      "typical": 95,
+      "ui_system": "metabolic",
+      "min": 40,
+      "max": 400,
+      "color": "#f59e0b",
+      "phys_min": 0.0,
+      "phys_max": 695.0,
+      "norm_center": 95.0,
+      "norm_scale": 30.0
+    },
+    {
+      "id": "insulin",
+      "name": "Insulin",
+      "label": "Insulin",
+      "unit": "\u03bcU/mL",
+      "module": "metabolic",
+      "typical": 10,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 200,
+      "color": "#f97316",
+      "phys_min": 0.0,
+      "phys_max": 210.0,
+      "norm_center": 10.0,
+      "norm_scale": 10.0
+    },
+    {
+      "id": "glucagon",
+      "name": "Glucagon",
+      "label": "Glucagon",
+      "unit": "pg/mL",
+      "module": "metabolic",
+      "typical": 70,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 500,
+      "color": "#eab308",
+      "phys_min": 0.0,
+      "phys_max": 470.0,
+      "norm_center": 70.0,
+      "norm_scale": 20.0
+    },
+    {
+      "id": "ffa",
+      "name": "Free Fatty Acids",
+      "label": "FFA",
+      "unit": "mmol/L",
+      "module": "metabolic",
+      "typical": 0.5,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 3,
+      "color": "#d97706",
+      "phys_min": 0.0,
+      "phys_max": 4.5,
+      "norm_center": 0.5,
+      "norm_scale": 0.2
+    },
+    {
+      "id": "bhb",
+      "name": "\u03b2-Hydroxybutyrate",
+      "label": "BHB",
+      "unit": "mmol/L",
+      "module": "metabolic",
+      "typical": 0.1,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 10,
+      "color": "#ca8a04",
+      "phys_min": 0.0,
+      "phys_max": 10.1,
+      "norm_center": 0.1,
+      "norm_scale": 0.5
+    },
+    {
+      "id": "lactate",
+      "name": "Lactate",
+      "label": "Lactate",
+      "unit": "mmol/L",
+      "module": "metabolic",
+      "typical": 1.0,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 20,
+      "color": "#a16207",
+      "phys_min": 0.0,
+      "phys_max": 7.0,
+      "norm_center": 1.0,
+      "norm_scale": 0.3
+    },
+    {
+      "id": "hepatic_output",
+      "name": "Hepatic glucose output",
+      "label": "Hepatic output",
+      "unit": "mg/kg/min",
+      "module": "metabolic",
+      "typical": 2.0,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 12,
+      "color": "#b45309",
+      "phys_min": 0.0,
+      "phys_max": 26.0,
+      "norm_center": 2.0,
+      "norm_scale": 1.2
+    },
+    {
+      "id": "ghrelin",
+      "name": "Ghrelin",
+      "label": "Ghrelin",
+      "unit": "pg/mL",
+      "module": "appetite",
+      "typical": 100,
+      "ui_system": "hormonal",
+      "min": 20,
+      "max": 300,
+      "color": "#a78bfa",
+      "phys_min": 0.0,
+      "phys_max": 900.0,
+      "norm_center": 100.0,
+      "norm_scale": 40.0
+    },
+    {
+      "id": "leptin",
+      "name": "Leptin",
+      "label": "Leptin",
+      "unit": "ng/mL",
+      "module": "appetite",
+      "typical": 10,
+      "ui_system": "hormonal",
+      "min": 1,
+      "max": 50,
+      "color": "#8b5cf6",
+      "phys_min": 0.0,
+      "phys_max": 70.0,
+      "norm_center": 10.0,
+      "norm_scale": 3.0
+    },
+    {
+      "id": "glp1",
+      "name": "GLP-1",
+      "label": "GLP-1",
+      "unit": "pmol/L",
+      "module": "appetite",
+      "typical": 10,
+      "ui_system": "hormonal",
+      "min": 2,
+      "max": 100,
+      "color": "#7c3aed",
+      "phys_min": 0.0,
+      "phys_max": 310.0,
+      "norm_center": 10.0,
+      "norm_scale": 15.0
+    },
+    {
+      "id": "cortisol",
+      "name": "Cortisol",
+      "label": "Cortisol",
+      "unit": "\u03bcg/dL",
+      "module": "stress",
+      "typical": 12,
+      "ui_system": "hormonal",
+      "min": 1,
+      "max": 40,
+      "color": "#6d28d9",
+      "phys_min": 0.0,
+      "phys_max": 172.0,
+      "norm_center": 12.0,
+      "norm_scale": 8.0
+    },
+    {
+      "id": "acth",
+      "name": "ACTH",
+      "label": "ACTH",
+      "unit": "pg/mL",
+      "module": "stress",
+      "typical": 30,
+      "ui_system": "hormonal",
+      "min": 5,
+      "max": 120,
+      "color": "#5b21b6",
+      "phys_min": 0.0,
+      "phys_max": 390.0,
+      "norm_center": 30.0,
+      "norm_scale": 18.0
+    },
+    {
+      "id": "hr",
+      "name": "Heart Rate",
+      "label": "Heart Rate",
+      "unit": "bpm",
+      "module": "cardiovascular",
+      "typical": 70,
+      "ui_system": "vital",
+      "min": 30,
+      "max": 220,
+      "color": "#f43f5e",
+      "phys_min": 0.0,
+      "phys_max": 270.0,
+      "norm_center": 70.0,
+      "norm_scale": 10.0
+    },
+    {
+      "id": "hrv",
+      "name": "HRV (RMSSD)",
+      "label": "HRV",
+      "unit": "ms",
+      "module": "cardiovascular",
+      "typical": 40,
+      "ui_system": "vital",
+      "min": 0,
+      "max": 300,
+      "color": "#e11d48",
+      "phys_min": 0.0,
+      "phys_max": 340.0,
+      "norm_center": 40.0,
+      "norm_scale": 15.0
+    },
+    {
+      "id": "sbp",
+      "name": "Systolic BP",
+      "label": "Systolic BP",
+      "unit": "mmHg",
+      "module": "cardiovascular",
+      "typical": 120,
+      "ui_system": "vital",
+      "min": 60,
+      "max": 250,
+      "color": "#be123c",
+      "phys_min": 0.0,
+      "phys_max": 320.0,
+      "norm_center": 120.0,
+      "norm_scale": 10.0
+    },
+    {
+      "id": "dbp",
+      "name": "Diastolic BP",
+      "label": "Diastolic BP",
+      "unit": "mmHg",
+      "module": "cardiovascular",
+      "typical": 80,
+      "ui_system": "vital",
+      "min": 30,
+      "max": 150,
+      "color": "#9f1239",
+      "phys_min": 0.0,
+      "phys_max": 240.0,
+      "norm_center": 80.0,
+      "norm_scale": 8.0
+    },
+    {
+      "id": "temp",
+      "name": "Core Temperature",
+      "label": "Temperature",
+      "unit": "\u00b0C",
+      "module": "thermoreg",
+      "typical": 37.0,
+      "ui_system": "vital",
+      "min": 35,
+      "max": 42,
+      "color": "#3b82f6",
+      "phys_min": 31.0,
+      "phys_max": 43.0,
+      "norm_center": 37.0,
+      "norm_scale": 0.3
+    },
+    {
+      "id": "rr",
+      "name": "Respiratory Rate",
+      "label": "Respiratory Rate",
+      "unit": "/min",
+      "module": "respiratory",
+      "typical": 15,
+      "ui_system": "vital",
+      "min": 4,
+      "max": 40,
+      "color": "#6366f1",
+      "phys_min": 0.0,
+      "phys_max": 75.0,
+      "norm_center": 15.0,
+      "norm_scale": 3.0
+    },
+    {
+      "id": "spo2",
+      "name": "SpO\u2082",
+      "label": "SpO\u2082",
+      "unit": "%",
+      "module": "respiratory",
+      "typical": 98,
+      "ui_system": "vital",
+      "min": 70,
+      "max": 100,
+      "color": "#8b5cf6",
+      "phys_min": 70.0,
+      "phys_max": 100.0,
+      "norm_center": 98.0,
+      "norm_scale": 1.5
+    },
+    {
+      "id": "liver_glycogen",
+      "name": "Liver glycogen",
+      "label": "Liver glycogen",
+      "unit": "g",
+      "module": "metabolic",
+      "typical": 100.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 150,
+      "color": "#92400e",
+      "phys_min": 0.0,
+      "phys_max": 1300.0,
+      "norm_center": 100.0,
+      "norm_scale": 60.0
+    },
+    {
+      "id": "muscle_glycogen",
+      "name": "Muscle glycogen",
+      "label": "Muscle glycogen",
+      "unit": "g",
+      "module": "metabolic",
+      "typical": 400.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 600,
+      "color": "#b45309",
+      "phys_min": 0.0,
+      "phys_max": 2400.0,
+      "norm_center": 400.0,
+      "norm_scale": 100.0
+    },
+    {
+      "id": "mitochondrial_capacity",
+      "name": "Mitochondrial capacity",
+      "label": "Mitochondria",
+      "unit": "\u00d7 pop. mean",
+      "module": "metabolic",
+      "typical": 1.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 3,
+      "color": "#78350f",
+      "phys_min": 0.0,
+      "phys_max": 7.0,
+      "norm_center": 1.0,
+      "norm_scale": 0.3
+    },
+    {
+      "id": "crh",
+      "name": "CRH",
+      "label": "CRH",
+      "unit": "pg/mL",
+      "module": "stress",
+      "typical": 100.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 500,
+      "color": "#9f1239",
+      "phys_min": 0.0,
+      "phys_max": 900.0,
+      "norm_center": 100.0,
+      "norm_scale": 40.0
+    },
+    {
+      "id": "insulin_action",
+      "name": "Insulin action (remote)",
+      "label": "Insulin action",
+      "unit": "a.u.",
+      "module": "metabolic",
+      "typical": 0.0,
+      "ui_system": "internal",
+      "min": -5,
+      "max": 5,
+      "color": "#c2410c",
+      "phys_min": -20.0,
+      "phys_max": 20.0,
+      "norm_center": 0.0,
+      "norm_scale": 1.0
+    },
+    {
+      "id": "cck",
+      "name": "Cholecystokinin",
+      "label": "CCK",
+      "unit": "pmol/L",
+      "module": "hepatobiliary",
+      "typical": 1.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 30,
+      "color": "#65a30d",
+      "phys_min": 0.0,
+      "phys_max": 41.0,
+      "norm_center": 1.0,
+      "norm_scale": 2.0
+    },
+    {
+      "id": "gallbladder_bile",
+      "name": "Gallbladder bile acids",
+      "label": "Gallbladder",
+      "unit": "mmol",
+      "module": "hepatobiliary",
+      "typical": 4.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 12,
+      "color": "#4d7c0f",
+      "phys_min": 0.0,
+      "phys_max": 34.0,
+      "norm_center": 4.0,
+      "norm_scale": 1.5
+    },
+    {
+      "id": "intestinal_bile",
+      "name": "Intestinal bile acids",
+      "label": "Intestine",
+      "unit": "mmol",
+      "module": "hepatobiliary",
+      "typical": 1.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 10,
+      "color": "#3f6212",
+      "phys_min": 0.0,
+      "phys_max": 21.0,
+      "norm_center": 1.0,
+      "norm_scale": 1.0
+    },
+    {
+      "id": "bile_acids",
+      "name": "Serum total bile acids",
+      "label": "Serum BA",
+      "unit": "\u00b5mol/L",
+      "module": "hepatobiliary",
+      "typical": 6.0,
+      "ui_system": "metabolic",
+      "min": 0,
+      "max": 100,
+      "color": "#a3e635",
+      "phys_min": 0.0,
+      "phys_max": 86.0,
+      "norm_center": 6.0,
+      "norm_scale": 4.0
+    },
+    {
+      "id": "fat_mass",
+      "name": "Fat mass",
+      "label": "Fat mass",
+      "unit": "kg",
+      "module": "metabolic",
+      "typical": 18.0,
+      "ui_system": "internal",
+      "min": 4,
+      "max": 60,
+      "color": "#78350f",
+      "phys_min": 0.0,
+      "phys_max": 78.0,
+      "norm_center": 18.0,
+      "norm_scale": 3.0
+    },
+    {
+      "id": "insulin_slow",
+      "name": "Insulin (slow)",
+      "label": "Slow insulin",
+      "unit": "\u03bcU/mL",
+      "module": "appetite",
+      "typical": 10.0,
+      "ui_system": "internal",
+      "min": 0,
+      "max": 80,
+      "color": "#c2410c",
+      "phys_min": 0.0,
+      "phys_max": 210.0,
+      "norm_center": 10.0,
+      "norm_scale": 10.0
+    }
+  ],
+  "channels": [
+    {
+      "id": "gut.glucose_appearance",
+      "name": "Glucose appearance",
+      "label": "Glucose appearance",
+      "unit": "mg/dL/min",
+      "module": "gut"
+    },
+    {
+      "id": "gut.lipid_appearance",
+      "name": "Lipid appearance",
+      "label": "Lipid appearance",
+      "unit": "g/min",
+      "module": "gut"
+    },
+    {
+      "id": "gut.amino_appearance",
+      "name": "Amino appearance",
+      "label": "Amino appearance",
+      "unit": "g/min",
+      "module": "gut"
+    },
+    {
+      "id": "gut.nutrient_flag",
+      "name": "Nutrient flag",
+      "label": "Nutrient flag",
+      "unit": "",
+      "module": "gut"
+    },
+    {
+      "id": "duodenal.fat",
+      "name": "Duodenal fat",
+      "label": "Duodenal fat",
+      "unit": "g/min",
+      "module": "gut"
+    },
+    {
+      "id": "duodenal.protein",
+      "name": "Duodenal protein",
+      "label": "Duodenal protein",
+      "unit": "g/min",
+      "module": "gut"
+    },
+    {
+      "id": "duodenal.carb",
+      "name": "Duodenal carbohydrate",
+      "label": "Duodenal carbohydrate",
+      "unit": "g/min",
+      "module": "gut"
+    }
+  ],
+  "edges": [
+    {
+      "source": "gut.glucose_appearance",
+      "source_module": "gut",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "gut.lipid_appearance",
+      "source_module": "gut",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "gut.amino_appearance",
+      "source_module": "gut",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "gut.nutrient_flag",
+      "source_module": "gut",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "cortisol",
+      "source_module": "stress",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "glp1",
+      "source_module": "appetite",
+      "target_module": "metabolic",
+      "sign": 1
+    },
+    {
+      "source": "insulin",
+      "source_module": "metabolic",
+      "target_module": "appetite",
+      "sign": -1
+    },
+    {
+      "source": "duodenal.fat",
+      "source_module": "gut",
+      "target_module": "appetite",
+      "sign": 1
+    },
+    {
+      "source": "duodenal.protein",
+      "source_module": "gut",
+      "target_module": "appetite",
+      "sign": 1
+    },
+    {
+      "source": "duodenal.carb",
+      "source_module": "gut",
+      "target_module": "appetite",
+      "sign": 1
+    },
+    {
+      "source": "fat_mass",
+      "source_module": "metabolic",
+      "target_module": "appetite",
+      "sign": 1
+    },
+    {
+      "source": "gut.glucose_appearance",
+      "source_module": "gut",
+      "target_module": "appetite",
+      "sign": 1
+    },
+    {
+      "source": "glucose",
+      "source_module": "metabolic",
+      "target_module": "stress",
+      "sign": -1
+    },
+    {
+      "source": "cortisol",
+      "source_module": "stress",
+      "target_module": "stress",
+      "sign": -1
+    },
+    {
+      "source": "cortisol",
+      "source_module": "stress",
+      "target_module": "cardiovascular",
+      "sign": 1
+    },
+    {
+      "source": "temp",
+      "source_module": "thermoreg",
+      "target_module": "cardiovascular",
+      "sign": 1
+    },
+    {
+      "source": "glucose",
+      "source_module": "metabolic",
+      "target_module": "cardiovascular",
+      "sign": 1
+    },
+    {
+      "source": "insulin",
+      "source_module": "metabolic",
+      "target_module": "cardiovascular",
+      "sign": 1
+    },
+    {
+      "source": "gut.glucose_appearance",
+      "source_module": "gut",
+      "target_module": "thermoreg",
+      "sign": 1
+    },
+    {
+      "source": "gut.lipid_appearance",
+      "source_module": "gut",
+      "target_module": "thermoreg",
+      "sign": 1
+    },
+    {
+      "source": "gut.amino_appearance",
+      "source_module": "gut",
+      "target_module": "thermoreg",
+      "sign": 1
+    },
+    {
+      "source": "cortisol",
+      "source_module": "stress",
+      "target_module": "thermoreg",
+      "sign": 1
+    },
+    {
+      "source": "lactate",
+      "source_module": "metabolic",
+      "target_module": "respiratory",
+      "sign": 1
+    },
+    {
+      "source": "temp",
+      "source_module": "thermoreg",
+      "target_module": "respiratory",
+      "sign": 1
+    },
+    {
+      "source": "duodenal.fat",
+      "source_module": "gut",
+      "target_module": "hepatobiliary",
+      "sign": 1
+    },
+    {
+      "source": "duodenal.protein",
+      "source_module": "gut",
+      "target_module": "hepatobiliary",
+      "sign": 1
+    }
+  ],
+  "loops": [
+    {
+      "id": "carbon",
+      "name": "Carbon",
+      "unit": "g/min",
+      "color": "#c9a227",
+      "scale": 0.35,
+      "residual_warn": 0.02,
+      "waypoints": [
+        {
+          "id": "gut",
+          "kind": "anchor",
+          "module": "gut",
+          "ox": 0.0,
+          "oy": 0.0,
+          "label": "Gut"
+        },
+        {
+          "id": "glucose",
+          "kind": "pool",
+          "module": "metabolic",
+          "marker": "glucose",
+          "ox": 0.0,
+          "oy": -0.08,
+          "label": "Glucose"
+        },
+        {
+          "id": "liver_glycogen",
+          "kind": "pool",
+          "module": "metabolic",
+          "marker": "liver_glycogen",
+          "ox": 0.11,
+          "oy": 0.01,
+          "label": "Liver glycogen"
+        },
+        {
+          "id": "muscle_glycogen",
+          "kind": "pool",
+          "module": "metabolic",
+          "marker": "muscle_glycogen",
+          "ox": -0.12,
+          "oy": 0.04,
+          "label": "Muscle glycogen"
+        },
+        {
+          "id": "gng",
+          "kind": "inlet",
+          "module": "hepatobiliary",
+          "ox": -0.09,
+          "oy": -0.07,
+          "label": "Gluconeogenesis"
+        },
+        {
+          "id": "oxidized",
+          "kind": "hole",
+          "module": "thermoreg",
+          "ox": 0.08,
+          "oy": 0.0,
+          "label": "Oxidized"
+        }
+      ],
+      "flows": [
+        {
+          "id": "ra",
+          "from": "gut",
+          "to": "glucose",
+          "label": "appearance"
+        },
+        {
+          "id": "syn_L",
+          "from": "glucose",
+          "to": "liver_glycogen",
+          "label": "to liver"
+        },
+        {
+          "id": "glyco",
+          "from": "liver_glycogen",
+          "to": "glucose",
+          "label": "glycogenolysis"
+        },
+        {
+          "id": "gng_rel",
+          "from": "gng",
+          "to": "glucose",
+          "label": "GNG released"
+        },
+        {
+          "id": "gng_divert",
+          "from": "gng",
+          "to": "liver_glycogen",
+          "label": "GNG to glycogen"
+        },
+        {
+          "id": "syn_M",
+          "from": "glucose",
+          "to": "muscle_glycogen",
+          "label": "to muscle"
+        },
+        {
+          "id": "uptake",
+          "from": "glucose",
+          "to": "oxidized",
+          "label": "oxidized"
+        },
+        {
+          "id": "brk_M",
+          "from": "muscle_glycogen",
+          "to": "oxidized",
+          "label": "muscle oxidation"
+        }
+      ],
+      "ledger": [
+        {
+          "id": "ra",
+          "name": "Appearance"
+        },
+        {
+          "id": "oxidized",
+          "name": "Oxidized"
+        },
+        {
+          "id": "residual",
+          "name": "Residual"
+        }
+      ]
+    },
+    {
+      "id": "bile",
+      "name": "Bile",
+      "unit": "mmol/min",
+      "color": "#8aa14a",
+      "scale": 0.06,
+      "residual_warn": 0.0001,
+      "waypoints": [
+        {
+          "id": "gallbladder",
+          "kind": "pool",
+          "module": "hepatobiliary",
+          "marker": "gallbladder_bile",
+          "ox": 0.09,
+          "oy": -0.03,
+          "label": "Gallbladder"
+        },
+        {
+          "id": "intestine",
+          "kind": "pool",
+          "module": "gut",
+          "marker": "intestinal_bile",
+          "ox": 0.13,
+          "oy": 0.0,
+          "label": "Intestine"
+        },
+        {
+          "id": "liver",
+          "kind": "anchor",
+          "module": "hepatobiliary",
+          "ox": 0.0,
+          "oy": 0.0,
+          "label": "Liver"
+        },
+        {
+          "id": "serum",
+          "kind": "pool",
+          "module": "hepatobiliary",
+          "marker": "bile_acids",
+          "ox": 0.03,
+          "oy": -0.13,
+          "label": "Serum BA"
+        },
+        {
+          "id": "synth",
+          "kind": "inlet",
+          "module": "hepatobiliary",
+          "ox": -0.1,
+          "oy": 0.06,
+          "label": "Synthesis"
+        },
+        {
+          "id": "faecal",
+          "kind": "hole",
+          "module": "gut",
+          "ox": 0.16,
+          "oy": 0.1,
+          "label": "Faecal"
+        }
+      ],
+      "flows": [
+        {
+          "id": "empty",
+          "from": "gallbladder",
+          "to": "intestine",
+          "label": "emptying"
+        },
+        {
+          "id": "ileal",
+          "from": "intestine",
+          "to": "liver",
+          "label": "ileal return"
+        },
+        {
+          "id": "fill",
+          "from": "liver",
+          "to": "gallbladder",
+          "label": "filling"
+        },
+        {
+          "id": "direct",
+          "from": "liver",
+          "to": "intestine",
+          "label": "direct bile"
+        },
+        {
+          "id": "spill",
+          "from": "liver",
+          "to": "serum",
+          "label": "spillover"
+        },
+        {
+          "id": "serum_return",
+          "from": "serum",
+          "to": "liver",
+          "label": "serum return"
+        },
+        {
+          "id": "faecal",
+          "from": "intestine",
+          "to": "faecal",
+          "label": "faecal loss"
+        },
+        {
+          "id": "synth",
+          "from": "synth",
+          "to": "liver",
+          "label": "synthesis"
+        }
+      ],
+      "ledger": [
+        {
+          "id": "synth",
+          "name": "Synthesis"
+        },
+        {
+          "id": "faecal",
+          "name": "Faecal loss"
+        },
+        {
+          "id": "residual",
+          "name": "Residual"
+        }
+      ]
+    }
+  ],
+  "readout": [
+    "glucose",
+    "hr",
+    "ghrelin",
+    "cortisol",
+    "temp"
+  ]
+}

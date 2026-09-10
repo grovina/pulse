@@ -1275,6 +1275,92 @@ def glucose_fluxes(
     }
 
 
+def duodenal_delivery(
+    t: float,
+    meals: list[tuple[float, float, float, float]],
+    params: PatientParams,
+) -> dict[str, float]:
+    """Fat, protein, and carbohydrate delivery into the duodenum (g/min)."""
+    fat = sum(
+        _duodenal_delivery(t, mt, mf, params.duo_fast_rate,
+                           params.duo_slow_rate, params.duo_slow_frac)
+        for mt, _mc, mf, _mp in meals
+    )
+    protein = sum(
+        _duodenal_delivery(t, mt, mp, params.duo_fast_rate,
+                           params.duo_slow_rate, params.duo_slow_frac)
+        for mt, _mc, _mf, mp in meals
+    )
+    carb = sum(
+        _duodenal_delivery(t, mt, mc, params.duo_fast_rate,
+                           params.duo_slow_rate, params.duo_slow_frac)
+        for mt, mc, _mf, _mp in meals
+    )
+    return {"fat": fat, "protein": protein, "carb": carb}
+
+
+def bile_fluxes(
+    params: PatientParams,
+    CCK: float, GB: float, INT: float, BA: float,
+    fat_duo: float, prot_duo: float, carb_duo: float,
+) -> dict[str, float]:
+    """Every enterohepatic flux at one instant, in mmol/min.
+
+    Four pools in series. The delay is the point: CCK peaks ~10 min after a
+    meal but serum bile acids peak at 75-120 min, and that gap is gallbladder
+    emptying → intestinal transit → ileal reabsorption → hepatic first-pass
+    happening in sequence. Anchors: docs/iter95-biliary-anchors.md.
+
+    Conservation (when canalicular export is healthy, k_canalicular ≥ 1):
+
+        d(GB + INT) + dBA / spill_gain  =  synthesis − faecal
+
+    Faecal loss is the intended hole; synthesis is the matching inlet. A
+    nonzero residual is a leak — cholestasis (k_canalicular < 1) scales
+    secretion down and the missing mass is the hole.
+    """
+    duo_total = fat_duo + prot_duo + carb_duo
+    fed_gate = duo_total / (duo_total + params.K_mmc_fed)
+    cck_drive = params.cck_fat_gain * fat_duo + params.cck_prot_gain * prot_duo
+    dCCK = -params.k_cck * (CCK - params.CCK_b) + cck_drive
+    cck_excess = max(CCK - params.CCK_b, 0.0)
+    contraction = cck_excess / (cck_excess + params.K_cck_gb)
+    gb_empty = (params.k_gb_eject * contraction
+                + params.k_gb_basal * (1.0 - fed_gate)) * GB
+    ileal_uptake = params.k_ileal * INT
+    portal_return = params.f_ileal * ileal_uptake
+    faecal = (1.0 - params.f_ileal) * ileal_uptake
+    extraction = params.hep_extraction * (
+        params.k_canalicular / (params.k_canalicular + 0.15)
+    ) / (1.0 / (1.0 + 0.15))
+    extraction = min(max(extraction, 0.0), 0.995)
+    spillover = (1.0 - extraction) * portal_return
+    serum_return = params.k_ba * BA / params.ba_spill_gain
+    dBA = params.ba_spill_gain * spillover - params.k_ba * BA
+    ileal_b = params.k_ileal * params.INT_b
+    ba_synth = params.k_ba_synth * (ileal_b / max(ileal_uptake, 0.25 * ileal_b)) ** 2
+    hep_secretion = (extraction * portal_return + serum_return + ba_synth)
+    hep_secretion *= min(params.k_canalicular, 1.0)
+    divert = params.gb_divert_frac * min(
+        1.0, max(0.0, (params.GB_max - GB) / params.gb_fill_width),
+    )
+    gb_fill = hep_secretion * divert
+    to_intestine = hep_secretion * (1.0 - divert)
+    dGB = gb_fill - gb_empty
+    dINT = gb_empty + to_intestine - ileal_uptake
+    residual = ba_synth - faecal - (dGB + dINT + dBA / params.ba_spill_gain)
+    return {
+        "dCCK": dCCK, "dGB": dGB, "dINT": dINT, "dBA": dBA,
+        "duo_total": duo_total, "fed_gate": fed_gate,
+        "empty": gb_empty, "fill": gb_fill, "direct": to_intestine,
+        "ileal": ileal_uptake, "portal": portal_return,
+        "extraction": extraction, "spill": spillover,
+        "serum_return": serum_return, "faecal": faecal, "synth": ba_synth,
+        "hep_secretion": hep_secretion, "divert": divert,
+        "residual": residual, "spill_gain": params.ba_spill_gain,
+    }
+
+
 def generate_meal_plan(
     n_days: int,
     rng: np.random.Generator,
@@ -1509,83 +1595,13 @@ def simulate_full_body(
                 + params.lac_glyco_gain * fl["brk_M_g"])
 
         # --- Hepatobiliary: the enterohepatic circulation (iter 95) ---
-        # Four states in series. The delay structure is the point: CCK peaks ~10 min
-        # after a meal but serum bile acids peak at 75-120 min, and that gap is
-        # gallbladder emptying -> intestinal transit -> ileal reabsorption -> hepatic
-        # first-pass extraction happening in sequence. Nothing here fits the gap
-        # directly; it falls out. Anchors: docs/iter95-biliary-anchors.md.
-        #
-        # CCK: duodenal I-cells read FAT and PROTEIN, not carbohydrate.
-        # Duodenal delivery, NOT systemic appearance — see _duodenal_delivery.
-        fat_duo = sum(_duodenal_delivery(t, mt, mf, params.duo_fast_rate,
-                                         params.duo_slow_rate, params.duo_slow_frac)
-                      for mt, _mc, mf, _mp in meals)
-        prot_duo = sum(_duodenal_delivery(t, mt, mp, params.duo_fast_rate,
-                                          params.duo_slow_rate, params.duo_slow_frac)
-                       for mt, _mc, _mf, mp in meals)
-        carb_duo = sum(_duodenal_delivery(t, mt, mc, params.duo_fast_rate,
-                                          params.duo_slow_rate, params.duo_slow_frac)
-                       for mt, mc, _mf, _mp in meals)
-        duo_total = fat_duo + prot_duo + carb_duo                    # g/min into the duodenum
-        fed_gate = duo_total / (duo_total + params.K_mmc_fed)        # 0 fasted -> 1 fed
-        cck_drive = (params.cck_fat_gain * fat_duo
-                     + params.cck_prot_gain * prot_duo)
-        dCCK = -params.k_cck * (CCK - params.CCK_b) + cck_drive
-        # Gallbladder: CCK-gated emptying, PROPORTIONAL TO CONTENT. Proportionality is
-        # what makes emptying exponential (the observed early-rapid / late-slow shape)
-        # and what makes a second meal empty far less than the first — a gallbladder
-        # cannot be emptied twice. Contraction is a GATE computed here, not a state;
-        # see docs/iter95-proposal.md 3.2.1.
-        cck_excess = max(CCK - params.CCK_b, 0.0)
-        contraction = cck_excess / (cck_excess + params.K_cck_gb)   # in [0, 1)
-        # CCK-driven ejection plus the interdigestive (MMC) partial emptying that keeps
-        # the loop turning between meals; both proportional to content. The MMC is a
-        # FASTED-state motor pattern -- suppressed while nutrient is in the duodenum --
-        # which is what lets the gallbladder refill after a meal instead of leaking.
-        gb_empty = (params.k_gb_eject * contraction
-                    + params.k_gb_basal * (1.0 - fed_gate)) * GB          # mmol/min
-        # Intestine: what the gallbladder delivers transits and is reabsorbed in the
-        # ileum at ~95%; the remaining ~5% is the faecal loss that hepatic synthesis
-        # replaces. This state is where the transit delay lives.
-        ileal_uptake = params.k_ileal * INT                          # mmol/min
-        portal_return = params.f_ileal * ileal_uptake                # mmol/min
-        # Hepatic first pass. Extraction saturates against canalicular export capacity:
-        # when k_canalicular falls (cholestasis), the liver cannot clear the portal
-        # load into bile, extraction drops, and the unextracted remainder spills into
-        # the systemic circulation. Serum bile acids then rise as a CONSEQUENCE of the
-        # mass balance rather than by assertion — which is the whole reason this step
-        # is explicit rather than lumped into a single clearance constant.
-        extraction = params.hep_extraction * (
-            params.k_canalicular / (params.k_canalicular + 0.15)
-        ) / (1.0 / (1.0 + 0.15))     # == hep_extraction at k_canalicular = 1
-        extraction = min(max(extraction, 0.0), 0.995)
-        spillover = (1.0 - extraction) * portal_return               # mmol/min
-        # Serum: a mass-action pool. What the liver clears from serum returns to bile.
-        serum_return = params.k_ba * BA / params.ba_spill_gain       # mmol/min
-        dBA = params.ba_spill_gain * spillover - params.k_ba * BA
-        # De-novo synthesis under the FXR/FGF19 loop: ileal enterocytes secrete FGF19
-        # in proportion to the bile acids they absorb, and FGF19 represses hepatic
-        # CYP7A1. Synthesis therefore scales INVERSELY with the returning flux
-        # (Inagaki 2005) -- equal to the derived basal at the fixed point, falling
-        # while a meal's bolus is being reabsorbed, rising as the pool runs low. It is
-        # what holds the pool: faecal loss is 5% of whatever flux passes the ileum, so
-        # a fed day (three boluses) loses more than a constant synthesis replaces.
-        # Squared: CYP7A1 repression is steep (synthesis rises 2-3x with modest pool
-        # depletion, bile acid sequestrant studies); first order left the pool
-        # recovering a fed day's loss over ~5 days.
-        ileal_b = params.k_ileal * params.INT_b
-        ba_synth = params.k_ba_synth * (ileal_b / max(ileal_uptake, 0.25 * ileal_b)) ** 2
-        # Hepatic bile secretion = everything the liver takes up + de-novo synthesis
-        # (iter 97: the loop is closed; nothing enters from or leaves to nowhere).
-        # Canalicular export capacity gates how much of it reaches bile.
-        hep_secretion = (extraction * portal_return + serum_return + ba_synth)
-        hep_secretion *= min(params.k_canalicular, 1.0)
-        # Split between the gallbladder (interdigestive diversion, tapering to zero as it
-        # fills) and direct duodenal flow.
-        divert = params.gb_divert_frac * min(1.0, max(0.0, (params.GB_max - GB) / params.gb_fill_width))
-        gb_fill = hep_secretion * divert
-        dGB = gb_fill - gb_empty
-        dINT = gb_empty + hep_secretion * (1.0 - divert) - ileal_uptake
+        duo = duodenal_delivery(t, meals, params)
+        bf = bile_fluxes(
+            params, CCK, GB, INT, BA,
+            duo["fat"], duo["protein"], duo["carb"],
+        )
+        dCCK, dGB, dINT, dBA = bf["dCCK"], bf["dGB"], bf["dINT"], bf["dBA"]
+        duo_total = bf["duo_total"]
 
         # --- Glycogen pools (iter 76) ---
         # Flux integrators, not setpoints. Synthesis is gated on gut carb

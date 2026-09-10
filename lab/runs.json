@@ -1,0 +1,30 @@
+[
+  {
+    "id": "day",
+    "title": "Eucaloric day",
+    "blurb": "Three meals, overnight sleep, a walk at 17:00.",
+    "duration_min": 1440,
+    "file": "runs/day.json"
+  },
+  {
+    "id": "fast",
+    "title": "24 h fast",
+    "blurb": "No meals. Sleep as usual. Fat mass and ketones should move.",
+    "duration_min": 1440,
+    "file": "runs/fast.json"
+  },
+  {
+    "id": "dawn",
+    "title": "Pre-dawn window",
+    "blurb": "03:00\u201309:00 asleep until 07:00. Cortisol nadir, then rise.",
+    "duration_min": 360,
+    "file": "runs/dawn.json"
+  },
+  {
+    "id": "meal",
+    "title": "Carbohydrate meal",
+    "blurb": "The dietary-carb flow story: 50 g at t+30 from 08:00.",
+    "duration_min": 480,
+    "file": "runs/meal.json"
+  }
+]
