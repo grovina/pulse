@@ -7,7 +7,9 @@ benchmarks have a hard time exposing on their own:
   grid and report AUC, peak, and time-to-peak of glucose appearance. Cold-model
   targets are provided by :func:`cold_gut_sweep_targets`. Monotonicity of AUC
   in carb dose is the first-order success criterion for any iteration that
-  touches the gut kernel.
+  touches the gut kernel. The default window is 240 min (peak and ordering);
+  training's gut_dose_sweep uses ``MEAL_ACTIVE_WINDOW_MIN`` (720) so a 240-min
+  probe AUC is not the same number as the training AUC term.
 - ``fasting_drift`` — integrate from the cold initial state for N hours with
   no meals and report the glucose drift. Should be near zero at zero
   embedding; non-trivial drift indicates the model relies on ambient drift
@@ -33,7 +35,7 @@ import torch
 from ..knowledge.full_body import PatientParams, compute_absorption_profile
 from ..model import ModularPhysiologyNetwork, integrate
 from ..modules.gut import MealEvent
-from ..types import EMBEDDING_DIM, GUT_OUTPUT_DIM, MARKER_INDEX, NORM_CENTER
+from ..types import GUT_OUTPUT_DIM, MARKER_INDEX, NORM_CENTER
 
 
 DEFAULT_CARB_DOSES_G: tuple[float, ...] = (0.0, 15.0, 30.0, 45.0, 60.0, 90.0, 120.0)
@@ -104,18 +106,7 @@ class ProbeReport:
 def load_model_from_checkpoint(path: str | Path) -> tuple[ModularPhysiologyNetwork, dict[str, Any]]:
     """Load a checkpoint and reconstruct the model with its training-time dims."""
     ckpt = torch.load(str(path), map_location="cpu", weights_only=False)
-    state = ckpt.get("model_state", ckpt)
-    h = int(ckpt.get("hidden_dim", 48))
-    model = ModularPhysiologyNetwork(
-        embedding_dim=int(ckpt.get("embedding_dim", EMBEDDING_DIM)),
-        metabolic_hidden=h,
-        appetite_hidden=max(24, h // 2),
-        stress_hidden=max(24, h // 2),
-        cardiovascular_hidden=h,
-        thermoreg_hidden=max(16, h // 3),
-        respiratory_hidden=max(16, h // 3),
-    )
-    model.load_state_dict(state)
+    model = ModularPhysiologyNetwork.from_checkpoint(ckpt)
     model.eval()
     return model, ckpt
 

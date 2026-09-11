@@ -350,6 +350,21 @@ class TestMitochondrialRole(unittest.TestCase):
             f1 = met.fluxes(s1, coupling, external, emb, tf)
         self.assertFalse(torch.equal(f0["mito_rate"], f1["mito_rate"]))
 
+    def test_activity_above_rest_raises_mito(self) -> None:
+        """Mito is a slow training-stimulus species. A rest overnight does not
+        prove it is padded; activity above 0.2 does."""
+        m = _model(14, perturb=0.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, act=0.0)
+        rest = external.clone()
+        rest[:, M._ACTIVITY_EXTERNAL_IDX] = 0.0
+        bout = external.clone()
+        bout[:, M._ACTIVITY_EXTERNAL_IDX] = 0.5
+        with torch.no_grad():
+            f_rest = met.fluxes(state, coupling, rest, emb, tf)
+            f_bout = met.fluxes(state, coupling, bout, emb, tf)
+        self.assertTrue(bool((f_bout["mito_rate"] > f_rest["mito_rate"]).all()))
+
     def test_mito_scales_oxidative_clearance(self) -> None:
         m = _model(13, perturb=0.5)
         met = m.metabolic

@@ -84,4 +84,6 @@ def test_long_only_markers_skip_rate_and_short_level() -> None:
     assert sig._score_rate("crh")
     assert not sig._score_level("mitochondrial_capacity", 60, 60, True)
     assert sig._score_level("mitochondrial_capacity", 200, 60, True)
-    assert sig._score_level("mitochondrial_capacity", 60, 60, False)
+    assert not sig._score_level("mitochondrial_capacity", 60, 60, False)
+    assert sig._score_level("crh", 60, 60, False)
+    assert sig._score_level("crh", 60, 60, True)

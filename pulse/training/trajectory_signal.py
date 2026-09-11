@@ -42,6 +42,7 @@ from ..knowledge.full_body import (
     simulate_full_body,
 )
 from ..model import integrate, precompute_gut_outputs
+from ..modules.base import GutModuleBase
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..training_verifier_loss import training_verifier_surrogate_loss
 from ..types import EMBEDDING_DIM, MARKERS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
@@ -385,7 +386,8 @@ class TrajectoryRolloutSignal(TrainingSignal):
     shape_markers: tuple[str, ...] = ()
     # Iter 97 (review 4.9): probability that a window's meals are reduced to
     # "logged, macros unknown" (see DEFAULT_MEAL_MACROS). The trainer raises
-    # this (and ``input_dropout``) for phase 3.
+    # this (and trajectory ``input_dropout``) in phase 3. Literature arm
+    # rollouts do not read these fields.
     meal_macro_dropout: float = 0.0
     # Default-patient distillation: extra cold-model episodes supervised
     # through the zero ("default") embedding. Aligns the trajectory training
@@ -414,7 +416,9 @@ class TrajectoryRolloutSignal(TrainingSignal):
             [m.typical for m in MARKERS], dtype=torch.float32,
         )
         self._norm_scales = torch.tensor(NORM_SCALE, dtype=torch.float32)
-        self._abs_scale = torch.tensor(GUT_OUTPUT_SCALE, dtype=torch.float32)
+        self._abs_scale = torch.tensor(
+            GUT_OUTPUT_SCALE[:GutModuleBase.N_APPEARANCE], dtype=torch.float32,
+        )
         self._band_vec: torch.Tensor | None = (
             band_vector(self.trajectory_band_per_marker)
             if self.trajectory_band_per_marker else None
@@ -654,7 +658,13 @@ class TrajectoryRolloutSignal(TrainingSignal):
                     )
                     # Reuse the precomputed gut window — same kernel call
                     # would otherwise run a second time here.
-                    gut_loss = ((gut_window - target_abs) / abs_scale).pow(2).mean()
+                    # Appearance channels only. The teacher's nutrient_flag is a
+                    # binary appearance-rate gate; the student's is unabsorbed-mass
+                    # survival — matching them is a category error (iter 98).
+                    n_app = GutModuleBase.N_APPEARANCE
+                    gut_loss = (
+                        (gut_window[..., :n_app] - target_abs[..., :n_app]) / abs_scale
+                    ).pow(2).mean()
                     loss = loss + self.gut_loss_weight * gut_loss
 
                 # Iter 25: strict abort. Per-window context goes into ``extra``

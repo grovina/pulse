@@ -177,6 +177,34 @@ class TestCheckpointRoundTrip(unittest.TestCase):
             self.assertTrue(torch.equal(a, b))
         self.assertEqual(m3.constructor_kwargs["metabolic_hidden"], h)
 
+    def test_from_checkpoint_rejects_coupling_layout_mismatch(self) -> None:
+        m = _small(8)
+        ckpt = {
+            "model_state": m.state_dict(),
+            "model_config": m.constructor_kwargs,
+            "coupling_channels": {
+                **{k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
+                "cardiovascular": ["cortisol", "temp"],
+            },
+        }
+        with self.assertRaises(ValueError) as ctx:
+            ModularPhysiologyNetwork.from_checkpoint(ckpt)
+        self.assertIn("coupling layout", str(ctx.exception))
+
+    def test_from_checkpoint_attaches_embedding_prior(self) -> None:
+        m = _small(8)
+        mean = [0.1] * EMBEDDING_DIM
+        std = [0.2] * EMBEDDING_DIM
+        ckpt = self._roundtrip({
+            "model_state": m.state_dict(),
+            "model_config": m.constructor_kwargs,
+            "embedding_prior_mean": mean,
+            "embedding_prior_std": std,
+        })
+        m2 = ModularPhysiologyNetwork.from_checkpoint(ckpt)
+        self.assertTrue(torch.allclose(m2._embedding_prior_mean, torch.tensor(mean)))
+        self.assertTrue(torch.allclose(m2._embedding_prior_std, torch.tensor(std)))
+
 
 class TestFromInitSanity(unittest.TestCase):
     """hidden 48, zero embedding, 24 h with a 3-meal day and with no meals."""

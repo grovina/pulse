@@ -1,65 +1,26 @@
 """
-Cold-model distillation signal — teaches the learned model to reproduce the
-knowledge model's *unobserved-marker* dynamics across a broad protocol
-distribution.
+Cold-model distillation — teacher-forced rates (and day-scale levels) for
+generator internals no paper reports as a time series.
 
-Why this exists (the dead-pathway diagnosis, iters 38-46)
----------------------------------------------------------
-Five markers — glucagon, ffa, ghrelin, leptin, acth (and to a lesser extent
-cortisol, bhb) — have been byte-identical in the benchmark report across every
-iteration since iter 38, regardless of weight tuning, multi-arm physiology
-rules, or broader rule sampling. The root cause is structural, not parametric:
-
-  1. The bench's targets for these markers come from ``simulate_full_body``
-     (the cold knowledge model) — no real user self-measures FFA, so the only
-     ground truth available is the textbook ODE.
-  2. *No active training signal reaches the parameters that control these
-     markers' level and shape.* Bench embedding calibration fits only the 5
-     self-measured markers (glucose/hr/sbp/dbp/temp); trajectory MSE on
-     real-user windows supervises only those 5; cohort-statistic weight split
-     across ~19 specs is negligible per spec; the physiology rules produce
-     ~1e-4 gradient onto glucagon/ghrelin (a correlation predicate on a flat
-     trajectory has near-zero gradient) and FFA's larger rule gradient trains
-     at sampled patient embeddings the cohort eval never visits; and
-     ``marker_vitality`` (a range-floor band-aid) was never enabled and only
-     constrained variance, not the curve.
-
-  ⇒ The unobserved-marker heads sit at initialization, which emits a near-
-     constant near-typical value. Nothing moves them.
-
-The fix: distill the knowledge model's trajectories for these markers directly.
-Each epoch, run the learned model at the zero embedding (= population-center
-patient) on a sampled subset of a broad protocol pool — standard meal days,
-OGTT, extended fast, high-fat meal, phase-shifted day, grazing — and MSE its
-unobserved-marker trajectories against the cold-model reference for the same
-protocol. The references are computed once at signal init (the cold model is
-deterministic).
+The wearable tape is glucose / hr / sbp / dbp / temp. Hormones and other
+published statistics are owned by cohort specs and physiology rules. This
+signal is only for the leftover internals: CRH, insulin_action, insulin_slow,
+the bile pools, and (on long windows) mitochondrial_capacity and fat_mass.
+See ``knowledge.evidence.TEACHER_DISTILL_MARKERS``.
 
 Two loss modes (``mode``)
 -------------------------
 - ``trajectory`` (iters 47-49): roll the learned model out from the cold
   initial state at a calibrated embedding and match the *integrated*
-  trajectory of the unobserved markers (Huber on NORM_SCALE-normalized
-  residuals). The 2026-05-13 diagnostic (`scripts/diagnose-dead-pathways.py`)
-  showed this is the wrong loss shape: the gradient from the trajectory loss
-  to the dead-marker rate heads is diluted ~T× through the integration chain
-  (state[t+1] = state[t] + dt·rate[t]), arrives at ~1e-5, and the heads —
-  which sit at the mass-action equilibrium pinning the marker at its
-  ``typical`` value — never leave it. Byte-identical bench MAPE across every
-  embedding/dose we tried.
-- ``rate`` (iter 50+): **teacher-forced rate matching.** Feed the model the
-  *cold* state at each timestep and require its instantaneous rate output for
-  the unobserved markers to match the cold ODE's ``d/dt`` at that state
-  (finite-differenced from the cold trajectory). One batched ``model.forward``
-  over the whole protocol — no integration chain, gradient straight to the
-  head, ~T× stronger. This is how you distil an ODE: matching rates ⊇ matching
-  trajectories. The embedding is still calibrated (the rate reads a per-module
-  embedding projection); the gut outputs are detached (the gut module has its
-  own signals).
+  trajectory. Gradient from a long chain is diluted ~T× and the heads never
+  leave typical.
+- ``rate`` (iter 50+): teacher-forced rate matching. Feed the cold state at
+  each timestep and match instantaneous ``d/dt``. One batched ``model.forward``,
+  no integration chain. Slow states in ``TEACHER_DISTILL_LONG_ONLY`` skip
+  rate and short level; they score as a day-scale free rollout instead.
 
-Patient axis: the cold references are ``simulate_full_body(PatientParams())``
-— the population-mean patient — distilled at the *calibrated* embedding(s) the
-bench lands near; ``pool`` controls how broad the protocol coverage is.
+Patient axis: cold references are ``simulate_full_body(PatientParams())``
+distilled at calibrated embeddings; ``pool`` controls protocol coverage.
 """
 
 from __future__ import annotations
@@ -91,11 +52,9 @@ from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 # are not distilled — cohort stats and physiology rules own those.
 _DEFAULT_DISTILL_MARKERS: tuple[str, ...] = TEACHER_DISTILL_MARKERS
 
-# Huber transition on the NORM_SCALE-normalized residual. The dead markers
-# start grossly wrong (ghrelin ~1.9× off, glucagon ~0.4× off), so a plain
-# MSE on the normalized residual would be dominated by a handful of large
-# errors and could swamp the other training signals. Huber keeps the loss
-# linear past one NORM_SCALE — the worst marker still leads, but bounded.
+# Huber transition on the NORM_SCALE-normalized residual. Internals can start
+# far from the teacher; MSE would be dominated by a handful of large errors.
+# Huber keeps the loss linear past one NORM_SCALE.
 _HUBER_DELTA = 1.0
 
 # Pool size and per-epoch sample count. The full pool is rebuilt once at
@@ -359,9 +318,10 @@ class ColdModelDistillationSignal(TrainingSignal):
          is seen; warm-restart (``calib_warm_steps`` from the cached value)
          when it has gone stale (``recalib_every`` epochs). The embedding is
          **detached** — it parametrizes *where* we distil, not *what*.
-      3. Run the learned model at that embedding and add the NORM_SCALE-
-         normalized Huber trajectory loss on ``markers`` (the unobserved
-         counter-regulatory + circadian set) vs the cold reference.
+      3. Run the learned model at that embedding and score ``markers``
+         (``TEACHER_DISTILL_MARKERS``: CRH, insulin_action, insulin_slow,
+         bile pools, and on long windows mitochondrial_capacity and
+         fat_mass) against the cold reference.
 
     The protocol pool is *broad over protocols, centred on the population-
     mean patient* (cold references from ``simulate_full_body(PatientParams())``)
@@ -460,14 +420,8 @@ class ColdModelDistillationSignal(TrainingSignal):
 
     name: str = "cold_model_distillation"
     source: str = (
-        "Cold knowledge model (simulate_full_body) — distillation of the "
-        "unobserved counter-regulatory + circadian markers (glucagon, ffa, "
-        "ghrelin, leptin, acth, cortisol, bhb) the bench targets but no other "
-        "training signal reaches, evaluated at a per-protocol embedding "
-        "calibrated to the cold observed markers (so the distilled dynamics "
-        "land where the bench's calibrated eval looks). Replaces the iter-39 "
-        "marker-vitality range-floor band-aid (matching the curve subsumes "
-        "the variance floor)."
+        "simulate_full_body internals with no literature time series "
+        "(TEACHER_DISTILL_MARKERS); slow pair on long windows only"
     )
     category: str = "mechanism"
 
@@ -498,9 +452,12 @@ class ColdModelDistillationSignal(TrainingSignal):
         return marker not in self._long_only
 
     def _score_level(self, marker: str, window: int, short_window: int, has_longer: bool) -> bool:
-        if marker not in self._long_only or not has_longer:
+        if marker not in self._long_only:
             return True
-        return window > short_window
+        # Slow pair is never a 60-minute slope. Iter 98's spec asked for this
+        # and the trainer scored short windows whenever a protocol could not
+        # fit a long pass, which pinned mito to a rest overnight.
+        return has_longer and window > short_window
 
     def _build_synthetic_protocols(self) -> list[_Protocol]:
         rng = np.random.default_rng(_PROTOCOL_SEED)

@@ -75,8 +75,10 @@ class SignalContext:
     # signal's gradient, across the whole run (the trainer passes one dict for
     # the run's lifetime and records it in the checkpoint).
     aux_steps_by_signal: dict[str, int] = field(default_factory=dict)
-    # Iter 97 (review 4.9): probability that an arm rollout drops its sleep /
-    # activity series (phase 3 input dropout for the cohort / rules signals).
+    # Probability that a literature arm rollout drops its sleep / activity
+    # series. The trainer always passes 0: published protocols stay on-protocol
+    # (iter 98 applied phase-3 dropout here and cohort doubled). Trajectory
+    # robustness is ``TrajectoryRolloutSignal.input_dropout``.
     input_dropout: float = 0.0
 
     def record_aux_grad(self, signal: str, norm: float) -> None:

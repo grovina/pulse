@@ -151,7 +151,7 @@ def test_interleaved_loop_runs_more_aux_steps_than_once_per_epoch() -> None:
     assert len(ctx.aux_grad_norms["prior_a"]) == 2
 
 
-# --- 4.9: arm rollouts honour the phase-3 input dropout ------------------------------
+# --- 4.9: arm rollouts can drop sleep/activity (capability, not phase-3 policy) ------
 
 def test_arm_rollout_drops_series_under_input_dropout(monkeypatch) -> None:
     from pulse import cohort_loss
@@ -213,6 +213,10 @@ def test_spec_pins_every_load_bearing_flag_and_parses_without_divergence() -> No
         "mitochondrial_capacity", "fat_mass",
     ]
     assert spec_only.perturb_protocols and spec_only.trajectory_band_per_marker
+    assert not any(
+        any(s in a for s in ("landmark", "fasting-stability", "default-baseline", "postprandial-recovery"))
+        for a in spec_args
+    )
 
 
 # --- student hand-off: the CVS setpoint frame ------------------------------------------

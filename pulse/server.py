@@ -213,31 +213,15 @@ def get_model() -> ModularPhysiologyNetwork:
 
     model_path = resolve_model_uri(model_uri)
     checkpoint = torch.load(model_path, map_location="cpu")
-    hidden_dim = int(checkpoint.get("hidden_dim", 48))
     marker_ids = checkpoint.get("marker_ids", MARKER_IDS)
     model_version = str(checkpoint.get("model_version", checkpoint.get("trained_at", "unknown")))
-    model_state = checkpoint.get("model_state", checkpoint)
 
-    model = ModularPhysiologyNetwork(
-        metabolic_hidden=hidden_dim,
-        appetite_hidden=max(24, hidden_dim // 2),
-        stress_hidden=max(24, hidden_dim // 2),
-        cardiovascular_hidden=hidden_dim,
-        thermoreg_hidden=max(16, hidden_dim // 3),
-        respiratory_hidden=max(16, hidden_dim // 3),
-    )
-    model.load_state_dict(model_state)
+    model = ModularPhysiologyNetwork.from_checkpoint(checkpoint)
     for param in model.parameters():
         param.requires_grad_(False)
     model.eval()
-    # Iter 97: the trained-table prior the gate calibrates against; the shared
-    # calibration shrinks toward it (isotropic L2 fallback on older checkpoints).
-    pm = checkpoint.get("embedding_prior_mean")
-    ps = checkpoint.get("embedding_prior_std")
-    if pm is not None and ps is not None:
-        model._embedding_prior_mean = torch.tensor(pm, dtype=torch.float32)
-        model._embedding_prior_std = torch.tensor(ps, dtype=torch.float32)
 
+    hidden_dim = int(checkpoint.get("hidden_dim", model.constructor_kwargs.get("metabolic_hidden", 48)))
     _MODEL = model
     _MODEL_META = LoadedModel(hidden_dim=hidden_dim, marker_ids=marker_ids, model_version=model_version)
     return _MODEL

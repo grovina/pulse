@@ -16,8 +16,9 @@
 #   REGION        (default: europe-west1)
 #   BUCKET        (default: grovina-pulse-data)
 #   REPO          (default: pulse)
-#   TASK_TIMEOUT  trainer task timeout, seconds (default: 86400 = 24h; the heavy
-#                 phase-2 runs need ~12h, so the old 4h default was too short)
+#   TASK_TIMEOUT  trainer task timeout, seconds (default: 158400 = 44h; the
+#                 current recipe is 58 epochs at aux-every-12 and needs the
+#                 headroom iter 98 used, not the old 4-CPU / 24h defaults)
 #   DEPLOY_ENGINE 1 to deploy the engine service, 0 to skip (default: 1)
 set -euo pipefail
 
@@ -25,7 +26,7 @@ PROJECT="${PROJECT:-grovina-pulse}"
 REGION="${REGION:-europe-west1}"
 BUCKET="${BUCKET:-grovina-pulse-data}"
 REPO="${REPO:-pulse}"
-TASK_TIMEOUT="${TASK_TIMEOUT:-86400}"
+TASK_TIMEOUT="${TASK_TIMEOUT:-158400}"
 DEPLOY_ENGINE="${DEPLOY_ENGINE:-1}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -65,7 +66,7 @@ gcloud run jobs "$verb" trainer \
   --project "$PROJECT" --region "$REGION" \
   --image "${AR}/trainer:${TAG}" \
   --service-account "trainer@${PROJECT}.iam.gserviceaccount.com" \
-  --cpu 4 --memory 16Gi \
+  --cpu 8 --memory 32Gi \
   --max-retries 0 --task-timeout "${TASK_TIMEOUT}s" \
   --quiet
 echo "    trainer pinned to :${TAG}, task-timeout ${TASK_TIMEOUT}s"

@@ -35,6 +35,7 @@ import torch.nn as nn
 
 from ..knowledge.full_body import PatientParams, compute_absorption_profile
 from ..model import ModularPhysiologyNetwork
+from ..modules.base import GutModuleBase
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..types import GUT_OUTPUT_DIM
 from .embedding_sampler import select_supervised_embeddings
@@ -69,11 +70,10 @@ class GutDoseSweepProtocol:
     proteins_g: float = 10.0
     # Iter 97 (teacher hand-off): the teacher kernel is mass-conserving and active
     # to 8/rate (~667 min at the default slow rate); over 240 min it delivers only
-    # 85 % of a 60 g dose (AUC 391 of 462 mg/dL-min). The sweep now covers the
-    # whole window the STUDENT kernel can express (MEAL_ACTIVE_WINDOW_MIN = 480,
-    # 97 % of the mass), so the AUC target is the ingested mass and not a
-    # truncation of it. The remaining 3 % tail is the student kernel's cutoff,
-    # which the student layer owns.
+    # 85 % of a 60 g dose (AUC 391 of 462 mg/dL-min). The sweep covers the whole
+    # window the student kernel can express (MEAL_ACTIVE_WINDOW_MIN = 720,
+    # >99 % of the mass), so the AUC target is the ingested mass and not a
+    # truncation of it.
     post_window_min: int = int(MEAL_ACTIVE_WINDOW_MIN)
     rank_margin: float = 0.3
 
@@ -141,15 +141,21 @@ class GutDoseSweepSignal(TrainingSignal):
             _cold_target_for_dose(
                 d, self.protocol.fats_g, self.protocol.proteins_g,
                 self.protocol.post_window_min, params,
-            )
+            )[..., :GutModuleBase.N_APPEARANCE]
             for d in self.protocol.carb_doses_g
-        ])  # [D, T, GUT_OUTPUT_DIM]
+        ])  # [D, T, N_APPEARANCE] — appearance only; nutrient_flag is not distilled
         self._targets = torch.tensor(targets, dtype=torch.float32)
 
         # Per-channel scales — single source of truth in modules.gut so this
         # signal and TrajectoryRolloutSignal supervise the kernel on the same
-        # error magnitudes.
-        self._abs_scale = torch.tensor(GUT_OUTPUT_SCALE, dtype=torch.float32)
+        # error magnitudes. Appearance only: the teacher's nutrient_flag is a
+        # binary "appearance > 0.01" square wave, the student's is survival of
+        # unabsorbed mass. Matching their AUCs is a category error (iter 98:
+        # appearance already matched cold to 2 %, the logged gut_sweep ≈ 32
+        # was eight aux-steps of flag AUC).
+        self._abs_scale = torch.tensor(
+            GUT_OUTPUT_SCALE[:GutModuleBase.N_APPEARANCE], dtype=torch.float32,
+        )
 
         # Pairwise cold-target AUC gaps and the dose-ordering mask. For each
         # ordered pair (i, j) and channel c, we want
@@ -230,12 +236,10 @@ class GutDoseSweepSignal(TrainingSignal):
 
         # AUC-matching term. ``pred_aucs`` is [D, B, C]; ``self._auc_targets``
         # is [D, C] (broadcasts across batch). Normalize by per-channel AUC
-        # scale so high-throughput channels (glucose, lipid) and the binary
-        # nutrient_flag channel contribute on comparable footing. Mean over
-        # all (D, B, C) entries — but unlike the per-element MSE this is a
-        # mean over D·B·C = 7·4·4 ≈ 112 already-collapsed scalars, not over
-        # 7·4·240·4 ≈ 27000 mostly-zero per-time-step errors, so a uniform
-        # multiplicative over-amp lands a real per-dose penalty.
+        # scale so glucose / lipid / amino contribute on comparable footing.
+        # Mean over D·B·C already-collapsed scalars, not over D·B·T·C
+        # mostly-zero per-time-step errors, so a uniform multiplicative
+        # over-amp lands a real per-dose penalty.
         auc_targets = self._auc_targets.to(device).unsqueeze(1)      # [D, 1, C]
         auc_scale = self._auc_scale.to(device)                       # [C]
         auc_loss = ((pred_aucs - auc_targets) / auc_scale).pow(2).mean()
@@ -292,8 +296,8 @@ class GutDoseSweepSignal(TrainingSignal):
                 fats=float(self.protocol.fats_g),
                 proteins=float(self.protocol.proteins_g),
             )
-            pred = net.gut.forward_window(times, [meal], emb_gut)  # [B, T, 4]
-            per_dose_pred.append(pred)
+            pred = net.gut.forward_window(times, [meal], emb_gut)
+            per_dose_pred.append(pred[..., :GutModuleBase.N_APPEARANCE])
 
         mse_loss, rank_loss, auc_loss, n_inv_zero = self._losses(
             per_dose_pred, targets, abs_scale, T,

@@ -239,7 +239,22 @@ class ModularPhysiologyNetwork(nn.Module):
         records; ``train.py`` should save it alongside ``model_state``). Falls back to
         the historical derivation of every module width from ``hidden_dim`` so older
         artifacts still load.
+
+        If the checkpoint records ``coupling_channels``, they must match
+        ``MODULE_COUPLING_CHANNELS`` in this tree — a Linear input-width mismatch
+        otherwise surfaces as an opaque ``size mismatch`` on e.g.
+        ``cardiovascular.network.0.weight``.
         """
+        saved = checkpoint.get("coupling_channels")
+        if saved is not None:
+            current = {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()}
+            recorded = {k: list(v) for k, v in saved.items()}
+            if recorded != current:
+                raise ValueError(
+                    "checkpoint coupling layout does not match this code. "
+                    f"checkpoint={recorded} current={current}. "
+                    "Load against the training-commit tree, or re-train."
+                )
         cfg = checkpoint.get("model_config")
         if cfg is None:
             h = int(checkpoint.get("hidden_dim", 48))
@@ -253,7 +268,21 @@ class ModularPhysiologyNetwork(nn.Module):
                 "respiratory_hidden": max(16, h // 3),
             }
         model = cls(**cfg)
-        model.load_state_dict(checkpoint.get("model_state", checkpoint), strict=strict)
+        try:
+            model.load_state_dict(checkpoint.get("model_state", checkpoint), strict=strict)
+        except RuntimeError as exc:
+            if "size mismatch" in str(exc).lower():
+                raise RuntimeError(
+                    f"{exc}\nCheckpoint was likely trained with a different "
+                    "MODULE_COUPLING_CHANNELS (a module Linear changed input "
+                    "width). Load it against the training-commit code."
+                ) from exc
+            raise
+        pm = checkpoint.get("embedding_prior_mean")
+        ps = checkpoint.get("embedding_prior_std")
+        if pm is not None and ps is not None:
+            model._embedding_prior_mean = torch.tensor(pm, dtype=torch.float32)
+            model._embedding_prior_std = torch.tensor(ps, dtype=torch.float32)
         return model
 
     def default_external_inputs(

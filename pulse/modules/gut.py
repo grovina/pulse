@@ -59,12 +59,11 @@ MEAL_ACTIVE_WINDOW_MIN: float = 720.0
 
 # Per-channel typical-excursion scale for gut appearance outputs (mg/dL/min in
 # the 70 kg reference space for glucose; appearance-units/min for lipid/amino;
-# dimensionless for nutrient_flag). Used by every signal that supervises
-# ``forward_window`` so MSE on the gut kernel has comparable magnitude across
-# channels and to typical state MSE in mg/dL after dividing by NORM_SCALE.
-# Numbers were chosen from cold-model peaks across the meal distribution we
-# train on (typical mixed-meal peaks: glucose ~2 mg/dL/min, lipid ~0.3, amino
-# ~0.5; nutrient_flag is binary).
+# dimensionless for nutrient_flag). Training supervises the three appearance
+# channels; the flag is a different quantity in teacher vs student and is not
+# distilled. The fourth scale remains so diagnostics that plot the flag have a
+# number. Peaks from the cold-model meal distribution we train on: glucose ~2,
+# lipid ~0.3, amino ~0.5; flag is in [0, 1).
 GUT_OUTPUT_SCALE: tuple[float, float, float, float] = (2.0, 0.3, 0.5, 1.0)
 
 # Appearance units per gram of macro (teacher convention), re-exported so the

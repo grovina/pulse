@@ -20,11 +20,13 @@ local.
 
 1. **Deploy** (idempotent) — build the images and create/update the `trainer`
    job: `bash deploy/deploy.sh`. Config via env (`PROJECT` / `REGION` /
-   `BUCKET`); see the script header.
+   `BUCKET`); see the script header. The job is 8 vCPU / 32 Gi / 44 h, which
+   is what the current `train/spec.json` recipe needs (iter 98 ran 34 h on
+   that size; the previous 4 CPU / 16 Gi / 24 h defaults killed it).
 2. **Run** — execute with per-run flag overrides:
    ```bash
    gcloud run jobs execute trainer --region europe-west1 \
-     --args=--gcs-bucket=<bucket>,--gcs-object=training/jobs/<id>/model.pt
+     --args=--spec=train/spec.json,--gcs-bucket=<bucket>,--gcs-object=training/jobs/<id>/model.pt
    ```
    Results land in `gs://<bucket>/training/jobs/<id>/`. List/inspect executions
    with `gcloud run jobs executions list --job=trainer --region=europe-west1`;

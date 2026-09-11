@@ -56,24 +56,7 @@ def slope_per_hour(times_min, values) -> float:
 
 def _load_model(path: str) -> ModularPhysiologyNetwork:
     blob = torch.load(path, map_location="cpu", weights_only=False)
-    state = blob
-    if isinstance(blob, dict):
-        for key in ("model_state", "model_state_dict"):
-            if key in blob:
-                state = blob[key]
-                break
-    # Mirror train.py's per-module hidden-dim derivation from the checkpoint's
-    # own `hidden_dim`; the modules do NOT all share one width.
-    h = int(blob.get("hidden_dim", 48)) if isinstance(blob, dict) else 48
-    model = ModularPhysiologyNetwork(
-        metabolic_hidden=h,
-        appetite_hidden=max(24, h // 2),
-        stress_hidden=max(24, h // 2),
-        cardiovascular_hidden=h,
-        thermoreg_hidden=max(16, h // 3),
-        respiratory_hidden=max(16, h // 3),
-    )
-    model.load_state_dict(state)
+    model = ModularPhysiologyNetwork.from_checkpoint(blob)
     model.eval()
     return model
 

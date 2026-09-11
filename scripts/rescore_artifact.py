@@ -93,14 +93,8 @@ def main() -> int:
         _download_gs_uri_to_file(model_path, local)
         model_path = local
 
-    model, blob = load_model_from_checkpoint(model_path)
-    # Same rehydration the trainer's --benchmark-only path does: the diag-Gauss
-    # prior needs the trained table's mean/std.
-    pm, ps = blob.get("embedding_prior_mean"), blob.get("embedding_prior_std")
-    if pm is not None and ps is not None:
-        model._embedding_prior_mean = torch.tensor(pm, dtype=torch.float32)
-        model._embedding_prior_std = torch.tensor(ps, dtype=torch.float32)
-    else:
+    model, _blob = load_model_from_checkpoint(model_path)
+    if getattr(model, "_embedding_prior_mean", None) is None:
         print("checkpoint has no embedding prior: calibration falls back to iso-L2")
     for p in model.parameters():
         p.requires_grad_(False)

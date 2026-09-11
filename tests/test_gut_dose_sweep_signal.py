@@ -66,7 +66,7 @@ class TestAbsScale(unittest.TestCase):
             trajectory_band=0.0, trajectory_band_default=0.0,
             n_default_patients=0,
         )
-        expected = torch.tensor(GUT_OUTPUT_SCALE, dtype=torch.float32)
+        expected = torch.tensor(GUT_OUTPUT_SCALE[:3], dtype=torch.float32)
         self.assertTrue(torch.equal(sweep._abs_scale, expected))
         self.assertTrue(torch.equal(traj._abs_scale, expected))
 
@@ -176,8 +176,8 @@ class TestGradientFlow(unittest.TestCase):
         emb_gut = model.embedding_projections["gut"](torch.zeros(EMBEDDING_DIM))
         times = torch.arange(60, dtype=torch.float32)
         meal = MealEvent(time=0.0, carbs=60.0, fats=5.0, proteins=10.0)
-        pred = model.gut.forward_window(times, [meal], emb_gut)
-        target = sig._targets[1].clone()  # 60g target
+        pred = model.gut.forward_window(times, [meal], emb_gut)[..., :3]
+        target = sig._targets[1].clone()  # 60g appearance target
         loss = ((pred - target) / sig._abs_scale).pow(2).mean()
         loss.backward()
 
@@ -597,6 +597,31 @@ class TestMonotonicityRegression(unittest.TestCase):
             aucs[-1], 0.5 * aucs[0],
             f"sweep training failed to undo inversion: AUCs={aucs}",
         )
+
+
+class TestAppearanceOnly(unittest.TestCase):
+    """The teacher's nutrient_flag is a binary appearance-rate gate; the
+    student's is survival of unabsorbed mass. Distilling one against the
+    other is a category error (iter 98). The sweep supervises appearance.
+    """
+
+    def test_targets_and_scale_are_three_appearance_channels(self) -> None:
+        sig = GutDoseSweepSignal(
+            protocol=GutDoseSweepProtocol(carb_doses_g=(0.0, 60.0), post_window_min=60),
+        )
+        self.assertEqual(tuple(sig._targets.shape), (2, 60, 3))
+        self.assertEqual(tuple(sig._abs_scale.shape), (3,))
+
+    def test_flag_mismatch_does_not_enter_the_loss(self) -> None:
+        proto = GutDoseSweepProtocol(carb_doses_g=(0.0, 60.0), post_window_min=60)
+        sig = GutDoseSweepSignal(protocol=proto)
+        T = proto.post_window_min
+        per_dose_pred = [sig._targets[i].unsqueeze(0) for i in range(sig._targets.shape[0])]
+        mse, rank, auc, n_inv = sig._losses(per_dose_pred, sig._targets, sig._abs_scale, T)
+        self.assertAlmostEqual(float(mse), 0.0, places=5)
+        self.assertAlmostEqual(float(rank), 0.0, places=5)
+        self.assertAlmostEqual(float(auc), 0.0, places=5)
+        self.assertEqual(float(n_inv), 0.0)
 
 
 if __name__ == "__main__":

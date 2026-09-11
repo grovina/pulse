@@ -126,7 +126,7 @@ from .training.trajectory_signal import (
     normalize_contribution_weights,
     parse_band_per_marker,
 )
-from .types import EMBEDDING_DIM, MARKERS
+from .types import EMBEDDING_DIM, MARKERS, MODULE_COUPLING_CHANNELS
 
 # Re-export for backwards-compatible test imports.
 from .training.trajectory_signal import sample_window_start as _sample_window_start  # noqa: F401
@@ -680,8 +680,9 @@ def train(
         print(
             f"Phased training: Phase 1 = {p1_epochs} epochs (distillation), "
             f"Phase 2 = {phase2_epochs} epochs (full, lr {p2_lr} -> floor {p2_floor})"
-            + (f", Phase 3 = {p3_epochs} epochs (input dropout {phase3_input_dropout}, "
-               f"meal-macro dropout {phase3_meal_dropout}, lr {p3_lr})" if p3_epochs else ""),
+            + (f", Phase 3 = {p3_epochs} epochs (trajectory input dropout {phase3_input_dropout}, "
+               f"meal-macro dropout {phase3_meal_dropout}, literature arms on-protocol, "
+               f"lr {p3_lr})" if p3_epochs else ""),
         )
     print(f"Training: {total_epochs} epochs, {windows_per_patient} windows/patient, window={TRAIN_WINDOW} min")
     print(
@@ -702,7 +703,6 @@ def train(
     # Iter 97 (review 4.1): cumulative aux steps per signal for the whole run.
     aux_steps_by_signal: dict[str, int] = {}
     aux_signals = [sig for sig in signals if sig is not trajectory_signal]
-    cur_input_dropout_arms = 0.0
     try:
         for epoch in range(total_epochs):
             if phased and epoch == phase_boundary:
@@ -720,11 +720,11 @@ def train(
                 )
                 if phase3_input_dropout is not None:
                     trajectory_signal.input_dropout = float(phase3_input_dropout)
-                    cur_input_dropout_arms = float(phase3_input_dropout)
                 trajectory_signal.meal_macro_dropout = float(phase3_meal_dropout)
                 print(
                     f"\n--- Phase 3: {p3_epochs} epochs, lr={p3_lr}, input dropout "
-                    f"{trajectory_signal.input_dropout} on sleep/activity (trajectory + arms), "
+                    f"{trajectory_signal.input_dropout} on trajectory sleep/activity "
+                    f"(literature arms stay on-protocol), "
                     f"meal-macro dropout {phase3_meal_dropout} ---\n",
                 )
 
@@ -742,7 +742,7 @@ def train(
                 grad_clip=grad_clip,
                 aux_signal_clip=float(aux_signal_clip),
                 aux_steps_by_signal=aux_steps_by_signal,
-                input_dropout=cur_input_dropout_arms,
+                input_dropout=0.0,
             )
 
             # Iter 25: time each signal explicitly. The iter-24 NaN-skip
@@ -1015,6 +1015,7 @@ def train(
         # Iter 97 (student hand-off): every constructor argument, so the exact
         # module layout can be rebuilt without re-deriving widths from hidden_dim.
         "model_config": getattr(model, "constructor_kwargs", None),
+        "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
         "hidden_dim": hidden_dim,
         "marker_ids": [m.id for m in MARKERS],
         "model_version": datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S"),
@@ -1090,6 +1091,7 @@ def train(
             "phase3_lr": p3_lr if p3_epochs else None,
             "phase3_input_dropout": phase3_input_dropout,
             "phase3_meal_dropout": phase3_meal_dropout,
+            "phase3_arm_input_dropout": 0.0,
         },
         "meal_window_bias": meal_window_bias,
         # Iter 97 (review 4.1 / 4.11 / 1.5).
@@ -1915,13 +1917,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--phase3-epochs", type=int, default=0,
-        help="Iter 97 (review 4.9): phase 3 = diversity / stress-testing (PRD stage 4): "
-             "all signals on, input dropout raised on sleep, activity AND meal macros.",
+        help="Phase 3 = trajectory robustness: input dropout raised on sleep/activity "
+             "and meal macros for the wearable tape. Literature arm rollouts stay on-protocol.",
     )
     parser.add_argument("--phase3-lr", type=float, default=None, help="Phase 3 LR; defaults to --phase2-lr")
     parser.add_argument(
         "--phase3-input-dropout", type=float, default=None,
-        help="Phase 3 dropout probability on sleep/activity (trajectory windows AND cohort/rule arms).",
+        help="Phase 3 dropout probability on sleep/activity for trajectory windows. "
+             "Does not apply to literature arm rollouts.",
     )
     parser.add_argument(
         "--phase3-meal-dropout", type=float, default=0.0,
@@ -2048,16 +2051,6 @@ def main():
         print(f"Downloading checkpoint gs://{args.gcs_bucket}/{args.gcs_object} ...")
         _download_gs_uri_to_file(f"gs://{args.gcs_bucket}/{args.gcs_object}", ckpt_local)
         model, _ = load_model_from_checkpoint(ckpt_local)
-        # Iter 61: rehydrate embedding prior stats from the checkpoint
-        # so calibrate_embedding's diagonal Gaussian prior gets the
-        # actual trained-table mean/std (legacy checkpoints without
-        # these keys fall back to the isotropic L2 path).
-        _ckpt_dict = torch.load(ckpt_local, map_location="cpu", weights_only=False)
-        _pm = _ckpt_dict.get("embedding_prior_mean")
-        _ps = _ckpt_dict.get("embedding_prior_std")
-        if _pm is not None and _ps is not None:
-            model._embedding_prior_mean = torch.tensor(_pm, dtype=torch.float32)
-            model._embedding_prior_std = torch.tensor(_ps, dtype=torch.float32)
         sys.exit(_run_benchmark(
             model, ckpt_local,
             args.benchmark_dataset_uri, args.benchmark_thresholds_uri,
