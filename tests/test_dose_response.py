@@ -27,7 +27,7 @@ from pulse.dose_response import (
 )
 from pulse.model import ModularPhysiologyNetwork
 from pulse.training import (
-    DoseResponseSignal,
+    RolloutEvidenceSignal,
     SignalContext,
     WeightSchedule,
     joint_aux_step,
@@ -160,14 +160,14 @@ class TestEpochLossAgainstTarget(unittest.TestCase):
         self.assertEqual(diagnostics["predicted_slope"], 0.0)
 
 
-class TestDoseResponseSignalGating(unittest.TestCase):
+class TestRolloutEvidenceSignalGating(unittest.TestCase):
     def test_zero_weight_is_noop(self) -> None:
         device = torch.device("cpu")
         model = _tiny_model()
         emb = nn.Embedding(2, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = DoseResponseSignal(
+        sig = RolloutEvidenceSignal(
             n_patients=2, sample_patients=2, weight=WeightSchedule(0.0),
         )
         ctx = SignalContext(
@@ -185,7 +185,7 @@ class TestDoseResponseSignalGating(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = DoseResponseSignal(
+        sig = RolloutEvidenceSignal(
             n_patients=2, sample_patients=2, weight=WeightSchedule(0.5),
         )
         ctx = SignalContext(
@@ -212,7 +212,7 @@ class TestDoseResponseSignalGating(unittest.TestCase):
         emb = nn.Embedding(1, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = DoseResponseSignal(
+        sig = RolloutEvidenceSignal(
             n_patients=0, sample_patients=0,
             include_default_embedding=True,
             weight=WeightSchedule(1.0),
@@ -238,7 +238,7 @@ class TestDoseResponseSignalGating(unittest.TestCase):
         emb = nn.Embedding(1, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = DoseResponseSignal(
+        sig = RolloutEvidenceSignal(
             n_patients=0, sample_patients=0,
             include_default_embedding=False,
             weight=WeightSchedule(1.0),

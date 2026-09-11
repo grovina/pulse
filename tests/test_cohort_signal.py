@@ -1,4 +1,4 @@
-"""End-to-end tests for ``CohortStatisticSignal`` focused on the embedding
+"""End-to-end tests for ``RolloutEvidenceSignal`` focused on the embedding
 selection contract: the zero embedding is supervised by default, model
 parameters move under positive weight, and a zero weight is a no-op.
 """
@@ -20,7 +20,7 @@ from pulse.knowledge.cohort_types import (
 from pulse.cohort_loss import cohort_statistic_loss_one_spec
 from pulse.model import ModularPhysiologyNetwork
 from pulse.training import (
-    CohortStatisticSignal,
+    RolloutEvidenceSignal,
     SignalContext,
     WeightSchedule,
     joint_aux_step,
@@ -56,14 +56,14 @@ def _toy_glucose_spec() -> CohortStatisticSpec:
     )
 
 
-class TestCohortStatisticSignalGating(unittest.TestCase):
+class TestRolloutEvidenceSignalGating(unittest.TestCase):
     def test_zero_weight_is_noop(self) -> None:
         device = torch.device("cpu")
         model = _tiny_model()
         emb = nn.Embedding(2, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.0),
@@ -84,7 +84,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         emb = nn.Embedding(1, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             n_patients=0, sample_patients=0,
             include_default_embedding=True,
@@ -111,7 +111,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         emb = nn.Embedding(1, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             n_patients=0, sample_patients=0,
             include_default_embedding=False,
@@ -133,7 +133,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         emb = nn.Embedding(2, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             n_patients=2, sample_patients=2,
             use_cold_initial_state=True,
@@ -154,7 +154,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
 
     def test_no_cold_init_falls_back_to_norm_center(self) -> None:
         device = torch.device("cpu")
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             use_cold_initial_state=False,
         )
@@ -177,7 +177,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[_toy_glucose_spec()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -217,7 +217,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         spec_a = _toy_glucose_spec()
         spec_b = replace(_toy_glucose_spec(), name="toy_glucose_meal_b")
 
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[spec_a, spec_b],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -231,7 +231,7 @@ class TestCohortStatisticSignalGating(unittest.TestCase):
         self.assertEqual(sum(1 for k in result.sub_metrics if k.startswith("z_")), 2)
 
 
-class TestCohortStatisticSignalAdaptive(unittest.TestCase):
+class TestRolloutEvidenceSignalAdaptive(unittest.TestCase):
     """Iter 74: violation-proportional reweighting between specs."""
 
     # These specs exist to exercise the *adaptive weighting* mechanism, not the
@@ -262,7 +262,7 @@ class TestCohortStatisticSignalAdaptive(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[self._easy_spec(), self._hard_spec()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -287,7 +287,7 @@ class TestCohortStatisticSignalAdaptive(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[self._easy_spec(), self._hard_spec()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -316,7 +316,7 @@ class TestCohortStatisticSignalAdaptive(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=[self._easy_spec(), self._hard_spec()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -384,7 +384,7 @@ class TestCohortStatisticProtocolBatchingEquivalence(unittest.TestCase):
         )
         specs = [spec_a, spec_b, spec_c, spec_d]
 
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=specs, n_patients=2, sample_patients=2,
             include_default_embedding=True, weight=WeightSchedule(0.5),
         )

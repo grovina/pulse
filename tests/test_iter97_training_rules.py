@@ -42,7 +42,7 @@ from pulse.knowledge.physiology_rules import (  # noqa: E402
     hinge_min_value,
 )
 from pulse.physiology_rules_loss import rule_context_for_arm  # noqa: E402
-from pulse.training import PhysiologyRulesSignal, WeightSchedule  # noqa: E402
+from pulse.training import RolloutEvidenceSignal, WeightSchedule  # noqa: E402
 from pulse.training.adaptive_weights import adaptive_multipliers  # noqa: E402
 from pulse.training.arm_init import cold_initial_state_for_arm, teacher_arm_trajectory  # noqa: E402
 from pulse.types import MARKER_INDEX, STATE_DIM  # noqa: E402
@@ -223,8 +223,8 @@ def test_rules_signal_ema_is_in_scale_units() -> None:
                              predicate=pred(120.0), scale=120.0, init_mode=InitMode.NORM_CENTER)
     mmol = PhysiologyRule(name="mmol", source="t", description="t", arms=(arm,),
                           predicate=pred(0.05), scale=0.05, init_mode=InitMode.NORM_CENTER)
-    sig = PhysiologyRulesSignal(rules=[minutes, mmol], weight=WeightSchedule(0.1), adaptive=True)
-    sig._update_violation_ema({
+    sig = RolloutEvidenceSignal(rules=[minutes, mmol], weight=WeightSchedule(0.1), adaptive=True)
+    sig._update_rule_ema({
         "minutes": {"violation_mean": 120.0},   # one full scale
         "mmol": {"violation_mean": 0.05},       # one full scale
     })

@@ -12,7 +12,7 @@ from pulse.knowledge import ALL_COHORT_STATISTICS
 from pulse.model import ModularPhysiologyNetwork
 from pulse.training import (
     ColdModelDistillationSignal,
-    CohortStatisticSignal,
+    RolloutEvidenceSignal,
     SignalContext,
     TrajectoryRolloutSignal,
     WeightSchedule,
@@ -52,6 +52,26 @@ class TestTrajectorySignalShape(unittest.TestCase):
         self.assertGreater(len(sig.priors), 0)
 
 
+class TestRolloutEvidenceFamily(unittest.TestCase):
+    def test_meal_family_stays_meal_with_empty_targets(self) -> None:
+        sig = RolloutEvidenceSignal(family="meal", targets={})
+        self.assertEqual(sig.name, "meal_response")
+        self.assertEqual(sig._family, "meal")
+
+    def test_weight_only_defaults_to_dose(self) -> None:
+        sig = RolloutEvidenceSignal(weight=WeightSchedule(0.4))
+        self.assertEqual(sig.name, "dose_response")
+        self.assertEqual(sig._family, "dose")
+
+    def test_specs_and_rules_without_family_raises(self) -> None:
+        from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
+        with self.assertRaises(ValueError):
+            RolloutEvidenceSignal(
+                specs=list(ALL_COHORT_STATISTICS[:1]),
+                rules=list(PHYSIOLOGY_RULES[:1]),
+            )
+
+
 class TestCohortStatisticSignalGate(unittest.TestCase):
     def test_zero_weight_returns_empty_result(self) -> None:
         device = torch.device("cpu")
@@ -59,7 +79,7 @@ class TestCohortStatisticSignalGate(unittest.TestCase):
         embeddings = nn.Embedding(2, EMBEDDING_DIM)
         params = list(model.parameters()) + list(embeddings.parameters())
         opt = torch.optim.Adam(params, lr=1e-4)
-        sig = CohortStatisticSignal(
+        sig = RolloutEvidenceSignal(
             specs=list(ALL_COHORT_STATISTICS),
             n_patients=2,
             sample_patients=2,

@@ -29,8 +29,7 @@ from pulse.train import (  # noqa: E402
     spec_config_divergence,
 )
 from pulse.training import (  # noqa: E402
-    DefaultBaselineSignal,
-    FastingStabilitySignal,
+    EmbeddingPriorSignal,
     SignalContext,
     SignalResult,
     TrajectoryRolloutSignal,
@@ -128,8 +127,10 @@ def test_interleaved_loop_runs_more_aux_steps_than_once_per_epoch() -> None:
         gut_loss_weight=0.0, coupling_weight=WeightSchedule(0.0), verifier_weight=WeightSchedule(0.0),
         n_default_patients=1,
     )
-    aux = [FastingStabilitySignal(window_min=30, weight=WeightSchedule(0.1)),
-           DefaultBaselineSignal(weight=WeightSchedule(0.1), markers=("lactate",))]
+    aux = [
+        EmbeddingPriorSignal(name="prior_a", weight=WeightSchedule(0.1)),
+        EmbeddingPriorSignal(name="prior_b", weight=WeightSchedule(0.1)),
+    ]
     torch.manual_seed(0)
     model = _tiny_model()
     emb = nn.Embedding(1, EMBEDDING_DIM)
@@ -146,8 +147,8 @@ def test_interleaved_loop_runs_more_aux_steps_than_once_per_epoch() -> None:
                 joint_aux_step(ctx)
                 n_aux += 1
     assert n_aux == 2
-    assert shared["fasting_stability"] == 2 and shared["default_baseline"] == 2
-    assert len(ctx.aux_grad_norms["fasting_stability"]) == 2
+    assert shared["prior_a"] == 2 and shared["prior_b"] == 2
+    assert len(ctx.aux_grad_norms["prior_a"]) == 2
 
 
 # --- 4.9: arm rollouts honour the phase-3 input dropout ------------------------------
@@ -204,7 +205,6 @@ def test_spec_pins_every_load_bearing_flag_and_parses_without_divergence() -> No
     # The iter-97 recipe's own numbers (review 4.1 / 4.9 / 4.12).
     assert spec_only.aux_every_k_windows > 0 and spec_only.phase2_lr_floor >= 1e-3
     assert spec_only.phase3_epochs > 0 and spec_only.phase3_input_dropout > 0.3
-    assert "hr" not in spec_only.default_baseline_markers.split(":")
     assert "insulin" not in spec_only.cold_distill_markers.split(":")
     assert "glucagon" not in spec_only.cold_distill_markers.split(":")
     for marker in ("crh", "insulin_action", "fat_mass", "insulin_slow"):

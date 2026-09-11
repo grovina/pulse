@@ -3,17 +3,14 @@ Cold-model trajectory distillation signal.
 
 Owns the per-patient episode dataset and runs the per-window inner loop
 (rollout, trajectory loss + soft range + optional coupling / verifier
-surrogate / gut absorption / post-meal landmark losses, backward + step).
+surrogate / gut absorption, backward + step).
 All gradient sources that share the same per-window rollout live here so we
 don't pay for the forward pass twice.
 
 Trajectory loss supports a ``trajectory_band``: per-step residuals within
 ±band (in normalized σ units) carry zero loss, only excursions outside the
 band cost. This relaxes pure waveform imitation so the model can deviate
-point-wise as long as the cold-model shape is broadly preserved. Landmark
-distillation supplies the complementary "match the qualitative shape"
-gradient via Δpeak / time-to-peak / AUC on glucose & insulin around each
-carb meal.
+point-wise as long as the cold-model shape is broadly preserved.
 
 In addition to per-patient episodes, the signal can include
 ``n_default_patients`` "default patient" episodes generated with the
@@ -44,7 +41,6 @@ from ..knowledge.full_body import (
     generate_sleep_wake,
     simulate_full_body,
 )
-from ..landmarks import post_meal_landmark_loss
 from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..training_verifier_loss import training_verifier_surrogate_loss
@@ -323,7 +319,7 @@ def generate_trajectory_dataset(
             # do not simulate a whole patient). Consumed by SetpointSupervisionSignal.
             "setpoints": ep.setpoints,
             # Iter 91: teacher's own standard-meal response for this patient. Consumed by
-            # MealResponseSignal to unfreeze the per-patient meal gain Ra.
+            # RolloutEvidenceSignal (family=meal) to unfreeze the per-patient meal gain Ra.
             "meal_response": ep.meal_response,
         })
 
@@ -391,12 +387,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
     # "logged, macros unknown" (see DEFAULT_MEAL_MACROS). The trainer raises
     # this (and ``input_dropout``) for phase 3.
     meal_macro_dropout: float = 0.0
-    # Landmark distillation: per-meal Δpeak / time-to-peak / AUC supervision
-    # on glucose+insulin around each carb meal in the window.
-    landmark_weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
-    landmark_pre_window: int = 15
-    landmark_post_window: int = 120
-    landmark_min_carbs: float = 5.0
     # Default-patient distillation: extra cold-model episodes supervised
     # through the zero ("default") embedding. Aligns the trajectory training
     # distribution with the textbook benchmark, which queries every scenario
@@ -487,7 +477,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
         abs_scale = self._abs_scale.to(device)
         cpl_w = self.coupling_weight.at(ctx.epoch)
         ver_w = self.verifier_weight.at(ctx.epoch)
-        lm_w = self.landmark_weight.at(ctx.epoch)
         band_patient = float(self.trajectory_band)
         band_default = float(self.trajectory_band_default)
         band_vec = self._band_vec.to(device) if self._band_vec is not None else None
@@ -498,8 +487,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
         gut_sum = 0.0
         coupling_sum = 0.0
         verifier_sum = 0.0
-        landmark_sum = 0.0
-        landmark_meals = 0
         shape_sum = 0.0
         n_windows = 0
         n_defaulted = 0
@@ -670,22 +657,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
                     gut_loss = ((gut_window - target_abs) / abs_scale).pow(2).mean()
                     loss = loss + self.gut_loss_weight * gut_loss
 
-                lm_component = 0.0
-                lm_meals_window = 0
-                if lm_w > 0.0 and win_meals:
-                    lm_loss, lm_n = post_meal_landmark_loss(
-                        pred_traj, target, win_meals,
-                        pre_window=self.landmark_pre_window,
-                        post_window=self.landmark_post_window,
-                        min_carbs=self.landmark_min_carbs,
-                    )
-                    if lm_n > 0:
-                        loss = loss + lm_w * lm_loss
-                        lm_component = float(lm_loss.detach().item())
-                        lm_meals_window = lm_n
-                        landmark_sum += lm_component
-                        landmark_meals += lm_n
-
                 # Iter 25: strict abort. Per-window context goes into ``extra``
                 # so the abort dump pinpoints the offending (patient, window,
                 # win_start, sub-component breakdown) — iter 24's silent
@@ -708,8 +679,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
                         "gut_loss": float(gut_loss.detach().item()),
                         "coupling_loss": cpl_component,
                         "verifier_loss": vloss_component,
-                        "landmark_loss": lm_component,
-                        "landmark_meals_window": float(lm_meals_window),
                         "shape_loss": shape_component,
                         "meals_defaulted": float(meals_defaulted),
                     },
@@ -727,9 +696,6 @@ class TrajectoryRolloutSignal(TrainingSignal):
             sub["coupling"] = coupling_sum / max(n_windows, 1)
         if ver_w > 0:
             sub["verifier_surrogate"] = verifier_sum / max(n_windows, 1)
-        if lm_w > 0:
-            sub["landmark"] = landmark_sum / max(n_windows, 1)
-            sub["landmark_meals"] = float(landmark_meals)
         if len(self.shape_markers):
             sub["shape"] = shape_sum / max(n_windows, 1)
         sub["meals_defaulted"] = float(n_defaulted)

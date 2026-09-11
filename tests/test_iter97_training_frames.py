@@ -89,7 +89,7 @@ def test_argparse_defaults_do_not_shadow_function_defaults() -> None:
             "benchmark_thresholds_uri", "benchmark_report_path", "deterministic",
             "benchmark_only", "frozen_ruler", "contribution_weights_json",
             "equal_contribution_weights", "dose_response_markers",
-            "default_baseline_markers", "cohort_cold_init"}
+            "cohort_cold_init"}
     mismatched = []
     for name, val in vars(args).items():
         if name in skip or val is None or name not in fn_defaults:

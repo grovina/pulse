@@ -53,6 +53,9 @@ class OperatorKind(str, Enum):
     TAPED_VITAL = "taped_vital"
     RATE = "rate"
     LONG_LEVEL = "long_level"
+    DOSE_SLOPE = "dose_slope"
+    DOSE_PEAK = "dose_peak"
+    DOSE_RANK = "dose_rank"
 
 
 _KIND_FROM_STATISTIC: dict[StatisticKind, OperatorKind] = {
@@ -218,12 +221,71 @@ def teacher_distill_items() -> tuple[EvidenceItem, ...]:
     )
 
 
+def teacher_meal_glucose_item() -> EvidenceItem:
+    return EvidenceItem(
+        name="teacher_meal_glucose",
+        source="simulate_full_body per-patient 75 g meal (generator, wearable glucose)",
+        description="Per-patient glucose peak rise, time-to-peak, and fasting level",
+        authority=Authority.TEACHER,
+        arms=(),
+        observations=(
+            Observation(marker_id="glucose", kind=OperatorKind.PEAK),
+            Observation(marker_id="glucose", kind=OperatorKind.TIME_TO_PEAK),
+            Observation(marker_id="glucose", kind=OperatorKind.WINDOW_MEAN),
+        ),
+    )
+
+
+def dose_response_items() -> tuple[EvidenceItem, ...]:
+    """Canonical literature dose-response (Wolever peak; GLP-1 rank)."""
+    return (
+        EvidenceItem(
+            name="dose_glucose_peak",
+            source="Wolever (1991, 1996)",
+            description="Postprandial glucose Δpeak vs carb dose, 0.7 mg/dL/g",
+            authority=Authority.LITERATURE,
+            arms=(),
+            observations=(
+                Observation(
+                    marker_id="glucose", kind=OperatorKind.DOSE_PEAK,
+                    target=0.7, sigma=0.25,
+                ),
+            ),
+        ),
+        EvidenceItem(
+            name="dose_insulin_peak",
+            source="Wolever (1991, 1996); Brand-Miller (2003)",
+            description="Postprandial insulin Δpeak vs carb dose",
+            authority=Authority.LITERATURE,
+            arms=(),
+            observations=(
+                Observation(
+                    marker_id="insulin", kind=OperatorKind.DOSE_PEAK,
+                    target=0.4, sigma=0.3,
+                ),
+            ),
+        ),
+        EvidenceItem(
+            name="dose_glp1_rank",
+            source="Brand-Miller (2003); incretin dose-ordering",
+            description="GLP-1 peak ranks with carb dose",
+            authority=Authority.LITERATURE,
+            arms=(),
+            observations=(
+                Observation(marker_id="glp1", kind=OperatorKind.DOSE_RANK),
+            ),
+        ),
+    )
+
+
 def all_evidence() -> tuple[EvidenceItem, ...]:
     return (
         *(from_cohort(spec) for spec in ALL_COHORT_STATISTICS),
         *(from_rule(rule) for rule in PHYSIOLOGY_RULES),
         teacher_tape_item(),
         *teacher_distill_items(),
+        teacher_meal_glucose_item(),
+        *dose_response_items(),
     )
 
 

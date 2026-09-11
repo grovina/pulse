@@ -29,8 +29,7 @@ from pulse.knowledge.cohort_types import (  # noqa: E402
     TargetShape,
 )
 from pulse.model import ModularPhysiologyNetwork  # noqa: E402
-from pulse.training import CohortStatisticSignal, SignalContext, WeightSchedule, joint_aux_step  # noqa: E402
-from pulse.training.cohort_signal import perturb_group_arms  # noqa: E402
+from pulse.training import RolloutEvidenceSignal, SignalContext, WeightSchedule, joint_aux_step, perturb_group_arms  # noqa: E402
 from pulse.types import EMBEDDING_DIM  # noqa: E402
 
 
@@ -114,7 +113,7 @@ def test_cohort_gradient_does_not_reach_the_embedding_table() -> None:
     nn.init.normal_(emb.weight, std=0.1)
     params = list(model.parameters()) + list(emb.parameters())
     opt = torch.optim.Adam(params, lr=1e-2)
-    sig = CohortStatisticSignal(specs=[_toy_meal_spec()], n_patients=2, sample_patients=2,
+    sig = RolloutEvidenceSignal(specs=[_toy_meal_spec()], n_patients=2, sample_patients=2,
                                 weight=WeightSchedule(0.5))
     ctx = SignalContext(epoch=0, total_epochs=1, rng=np.random.default_rng(0),
                         device=torch.device("cpu"), optimizer=opt, params=params, grad_clip=10.0)
@@ -129,7 +128,7 @@ def test_cohort_gradient_does_not_reach_the_embedding_table() -> None:
 
 def test_adaptive_cap_and_multiply_in_the_cohort_signal() -> None:
     specs = [_spec(name=f"s{i}", weight=(0.5 if i == 0 else 1.0)) for i in range(5)]
-    sig = CohortStatisticSignal(specs=specs, adaptive=True, weight=WeightSchedule(0.1))
+    sig = RolloutEvidenceSignal(specs=specs, adaptive=True, weight=WeightSchedule(0.1))
     sig._update_violation_ema({"s0": 50.0, "s1": 50.0, "s2": 0.1, "s3": 0.1, "s4": 0.1})
     w = sig._adaptive_weights_from_ema()
     total = sum(s.weight for s in specs)
@@ -162,7 +161,7 @@ def test_perturbation_keeps_meals_on_their_side_of_every_window() -> None:
 def test_short_arms_are_not_perturbed_and_fixed_protocol_is_sampled() -> None:
     assert perturb_group_arms([_toy_meal_spec()], np.random.default_rng(0)) is None
     from pulse.knowledge.cohorts.sleep import SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE as S
-    sig = CohortStatisticSignal(specs=[S], perturb_protocols=True, perturb_fixed_prob=0.25)
+    sig = RolloutEvidenceSignal(specs=[S], perturb_protocols=True, perturb_fixed_prob=0.25)
     assert sig.perturb_fixed_prob == 0.25
 
 
@@ -175,7 +174,7 @@ def test_groups_per_step_round_robins_over_all_groups() -> None:
     emb = nn.Embedding(1, EMBEDDING_DIM)
     params = list(model.parameters())
     opt = torch.optim.SGD(params, lr=0.0)
-    sig = CohortStatisticSignal(specs=specs, n_patients=0, sample_patients=0, use_cold_initial_state=False,
+    sig = RolloutEvidenceSignal(specs=specs, n_patients=0, sample_patients=0, use_cold_initial_state=False,
                                 weight=WeightSchedule(0.1), groups_per_step=2)
     seen: list[set[str]] = []
     for epoch in range(3):

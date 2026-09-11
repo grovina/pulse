@@ -116,7 +116,7 @@ BENCHMARK_GATE_CALIBRATE_L2 = _GATE_SETTINGS.l2_weight
 # embedding barely leaves the population mean. The underlying disease is that per-patient meal
 # amplitude is not identifiable, so with a meal in the calibration window the optimizer inflates
 # Gb to fit the peak (measured: it drives Gb to ~110 whether the truth is 100 or 85). Iter 91
-# attacks that at TRAINING time (MealResponseSignal). The prior is the guardrail that keeps
+# attacks that at TRAINING time (meal-response evidence). The prior is the guardrail that keeps
 # calibration from running away while the amplitude axis becomes fittable — the two belong
 # together, and the prior should be re-swept once amplitude is identifiable.
 # Iter 91 follow-up: re-swept, default REVERTED to 0.0. The iter-91 re-enable above was validated

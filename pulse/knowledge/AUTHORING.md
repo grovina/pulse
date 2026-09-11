@@ -46,6 +46,17 @@ time series (CRH, remote insulin, mito, fat mass, bile pools)?
 └─ Yes → TEACHER_DISTILL_MARKERS (rate), or TEACHER_DISTILL_LONG_ONLY
    for day-scale states. Do not distill a marker a cohort statistic owns.
 
+Is the finding "marker M's peak / rank / slope scales with carb dose
+on a simulated protocol"?
+└─ Yes → OperatorKind.DOSE_* EvidenceItem (knowledge/evidence.py),
+   scored by RolloutEvidenceSignal (family=dose). Not a SweepSignal —
+   those bypass integrate() for a local module map.
+
+Is the finding a typical-value magnet, a fasting-stability MSE, or a
+copy of post-meal landmarks onto the trajectory window?
+└─ No. Those are not evidence. Encode the literature finding as a
+   cohort spec or physiology rule instead.
+
 Is the finding "in this scenario, marker M follows roughly this
 trajectory shape"?
 └─ Yes → TextbookScenario / FlowStory
@@ -259,6 +270,10 @@ For all surfaces:
 - **Don't** add a new sweep signal "just in case". They're expensive
   and only help when the trajectory loss is structurally too weak on
   a module. Use the diagnostics first.
+- **Don't** add a fasting-stability, postprandial-recovery, or
+  default-baseline magnet, and don't copy post-meal landmarks onto
+  the trajectory window. Those findings already live as cohort
+  statistics and physiology rules.
 - **Don't** factorize a module without first trying a sweep signal
   + coupling priors. Factorization is irreversible and constrains
   future iterations.

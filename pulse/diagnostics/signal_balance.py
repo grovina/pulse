@@ -38,9 +38,9 @@ import torch.nn as nn
 
 from ..knowledge import ALL_COHORT_STATISTICS, ALL_CONTRIBUTIONS
 from ..training import (
-    CohortStatisticSignal,
     GutDoseSweepSignal,
     InsulinSweepSignal,
+    RolloutEvidenceSignal,
     SignalContext,
     TrainingSignal,
     TrajectoryRolloutSignal,
@@ -149,7 +149,8 @@ def _build_default_signals(n_patients: int) -> list[TrainingSignal]:
             include_default_embedding=True,
             weight=WeightSchedule(1.0),
         ),
-        CohortStatisticSignal(
+        RolloutEvidenceSignal(
+            family="cohort",
             specs=list(ALL_COHORT_STATISTICS),
             n_patients=n_patients,
             sample_patients=4,
@@ -171,7 +172,6 @@ def _build_default_signals(n_patients: int) -> list[TrainingSignal]:
             coupling_prior_samples=0,
             trajectory_band=0.2,
             trajectory_band_default=0.05,
-            landmark_weight=WeightSchedule(0.0),
             n_default_patients=2,
         ),
     ]

@@ -38,6 +38,10 @@ def test_registry_covers_cohorts_and_rules() -> None:
     assert "teacher_wearable_tape" in names
     assert "teacher_internal_rate" in names
     assert "teacher_internal_long_level" in names
+    assert "teacher_meal_glucose" in names
+    assert "dose_glucose_peak" in names
+    assert "dose_insulin_peak" in names
+    assert "dose_glp1_rank" in names
 
 
 def test_training_mix_is_the_generator_not_views() -> None:

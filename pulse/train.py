@@ -103,22 +103,16 @@ from .knowledge.physiology_rules import PHYSIOLOGY_RULES
 from .model import ModularPhysiologyNetwork
 from .dose_response import DoseResponseProtocol, MarkerDoseTarget
 from .training import (
-    CohortStatisticSignal,
     ColdModelDistillationSignal,
     CarbMassBalanceSignal,
-    DefaultBaselineSignal,
     SetpointSupervisionSignal,
-    MealResponseSignal,
     EmbeddingPriorSignal,
-    DoseResponseSignal,
-    FastingStabilitySignal,
-    PhysiologyRulesSignal,
-    PostprandialRecoverySignal,
     GutDoseSweepProtocol,
     GutDoseSweepSignal,
     InsulinSweepProtocol,
     InsulinSweepSignal,
     NaNTrainingAbort,
+    RolloutEvidenceSignal,
     SignalContext,
     joint_aux_step,
     SignalResult,
@@ -329,10 +323,6 @@ def train(
     cohort_statistic_adaptive: bool = False,
     trajectory_band: float = 0.0,
     trajectory_band_default: float = 0.0,
-    landmark_weight: float = 0.0,
-    landmark_pre_window: int = 15,
-    landmark_post_window: int = 120,
-    landmark_min_carbs: float = 5.0,
     dose_response_weight: float = 0.0,
     dose_response_sample_patients: int = 4,
     dose_response_markers: tuple[MarkerDoseTarget, ...] = (),
@@ -343,15 +333,10 @@ def train(
     insulin_sweep_sample_patients: int = 4,
     insulin_sweep_auc_weight: float = 1.0,
     insulin_sweep_ranking_weight: float = 1.0,
-    fasting_stability_weight: float = 0.0,
-    fasting_stability_window: int = 120,
-    postprandial_recovery_weight: float = 0.0,
-    default_baseline_weight: float = 0.0,
     setpoint_supervision_weight: float = 0.0,
     meal_response_weight: float = 0.0,
     embedding_prior_weight: float = 0.0,
     meal_response_sample_patients: int = 4,
-    default_baseline_markers: tuple[str, ...] = ("hr",),
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
     cold_distill_weight: float = 0.0,
@@ -453,15 +438,12 @@ def train(
         coupling_prior_samples=coupling_prior_samples,
         trajectory_band=trajectory_band,
         trajectory_band_default=trajectory_band_default,
-        landmark_weight=WeightSchedule(landmark_weight, enable_at_epoch=enable_at),
-        landmark_pre_window=landmark_pre_window,
-        landmark_post_window=landmark_post_window,
-        landmark_min_carbs=landmark_min_carbs,
         n_default_patients=n_default_patients,
         trajectory_band_per_marker=trajectory_band_per_marker,
         shape_markers=tuple(trajectory_shape_markers),
     )
-    cohort_signal = CohortStatisticSignal(
+    cohort_signal = RolloutEvidenceSignal(
+        family="cohort",
         specs=list(ALL_COHORT_STATISTICS),
         n_patients=n_patients,
         sample_patients=cohort_sample_patients,
@@ -474,7 +456,8 @@ def train(
     dose_response_protocol = DoseResponseProtocol(
         marker_targets=tuple(dose_response_markers),
     )
-    dose_response_signal = DoseResponseSignal(
+    dose_response_signal = RolloutEvidenceSignal(
+        family="dose",
         n_patients=n_patients,
         sample_patients=dose_response_sample_patients,
         weight=WeightSchedule(dose_response_weight, enable_at_epoch=enable_at),
@@ -497,18 +480,6 @@ def train(
         protocol=insulin_sweep_protocol,
         auc_weight=insulin_sweep_auc_weight,
         ranking_weight=insulin_sweep_ranking_weight,
-    )
-    fasting_stability_signal = FastingStabilitySignal(
-        window_min=fasting_stability_window,
-        weight=WeightSchedule(fasting_stability_weight, enable_at_epoch=0),
-    )
-    postprandial_recovery_signal = PostprandialRecoverySignal(
-        weight=WeightSchedule(postprandial_recovery_weight, enable_at_epoch=0),
-        perturb_protocols=perturb_protocols,
-    )
-    default_baseline_signal = DefaultBaselineSignal(
-        weight=WeightSchedule(default_baseline_weight, enable_at_epoch=0),
-        markers=tuple(default_baseline_markers),
     )
     # Iter 90: supervise the embedding->physiology map against the teacher's KNOWN
     # per-patient setpoints. The recovery test showed the map is not invertible --
@@ -539,7 +510,8 @@ def train(
     embedding_prior_signal = EmbeddingPriorSignal(
         weight=WeightSchedule(embedding_prior_weight, enable_at_epoch=0),
     )
-    meal_response_signal = MealResponseSignal(
+    meal_response_signal = RolloutEvidenceSignal(
+        family="meal",
         weight=WeightSchedule(meal_response_weight, enable_at_epoch=enable_at),
         n_patients=n_patients,
         sample_patients=meal_response_sample_patients,
@@ -572,7 +544,8 @@ def train(
         anchor_long_only_markers=tuple(cold_distill_anchor_long_only),
         anchor_level_band=cold_distill_level_band,
     )
-    physiology_rules_signal = PhysiologyRulesSignal(
+    physiology_rules_signal = RolloutEvidenceSignal(
+        family="hinge",
         rules=list(PHYSIOLOGY_RULES),
         n_patients=n_patients,
         sample_patients=physiology_rules_sample_patients,
@@ -586,9 +559,6 @@ def train(
         dose_response_signal,
         gut_dose_sweep_signal,
         insulin_sweep_signal,
-        fasting_stability_signal,
-        postprandial_recovery_signal,
-        default_baseline_signal,
         setpoint_supervision_signal,
         meal_response_signal,
         embedding_prior_signal,
@@ -604,9 +574,7 @@ def train(
     )
     print(
         f"Trajectory band={trajectory_band:.3f} (per-patient), "
-        f"{trajectory_band_default:.3f} (default-patient, norm units); "
-        f"landmark weight={landmark_weight} "
-        f"(pre={landmark_pre_window}min, post={landmark_post_window}min, min_carbs={landmark_min_carbs}g)",
+        f"{trajectory_band_default:.3f} (default-patient, norm units)",
     )
     _dr_targets = dose_response_protocol.effective_targets()
     _dr_target_desc = ", ".join(
@@ -635,19 +603,6 @@ def train(
         f"glucose_grid={insulin_sweep_protocol.glucose_sweep_mg_dL} mg/dL, "
         f"insulin_grid={insulin_sweep_protocol.insulin_sweep_uU_mL} μU/mL, "
         f"sample_patients={insulin_sweep_sample_patients}",
-    )
-    print(
-        f"Fasting stability: weight={fasting_stability_weight} "
-        f"(glucose drift from NORM_CENTER over {fasting_stability_window} min, zero embedding; 0=disabled)",
-    )
-    print(
-        f"Postprandial recovery: weight={postprandial_recovery_weight} "
-        f"(glucose residual at +420-475 min after standard meal, zero embedding; 0=disabled)",
-    )
-    print(
-        f"Default baseline: weight={default_baseline_weight} "
-        f"markers={tuple(default_baseline_markers)} "
-        f"(zero-embedding fasted mean toward NORM_CENTER; 0=disabled)",
     )
     print(
         f"Cold-model distillation: weight={cold_distill_weight} pool={cold_distill_pool} mode={cold_distill_mode}"
@@ -887,8 +842,6 @@ def train(
             dose = results["dose_response"]
             gut_sweep = results["gut_dose_sweep"]
             ins_sweep = results["insulin_sweep"]
-            fst = results["fasting_stability"]
-            ppr = results["postprandial_recovery"]
 
             metrics_summary: dict[str, float] = {
                 "epoch": float(epoch),
@@ -903,8 +856,6 @@ def train(
                 "dose_loss": float(dose.loss_sum) if dose.n_units > 0 else 0.0,
                 "gut_sweep_loss": float(gut_sweep.loss_sum) if gut_sweep.n_units > 0 else 0.0,
                 "ins_sweep_loss": float(ins_sweep.loss_sum) if ins_sweep.n_units > 0 else 0.0,
-                "fasting_stability_loss": float(fst.loss_sum) if fst.n_units > 0 else 0.0,
-                "postprandial_recovery_loss": float(ppr.loss_sum) if ppr.n_units > 0 else 0.0,
             }
             for sig_name, t in signal_times.items():
                 metrics_summary[f"time_{sig_name}_s"] = float(t)
@@ -954,11 +905,6 @@ def train(
                     parts.append(f"cpl={traj.sub_metrics['coupling']:.6f}")
                 if "verifier_surrogate" in traj.sub_metrics:
                     parts.append(f"v_sur={traj.sub_metrics['verifier_surrogate']:.6f}")
-                if "landmark" in traj.sub_metrics:
-                    parts.append(
-                        f"lm={traj.sub_metrics['landmark']:.6f}"
-                        f"({int(traj.sub_metrics.get('landmark_meals', 0))})",
-                    )
                 if cohort.n_units > 0:
                     parts.append(f"cohort={cohort.loss_sum:.6f}")
                 if dose.n_units > 0:
@@ -973,12 +919,6 @@ def train(
                         f"ins_sweep={ins_sweep.loss_sum:.4f}"
                         f"(auc={ins_sweep.sub_metrics.get('auc', 0.0):.4f})",
                     )
-                if fst.n_units > 0:
-                    parts.append(f"fst={fst.sub_metrics.get('glucose_drift_norm', 0.0):.4f}")
-                if ppr.n_units > 0:
-                    parts.append(
-                        f"ppr={ppr.sub_metrics.get('residual_mg_dl', 0.0):.2f}mg/dL",
-                    )
                 parts.append(f"lr={scheduler.get_last_lr()[0]:.5f}")
                 parts.append(f"({elapsed:.1f}s)")
                 # Per-signal time breakdown — short names so it fits one line.
@@ -988,8 +928,8 @@ def train(
                     "dose_response": "dose",
                     "gut_dose_sweep": "gsw",
                     "insulin_sweep": "isw",
-                    "fasting_stability": "fst",
-                    "postprandial_recovery": "ppr",
+                    "physiology_rules": "rules",
+                    "meal_response": "meal",
                 }
                 breakdown = " ".join(
                     f"{_short.get(nm, nm)}={signal_times[nm]:.0f}s"
@@ -1095,10 +1035,6 @@ def train(
         "cohort_statistic_specs": [s.name for s in ALL_COHORT_STATISTICS],
         "trajectory_band": trajectory_band,
         "trajectory_band_default": trajectory_band_default,
-        "landmark_weight": landmark_weight,
-        "landmark_pre_window": landmark_pre_window,
-        "landmark_post_window": landmark_post_window,
-        "landmark_min_carbs": landmark_min_carbs,
         "dose_response_weight": dose_response_weight,
         "dose_response_sample_patients": dose_response_sample_patients,
         "dose_response_target_slope": dose_response_protocol.target_slope,
@@ -1123,11 +1059,9 @@ def train(
         "insulin_sweep_ranking_weight": insulin_sweep_ranking_weight,
         "insulin_sweep_glucose_mg_dL": list(insulin_sweep_protocol.glucose_sweep_mg_dL),
         "insulin_sweep_insulin_uU_mL": list(insulin_sweep_protocol.insulin_sweep_uU_mL),
-        "default_baseline_weight": default_baseline_weight,
         "setpoint_supervision_weight": setpoint_supervision_weight,
         "meal_response_weight": meal_response_weight,
         "embedding_prior_weight": embedding_prior_weight,
-        "default_baseline_markers": list(default_baseline_markers),
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
         "cold_distill_weight": cold_distill_weight,
@@ -1577,15 +1511,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Banded distillation for default-patient (zero embedding) episodes. Lower than --trajectory-band so the zero embedding receives tighter cold-model imitation (the benchmark queries it directly; no patient identity to preserve).",
     )
     parser.add_argument(
-        "--landmark-weight",
-        type=float,
-        default=0.0,
-        help="Per-window post-meal landmark loss weight (Δpeak / time-to-peak / AUC for glucose & insulin). 0 disables.",
-    )
-    parser.add_argument("--landmark-pre-window", type=int, default=15)
-    parser.add_argument("--landmark-post-window", type=int, default=120)
-    parser.add_argument("--landmark-min-carbs", type=float, default=5.0)
-    parser.add_argument(
         "--dose-response-weight",
         type=float,
         default=0.0,
@@ -1687,37 +1612,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--fasting-stability-weight",
-        type=float,
-        default=0.0,
-        help=(
-            "Weight for the fasting stability signal: MSE of glucose drift from NORM_CENTER "
-            "over a no-meal rollout at the zero embedding. Directly counters the "
-            "+57 mg/dL resting glucose drift observed in iter 26. Active from epoch 0. "
-            "0 disables (default)."
-        ),
-    )
-    parser.add_argument(
-        "--fasting-stability-window",
-        type=int,
-        default=120,
-        help=(
-            "Duration in minutes of the fasting rollout used by the fasting stability signal. "
-            "Default 120 (iter 26–30). Set to 240 to match the benchmark probe window directly."
-        ),
-    )
-    parser.add_argument(
-        "--postprandial-recovery-weight",
-        type=float,
-        default=0.0,
-        help=(
-            "Weight for the postprandial recovery signal: MSE of glucose residual at "
-            "+420-475 min after a standardized 50g-carb meal at the zero embedding. "
-            "Mirrors the dietary_carbohydrate_meal_flow benchmark check that has been "
-            "failing 60-70 mg/dL across iters 27-31. Active from epoch 0. 0 disables (default)."
-        ),
-    )
-    parser.add_argument(
         "--embedding-prior-weight",
         type=float,
         default=0.0,
@@ -1766,31 +1660,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "supervised: measured best-case recovery of fasting glucose is worse than "
             "predicting the population mean (skill -24.7). Cheap (no rollout); on from epoch 0. "
             "0 disables (default)."
-        ),
-    )
-    parser.add_argument(
-        "--default-baseline-weight",
-        type=float,
-        default=0.0,
-        help=(
-            "Weight for the default-baseline signal: pulls the trained model's "
-            "zero-embedding fasted mean output toward NORM_CENTER for selected "
-            "markers. Iter 36 calibration investigation showed iter-32-to-35's "
-            "hr_mape ~0.24 was a +15 bpm bias on the trained default-patient "
-            "(zero embedding HR ~88 bpm vs bench eval mean ~63 bpm). This signal "
-            "constrains the resting equilibrium so calibration starts from a "
-            "saner basin. Active from epoch 0. 0 disables (default)."
-        ),
-    )
-    parser.add_argument(
-        "--default-baseline-markers",
-        type=str,
-        default="hr",
-        help=(
-            "Comma-separated marker ids constrained by --default-baseline-weight. "
-            "Default 'hr' — the marker the iter-36 investigation identified. "
-            "Add others (e.g. 'hr,sbp,dbp') only after confirming the HR-only "
-            "version doesn't introduce regressions elsewhere."
         ),
     )
     parser.add_argument(
@@ -2099,7 +1968,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--perturb-protocols", action="store_true",
-        help="Iter 97 (review 4.10): perturb the postprandial-recovery, dose-response and long "
+        help="Iter 97 (review 4.10): perturb dose-response and long "
              "cohort protocols per step (dose +/-20%%, timing +/-30 min, start +/-1 h), keeping "
              "the fixed protocol as one sample in four.",
     )
@@ -2226,10 +2095,6 @@ def main():
         cohort_statistic_adaptive=args.cohort_statistic_adaptive,
         trajectory_band=args.trajectory_band,
         trajectory_band_default=args.trajectory_band_default,
-        landmark_weight=args.landmark_weight,
-        landmark_pre_window=args.landmark_pre_window,
-        landmark_post_window=args.landmark_post_window,
-        landmark_min_carbs=args.landmark_min_carbs,
         dose_response_weight=args.dose_response_weight,
         dose_response_sample_patients=args.dose_response_sample_patients,
         dose_response_markers=_parse_dose_response_markers(args.dose_response_markers),
@@ -2240,15 +2105,10 @@ def main():
         insulin_sweep_sample_patients=args.insulin_sweep_sample_patients,
         insulin_sweep_auc_weight=args.insulin_sweep_auc_weight,
         insulin_sweep_ranking_weight=args.insulin_sweep_ranking_weight,
-        fasting_stability_weight=args.fasting_stability_weight,
-        fasting_stability_window=args.fasting_stability_window,
-        postprandial_recovery_weight=args.postprandial_recovery_weight,
-        default_baseline_weight=args.default_baseline_weight,
         setpoint_supervision_weight=args.setpoint_supervision_weight,
         meal_response_weight=args.meal_response_weight,
         embedding_prior_weight=args.embedding_prior_weight,
         meal_response_sample_patients=args.meal_response_sample_patients,
-        default_baseline_markers=_split_markers(args.default_baseline_markers),
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,
         cold_distill_weight=args.cold_distill_weight,

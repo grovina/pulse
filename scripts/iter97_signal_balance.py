@@ -44,17 +44,11 @@ from pulse.model import ModularPhysiologyNetwork  # noqa: E402
 from pulse.train import _load_spec_train_args, _parse_dose_response_markers, build_arg_parser  # noqa: E402
 from pulse.training import (  # noqa: E402
     CarbMassBalanceSignal,
-    CohortStatisticSignal,
     ColdModelDistillationSignal,
-    DefaultBaselineSignal,
-    DoseResponseSignal,
     EmbeddingPriorSignal,
-    FastingStabilitySignal,
     GutDoseSweepSignal,
     InsulinSweepSignal,
-    MealResponseSignal,
-    PhysiologyRulesSignal,
-    PostprandialRecoverySignal,
+    RolloutEvidenceSignal,
     SetpointSupervisionSignal,
     SignalContext,
     TrajectoryRolloutSignal,
@@ -120,19 +114,15 @@ def main() -> int:
     dr = DoseResponseProtocol(marker_targets=_parse_dose_response_markers(args.dose_response_markers))
     markers = tuple(args.cold_distill_markers.split(":")) if args.cold_distill_markers else None
     sigs = [
-        DoseResponseSignal(n_patients=N, sample_patients=args.dose_response_sample_patients,
+        RolloutEvidenceSignal(family="dose", n_patients=N, sample_patients=args.dose_response_sample_patients,
                            weight=WeightSchedule(args.dose_response_weight), protocol=dr, perturb_protocols=True),
         GutDoseSweepSignal(n_patients=N, sample_patients=args.gut_dose_sweep_sample_patients,
                            weight=WeightSchedule(args.gut_dose_sweep_weight), auc_weight=args.gut_dose_sweep_auc_weight),
         InsulinSweepSignal(n_patients=N, sample_patients=args.insulin_sweep_sample_patients,
                            weight=WeightSchedule(args.insulin_sweep_weight), auc_weight=args.insulin_sweep_auc_weight,
                            ranking_weight=args.insulin_sweep_ranking_weight),
-        FastingStabilitySignal(window_min=args.fasting_stability_window, weight=WeightSchedule(args.fasting_stability_weight)),
-        PostprandialRecoverySignal(weight=WeightSchedule(args.postprandial_recovery_weight), perturb_protocols=True),
-        DefaultBaselineSignal(weight=WeightSchedule(args.default_baseline_weight),
-                              markers=tuple(args.default_baseline_markers.split(":"))),
         SetpointSupervisionSignal(weight=WeightSchedule(args.setpoint_supervision_weight), targets=sp),
-        MealResponseSignal(weight=WeightSchedule(args.meal_response_weight), n_patients=N,
+        RolloutEvidenceSignal(family="meal", weight=WeightSchedule(args.meal_response_weight), n_patients=N,
                            sample_patients=args.meal_response_sample_patients, targets=mr),
         EmbeddingPriorSignal(weight=WeightSchedule(args.embedding_prior_weight)),
         CarbMassBalanceSignal(weight=WeightSchedule(args.carb_mass_balance_weight), n_patients=N,
@@ -140,7 +130,7 @@ def main() -> int:
     ]
     if not a.fast:
         sigs += [
-            CohortStatisticSignal(specs=list(ALL_COHORT_STATISTICS), n_patients=N,
+            RolloutEvidenceSignal(family="cohort", specs=list(ALL_COHORT_STATISTICS), n_patients=N,
                                   sample_patients=args.cohort_sample_patients,
                                   weight=WeightSchedule(args.cohort_statistic_weight), adaptive=True,
                                   groups_per_step=args.cohort_groups_per_step, perturb_protocols=True),
@@ -159,7 +149,7 @@ def main() -> int:
                                             )
                                         }),
                                         anchor_level_band=args.cold_distill_level_band),
-            PhysiologyRulesSignal(rules=list(PHYSIOLOGY_RULES), n_patients=N,
+            RolloutEvidenceSignal(family="hinge", rules=list(PHYSIOLOGY_RULES), n_patients=N,
                                   sample_patients=args.physiology_rules_sample_patients,
                                   weight=WeightSchedule(args.physiology_rules_weight), adaptive=True,
                                   arms_per_step=args.rules_arms_per_step),
@@ -178,7 +168,7 @@ def main() -> int:
         n_patients=N, n_days=2, seed=1, contribution_weights={"full_body": 1.0}, windows_per_patient=1,
         meal_window_bias=args.meal_window_bias, input_dropout=args.input_dropout, huber_delta=args.huber_delta,
         gut_loss_weight=0.0, coupling_weight=WeightSchedule(args.coupling_prior_weight),
-        verifier_weight=WeightSchedule(0.02), landmark_weight=WeightSchedule(args.landmark_weight),
+        verifier_weight=WeightSchedule(0.02),
         n_default_patients=1, trajectory_band_per_marker=parse_band_per_marker(args.trajectory_band_per_marker),
         shape_markers=tuple(args.trajectory_shape_markers.split(":")) if args.trajectory_shape_markers else (),
     )

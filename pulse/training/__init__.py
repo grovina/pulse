@@ -1,14 +1,13 @@
 """
 Training-signal framework for Pulse.
 
-Each gradient-producing source of medical knowledge (cold-model trajectory
-distillation, cohort statistics, mechanism priors, scenario checks) is a
+Each gradient-producing source of medical knowledge is a
 ``TrainingSignal``. The trainer orchestrates them; signals own their data,
 their inner loop, and their own backward+step calls.
 
-This isolates the *what* (which knowledge source contributes) from the
-*how* (rollout cadence, gradient handling) and lets us add new signals
-without surgery on the main loop.
+Rollout evidence (cohort statistics, physiology-rule hinges, dose-response,
+per-patient meal glucose) shares one engine. Map, rate, and structure
+signals stay their own engines.
 """
 
 from .signals import (
@@ -26,19 +25,17 @@ from .safe_step import (
     safe_step,
 )
 from .trajectory_signal import TrajectoryRolloutSignal
-from .cohort_signal import CohortStatisticSignal
-from .dose_response_signal import DoseResponseSignal
+from .rollout_signal import (
+    RolloutEvidenceSignal,
+    perturb_dose_response_protocol,
+    perturb_group_arms,
+)
 from .gut_dose_sweep_signal import GutDoseSweepProtocol, GutDoseSweepSignal
 from .insulin_sweep_signal import InsulinSweepProtocol, InsulinSweepSignal
-from .fasting_stability_signal import FastingStabilitySignal
-from .postprandial_recovery_signal import PostprandialRecoverySignal
-from .default_baseline_signal import DefaultBaselineSignal
 from .setpoint_supervision_signal import SetpointSupervisionSignal
-from .meal_response_signal import MealResponseSignal
 from .embedding_prior_signal import EmbeddingPriorSignal
 from .carb_mass_balance_signal import CarbMassBalanceSignal
 from .cold_model_distillation_signal import ColdModelDistillationSignal
-from .physiology_rules_signal import PhysiologyRulesSignal
 
 __all__ = [
     "SignalContext",
@@ -52,19 +49,15 @@ __all__ = [
     "grad_snapshot",
     "joint_aux_step",
     "TrajectoryRolloutSignal",
-    "CohortStatisticSignal",
-    "DoseResponseSignal",
+    "RolloutEvidenceSignal",
+    "perturb_dose_response_protocol",
+    "perturb_group_arms",
     "GutDoseSweepProtocol",
     "GutDoseSweepSignal",
     "InsulinSweepProtocol",
     "InsulinSweepSignal",
-    "FastingStabilitySignal",
-    "PostprandialRecoverySignal",
-    "DefaultBaselineSignal",
     "SetpointSupervisionSignal",
-    "MealResponseSignal",
     "EmbeddingPriorSignal",
     "CarbMassBalanceSignal",
     "ColdModelDistillationSignal",
-    "PhysiologyRulesSignal",
 ]

@@ -64,8 +64,6 @@ class TestAbsScale(unittest.TestCase):
             verifier_weight=WeightSchedule(0.0),
             coupling_prior_samples=0,
             trajectory_band=0.0, trajectory_band_default=0.0,
-            landmark_weight=WeightSchedule(0.0),
-            landmark_pre_window=0, landmark_post_window=0, landmark_min_carbs=0.0,
             n_default_patients=0,
         )
         expected = torch.tensor(GUT_OUTPUT_SCALE, dtype=torch.float32)

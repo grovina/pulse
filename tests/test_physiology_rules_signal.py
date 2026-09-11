@@ -1,4 +1,4 @@
-"""Regression coverage for ``PhysiologyRulesSignal``.
+"""Regression coverage for ``RolloutEvidenceSignal``.
 
 iter 68 r6 OOM'd at phase 2 ep 50 because ``physiology_rules_epoch_loss``
 summed all 60 rules' losses into one composite tensor before a single
@@ -24,7 +24,7 @@ from pulse.knowledge.physiology_rules import (
 )
 from pulse.model import ModularPhysiologyNetwork
 from pulse.physiology_rules_loss import physiology_rule_loss_one_rule
-from pulse.training import PhysiologyRulesSignal, SignalContext, WeightSchedule
+from pulse.training import RolloutEvidenceSignal, SignalContext, WeightSchedule
 from pulse.types import EMBEDDING_DIM
 
 
@@ -77,14 +77,14 @@ def _glucagon_falls_rule(name: str = "glucagon_falls") -> PhysiologyRule:
     )
 
 
-class TestPhysiologyRulesSignalPerRuleBackward(unittest.TestCase):
+class TestRolloutEvidenceSignalPerRuleBackward(unittest.TestCase):
     def test_zero_weight_is_noop(self) -> None:
         device = torch.device("cpu")
         model = _tiny_model()
         emb = nn.Embedding(2, EMBEDDING_DIM)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
-        sig = PhysiologyRulesSignal(
+        sig = RolloutEvidenceSignal(
             rules=[_glucose_rises_rule()],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.0),
@@ -111,7 +111,7 @@ class TestPhysiologyRulesSignalPerRuleBackward(unittest.TestCase):
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-3)
 
-        sig = PhysiologyRulesSignal(
+        sig = RolloutEvidenceSignal(
             rules=[_glucose_rises_rule("rule_a"), _glucagon_falls_rule("rule_b")],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -142,7 +142,7 @@ class TestPhysiologyRulesSignalPerRuleBackward(unittest.TestCase):
         nn.init.normal_(emb.weight, std=0.1)
         params = list(model.parameters()) + list(emb.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
-        sig = PhysiologyRulesSignal(
+        sig = RolloutEvidenceSignal(
             rules=[_glucose_rises_rule("ra"), _glucagon_falls_rule("rb")],
             n_patients=2, sample_patients=2,
             weight=WeightSchedule(0.5),
@@ -220,13 +220,13 @@ class TestPhysiologyRulesArmMajorEquivalence(unittest.TestCase):
         )
         rules = [rule_a, rule_b, rule_c]
 
-        sig = PhysiologyRulesSignal(
+        sig = RolloutEvidenceSignal(
             rules=rules, n_patients=2, sample_patients=2,
             include_default_embedding=True, weight=WeightSchedule(0.5),
         )
         w = sig.weight_at(0)
         weight_sum = sum(r.weight for r in rules)
-        init_fn = sig._initial_state_fn(device)
+        init_fn = sig._hinge_initial_state_fn(device)
 
         def fresh_emb_list() -> list[torch.Tensor]:
             return [
