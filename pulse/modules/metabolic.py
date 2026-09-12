@@ -70,6 +70,9 @@ error). The thresholds that leaked (glycogen catabolic gates) are DELETED, not
 clamped: muscle breakdown is ``relu(act − 0.10)``, liver breakdown is the
 insulin gate above. ``mitochondrial_capacity`` has ONE role — a scale on the
 clearance of FFA, lactate and BHB — and no other head sees it.
+``insulin_action`` is lagged ``(I − Ib)/10``, signed; it is not a concentration,
+so ``raw_state`` does not floor it at 0. The only bound on how negative it can
+drive glucose is ``x_eff = max(Si·X, −0.05·k_ii)``.
 """
 
 import math
@@ -372,6 +375,10 @@ class MetabolicModule(MassActionModule):
             hidden_dim=hidden_dim,
             typicals=_TYPICALS,
             norm_scales=_NORM_SCALES,
+            # insulin_action is signed remote insulin, not a concentration. A 0-floor
+            # here zeros the tracker whenever X < 0 and walks X to the catastrophe wall.
+            raw_floors=[0.0 if i != _INSULIN_ACTION_IDX else float("-inf")
+                        for i in range(_N_SPECIES)],
             # Iter 97: every head except mito's own reads the module input WITHOUT the
             # mitochondrial_capacity column (3.11); glucose and insulin_action have fully
             # structural rates and own no parameters (the 16.5 % dead-parameter finding).
@@ -693,7 +700,7 @@ class MetabolicModule(MassActionModule):
             "mod_liver": mod_liver, "mod_gng": mod_gng,
             "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
             "ins_production": ins_production, "ins_clearance": ins_clearance,
-            "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
+            "xa": xa, "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis, "fat_rate": fat_rate, "mito_rate": mito_rate,
             "lactate_from_glyco": lactate_from_glyco, "mito_sp": mito_sp,
             "ffa_from_lipid": ffa_from_lipid, "glucagon_from_amino": glucagon_from_amino,

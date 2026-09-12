@@ -18,7 +18,7 @@ from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
 from pulse.types import (
     BODY_MASS_KG, EMBEDDING_DIM, MARKER_INDEX as MI, MG_DL_PER_G, MODULE_MARKER_INDICES,
-    NORM_CENTER, NORM_SCALE, VG_DL,
+    NORM_CENTER, NORM_SCALE, PHYSIOLOGICAL_MIN, VG_DL,
 )
 
 _MET = MODULE_MARKER_INDICES["metabolic"]
@@ -305,10 +305,98 @@ class TestPerPatientGates(unittest.TestCase):
                 m.embedding_projections["metabolic"](torch.zeros(EMBEDDING_DIM))))
             # (tau = 1/p2 = 50 min, so the lag trails a still-drifting insulin by a little)
             self.assertAlmostEqual(xa, (ins - ib) / 10.0, delta=0.08, msg=f"Gb={gb}")
+            self.assertGreater(xa, PHYSIOLOGICAL_MIN[MI["insulin_action"]] + 1.0, msg=f"Gb={gb}")
+
+
+class TestSignedInsulinAction(unittest.TestCase):
+    """Remote insulin is a signed latent, not a concentration.
+
+    Flooring it at 0 in raw_state zeros the tracker whenever X < 0 and walks
+    X to PHYSIOLOGICAL_MIN on a fast. Concentrations still floor at 0.
+    """
+
+    def test_raw_state_passes_signed_insulin_action_and_floors_concentrations(self) -> None:
+        m = _model(0, perturb=0.0)
+        met = m.metabolic
+        state = torch.zeros(1, len(_MET))
+        state[0, M._INSULIN_ACTION_IDX] = -4.0
+        state[0, M._INSULIN_IDX] = -2.0          # would be −10 µU/mL
+        state[0, M._GLUCOSE_IDX] = -4.0          # would be −25 mg/dL
+        raw = met.raw_state(state)
+        self.assertAlmostEqual(float(raw[0, M._INSULIN_ACTION_IDX]), -4.0, places=5)
+        self.assertEqual(float(raw[0, M._INSULIN_IDX]), 0.0)
+        self.assertEqual(float(raw[0, M._GLUCOSE_IDX]), 0.0)
+
+    def test_sub_basal_tracker_restores_when_x_is_too_negative(self) -> None:
+        m = _model(8, perturb=0.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0)
+        state[0, M._INSULIN_IDX] = (7.0 - 10.0) / 10.0
+        state[0, M._INSULIN_ACTION_IDX] = -4.0
+        with torch.no_grad():
+            f = met.fluxes(state, coupling, external, emb, tf)
+        self.assertAlmostEqual(float(f["xa"]), -4.0, places=5)
+        self.assertGreater(float(f["insulin_dev"]), -1.0)
+        self.assertLess(float(f["insulin_dev"]), 0.0)
+        self.assertGreater(float(f["xa_rate"]), 0.0)
+
+    def test_negative_insulin_action_reaches_glucose_as_a_floored_source(self) -> None:
+        m = _model(11, perturb=0.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0)
+        state[0, M._GLUCOSE_IDX] = 0.0
+        state[0, M._INSULIN_ACTION_IDX] = -0.05
+        with torch.no_grad():
+            f = met.fluxes(state, coupling, external, emb, tf)
+        g = 95.0
+        self.assertLess(float(f["uptake_id"]), 0.0)
+        si = float((M._SI_MIN + M._SI_RANGE * torch.sigmoid(met.log_si)).item())
+        self.assertAlmostEqual(float(f["uptake_id"]), si * -0.05 * g, places=6)
+        floor = -M._INS_DEP_BASAL_FRAC * float(f["k_ii"])
+        state[0, M._INSULIN_ACTION_IDX] = -20.0
+        with torch.no_grad():
+            f_wall = met.fluxes(state, coupling, external, emb, tf)
+        self.assertAlmostEqual(float(f_wall["xa"]), -20.0, places=5)
+        self.assertAlmostEqual(float(f_wall["uptake_id"]), floor * g, places=6)
+
+    def test_48h_fast_tracks_insulin_dev_and_does_not_pin_the_wall(self) -> None:
+        m = _model(10, hidden=32, perturb=0.0)
+        n = 2880
+        xa_floor = PHYSIOLOGICAL_MIN[MI["insulin_action"]]
+        with torch.no_grad():
+            tr = integrate(
+                m, _CENTER.clone(), torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=8 * 60, meals=[],
+                sleep_wake=torch.ones(n), activity=torch.zeros(n),
+            )
+        xa = tr[:, MI["insulin_action"]]
+        ins = tr[-1, MI["insulin"]]
+        ib = float(m.metabolic.insulin_setpoint_raw(
+            m.embedding_projections["metabolic"](torch.zeros(EMBEDDING_DIM))))
+        self.assertGreater(float(xa.min()), xa_floor + 1.0)
+        self.assertAlmostEqual(float(xa[-1]), float((ins - ib) / 10.0), delta=0.15)
+
+    def test_negative_x_recovers_toward_insulin_dev_instead_of_walking_away(self) -> None:
+        """The 99 disease: raw_state floors X at 0, so dX/dt = p2·(I−Ib)/10 with
+        no −X term, and a state of −4 never comes back. With the coordinate,
+        τ = 50 min brings it back to ~0 in a few hours."""
+        m = _model(10, hidden=32, perturb=0.0)
+        initial = _CENTER.clone()
+        initial[MI["insulin_action"]] = -4.0
+        n = 300
+        with torch.no_grad():
+            tr = integrate(
+                m, initial, torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=8 * 60, meals=[],
+                sleep_wake=torch.ones(n), activity=torch.zeros(n),
+            )
+        xa = tr[:, MI["insulin_action"]]
+        self.assertGreater(float(xa[-1]), -1.0)
+        self.assertGreater(float(xa.min()), -4.05)
 
 
 class TestBergmanClearance(unittest.TestCase):
-    """3.10: insulin action is a sink, never a source."""
+    """3.10: above-basal insulin action is a sink; sub-basal X is a floored source."""
 
     def test_insulin_action_lowers_the_glucose_rate_below_the_setpoint(self) -> None:
         m = _model(11, perturb=1.0)

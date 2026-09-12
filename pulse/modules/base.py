@@ -276,6 +276,7 @@ class MassActionModule(nn.Module):
     cons_scale: torch.Tensor
     typical_val: torch.Tensor
     norm_scale_val: torch.Tensor
+    raw_floor: torch.Tensor
 
     def __init__(
         self,
@@ -286,6 +287,7 @@ class MassActionModule(nn.Module):
         hidden_dim: int = 48,
         typicals: list[float] | None = None,
         norm_scales: list[float] | None = None,
+        raw_floors: list[float] | None = None,
         head_factories: Optional[dict[int, HeadFactory]] = None,
     ):
         super().__init__()
@@ -314,10 +316,13 @@ class MassActionModule(nn.Module):
         cons_scales = [0.02] * n_species
         prod_scales = [c * t for c, t in zip(cons_scales, typicals)]
 
+        if raw_floors is None:
+            raw_floors = [0.0] * n_species
         self.register_buffer("prod_scale", torch.tensor(prod_scales, dtype=torch.float32))
         self.register_buffer("cons_scale", torch.tensor(cons_scales, dtype=torch.float32))
         self.register_buffer("typical_val", torch.tensor(typicals, dtype=torch.float32))
         self.register_buffer("norm_scale_val", torch.tensor(norm_scales, dtype=torch.float32))
+        self.register_buffer("raw_floor", torch.tensor(raw_floors, dtype=torch.float32))
 
     def forward(
         self,
@@ -332,13 +337,14 @@ class MassActionModule(nn.Module):
         return prod * self.prod_scale - cons * self.cons_scale * self.raw_state(state)
 
     def raw_state(self, state: torch.Tensor) -> torch.Tensor:
-        """Rebuild the RAW concentration from the normalized state handed to the module.
+        """Rebuild the RAW value from the normalized state handed to the module.
 
-        Iter 95: clamped at 0 because a concentration is not negative — the integrator's
-        own physiological clamp already enforces that on the state, so this only guards
-        a transient where the straight-through clamp lets a value dip fractionally below.
+        Concentrations floor at 0 (chemistry). Signed latents pass through —
+        ``raw_floor`` is ``-inf`` for those indices. Flooring signed remote insulin
+        at 0 zeroed the Bergman tracker whenever X < 0 and turned it into an
+        open-loop integrator that walked to the catastrophe wall.
         """
-        return torch.clamp(self.typical_val + self.norm_scale_val * state, min=0.0)
+        return torch.maximum(self.typical_val + self.norm_scale_val * state, self.raw_floor)
 
     def species_fluxes(
         self,
