@@ -12,7 +12,7 @@ import unittest
 import torch
 
 from pulse.modules.base import MIN_GATE_TEMP, BasalPlusGatedPeakHead, gate_temp
-from pulse.modules.metabolic import GlucoseGatedInsulinHead, GlycogenFluxHead
+from pulse.modules.metabolic import GlucoseStimulatedInsulinHead, GlycogenFluxHead
 
 
 class TestGateTempFloor(unittest.TestCase):
@@ -54,9 +54,14 @@ class TestGateTempFloor(unittest.TestCase):
         (prod.pow(2) + cons.pow(2)).mean().backward()
         self.assertTrue(torch.isfinite(x.grad).all().item())
 
-    def test_glucose_gated_insulin_head_finite_grad_under_collapse(self) -> None:
-        head = GlucoseGatedInsulinHead(input_dim=12, hidden_dim=16)
-        self._assert_finite_grads_under_collapse(head, input_dim=12)
+    def test_glucose_stimulated_insulin_head_has_no_gate_temperature_to_collapse(self) -> None:
+        head = GlucoseStimulatedInsulinHead(input_dim=12, hidden_dim=16)
+        names = [n for n, _ in head.named_parameters()]
+        self.assertFalse(any("temp" in n or "thresh" in n for n in names), names)
+        x = torch.randn(8, 12, requires_grad=True)
+        prod, cons = head(x, torch.zeros(8))
+        (prod.pow(2) + cons.pow(2)).mean().backward()
+        self.assertTrue(torch.isfinite(x.grad).all().item())
 
     def test_basal_plus_gated_peak_head_finite_grad_under_collapse(self) -> None:
         head = BasalPlusGatedPeakHead(

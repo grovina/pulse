@@ -191,13 +191,17 @@ class TestAlgorithm(unittest.TestCase):
         self.assertLessEqual(res_wall.embedding_norm, 1.0 + 1e-5)
 
     def test_prior_pulls_toward_the_population(self) -> None:
+        # Start at the generating embedding so the data term is already
+        # satisfied. Then the prior is the only force: a stronger weight
+        # must shrink toward the population. Fifteen Adam steps from the prior
+        # on an untrained ODE is not that pin — the data term can overshoot.
         obs = self._truth_obs(self.truth_emb, range(0, 400, 40))
         norms = {}
         for w in (0.0, 2.0):
             res = calibrate_embedding(
                 self.model, obs, self.init, self.meals, self.dur, start_time_minutes=self.t0,
                 sleep_wake=self.sw, activity=self.act, prior_mean=self.prior_mean,
-                prior_std=self.prior_std,
+                prior_std=self.prior_std, initial_embedding=self.truth_emb,
                 settings=CalibrationSettings(max_steps=15, lr=0.05, holdout_fraction=0.0,
                                              prior_weight=w, soft_norm_weight=0.0),
             )

@@ -181,9 +181,14 @@ class TestColdModelDistillationSignal(unittest.TestCase):
         self.assertTrue(np.isfinite(result.loss_sum))
         self.assertEqual(result.sub_metrics.get("mode"), 2.0)
         self.assertIn("anchor_skips", result.sub_metrics)
-        # Every default distill marker still reports a (combined rate+level) term.
-        from pulse.knowledge.evidence import TEACHER_DISTILL_MARKERS
+        # Short-window distill markers report a combined rate+level term.
+        # mitochondrial_capacity and fat_mass are long-only (day-scale);
+        # a 30-minute bench_cohorts window does not score them.
+        from pulse.knowledge.evidence import TEACHER_DISTILL_LONG_ONLY, TEACHER_DISTILL_MARKERS
         for m in TEACHER_DISTILL_MARKERS:
+            if m in TEACHER_DISTILL_LONG_ONLY:
+                self.assertNotIn(f"dist_{m}", result.sub_metrics)
+                continue
             self.assertIn(f"dist_{m}", result.sub_metrics)
         # The level anchor must contribute gradient to the model params (the
         # whole point — rate-only matching is offset-invariant). Backprop and

@@ -268,17 +268,50 @@ class TestPerPatientGates(unittest.TestCase):
                 places=5, msg=f"Gb={gb}",
             )
 
-    def test_basal_insulin_gate_is_gentle_below_gb(self) -> None:
-        """2/(1 + (Gb/G)^n) on the basal term: 1 at Gb, ~0.79 at 0.9·Gb (not 0.59), and it
-        does not touch the gated peak term."""
-        m = _model(9, perturb=0.0)
+    def test_effective_ib_is_the_teacher_glucose_gated_basal(self) -> None:
+        """At G = 0.9·Gb (this patient's Gb), I = Ib: GSIR is 0 and I is restored toward Ib·0.9^5."""
+        m = _model(11, perturb=0.3)
         met = m.metabolic
         state, coupling, external, emb, tf = self._reference_state(m, 95.0)
-        state[0, M._GLUCOSE_IDX] = (0.9 * 95.0 - 95.0) / 30.0
+        with torch.no_grad():
+            gb = float(met.glucose_setpoint_raw(emb))
+            ib = float(met.insulin_setpoint_raw(emb))
+        state = state.clone()
+        state[0, M._GLUCOSE_IDX] = (0.9 * gb - 95.0) / 30.0
+        state[0, M._INSULIN_IDX] = (ib - 10.0) / 10.0
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
-        self.assertAlmostEqual(float(f["ins_basal_gate"]), 2 / (1 + (1 / 0.9) ** 4), places=5)
-        self.assertGreater(float(f["ins_basal_gate"]), 0.75)
+            rate = met(state, coupling, external, emb, tf)[0, M._INSULIN_IDX]
+        expected = ib * max((0.9) ** M._FAST_INS_EXP, M._FAST_INS_FLOOR)
+        self.assertAlmostEqual(float(f["gb"]), gb, places=5)
+        self.assertAlmostEqual(float(f["effective_ib"]), expected, places=5)
+        self.assertEqual(float(f["ins_gsir"]), 0.0)
+        self.assertLess(float(rate), 0.0)
+        self.assertAlmostEqual(float(rate), float(f["ins_rate"]), places=6)
+        self.assertAlmostEqual(
+            float(f["ins_restoring"]),
+            -float(f["k_ins"]) * (ib - expected),
+            places=5,
+        )
+
+    def test_gsir_is_off_at_gb_and_on_above(self) -> None:
+        m = _model(4, perturb=0.0)
+        met = m.metabolic
+        gb = 95.0
+        args = self._reference_state(m, gb)
+        with torch.no_grad():
+            f0 = met.fluxes(*args)
+            rate0 = met(*args)[0, M._INSULIN_IDX]
+        self.assertEqual(float(f0["ins_gsir"]), 0.0)
+        self.assertAlmostEqual(float(rate0), 0.0, places=5)
+        self.assertAlmostEqual(float(f0["effective_ib"]), float(f0["ib"]), places=5)
+        state, coupling, external, emb, tf = args
+        state = state.clone()
+        state[0, M._GLUCOSE_IDX] = (gb + 30.0 - 95.0) / 30.0
+        with torch.no_grad():
+            f1 = met.fluxes(state, coupling, external, emb, tf)
+        self.assertGreater(float(f1["ins_gsir"]), 0.5)
+        self.assertAlmostEqual(float(f1["effective_ib"]), float(f1["ib"]), places=5)
 
     def test_gb_75_and_gb_120_patients_both_fast_to_physiological_levels(self) -> None:
         """probe2-C pattern: a 16 h fast from typical at rest. Through iter 96 the Gb=75

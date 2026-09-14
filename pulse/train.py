@@ -73,14 +73,19 @@ def _memory_stats() -> dict[str, float | int]:
     grad_elems = 0
     for obj in gc.get_objects():
         try:
-            if isinstance(obj, torch.Tensor):
-                n_tensors += 1
-                numel = obj.numel()
-                total_elems += numel
-                if obj.requires_grad or obj.grad_fn is not None:
-                    n_grad_tensors += 1
-                    grad_elems += numel
-        except (ReferenceError, RuntimeError):
+            # type/issubclass, not isinstance: isinstance(obj, Tensor) on the
+            # deprecated torch.distributed.reduce_op alias (still in the GC after
+            # torch imports distributed) emits FutureWarning from that alias.
+            obj_t = type(obj)
+            if not isinstance(obj_t, type) or not issubclass(obj_t, torch.Tensor):
+                continue
+            n_tensors += 1
+            numel = obj.numel()
+            total_elems += numel
+            if obj.requires_grad or obj.grad_fn is not None:
+                n_grad_tensors += 1
+                grad_elems += numel
+        except (ReferenceError, RuntimeError, TypeError):
             continue
     return {
         "rss_mb": (rss_kb / 1024.0) if rss_kb is not None else -1.0,

@@ -28,7 +28,6 @@ from .types import (
     MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES, MODULE_COUPLING_CHANNELS,
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE,
-    PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX,
 )
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
@@ -37,16 +36,6 @@ from .modules import (
 )
 from .modules.base import compute_time_features
 from .modules.gut import MealEvent
-
-# Hard physiological bounds applied to the integrated state each Euler step
-# (iter 81). A no-op for any in-distribution trajectory (state stays well inside
-# these extremes), this caps catastrophic off-manifold divergence — an
-# embedding driven off the trained manifold by weakly-leashed calibration can
-# explode the gut appearance kernel / a softplus production term and integrate a
-# marker to nonphysical magnitudes (glucose ~18,000 mg/dL observed). See
-# PHYSIOLOGICAL_MIN/MAX in types.py for the derivation and rationale.
-_PHYS_MIN = torch.tensor(PHYSIOLOGICAL_MIN, dtype=torch.float32)
-_PHYS_MAX = torch.tensor(PHYSIOLOGICAL_MAX, dtype=torch.float32)
 
 # Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
 # stay strictly positive along every trajectory (review 2026-09-04, items 3.5/3.7). The
@@ -590,21 +579,7 @@ def integrate(
             gut_override=gut_step,
             duodenal_override=duo_step,
         )
-        # Physiological clamp (iter 81): a no-op in-distribution, it bounds
-        # off-manifold divergence so a runaway term cannot integrate a marker to
-        # nonphysical magnitudes. Straight-through: the FORWARD state is clamped
-        # (so a blow-up never propagates and the benchmark/no-grad path is hard-
-        # bounded), but the backward pass treats the clamp as the identity, so it
-        # never zeros the gradient at the boundary — early training (when random
-        # rollouts transiently hit the bounds) is not starved. In-distribution
-        # the clamp never binds, so this is exactly `state + rates*dt`.
-        new_state = euler_step(state, rates, dt)
-        clamped = torch.clamp(
-            new_state,
-            _PHYS_MIN.to(new_state.device),
-            _PHYS_MAX.to(new_state.device),
-        )
-        return new_state + (clamped - new_state).detach()
+        return euler_step(state, rates, dt)
 
     # Duodenal delivery (gastric emptying) for the whole window, on the WINDOW-OFFSET
     # clock — the same frame contract as the gut precompute above, and for the same

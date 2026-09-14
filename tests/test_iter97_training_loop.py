@@ -22,6 +22,7 @@ assert pulse.__file__.startswith(REPO), pulse.__file__
 from pulse.model import ModularPhysiologyNetwork  # noqa: E402
 from pulse.train import (  # noqa: E402
     _load_spec_train_args,
+    _memory_stats,
     _merge_results,
     _parse_aux_cadence,
     build_arg_parser,
@@ -258,3 +259,16 @@ def test_checkpoint_records_model_config() -> None:
     import inspect
     from pulse import train as train_mod
     assert '"model_config": getattr(model, "constructor_kwargs", None)' in inspect.getsource(train_mod.train)
+
+
+def test_memory_stats_does_not_warn_on_distributed_reduce_op() -> None:
+    """gc.isinstance(Tensor) hits torch.distributed.reduce_op and FutureWarns."""
+    import warnings
+    p = nn.Parameter(torch.zeros(4))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        stats = _memory_stats()
+    assert not any("reduce_op" in str(w.message) for w in caught)
+    assert stats["n_tensors"] >= 1
+    assert stats["n_grad_tensors"] >= 1
+    del p
