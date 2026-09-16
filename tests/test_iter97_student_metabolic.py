@@ -451,7 +451,7 @@ class TestBergmanClearance(unittest.TestCase):
 
 
 class TestMitochondrialRole(unittest.TestCase):
-    """3.11: mito scales oxidative clearance of FFA / lactate / BHB and nothing else."""
+    """3.11: mito scales oxidative clearance of FFA and lactate, and nothing else."""
 
     def test_other_heads_do_not_see_mito(self) -> None:
         m = _model(12, perturb=1.0)
@@ -495,33 +495,88 @@ class TestMitochondrialRole(unittest.TestCase):
         with torch.no_grad():
             r0 = met(state, coupling, external, emb, tf)
             r1 = met(s1, coupling, external, emb, tf)
-        for idx in (M._FFA_IDX, M._BHB_IDX, M._LACTATE_IDX):
+        for idx in (M._FFA_IDX, M._LACTATE_IDX):
             self.assertTrue(bool((r1[:, idx] < r0[:, idx]).all()), msg=f"species {idx}")
+        torch.testing.assert_close(r0[:, M._BHB_IDX], r1[:, M._BHB_IDX], atol=1e-6, rtol=1e-5)
         for idx in (M._GLUCOSE_IDX, M._INSULIN_IDX, M._GLUCAGON_IDX, M._HEPATIC_IDX):
             torch.testing.assert_close(r0[:, idx], r1[:, idx], atol=1e-6, rtol=1e-6)
 
 
 class TestKetogenesisAndHepaticOutput(unittest.TestCase):
-    def test_ketogenesis_needs_ffa_above_basal_and_is_insulin_suppressed(self) -> None:
+    def test_bhb_basal_is_a_fixed_point(self) -> None:
+        """At FFA=FFA_b, I=Ib, LGly=LGly_b, BHB=BHB_b: dBHB=0, even after a random
+        perturbation of k_keto — clearance is derived from production."""
+        m = _model(14, perturb=1.0)
+        gb = 95.0
+        args = TestPerPatientGates._reference_state(m, gb)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+            rate = m.metabolic(*args)[0, M._BHB_IDX]
+        self.assertAlmostEqual(float(rate), 0.0, places=5)
+        self.assertAlmostEqual(float(f["bhb_rate"]), 0.0, places=5)
+        self.assertGreater(float(f["ketogenesis"]), 0.0)
+        self.assertAlmostEqual(float(f["glyco_depletion"]), 0.0, places=5)
+
+    def test_empty_liver_at_basal_substrate_raises_bhb(self) -> None:
+        """The 101 miss: production on FFA_b, not on relu(FFA−FFA_b). An empty
+        liver at basal FFA/insulin is already a ketogenic source."""
+        m = _model(14, perturb=1.0)
+        empty = TestPerPatientGates._reference_state(m, 95.0, lgly=0.0)
+        with torch.no_grad():
+            rate = m.metabolic(*empty)[0, M._BHB_IDX]
+        self.assertGreater(float(rate), 0.0)
+
+    def test_zero_ffa_is_zero_ketogenesis(self) -> None:
         m = _model(14, perturb=0.5)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
+        state = state.clone()
+        state[:, M._FFA_IDX] = (0.0 - M._FFA_CENTER) / M._FFA_SCALE
         with torch.no_grad():
-            ffa_b = met.ffa_setpoint_raw(emb)
-        low = state.clone()
-        low[:, M._FFA_IDX] = (0.5 * ffa_b - M._FFA_CENTER) / M._FFA_SCALE
-        with torch.no_grad():
-            f = met.fluxes(low, coupling, external, emb, tf)
+            f = met.fluxes(state, coupling, external, emb, tf)
         self.assertEqual(float(f["ketogenesis"].abs().sum()), 0.0)
-        hi = state.clone()
-        hi[:, M._FFA_IDX] = (2.0 * ffa_b - M._FFA_CENTER) / M._FFA_SCALE
-        hi[:, M._INSULIN_IDX] = (4.0 - 10.0) / 10.0
-        hi_ins = hi.clone(); hi_ins[:, M._INSULIN_IDX] = (60.0 - 10.0) / 10.0
+
+    def test_empty_liver_multiplies_production_by_one_plus_gain(self) -> None:
+        m = _model(14, perturb=0.4)
+        full = TestPerPatientGates._reference_state(m, 95.0, lgly=100.0)
+        empty = TestPerPatientGates._reference_state(m, 95.0, lgly=0.0)
         with torch.no_grad():
-            f_fast = met.fluxes(hi, coupling, external, emb, tf)
-            f_fed = met.fluxes(hi_ins, coupling, external, emb, tf)
-        self.assertTrue(bool((f_fast["ketogenesis"] > 0).all()))
-        self.assertTrue(bool((f_fed["ketogenesis"] < f_fast["ketogenesis"]).all()))
+            f_full = m.metabolic.fluxes(*full)
+            f_empty = m.metabolic.fluxes(*empty)
+        ratio = f_empty["ketogenesis"] / f_full["ketogenesis"].clamp(min=1e-12)
+        self.assertAlmostEqual(float(ratio), 1.0 + M._KETO_GLYC_GAIN, places=4)
+        self.assertAlmostEqual(float(f_empty["glyco_depletion"]), 1.0, places=5)
+
+    def test_insulin_in_the_denominator_is_a_concentration(self) -> None:
+        """Sub-basal insulin raises ketogenesis; high insulin suppresses it.
+        Same FFA, full liver — the rectifier on I−Ib cannot do this."""
+        m = _model(14, perturb=0.3)
+        met = m.metabolic
+        state, coupling, external, emb, tf = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            ib = float(met.insulin_setpoint_raw(emb))
+        low = state.clone()
+        low[:, M._INSULIN_IDX] = (0.4 * ib - 10.0) / 10.0
+        high = state.clone()
+        high[:, M._INSULIN_IDX] = (4.0 * ib - 10.0) / 10.0
+        with torch.no_grad():
+            f_b = met.fluxes(state, coupling, external, emb, tf)
+            f_low = met.fluxes(low, coupling, external, emb, tf)
+            f_high = met.fluxes(high, coupling, external, emb, tf)
+        self.assertGreater(float(f_low["ketogenesis"]), float(f_b["ketogenesis"]))
+        self.assertLess(float(f_high["ketogenesis"]), float(f_b["ketogenesis"]))
+
+    def test_24h_fast_bhb_rises_above_fed_baseline(self) -> None:
+        m = _model(14, hidden=32, perturb=0.0)
+        n = 1440
+        with torch.no_grad():
+            tr = integrate(
+                m, _CENTER.clone(), torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=20.0 * 60.0, meals=[],
+                sleep_wake=torch.ones(n), activity=torch.zeros(n),
+            )
+        self.assertGreater(float(tr[-1, MI["bhb"]]), 0.4)
+        self.assertGreater(float(tr[-1, MI["bhb"]]), float(tr[0, MI["bhb"]]) + 0.2)
 
     def test_hepatic_output_target_is_the_two_fluxes_in_mg_per_kg(self) -> None:
         m = _model(15, perturb=0.5)
@@ -542,7 +597,7 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
 class TestNoDeadHeads(unittest.TestCase):
     def test_structural_species_own_no_parameters(self) -> None:
         m = _model(16)
-        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX):
+        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX):
             self.assertEqual(sum(p.numel() for p in m.metabolic.heads[idx].parameters()), 0)
 
     def test_every_metabolic_parameter_receives_gradient(self) -> None:
