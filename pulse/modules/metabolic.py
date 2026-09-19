@@ -61,7 +61,7 @@ uptake_ex − gng − store·relu(X·G))/mg`` identically. A heavier person
 converts a gram of carbohydrate into fewer mg/dL. ``ra`` is only the
 meal-appearance gain.
 
-Gates: glucagon fires on ``(G − Gb)/30``, FFA on ``(I − Ib)/10``,
+Gates: glucagon fires on ``(G − Gb)/30``,
 with ``Ib = 10·exp(±0.9·tanh(head))`` a zero-init per-patient head like Gb.
 Insulin is not mass-action. A learned basal × Hill could sit above Ib in a
 fast (iter 100: 48 h ended at 12.2 µU/mL against the teacher's 3.8). The
@@ -76,7 +76,7 @@ scalars (init 0.15 / 0.05, the teacher's ``n`` / ``gamma``); ``mod`` is a
 learned state-dependent gain. The thresholds that leaked (glycogen catabolic
 gates) are DELETED, not clamped: muscle breakdown is ``relu(act − 0.10)``,
 liver breakdown is the insulin gate above. ``mitochondrial_capacity`` has
-ONE role — a scale on the clearance of FFA and lactate — and no other
+ONE role — a scale on the clearance of lactate — and no other
 head sees it. ``insulin_action`` is lagged ``(I − Ib)/10``, signed; it is not
 a concentration, so ``raw_state`` does not floor it at 0. The only bound on
 how negative it can drive glucose is ``x_eff = max(Si·X, −0.05·k_ii)``.
@@ -92,6 +92,19 @@ and BHB still ended at 0.23 vs 3.14):
 raises production; an empty liver multiplies it by 14. ``k_keto`` and
 ``IC50`` are population scalars (init 0.005 / 15, the teacher's
 ``keto_max`` / ``IC50_keto``). The glycogen gain is a constant.
+
+FFA is the teacher's lipolysis, not a gated peak on ``I − Ib`` (iter 102:
+k_keto unmoved, 48 h BHB 1.24 vs 3.14, and FFA crashed to 0.14 at 16 h
+while insulin was already 5.7 matching the teacher):
+
+    lip_max   = FFA_b · k_ffa · (1 + Ib/IC50)
+    lipolysis = lip_max / (1 + I/IC50)
+    dFFA      = lipolysis − k_ffa · FFA + 0.01 · Ra_fat
+
+``lip_max`` is derived so FFA_b is the fed fixed point. ``k_ffa`` is a
+speed (init 0.20, τ ≈ 5 min); ``IC50`` is 5 µU/mL — adipose antilipolysis
+is the most insulin-sensitive action in the body. Sub-basal insulin
+raises FFA; the gated peak could not be stopped from crashing it.
 """
 
 import math
@@ -274,6 +287,12 @@ _KETO_INS_SUPP_INIT = 15.0    # teacher IC50_keto
 _KETO_GLYC_GAIN = 13.0        # teacher keto_glyc_gain
 _BHB_CENTER = NORM_CENTER[MARKER_INDEX["bhb"]]  # teacher BHB_b / typical
 
+# --- lipolysis -----------------------------------------------------------------
+# Teacher full_body.dFFA (Nurjhan 1986; Jensen 1989; Eaton 1969; iter 93).
+# lip_max is derived so FFA_b is the fed fixed point; k_ffa is the speed.
+_K_FFA_INIT = 0.20            # teacher k_ffa (τ ≈ 5 min)
+_LIP_IC50_INIT = 5.0          # teacher IC50_lip
+
 
 def _logit(p: float) -> float:
     """Inverse sigmoid — init a sigmoid-bounded parameter at a target value."""
@@ -385,8 +404,8 @@ class MetabolicModule(MassActionModule):
             raw_floors=[0.0 if i != _INSULIN_ACTION_IDX else float("-inf")
                         for i in range(_N_SPECIES)],
             # Iter 97: every head except mito's own reads the module input WITHOUT the
-            # mitochondrial_capacity column (3.11); glucose, BHB and insulin_action have
-            # fully structural rates and own no parameters.
+            # mitochondrial_capacity column (3.11); glucose, FFA, BHB and insulin_action
+            # have fully structural rates and own no parameters.
             head_factories={
                 _GLUCOSE_IDX: lambda inp, hd: ConstantFluxHead(),
                 _INSULIN_IDX: _without_mito(GlucoseStimulatedInsulinHead),
@@ -397,10 +416,7 @@ class MetabolicModule(MassActionModule):
                     inp - 1, hd, stimulus_idx=_GLUCOSE_IDX, gate_dir=-1,
                     init_thresh=-0.3, init_log_temp=-0.7,
                 ),
-                _FFA_IDX: lambda inp, hd: BasalPlusGatedPeakHead(
-                    inp - 1, hd, stimulus_idx=_INSULIN_IDX, gate_dir=-1,
-                    init_thresh=-0.2, init_log_temp=-0.7,
-                ),
+                _FFA_IDX: lambda inp, hd: ConstantFluxHead(),
                 _BHB_IDX: lambda inp, hd: ConstantFluxHead(),
                 _LACTATE_IDX: _without_mito(SpeciesHead),
                 # hepatic_output: prod = GNG modulation (normalized at the reference),
@@ -438,6 +454,10 @@ class MetabolicModule(MassActionModule):
         # glycogen-emptying gain is a constant; clearance is derived from these.
         self.log_keto_ins_supp = nn.Parameter(torch.tensor(_inverse_softplus(_KETO_INS_SUPP_INIT)))
         self.log_k_keto = nn.Parameter(torch.tensor(_inverse_softplus(_K_KETO_INIT)))
+        # Lipolysis: IC50 on absolute insulin (µU/mL) and clearance speed.
+        # lip_max is derived from these so FFA_b is the fed fixed point.
+        self.log_lip_ic50 = nn.Parameter(torch.tensor(_inverse_softplus(_LIP_IC50_INIT)))
+        self.log_k_ffa = nn.Parameter(torch.tensor(_inverse_softplus(_K_FFA_INIT)))
 
         # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95, Ib = 10, Ra =
         # softplus(log_ra) for every embedding at cold start; authority grows in training.
@@ -511,11 +531,10 @@ class MetabolicModule(MassActionModule):
         time_features: torch.Tensor,
         *,
         glucose_dev: torch.Tensor | None = None,
-        insulin_dev: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Per-species head outputs. ``glucose_dev`` / ``insulin_dev`` are the
-        per-patient deviations ``(G − Gb)/30`` and ``(I − Ib)/10`` that gate
-        glucagon and FFA. Without them the gates fall back to the population frame."""
+        """Per-species head outputs. ``glucose_dev`` is the per-patient deviation
+        ``(G − Gb)/30`` that gates glucagon. Without it the gate falls back to
+        the population frame."""
         x, x_no_mito = self._head_input(state, coupling, external, embedding, time_features)
         prods: list[torch.Tensor] = []
         conss: list[torch.Tensor] = []
@@ -523,8 +542,6 @@ class MetabolicModule(MassActionModule):
             xi = x if i == _MITO_IDX else x_no_mito
             if i == _GLUCAGON_IDX:
                 p, c = head(xi, state[..., i], stimulus=glucose_dev)
-            elif i == _FFA_IDX:
-                p, c = head(xi, state[..., i], stimulus=insulin_dev)
             else:
                 p, c = head(xi, state[..., i])
             prods.append(p)
@@ -600,7 +617,7 @@ class MetabolicModule(MassActionModule):
 
         prod_raw, cons_raw = self.species_fluxes(
             state, coupling, external, embedding, time_features,
-            glucose_dev=glucose_dev, insulin_dev=insulin_dev)
+            glucose_dev=glucose_dev)
         mod_liver_ref, mod_gng_ref = self.reference_modulations(gb, ib, embedding, time_features)
 
         # Gut glucose appearance is in the 70 kg reference space. Grams are that
@@ -689,6 +706,11 @@ class MetabolicModule(MassActionModule):
         fat_rate = (kcal_in - kcal_out) / _KCAL_PER_KG_FAT
         ffa_from_lipid = _FFA_FROM_LIPID * lipid_app
         glucagon_from_amino = _GN_FROM_AMINO * amino_app
+        k_ffa = nn.functional.softplus(self.log_k_ffa)
+        ic50_lip = nn.functional.softplus(self.log_lip_ic50)
+        lip_max = ffa_b * k_ffa * (1.0 + ib / ic50_lip)
+        lipolysis = lip_max / (1.0 + ins / ic50_lip)
+        ffa_rate = lipolysis - k_ffa * ffa + ffa_from_lipid
 
         mito_rate = -_K_MITO * (mito - mito_sp) + _MITO_TRAIN_GAIN * relu(act - 0.2)
         lactate_from_glyco = _LAC_GLYCO_GAIN * brk_muscle
@@ -717,6 +739,8 @@ class MetabolicModule(MassActionModule):
             "bhb_rate": bhb_rate, "fat_rate": fat_rate, "mito_rate": mito_rate,
             "lactate_from_glyco": lactate_from_glyco, "mito_sp": mito_sp,
             "ffa_from_lipid": ffa_from_lipid, "glucagon_from_amino": glucagon_from_amino,
+            "lipolysis": lipolysis, "lip_max": lip_max, "k_ffa": k_ffa, "ic50_lip": ic50_lip,
+            "ffa_rate": ffa_rate,
         }
 
     def forward(
@@ -732,13 +756,14 @@ class MetabolicModule(MassActionModule):
         raw = self.raw_state(state)
         rates = prod_raw * self.prod_scale - cons_raw * self.cons_scale * raw
         out = rates.clone()
-        for idx in (_FFA_IDX, _LACTATE_IDX):
-            out[..., idx] = (prod_raw[..., idx] * self.prod_scale[idx]
-                             - cons_raw[..., idx] * self.cons_scale[idx] * mito * raw[..., idx])
-        out[..., _FFA_IDX] = out[..., _FFA_IDX] + f["ffa_from_lipid"]
+        out[..., _LACTATE_IDX] = (
+            prod_raw[..., _LACTATE_IDX] * self.prod_scale[_LACTATE_IDX]
+            - cons_raw[..., _LACTATE_IDX] * self.cons_scale[_LACTATE_IDX] * mito * raw[..., _LACTATE_IDX]
+            + f["lactate_from_glyco"]
+        )
+        out[..., _FFA_IDX] = f["ffa_rate"]
         out[..., _GLUCAGON_IDX] = out[..., _GLUCAGON_IDX] + f["glucagon_from_amino"]
         out[..., _BHB_IDX] = f["bhb_rate"]
-        out[..., _LACTATE_IDX] = out[..., _LACTATE_IDX] + f["lactate_from_glyco"]
         out[..., _GLUCOSE_IDX] = (
             f["appearance_plasma"] + f["glycogenolysis_plasma"] + f["gng_plasma"]
             - f["uptake_ii"] - f["uptake_id"] - f["exercise_uptake"]

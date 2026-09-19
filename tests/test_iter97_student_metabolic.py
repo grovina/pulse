@@ -451,7 +451,7 @@ class TestBergmanClearance(unittest.TestCase):
 
 
 class TestMitochondrialRole(unittest.TestCase):
-    """3.11: mito scales oxidative clearance of FFA and lactate, and nothing else."""
+    """3.11: mito scales oxidative clearance of lactate, and nothing else."""
 
     def test_other_heads_do_not_see_mito(self) -> None:
         m = _model(12, perturb=1.0)
@@ -495,9 +495,10 @@ class TestMitochondrialRole(unittest.TestCase):
         with torch.no_grad():
             r0 = met(state, coupling, external, emb, tf)
             r1 = met(s1, coupling, external, emb, tf)
-        for idx in (M._FFA_IDX, M._LACTATE_IDX):
+        for idx in (M._LACTATE_IDX,):
             self.assertTrue(bool((r1[:, idx] < r0[:, idx]).all()), msg=f"species {idx}")
         torch.testing.assert_close(r0[:, M._BHB_IDX], r1[:, M._BHB_IDX], atol=1e-6, rtol=1e-5)
+        torch.testing.assert_close(r0[:, M._FFA_IDX], r1[:, M._FFA_IDX], atol=1e-6, rtol=1e-5)
         for idx in (M._GLUCOSE_IDX, M._INSULIN_IDX, M._GLUCAGON_IDX, M._HEPATIC_IDX):
             torch.testing.assert_close(r0[:, idx], r1[:, idx], atol=1e-6, rtol=1e-6)
 
@@ -597,7 +598,7 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
 class TestNoDeadHeads(unittest.TestCase):
     def test_structural_species_own_no_parameters(self) -> None:
         m = _model(16)
-        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX):
+        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX, M._FFA_IDX):
             self.assertEqual(sum(p.numel() for p in m.metabolic.heads[idx].parameters()), 0)
 
     def test_every_metabolic_parameter_receives_gradient(self) -> None:
@@ -638,6 +639,68 @@ class TestVolumeAndEnergy(unittest.TestCase):
         self.assertLess(float(tr[-1, MI["fat_mass"]]), float(tr[0, MI["fat_mass"]]) - 0.05)
 
 
+class TestLipolysis(unittest.TestCase):
+    def test_ffa_basal_is_a_fixed_point(self) -> None:
+        """At I=Ib, FFA=FFA_b: dFFA=0 even after a random perturbation of k_ffa —
+        lip_max is derived from clearance."""
+        m = _model(18, perturb=1.0)
+        args = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+            rate = m.metabolic(*args)[0, M._FFA_IDX]
+        self.assertAlmostEqual(float(rate), 0.0, places=5)
+        self.assertAlmostEqual(float(f["ffa_rate"]), 0.0, places=5)
+        self.assertGreater(float(f["lipolysis"]), 0.0)
+
+    def test_sub_basal_insulin_raises_lipolysis(self) -> None:
+        """The 102 miss: I=5.7 should raise FFA, not crash it. Insulin is a
+        concentration in the denominator, not a rectifier on I−Ib."""
+        m = _model(18, perturb=0.3)
+        met = m.metabolic
+        state, coupling, external, emb, tf = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            ib = float(met.insulin_setpoint_raw(emb))
+        low = state.clone()
+        low[:, M._INSULIN_IDX] = (0.4 * ib - 10.0) / 10.0
+        high = state.clone()
+        high[:, M._INSULIN_IDX] = (4.0 * ib - 10.0) / 10.0
+        with torch.no_grad():
+            f_b = met.fluxes(state, coupling, external, emb, tf)
+            f_low = met.fluxes(low, coupling, external, emb, tf)
+            f_high = met.fluxes(high, coupling, external, emb, tf)
+            r_low = met(low, coupling, external, emb, tf)[0, M._FFA_IDX]
+        self.assertGreater(float(f_low["lipolysis"]), float(f_b["lipolysis"]))
+        self.assertLess(float(f_high["lipolysis"]), float(f_b["lipolysis"]))
+        self.assertGreater(float(r_low), 0.0)
+
+    def test_excess_ffa_at_basal_insulin_is_cleared(self) -> None:
+        m = _model(18, perturb=0.4)
+        met = m.metabolic
+        state, coupling, external, emb, tf = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            ffa_b = float(met.ffa_setpoint_raw(emb))
+        hi = state.clone()
+        hi[:, M._FFA_IDX] = (2.0 * ffa_b - 0.5) / 0.2
+        with torch.no_grad():
+            rate = met(hi, coupling, external, emb, tf)[0, M._FFA_IDX]
+        self.assertLess(float(rate), 0.0)
+
+    def test_overnight_ffa_does_not_crash_below_half_basal(self) -> None:
+        m = _model(18, hidden=32, perturb=0.0)
+        n = 720
+        hour = ((20.0 * 60.0 + torch.arange(n)) % 1440.0) / 60.0
+        sleep_wake = 1.0 - ((hour >= 23.0) | (hour < 7.0)).float()
+        with torch.no_grad():
+            tr = integrate(
+                m, _CENTER.clone(), torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=20.0 * 60.0, meals=[],
+                sleep_wake=sleep_wake, activity=torch.zeros(n),
+            )
+            ffa_b = float(m.metabolic.ffa_setpoint_raw(
+                m.embedding_projections["metabolic"](torch.zeros(1, EMBEDDING_DIM))))
+        self.assertGreater(float(tr[:, MI["ffa"]].min()), 0.5 * ffa_b)
+
+
 class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
     """Lipid and amino appearance already sit on the metabolic coupling vector.
     They used to affect only the fat-mass calorie residual; the teacher also
@@ -653,14 +716,12 @@ class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
             f = met.fluxes(state, coupling, external, emb, tf)
             rate = met(state, coupling, external, emb, tf)
             prod, cons = f["prod_raw"], f["cons_raw"]
-            mito, raw = f["mito"], met.raw_state(state)
+            raw = met.raw_state(state)
         torch.testing.assert_close(f["ffa_from_lipid"], M._FFA_FROM_LIPID * coupling[:, M._LIPID_COUPLING_IDX])
         torch.testing.assert_close(f["glucagon_from_amino"], M._GN_FROM_AMINO * coupling[:, M._AMINO_COUPLING_IDX])
-        ffa_ma = (prod[:, M._FFA_IDX] * met.prod_scale[M._FFA_IDX]
-                  - cons[:, M._FFA_IDX] * met.cons_scale[M._FFA_IDX] * mito * raw[:, M._FFA_IDX])
+        torch.testing.assert_close(rate[:, M._FFA_IDX], f["ffa_rate"], atol=1e-6, rtol=1e-5)
         gn_ma = (prod[:, M._GLUCAGON_IDX] * met.prod_scale[M._GLUCAGON_IDX]
                  - cons[:, M._GLUCAGON_IDX] * met.cons_scale[M._GLUCAGON_IDX] * raw[:, M._GLUCAGON_IDX])
-        torch.testing.assert_close(rate[:, M._FFA_IDX], ffa_ma + f["ffa_from_lipid"], atol=1e-6, rtol=1e-5)
         torch.testing.assert_close(rate[:, M._GLUCAGON_IDX], gn_ma + f["glucagon_from_amino"], atol=1e-6, rtol=1e-5)
 
     def test_carb_appearance_does_not_create_those_terms(self) -> None:
