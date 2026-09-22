@@ -16,9 +16,10 @@
 #   REGION        (default: europe-west1)
 #   BUCKET        (default: grovina-pulse-data)
 #   REPO          (default: pulse)
-#   TASK_TIMEOUT  trainer task timeout, seconds (default: 158400 = 44h; the
-#                 current recipe is 58 epochs at aux-every-12 and needs the
-#                 headroom iter 98 used, not the old 4-CPU / 24h defaults)
+#   TASK_TIMEOUT  trainer task timeout, seconds (default: 259200 = 72h).
+#                 Iter 103 died at epoch 55/58 on the 44h limit with nothing
+#                 uploaded. 72h covers a 58-epoch warm start plus the bench;
+#                 last_good.pt is uploaded every epoch either way.
 #   DEPLOY_ENGINE 1 to deploy the engine service, 0 to skip (default: 1)
 set -euo pipefail
 
@@ -26,7 +27,7 @@ PROJECT="${PROJECT:-grovina-pulse}"
 REGION="${REGION:-europe-west1}"
 BUCKET="${BUCKET:-grovina-pulse-data}"
 REPO="${REPO:-pulse}"
-TASK_TIMEOUT="${TASK_TIMEOUT:-158400}"
+TASK_TIMEOUT="${TASK_TIMEOUT:-259200}"
 DEPLOY_ENGINE="${DEPLOY_ENGINE:-1}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

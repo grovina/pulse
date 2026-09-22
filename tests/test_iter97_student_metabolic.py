@@ -598,7 +598,7 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
 class TestNoDeadHeads(unittest.TestCase):
     def test_structural_species_own_no_parameters(self) -> None:
         m = _model(16)
-        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX, M._FFA_IDX):
+        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX, M._FFA_IDX, M._GLUCAGON_IDX):
             self.assertEqual(sum(p.numel() for p in m.metabolic.heads[idx].parameters()), 0)
 
     def test_every_metabolic_parameter_receives_gradient(self) -> None:
@@ -701,6 +701,71 @@ class TestLipolysis(unittest.TestCase):
         self.assertGreater(float(tr[:, MI["ffa"]].min()), 0.5 * ffa_b)
 
 
+class TestGlucagon(unittest.TestCase):
+    def _basal(self, seed: int, perturb: float):
+        m = _model(seed, perturb=perturb)
+        emb = m.embedding_projections["metabolic"](torch.zeros(1, EMBEDDING_DIM))
+        with torch.no_grad():
+            gb = float(m.metabolic.glucose_setpoint_raw(emb))
+        return m, TestPerPatientGates._reference_state(m, gb)
+
+    def test_gnb_is_the_fed_fixed_point(self) -> None:
+        """At G=Gb, I=Ib, Gn=Gnb: dGn=0 even after perturbing k_gn, alpha, and
+        the insulin coefficient. Both extras are zero there, so nothing is derived."""
+        m, args = self._basal(19, perturb=1.0)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+            rate = m.metabolic(*args)[0, M._GLUCAGON_IDX]
+        self.assertAlmostEqual(float(rate), 0.0, places=4)
+        self.assertAlmostEqual(float(f["gn_rate"]), 0.0, places=4)
+        self.assertAlmostEqual(float(f["glucagon_stim"]), 0.0, places=5)
+        self.assertAlmostEqual(float(f["glucagon_supp"]), 0.0, places=5)
+
+    def test_glucose_below_gb_stimulates(self) -> None:
+        m, args = self._basal(19, perturb=0.3)
+        state, coupling, external, emb, tf = args
+        with torch.no_grad():
+            gb = float(m.metabolic.glucose_setpoint_raw(emb))
+        low = state.clone()
+        low[:, M._GLUCOSE_IDX] = (0.85 * gb - 95.0) / 30.0
+        with torch.no_grad():
+            f_b = m.metabolic.fluxes(state, coupling, external, emb, tf)
+            f_low = m.metabolic.fluxes(low, coupling, external, emb, tf)
+        self.assertGreater(float(f_low["glucagon_stim"]), 0.0)
+        self.assertGreater(float(f_low["gn_rate"]), float(f_b["gn_rate"]))
+
+    def test_sub_basal_insulin_disinhibits_at_gb(self) -> None:
+        """The 102 miss: glucose back at Gb turned the gated peak off. Insulin
+        below basal has to raise glucagon on its own (Unger switch-off)."""
+        m, args = self._basal(19, perturb=0.3)
+        state, coupling, external, emb, tf = args
+        with torch.no_grad():
+            ib = float(m.metabolic.insulin_setpoint_raw(emb))
+        low = state.clone()
+        low[:, M._INSULIN_IDX] = (0.4 * ib - 10.0) / 10.0
+        high = state.clone()
+        high[:, M._INSULIN_IDX] = (4.0 * ib - 10.0) / 10.0
+        with torch.no_grad():
+            r_b = m.metabolic(state, coupling, external, emb, tf)[0, M._GLUCAGON_IDX]
+            r_low = m.metabolic(low, coupling, external, emb, tf)[0, M._GLUCAGON_IDX]
+            r_high = m.metabolic(high, coupling, external, emb, tf)[0, M._GLUCAGON_IDX]
+            f_low = m.metabolic.fluxes(low, coupling, external, emb, tf)
+        self.assertLess(float(f_low["glucagon_supp"]), 0.0)
+        self.assertGreater(float(r_low), float(r_b))
+        self.assertLess(float(r_high), float(r_b))
+
+    def test_excess_glucagon_at_the_fed_point_is_cleared(self) -> None:
+        m, args = self._basal(19, perturb=0.4)
+        state, coupling, external, emb, tf = args
+        with torch.no_grad():
+            gn_b = float(m.metabolic.gn_setpoint_raw(emb))
+        hi = state.clone()
+        hi[:, M._GLUCAGON_IDX] = (2.0 * gn_b - 70.0) / 20.0
+        with torch.no_grad():
+            rate = m.metabolic(hi, coupling, external, emb, tf)[0, M._GLUCAGON_IDX]
+        self.assertLess(float(rate), 0.0)
+
+
 class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
     """Lipid and amino appearance already sit on the metabolic coupling vector.
     They used to affect only the fat-mass calorie residual; the teacher also
@@ -715,14 +780,19 @@ class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
             rate = met(state, coupling, external, emb, tf)
-            prod, cons = f["prod_raw"], f["cons_raw"]
-            raw = met.raw_state(state)
         torch.testing.assert_close(f["ffa_from_lipid"], M._FFA_FROM_LIPID * coupling[:, M._LIPID_COUPLING_IDX])
         torch.testing.assert_close(f["glucagon_from_amino"], M._GN_FROM_AMINO * coupling[:, M._AMINO_COUPLING_IDX])
         torch.testing.assert_close(rate[:, M._FFA_IDX], f["ffa_rate"], atol=1e-6, rtol=1e-5)
-        gn_ma = (prod[:, M._GLUCAGON_IDX] * met.prod_scale[M._GLUCAGON_IDX]
-                 - cons[:, M._GLUCAGON_IDX] * met.cons_scale[M._GLUCAGON_IDX] * raw[:, M._GLUCAGON_IDX])
-        torch.testing.assert_close(rate[:, M._GLUCAGON_IDX], gn_ma + f["glucagon_from_amino"], atol=1e-6, rtol=1e-5)
+        torch.testing.assert_close(rate[:, M._GLUCAGON_IDX], f["gn_rate"], atol=1e-6, rtol=1e-5)
+        bare = coupling.clone()
+        bare[:, M._AMINO_COUPLING_IDX] = 0.0
+        with torch.no_grad():
+            f_bare = met.fluxes(state, bare, external, emb, tf)
+        torch.testing.assert_close(
+            f["gn_rate"] - f_bare["gn_rate"],
+            M._GN_FROM_AMINO * coupling[:, M._AMINO_COUPLING_IDX],
+            atol=1e-6, rtol=1e-5,
+        )
 
     def test_carb_appearance_does_not_create_those_terms(self) -> None:
         m = _model(1, perturb=0.5)

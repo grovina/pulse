@@ -391,6 +391,8 @@ def train(
     # the checkpoint so a run can be checked against its recipe.
     train_config: dict[str, Any] | None = None,
     spec_path: str | None = None,
+    init_from: str | None = None,
+    resume_from: str | None = None,
     gcs_bucket: str | None = None,
     gcs_object: str | None = None,
     benchmark_dataset_uri: str | None = None,
@@ -659,6 +661,24 @@ def train(
     embeddings = nn.Embedding(n_patients, EMBEDDING_DIM).to(device)
     nn.init.normal_(embeddings.weight, std=0.1)
 
+    start_epoch = 0
+    if resume_from:
+        resumed = _load_checkpoint_uri(resume_from)
+        model.load_state_dict(resumed["model_state"], strict=True)
+        if "embeddings_state" in resumed:
+            embeddings.load_state_dict(resumed["embeddings_state"])
+        else:
+            print("[RESUME] checkpoint has no embeddings_state; patient table stays at its fresh init")
+        start_epoch = resume_start_epoch(resumed)
+        print(f"[RESUME] {resume_from} -> epoch {start_epoch} (Adam moments reset)")
+    elif init_from:
+        seeded = _load_checkpoint_uri(init_from)
+        missing, unexpected = model.load_state_dict(seeded["model_state"], strict=False)
+        print(
+            f"[INIT] {init_from} missing={list(missing)} unexpected={list(unexpected)}",
+            flush=True,
+        )
+
     # NOTE: torch.compile was tried for iter 14 (5-epoch local A/B). On a
     # single fixed protocol it gave 2.9x steady-state speedup, but in the
     # real training loop the model.forward graph is hit with too many
@@ -671,11 +691,47 @@ def train(
     params = list(model.parameters()) + list(embeddings.parameters())
     rng = np.random.default_rng(seed)
 
-    optimizer = torch.optim.Adam(params, lr=lr)
     scheduler_T = phase_boundary if phased else total_epochs
+    optimizer = torch.optim.Adam(params, lr=lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=scheduler_T, eta_min=lr * 0.05,
     )
+
+    def _arm_phase(epoch_now: int, *, announce: bool) -> None:
+        """Point the optimizer and cosine at the phase ``epoch_now`` is in.
+
+        ``done`` is how many epochs of this phase have already finished, so a
+        resume lands on the learning rate the next epoch would have had.
+        Adam moments start fresh: a phase change already did that, and a
+        resume has no saved optimizer.
+        """
+        nonlocal cur_phase, optimizer, scheduler
+        if phased and p3_epochs > 0 and epoch_now >= p3_start:
+            phase, lr_now, t_max, eta = 3, p3_lr, p3_epochs, min(p2_floor, p3_lr)
+            done = epoch_now - p3_start
+        elif phased and epoch_now >= phase_boundary:
+            phase, lr_now, t_max, eta = 2, p2_lr, phase2_epochs, p2_floor
+            done = epoch_now - phase_boundary
+        else:
+            phase, lr_now, t_max, eta = 1, lr, scheduler_T, lr * 0.05
+            done = epoch_now
+        cur_phase = phase
+        optimizer = torch.optim.Adam(params, lr=lr_now)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max(t_max, 1), eta_min=eta,
+        )
+        for _ in range(done):
+            scheduler.step()
+        if phase == 3:
+            if phase3_input_dropout is not None:
+                trajectory_signal.input_dropout = float(phase3_input_dropout)
+            trajectory_signal.meal_macro_dropout = float(phase3_meal_dropout)
+        if announce:
+            print(
+                f"[PHASE] epoch {epoch_now} enters phase {phase} at lr={scheduler.get_last_lr()[0]:.6g} "
+                f"({done} epoch(s) of this phase already done)",
+                flush=True,
+            )
 
     total_params = sum(p.numel() for p in model.parameters())
     emb_params = n_patients * EMBEDDING_DIM
@@ -695,43 +751,36 @@ def train(
         f"cohort statistics: {len(ALL_COHORT_STATISTICS)} spec(s), weight={cohort_statistic_weight}\n",
     )
 
-    # Iter 25: rolling last-good checkpoint + recent-metrics buffer for the
-    # NaN abort handler. ``last_good_path`` is overwritten at the end of every
-    # successful epoch; on abort it's uploaded to GCS as ``last_good_pre_nan.pt``
-    # so iter 26 can probe the pre-NaN parameter state with the diagnostics
-    # tools instead of re-running blind.
+    # Rolling last-good checkpoint. Written at the end of every epoch and
+    # uploaded to GCS as ``last_good.pt`` next to the final object, so a
+    # timeout can resume. A NaN abort uploads the same object.
     last_good_path = output_path + ".last-good.pt"
     recent_metrics: list[dict[str, float]] = []  # rolling, last 5 epochs
 
     cur_phase = 1
     epoch = 0
+    if start_epoch < total_epochs:
+        _arm_phase(start_epoch, announce=start_epoch > 0)
     # Iter 97 (review 4.1): cumulative aux steps per signal for the whole run.
     aux_steps_by_signal: dict[str, int] = {}
     aux_signals = [sig for sig in signals if sig is not trajectory_signal]
     try:
-        for epoch in range(total_epochs):
-            if phased and epoch == phase_boundary:
-                cur_phase = 2
-                optimizer = torch.optim.Adam(params, lr=p2_lr)
-                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=phase2_epochs, eta_min=p2_floor,
-                )
-                print(f"\n--- Phase 2: {phase2_epochs} epochs, lr={p2_lr} (floor {p2_floor}) ---\n")
-            if phased and p3_epochs > 0 and epoch == p3_start:
-                cur_phase = 3
-                optimizer = torch.optim.Adam(params, lr=p3_lr)
-                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=p3_epochs, eta_min=min(p2_floor, p3_lr),
-                )
-                if phase3_input_dropout is not None:
-                    trajectory_signal.input_dropout = float(phase3_input_dropout)
-                trajectory_signal.meal_macro_dropout = float(phase3_meal_dropout)
-                print(
-                    f"\n--- Phase 3: {p3_epochs} epochs, lr={p3_lr}, input dropout "
-                    f"{trajectory_signal.input_dropout} on trajectory sleep/activity "
-                    f"(literature arms stay on-protocol), "
-                    f"meal-macro dropout {phase3_meal_dropout} ---\n",
-                )
+        for epoch in range(start_epoch, total_epochs):
+            entering = epoch != start_epoch and (
+                (phased and epoch == phase_boundary)
+                or (phased and p3_epochs > 0 and epoch == p3_start)
+            )
+            if entering:
+                _arm_phase(epoch, announce=True)
+                if cur_phase == 2:
+                    print(f"\n--- Phase 2: {phase2_epochs} epochs, lr={p2_lr} (floor {p2_floor}) ---\n")
+                elif cur_phase == 3:
+                    print(
+                        f"\n--- Phase 3: {p3_epochs} epochs, lr={p3_lr}, input dropout "
+                        f"{trajectory_signal.input_dropout} on trajectory sleep/activity "
+                        f"(literature arms stay on-protocol), "
+                        f"meal-macro dropout {phase3_meal_dropout} ---\n",
+                    )
 
             epoch_start = time.time()
             if _WATCHDOG_TIMEOUT_S > 0:
@@ -878,6 +927,10 @@ def train(
             torch.save(
                 {
                     "model_state": model.state_dict(),
+                    "model_config": getattr(model, "constructor_kwargs", None),
+                    "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
+                    "hidden_dim": hidden_dim,
+                    "embedding_dim": EMBEDDING_DIM,
                     "embeddings_state": embeddings.state_dict(),
                     "epoch": epoch,
                     "phase": cur_phase,
@@ -885,6 +938,13 @@ def train(
                 },
                 last_good_path,
             )
+            if gcs_bucket and gcs_object:
+                try:
+                    _upload_to_gcs(
+                        last_good_path, gcs_bucket, _gcs_sibling(gcs_object, "last_good.pt"),
+                    )
+                except Exception as err:
+                    print(f"[LAST-GOOD] upload failed: {err}", flush=True)
 
             # Memory profile is printed every epoch (not gated to the every-5
             # epoch summary) — the OOM-saga curve is what we're paying for,
@@ -982,7 +1042,7 @@ def train(
         if gcs_bucket and gcs_object:
             prefix = gcs_object.rsplit("/", 1)[0] if "/" in gcs_object else ""
             abort_object = f"{prefix}/abort_diagnostics.json" if prefix else "abort_diagnostics.json"
-            last_good_object = f"{prefix}/last_good_pre_nan.pt" if prefix else "last_good_pre_nan.pt"
+            last_good_object = _gcs_sibling(gcs_object, "last_good.pt")
             try:
                 _upload_to_gcs(abort_local, gcs_bucket, abort_object)
             except Exception as e:
@@ -1137,6 +1197,33 @@ def train(
     return 0
 
 
+def resume_start_epoch(checkpoint: dict) -> int:
+    """Epoch index to run next. ``checkpoint['epoch']`` is the last one that finished."""
+    if "epoch" not in checkpoint:
+        raise ValueError("resume checkpoint has no epoch")
+    start = int(checkpoint["epoch"]) + 1
+    if start < 1:
+        raise ValueError(f"resume epoch {checkpoint['epoch']} is not a completed epoch")
+    return start
+
+
+def _gcs_sibling(gcs_object: str, name: str) -> str:
+    prefix = gcs_object.rsplit("/", 1)[0] if "/" in gcs_object else ""
+    return f"{prefix}/{name}" if prefix else name
+
+
+def _load_checkpoint_uri(uri: str) -> dict:
+    import tempfile
+
+    if uri.startswith("gs://"):
+        local = tempfile.mktemp(suffix=".pt")
+        _download_gs_uri_to_file(uri, local)
+        path = local
+    else:
+        path = uri
+    return torch.load(path, map_location="cpu", weights_only=False)
+
+
 def _parse_gs_uri(uri: str) -> tuple[str, str]:
     if not uri.startswith("gs://"):
         raise ValueError(f"Not a gs:// URI: {uri}")
@@ -1251,6 +1338,16 @@ def _run_benchmark(
 
     textbook_block = run_textbook_scenarios_on_model(model, rng=np.random.default_rng(42))
 
+    from .knowledge.emergence_chain import fed_morning_chain
+
+    emergence = fed_morning_chain(model)
+    _fail = emergence.get("first_failure")
+    print(
+        f"[emergence] fed-morning chain passed={emergence['passed']} "
+        f"first_failure={_fail} embedding={emergence['embedding_source']}",
+        flush=True,
+    )
+
     failures = []
     mape_max = thresholds.get("overall_weighted_mape_max", 0.16)
     verifier_min = thresholds.get("verifier_overall_min", 0.70)
@@ -1330,6 +1427,9 @@ def _run_benchmark(
         "textbook_mean_soft_score": textbook_block.get("textbook_mean_soft_score"),
         "textbook_hairline": textbook_block.get("textbook_hairline", []),
         "textbook_scenarios": textbook_block["textbook_scenarios"],
+        # Sealed readout. Reported, not gated: a failure here does not enter
+        # ``failures`` and does not change ``gate.passed``.
+        "emergence_chain": emergence,
         "gate": {
             "passed": gate_passed,
             "failures": failures,
@@ -1408,6 +1508,7 @@ _RUN_PLUMBING_KEYS = frozenset({
     "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
     "frozen_ruler", "deterministic", "allow_spec_override",
+    "init_from", "resume_from",
 })
 
 
@@ -2006,6 +2107,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "(slow on multi-CPU hosts; default off — opt in for tests).",
     )
     parser.add_argument(
+        "--init-from", type=str, default=None,
+        help="Warm-start model weights from this checkpoint (local path or gs://). "
+             "Missing keys stay at init; unexpected keys are dropped. Epochs start at 0.",
+    )
+    parser.add_argument(
+        "--resume-from", type=str, default=None,
+        help="Continue a run from last_good.pt (local path or gs://). "
+             "Weights must match this model. Training starts at epoch+1. "
+             "Takes precedence over --init-from.",
+    )
+    parser.add_argument(
         "--benchmark-only",
         action="store_true",
         help=(
@@ -2146,6 +2258,8 @@ def main():
         perturb_protocols=args.perturb_protocols,
         train_config=train_config,
         spec_path=args.spec,
+        init_from=args.init_from,
+        resume_from=args.resume_from,
         gcs_bucket=args.gcs_bucket,
         gcs_object=args.gcs_object,
         benchmark_dataset_uri=args.benchmark_dataset_uri,
