@@ -40,21 +40,21 @@ population ``MG_DL_PER_G``, then converted into this patient's mg/dL:
     dHep  = k·((glyco + gng)·VG_DL_PER_KG − Hep)   a lagged mg/kg/min readout
 
     EGP_b   = k_ii · Gb_emb                          per patient (basal EGP scales with Gb)
-    glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G · mod_L/mod_L_ref
-    gng     =      f_gng ·EGP_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G · mod_H/mod_H_ref
+    glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G
+    gng     =      f_gng ·EGP_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G
 
 ``k_ii`` (obligatory uptake per mg/dL) and ``f_gng`` are learnable POPULATION
-scalars; every structural gate is normalized to exactly 1 at the patient's basal
+scalars. Every structural gate is normalized to exactly 1 at the patient's basal
 state (``g_ins`` at I = Ib, ``g_gn`` at Gn = Gnb, ``g_cort`` at Cort_b, ``g_ffa``
-at FFA_b, ``g_G`` at G ≤ Gb), and each learned modulation ``mod`` is the head's
-output DIVIDED by the same head evaluated at the patient's fasted reference
-state (typicals with Gb_emb / Ib_emb; not detached — the level is pinned to the
-setpoint by construction and the head learns only shape). So at the fasted
-reference ``dG = EGP_b − k_ii·Gb = 0`` exactly: Gb is the fixed point, not an
-attractor. The fasting fall EMERGES from pool depletion — glycogenolysis is
-first order in ``LGly`` so EGP falls toward GNG alone and glucose settles where
-obligatory uptake balances it, an absolute floor ``gng/k_ii`` the same for
-every Gb (item 3.3). ``Gb_fasted``, the drop and the floor are gone.
+at FFA_b, ``g_G`` at G ≤ Gb), so at the fasted reference ``dG = EGP_b − k_ii·Gb
+= 0`` exactly: Gb is the fixed point, not an attractor. The liver head's
+breakdown output and the hepatic head's production output do not multiply
+these fluxes. A learned gain there cancelled the first-order pool on the
+iter-104 weights: the same checkpoint with those gains at 1 holds a 48 h fast.
+The fasting fall emerges from pool depletion — glycogenolysis is first order
+in ``LGly``, so EGP falls toward GNG alone and glucose settles where obligatory
+uptake balances it, an absolute floor ``gng/k_ii`` the same for every Gb
+(item 3.3). ``Gb_fasted``, the drop and the floor are gone.
 
 Carbon: ``d(G/mg) + dLGly + dMGly = app_g − brk_M − (k_ii·G + X·G +
 uptake_ex − gng − store·relu(X·G))/mg`` identically. A heavier person
@@ -377,37 +377,39 @@ class GlycogenFluxHead(nn.Module):
         synthesis   = f_store · fill · appearance_g        (f_store from a softmax the
                                                             module takes over both pools
                                                             and plasma — see fluxes)
-        breakdown   = structural flux · mod / mod_ref      (liver: the derived basal
-                                                            glycogenolysis times gates;
-                                                            muscle: activity-gated)
+        breakdown   = structural                                 liver glycogenolysis
+                      activity-gated · cons                      muscle only
 
     In the ``(prod, cons)`` protocol: ``prod`` is the STORE LOGIT (unbounded; the
     module softmaxes it against the other pool and a zero plasma reference so the
-    fractions sum to one) and ``cons`` is the non-negative breakdown modulation.
+    fractions sum to one). ``cons`` scales muscle glycogenolysis. Liver
+    glycogenolysis does not read it.
 
     Iter 97: the learned catabolic gate (``σ((s − c_thresh)/τ)``) is gone. It leaked
     the way every learned threshold here has leaked — 40 % open at activity 0 for
     muscle, 86 % ungated for liver — and the module now applies the gates
-    structurally (``relu(act − a_rest)`` / the basal-normalized insulin gate). The
-    liver's modulation is further divided by its own value at the patient's fasted
-    reference state, so it can only reshape the flux, never move its basal level.
+    structurally (``relu(act − a_rest)`` / the basal-normalized insulin gate).
     """
 
-    def __init__(self, input_dim: int, hidden_dim: int, *, init_store_logit: float):
+    def __init__(self, input_dim: int, hidden_dim: int, *, init_store_logit: float, emit_breakdown: bool = True):
         super().__init__()
+        self.emit_breakdown = emit_breakdown
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, 2),
+            nn.Linear(hidden_dim, 2 if emit_breakdown else 1),
         )
         self.init_store_logit = float(init_store_logit)
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         raw = self.network(x)
         store_logit = raw[..., 0] + self.init_store_logit
-        break_mod = nn.functional.softplus(raw[..., 1])
+        if self.emit_breakdown:
+            break_mod = nn.functional.softplus(raw[..., 1])
+        else:
+            break_mod = torch.ones_like(store_logit)
         return store_logit, break_mod
 
 
@@ -443,12 +445,13 @@ class MetabolicModule(MassActionModule):
                 _FFA_IDX: lambda inp, hd: ConstantFluxHead(),
                 _BHB_IDX: lambda inp, hd: ConstantFluxHead(),
                 _LACTATE_IDX: _without_mito(SpeciesHead),
-                # hepatic_output: prod = GNG modulation (normalized at the reference),
-                # cons = the readout's relaxation rate.
-                _HEPATIC_IDX: _without_mito(SpeciesHead),
+                # hepatic_output: cons is the readout's relaxation rate.
+                # There is no production output — it used to scale gluconeogenesis.
+                _HEPATIC_IDX: lambda inp, hd: SpeciesHead(inp - 1, hd, emit_prod=False),
                 _LIVER_GLYCOGEN_IDX: lambda inp, hd: GlycogenFluxHead(
                     inp - 1, hd,
-                    init_store_logit=math.log(_LIVER_STORE_FRAC_INIT / _PLASMA_FRAC_INIT)),
+                    init_store_logit=math.log(_LIVER_STORE_FRAC_INIT / _PLASMA_FRAC_INIT),
+                    emit_breakdown=False),
                 _MUSCLE_GLYCOGEN_IDX: lambda inp, hd: GlycogenFluxHead(
                     inp - 1, hd,
                     init_store_logit=math.log(_MUSCLE_STORE_FRAC_INIT / _PLASMA_FRAC_INIT)),
@@ -572,33 +575,6 @@ class MetabolicModule(MassActionModule):
             conss.append(c)
         return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
 
-    def reference_modulations(
-        self,
-        gb: torch.Tensor,
-        ib: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """The liver-breakdown and GNG head modulations at the patient's FASTED
-        REFERENCE state: glucose at Gb, insulin at Ib, FFA and glucagon at their
-        per-patient basals, everything else typical; no appearance; cortisol and
-        GLP-1 at basal; awake at rest; current time of day."""
-        batch_shape = gb.shape
-        ffa_b = self.ffa_setpoint_raw(embedding)
-        gn_b = self.gn_setpoint_raw(embedding)
-        state = torch.zeros(*batch_shape, _N_SPECIES, dtype=gb.dtype, device=gb.device)
-        state[..., _GLUCOSE_IDX] = (gb - _GLUCOSE_CENTER) / _GLUCOSE_NORM_SCALE
-        state[..., _INSULIN_IDX] = (ib - _INSULIN_CENTER) / _INSULIN_NORM_SCALE
-        state[..., _FFA_IDX] = (ffa_b - _FFA_CENTER) / _FFA_SCALE
-        state[..., _GLUCAGON_IDX] = (gn_b - _GN_CENTER) / _GN_SCALE
-        coupling = torch.zeros(*batch_shape, _N_COUPLING, dtype=gb.dtype, device=gb.device)
-        external = torch.zeros(*batch_shape, _N_EXTERNAL, dtype=gb.dtype, device=gb.device)
-        external[..., _SLEEP_EXTERNAL_IDX] = 1.0
-        _, x_ref = self._head_input(state, coupling, external, embedding, time_features)
-        _, mod_liver_ref = self.heads[_LIVER_GLYCOGEN_IDX](x_ref, state[..., _LIVER_GLYCOGEN_IDX])
-        mod_gng_ref, _ = self.heads[_HEPATIC_IDX](x_ref, state[..., _HEPATIC_IDX])
-        return mod_liver_ref, mod_gng_ref
-
     # ---- fluxes ----------------------------------------------------------------------
 
     def fluxes(
@@ -641,7 +617,6 @@ class MetabolicModule(MassActionModule):
 
         prod_raw, cons_raw = self.species_fluxes(
             state, coupling, external, embedding, time_features)
-        mod_liver_ref, mod_gng_ref = self.reference_modulations(gb, ib, embedding, time_features)
 
         # Gut glucose appearance is in the 70 kg reference space. Grams are that
         # density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
@@ -675,12 +650,9 @@ class MetabolicModule(MassActionModule):
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
         g_ffa = (ffa.clamp(min=1e-3) / ffa_b) ** _GNG_FFA_EXP
         g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M
-        mod_liver = cons_raw[..., _LIVER_GLYCOGEN_IDX] / mod_liver_ref
-        mod_gng = prod_raw[..., _HEPATIC_IDX] / mod_gng_ref
         glycogenolysis_plasma = ((1.0 - f_gng) * egp_b * (lgly / _LIVER_GLY_CENTER)
-                                 * g_ins_glyco * g_gn * g_g * mod_liver)
-        gng_plasma = (f_gng * egp_b * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g
-                      * mod_gng)
+                                 * g_ins_glyco * g_gn * g_g)
+        gng_plasma = (f_gng * egp_b * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g)
         brk_liver = glycogenolysis_plasma / mg
 
         avail_m = mgly / (mgly + _MUSCLE_GLY_K)
@@ -760,7 +732,6 @@ class MetabolicModule(MassActionModule):
             "glycogenolysis_plasma": glycogenolysis_plasma, "gng_plasma": gng_plasma,
             "g_ins_glyco": g_ins_glyco, "g_ins_gng": g_ins_gng, "g_gn": g_gn,
             "g_cort": g_cort, "g_ffa": g_ffa, "g_g": g_g,
-            "mod_liver": mod_liver, "mod_gng": mod_gng,
             "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
             "ins_gsir": ins_gsir, "ins_restoring": ins_restoring, "ins_rate": ins_rate,
             "xa": xa, "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,

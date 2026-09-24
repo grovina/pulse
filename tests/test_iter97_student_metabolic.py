@@ -142,9 +142,9 @@ class TestGlycogenGates(unittest.TestCase):
         self.assertTrue(bool((f["brk_muscle"] > 0).all()))
 
     def test_liver_breakdown_has_no_ungated_channel(self) -> None:
-        """glycogenolysis = (1 − f_gng)·EGP_b·(LGly/LGly_b)·g_ins·g_gn·g_G·mod/mod_ref, and the
+        """glycogenolysis = (1 − f_gng)·EGP_b·(LGly/LGly_b)·g_ins·g_gn·g_G, and the
         insulin gate is the teacher's basal-normalized IC50: exactly 1 at I = Ib, 1/(1+(I/K)^2)-
-        shaped above it, → 0 at high insulin."""
+        shaped above it, → 0 at high insulin. The liver head does not scale it."""
         m = _model(4, perturb=1.0)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
@@ -159,7 +159,7 @@ class TestGlycogenGates(unittest.TestCase):
             expected_gate = (1 + (ib / k) ** 2) / (1 + ((ib + excess) / k) ** 2)
             torch.testing.assert_close(f["g_ins_glyco"], expected_gate, atol=1e-6, rtol=1e-5)
             expected = ((1 - f["f_gng"]) * f["egp_b"] * (100.0 + 60.0 * s[:, M._LIVER_GLYCOGEN_IDX]).clamp(min=0) / 100.0
-                        * f["g_ins_glyco"] * f["g_gn"] * f["g_g"] * f["mod_liver"])
+                        * f["g_ins_glyco"] * f["g_gn"] * f["g_g"])
             torch.testing.assert_close(f["glycogenolysis_plasma"], expected, atol=1e-6, rtol=1e-5)
             torch.testing.assert_close(f["brk_liver"], f["glycogenolysis_plasma"] / f["mg_dl_per_g"], atol=1e-7, rtol=1e-6)
         self.assertLess(float(f["g_ins_glyco"].max()), 0.02)
@@ -242,9 +242,8 @@ class TestPerPatientGates(unittest.TestCase):
 
     def test_gb_is_an_exact_fixed_point_for_every_patient(self) -> None:
         """At the fasted reference dG = EGP_b − k_ii·Gb = 0 exactly, and glycogenolysis is
-        exactly (1 − f_gng)·EGP_b — the learned modulations are normalized to 1 there. With
-        the pool halved dG < 0: the fasting fall emerges from depletion, not from a moved
-        setpoint (there is no Gb_fasted any more)."""
+        exactly (1 − f_gng)·EGP_b. With the pool halved, glycogenolysis halves: the fasting
+        fall emerges from depletion, not from a moved setpoint (there is no Gb_fasted)."""
         m = _model(9, perturb=1.0)
         met = m.metabolic
         self.assertFalse(hasattr(met, "log_gb_drop_abs"))
@@ -261,12 +260,36 @@ class TestPerPatientGates(unittest.TestCase):
             args_half = self._reference_state(m, gb, lgly=50.0)
             with torch.no_grad():
                 f_half = met.fluxes(*args_half)
-            # First-order in the pool, independent of the learned modulation.
             self.assertAlmostEqual(
-                float(f_half["glycogenolysis_plasma"] / f_half["mod_liver"]),
+                float(f_half["glycogenolysis_plasma"]),
                 float(0.5 * (1 - f_half["f_gng"]) * f_half["egp_b"]),
                 places=5, msg=f"Gb={gb}",
             )
+
+    def test_hepatic_heads_do_not_scale_the_carbon_budget(self) -> None:
+        """Liver cons and hepatic prod used to multiply glycogenolysis and gluconeogenesis.
+        Moving those outputs leaves both fluxes where the law put them. Hepatic cons still
+        sets the readout lag."""
+        m = _model(9, perturb=1.0)
+        args = self._reference_state(m, 95.0, lgly=60.0)
+        met = m.metabolic
+        liver = met.heads[M._LIVER_GLYCOGEN_IDX].network[-1]
+        hepatic = met.heads[M._HEPATIC_IDX].network[-1]
+        self.assertEqual(liver.out_features, 1)
+        self.assertEqual(hepatic.out_features, 1)
+        self.assertEqual(met.heads[M._MUSCLE_GLYCOGEN_IDX].network[-1].out_features, 2)
+        with torch.no_grad():
+            before = met.fluxes(*args)
+            liver.weight.mul_(5)
+            liver.bias.add_(3)
+            after = met.fluxes(*args)
+            hepatic.weight.mul_(4)
+            lagged = met.fluxes(*args)
+        torch.testing.assert_close(before["glycogenolysis_plasma"], after["glycogenolysis_plasma"])
+        torch.testing.assert_close(before["gng_plasma"], after["gng_plasma"])
+        torch.testing.assert_close(before["gng_plasma"], lagged["gng_plasma"])
+        self.assertGreater(
+            float((lagged["hep_rate"] - before["hep_rate"]).abs().sum()), 0.0)
 
     def test_effective_ib_is_the_teacher_glucose_gated_basal(self) -> None:
         """At G = 0.9·Gb (this patient's Gb), I = Ib: GSIR is 0 and I is restored toward Ib·0.9^5."""

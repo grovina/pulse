@@ -62,20 +62,25 @@ class SpeciesHead(nn.Module):
     on parameters that actually move its prediction.
     """
 
-    def __init__(self, input_dim: int, hidden_dim: int):
+    def __init__(self, input_dim: int, hidden_dim: int, *, emit_prod: bool = True):
         super().__init__()
+        self.emit_prod = emit_prod
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, 2),
+            nn.Linear(hidden_dim, 2 if emit_prod else 1),
         )
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         raw = self.network(x)
-        prod = nn.functional.softplus(raw[..., 0:1]).squeeze(-1)
-        cons = nn.functional.softplus(raw[..., 1:2]).squeeze(-1)
+        if self.emit_prod:
+            prod = nn.functional.softplus(raw[..., 0])
+            cons = nn.functional.softplus(raw[..., 1])
+        else:
+            prod = torch.ones_like(raw[..., 0])
+            cons = nn.functional.softplus(raw[..., 0])
         return prod, cons
 
 
