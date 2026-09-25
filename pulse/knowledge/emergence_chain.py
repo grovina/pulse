@@ -18,6 +18,7 @@ import numpy as np
 import torch
 
 from ..model import ModularPhysiologyNetwork, integrate
+from ..modules.gut import MealEvent
 from ..types import MARKER_INDEX, NORM_CENTER
 from .full_body import PatientParams, simulate_full_body
 
@@ -45,6 +46,16 @@ _FASTING_TARGETS_MGDL = (75.0, 120.0)
 _GLUCOSE_FLOOR_MGDL = 60.0
 _FRACTION_SPREAD = 0.10
 _OVERNIGHT_MIN = 12 * 60
+# Staub-Traugott: a second identical glucose load raises glucose less than
+# the first while insulin from the first load is still up. 75 g is an OGTT
+# load. 90 min is late enough that the first peak has happened and early
+# enough that insulin has not returned to basal; at 3 h both this model and
+# the teacher have already come home and the second rise is larger. 15 mg/dL
+# is the smallest first-meal rise that is still a meal.
+_MEAL_CARBS_G = 75.0
+_MEAL_GAP_MIN = 90
+_PEAK_WINDOW_MIN = 150
+_MEAL_RISE_MGDL = 15.0
 
 _HOURS = (8, 16, 24, 36, 48)
 _MARKERS = (
@@ -192,6 +203,96 @@ def two_basal_fasts(model: ModularPhysiologyNetwork) -> dict[str, Any]:
         "first_failure": first,
         "passed": passed,
     }
+
+
+def judge_second_meal(glucose: np.ndarray, *, meal1: int, meal2: int, window: int) -> dict[str, Any]:
+    """The second load's glucose rise is smaller, and the first load did rise."""
+    def rise(t: int) -> tuple[float, float, float]:
+        seg = glucose[t:t + window]
+        base = float(glucose[t])
+        peak = float(seg.max())
+        return peak - base, peak, base
+
+    rise1, peak1, base1 = rise(meal1)
+    rise2, peak2, base2 = rise(meal2)
+    links = [
+        _link("meal_one_rose", rise1, ">=", _MEAL_RISE_MGDL,
+              "the first 75 g load raises glucose by at least 15 mg/dL"),
+        _link("second_rise_smaller", rise2, "<", rise1,
+              "the second identical load raises glucose less than the first"),
+    ]
+    # The second link is only meaningful once the first meal registered.
+    if not links[0]["passed"]:
+        links[1]["passed"] = False
+    first = next((lnk["name"] for lnk in links if not lnk["passed"]), None)
+    return {
+        "links": links,
+        "first_failure": first,
+        "passed": first is None,
+        "rise_mgdl": [rise1, rise2],
+        "peak_mgdl": [peak1, peak2],
+        "baseline_mgdl": [base1, base2],
+    }
+
+
+def second_meal(model: ModularPhysiologyNetwork) -> dict[str, Any]:
+    """Two identical 75 g loads, 3 h apart, at the trained prior-mean person.
+
+    Awake rest from 08:00. The loss has a dose response across different
+    meals, not this comparison of the same meal given twice.
+    """
+    model.eval()
+    prior = getattr(model, "_embedding_prior_mean", None)
+    if prior is None:
+        embedding = torch.zeros(model.embedding_dim)
+        embedding_source = "zero"
+    else:
+        embedding = prior.detach().float().cpu().view(-1)
+        embedding_source = "embedding_prior_mean"
+    n = _MEAL_GAP_MIN + _PEAK_WINDOW_MIN
+    meals = [
+        MealEvent(0.0, _MEAL_CARBS_G, 0.0, 0.0),
+        MealEvent(float(_MEAL_GAP_MIN), _MEAL_CARBS_G, 0.0, 0.0),
+    ]
+    with torch.no_grad():
+        traj = integrate(
+            model, torch.tensor(NORM_CENTER, dtype=torch.float32), embedding, n,
+            start_time_minutes=8.0 * 60.0, meals=meals,
+            sleep_wake=torch.ones(n), activity=torch.zeros(n),
+        ).numpy()
+    glucose = traj[:, MARKER_INDEX["glucose"]]
+    insulin = traj[:, MARKER_INDEX["insulin"]]
+    judged = judge_second_meal(glucose, meal1=0, meal2=_MEAL_GAP_MIN, window=_PEAK_WINDOW_MIN)
+    teacher = _teacher_second_meal(n)
+    return {
+        "protocol": "08:00 awake rest, 75 g glucose at 0 and at 90 min",
+        "sealed": True,
+        "gated": False,
+        "embedding_source": embedding_source,
+        "teacher": teacher,
+        **judged,
+        "insulin_rise": [
+            _rise(insulin, 0),
+            _rise(insulin, _MEAL_GAP_MIN),
+        ],
+    }
+
+
+def _rise(series: np.ndarray, t: int) -> float:
+    seg = series[t:t + _PEAK_WINDOW_MIN]
+    return float(seg.max() - series[t])
+
+
+def _teacher_second_meal(n: int) -> dict[str, Any]:
+    params = PatientParams()
+    sw = np.ones(n, dtype=np.float32)
+    act = np.zeros(n, dtype=np.float32)
+    meals = [(0.0, _MEAL_CARBS_G, 0.0, 0.0), (float(_MEAL_GAP_MIN), _MEAL_CARBS_G, 0.0, 0.0)]
+    traj, _ = simulate_full_body(params, meals, sw, act, n, start_hour=8.0, noise_scale=0.0)
+    judged = judge_second_meal(
+        traj[:, MARKER_INDEX["glucose"]], meal1=0, meal2=_MEAL_GAP_MIN, window=_PEAK_WINDOW_MIN,
+    )
+    return {"rise_mgdl": judged["rise_mgdl"], "passed": judged["passed"], "first_failure": judged["first_failure"]}
 
 
 def _chain_report(

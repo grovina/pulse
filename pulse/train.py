@@ -1338,7 +1338,7 @@ def _run_benchmark(
 
     textbook_block = run_textbook_scenarios_on_model(model, rng=np.random.default_rng(42))
 
-    from .knowledge.emergence_chain import fed_morning_chain, two_basal_fasts
+    from .knowledge.emergence_chain import fed_morning_chain, second_meal, two_basal_fasts
 
     emergence = fed_morning_chain(model)
     _fail = emergence.get("first_failure")
@@ -1351,6 +1351,12 @@ def _run_benchmark(
     print(
         f"[emergence] two-basal fasts passed={two_basal['passed']} "
         f"first_failure={two_basal['first_failure']}",
+        flush=True,
+    )
+    meal = second_meal(model)
+    print(
+        f"[emergence] second meal passed={meal['passed']} "
+        f"first_failure={meal['first_failure']} rises={meal['rise_mgdl']}",
         flush=True,
     )
 
@@ -1437,6 +1443,7 @@ def _run_benchmark(
         # ``failures`` and does not change ``gate.passed``.
         "emergence_chain": emergence,
         "two_basal_fasts": two_basal,
+        "second_meal": meal,
         "gate": {
             "passed": gate_passed,
             "failures": failures,

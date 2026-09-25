@@ -1,6 +1,8 @@
 """The sealed chain judges a course. It does not train, and it does not gate."""
 
-from pulse.knowledge.emergence_chain import judge_chain, two_basal_fasts
+import numpy as np
+
+from pulse.knowledge.emergence_chain import judge_chain, judge_second_meal, two_basal_fasts
 from pulse.train import resume_start_epoch
 
 
@@ -58,6 +60,23 @@ def test_resume_starts_at_the_epoch_after_the_one_that_finished():
     except ValueError:
         return
     raise AssertionError("a checkpoint with no epoch should not resume")
+
+
+def test_a_smaller_second_rise_passes_only_if_the_first_meal_rose():
+    glucose = np.full(400, 90.0)
+    glucose[40:80] = 130.0
+    glucose[180 + 40:180 + 80] = 110.0
+    judged = judge_second_meal(glucose, meal1=0, meal2=180, window=150)
+    assert judged["passed"]
+    assert judged["rise_mgdl"][0] > judged["rise_mgdl"][1]
+
+
+def test_a_flat_first_meal_is_not_a_smaller_second_rise():
+    glucose = np.full(400, 90.0)
+    glucose[200:240] = 100.0
+    judged = judge_second_meal(glucose, meal1=0, meal2=180, window=150)
+    assert judged["first_failure"] == "meal_one_rose"
+    assert not judged["links"][1]["passed"]
 
 
 def test_two_basal_without_a_prior_does_not_invent_a_person():
