@@ -1338,13 +1338,19 @@ def _run_benchmark(
 
     textbook_block = run_textbook_scenarios_on_model(model, rng=np.random.default_rng(42))
 
-    from .knowledge.emergence_chain import fed_morning_chain
+    from .knowledge.emergence_chain import fed_morning_chain, two_basal_fasts
 
     emergence = fed_morning_chain(model)
     _fail = emergence.get("first_failure")
     print(
         f"[emergence] fed-morning chain passed={emergence['passed']} "
         f"first_failure={_fail} embedding={emergence['embedding_source']}",
+        flush=True,
+    )
+    two_basal = two_basal_fasts(model)
+    print(
+        f"[emergence] two-basal fasts passed={two_basal['passed']} "
+        f"first_failure={two_basal['first_failure']}",
         flush=True,
     )
 
@@ -1430,6 +1436,7 @@ def _run_benchmark(
         # Sealed readout. Reported, not gated: a failure here does not enter
         # ``failures`` and does not change ``gate.passed``.
         "emergence_chain": emergence,
+        "two_basal_fasts": two_basal,
         "gate": {
             "passed": gate_passed,
             "failures": failures,

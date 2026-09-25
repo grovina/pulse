@@ -36,6 +36,15 @@ _LIVER_48H_CEILING_G = 30.0
 _GLUCOSE_DROP_MGDL = 5.0
 _INSULIN_FALL_FRAC = 0.7
 _GLUCAGON_RISE_PG = 10.0
+# Two fasting glucoses the per-patient probe already uses (Gb 75 and Gb 120).
+# The embedding is fit to an overnight of those check-ins; the 48 h fast is not
+# in that fit. 60 mg/dL is the physiological floor that probe already requires.
+# The two 48 h glucose/Gb ratios should agree: the floor is a fraction of the
+# person's own basal, not a shared absolute glucose.
+_FASTING_TARGETS_MGDL = (75.0, 120.0)
+_GLUCOSE_FLOOR_MGDL = 60.0
+_FRACTION_SPREAD = 0.10
+_OVERNIGHT_MIN = 12 * 60
 
 _HOURS = (8, 16, 24, 36, 48)
 _MARKERS = (
@@ -100,8 +109,96 @@ def fed_morning_chain(model: ModularPhysiologyNetwork) -> dict[str, Any]:
     else:
         embedding = prior.detach().float().cpu().view(-1)
         embedding_source = "embedding_prior_mean"
+    return _chain_report(model, embedding, embedding_source)
 
+
+def two_basal_fasts(model: ModularPhysiologyNetwork) -> dict[str, Any]:
+    """Fit two embeddings to two fasting glucoses, then roll the sealed chain.
+
+    Weights stay frozen. The fit is one asleep overnight of hourly glucose
+    check-ins, the same ``calibrate_embedding`` the gate runs. The 48 h fast
+    starts the next morning from the fed state and is not among those check-ins.
+    """
+    from ..calibration import CalibrationSettings, MeasurementPoint, calibrate_embedding
+
+    model.eval()
+    prior = getattr(model, "_embedding_prior_mean", None)
+    prior_std = getattr(model, "_embedding_prior_std", None)
+    people = []
+    for target in _FASTING_TARGETS_MGDL:
+        obs = [
+            MeasurementPoint(time=t, marker_id="glucose", value=float(target))
+            for t in range(60, _OVERNIGHT_MIN, 60)
+        ]
+        if prior is None or prior_std is None:
+            people.append({
+                "fasting_glucose_mgdl": float(target),
+                "calibration": {"accepted": False, "reason": "no_prior"},
+                "passed": False,
+                "first_failure": "no_prior",
+            })
+            continue
+        n_night = _OVERNIGHT_MIN
+        cal = calibrate_embedding(
+            model, obs, torch.tensor(NORM_CENTER, dtype=torch.float32), [], n_night,
+            start_time_minutes=20.0 * 60.0,
+            sleep_wake=torch.zeros(n_night), activity=torch.zeros(n_night),
+            prior_mean=prior.detach().float().cpu().view(-1),
+            prior_std=prior_std.detach().float().cpu().view(-1),
+            settings=CalibrationSettings.from_env(),
+        )
+        report = _chain_report(model, cal.embedding, "calibrated_fasting_glucose")
+        report["fasting_glucose_mgdl"] = float(target)
+        report["calibration"] = cal.as_report()
+        g48 = float(report["course"]["48h"]["glucose"])
+        gb = float(report["setpoints"]["gb"])
+        report["glucose_48h_over_gb"] = g48 / gb if gb else float("nan")
+        if not cal.accepted:
+            report["passed"] = False
+            report["first_failure"] = "calibration_not_accepted"
+        elif report["passed"] and g48 < _GLUCOSE_FLOOR_MGDL:
+            report["passed"] = False
+            report["first_failure"] = "glucose_floor_48h"
+        people.append(report)
+
+    ratios = [p.get("glucose_48h_over_gb") for p in people]
+    fraction_ok = (
+        len(ratios) == 2
+        and all(r is not None and r == r for r in ratios)
+        and abs(ratios[0] - ratios[1]) <= _FRACTION_SPREAD
+        and all(p.get("calibration", {}).get("accepted") for p in people)
+    )
+    own = [p.get("first_failure") for p in people if not p.get("passed")]
+    if own:
+        first = own[0]
+        passed = False
+    elif not fraction_ok:
+        first = "fractional_drop_disagrees"
+        passed = False
+    else:
+        first = None
+        passed = True
+    return {
+        "protocol": (
+            "fit embedding to an asleep overnight of fasting glucose, "
+            "then fed 08:00 awake rest, no meals, 48 h"
+        ),
+        "sealed": True,
+        "gated": False,
+        "targets_mgdl": list(_FASTING_TARGETS_MGDL),
+        "fraction_spread": _FRACTION_SPREAD,
+        "glucose_floor_mgdl": _GLUCOSE_FLOOR_MGDL,
+        "people": people,
+        "first_failure": first,
+        "passed": passed,
+    }
+
+
+def _chain_report(
+    model: ModularPhysiologyNetwork, embedding: torch.Tensor, embedding_source: str,
+) -> dict[str, Any]:
     n = 48 * 60
+    embedding = embedding.detach().float().cpu().view(-1)
     with torch.no_grad():
         traj = integrate(
             model, torch.tensor(NORM_CENTER, dtype=torch.float32), embedding, n,
@@ -113,7 +210,6 @@ def fed_morning_chain(model: ModularPhysiologyNetwork) -> dict[str, Any]:
         ib = float(model.metabolic.insulin_setpoint_raw(met_emb))
         ffa_b = float(model.metabolic.ffa_setpoint_raw(met_emb))
         gn_b = float(model.metabolic.gn_setpoint_raw(met_emb))
-
     course = {f"{h}h": _snap(traj, h * 60) for h in _HOURS}
     judged = judge_chain(course, gb=gb, ib=ib, ffa_b=ffa_b, gn_b=gn_b)
     return {

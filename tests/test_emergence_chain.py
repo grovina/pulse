@@ -1,6 +1,6 @@
 """The sealed chain judges a course. It does not train, and it does not gate."""
 
-from pulse.knowledge.emergence_chain import judge_chain
+from pulse.knowledge.emergence_chain import judge_chain, two_basal_fasts
 from pulse.train import resume_start_epoch
 
 
@@ -58,6 +58,20 @@ def test_resume_starts_at_the_epoch_after_the_one_that_finished():
     except ValueError:
         return
     raise AssertionError("a checkpoint with no epoch should not resume")
+
+
+def test_two_basal_without_a_prior_does_not_invent_a_person():
+    class _Model:
+        embedding_dim = 4
+
+        def eval(self):
+            return None
+
+    report = two_basal_fasts(_Model())
+    assert report["sealed"] is True and report["gated"] is False
+    assert report["passed"] is False
+    assert report["first_failure"] == "no_prior"
+    assert report["targets_mgdl"] == [75.0, 120.0]
 
 
 def test_bhb_below_the_cahill_floor_fails_last():
