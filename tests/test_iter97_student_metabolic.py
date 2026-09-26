@@ -663,9 +663,20 @@ class TestVolumeAndEnergy(unittest.TestCase):
 
 
 class TestLipolysis(unittest.TestCase):
+    def test_ffa_clearance_is_anatomical(self) -> None:
+        """Clearance is the teacher's 0.20. It is not a parameter, so a
+        perturbation of the module cannot move it."""
+        m = _model(18, perturb=1.0)
+        names = [n for n, _ in m.metabolic.named_parameters()]
+        self.assertNotIn("log_k_ffa", names)
+        args = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+        self.assertAlmostEqual(float(f["k_ffa"]), 0.20, places=6)
+
     def test_ffa_basal_is_a_fixed_point(self) -> None:
-        """At I=Ib, FFA=FFA_b: dFFA=0 even after a random perturbation of k_ffa —
-        lip_max is derived from clearance."""
+        """At I=Ib, FFA=FFA_b: dFFA=0 after perturbing the remaining scalars —
+        lip_max is derived from the constant clearance and from IC50."""
         m = _model(18, perturb=1.0)
         args = TestPerPatientGates._reference_state(m, 95.0)
         with torch.no_grad():

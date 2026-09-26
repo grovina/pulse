@@ -100,10 +100,14 @@ while insulin was already 5.7 matching the teacher):
     lipolysis = lip_max / (1 + I/IC50)
     dFFA      = lipolysis − k_ffa · FFA + 0.01 · Ra_fat
 
-``lip_max`` is derived so FFA_b is the fed fixed point. ``k_ffa`` is a
-speed (init 0.20, τ ≈ 5 min); ``IC50`` is 5 µU/mL — adipose antilipolysis
-is the most insulin-sensitive action in the body. Sub-basal insulin
-raises FFA; the gated peak could not be stopped from crashing it.
+``lip_max`` is derived so FFA_b is the fed fixed point, and ``k_ffa``
+cancels at every equilibrium. It is the teacher's clearance, 0.20
+(τ ≈ 5 min; Eaton 1969), not a parameter: a free copy walked from 0.20
+to 0.038 and the sealed fast was unchanged when it was forced back.
+``IC50`` stays a population scalar (init 5 µU/mL) — adipose
+antilipolysis is the most insulin-sensitive action in the body.
+Sub-basal insulin raises FFA; the gated peak could not be stopped from
+crashing it.
 
 Glucagon is the teacher's alpha-cell law, not a gated peak on
 ``(G − Gb)/30`` (iter 102 graft: at 16 h glucose was already 84 and
@@ -305,8 +309,9 @@ _BHB_CENTER = NORM_CENTER[MARKER_INDEX["bhb"]]  # teacher BHB_b / typical
 
 # --- lipolysis -----------------------------------------------------------------
 # Teacher full_body.dFFA (Nurjhan 1986; Jensen 1989; Eaton 1969; iter 93).
-# lip_max is derived so FFA_b is the fed fixed point; k_ffa is the speed.
-_K_FFA_INIT = 0.20            # teacher k_ffa (τ ≈ 5 min)
+# lip_max is derived so FFA_b is the fed fixed point. Clearance cancels
+# there, so it is the teacher's time constant, not a learned level.
+_K_FFA = 0.20                 # teacher k_ffa (τ ≈ 5 min)
 _LIP_IC50_INIT = 5.0          # teacher IC50_lip
 
 # --- glucagon ----------------------------------------------------------------------
@@ -481,10 +486,9 @@ class MetabolicModule(MassActionModule):
         # glycogen-emptying gain is a constant; clearance is derived from these.
         self.log_keto_ins_supp = nn.Parameter(torch.tensor(_inverse_softplus(_KETO_INS_SUPP_INIT)))
         self.log_k_keto = nn.Parameter(torch.tensor(_inverse_softplus(_K_KETO_INIT)))
-        # Lipolysis: IC50 on absolute insulin (µU/mL) and clearance speed.
-        # lip_max is derived from these so FFA_b is the fed fixed point.
+        # Lipolysis: IC50 on absolute insulin (µU/mL). Clearance is _K_FFA.
+        # lip_max is derived so FFA_b is the fed fixed point.
         self.log_lip_ic50 = nn.Parameter(torch.tensor(_inverse_softplus(_LIP_IC50_INIT)))
-        self.log_k_ffa = nn.Parameter(torch.tensor(_inverse_softplus(_K_FFA_INIT)))
         # Glucagon: speed, glucose-stimulus gain, signed-insulin coefficient.
         # Gnb is already the fed fixed point of the restoring term.
         self.log_k_gn = nn.Parameter(torch.tensor(_inverse_softplus(_K_GN_INIT)))
@@ -708,7 +712,7 @@ class MetabolicModule(MassActionModule):
         glucagon_supp = gn_ins * (ins - ib) / (ib + _GN_INS_OFFSET)
         glucagon_restoring = -k_gn * (gn - gn_b)
         gn_rate = glucagon_restoring + glucagon_stim - glucagon_supp + glucagon_from_amino
-        k_ffa = nn.functional.softplus(self.log_k_ffa)
+        k_ffa = ffa.new_tensor(_K_FFA)
         ic50_lip = nn.functional.softplus(self.log_lip_ic50)
         lip_max = ffa_b * k_ffa * (1.0 + ib / ic50_lip)
         lipolysis = lip_max / (1.0 + ins / ic50_lip)
