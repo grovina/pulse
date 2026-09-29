@@ -35,7 +35,10 @@ population ``MG_DL_PER_G``, then converted into this patient's mg/dL:
     dG    = ra·app·f_plasma                       meal appearance not stored
             + glyco + gng                          hepatic output (two fluxes, below)
             − k_ii·G − X·G − uptake_ex             obligatory, insulin-dependent, exercise
-    dLGly = f_liver·app_g − glyco / mg
+    dLGly = f_liver·app_g + gng_divert/mg − glyco/mg
+    f_liver = 0.30·(0.5 + 0.5·ins_drive)·fill      direct pathway, not a head
+    gng_divert = gng · ins_drive^0.25               indirect pathway, insulin above basal
+    ins_drive = relu(I − Ib) / (relu(I − Ib) + Ib)
     dMGly = f_muscle·app_g + store·relu(X·G)/mg − brk_M
     dHep  = k·((glyco + gng)·VG_DL_PER_KG − Hep)   a lagged mg/kg/min readout
 
@@ -51,6 +54,14 @@ at FFA_b, ``g_G`` at G ≤ Gb), so at the fasted reference ``dG = EGP_b − k_ii
 breakdown output and the hepatic head's production output do not multiply
 these fluxes. A learned gain there cancelled the first-order pool on the
 iter-104 weights: the same checkpoint with those gains at 1 holds a 48 h fast.
+Liver storage is the same kind of constant. The direct pathway takes 30 % of
+appearance, half of it before insulin rises (the portal signal; Taylor 1996
+lands near 19 % once insulin is averaged in). While insulin is above basal the
+indirect pathway books gluconeogenic carbon into glycogen instead of blood
+(Katz & McGarry 1984; the teacher's ``ins_drive^0.25``). At I ≤ Ib that share
+is zero, so the fasted fixed point is unchanged. On the iter-106 weights the
+store logit had gone to zero: a day of meals synthesized 0 g and glycogenolysis
+removed 61 g, and the second morning was a fast.
 The fasting fall emerges from pool depletion — glycogenolysis is first order
 in ``LGly``, so EGP falls toward GNG alone and glucose settles where obligatory
 uptake balances it, an absolute floor ``gng/k_ii`` the same for every Gb
@@ -290,12 +301,18 @@ _MUSCLE_GLY_FLUX = 3.0
 # threshold — iter 96's S1 lesson is that a learnable threshold cannot be stopped from
 # leaking (the previous gate learned its way to 40 % open at activity 0).
 _MUSCLE_ACT_REST = 0.10
-# Prior fractions of absorbed carbohydrate stored: liver 30 % (teacher glyc_syn_frac_L;
-# Taylor 1996: 19 % of the meal by 5 h once the insulin drive is averaged in), muscle
-# 15 %, the rest to plasma. Softmax logits relative to the plasma reference (logit 0).
-_LIVER_STORE_FRAC_INIT = 0.30
+# Direct pathway into liver glycogen (teacher glyc_syn_frac_L). Half of the
+# fraction is taken as absorption starts, before insulin has risen; the rest
+# scales with ins_drive. Taylor 1996: 19 % of the meal by 5 h once that drive
+# is averaged in. Muscle cold-start logit is its old 15 % share of the remainder.
+_LIVER_DIRECT_FRAC = 0.30
+_GNG_DIVERT_EXP = 0.25            # teacher gng_divert_exp
+# x^0.25 is the teacher's shape and its derivative blows up at x = 0, which
+# is exactly where a fast sits. x / (x + eps)^(1 − exp) matches it for any
+# drive that is not tiny and is finite at zero.
+_GNG_DIVERT_EPS = 1e-3
 _MUSCLE_STORE_FRAC_INIT = 0.15
-_PLASMA_FRAC_INIT = 1.0 - _LIVER_STORE_FRAC_INIT - _MUSCLE_STORE_FRAC_INIT
+_PLASMA_FRAC_INIT = 1.0 - _LIVER_DIRECT_FRAC - _MUSCLE_STORE_FRAC_INIT
 
 # --- ketogenesis -----------------------------------------------------------------------
 # Teacher full_body.ketogenesis (Cahill 2006; iter 80/93/97). Production on
@@ -379,9 +396,8 @@ class GlucoseStimulatedInsulinHead(nn.Module):
 class GlycogenFluxHead(nn.Module):
     """Glycogen as a flux integrator: the head emits the two learned GAINS of
 
-        synthesis   = f_store · fill · appearance_g        (f_store from a softmax the
-                                                            module takes over both pools
-                                                            and plasma — see fluxes)
+        synthesis   = f_store · fill · remainder           muscle only; liver storage is the
+                                                            direct-pathway fraction in fluxes
         breakdown   = structural                                 liver glycogenolysis
                       activity-gated · cons                      muscle only
 
@@ -453,10 +469,8 @@ class MetabolicModule(MassActionModule):
                 # hepatic_output: cons is the readout's relaxation rate.
                 # There is no production output — it used to scale gluconeogenesis.
                 _HEPATIC_IDX: lambda inp, hd: SpeciesHead(inp - 1, hd, emit_prod=False),
-                _LIVER_GLYCOGEN_IDX: lambda inp, hd: GlycogenFluxHead(
-                    inp - 1, hd,
-                    init_store_logit=math.log(_LIVER_STORE_FRAC_INIT / _PLASMA_FRAC_INIT),
-                    emit_breakdown=False),
+                # Liver storage is the direct-pathway fraction, not a logit.
+                _LIVER_GLYCOGEN_IDX: lambda inp, hd: ConstantFluxHead(),
                 _MUSCLE_GLYCOGEN_IDX: lambda inp, hd: GlycogenFluxHead(
                     inp - 1, hd,
                     init_store_logit=math.log(_MUSCLE_STORE_FRAC_INIT / _PLASMA_FRAC_INIT)),
@@ -626,18 +640,15 @@ class MetabolicModule(MassActionModule):
         # density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
         app_g = ra * coupling[..., _GUT_GLUCOSE_COUPLING_IDX] / MG_DL_PER_G
         app_eff = app_g * mg
-        store_logits = torch.stack([
-            prod_raw[..., _LIVER_GLYCOGEN_IDX],
-            prod_raw[..., _MUSCLE_GLYCOGEN_IDX],
-            torch.zeros_like(app_eff),
-        ], dim=-1)
-        frac = torch.softmax(store_logits, dim=-1)
         fill_l = torch.sigmoid(
             (_GLY_CAPACITY_FRAC * _LIVER_GLY_CENTER - lgly) / (_GLY_FILL_WIDTH_FRAC * _LIVER_GLY_CENTER))
         fill_m = torch.sigmoid(
             (_GLY_CAPACITY_FRAC * _MUSCLE_GLY_CENTER - mgly) / (_GLY_FILL_WIDTH_FRAC * _MUSCLE_GLY_CENTER))
-        f_liver = frac[..., 0] * fill_l
-        f_muscle = frac[..., 1] * fill_m
+        ins_excess = relu(ins - ib)
+        ins_drive = ins_excess / (ins_excess + ib.clamp(min=1e-3))
+        f_liver = _LIVER_DIRECT_FRAC * (0.5 + 0.5 * ins_drive) * fill_l
+        muscle_share = torch.sigmoid(prod_raw[..., _MUSCLE_GLYCOGEN_IDX]) * fill_m
+        f_muscle = muscle_share * (1.0 - f_liver)
         f_plasma = 1.0 - f_liver - f_muscle
         syn_liver = f_liver * app_g
         syn_muscle_oral = f_muscle * app_g
@@ -657,6 +668,9 @@ class MetabolicModule(MassActionModule):
         glycogenolysis_plasma = ((1.0 - f_gng) * egp_b * (lgly / _LIVER_GLY_CENTER)
                                  * g_ins_glyco * g_gn * g_g)
         gng_plasma = (f_gng * egp_b * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g)
+        gng_divert = gng_plasma * ins_drive / (
+            ins_drive + _GNG_DIVERT_EPS).pow(1.0 - _GNG_DIVERT_EXP)
+        gng_released = gng_plasma - gng_divert
         brk_liver = glycogenolysis_plasma / mg
 
         avail_m = mgly / (mgly + _MUSCLE_GLY_K)
@@ -729,11 +743,13 @@ class MetabolicModule(MassActionModule):
             "prod_raw": prod_raw, "cons_raw": cons_raw, "mito": mito,
             "app_eff": app_eff, "app_g": app_g,
             "f_liver": f_liver, "f_muscle": f_muscle, "f_plasma": f_plasma,
+            "ins_drive": ins_drive,
             "syn_liver": syn_liver, "syn_muscle": syn_muscle, "syn_muscle_id": syn_muscle_id,
             "syn_muscle_oral": syn_muscle_oral,
             "brk_liver": brk_liver, "brk_muscle": brk_muscle,
             "appearance_plasma": appearance_plasma,
             "glycogenolysis_plasma": glycogenolysis_plasma, "gng_plasma": gng_plasma,
+            "gng_divert": gng_divert, "gng_released": gng_released,
             "g_ins_glyco": g_ins_glyco, "g_ins_gng": g_ins_gng, "g_gn": g_gn,
             "g_cort": g_cort, "g_ffa": g_ffa, "g_g": g_g,
             "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
@@ -773,13 +789,15 @@ class MetabolicModule(MassActionModule):
         out[..., _GLUCAGON_IDX] = f["gn_rate"]
         out[..., _BHB_IDX] = f["bhb_rate"]
         out[..., _GLUCOSE_IDX] = (
-            f["appearance_plasma"] + f["glycogenolysis_plasma"] + f["gng_plasma"]
+            f["appearance_plasma"] + f["glycogenolysis_plasma"] + f["gng_released"]
             - f["uptake_ii"] - f["uptake_id"] - f["exercise_uptake"]
         )
         out[..., _INSULIN_IDX] = f["ins_rate"]
         out[..., _INSULIN_ACTION_IDX] = f["xa_rate"]
         out[..., _HEPATIC_IDX] = f["hep_rate"]
-        out[..., _LIVER_GLYCOGEN_IDX] = f["syn_liver"] - f["brk_liver"]
+        out[..., _LIVER_GLYCOGEN_IDX] = (
+            f["syn_liver"] + f["gng_divert"] / f["mg_dl_per_g"] - f["brk_liver"]
+        )
         out[..., _MUSCLE_GLYCOGEN_IDX] = f["syn_muscle"] - f["brk_muscle"]
         out[..., _MITO_IDX] = f["mito_rate"]
         out[..., _FAT_MASS_IDX] = f["fat_rate"]

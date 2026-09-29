@@ -267,29 +267,51 @@ class TestPerPatientGates(unittest.TestCase):
             )
 
     def test_hepatic_heads_do_not_scale_the_carbon_budget(self) -> None:
-        """Liver cons and hepatic prod used to multiply glycogenolysis and gluconeogenesis.
-        Moving those outputs leaves both fluxes where the law put them. Hepatic cons still
-        sets the readout lag."""
+        """Liver storage is the direct-pathway fraction. The liver head has no
+        parameters, so it cannot move glycogenolysis, gluconeogenesis, or that
+        fraction. Hepatic cons still sets the readout lag."""
         m = _model(9, perturb=1.0)
         args = self._reference_state(m, 95.0, lgly=60.0)
         met = m.metabolic
-        liver = met.heads[M._LIVER_GLYCOGEN_IDX].network[-1]
         hepatic = met.heads[M._HEPATIC_IDX].network[-1]
-        self.assertEqual(liver.out_features, 1)
+        self.assertEqual(sum(p.numel() for p in met.heads[M._LIVER_GLYCOGEN_IDX].parameters()), 0)
         self.assertEqual(hepatic.out_features, 1)
         self.assertEqual(met.heads[M._MUSCLE_GLYCOGEN_IDX].network[-1].out_features, 2)
         with torch.no_grad():
             before = met.fluxes(*args)
-            liver.weight.mul_(5)
-            liver.bias.add_(3)
-            after = met.fluxes(*args)
             hepatic.weight.mul_(4)
             lagged = met.fluxes(*args)
-        torch.testing.assert_close(before["glycogenolysis_plasma"], after["glycogenolysis_plasma"])
-        torch.testing.assert_close(before["gng_plasma"], after["gng_plasma"])
+        torch.testing.assert_close(before["glycogenolysis_plasma"], lagged["glycogenolysis_plasma"])
         torch.testing.assert_close(before["gng_plasma"], lagged["gng_plasma"])
+        torch.testing.assert_close(before["f_liver"], lagged["f_liver"])
         self.assertGreater(
             float((lagged["hep_rate"] - before["hep_rate"]).abs().sum()), 0.0)
+
+    def test_liver_storage_is_the_direct_pathway(self) -> None:
+        """At I = Ib the portal half is taken and ins_drive is 0, so f_liver is
+        0.15 times the fill. Insulin above basal raises it toward 0.30. A
+        perturbation of every parameter leaves the fraction on that curve."""
+        m = _model(9, perturb=1.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = self._reference_state(m, 95.0, lgly=100.0)
+        with torch.no_grad():
+            ib = met.insulin_setpoint_raw(emb)
+            basal = met.fluxes(state, coupling, external, emb, tf)
+        self.assertAlmostEqual(float(basal["ins_drive"]), 0.0, places=5)
+        self.assertAlmostEqual(float(basal["gng_divert"]), 0.0, places=5)
+        self.assertAlmostEqual(float(basal["gng_released"]), float(basal["gng_plasma"]), places=5)
+        fill = float(torch.sigmoid(torch.tensor((1.3 * 100.0 - 100.0) / (0.1 * 100.0))))
+        self.assertAlmostEqual(float(basal["f_liver"]), 0.30 * 0.5 * fill, places=5)
+        high = state.clone()
+        high[:, M._INSULIN_IDX] = (ib + ib - 10.0) / 10.0
+        with torch.no_grad():
+            fed = met.fluxes(high, coupling, external, emb, tf)
+        drive = float(ib / (ib + ib))
+        self.assertAlmostEqual(float(fed["ins_drive"]), drive, places=5)
+        self.assertAlmostEqual(float(fed["f_liver"]), 0.30 * (0.5 + 0.5 * drive) * fill, places=5)
+        self.assertGreater(float(fed["f_liver"]), float(basal["f_liver"]))
+        self.assertGreater(float(fed["gng_divert"]), 0.0)
+        self.assertLess(float(fed["gng_released"]), float(fed["gng_plasma"]))
 
     def test_effective_ib_is_the_teacher_glucose_gated_basal(self) -> None:
         """At G = 0.9·Gb (this patient's Gb), I = Ib: GSIR is 0 and I is restored toward Ib·0.9^5."""
@@ -621,7 +643,7 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
 class TestNoDeadHeads(unittest.TestCase):
     def test_structural_species_own_no_parameters(self) -> None:
         m = _model(16)
-        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX, M._FFA_IDX, M._GLUCAGON_IDX):
+        for idx in (M._GLUCOSE_IDX, M._INSULIN_ACTION_IDX, M._MITO_IDX, M._FAT_MASS_IDX, M._BHB_IDX, M._FFA_IDX, M._GLUCAGON_IDX, M._LIVER_GLYCOGEN_IDX):
             self.assertEqual(sum(p.numel() for p in m.metabolic.heads[idx].parameters()), 0)
 
     def test_every_metabolic_parameter_receives_gradient(self) -> None:
