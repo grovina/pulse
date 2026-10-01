@@ -42,7 +42,8 @@ from ..knowledge.full_body import (
     generate_sleep_wake,
     simulate_full_body,
 )
-from ..model import integrate, precompute_gut_outputs
+from ..model import frozen_parameters, integrate, precompute_gut_outputs
+from ..rollouts import RolloutRequest, rollout_many
 from ..modules.gut import MealEvent
 from ..types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
 from .safe_step import accumulate_grad
@@ -595,11 +596,18 @@ class ColdModelDistillationSignal(TrainingSignal):
         # Calibration targets: either explicit (time, marker, value) check-ins
         # (bench-cohort protocols — mirrors what the bench calibrates against)
         # or a dense grid sample of the cold trajectory on ``obs_markers``.
+        # The rollout only has to reach the last state the objective reads: with
+        # check-ins that is the last check-in, not the end of the protocol (states
+        # after it cannot change the loss or its gradient) — the same horizon
+        # ``pulse.calibration`` integrates to.
+        n_fit = int(proto.duration_min)
         if proto.obs_points:
             pts = [(t, m, v) for (t, m, v) in proto.obs_points if 0 <= t < T]
             t_idx = torch.tensor([t for t, _, _ in pts], dtype=torch.long, device=device)
             m_idx = torch.tensor([m for _, m, _ in pts], dtype=torch.long, device=device)
             tgt = torch.tensor([v for _, _, v in pts], dtype=torch.float32, device=device)
+            if pts:
+                n_fit = min(n_fit, int(t_idx.max()) + 1)
         else:
             obs_idx = torch.tensor(self._obs_idx, dtype=torch.long, device=device)
 
@@ -607,7 +615,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         opt = torch.optim.Adam([emb], lr=self.calib_lr)
         with torch.no_grad():
             gut = precompute_gut_outputs(
-                model, emb.detach(), proto.duration_min,
+                model, emb.detach(), n_fit,
                 dt=1.0, start_time_minutes=start_min, meals=list(proto.meal_events),
             )
         # Iter 67 numerics fix: the iter-65 NaN crash (Phase 2 epoch 58, all
@@ -630,35 +638,40 @@ class ColdModelDistillationSignal(TrainingSignal):
         # chunk's forward is re-executed once during backward — model is in
         # eval mode here (no dropout/BN), so this is mathematically
         # equivalent to the unchunked path.
-        ckpt_segs = max(1, int(math.sqrt(max(1, int(proto.duration_min)))))
-        for _ in range(max(0, int(n_steps))):
-            opt.zero_grad()
-            with torch.enable_grad():
-                pred = integrate(
-                    model, initial, emb, proto.duration_min,
-                    dt=1.0, start_time_minutes=start_min, meals=list(proto.meal_events),
-                    gut_outputs=gut, sleep_wake=sw, activity=act,
-                    checkpoint_segments=ckpt_segs,
-                )
-                t = min(pred.shape[0], T)
-                if proto.obs_points:
-                    keep = t_idx < t
-                    resid = (pred[t_idx[keep], m_idx[keep]] - tgt[keep]) / scale[m_idx[keep]]
-                else:
-                    resid = (pred[:t][:, obs_idx] - ref[:t][:, obs_idx]) / scale[obs_idx]
-                loss = resid.pow(2).mean() + self.calib_l2 * emb.pow(2).mean()
-            if not torch.isfinite(loss):
-                # The Adam state already holds the prior emb; just don't step.
-                # Returning the unmodified emb lets the next epoch's warm-start
-                # try again with the same parameters.
-                break
-            loss.backward()
-            if emb.grad is None or not torch.isfinite(emb.grad).all():
+        ckpt_segs = max(1, int(math.sqrt(max(1, n_fit))))
+        # Only the embedding is being fitted: freeze the weights so this inner
+        # objective's gradient does not land in their .grad — the buffers the joint
+        # aux step reads. Unfrozen, two calibration steps left a norm-53 gradient on
+        # 118 of 203 parameters, added unweighted and unclipped to the next step.
+        with frozen_parameters(model):
+            for _ in range(max(0, int(n_steps))):
                 opt.zero_grad()
-                break
-            opt.step()
-            with torch.no_grad():
-                emb.clamp_(-_CALIB_EMB_CLAMP, _CALIB_EMB_CLAMP)
+                with torch.enable_grad():
+                    pred = integrate(
+                        model, initial, emb, n_fit,
+                        dt=1.0, start_time_minutes=start_min, meals=list(proto.meal_events),
+                        gut_outputs=gut, sleep_wake=sw[:n_fit], activity=act[:n_fit],
+                        checkpoint_segments=ckpt_segs,
+                    )
+                    t = min(pred.shape[0], T)
+                    if proto.obs_points:
+                        keep = t_idx < t
+                        resid = (pred[t_idx[keep], m_idx[keep]] - tgt[keep]) / scale[m_idx[keep]]
+                    else:
+                        resid = (pred[:t][:, obs_idx] - ref[:t][:, obs_idx]) / scale[obs_idx]
+                    loss = resid.pow(2).mean() + self.calib_l2 * emb.pow(2).mean()
+                if not torch.isfinite(loss):
+                    # The Adam state already holds the prior emb; just don't step.
+                    # Returning the unmodified emb lets the next epoch's warm-start
+                    # try again with the same parameters.
+                    break
+                loss.backward()
+                if emb.grad is None or not torch.isfinite(emb.grad).all():
+                    opt.zero_grad()
+                    break
+                opt.step()
+                with torch.no_grad():
+                    emb.clamp_(-_CALIB_EMB_CLAMP, _CALIB_EMB_CLAMP)
         out = emb.detach()
         if not torch.isfinite(out).all():
             # Adam diverged before our per-step guards caught it (e.g., a NaN
@@ -909,7 +922,12 @@ class ColdModelDistillationSignal(TrainingSignal):
             duo_all = model.duodenal.forward_window(
                 torch.arange(T, dtype=torch.float32, device=device), meal_list,
             ).detach()
-        per_marker: dict[str, list[torch.Tensor]] = {m: [] for m, _ in self._marker_idx}
+        # Every window of every pass in ONE batched rollout (``rollouts.rollout_many``):
+        # each window is a row with its own cold initial state, clock and input
+        # slices, and its own length; a window that diverges is dropped exactly as
+        # when windows were rolled out one by one.
+        windows: list[tuple[int, int, int]] = []  # (W, t0, w)
+        requests: list[RolloutRequest] = []
         for W, starts in passes:
             for t0 in starts:
                 w = min(W, T - t0)
@@ -922,47 +940,52 @@ class ColdModelDistillationSignal(TrainingSignal):
                 # Iter 97 (review 4.7): the meals are passed on the WINDOW-OFFSET clock
                 # (meal.time - t0) so the hepatobiliary axis gets its duodenal stimulus
                 # — with meals=[] the biliary markers' level was trained to reproduce
-                # meal-driven secretion with max |duodenal| = 0.0000. When the student
-                # layer's ``duodenal_outputs=`` exists the precomputed slice is passed
-                # explicitly (same frame contract as ``gut_outputs``).
+                # meal-driven secretion with max |duodenal| = 0.0000. The precomputed
+                # duodenal slice is passed explicitly (same frame contract as
+                # ``gut_outputs``).
                 win_meals = [
                     MealEvent(time=m.time - t0, carbs=m.carbs, fats=m.fats, proteins=m.proteins)
                     for m in meal_list
                 ]
-                extra_kw: dict[str, Any] = {}
-                if duo_all is not None:
-                    extra_kw["duodenal_outputs"] = duo_all[t0:t0 + w]
-                pred = integrate(
-                    model, ref_all[t0], emb, w, dt=1.0,
-                    start_time_minutes=start_min + t0, meals=win_meals,
-                    sleep_wake=sw_all[t0:t0 + w], activity=act_all[t0:t0 + w],
+                windows.append((W, t0, w))
+                requests.append(RolloutRequest(
+                    duration_min=w,
+                    start_minutes=start_min + t0,
+                    meals=win_meals,
+                    embeddings=emb.unsqueeze(0),
+                    states=ref_all[t0].unsqueeze(0),
+                    sleep_wake=sw_all[t0:t0 + w],
+                    activity=act_all[t0:t0 + w],
                     gut_outputs=absorp[t0:t0 + w],
-                    **extra_kw,
-                )
-                if not torch.isfinite(pred).all():
-                    self._n_anchor_skips += 1
+                    duodenal_outputs=None if duo_all is None else duo_all[t0:t0 + w],
+                ))
+        per_marker: dict[str, list[torch.Tensor]] = {m: [] for m, _ in self._marker_idx}
+        for (W, t0, w), traj in zip(windows, rollout_many(model, requests, isolate_nonfinite=True)):
+            if traj is None:
+                self._n_anchor_skips += 1
+                continue
+            pred = traj[0]
+            seg = ref_all[t0:t0 + w]
+            L = min(pred.shape[0], seg.shape[0])
+            for marker, midx in self._marker_idx:
+                if not self._score_level(marker, W, W_short, has_longer):
                     continue
-                seg = ref_all[t0:t0 + w]
-                L = min(pred.shape[0], seg.shape[0])
-                for marker, midx in self._marker_idx:
-                    if not self._score_level(marker, W, W_short, has_longer):
-                        continue
-                    ref_w = seg[:L, midx]
-                    if floor_frac > 0.0:
-                        # What this marker actually does in THIS window, floored.
-                        local = ref_w.max() - ref_w.min()
-                        denom = torch.clamp(local, min=floor_frac * scale[midx])
-                    else:
-                        denom = scale[midx]
-                    resid = (pred[:L, midx] - ref_w) / denom
-                    if level_band > 0.0:
-                        # Dead-zone: the level inside the band is the teacher's own
-                        # uncertainty and costs nothing (review 4.7).
-                        resid = F.relu(resid.abs() - level_band)
-                    per_marker[marker].append(
-                        F.huber_loss(resid, torch.zeros_like(resid),
-                                     delta=_HUBER_DELTA, reduction="mean")
-                    )
+                ref_w = seg[:L, midx]
+                if floor_frac > 0.0:
+                    # What this marker actually does in THIS window, floored.
+                    local = ref_w.max() - ref_w.min()
+                    denom = torch.clamp(local, min=floor_frac * scale[midx])
+                else:
+                    denom = scale[midx]
+                resid = (pred[:L, midx] - ref_w) / denom
+                if level_band > 0.0:
+                    # Dead-zone: the level inside the band is the teacher's own
+                    # uncertainty and costs nothing (review 4.7).
+                    resid = F.relu(resid.abs() - level_band)
+                per_marker[marker].append(
+                    F.huber_loss(resid, torch.zeros_like(resid),
+                                 delta=_HUBER_DELTA, reduction="mean")
+                )
         return {m: torch.stack(v).mean() for m, v in per_marker.items() if v}
 
     # -- main signal ----------------------------------------------------------

@@ -22,7 +22,7 @@ import pulse
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(pulse.__file__)))
 assert pulse.__file__.startswith(REPO), pulse.__file__
 
-from pulse import cohort_loss  # noqa: E402
+from pulse import cohort_loss, rollouts  # noqa: E402
 from pulse.cohort_loss import ARM_DEFAULT_ACTIVITY, ARM_DEFAULT_SLEEP_WAKE  # noqa: E402
 from pulse.knowledge.cohort_types import CohortArmSpec  # noqa: E402
 from pulse.knowledge.physiology_rules import _SLEEP_WAKE_24H_ARM  # noqa: E402
@@ -121,7 +121,8 @@ def test_undeclared_arm_series_run_at_rest_and_awake(monkeypatch) -> None:
         captured["activity"] = kw.get("activity")
         return torch.zeros(state.shape[0], n_steps, STATE_DIM)
 
-    monkeypatch.setattr(cohort_loss, "integrate", fake_integrate)
+    # Arm rollouts integrate through pulse.rollouts (one batched call for many arms).
+    monkeypatch.setattr(rollouts, "integrate", fake_integrate)
     model = ModularPhysiologyNetwork(
         metabolic_hidden=8, appetite_hidden=8, stress_hidden=8,
         cardiovascular_hidden=8, thermoreg_hidden=8, respiratory_hidden=8,

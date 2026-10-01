@@ -88,22 +88,25 @@ class ThermoregModule(LearnedDynamicsModule):
             self.setpoint_net[-1].bias.zero_()
         self.log_k = nn.Parameter(torch.tensor(_TEMP_LOG_K_INIT))
 
-    def forward(
+    def prepare(
         self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+        const, seq = super().prepare(external, embedding, time_features)
+        const["setpoint"] = _TEMP_SETPOINT_MAX_Z * torch.tanh(self.setpoint_net(embedding))  # [..., 1]
+        const["k"] = _TEMP_K_MIN + _TEMP_K_RANGE * torch.sigmoid(self.log_k)
+        return const, seq
+
+    def step(self, x: torch.Tensor, p: dict[str, torch.Tensor]) -> torch.Tensor:
         # Learned drivers (circadian, exercise, sleep, cortisol) plus structural
         # diet-induced thermogenesis from gut appearance in grams.
-        driver = super().forward(state, coupling, external, embedding, time_features)
-        setpoint = _TEMP_SETPOINT_MAX_Z * torch.tanh(self.setpoint_net(embedding))  # [..., 1]
-        k = _TEMP_K_MIN + _TEMP_K_RANGE * torch.sigmoid(self.log_k)
-        carb_g = coupling[..., 0:1].clamp(min=0.0) / MG_DL_PER_G
-        fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
-        prot_g = coupling[..., 2:3].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        driver = self.driver(x, p)
+        state = x[..., 0:1]
+        carb_g = x[..., 1:2].clamp(min=0.0) / MG_DL_PER_G
+        fat_g = x[..., 2:3].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        prot_g = x[..., 3:4].clamp(min=0.0) / _LIPID_UNITS_PER_G
         dit_kcal = 0.08 * 4.0 * carb_g + 0.03 * 9.0 * fat_g + 0.25 * 4.0 * prot_g
         dit = _TEMP_DIT_GAIN * dit_kcal
-        return driver - k * (state - setpoint) * _TEMP_NORM_SCALE + dit
+        return driver - p["k"] * (state - p["setpoint"]) * _TEMP_NORM_SCALE + dit

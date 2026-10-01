@@ -99,15 +99,19 @@ OVERRIDDEN = {"glucose", "insulin_action", "liver_glycogen", "muscle_glycogen"}
 captured: dict[int, list[tuple[float, float]]] = {i: [] for i in range(len(met.heads))}
 
 
-def _make_hook(i: int):
-    def hook(_mod, _inp, out):
-        prod, cons = out
-        captured[i].append((float(prod.reshape(-1)[0]), float(cons.reshape(-1)[0])))
-    return hook
+# The heads are evaluated as one batched bank per step (``species_fluxes_step``), not
+# through each head's ``forward``, so record the per-species (prod, cons) there.
+_species_fluxes_step = met.species_fluxes_step
 
 
-for _i, _head in enumerate(met.heads):
-    _head.register_forward_hook(_make_hook(_i))
+def _recording_species_fluxes_step(*args, **kwargs):
+    prod, cons = _species_fluxes_step(*args, **kwargs)
+    for i in captured:
+        captured[i].append((float(prod[..., i].reshape(-1)[0]), float(cons[..., i].reshape(-1)[0])))
+    return prod, cons
+
+
+met.species_fluxes_step = _recording_species_fluxes_step
 
 
 def rollout(meals: list[MealEvent], dur: int, activity: float = 0.0) -> np.ndarray:

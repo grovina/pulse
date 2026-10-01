@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..types import MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["respiratory"])
 _N_EXTERNAL = 2
@@ -64,20 +64,21 @@ class RespiratoryModule(LearnedDynamicsModule):
         spo2 = self.rsp_center[_SPO2] + _SPO2_MAX_Z * self.rsp_scale[_SPO2] * torch.tanh(o[..., 1])
         return torch.stack([rr, spo2], dim=-1)
 
-    def forward(
+    def prepare(
         self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        driver = super().forward(state, coupling, external, embedding, time_features)
-        k = _K_MIN + _K_RANGE * torch.sigmoid(self.log_k)
-        sp = self.setpoints_raw(embedding)
-        raw = self.rsp_center + self.rsp_scale * state
-        rate = driver - k * (raw - sp)
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+        const, seq = super().prepare(external, embedding, time_features)
+        const["k"] = _K_MIN + _K_RANGE * torch.sigmoid(self.log_k)
+        const["sp"] = self.setpoints_raw(embedding)
         act = external[..., _ACTIVITY_EXTERNAL_IDX]
         spo2_ex = _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH)
-        rate_spo2 = rate[..., _SPO2] - spo2_ex
-        return torch.stack([rate[..., _RR], rate_spo2], dim=-1)
+        seq["exercise_offset"] = torch.stack([torch.zeros_like(spo2_ex), spo2_ex], dim=-1)
+        return const, seq
+
+    def step(self, x: torch.Tensor, p: dict[str, torch.Tensor]) -> torch.Tensor:
+        driver = self.driver(x, p)
+        raw = self.rsp_center + self.rsp_scale * x[..., :_N_STATE]
+        return driver - p["k"] * (raw - p["sp"]) - p["exercise_offset"]

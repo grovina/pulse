@@ -154,7 +154,7 @@ def test_interleaved_loop_runs_more_aux_steps_than_once_per_epoch() -> None:
 # --- 4.9: arm rollouts can drop sleep/activity (capability, not phase-3 policy) ------
 
 def test_arm_rollout_drops_series_under_input_dropout(monkeypatch) -> None:
-    from pulse import cohort_loss
+    from pulse import cohort_loss, rollouts
     from pulse.knowledge.cohort_types import CohortArmSpec
     from pulse.types import NORM_CENTER, STATE_DIM
     seen: list[tuple[bool, bool]] = []
@@ -163,7 +163,7 @@ def test_arm_rollout_drops_series_under_input_dropout(monkeypatch) -> None:
         seen.append((kw.get("sleep_wake") is None, kw.get("activity") is None))
         return torch.zeros(state.shape[0], n_steps, STATE_DIM)
 
-    monkeypatch.setattr(cohort_loss, "integrate", fake_integrate)
+    monkeypatch.setattr(rollouts, "integrate", fake_integrate)
     model = _tiny_model()
     arm = CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=())
     state = torch.tensor(NORM_CENTER).unsqueeze(0)

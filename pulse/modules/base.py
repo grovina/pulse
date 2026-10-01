@@ -13,6 +13,26 @@ Both module types receive:
   - External inputs (sleep/wake, activity — with learned defaults for missing)
   - Module-specific embedding (projected from the global person embedding)
   - Time features
+
+TWO PHASES: PREPARE, THEN STEP. Everything a module computes splits into what
+depends on the ODE state and what does not. Setpoints and population scalars
+depend only on the embedding; circadian drives only on the clock; the external,
+embedding and time columns of every first-layer matmul only on the inputs —
+all of it known before the first Euler step. ``prepare(external, embedding,
+time_features)`` computes that part and returns ``(const, seq)``: ``const``
+holds what is fixed for the rollout, ``seq`` what varies with the step.
+``step(x, p)`` computes the rest from ``x = [own state ‖ coupling]`` and the
+merged per-step dict ``p``.
+
+``model.integrate`` calls ``prepare`` ONCE per rollout with a leading time axis
+on ``external`` / ``time_features`` (so every ``seq`` entry is ``[T, B, ...]``)
+and then ``step`` per Euler step on the ``t``-th slice. ``forward`` — the
+single-call API every test and probe uses — is ``prepare`` without a time axis
+followed by ``step``: one code path, so the fast rollout cannot drift from what
+the tests check. Through iter 99 every module recomputed its setpoint heads,
+reference evaluations, circadian drives and input projections at every one of
+the ~10⁵ Euler steps of an epoch; about half of a step's matmuls were
+state-independent.
 """
 
 import math
@@ -20,6 +40,7 @@ from typing import Callable, Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..types import MG_DL_PER_G, TIME_FEATURES_DIM
 
@@ -35,13 +56,97 @@ from ..types import MG_DL_PER_G, TIME_FEATURES_DIM
 # change in the normal regime — that caps the gate gradient at 1/0.05 = 20.
 MIN_GATE_TEMP = 0.05
 
+# A module's prepared inputs: ``(const, seq)`` from ``prepare``; ``p`` in ``step``
+# is the two merged for one step.
+Prepared = dict[str, torch.Tensor]
+
 
 def gate_temp(log_temp: torch.Tensor) -> torch.Tensor:
     """``exp(log_temp)`` floored at ``MIN_GATE_TEMP`` (see above)."""
     return torch.exp(log_temp).clamp(min=MIN_GATE_TEMP)
 
 
-class SpeciesHead(nn.Module):
+def split_input_linear(
+    layer: nn.Linear, n_dyn: int, n_external: int, n_embedding: int,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Column blocks of a first layer that reads ``[dyn ‖ external ‖ embedding ‖ time]``.
+
+    Returns ``(W_dyn, W_external, W_embedding, W_time)`` so that
+    ``layer(cat[d, e, m, t]) == d·W_dynᵀ + (e·W_extᵀ + m·W_embᵀ + t·W_timeᵀ + b)``,
+    where the bracket is state-independent and computed once per rollout.
+    """
+    w = layer.weight
+    a = n_dyn
+    b = a + n_external
+    c = b + n_embedding
+    return w[:, :a], w[:, a:b], w[:, b:c], w[:, c:]
+
+
+def static_preactivation(
+    w_ext: torch.Tensor,
+    w_emb: torch.Tensor,
+    w_time: torch.Tensor,
+    bias: Optional[torch.Tensor],
+    external: torch.Tensor,
+    embedding: torch.Tensor,
+    time_features: torch.Tensor,
+) -> torch.Tensor:
+    """The state-independent part of a first-layer matmul. ``external`` and
+    ``time_features`` may carry a leading time axis that ``embedding`` lacks; the
+    sum broadcasts."""
+    return (F.linear(external, w_ext) + F.linear(time_features, w_time)
+            + F.linear(embedding, w_emb, bias))
+
+
+class MLPHead(nn.Module):
+    """A species head: a 3-layer tanh MLP on the module input (``network``)
+    followed by a parameter-light output transform (``finish``).
+
+    The split is for speed, not modelling. ``MassActionModule`` evaluates the
+    networks of ALL its MLP heads as one batched computation per step (each head
+    keeps its own weights — the iter-23 per-species isolation is untouched; only
+    the arithmetic is batched) and hands each head its slice of raw outputs.
+    ``forward`` is the same computation for one head on its own.
+    """
+
+    def __init__(self, input_dim: int, hidden_dim: int, n_out: int):
+        super().__init__()
+        self.n_out = int(n_out)
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, n_out),
+        )
+
+    def finish(
+        self, raw: torch.Tensor, state_self: torch.Tensor, **kwargs,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        raise NotImplementedError
+
+    def forward(
+        self, x: torch.Tensor, state_self: torch.Tensor, **kwargs,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.finish(self.network(x), state_self, **kwargs)
+
+
+class GatedMLPHead(MLPHead):
+    """An ``MLPHead`` whose output is gated on a stimulus read from its input at
+    ``stimulus_idx`` unless the module hands one in explicitly."""
+
+    stimulus_idx: int
+
+    def forward(
+        self, x: torch.Tensor, state_self: torch.Tensor,
+        stimulus: Optional[torch.Tensor] = None, **kwargs,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if stimulus is None:
+            stimulus = x[..., self.stimulus_idx]
+        return self.finish(self.network(x), state_self, stimulus=stimulus, **kwargs)
+
+
+class SpeciesHead(MLPHead):
     """Per-species production/consumption head.
 
     Reads the full module input (state, coupling, external, embedding,
@@ -63,20 +168,11 @@ class SpeciesHead(nn.Module):
     """
 
     def __init__(self, input_dim: int, hidden_dim: int):
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, 2),
-        )
+        super().__init__(input_dim, hidden_dim, 2)
 
-    def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        raw = self.network(x)
-        prod = nn.functional.softplus(raw[..., 0:1]).squeeze(-1)
-        cons = nn.functional.softplus(raw[..., 1:2]).squeeze(-1)
-        return prod, cons
+    def finish(self, raw: torch.Tensor, state_self: torch.Tensor, **kwargs) -> tuple[torch.Tensor, torch.Tensor]:
+        sp = F.softplus(raw)
+        return sp[..., 0], sp[..., 1]
 
 
 class ConstantFluxHead(nn.Module):
@@ -116,7 +212,7 @@ class ConstantFluxHead(nn.Module):
 # asking for 0.23 mmol/L with no authority to get there. Removing the head removes
 # that mode; nothing replaces it.
 
-class BasalPlusGatedPeakHead(nn.Module):
+class BasalPlusGatedPeakHead(GatedMLPHead):
     """Basal + stimulus-gated peak head for stimulus-driven hormones.
 
     Generalises iter-23's ``GlucoseGatedInsulinHead`` into a reusable
@@ -182,36 +278,24 @@ class BasalPlusGatedPeakHead(nn.Module):
         init_thresh: float = 0.5,
         init_log_temp: float = -0.7,
     ):
-        super().__init__()
+        super().__init__(input_dim, hidden_dim, 3)
         assert gate_dir in (-1, 1), "gate_dir must be +1 or -1"
         self.stimulus_idx = int(stimulus_idx)
         self.gate_dir = float(gate_dir)
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, 3),
-        )
         # Gate position + temperature, per-head learnable.
         self.g_thresh = nn.Parameter(torch.tensor(float(init_thresh)))
         self.log_g_temp = nn.Parameter(torch.tensor(float(init_log_temp)))
 
-    def forward(
+    def finish(
         self,
-        x: torch.Tensor,
+        raw: torch.Tensor,
         state_self: torch.Tensor,
         stimulus: Optional[torch.Tensor] = None,
+        **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        if stimulus is None:
-            stimulus = x[..., self.stimulus_idx]
         gate = torch.sigmoid(self.gate_dir * (stimulus - self.g_thresh) / gate_temp(self.log_g_temp))
-        raw = self.network(x)
-        basal = nn.functional.softplus(raw[..., 0])
-        peak = nn.functional.softplus(raw[..., 1])
-        cons = nn.functional.softplus(raw[..., 2])
-        prod = basal + peak * gate
-        return prod, cons
+        sp = F.softplus(raw)
+        return sp[..., 0] + sp[..., 1] * gate, sp[..., 2]
 
 
 HeadFactory = Callable[[int, int], nn.Module]
@@ -270,6 +354,14 @@ class MassActionModule(nn.Module):
     1 (insulin 10x, glucagon 20x). Trained ``cons`` values therefore do not
     transfer, and Euler headroom shrinks by the same factor; at dt=1 the limit is
     2/min, and insulin at cons≈2.4, cons_scale=0.1 sits at 0.24/min.
+
+    HEAD INPUT. Every MLP head reads ``[state ‖ coupling ‖ external ‖ embedding ‖
+    time]`` minus the state columns listed in ``head_input_exclude`` (the
+    metabolic module keeps ``mitochondrial_capacity`` out of every head but its
+    own, review item 3.11). ``prepare`` folds the external / embedding / time
+    columns into a per-step pre-activation and stacks the heads' weights, so a
+    step evaluates every MLP head of the module in three batched matmuls; the
+    excluded columns become zero weight columns rather than a per-step slice.
     """
 
     prod_scale: torch.Tensor
@@ -287,12 +379,19 @@ class MassActionModule(nn.Module):
         typicals: list[float] | None = None,
         norm_scales: list[float] | None = None,
         head_factories: Optional[dict[int, HeadFactory]] = None,
+        head_input_exclude: tuple[int, ...] = (),
     ):
         super().__init__()
         self.n_species = n_species
         self.n_coupling = n_coupling
+        self.n_external = n_external
+        self.embedding_dim = embedding_dim
 
-        input_dim = n_species + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
+        self._head_input_exclude = tuple(sorted(int(i) for i in head_input_exclude))
+        n_dyn = n_species + n_coupling
+        self._head_dyn_keep = [i for i in range(n_dyn) if i not in self._head_input_exclude]
+        n_dyn_head = len(self._head_dyn_keep)
+        input_dim = n_dyn_head + n_external + embedding_dim + TIME_FEATURES_DIM
         self._input_dim = input_dim
 
         factories = head_factories or {}
@@ -304,6 +403,18 @@ class MassActionModule(nn.Module):
             else:
                 heads.append(factory(input_dim, hidden_dim))
         self.heads = nn.ModuleList(heads)
+        self._mlp_heads = [i for i, h in enumerate(heads) if isinstance(h, MLPHead)]
+        # A gated head's fallback stimulus index is in HEAD-input coordinates; map it
+        # to the module's [state ‖ coupling] coordinates once.
+        self._stimulus_dyn_idx: dict[int, int] = {}
+        for i in self._mlp_heads:
+            idx = getattr(heads[i], "stimulus_idx", None)
+            if idx is not None and idx < n_dyn_head:
+                self._stimulus_dyn_idx[i] = self._head_dyn_keep[idx]
+        self.register_buffer(
+            "_head_dyn_keep_idx", torch.tensor(self._head_dyn_keep, dtype=torch.long),
+            persistent=False,
+        )
 
         if typicals is None:
             typicals = [1.0] * n_species
@@ -319,6 +430,126 @@ class MassActionModule(nn.Module):
         self.register_buffer("typical_val", torch.tensor(typicals, dtype=torch.float32))
         self.register_buffer("norm_scale_val", torch.tensor(norm_scales, dtype=torch.float32))
 
+    # ---- the two-phase protocol (see the module docstring) -------------------------
+
+    def prepare(
+        self,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> tuple[Prepared, Prepared]:
+        """State-independent inputs: the stacked head bank (``const``), its per-step
+        pre-activation (``seq["bank_pre"]``) and ``external`` itself (``seq``)."""
+        seq: Prepared = {"external": external}
+        if not self._mlp_heads:
+            return {}, seq
+        const = self.head_bank()
+        seq["bank_pre"] = self.bank_preactivation(const, external, embedding, time_features)
+        return const, seq
+
+    def head_bank(self) -> Prepared:
+        """The MLP heads' weights stacked for one batched evaluation (``head_raw``)."""
+        heads = [self.heads[i] for i in self._mlp_heads]
+        n_dyn = len(self._head_dyn_keep)
+        blocks = [split_input_linear(h.network[0], n_dyn, self.n_external, self.embedding_dim)
+                  for h in heads]
+        w_dyn = torch.cat([b[0] for b in blocks], dim=0)
+        if self._head_input_exclude:
+            full = w_dyn.new_zeros(w_dyn.shape[0], self.n_species + self.n_coupling)
+            w_dyn = full.index_copy(1, self._head_dyn_keep_idx, w_dyn)
+        n_out = max(h.n_out for h in heads)
+        return {
+            "bank_w1": w_dyn,
+            "bank_w1_ext": torch.cat([b[1] for b in blocks], dim=0),
+            "bank_w1_emb": torch.cat([b[2] for b in blocks], dim=0),
+            "bank_w1_time": torch.cat([b[3] for b in blocks], dim=0),
+            "bank_b1": torch.cat([h.network[0].bias for h in heads], dim=0),
+            "bank_w2": torch.stack([h.network[2].weight for h in heads]).transpose(1, 2),
+            "bank_b2": torch.stack([h.network[2].bias for h in heads]).unsqueeze(1),
+            "bank_w3": torch.stack([
+                F.pad(h.network[4].weight, (0, 0, 0, n_out - h.n_out)) for h in heads
+            ]).transpose(1, 2),
+            "bank_b3": torch.stack([
+                F.pad(h.network[4].bias, (0, n_out - h.n_out)) for h in heads
+            ]).unsqueeze(1),
+        }
+
+    @staticmethod
+    def bank_preactivation(
+        bank: Prepared,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> torch.Tensor:
+        """The external/embedding/time part of every head's first layer (``bank_pre``)."""
+        return static_preactivation(
+            bank["bank_w1_ext"], bank["bank_w1_emb"], bank["bank_w1_time"], bank["bank_b1"],
+            external, embedding, time_features,
+        )
+
+    def bank_position(self, head_index: int) -> int:
+        """Where head ``head_index`` sits in ``head_raw``'s leading axis."""
+        return self._mlp_heads.index(head_index)
+
+    def head_raw(self, x: torch.Tensor, p: Prepared) -> torch.Tensor:
+        """Raw network outputs of every MLP head → ``[n_heads, *lead, n_out_max]``.
+
+        ``x`` is ``[*lead, n_species + n_coupling]``. Equal to running each head's
+        ``network`` on its own input (to float rounding)."""
+        lead = x.shape[:-1]
+        w1 = p["bank_w1"]
+        n_heads = len(self._mlp_heads)
+        h = torch.tanh(F.linear(x, w1) + p["bank_pre"])
+        h = h.reshape(-1, n_heads, w1.shape[0] // n_heads).transpose(0, 1)
+        h = torch.tanh(torch.baddbmm(p["bank_b2"], h, p["bank_w2"]))
+        raw = torch.baddbmm(p["bank_b3"], h, p["bank_w3"])
+        return raw.reshape(n_heads, *lead, raw.shape[-1])
+
+    def species_fluxes_step(
+        self,
+        x: torch.Tensor,
+        p: Prepared,
+        head_kwargs: Optional[dict[int, dict]] = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Per-species ``(prod, cons)`` from ``x = [state ‖ coupling]`` and the
+        prepared bank. ``head_kwargs[i]`` is passed to head ``i``'s ``finish``."""
+        state = x[..., :self.n_species]
+        raw = self.head_raw(x, p) if self._mlp_heads else None
+        ones = None
+        prods: list[torch.Tensor] = []
+        conss: list[torch.Tensor] = []
+        k = 0
+        for i, head in enumerate(self.heads):
+            if isinstance(head, MLPHead):
+                kw = dict(head_kwargs.get(i, {})) if head_kwargs else {}
+                if i in self._stimulus_dyn_idx and kw.get("stimulus") is None:
+                    kw["stimulus"] = x[..., self._stimulus_dyn_idx[i]]
+                prod_i, cons_i = head.finish(raw[k][..., :head.n_out], state[..., i], **kw)
+                k += 1
+            else:
+                if ones is None:
+                    ones = torch.ones_like(state[..., 0])
+                prod_i = cons_i = ones
+            prods.append(prod_i)
+            conss.append(cons_i)
+        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+
+    def step(self, x: torch.Tensor, p: Prepared) -> torch.Tensor:
+        """Mass-action rates from ``x = [state ‖ coupling]``."""
+        state = x[..., :self.n_species]
+        prod, cons = self.species_fluxes_step(x, p)
+        return prod * self.prod_scale - cons * self.cons_scale * self.raw_state(state)
+
+    def prepared(
+        self,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> Prepared:
+        """``prepare`` merged into one dict, for a single (time-axis-free) call."""
+        const, seq = self.prepare(external, embedding, time_features)
+        return {**const, **seq}
+
     def forward(
         self,
         state: torch.Tensor,
@@ -327,9 +558,8 @@ class MassActionModule(nn.Module):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
-        prod, cons = self.species_fluxes(
-            state, coupling, external, embedding, time_features)
-        return prod * self.prod_scale - cons * self.cons_scale * self.raw_state(state)
+        p = self.prepared(external, embedding, time_features)
+        return self.step(torch.cat([state, coupling], dim=-1), p)
 
     def raw_state(self, state: torch.Tensor) -> torch.Tensor:
         """Rebuild the RAW concentration from the normalized state handed to the module.
@@ -355,14 +585,8 @@ class MassActionModule(nn.Module):
         cons·cons_scale·state``, without paying for a second pass over every head.
         The mass-action assembly stays in ``forward`` and is unchanged.
         """
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        prods: list[torch.Tensor] = []
-        conss: list[torch.Tensor] = []
-        for i, head in enumerate(self.heads):
-            prod_i, cons_i = head(x, state[..., i])
-            prods.append(prod_i)
-            conss.append(cons_i)
-        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+        p = self.prepared(external, embedding, time_features)
+        return self.species_fluxes_step(torch.cat([state, coupling], dim=-1), p)
 
 
 class LearnedDynamicsModule(nn.Module):
@@ -383,6 +607,8 @@ class LearnedDynamicsModule(nn.Module):
         super().__init__()
         self.n_state = n_state
         self.n_coupling = n_coupling
+        self.n_external = n_external
+        self.embedding_dim = embedding_dim
 
         input_dim = n_state + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
 
@@ -405,6 +631,40 @@ class LearnedDynamicsModule(nn.Module):
             self.network[-1].weight.zero_()
             self.network[-1].bias.zero_()
 
+    def prepare(
+        self,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> tuple[Prepared, Prepared]:
+        w_dyn, w_ext, w_emb, w_time = split_input_linear(
+            self.network[0], self.n_state + self.n_coupling, self.n_external, self.embedding_dim)
+        const: Prepared = {"net_w1": w_dyn}
+        seq: Prepared = {
+            "external": external,
+            "net_pre": static_preactivation(
+                w_ext, w_emb, w_time, self.network[0].bias, external, embedding, time_features),
+        }
+        return const, seq
+
+    def driver(self, x: torch.Tensor, p: Prepared) -> torch.Tensor:
+        """The learned rate from ``x = [state ‖ coupling]``."""
+        h = torch.tanh(F.linear(x, p["net_w1"]) + p["net_pre"])
+        h = torch.tanh(self.network[2](h))
+        return self.network[4](h)
+
+    def step(self, x: torch.Tensor, p: Prepared) -> torch.Tensor:
+        return self.driver(x, p)
+
+    def prepared(
+        self,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> Prepared:
+        const, seq = self.prepare(external, embedding, time_features)
+        return {**const, **seq}
+
     def forward(
         self,
         state: torch.Tensor,
@@ -413,8 +673,8 @@ class LearnedDynamicsModule(nn.Module):
         embedding: torch.Tensor,
         time_features: torch.Tensor,
     ) -> torch.Tensor:
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        return self.network(x)
+        p = self.prepared(external, embedding, time_features)
+        return self.step(torch.cat([state, coupling], dim=-1), p)
 
 
 class GutModuleBase(nn.Module):

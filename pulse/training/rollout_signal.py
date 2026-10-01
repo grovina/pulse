@@ -21,9 +21,11 @@ from torch import nn
 
 from ..cohort_loss import (
     InitialStateFn,
-    _rollout_arm_batched,
-    cohort_statistic_loss_group,
+    arm_rollout,
+    cohort_group_requests,
     norm_center_initial_state,
+    rollout_arms,
+    score_cohort_group,
 )
 from ..dose_response import (
     DoseResponseProtocol,
@@ -484,23 +486,48 @@ class RolloutEvidenceSignal(TrainingSignal):
                 for g in group_list for spec in g
             ) or 1e-8
 
-        raw_weighted_sum = 0.0
+        # Iter 100: every group of this step rolls out in ONE batched rollout
+        # (``rollout_arms``): per-step cost is overhead, not width, so the step costs
+        # about its longest arm instead of the sum of all of them. Rows never
+        # interact, and the per-spec losses are summed into one backward —
+        # gradient-identical to the per-group rollouts and backwards it replaces.
         z_by_spec: dict[str, float] = {}
         loss_by_spec: dict[str, float] = {}
         n_perturbed = 0
+        plans: list[tuple[list[CohortStatisticSpec], tuple, int, int]] = []
+        requests = []
         for group_specs in group_list:
             emb_list = build_emb_list()
             init_states = [init_fn(spec) for spec in group_specs]
-            arms_override = None
+            arms = group_specs[0].arms
             if self.perturb_protocols and ctx.rng.random() >= self.perturb_fixed_prob:
                 arms_override = perturb_group_arms(group_specs, ctx.rng)
                 if arms_override is not None:
+                    arms = arms_override
                     n_perturbed += 1
-            results = cohort_statistic_loss_group(
-                model, emb_list, group_specs, init_states, arms_override=arms_override,
+            group_requests = cohort_group_requests(
+                emb_list, group_specs, init_states, arms,
                 input_dropout=float(ctx.input_dropout), rng=ctx.rng,
             )
-            group_loss = None
+            plans.append((group_specs, arms, len(emb_list), len(group_requests)))
+            requests.extend(group_requests)
+        trajs = rollout_arms(model, requests, isolate_nonfinite=True)
+
+        raw_weighted_sum = 0.0
+        total_loss = None
+        k = 0
+        for group_specs, arms, n_emb, n_req in plans:
+            group_trajs = trajs[k:k + n_req]
+            k += n_req
+            if any(t is None for t in group_trajs):
+                for spec in group_specs:
+                    print(
+                        f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                        f"cause=rollout spec={spec.name} (spec dropped this epoch)",
+                        flush=True,
+                    )
+                continue
+            results = score_cohort_group(group_specs, arms, group_trajs, n_emb)
             for spec in group_specs:
                 loss_t, _pred, z = results[spec.name]
                 z_by_spec[spec.name] = z
@@ -514,11 +541,11 @@ class RolloutEvidenceSignal(TrainingSignal):
                         flush=True,
                     )
                     continue
-                group_loss = contrib if group_loss is None else group_loss + contrib
+                total_loss = contrib if total_loss is None else total_loss + contrib
                 raw_weighted_sum += loss_by_spec[spec.name] * sw
-            if group_loss is not None:
-                group_loss.backward()
-            del results, group_loss, emb_list  # release graph leaves promptly
+        if total_loss is not None:
+            total_loss.backward()
+        del trajs, total_loss  # release the rollout graph promptly
 
         raw_avg = raw_weighted_sum / total_weight
 
@@ -648,18 +675,30 @@ class RolloutEvidenceSignal(TrainingSignal):
         v_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
         sat_count: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
 
-        for (label, _init_mode), members in group_items:
+        # Iter 100: all arm groups of this step in ONE batched rollout, one backward
+        # (see _compute_cohort; gradient-identical to a rollout + backward per group).
+        requests = []
+        for (_label, _init_mode), members in group_items:
             rule_repr, arm_repr = members[0]
             init_state = init_fn(rule_repr, arm_repr)
-            emb_list = build_emb_list()
-            embs = torch.stack(emb_list, dim=0)
-            traj = _rollout_arm_batched(
-                model, embs, arm_repr, init_state,
+            embs = torch.stack(build_emb_list(), dim=0)
+            requests.append(arm_rollout(
+                arm_repr, embs, init_state.unsqueeze(0).expand(int(embs.shape[0]), -1),
                 input_dropout=float(ctx.input_dropout), rng=ctx.rng,
-            )
-            rule_ctx = rule_context_for_arm(arm_repr)
+            ))
+        trajs = rollout_arms(model, requests, isolate_nonfinite=True)
 
-            arm_loss = None
+        total_loss = None
+        for ((label, _init_mode), members), traj in zip(group_items, trajs):
+            if traj is None:
+                print(
+                    f"[SKIP-NONFINITE] signal={self.name} epoch={ctx.epoch} "
+                    f"cause=rollout arm={label} (its rules dropped this epoch)",
+                    flush=True,
+                )
+                continue
+            arm_repr = members[0][1]
+            rule_ctx = rule_context_for_arm(arm_repr)
             for rule, _arm in members:
                 rw = applied_weight(rule)
                 n_R = n_units[rule.name]
@@ -675,16 +714,15 @@ class RolloutEvidenceSignal(TrainingSignal):
                         flush=True,
                     )
                     continue
-                arm_loss = contrib if arm_loss is None else arm_loss + contrib
+                total_loss = contrib if total_loss is None else total_loss + contrib
                 vs_d = vs.detach()
                 sq_sum[rule.name] += float((vs_d / rule.scale).pow(2).sum().item())
                 v_sum[rule.name] += float(vs_d.sum().item())
                 sat_count[rule.name] += float((vs_d <= 0).float().sum().item())
                 visited[rule.name] += B
-
-            if arm_loss is not None:
-                arm_loss.backward()
-            del traj, embs, emb_list, arm_loss
+        if total_loss is not None:
+            total_loss.backward()
+        del trajs, total_loss
 
         raw_weighted_sum = 0.0
         diags: dict[str, dict[str, float]] = {}

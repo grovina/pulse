@@ -372,6 +372,9 @@ def train(
     # (0 = once per epoch, the pre-97 cadence); per-signal cadence in aux steps.
     aux_every_k_windows: int = 0,
     aux_cadence: dict[str, int] | None = None,
+    # Trajectory windows per optimizer step, rolled out as one batch (1 = one step
+    # per window, the historical cadence). See docs/training-efficiency.md.
+    trajectory_batch_windows: int = 1,
     # Iter 97 (review 4.11): per-signal contribution clip before the joint clip.
     aux_signal_clip: float = 0.0,
     cohort_groups_per_step: int = 0,
@@ -441,6 +444,7 @@ def train(
         n_default_patients=n_default_patients,
         trajectory_band_per_marker=trajectory_band_per_marker,
         shape_markers=tuple(trajectory_shape_markers),
+        batch_windows=trajectory_batch_windows,
     )
     cohort_signal = RolloutEvidenceSignal(
         family="cohort",
@@ -604,18 +608,21 @@ def train(
         f"insulin_grid={insulin_sweep_protocol.insulin_sweep_uU_mL} μU/mL, "
         f"sample_patients={insulin_sweep_sample_patients}",
     )
+    # Iter 94: print the anchor settings that decide WHAT this signal can see, not
+    # just the short window. The local-scale floor and the long windows are the
+    # whole point of the iter-94 change and were previously unverifiable from the
+    # logs — the only other record is the checkpoint, which does not exist until
+    # the run is over.
+    anchor_desc = (
+        f"(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}"
+        f" long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}"
+        f" long_only={tuple(cold_distill_anchor_long_only)}"
+        f" local_scale_floor={cold_distill_anchor_local_scale_floor})"
+        if cold_distill_mode == "anchored" else ""
+    )
     print(
         f"Cold-model distillation: weight={cold_distill_weight} pool={cold_distill_pool} mode={cold_distill_mode}"
-        # Iter 94: print the anchor settings that decide WHAT this signal can see, not
-        # just the short window. The local-scale floor and the long windows are the
-        # whole point of the iter-94 change and were previously unverifiable from the
-        # logs — the only other record is the checkpoint, which does not exist until
-        # the run is over.
-        f"{f'(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}'
-           f' long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}'
-           f' long_only={tuple(cold_distill_anchor_long_only)}'
-           f' local_scale_floor={cold_distill_anchor_local_scale_floor})'
-           if cold_distill_mode == 'anchored' else ''} "
+        f"{anchor_desc} "
         f"markers={tuple(cold_distill_markers)} "
         f"protocols/epoch={cold_distill_protocols_per_epoch}/{len(cold_distill_signal._protocols)} "
         f"(rate + long-level on teacher internals; 0=disabled)",
@@ -631,6 +638,7 @@ def train(
         f"supervised at zero embedding; cohort cold initial state: {cohort_use_cold_init}",
     )
     print(
+        f"Trajectory windows per optimizer step: {trajectory_batch_windows}. "
         f"Aux cadence (iter 97): one joint aux step every {aux_every_k_windows} trajectory "
         f"window(s) (0 = once per epoch); per-signal cadence={aux_cadence or '{}'}; "
         f"per-signal clip={aux_signal_clip}; cohort groups/step={cohort_groups_per_step}; "
@@ -654,15 +662,11 @@ def train(
     embeddings = nn.Embedding(n_patients, EMBEDDING_DIM).to(device)
     nn.init.normal_(embeddings.weight, std=0.1)
 
-    # NOTE: torch.compile was tried for iter 14 (5-epoch local A/B). On a
-    # single fixed protocol it gave 2.9x steady-state speedup, but in the
-    # real training loop the model.forward graph is hit with too many
-    # (batch_size × requires_grad × dispatch-shape) variants — Phase 2
-    # epoch ended up the same wall-clock or slightly worse vs eager, and
-    # dynamo started warning about hitting the recompile limit. The
-    # batched-embedding refactor (Tiers 1+2) already delivered the
-    # ~3-4x Phase-2 speedup we needed; not worth introducing the
-    # compile moving piece on top.
+    # torch.compile: iter 14 compiled the whole ``model.forward`` and lost to the
+    # recompile limit (too many batch × requires_grad × dispatch-shape variants).
+    # Since the prepare/step split the compiled unit is the Euler step alone
+    # (``model._model_step``): fixed shapes, no Python branching on data, dynamic
+    # batch — opt in with ``--compile-step`` (docs/training-efficiency.md).
     params = list(model.parameters()) + list(embeddings.parameters())
     rng = np.random.default_rng(seed)
 
@@ -798,12 +802,17 @@ def train(
                 aux_step_idx += 1
 
             t_traj = time.time()
-            n_win = 0
+            # One aux step per k windows CONSUMED: with batched windows a single
+            # trajectory step can cross a multiple of k (or two), and each crossing
+            # is owed its aux step, so the literature/imitation data ratio does not
+            # depend on --trajectory-batch-windows.
+            next_aux_at = aux_every_k_windows
             for n_win in trajectory_signal.iter_windows(model, embeddings, ctx):
-                if aux_every_k_windows > 0 and n_win % aux_every_k_windows == 0:
+                while aux_every_k_windows > 0 and n_win >= next_aux_at:
                     t_pause = time.time()
                     _run_aux_step()
                     t_traj += time.time() - t_pause  # aux time is booked to the aux signals
+                    next_aux_at += aux_every_k_windows
             signal_times[trajectory_signal.name] = time.time() - t_traj
             results[trajectory_signal.name] = trajectory_signal.last_result
             if aux_step_idx == 0:
@@ -1096,6 +1105,7 @@ def train(
         "meal_window_bias": meal_window_bias,
         # Iter 97 (review 4.1 / 4.11 / 1.5).
         "aux_every_k_windows": aux_every_k_windows,
+        "trajectory_batch_windows": trajectory_batch_windows,
         "aux_cadence": dict(aux_cadence),
         "aux_signal_clip": aux_signal_clip,
         "aux_steps_by_signal": dict(aux_steps_by_signal),
@@ -1402,7 +1412,7 @@ def _run_benchmark(
 _RUN_PLUMBING_KEYS = frozenset({
     "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
-    "frozen_ruler", "deterministic", "allow_spec_override",
+    "frozen_ruler", "deterministic", "allow_spec_override", "compile_step",
 })
 
 
@@ -1937,6 +1947,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "(0 = once per epoch, the pre-97 cadence: 25 literature steps per run).",
     )
     parser.add_argument(
+        "--trajectory-batch-windows", type=int, default=1,
+        help="Trajectory windows rolled out together per optimizer step (loss = mean "
+             "over the windows). 1 = one step per window (the historical cadence). A "
+             "batched rollout costs about what one window does, so B windows per step "
+             "is ~Bx the trajectory throughput — but B-fold fewer optimizer steps. "
+             "See docs/training-efficiency.md.",
+    )
+    parser.add_argument(
         "--aux-cadence", type=str, default="",
         help="Per-signal cadence in aux steps, 'name:n;name:n' — an expensive signal runs "
              "on every n-th aux step so the epoch's wall-clock stays flat.",
@@ -1979,6 +1997,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--allow-spec-override", action="store_true",
         help="Iter 97 (review 1.5): permit CLI flags that change a value the --spec sets. "
              "Without it a divergence between the recipe and the run is an error.",
+    )
+    parser.add_argument(
+        "--compile-step", action="store_true",
+        help="torch.compile the integrator's Euler step (~5x per step on CPU after a "
+             "one-off compile of a few minutes per step signature; needs a C++ compiler, "
+             "falls back to eager without one). Same math, so not part of the recipe. "
+             "Equivalent to PULSE_COMPILE_STEP=1.",
     )
     parser.add_argument("--gcs-bucket", type=str, default=None)
     parser.add_argument("--gcs-object", type=str, default=None)
@@ -2039,6 +2064,9 @@ def main():
 
     if args.frozen_ruler:
         os.environ["PULSE_BENCHMARK_FROZEN_RULER"] = str(args.frozen_ruler)
+    if args.compile_step:
+        from .model import set_step_compilation
+        set_step_compilation(True)
 
     if args.benchmark_only:
         if not args.gcs_bucket or not args.gcs_object:
@@ -2131,6 +2159,7 @@ def main():
         phase3_input_dropout=args.phase3_input_dropout,
         phase3_meal_dropout=args.phase3_meal_dropout,
         aux_every_k_windows=args.aux_every_k_windows,
+        trajectory_batch_windows=args.trajectory_batch_windows,
         aux_cadence=_parse_aux_cadence(args.aux_cadence),
         aux_signal_clip=args.aux_signal_clip,
         cohort_groups_per_step=args.cohort_groups_per_step,

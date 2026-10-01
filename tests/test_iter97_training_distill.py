@@ -12,8 +12,8 @@ import pulse
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(pulse.__file__)))
 assert pulse.__file__.startswith(REPO), pulse.__file__
 
-from pulse.model import ModularPhysiologyNetwork, integrate  # noqa: E402
-from pulse.training import ColdModelDistillationSignal, SignalContext, WeightSchedule  # noqa: E402
+from pulse.model import ModularPhysiologyNetwork  # noqa: E402
+from pulse.training import ColdModelDistillationSignal, WeightSchedule  # noqa: E402
 from pulse.types import EMBEDDING_DIM  # noqa: E402
 
 MARKERS = ("cck", "gallbladder_bile", "intestinal_bile", "bile_acids", "cortisol")
@@ -31,62 +31,66 @@ def test_level_anchor_rollouts_carry_the_duodenal_stimulus() -> None:
     proto = sig._protocols[0]  # standard_3meal
     model = ModularPhysiologyNetwork().eval()
     seen: list[float] = []
-    h = model.hepatobiliary.register_forward_hook(
-        lambda m, a, o: seen.append(float(a[1].detach().abs().max())),
-    )
+    hpb = model.hepatobiliary
+    step = hpb.step
+
+    def recording_step(x, p):
+        # x = [own state (4) ‖ coupling (duodenal fat, protein)]
+        seen.append(float(x[..., 4:].detach().abs().max()))
+        return step(x, p)
+
+    hpb.step = recording_step
     try:
         with torch.no_grad():
             sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
                              rng=np.random.default_rng(0))
     finally:
-        h.remove()
+        del hpb.step
     # Review 4.7 measured max |duodenal| = 0.0000 across every level window.
     assert max(seen) > 0.0
 
 
 def test_level_anchor_passes_precomputed_duodenal_outputs(monkeypatch) -> None:
     import pulse.training.cold_model_distillation_signal as mod
-    captured: list[dict] = []
-    real = mod.integrate
+    captured: list = []
+    real = mod.rollout_many
 
-    def spy(*a, **kw):
-        captured.append(kw)
-        return real(*a, **kw)
+    def spy(model_, requests, **kw):
+        captured.extend(requests)
+        return real(model_, requests, **kw)
 
-    monkeypatch.setattr(mod, "integrate", spy)
+    monkeypatch.setattr(mod, "rollout_many", spy)
     sig = _sig()
     model = ModularPhysiologyNetwork().eval()
     with torch.no_grad():
         sig._level_terms(model, sig._protocols[0], torch.zeros(EMBEDDING_DIM), torch.device("cpu"))
-    assert captured and all(kw.get("duodenal_outputs") is not None for kw in captured)
-    assert all(kw["duodenal_outputs"].shape[0] == kw["duodenal_outputs"].shape[0] for kw in captured)
+    # One rollout request per level window, each carrying its duodenal slice.
+    assert captured and all(r.duodenal_outputs is not None for r in captured)
+    assert all(r.duodenal_outputs.shape[0] == r.duration_min for r in captured)
 
 
-def test_level_window_starts_are_jittered_per_epoch() -> None:
+def test_level_window_starts_are_jittered_per_epoch(monkeypatch) -> None:
     sig = _sig()
     proto = sig._protocols[0]
     model = ModularPhysiologyNetwork().eval()
-    starts_seen: list[tuple[int, ...]] = []
+    starts_seen: list[int] = []
     import pulse.training.cold_model_distillation_signal as mod
-    real = mod.integrate
+    real = mod.rollout_many
 
-    def spy(model_, init, emb, w, **kw):
-        starts_seen.append(int(kw["start_time_minutes"]))
-        return real(model_, init, emb, w, **kw)
+    def spy(model_, requests, **kw):
+        starts_seen.extend(int(r.start_minutes) for r in requests if r.duration_min == sig.anchor_window)
+        return real(model_, requests, **kw)
 
-    mod.integrate = spy
-    try:
-        with torch.no_grad():
-            sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
-                             rng=np.random.default_rng(1))
-            a = tuple(starts_seen); starts_seen.clear()
-            sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
-                             rng=np.random.default_rng(2))
-            b = tuple(starts_seen); starts_seen.clear()
-            sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"), rng=None)
-            c = tuple(starts_seen)
-    finally:
-        mod.integrate = real
+    monkeypatch.setattr(mod, "rollout_many", spy)
+    with torch.no_grad():
+        sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
+                         rng=np.random.default_rng(1))
+        a = tuple(starts_seen); starts_seen.clear()
+        sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
+                         rng=np.random.default_rng(2))
+        b = tuple(starts_seen); starts_seen.clear()
+        sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"), rng=None)
+        c = tuple(starts_seen)
     assert a != b, "starts must vary with the epoch rng"
     assert len(c) == 6 and c == tuple(sorted(c))  # deterministic without an rng
 

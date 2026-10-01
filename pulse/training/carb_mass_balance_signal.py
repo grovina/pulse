@@ -42,8 +42,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..model import integrate, precompute_gut_outputs
 from ..modules.gut import MealEvent
+from ..rollouts import RolloutRequest, rollout_many
 from ..types import MARKER_INDEX, NORM_CENTER
 from .embedding_sampler import select_supervised_embeddings
 from .safe_step import accumulate_grad
@@ -82,37 +82,41 @@ class CarbMassBalanceSignal(TrainingSignal):
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
 
-    def _glycogen_delta(
-        self, model: nn.Module, embedding: torch.Tensor, dose_g: float,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Net Δ(liver+muscle glycogen) across the fed window for one (emb, dose).
-
-        Returns ``(delta, pre)`` — the post-minus-pre change and the pre-meal
-        baseline total, both in grams. ``pre`` is detached only for logging.
-        """
+    def _glycogen_deltas(
+        self, model: nn.Module, embeddings: torch.Tensor, device: torch.device,
+    ) -> list[list[tuple[torch.Tensor, torch.Tensor]]]:
+        """Net Δ(liver+muscle glycogen) across the fed window for every
+        (embedding, dose): ``out[b][d] = (delta, pre)`` in grams — the post-minus-
+        pre change and the pre-meal baseline. Every pair is one row of ONE batched
+        rollout (``rollouts.rollout_many``)."""
+        B = int(embeddings.shape[0])
         initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
-        start_min = self.start_hour * 60.0
-        meal = MealEvent(
-            time=self.meal_time_min, carbs=float(dose_g),
-            fats=float(self.fats_g), proteins=float(self.proteins_g),
-        )
-        gut = precompute_gut_outputs(
-            model, embedding, self.window_min,
-            dt=1.0, start_time_minutes=start_min, meals=[meal],
-        )
-        pred = integrate(
-            model, initial, embedding, self.window_min,
-            dt=1.0, start_time_minutes=start_min, meals=[meal],
-            gut_outputs=gut,
-        )
-        total = pred[:, _LIVER] + pred[:, _MUSCLE]
+        requests = [
+            RolloutRequest(
+                duration_min=self.window_min,
+                start_minutes=self.start_hour * 60.0,
+                meals=[MealEvent(
+                    time=self.meal_time_min, carbs=float(dose_g),
+                    fats=float(self.fats_g), proteins=float(self.proteins_g),
+                )],
+                embeddings=embeddings,
+                states=initial.unsqueeze(0).expand(B, -1),
+            )
+            for dose_g in self.carb_doses_g
+        ]
+        trajs = rollout_many(model, requests)  # per dose: [B, T, STATE]
         # Pre-meal baseline (before the meal lands) vs the last hour of the
         # window (storage has had the whole window to accumulate).
         pre_end = max(1, int(self.meal_time_min))
-        pre = total[:pre_end].mean()
-        post = total[-60:].mean()
-        return post - pre, pre
+        out: list[list[tuple[torch.Tensor, torch.Tensor]]] = []
+        for b in range(B):
+            row = []
+            for traj in trajs:
+                total = traj[b, :, _LIVER] + traj[b, :, _MUSCLE]
+                pre = total[:pre_end].mean()
+                row.append((total[-60:].mean() - pre, pre))
+            out.append(row)
+        return out
 
     def compute(
         self,
@@ -139,9 +143,9 @@ class CarbMassBalanceSignal(TrainingSignal):
         over_terms: list[torch.Tensor] = []
         under_terms: list[torch.Tensor] = []
         deltas: list[float] = []
-        for emb in emb_list:
-            for dose in self.carb_doses_g:
-                delta, _pre = self._glycogen_delta(model, emb, dose, device)
+        pairs = self._glycogen_deltas(model, torch.stack(emb_list, dim=0), device)
+        for row in pairs:
+            for dose, (delta, _pre) in zip(self.carb_doses_g, row):
                 # Normalise the violation by the dose so a 90 g and a 30 g
                 # meal contribute comparable gradient when equally violated.
                 norm = max(float(dose), 1.0)

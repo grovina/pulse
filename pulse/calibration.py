@@ -47,7 +47,7 @@ from typing import Any, Sequence
 
 import torch
 
-from .model import ModularPhysiologyNetwork, integrate
+from .model import ModularPhysiologyNetwork, frozen_parameters, integrate
 from .modules.gut import MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from .types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
 
@@ -369,50 +369,53 @@ def calibrate_embedding(
     no_improvement = 0
     steps_run = 0
 
-    for step in range(st.max_steps + 1):
-        # Iteration k evaluates e_k (train WITH grad, held-out WITHOUT), records
-        # it, then takes the Adam step that produces e_{k+1}. k = 0 is the
-        # baseline. The forward pass is shared: hold-out times are later than
-        # train times, so one integration to the last check-in covers both.
-        with torch.enable_grad():
-            predicted = _forward(
-                emb, model=model, n_steps=n_steps_fwd, initial_state=initial_state,
-                meals=meals, start_time_minutes=start_time_minutes,
-                sleep_wake=sleep_wake, activity=activity,
-                checkpoint_segments=st.checkpoint_segments,
-            )
-            train_sum, n_tr = _data_terms(predicted, train_obs, train_soft, norm_scale, st.huber_delta)
-            train_data = train_sum / max(n_tr, 1)
-            objective = train_data + regularizers(emb)
-        with torch.no_grad():
-            if n_val > 0:
-                val_sum, n_va = _data_terms(predicted.detach(), val_obs, val_soft, norm_scale, st.huber_delta)
-                val_data = float(val_sum) / max(n_va, 1)
-            else:
-                val_data = float(train_data)  # no hold-out: track the train objective
-        train_val = float(train_data.detach())
-        if step == 0:
-            baseline_train, baseline_val = train_val, val_data
-        if val_data < best_val - 1e-12:
-            best_val, best_train, best_step = val_data, train_val, step
-            best_emb = emb.detach().clone()
-            no_improvement = 0
-        else:
-            no_improvement += 1
-        final_loss = float(objective.detach())
-        if step == st.max_steps:
-            break
-        if n_val > 0 and st.patience > 0 and no_improvement >= st.patience:
-            break
-        optimizer.zero_grad()
-        objective.backward()
-        optimizer.step()
-        steps_run = step + 1
-        if st.max_norm > 0.0:
+    # The model's weights are constants here: freeze them so the objective's
+    # gradient reaches only the embedding (and is not computed for the weights).
+    with frozen_parameters(model):
+        for step in range(st.max_steps + 1):
+            # Iteration k evaluates e_k (train WITH grad, held-out WITHOUT), records
+            # it, then takes the Adam step that produces e_{k+1}. k = 0 is the
+            # baseline. The forward pass is shared: hold-out times are later than
+            # train times, so one integration to the last check-in covers both.
+            with torch.enable_grad():
+                predicted = _forward(
+                    emb, model=model, n_steps=n_steps_fwd, initial_state=initial_state,
+                    meals=meals, start_time_minutes=start_time_minutes,
+                    sleep_wake=sleep_wake, activity=activity,
+                    checkpoint_segments=st.checkpoint_segments,
+                )
+                train_sum, n_tr = _data_terms(predicted, train_obs, train_soft, norm_scale, st.huber_delta)
+                train_data = train_sum / max(n_tr, 1)
+                objective = train_data + regularizers(emb)
             with torch.no_grad():
-                norm = float(emb.norm())
-                if norm > st.max_norm:
-                    emb.mul_(st.max_norm / norm)
+                if n_val > 0:
+                    val_sum, n_va = _data_terms(predicted.detach(), val_obs, val_soft, norm_scale, st.huber_delta)
+                    val_data = float(val_sum) / max(n_va, 1)
+                else:
+                    val_data = float(train_data)  # no hold-out: track the train objective
+            train_val = float(train_data.detach())
+            if step == 0:
+                baseline_train, baseline_val = train_val, val_data
+            if val_data < best_val - 1e-12:
+                best_val, best_train, best_step = val_data, train_val, step
+                best_emb = emb.detach().clone()
+                no_improvement = 0
+            else:
+                no_improvement += 1
+            final_loss = float(objective.detach())
+            if step == st.max_steps:
+                break
+            if n_val > 0 and st.patience > 0 and no_improvement >= st.patience:
+                break
+            optimizer.zero_grad()
+            objective.backward()
+            optimizer.step()
+            steps_run = step + 1
+            if st.max_norm > 0.0:
+                with torch.no_grad():
+                    norm = float(emb.norm())
+                    if norm > st.max_norm:
+                        emb.mul_(st.max_norm / norm)
 
     if n_val == 0:
         # Legacy / MAP mode: no hold-out, the final embedding is the answer.

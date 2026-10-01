@@ -112,47 +112,48 @@ class StressModule(MassActionModule):
         return _CORT_B * torch.exp(
             _CORT_LOG_MAX * torch.tanh(self.cort_baseline_net(embedding).squeeze(-1)))
 
-    def forward(
+    def prepare(
         self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        raw = self.raw_state(state)
-        cort = raw[..., _CORTISOL_IDX]
-        acth = raw[..., _ACTH_IDX]
-        crh = raw[..., _CRH_IDX]
-        g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+        """Everything of the cascade that does not read the ODE state: the patient's
+        basal cortisol, the circadian/sleep CRH target before feedback, the activity
+        drive, and the rate constants."""
+        const: dict[str, torch.Tensor] = {
+            "cort_b": self.cort_setpoint_raw(embedding),
+            "fb_amp": nn.functional.softplus(self._fb_raw),
+            "k_crh": torch.exp(self.log_k_crh),
+            "k_acth": torch.exp(self.log_k_acth),
+            "k_cort": torch.exp(self.log_k_cort),
+            "hypo_gain": nn.functional.softplus(self._hypo_raw),
+        }
         sw = external[..., 0]
         act = external[..., 1]
         sleep_depth = 1.0 - sw
-
         hour = _hour_from_time_features(time_features)
         phase_h = 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1))
         drive = _hpa_drive((hour - phase_h) % 24.0)
         sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
-        cort_b = self.cort_setpoint_raw(embedding)
-        fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / cort_b))
+        crh_drive = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
+        seq: dict[str, torch.Tensor] = {
+            "crh_drive": crh_drive * sleep_suppression,
+            "act_drive": nn.functional.softplus(self._act_raw) * act,
+        }
+        return const, seq
+
+    def step(self, x: torch.Tensor, p: dict[str, torch.Tensor]) -> torch.Tensor:
+        cort, acth, crh = self.raw_state(x[..., :3]).unbind(-1)
+        g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * x[..., 3]).clamp(min=1.0)
+
+        fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / p["cort_b"]))
         fb = torch.relu(fb)
-        fb_amp = nn.functional.softplus(self._fb_raw)
-        crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
-        crh_target = crh_target * sleep_suppression * (1.0 - fb_amp * fb)
+        crh_target = p["crh_drive"] * (1.0 - p["fb_amp"] * fb)
+        hypo = p["hypo_gain"] * torch.relu(70.0 - g)
 
-        k_crh = torch.exp(self.log_k_crh)
-        k_acth = torch.exp(self.log_k_acth)
-        k_cort = torch.exp(self.log_k_cort)
-        hypo = nn.functional.softplus(self._hypo_raw) * torch.relu(70.0 - g)
-        act_drive = nn.functional.softplus(self._act_raw) * act
-
-        d_crh = -k_crh * (crh - crh_target) + hypo + act_drive
-        d_acth = -k_acth * (acth - _ACTH_PER_CRH * crh)
+        d_crh = -p["k_crh"] * (crh - crh_target) + hypo + p["act_drive"]
+        d_acth = -p["k_acth"] * (acth - _ACTH_PER_CRH * crh)
         cort_target = (_CORT_PER_ACTH * acth.clamp(min=0.0)).clamp(min=0.5)
-        d_cort = -k_cort * (cort - cort_target)
-
-        rates = torch.zeros_like(state)
-        rates[..., _CORTISOL_IDX] = d_cort
-        rates[..., _ACTH_IDX] = d_acth
-        rates[..., _CRH_IDX] = d_crh
-        return rates
+        d_cort = -p["k_cort"] * (cort - cort_target)
+        return torch.stack([d_cort, d_acth, d_crh], dim=-1)

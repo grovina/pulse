@@ -37,14 +37,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import numpy as np
 import torch
 import torch.nn as nn
 
 from .knowledge.full_body import PatientParams
 from .knowledge.textbook_scenarios.base import cold_model_trajectory
 from .landmarks import LandmarkDirection, post_meal_landmarks
-from .model import integrate, precompute_gut_outputs
 from .modules.gut import MealEvent
+from .rollouts import RolloutRequest, rollout_many
 from .types import MARKER_INDEX
 
 
@@ -176,7 +177,7 @@ class DoseResponseProtocol:
 
 def cold_initial_state(
     protocol: DoseResponseProtocol,
-    rng: "np.random.Generator | None" = None,
+    rng: np.random.Generator | None = None,
     device: torch.device | str = "cpu",
 ) -> torch.Tensor:
     """Sample a realistic fasting initial state from the analytical cold model.
@@ -186,8 +187,6 @@ def cold_initial_state(
     Per-epoch stochasticity (via ``rng``) prevents the model from overfitting to
     a single initial condition.
     """
-    import numpy as np  # local import keeps top of module tensor-only
-
     if rng is None:
         rng = np.random.default_rng()
     meals = [(
@@ -225,11 +224,10 @@ def predicted_peaks_batched(
 ) -> torch.Tensor:
     """Soft Δpeak per (marker, dose, embedding).
 
-    Returns ``[B, M, D]`` — B embeddings × M markers × D doses. Runs one
-    batched ``integrate`` per dose (same dose for every embedding in the
-    batch), shared across all supervised markers — the marker dimension
-    just re-extracts peaks from the same trajectory, no extra forward
-    passes.
+    Returns ``[B, M, D]`` — B embeddings × M markers × D doses. Runs ONE
+    batched rollout over every (dose, embedding) pair, shared across all
+    supervised markers — the marker dimension just re-extracts peaks from
+    the same trajectory, no extra forward passes.
     """
     if len(markers) != len(directions):
         raise ValueError("markers / directions length mismatch")
@@ -241,26 +239,29 @@ def predicted_peaks_batched(
     M = len(markers)
     D = len(protocol.carb_doses_g)
 
+    # Every dose in ONE batched rollout (``rollouts.rollout_many``): rows are
+    # (dose, embedding), each with its own meal; gradient-identical to a rollout
+    # per dose, at about the cost of one.
+    requests = [
+        RolloutRequest(
+            duration_min=n_steps,
+            start_minutes=t0,
+            meals=[MealEvent(
+                time=float(protocol.meal_offset_min),
+                carbs=float(dose),
+                fats=float(protocol.fats_g),
+                proteins=float(protocol.proteins_g),
+            )],
+            embeddings=embeddings,
+            states=state_b,
+        )
+        for dose in protocol.carb_doses_g
+    ]
     peaks_per_dose: list[torch.Tensor] = []
-    for dose in protocol.carb_doses_g:
-        meal = MealEvent(
-            time=float(protocol.meal_offset_min),
-            carbs=float(dose),
-            fats=float(protocol.fats_g),
-            proteins=float(protocol.proteins_g),
-        )
-        gut = precompute_gut_outputs(
-            model, embeddings, n_steps,
-            dt=1.0, start_time_minutes=t0, meals=[meal],
-        )
-        traj = integrate(
-            model, state_b, embeddings, n_steps,
-            dt=1.0, start_time_minutes=t0, meals=[meal],
-            gut_outputs=gut,
-        )  # [B, T, STATE]
+    for traj in rollout_many(model, requests):  # [B, T, STATE] per dose
         # Extract Δpeak per (marker, batch). post_meal_landmarks is 1-D
         # over the trajectory window; the inner loops are cheap relative
-        # to the integrate above.
+        # to the rollout above.
         per_marker: list[torch.Tensor] = []
         for m_i, idx in enumerate(marker_indices):
             direction = directions[m_i]

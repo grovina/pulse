@@ -28,17 +28,22 @@ from .knowledge.cohort_types import (
     StatisticWindow,
     TargetShape,
 )
-from .model import ModularPhysiologyNetwork, integrate, precompute_gut_outputs
+from .model import ModularPhysiologyNetwork
+from .rollouts import RolloutRequest, rollout_many
 from .modules.gut import MealEvent
 from .types import MARKER_INDEX, NORM_CENTER
 
 __all__ = [
     "ARM_DEFAULT_ACTIVITY",
     "ARM_DEFAULT_SLEEP_WAKE",
+    "arm_rollout",
+    "cohort_group_requests",
     "cohort_statistic_epoch_loss",
     "cohort_statistic_loss_group",
     "cohort_statistic_loss_one_spec",
     "norm_center_initial_state",
+    "rollout_arms",
+    "score_cohort_group",
     "score_batch_statistic",
     "shaped_residual",
 ]
@@ -103,6 +108,78 @@ def _validate_window(spec_name: str, w: StatisticWindow, duration_min: int) -> N
         )
 
 
+def arm_rollout(
+    arm: CohortArmSpec,
+    embeddings: torch.Tensor,
+    states: torch.Tensor,
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
+) -> RolloutRequest:
+    """One arm as a ``RolloutRequest`` for ``N`` (embedding, initial-state) rows.
+
+    Undeclared series run in the arm frame (awake, at rest — see above). With
+    ``input_dropout`` each series is withheld with that probability (the RNG
+    draws ``_rollout_arm_states`` has always made, in the same order).
+    """
+    n_steps = arm.duration_min
+    device = states.device
+    sw = _optional_series_tensor(
+        f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device, fill=ARM_DEFAULT_SLEEP_WAKE,
+    )
+    act = _optional_series_tensor(
+        f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
+    )
+    # Iter 97 (review 4.9): phase-3 input dropout — with probability
+    # ``input_dropout`` each series is withheld and the model runs on its learned
+    # default, so "no sleep log / no activity log" is a trained condition for the
+    # literature signals too, not only for trajectory imitation.
+    if input_dropout > 0.0 and rng is not None:
+        if rng.random() < input_dropout:
+            sw = None
+        if rng.random() < input_dropout:
+            act = None
+    return RolloutRequest(
+        duration_min=n_steps,
+        start_minutes=float(arm.start_hour * 60.0),
+        meals=_meals_from_spec(arm.meals),
+        embeddings=embeddings,
+        states=states,
+        sleep_wake=sw,
+        activity=act,
+    )
+
+
+def rollout_arms(
+    model: ModularPhysiologyNetwork,
+    requests: list[RolloutRequest],
+    *,
+    isolate_nonfinite: bool = False,
+) -> list[torch.Tensor | None]:
+    """Every arm request in ONE batched rollout (``rollouts.rollout_many``), with
+    the cohort rollouts' gradient checkpointing.
+
+    Iter 68 round 3: gradient checkpointing on the cohort rollout. The
+    iter-67 saga turned out to have TWO memory eaters, not one. Round 1+2
+    fixed cold-distill (the visible one in watchdog stack traces); round 3
+    fixes cohort_statistic, which the intra-epoch memprof in r2 caught
+    red-handed: RSS jumped 879 MB → 26 GB inside one cohort_statistic
+    compute() call. With 31 specs × 1-3 arms × 13 embeddings × up to 1440
+    steps unchunked, the held activation graph is ~25 GB. Checkpointing at
+    sqrt(n_steps) segments mirrors the cold-distill fix and drops this by
+    ~sqrt(n_steps)×. Same back-compat guarantees: bench-time integrate has
+    default checkpoint_segments=0 so prediction quality is unaffected.
+    """
+    if not requests:
+        return []
+    n_steps = max(r.duration_min for r in requests)
+    return rollout_many(
+        model, requests,
+        checkpoint_segments=max(1, int(n_steps**0.5)),
+        isolate_nonfinite=isolate_nonfinite,
+    )
+
+
 def _rollout_arm_states(
     model: ModularPhysiologyNetwork,
     embeddings: torch.Tensor,
@@ -125,47 +202,8 @@ def _rollout_arm_states(
     state are rolled in a single ``integrate`` call by stacking their states
     here, collapsing N sequential rollouts of the same long protocol into one.
     """
-    n_steps = arm.duration_min
-    t0 = float(arm.start_hour * 60.0)
-    meals = _meals_from_spec(arm.meals)
-    device = state_batch.device
-    sw = _optional_series_tensor(
-        f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device, fill=ARM_DEFAULT_SLEEP_WAKE,
-    )
-    act = _optional_series_tensor(
-        f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
-    )
-    # Iter 97 (review 4.9): phase-3 input dropout — with probability
-    # ``input_dropout`` each series is withheld and the model runs on its learned
-    # default, so "no sleep log / no activity log" is a trained condition for the
-    # literature signals too, not only for trajectory imitation.
-    if input_dropout > 0.0 and rng is not None:
-        if rng.random() < input_dropout:
-            sw = None
-        if rng.random() < input_dropout:
-            act = None
-    gut = precompute_gut_outputs(
-        model, embeddings, n_steps,
-        dt=1.0, start_time_minutes=t0, meals=meals,
-    )
-    # Iter 68 round 3: gradient checkpointing on the cohort rollout. The
-    # iter-67 saga turned out to have TWO memory eaters, not one. Round 1+2
-    # fixed cold-distill (the visible one in watchdog stack traces); round 3
-    # fixes cohort_statistic, which the intra-epoch memprof in r2 caught
-    # red-handed: RSS jumped 879 MB → 26 GB inside one cohort_statistic
-    # compute() call. With 31 specs × 1-3 arms × 13 embeddings × up to 1440
-    # steps unchunked, the held activation graph is ~25 GB. Checkpointing at
-    # sqrt(n_steps) segments mirrors the cold-distill fix and drops this by
-    # ~sqrt(n_steps)×. Same back-compat guarantees: bench-time integrate has
-    # default checkpoint_segments=0 so prediction quality is unaffected.
-    ckpt_segs = max(1, int(n_steps**0.5))
-    return integrate(
-        model, state_batch, embeddings, n_steps,
-        dt=1.0, start_time_minutes=t0, meals=meals,
-        sleep_wake=sw, activity=act,
-        gut_outputs=gut,
-        checkpoint_segments=ckpt_segs,
-    )
+    request = arm_rollout(arm, embeddings, state_batch, input_dropout=input_dropout, rng=rng)
+    return rollout_arms(model, [request])[0]
 
 
 def _rollout_arm_batched(
@@ -345,21 +383,47 @@ def cohort_statistic_loss_group(
         assert len(arms_override) == len(arms)
         arms = arms_override
 
+    requests = cohort_group_requests(
+        embeddings_to_supervise, specs, initial_states, arms,
+        input_dropout=input_dropout, rng=rng,
+    )
+    return score_cohort_group(
+        specs, arms, rollout_arms(model, requests), len(embeddings_to_supervise),
+    )
+
+
+def cohort_group_requests(
+    embeddings_to_supervise: list[torch.Tensor],
+    specs: list[CohortStatisticSpec],
+    initial_states: list[torch.Tensor],
+    arms: tuple[CohortArmSpec, ...],
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
+) -> list[RolloutRequest]:
+    """One rollout request per arm of a spec group: ``[S × B]`` rows (spec s's init
+    state repeated across the B supervised embeddings), row ``r = s·B + b``."""
     embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
     B = int(embs.shape[0])
     S = len(specs)
-    # Row r = s*B + b → spec s's init state, embedding b.
     emb_batch = embs.repeat(S, 1)  # [S*B, EMB]
     init_stack = torch.stack(list(initial_states), dim=0)  # [S, STATE]
     state_batch = init_stack.repeat_interleave(B, dim=0)  # [S*B, STATE]
-
-    arm_trajs: list[torch.Tensor] = [
-        _rollout_arm_states(
-            model, emb_batch, arm, state_batch, input_dropout=input_dropout, rng=rng,
-        )  # [S*B, T, STATE]
+    return [
+        arm_rollout(arm, emb_batch, state_batch, input_dropout=input_dropout, rng=rng)
         for arm in arms
     ]
 
+
+def score_cohort_group(
+    specs: list[CohortStatisticSpec],
+    arms: tuple[CohortArmSpec, ...],
+    arm_trajs: list[torch.Tensor],
+    n_embeddings: int,
+) -> dict[str, tuple[torch.Tensor, float, float]]:
+    """Per-spec ``(loss, predicted_mean, residual_z)`` from a group's arm rollouts
+    (``[S·B, T, STATE]`` each, rows as ``cohort_group_requests`` lays them out)."""
+    B = int(n_embeddings)
     out: dict[str, tuple[torch.Tensor, float, float]] = {}
     for s_idx, spec in enumerate(specs):
         mi = MARKER_INDEX[spec.marker_id]

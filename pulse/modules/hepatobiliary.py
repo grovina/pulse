@@ -267,6 +267,31 @@ class HepatobiliaryModule(MassActionModule):
         return _TYPICALS[_CCK_IDX] * torch.exp(
             _CCK_LOG_MAX * torch.tanh(self.cck_baseline_net(embedding).squeeze(-1)))
 
+    def prepare(
+        self,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+        """The head bank plus every rate constant and gain of the loop — none of
+        which read the ODE state."""
+        const, seq = super().prepare(external, embedding, time_features)
+        k_can = torch.exp(self.log_k_canalicular)
+        extraction = (_HEP_EXTRACTION * (k_can / (k_can + _CANALICULAR_OFFSET))
+                      / (1.0 / (1.0 + _CANALICULAR_OFFSET)))
+        const.update({
+            "cck_b": self.cck_setpoint_raw(embedding),
+            "cck_fat_gain": torch.exp(self.log_cck_fat_gain),
+            "cck_prot_gain": torch.exp(self.log_cck_prot_gain),
+            "k_eject": _K_EJECT_MIN + _K_EJECT_RANGE * torch.sigmoid(self.log_k_eject),
+            "k_basal": _K_BASAL_MIN + _K_BASAL_RANGE * torch.sigmoid(self.log_k_gb_basal),
+            "k_ileal": _K_ILEAL_MIN + _K_ILEAL_RANGE * torch.sigmoid(self.log_k_ileal),
+            "extraction": extraction.clamp(0.0, 0.995),
+            "spill_gain": torch.exp(self.log_ba_spill_gain),
+            "k_ba": torch.exp(self.log_k_ba),
+        })
+        return const, seq
+
     def fluxes(
         self,
         state: torch.Tensor,
@@ -277,48 +302,42 @@ class HepatobiliaryModule(MassActionModule):
     ) -> dict[str, torch.Tensor]:
         """Every named flux of the loop (mmol/min unless noted). ``forward`` assembles
         the rates from these; tests and probes read them directly."""
-        prod_raw, cons_raw = self.species_fluxes(
-            state, coupling, external, embedding, time_features)
-        raw = self.raw_state(state)
-        relu = nn.functional.relu
-        cck_raw = raw[..., _CCK_IDX]
-        gb_raw = raw[..., _GB_IDX]
-        int_raw = raw[..., _INT_IDX]
-        ba_raw = raw[..., _BA_IDX]
-        fat_duo = coupling[..., _FAT_DUO_IDX]
-        prot_duo = coupling[..., _PROT_DUO_IDX]
-        duo_total = fat_duo + prot_duo
-        cck_b = self.cck_setpoint_raw(embedding)
+        p = self.prepared(external, embedding, time_features)
+        return self.step_fluxes(torch.cat([state, coupling], dim=-1), p)
 
-        cck_secretion = (torch.exp(self.log_cck_fat_gain) * fat_duo
-                         + torch.exp(self.log_cck_prot_gain) * prot_duo)
+    def step_fluxes(self, x: torch.Tensor, p: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+        """``fluxes`` from ``x = [state ‖ coupling]`` and the prepared inputs."""
+        prod_raw, cons_raw = self.species_fluxes_step(x, p)
+        raw = self.raw_state(x[..., :4])
+        relu = nn.functional.relu
+        cck_raw, gb_raw, int_raw, ba_raw = raw.unbind(-1)
+        fat_duo = x[..., 4 + _FAT_DUO_IDX]
+        prot_duo = x[..., 4 + _PROT_DUO_IDX]
+        duo_total = fat_duo + prot_duo
+        cck_b = p["cck_b"]
+
+        cck_secretion = p["cck_fat_gain"] * fat_duo + p["cck_prot_gain"] * prot_duo
         cck_basal = prod_raw[..., _CCK_IDX] * self.prod_scale[_CCK_IDX]
         cck_clearance = cons_raw[..., _CCK_IDX] * self.cons_scale[_CCK_IDX] * cck_raw
 
         cck_excess = relu(cck_raw - cck_b)
         contraction = cck_excess / (cck_excess + _K_CCK_GB)
-        k_eject = _K_EJECT_MIN + _K_EJECT_RANGE * torch.sigmoid(self.log_k_eject)
-        k_basal = _K_BASAL_MIN + _K_BASAL_RANGE * torch.sigmoid(self.log_k_gb_basal)
         fed_gate = duo_total / (duo_total + _K_MMC_FED)
         gb_empty = (
-            k_eject * contraction * gb_raw * prod_raw[..., _GB_IDX]
-            + k_basal * (1.0 - fed_gate) * gb_raw
+            p["k_eject"] * contraction * gb_raw * prod_raw[..., _GB_IDX]
+            + p["k_basal"] * (1.0 - fed_gate) * gb_raw
         )
 
-        k_ileal = _K_ILEAL_MIN + _K_ILEAL_RANGE * torch.sigmoid(self.log_k_ileal)
-        ileal_uptake = k_ileal * int_raw
+        ileal_uptake = p["k_ileal"] * int_raw
         portal_return = _F_ILEAL * ileal_uptake
         fecal_loss = ileal_uptake - portal_return
 
-        k_can = torch.exp(self.log_k_canalicular)
-        extraction = (_HEP_EXTRACTION * (k_can / (k_can + _CANALICULAR_OFFSET))
-                      / (1.0 / (1.0 + _CANALICULAR_OFFSET)))
-        extraction = extraction.clamp(0.0, 0.995)
+        extraction = p["extraction"]
         spillover = (1.0 - extraction) * portal_return
         extracted = extraction * portal_return
 
-        spill_gain = torch.exp(self.log_ba_spill_gain)
-        ba_clearance = torch.exp(self.log_k_ba) * ba_raw
+        spill_gain = p["spill_gain"]
+        ba_clearance = p["k_ba"] * ba_raw
         serum_return = ba_clearance / spill_gain
         ba_spill = spill_gain * spillover
         synthesis = _SYNTH_SCALE * cons_raw[..., _GB_IDX]
@@ -339,18 +358,11 @@ class HepatobiliaryModule(MassActionModule):
             "ba_spill": ba_spill, "ba_clearance": ba_clearance, "spill_gain": spill_gain,
         }
 
-    def forward(
-        self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        f = self.fluxes(state, coupling, external, embedding, time_features)
-        rates = torch.zeros_like(state)
-        rates[..., _CCK_IDX] = f["cck_basal"] + f["cck_secretion"] - f["cck_clearance"]
-        rates[..., _GB_IDX] = f["to_gallbladder"] - f["gb_empty"]
-        rates[..., _INT_IDX] = f["gb_empty"] + f["to_intestine"] - f["ileal_uptake"]
-        rates[..., _BA_IDX] = f["ba_spill"] - f["ba_clearance"]
-        return rates
+    def step(self, x: torch.Tensor, p: dict[str, torch.Tensor]) -> torch.Tensor:
+        f = self.step_fluxes(x, p)
+        return torch.stack([
+            f["cck_basal"] + f["cck_secretion"] - f["cck_clearance"],
+            f["to_gallbladder"] - f["gb_empty"],
+            f["gb_empty"] + f["to_intestine"] - f["ileal_uptake"],
+            f["ba_spill"] - f["ba_clearance"],
+        ], dim=-1)

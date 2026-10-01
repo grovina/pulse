@@ -63,4 +63,11 @@ CMD ["sh", "-c", "uvicorn pulse.server:app --host 0.0.0.0 --port ${PORT:-8080}"]
 # ===========================================================================
 FROM runtime AS train
 
+# A C++ toolchain for `--compile-step`: torch.compile (inductor) generates and builds
+# C++ kernels at runtime. Without it the trainer still runs — the compile falls back
+# to eager with a warning — just ~5x slower per Euler step. Train image only.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 ENTRYPOINT ["python", "-m", "pulse.train"]
