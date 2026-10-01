@@ -16,6 +16,21 @@ Pass `--gcs-bucket` + `--gcs-object` to upload the checkpoint and benchmark
 report to `gs://<bucket>/training/jobs/<id>/`; omit them to keep a run fully
 local.
 
+## Speed
+
+Where the time goes and what each lever costs: `docs/training-efficiency.md`.
+In short:
+
+- `--compile-step` — `torch.compile` the integrator's Euler step (~5x per step
+  after a one-off compile of a few minutes per step signature; same math, so it is
+  run plumbing, not part of the recipe). Needs a C++ compiler; the trainer image
+  ships `g++`.
+- `--trajectory-batch-windows B` — B trajectory windows per optimizer step. Part
+  of the recipe: B-fold fewer, less noisy imitation steps.
+- `uv run python scripts/bench_training_step.py [--compile-step]` — per-step
+  throughput of the rollout every signal pays for; run it before and after a
+  change to the hot path (`model.prepare` / `model.step`, the modules' `step`).
+
 ## Cloud Run job
 
 1. **Deploy** (idempotent) — build the images and create/update the `trainer`

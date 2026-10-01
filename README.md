@@ -38,6 +38,7 @@ Uses [uv](https://docs.astral.sh/uv/):
 ```bash
 uv sync                            # CPU PyTorch by default (macOS, CI, Cloud Run)
 uv run python -m pulse.train       # train against synthetic episodes + knowledge losses
+                                   #   (--compile-step: ~5x per step; docs/training-efficiency.md)
 uv run python -m pulse.benchmark   # evaluate against the benchmark/gate
 uv run uvicorn pulse.server:app    # serve inference
 ```
