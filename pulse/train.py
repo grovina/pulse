@@ -2000,7 +2000,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--compile-step", action="store_true",
-        help="torch.compile the integrator's Euler step (~5x per step on CPU after a "
+        help="torch.compile the integrator's Euler step (~2.5-3x per step on CPU after a "
              "one-off compile of a few minutes per step signature; needs a C++ compiler, "
              "falls back to eager without one). Same math, so not part of the recipe. "
              "Equivalent to PULSE_COMPILE_STEP=1.",

@@ -148,12 +148,26 @@ does not move with B.
 ### `--compile-step` (or `PULSE_COMPILE_STEP=1`)
 
 `torch.compile` of the integrator's Euler step (`model._model_step`) — the unit
-that is ~600 small ops forward and as many autograd nodes: **2.8 ms vs 14.6 ms per
-step forward + backward** (batch 3, same core, after warm-up). Same math, so it is run
-plumbing, not part of the recipe. Costs a one-off compile of a few minutes per step
-signature (grad mode, which inputs require grad, frozen rows or not; the batch is
-dynamic) and a C++ compiler at runtime — the trainer image now installs `g++`; any
-compile failure falls back to eager, once, with a warning.
+that is ~600 small ops forward and as many autograd nodes. Per step, forward +
+backward, one idle core, after warm-up:
+
+| batch | HEAD | eager now | compiled |
+|---:|---:|---:|---:|
+| 1 | 16.9 ms | 8.5 ms | 2.98 ms |
+| 8 | 17.4 ms | 9.0 ms | 3.46 ms |
+| 32 | 19.0 ms | 10.2 ms | 4.26 ms |
+
+i.e. 2.4-2.9x over the eager step and 4.5-5.7x over HEAD. Same math, so it is run
+plumbing, not part of the recipe. Costs a C++ compiler at runtime — the trainer
+image now installs `g++`; any compile failure falls back to eager, once, with a
+warning — and a one-off compile of 1.5-7 min (one core) per graph: two graphs per
+step signature (a rollout's first step, whose state usually carries no gradient, and
+the rest), a signature being grad mode × frozen rows or not × checkpointed or not.
+The batch is dynamic: traced with `TORCH_LOGS=recompiles`, widths 3, 5, 1 and 9
+share the same two graphs once dynamo's duck sizing is off (left on, it tied the
+batch to any equal-sized dim — 3 to the duodenal channels, 2 to the external inputs —
+and recompiled per width) and per-step inputs have their own storage (views at offset
+t·B made it guard on offsets).
 
 Correctness, against eager on a randomized model: trajectories to 8e-7 (normalized),
 and every parameter's and the embedding's gradient to float rounding — for a single
@@ -164,7 +178,7 @@ checkpointing, and a frozen-weight calibration rollout. One trap found on the wa
 trajectory and the embedding gradient are exact; `aot_eager` and every batch ≥ 2
 graph are correct). So under compilation `integrate` runs a single rollout as two
 identical rows and keeps the first — the twin row carries no gradient and costs
-nothing, and there is one compiled graph per signature instead of two.
+nothing.
 
 ## Where the next order of magnitude is
 

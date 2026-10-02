@@ -530,9 +530,9 @@ class MetabolicModule(MassActionModule):
         liver = self.heads[_LIVER_GLYCOGEN_IDX]
         hepatic = self.heads[_HEPATIC_IDX]
         _, mod_liver_ref = liver.finish(
-            raw[self.bank_position(_LIVER_GLYCOGEN_IDX)][..., :liver.n_out], x[..., 0])
+            raw[self.bank_position(_LIVER_GLYCOGEN_IDX)], x[..., 0])
         mod_gng_ref, _ = hepatic.finish(
-            raw[self.bank_position(_HEPATIC_IDX)][..., :hepatic.n_out], x[..., 0])
+            raw[self.bank_position(_HEPATIC_IDX)], x[..., 0])
         return mod_liver_ref, mod_gng_ref
 
     # ---- the two phases --------------------------------------------------------------

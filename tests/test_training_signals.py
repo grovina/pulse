@@ -181,10 +181,15 @@ class TestColdModelDistillationSignal(unittest.TestCase):
         self.assertTrue(np.isfinite(result.loss_sum))
         self.assertEqual(result.sub_metrics.get("mode"), 2.0)
         self.assertIn("anchor_skips", result.sub_metrics)
-        # Every default distill marker still reports a (combined rate+level) term.
-        from pulse.knowledge.evidence import TEACHER_DISTILL_MARKERS
+        # Every default distill marker still reports a (combined rate+level) term —
+        # except the long-only slow states (iter 99), which are scored on long level
+        # windows alone and this signal configures none.
+        from pulse.knowledge.evidence import TEACHER_DISTILL_LONG_ONLY, TEACHER_DISTILL_MARKERS
         for m in TEACHER_DISTILL_MARKERS:
-            self.assertIn(f"dist_{m}", result.sub_metrics)
+            if m in TEACHER_DISTILL_LONG_ONLY:
+                self.assertNotIn(f"dist_{m}", result.sub_metrics)
+            else:
+                self.assertIn(f"dist_{m}", result.sub_metrics)
         # The level anchor must contribute gradient to the model params (the
         # whole point — rate-only matching is offset-invariant). Backprop and
         # assert at least one param grad is non-zero.

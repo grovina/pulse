@@ -668,7 +668,7 @@ def _model_step(
 # Opt-in ``torch.compile`` of ``_model_step`` (``PULSE_COMPILE_STEP=1`` or
 # ``set_step_compilation(True)``; ``python -m pulse.train --compile-step``). The step
 # is ~600 small ops forward and as many autograd nodes; compiled, they fuse into a
-# handful of kernels each way — ~4-5x per step on CPU (docs/training-efficiency.md).
+# handful of kernels each way — ~2.5-3x per step on CPU (docs/training-efficiency.md).
 # The price is a one-off compile (minutes) per distinct step signature (grad mode,
 # which inputs require grad, frozen rows or not — the batch is dynamic, and a batch
 # of 1 runs as 2, see ``integrate``), and a C++ compiler at runtime. Any failure to
@@ -690,9 +690,13 @@ def _compiled_step():
         return None
     if _STEP_COMPILE["fn"] is None:
         import torch._dynamo
+        import torch.fx.experimental._config as fx_config
 
-        # One graph per step signature; a training run has a few dozen.
+        # A few graphs per step signature; a training run has a few dozen.
         torch._dynamo.config.cache_size_limit = max(torch._dynamo.config.cache_size_limit, 64)
+        # No duck sizing: it ties the batch to any equal-sized dim (a batch of 3 to the
+        # 3 duodenal channels, 2 to the 2 external inputs) and recompiles per width.
+        fx_config.use_duck_shape = False
         _STEP_COMPILE["fn"] = torch.compile(_model_step, dynamic=True)
     return _STEP_COMPILE["fn"]
 
@@ -823,6 +827,10 @@ def integrate(
             activity = activity.expand(2, -1)
         if active_steps is not None:
             active_steps = torch.as_tensor(active_steps, device=device).reshape(-1).expand(2)
+    if isinstance(model, ModularPhysiologyNetwork) and _compiled_step() is not None:
+        # One first-step graph whatever the caller's layout: an expanded initial state
+        # (stride 0) would otherwise compile a graph of its own.
+        initial_state = initial_state.contiguous()
     if gut_outputs is None and meals:
         # Precompute the whole gut window here so BOTH the batched and the
         # single-embedding paths take meal absorption on the window-offset
@@ -853,6 +861,14 @@ def integrate(
     t_abs = ((start.unsqueeze(0) + steps.unsqueeze(1)) % 1440.0).to(torch.float32)  # [T, 1|B]
     sw = _steps_first(sleep_wake, n_steps, batch, "sleep_wake")
     act = _steps_first(activity, n_steps, batch, "activity")
+    compiled = isinstance(model, ModularPhysiologyNetwork) and _compiled_step() is not None
+
+    def per_step_slices(x: torch.Tensor) -> list[torch.Tensor]:
+        """``x[t]`` for every step. Compiled, each slice gets its own storage: views
+        at offset t·B make dynamo guard on the offset and recompile whenever it
+        happens to equal some other size (duck sizing)."""
+        parts = x.unbind(0)
+        return [t.clone() for t in parts] if compiled else list(parts)
 
     def per_step(x: Optional[torch.Tensor], width: int, shared_2d: bool) -> list[torch.Tensor]:
         """[B|1, T, width] (or [T, width] when ``shared_2d``) → T tensors [B, width];
@@ -864,7 +880,7 @@ def integrate(
         if shared_2d and x.dim() == 2:
             x = x.unsqueeze(0)
         x = x[:, :n_steps].expand(batch, n_steps, width).transpose(0, 1).contiguous()
-        return list(x.unbind(0))
+        return per_step_slices(x)
 
     gut_steps = per_step(gut_outputs, GUT_OUTPUT_DIM, shared_2d=False)
     duo_steps = per_step(duo_outputs, DUODENAL_DIM, shared_2d=True)
@@ -872,7 +888,7 @@ def integrate(
     if isinstance(model, ModularPhysiologyNetwork):
         time_feats = compute_time_features(t_abs).expand(n_steps, batch, TIME_FEATURES_DIM)
         const, seq = model.prepare(embedding, time_feats, sw, act)
-        seq_steps: dict[str, dict[str, tuple[torch.Tensor, ...]]] = {}
+        seq_steps: dict[str, dict[str, list[torch.Tensor]]] = {}
         for name, entries in seq.items():
             seq_steps[name] = {}
             for key, value in entries.items():
@@ -881,7 +897,7 @@ def integrate(
                         f"{name}.prepare: seq entry {key!r} has shape {tuple(value.shape)}; "
                         f"expected a leading time axis of {n_steps}",
                     )
-                seq_steps[name][key] = value.unbind(0)
+                seq_steps[name][key] = per_step_slices(value)
         phys_min, phys_max = model._phys_min, model._phys_max
     else:
         phys_min, phys_max = _PHYS_MIN.to(device), _PHYS_MAX.to(device)
@@ -890,7 +906,7 @@ def integrate(
     if active_steps is not None:
         active_steps = torch.as_tensor(active_steps, device=device).reshape(1, batch, 1)
         steps_idx = torch.arange(n_steps, device=device).reshape(n_steps, 1, 1)
-        keep_steps = list((steps_idx + 1 < active_steps).unbind(0))  # [B, 1] per step
+        keep_steps = per_step_slices(steps_idx + 1 < active_steps)  # [B, 1] per step
 
     def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
         keep = keep_steps[step] if keep_steps is not None else None

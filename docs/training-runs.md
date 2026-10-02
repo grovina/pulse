@@ -21,7 +21,7 @@ local.
 Where the time goes and what each lever costs: `docs/training-efficiency.md`.
 In short:
 
-- `--compile-step` — `torch.compile` the integrator's Euler step (~5x per step
+- `--compile-step` — `torch.compile` the integrator's Euler step (~2.5-3x per step
   after a one-off compile of a few minutes per step signature; same math, so it is
   run plumbing, not part of the recipe). Needs a C++ compiler; the trainer image
   ships `g++`.

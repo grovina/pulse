@@ -123,6 +123,11 @@ class MLPHead(nn.Module):
     def finish(
         self, raw: torch.Tensor, state_self: torch.Tensor, **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(prod, cons)`` from the network output ``raw[..., k]``, ``k < n_out``.
+
+        ``raw`` may carry extra trailing columns (the bank pads every head to the
+        widest one); read only your own. Handing over the whole padded row keeps it
+        contiguous, which is what lets a compiled step stay dynamic in the batch."""
         raise NotImplementedError
 
     def forward(
@@ -524,7 +529,7 @@ class MassActionModule(nn.Module):
                 kw = dict(head_kwargs.get(i, {})) if head_kwargs else {}
                 if i in self._stimulus_dyn_idx and kw.get("stimulus") is None:
                     kw["stimulus"] = x[..., self._stimulus_dyn_idx[i]]
-                prod_i, cons_i = head.finish(raw[k][..., :head.n_out], state[..., i], **kw)
+                prod_i, cons_i = head.finish(raw[k], state[..., i], **kw)
                 k += 1
             else:
                 if ones is None:
