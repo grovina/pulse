@@ -114,10 +114,11 @@ def rollout(meals: list[MealEvent], dur: int, activity: float = 0.0) -> np.ndarr
     for v in captured.values():
         v.clear()
     with torch.no_grad():
+        # planned=False: the per-minute forward path, so the head hooks above fire.
         return integrate(model, torch.tensor(NORM_CENTER, dtype=torch.float32), prior_mean,
                          n_steps=dur, dt=1.0, start_time_minutes=360.0, meals=meals,
                          sleep_wake=torch.ones(dur),
-                         activity=torch.full((dur,), activity)).numpy()
+                         activity=torch.full((dur,), activity), planned=False).numpy()
 
 
 # --- 1. the absorbing floor ------------------------------------------------------------

@@ -188,40 +188,55 @@ class CardiovascularModule(LearnedDynamicsModule):
         — the frame SetpointSupervisionSignal compares against."""
         return (self.setpoints_raw(embedding) - self.cvs_norm_center) / self.cvs_norm_scale
 
-    # ---- dynamics -------------------------------------------------------------
+    # ---- dynamics (see base.PhysiologyModule) ------------------------------------
 
-    def forward(
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        k = _CVS_K_MIN + _CVS_K_RANGE * torch.sigmoid(self.log_k)
+        sp = self.setpoints_raw(embedding)
+        hr_sp, hrv_sp, sbp_sp, dbp_sp = sp[..., 0], sp[..., 1], sp[..., 2], sp[..., 3]
+        pp_sp = sbp_sp - dbp_sp
+        return {
+            "k_hr": k[_HR], "k_hrv": k[_HRV], "k_pp": k[_SBP], "k_dbp": k[_DBP],
+            "hr_sp": hr_sp, "hrv_sp": hrv_sp, "dbp_sp": dbp_sp,
+            "log_pp_sp": torch.log(pp_sp),
+        }
+
+    def drives(
+        self,
+        external: torch.Tensor,
+        coupling: torch.Tensor,
+        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        ra = coupling[..., _APPEARANCE_COUPLING_IDX].clamp(min=0.0)
+        return {"meal_hr": _MEAL_HR_GAIN * ra / (ra + _K_RA_NORM)}
+
+    def step(
         self,
         state: torch.Tensor,
         coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
         # Learned autonomic drivers (cortisol/temp/glucose/insulin/activity/
         # circadian) — the MLP still sees UNCENTERED normalized state (the
         # iter-36 frame-consistency fix). Outputs are read as
         # [d_hr (bpm/min), d_loghrv·HRV_c, d_logpp·PP_c, d_dbp (mmHg/min)].
-        driver = super().forward(state, coupling, external, embedding, time_features)
-        k = _CVS_K_MIN + _CVS_K_RANGE * torch.sigmoid(self.log_k)
-        sp = self.setpoints_raw(embedding)
-
-        raw = self.cvs_norm_center + self.cvs_norm_scale * state
-        hr, hrv, sbp, dbp = raw[..., _HR], raw[..., _HRV], raw[..., _SBP], raw[..., _DBP]
+        driver = raw["driver"]
+        raw_s = self.cvs_norm_center + self.cvs_norm_scale * state
+        hr, hrv, sbp, dbp = raw_s[..., _HR], raw_s[..., _HRV], raw_s[..., _SBP], raw_s[..., _DBP]
         pp = sbp - dbp
-        hr_sp, hrv_sp, sbp_sp, dbp_sp = sp[..., 0], sp[..., 1], sp[..., 2], sp[..., 3]
-        pp_sp = sbp_sp - dbp_sp
+        hr_sp = const["hr_sp"]
 
-        ra = coupling[..., _APPEARANCE_COUPLING_IDX].clamp(min=0.0)
-        meal_hr = _MEAL_HR_GAIN * ra / (ra + _K_RA_NORM)
-        rate_hr = driver[..., _HR] - k[_HR] * (hr - hr_sp) + meal_hr
-        rate_dbp = driver[..., _DBP] - k[_DBP] * (dbp - dbp_sp)
+        rate_hr = driver[..., _HR] - const["k_hr"] * (hr - hr_sp) + drv["meal_hr"]
+        rate_dbp = driver[..., _DBP] - const["k_dbp"] * (dbp - const["dbp_sp"])
         # Log-space relaxations, returned as RAW rates (x · d log x / dt).
-        hrv_target = hrv_sp * hr_sp / hr.clamp(min=40.0)
-        dlog_hrv = driver[..., _HRV] / _HRV_CENTER - k[_HRV] * (
+        hrv_target = const["hrv_sp"] * hr_sp / hr.clamp(min=40.0)
+        dlog_hrv = driver[..., _HRV] / _HRV_CENTER - const["k_hrv"] * (
             torch.log(hrv.clamp(min=_LOG_EPS)) - torch.log(hrv_target))
-        dlog_pp = driver[..., _SBP] / _PP_CENTER - k[_SBP] * (
-            torch.log(pp.clamp(min=_LOG_EPS)) - torch.log(pp_sp))
+        dlog_pp = driver[..., _SBP] / _PP_CENTER - const["k_pp"] * (
+            torch.log(pp.clamp(min=_LOG_EPS)) - const["log_pp_sp"])
         rate_hrv = hrv * dlog_hrv
         rate_pp = pp * dlog_pp
         rate_sbp = rate_dbp + rate_pp

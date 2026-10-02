@@ -88,6 +88,8 @@ def _anticipation_drive(hour: torch.Tensor) -> torch.Tensor:
 
 
 class AppetiteModule(MassActionModule):
+    external_inputs = ("sleep_wake",)
+
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__(
             n_species=4,
@@ -122,63 +124,74 @@ class AppetiteModule(MassActionModule):
         return _INSULIN_CENTER * torch.exp(
             _IB_LOG_MAX * torch.tanh(self.insulin_baseline_net(embedding).squeeze(-1)))
 
-    def forward(
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        return {
+            "ib": self.insulin_setpoint_raw(embedding).clamp(min=1e-3),
+            "glp1_prod_scale": self.prod_scale[_GLP1_IDX],
+            "glp1_cons_scale": self.cons_scale[_GLP1_IDX],
+        }
+
+    def drives(
         self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
         external: torch.Tensor,
-        embedding: torch.Tensor,
+        coupling: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        raw = self.raw_state(state)
-        ghr, lep, glp1, ins_slow = (
-            raw[..., _GHRELIN_IDX], raw[..., _LEPTIN_IDX],
-            raw[..., _GLP1_IDX], raw[..., _INSULIN_SLOW_IDX],
-        )
-        ins = (_INSULIN_CENTER + _INSULIN_SCALE * coupling[..., _INS_COUPLING]).clamp(min=1e-3)
-        ib = self.insulin_setpoint_raw(embedding).clamp(min=1e-3)
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        """Duodenal nutrient, the entrained pre-meal drive and leptin's circadian term."""
         duo = (
             coupling[..., _DUO_FAT] + coupling[..., _DUO_PROT] + coupling[..., _DUO_CARB]
         ).clamp(min=0.0)
-        fat = (_FAT_CENTER + _FAT_SCALE * coupling[..., _FAT_MASS_COUPLING]).clamp(min=1.0)
-        ra = coupling[..., _GUT_GLUCOSE].clamp(min=0.0)
-
-        # --- ghrelin: duodenal nutrient ∪ signed insulin, plus anticipatory rise ---
-        ra_norm = duo / (duo + _K_MEAL_GHR)
-        ins_ratio_n = (ins / ib) ** _GHR_INS_N
-        insulin_supp = (ins_ratio_n - 1.0) / (ins_ratio_n + 1.0)
-        meal_supp = 1.0 - (1.0 - insulin_supp) * (1.0 - ra_norm)
         hour = _hour_from_time_features(time_features)
         antic = _anticipation_drive(hour)
-        ghr_prod = (
-            _TYPICALS[_GHRELIN_IDX] * _K_GHR
-            * (1.0 + _GHR_ANTIC_AMP * antic)
-            * (1.0 - _GHR_SUPP_MAX * meal_supp)
+        return {
+            "ra_norm": duo / (duo + _K_MEAL_GHR),
+            # Ghrelin production before the meal suppression multiplies it.
+            "ghr_drive": _TYPICALS[_GHRELIN_IDX] * _K_GHR * (1.0 + _GHR_ANTIC_AMP * antic),
+            "lep_circ": _LEP_CIRC_AMP * torch.cos(2.0 * math.pi * (hour - 2.0) / 24.0),
+            "glp1_duo": _GLP1_DUO_GAIN * (coupling[..., _DUO_FAT] + coupling[..., _DUO_PROT]),
+        }
+
+    def step(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> torch.Tensor:
+        raw_s = self.raw_state(state)
+        ghr, lep, glp1, ins_slow = (
+            raw_s[..., _GHRELIN_IDX], raw_s[..., _LEPTIN_IDX],
+            raw_s[..., _GLP1_IDX], raw_s[..., _INSULIN_SLOW_IDX],
         )
+        ins = (_INSULIN_CENTER + _INSULIN_SCALE * coupling[..., _INS_COUPLING]).clamp(min=1e-3)
+        ib = const["ib"]
+        fat = (_FAT_CENTER + _FAT_SCALE * coupling[..., _FAT_MASS_COUPLING]).clamp(min=1.0)
+
+        # --- ghrelin: duodenal nutrient ∪ signed insulin, plus anticipatory rise ---
+        ins_ratio_n = (ins / ib) ** _GHR_INS_N
+        insulin_supp = (ins_ratio_n - 1.0) / (ins_ratio_n + 1.0)
+        meal_supp = 1.0 - (1.0 - insulin_supp) * (1.0 - drv["ra_norm"])
+        ghr_prod = drv["ghr_drive"] * (1.0 - _GHR_SUPP_MAX * meal_supp)
         d_ghr = ghr_prod - _K_GHR * ghr
 
         # --- insulin_slow: 4 h lag of plasma insulin ---
         d_slow = -_K_INS_SLOW * (ins_slow - ins)
 
         # --- leptin: fat mass + circadian + lagged insulin ---
-        circ = _LEP_CIRC_AMP * torch.cos(2.0 * math.pi * (hour - 2.0) / 24.0)
         lep_ins = _LEP_INS_GAIN * (ins_slow / ib - 1.0)
         lep_target = (
             _TYPICALS[_LEPTIN_IDX] * (fat / _FAT_CENTER) ** _LEP_FAT_GAIN
-            + circ + lep_ins
+            + drv["lep_circ"] + lep_ins
         )
         d_lep = -_K_LEP * (lep - lep_target)
 
         # --- GLP-1: learned meal-gated peak on appearance, plus a small duodenal term ---
-        base_rate = super().forward(state, coupling, external, embedding, time_features)
+        head = self.heads[_GLP1_IDX]
+        prod, cons = head.post(raw[_GLP1_IDX], self.head_stimulus(head, state, coupling))
         d_glp1 = (
-            base_rate[..., _GLP1_IDX]
-            + _GLP1_DUO_GAIN * (coupling[..., _DUO_FAT] + coupling[..., _DUO_PROT])
+            prod * const["glp1_prod_scale"] - cons * const["glp1_cons_scale"] * glp1
+            + drv["glp1_duo"]
         )
-
-        rates = torch.zeros_like(state)
-        rates[..., _GHRELIN_IDX] = d_ghr
-        rates[..., _LEPTIN_IDX] = d_lep
-        rates[..., _GLP1_IDX] = d_glp1
-        rates[..., _INSULIN_SLOW_IDX] = d_slow
-        return rates
+        return torch.stack([d_ghr, d_lep, d_glp1, d_slow], dim=-1)

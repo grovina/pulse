@@ -72,6 +72,8 @@ def _hour_from_time_features(time_features: torch.Tensor) -> torch.Tensor:
 
 
 class StressModule(MassActionModule):
+    external_inputs = ("sleep_wake", "activity")
+
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__(
             n_species=3,
@@ -112,47 +114,59 @@ class StressModule(MassActionModule):
         return _CORT_B * torch.exp(
             _CORT_LOG_MAX * torch.tanh(self.cort_baseline_net(embedding).squeeze(-1)))
 
-    def forward(
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        return {
+            "phase_h": 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1)),
+            "cort_b": self.cort_setpoint_raw(embedding),
+            "fb_amp": nn.functional.softplus(self._fb_raw),
+            "k_crh": torch.exp(self.log_k_crh),
+            "k_acth": torch.exp(self.log_k_acth),
+            "k_cort": torch.exp(self.log_k_cort),
+            "hypo_gain": nn.functional.softplus(self._hypo_raw),
+            "act_gain": nn.functional.softplus(self._act_raw),
+        }
+
+    def drives(
         self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
         external: torch.Tensor,
-        embedding: torch.Tensor,
+        coupling: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        raw = self.raw_state(state)
-        cort = raw[..., _CORTISOL_IDX]
-        acth = raw[..., _ACTH_IDX]
-        crh = raw[..., _CRH_IDX]
-        g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        """The circadian CRH target under sleep suppression, and the activity drive."""
         sw = external[..., 0]
         act = external[..., 1]
         sleep_depth = 1.0 - sw
-
         hour = _hour_from_time_features(time_features)
-        phase_h = 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1))
-        drive = _hpa_drive((hour - phase_h) % 24.0)
+        drive = _hpa_drive((hour - const["phase_h"]) % 24.0)
         sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
-        cort_b = self.cort_setpoint_raw(embedding)
-        fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / cort_b))
-        fb = torch.relu(fb)
-        fb_amp = nn.functional.softplus(self._fb_raw)
         crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
-        crh_target = crh_target * sleep_suppression * (1.0 - fb_amp * fb)
+        return {
+            "crh_target_open_loop": crh_target * sleep_suppression,
+            "act_drive": const["act_gain"] * act,
+        }
 
-        k_crh = torch.exp(self.log_k_crh)
-        k_acth = torch.exp(self.log_k_acth)
-        k_cort = torch.exp(self.log_k_cort)
-        hypo = nn.functional.softplus(self._hypo_raw) * torch.relu(70.0 - g)
-        act_drive = nn.functional.softplus(self._act_raw) * act
+    def step(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> torch.Tensor:
+        raw_s = self.raw_state(state)
+        cort = raw_s[..., _CORTISOL_IDX]
+        acth = raw_s[..., _ACTH_IDX]
+        crh = raw_s[..., _CRH_IDX]
+        g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
 
-        d_crh = -k_crh * (crh - crh_target) + hypo + act_drive
-        d_acth = -k_acth * (acth - _ACTH_PER_CRH * crh)
+        fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / const["cort_b"]))
+        fb = torch.relu(fb)
+        crh_target = drv["crh_target_open_loop"] * (1.0 - const["fb_amp"] * fb)
+        hypo = const["hypo_gain"] * torch.relu(70.0 - g)
+
+        d_crh = -const["k_crh"] * (crh - crh_target) + hypo + drv["act_drive"]
+        d_acth = -const["k_acth"] * (acth - _ACTH_PER_CRH * crh)
         cort_target = (_CORT_PER_ACTH * acth.clamp(min=0.0)).clamp(min=0.5)
-        d_cort = -k_cort * (cort - cort_target)
-
-        rates = torch.zeros_like(state)
-        rates[..., _CORTISOL_IDX] = d_cort
-        rates[..., _ACTH_IDX] = d_acth
-        rates[..., _CRH_IDX] = d_crh
-        return rates
+        d_cort = -const["k_cort"] * (cort - cort_target)
+        return torch.stack([d_cort, d_acth, d_crh], dim=-1)

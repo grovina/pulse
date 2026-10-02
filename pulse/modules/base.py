@@ -13,6 +13,15 @@ Both module types receive:
   - External inputs (sleep/wake, activity — with learned defaults for missing)
   - Module-specific embedding (projected from the global person embedding)
   - Time features
+
+THE RATE IS SPLIT BY WHAT IT DEPENDS ON (see ``PhysiologyModule``). A module's
+rate is a function of the patient (embedding), of the protocol (time of day,
+sleep/activity, the gut and duodenal absorption clocks) and of the ODE state.
+Only the last changes inside an integration, so ``model.integrate`` evaluates
+the first two once per rollout and calls ``step`` per minute, and every MLP
+head of every module runs as one fused three-layer network per step
+(``model._HeadBank``). ``forward`` composes the same pieces for a single time
+point, so there is one implementation of the physiology, not two.
 """
 
 import math
@@ -74,7 +83,12 @@ class SpeciesHead(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        raw = self.network(x)
+        return self.post(self.network(x))
+
+    def post(
+        self, raw: torch.Tensor, stimulus: Optional[torch.Tensor] = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(prod, cons)`` from the network's raw output (see ``PhysiologyModule``)."""
         if self.emit_prod:
             prod = nn.functional.softplus(raw[..., 0])
             cons = nn.functional.softplus(raw[..., 1])
@@ -210,8 +224,15 @@ class BasalPlusGatedPeakHead(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if stimulus is None:
             stimulus = x[..., self.stimulus_idx]
+        return self.post(self.network(x), stimulus)
+
+    def post(
+        self, raw: torch.Tensor, stimulus: Optional[torch.Tensor] = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(prod, cons)`` from the network's raw output and the gate's stimulus."""
+        if stimulus is None:
+            raise ValueError("BasalPlusGatedPeakHead.post needs its stimulus")
         gate = torch.sigmoid(self.gate_dir * (stimulus - self.g_thresh) / gate_temp(self.log_g_temp))
-        raw = self.network(x)
         basal = nn.functional.softplus(raw[..., 0])
         peak = nn.functional.softplus(raw[..., 1])
         cons = nn.functional.softplus(raw[..., 2])
@@ -221,8 +242,123 @@ class BasalPlusGatedPeakHead(nn.Module):
 
 HeadFactory = Callable[[int, int], nn.Module]
 
+# Where one column of a module's MLP head input comes from: ("state", j) the
+# module's own marker j, ("coupling", c) its coupling channel c, ("external", e)
+# its external channel e, ("embedding", j) its embedding projection, ("time", j)
+# the time features. ``model._HeadBank`` reads this to fuse every head.
+InputSource = tuple[str, int]
 
-class MassActionModule(nn.Module):
+
+class PhysiologyModule(nn.Module):
+    """A module's rate, split by what each part depends on.
+
+    * ``constants(embedding)`` — the PATIENT: per-patient setpoints and the
+      transforms of population parameters. Depends on nothing else.
+    * ``drives(external, coupling, time_features, const)`` — the PROTOCOL: time-of-
+      day drives, sleep/activity terms and anything computed from the gut and
+      duodenal absorption channels. It may read only those exogenous coupling
+      channels; the integrator hands it the whole window at once with every ODE-
+      marker channel set to NaN, so reading one is a loud error, not a silent one.
+    * ``step(state, coupling, const, drv, raw)`` — the STATE: everything that
+      moves with the ODE. ``raw`` maps each MLP head (``mlp_heads``) to its
+      network's raw output; the head's own ``post`` turns it into fluxes.
+
+    ``forward`` (one time point, the historical API) composes the three, so the
+    pointwise rate and the integrator's rate are the same code.
+
+    Shapes: ``constants`` returns tensors with the embedding's leading batch shape,
+    or no batch dimension at all for a parameter-only quantity; ``drives`` and
+    ``step`` broadcast their inputs against those.
+    """
+
+    #: Names of the external channels this module reads, in input order.
+    external_inputs: tuple[str, ...] = ("activity", "sleep_wake")
+
+    n_state: int
+    n_coupling: int
+    embedding_dim: int
+
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        return {}
+
+    def drives(
+        self,
+        external: torch.Tensor,
+        coupling: torch.Tensor,
+        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        return {}
+
+    def mlp_heads(self) -> dict[object, nn.Sequential]:
+        """Every Linear-Tanh-Linear-Tanh-Linear network this module evaluates, by key."""
+        return {}
+
+    def head_state_columns(self) -> list[int]:
+        """The module's own markers fed to its MLP heads (default: all of them)."""
+        return list(range(self.n_state))
+
+    def head_input(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> torch.Tensor:
+        cols = self.head_state_columns()
+        own = state if len(cols) == self.n_state else state[..., cols]
+        return torch.cat([own, coupling, external, embedding, time_features], dim=-1)
+
+    def head_input_sources(self) -> list[InputSource]:
+        """Column-by-column provenance of ``head_input`` (same order)."""
+        return (
+            [("state", j) for j in self.head_state_columns()]
+            + [("coupling", c) for c in range(self.n_coupling)]
+            + [("external", e) for e in range(len(self.external_inputs))]
+            + [("embedding", j) for j in range(self.embedding_dim)]
+            + [("time", j) for j in range(TIME_FEATURES_DIM)]
+        )
+
+    def head_outputs(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> dict[object, torch.Tensor]:
+        nets = self.mlp_heads()
+        if not nets:
+            return {}
+        x = self.head_input(state, coupling, external, embedding, time_features)
+        return {key: net(x) for key, net in nets.items()}
+
+    def step(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> torch.Tensor:
+        raise NotImplementedError
+
+    def forward(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+    ) -> torch.Tensor:
+        const = self.constants(embedding)
+        drv = self.drives(external, coupling, time_features, const)
+        raw = self.head_outputs(state, coupling, external, embedding, time_features)
+        return self.step(state, coupling, const, drv, raw)
+
+
+class MassActionModule(PhysiologyModule):
     """Module for chemical species with mass-action kinetics.
 
     rate_i = production_i - consumption_i × concentration_i
@@ -297,7 +433,14 @@ class MassActionModule(nn.Module):
     ):
         super().__init__()
         self.n_species = n_species
+        self.n_state = n_species
         self.n_coupling = n_coupling
+        self.embedding_dim = embedding_dim
+        if len(self.external_inputs) != n_external:
+            raise ValueError(
+                f"{type(self).__name__}: n_external={n_external} but external_inputs="
+                f"{self.external_inputs}",
+            )
 
         input_dim = n_species + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
         self._input_dim = input_dim
@@ -329,16 +472,56 @@ class MassActionModule(nn.Module):
         self.register_buffer("norm_scale_val", torch.tensor(norm_scales, dtype=torch.float32))
         self.register_buffer("raw_floor", torch.tensor(raw_floors, dtype=torch.float32))
 
-    def forward(
+    def mlp_heads(self) -> dict[object, nn.Sequential]:
+        return {
+            i: head.network for i, head in enumerate(self.heads)
+            if isinstance(getattr(head, "network", None), nn.Sequential)
+        }
+
+    def head_stimulus(
+        self, head: nn.Module, state: torch.Tensor, coupling: torch.Tensor,
+    ) -> Optional[torch.Tensor]:
+        """The input column a gated head reads as its stimulus (``stimulus_idx`` into
+        ``head_input``), resolved from the state or coupling block it lies in."""
+        idx = getattr(head, "stimulus_idx", None)
+        if idx is None:
+            return None
+        cols = self.head_state_columns()
+        if idx < len(cols):
+            return state[..., cols[idx]]
+        if idx < len(cols) + self.n_coupling:
+            return coupling[..., idx - len(cols)]
+        raise ValueError(
+            f"{type(head).__name__}.stimulus_idx={idx} is not a state or coupling column",
+        )
+
+    def head_fluxes(
+        self,
+        raw: dict[object, torch.Tensor],
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Per-species ``(prod, cons)`` from the heads' raw network outputs."""
+        prods: list[torch.Tensor] = []
+        conss: list[torch.Tensor] = []
+        for i, head in enumerate(self.heads):
+            if i in raw:
+                prod_i, cons_i = head.post(raw[i], self.head_stimulus(head, state, coupling))
+            else:
+                prod_i, cons_i = head(None, state[..., i])
+            prods.append(prod_i)
+            conss.append(cons_i)
+        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+
+    def step(
         self,
         state: torch.Tensor,
         coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
-        prod, cons = self.species_fluxes(
-            state, coupling, external, embedding, time_features)
+        prod, cons = self.head_fluxes(raw, state, coupling)
         return prod * self.prod_scale - cons * self.cons_scale * self.raw_state(state)
 
     def raw_state(self, state: torch.Tensor) -> torch.Tensor:
@@ -364,19 +547,12 @@ class MassActionModule(nn.Module):
         Split out of ``forward`` (iter 94) so a subclass can build a species' rate
         from the raw head fluxes instead of from ``prod·prod_scale −
         cons·cons_scale·state``, without paying for a second pass over every head.
-        The mass-action assembly stays in ``forward`` and is unchanged.
         """
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        prods: list[torch.Tensor] = []
-        conss: list[torch.Tensor] = []
-        for i, head in enumerate(self.heads):
-            prod_i, cons_i = head(x, state[..., i])
-            prods.append(prod_i)
-            conss.append(cons_i)
-        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+        raw = self.head_outputs(state, coupling, external, embedding, time_features)
+        return self.head_fluxes(raw, state, coupling)
 
 
-class LearnedDynamicsModule(nn.Module):
+class LearnedDynamicsModule(PhysiologyModule):
     """Module for vital signs with fully learned dynamics.
 
     No imposed equation — the network directly outputs rates of change.
@@ -394,6 +570,12 @@ class LearnedDynamicsModule(nn.Module):
         super().__init__()
         self.n_state = n_state
         self.n_coupling = n_coupling
+        self.embedding_dim = embedding_dim
+        if len(self.external_inputs) != n_external:
+            raise ValueError(
+                f"{type(self).__name__}: n_external={n_external} but external_inputs="
+                f"{self.external_inputs}",
+            )
 
         input_dim = n_state + n_coupling + n_external + embedding_dim + TIME_FEATURES_DIM
 
@@ -416,16 +598,19 @@ class LearnedDynamicsModule(nn.Module):
             self.network[-1].weight.zero_()
             self.network[-1].bias.zero_()
 
-    def forward(
+    def mlp_heads(self) -> dict[object, nn.Sequential]:
+        return {"driver": self.network}
+
+    def step(
         self,
         state: torch.Tensor,
         coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        return self.network(x)
+        """The bare learned driver; subclasses add their restoring structure."""
+        return raw["driver"]
 
 
 class GutModuleBase(nn.Module):

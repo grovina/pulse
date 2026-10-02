@@ -31,15 +31,18 @@ def test_level_anchor_rollouts_carry_the_duodenal_stimulus() -> None:
     proto = sig._protocols[0]  # standard_3meal
     model = ModularPhysiologyNetwork().eval()
     seen: list[float] = []
-    h = model.hepatobiliary.register_forward_hook(
-        lambda m, a, o: seen.append(float(a[1].detach().abs().max())),
-    )
-    try:
-        with torch.no_grad():
-            sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
-                             rng=np.random.default_rng(0))
-    finally:
-        h.remove()
+    step = model.hepatobiliary.step
+
+    # Every rate evaluation — planned rollout or pointwise forward — goes through
+    # the module's ``step``; its coupling carries the duodenal (fat, protein) drive.
+    def spy(state, coupling, *args, **kwargs):
+        seen.append(float(coupling.detach().abs().max()))
+        return step(state, coupling, *args, **kwargs)
+
+    model.hepatobiliary.step = spy
+    with torch.no_grad():
+        sig._level_terms(model, proto, torch.zeros(EMBEDDING_DIM), torch.device("cpu"),
+                         rng=np.random.default_rng(0))
     # Review 4.7 measured max |duodenal| = 0.0000 across every level window.
     assert max(seen) > 0.0
 
@@ -71,7 +74,9 @@ def test_level_window_starts_are_jittered_per_epoch() -> None:
     real = mod.integrate
 
     def spy(model_, init, emb, w, **kw):
-        starts_seen.append(int(kw["start_time_minutes"]))
+        # Iter 108: the windows of one length roll as one batched call, one start each.
+        starts = torch.as_tensor(kw["start_time_minutes"]).reshape(-1)
+        starts_seen.extend(int(s) for s in starts.tolist())
         return real(model_, init, emb, w, **kw)
 
     mod.integrate = spy

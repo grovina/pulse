@@ -388,7 +388,10 @@ class GlucoseStimulatedInsulinHead(nn.Module):
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         del state_self
-        raw = self.network(x).squeeze(-1)
+        return self.post(self.network(x))
+
+    def post(self, raw: torch.Tensor, stimulus=None) -> tuple[torch.Tensor, torch.Tensor]:
+        raw = raw.squeeze(-1)
         mod = torch.exp(raw.clamp(-3.0, 4.0))
         return mod, torch.ones_like(raw)
 
@@ -425,7 +428,9 @@ class GlycogenFluxHead(nn.Module):
         self.init_store_logit = float(init_store_logit)
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        raw = self.network(x)
+        return self.post(self.network(x))
+
+    def post(self, raw: torch.Tensor, stimulus=None) -> tuple[torch.Tensor, torch.Tensor]:
         store_logit = raw[..., 0] + self.init_store_logit
         if self.emit_breakdown:
             break_mod = nn.functional.softplus(raw[..., 1])
@@ -566,80 +571,108 @@ class MetabolicModule(MassActionModule):
 
     # ---- heads -----------------------------------------------------------------------
 
-    @staticmethod
-    def _head_input(state, coupling, external, embedding, time_features):
-        x = torch.cat([state, coupling, external, embedding, time_features], dim=-1)
-        x_no_mito = torch.cat([x[..., :_MITO_IDX], x[..., _MITO_IDX + 1:]], dim=-1)
-        return x, x_no_mito
+    def head_state_columns(self) -> list[int]:
+        """Iter 97 (3.11): no head reads ``mitochondrial_capacity`` — it has one role,
+        the lactate clearance scale — so every head's input drops that column."""
+        return [i for i in range(_N_SPECIES) if i != _MITO_IDX]
 
-    def species_fluxes(
-        self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Per-species head outputs. Glucose, insulin, glucagon, FFA, BHB,
-        insulin action, mito and fat mass have structural rates and do not
-        read these outputs."""
-        x, x_no_mito = self._head_input(state, coupling, external, embedding, time_features)
-        prods: list[torch.Tensor] = []
-        conss: list[torch.Tensor] = []
-        for i, head in enumerate(self.heads):
-            xi = x if i == _MITO_IDX else x_no_mito
-            p, c = head(xi, state[..., i])
-            prods.append(p)
-            conss.append(c)
-        return torch.stack(prods, dim=-1), torch.stack(conss, dim=-1)
+    # ---- the rate, split by what it depends on (see base.PhysiologyModule) ------------
 
-    # ---- fluxes ----------------------------------------------------------------------
-
-    def fluxes(
-        self,
-        state: torch.Tensor,
-        coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
-    ) -> dict[str, torch.Tensor]:
-        """Every named term of the metabolic ODE, in raw units (mg/dL/min of glucose
-        space; g/min for the pools). ``forward`` assembles the rates from these; the
-        carbon-budget test and the probes read them directly."""
-        relu = nn.functional.relu
-        raw = self.raw_state(state)
-        g = raw[..., _GLUCOSE_IDX]
-        ins = raw[..., _INSULIN_IDX]
-        gn = raw[..., _GLUCAGON_IDX]
-        ffa = raw[..., _FFA_IDX]
-        bhb = raw[..., _BHB_IDX]
-        hep = raw[..., _HEPATIC_IDX]
-        lgly = raw[..., _LIVER_GLYCOGEN_IDX]
-        mgly = raw[..., _MUSCLE_GLYCOGEN_IDX]
-        mito = raw[..., _MITO_IDX]
-        xa = raw[..., _INSULIN_ACTION_IDX]
-        cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
-        glp1 = (_GLP1_CENTER + _GLP1_SCALE * coupling[..., _GLP1_COUPLING_IDX]).clamp(min=0.1)
-        act = external[..., _ACTIVITY_EXTERNAL_IDX]
-
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Per-patient setpoints and the population scalars of the balance."""
         gb = self.glucose_setpoint_raw(embedding)
         ib = self.insulin_setpoint_raw(embedding)
         ra = self.appearance_gain(embedding)
-        mg = self.mg_dl_per_g(embedding)
         mass_kg = self.body_mass_kg(embedding)
+        mg = 1000.0 / (mass_kg * VG_DL_PER_KG)
         ffa_b = self.ffa_setpoint_raw(embedding)
         gn_b = self.gn_setpoint_raw(embedding)
         mito_sp = self.mito_setpoint_raw(embedding)
+        k_ii = self.k_ii()
+        ic50_keto = nn.functional.softplus(self.log_keto_ins_supp)
+        k_keto = nn.functional.softplus(self.log_k_keto)
+        k_ffa = ffa_b.new_tensor(_K_FFA)
+        ic50_lip = nn.functional.softplus(self.log_lip_ic50)
+        return {
+            "gb": gb, "ib": ib, "ra": ra, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
+            "ffa_b": ffa_b, "gn_b": gn_b, "mito_sp": mito_sp,
+            "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": torch.sigmoid(self.logit_f_gng),
+            "glyc_k": nn.functional.softplus(self.log_glyc_ins_k),
+            "gng_k": nn.functional.softplus(self.log_gng_ins_k),
+            "si": _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si),
+            "k_act": _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act),
+            "k_ins": nn.functional.softplus(self.log_k_ins),
+            "gamma": nn.functional.softplus(self.log_gamma),
+            "p2": _P2_MIN + _P2_RANGE * torch.sigmoid(self.log_p2),
+            "ic50_keto": ic50_keto, "k_keto": k_keto,
+            "k_bhb": (k_keto * ffa_b / (1.0 + ib / ic50_keto)) / _BHB_CENTER,
+            "k_gn": nn.functional.softplus(self.log_k_gn),
+            "alpha_gn": nn.functional.softplus(self.log_alpha_gn),
+            "gn_ins": nn.functional.softplus(self.log_gn_ins),
+            "k_ffa": k_ffa, "ic50_lip": ic50_lip,
+            "lip_max": ffa_b * k_ffa * (1.0 + ib / ic50_lip),
+            "lac_prod_scale": self.prod_scale[_LACTATE_IDX],
+            "lac_cons_scale": self.cons_scale[_LACTATE_IDX],
+            "hep_cons_scale": self.cons_scale[_HEPATIC_IDX],
+        }
+
+    def drives(
+        self,
+        external: torch.Tensor,
+        coupling: torch.Tensor,
+        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        """Meal appearance, the energy ledger and the activity terms — the protocol."""
+        relu = nn.functional.relu
+        act = external[..., _ACTIVITY_EXTERNAL_IDX]
+        # Gut glucose appearance is in the 70 kg reference space. Grams are that
+        # density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
+        app_g = const["ra"] * coupling[..., _GUT_GLUCOSE_COUPLING_IDX] / MG_DL_PER_G
+        lipid_app = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0)
+        amino_app = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0)
+        lipid_g = lipid_app / _LIPID_UNITS_PER_G
+        amino_g = amino_app / _LIPID_UNITS_PER_G
+        kcal_in = 4.0 * app_g + 9.0 * lipid_g + 4.0 * amino_g
+        kcal_out = _BMR_KCAL_PER_MIN * (const["body_mass_kg"] / BODY_MASS_KG) + _ACT_KCAL_PER_MIN * act
+        return {
+            "app_g": app_g,
+            "app_eff": app_g * const["mg_dl_per_g"],
+            "act_above_rest": relu(act - _MUSCLE_ACT_REST),
+            "exercise_gain": const["k_act"] * act,
+            "fat_rate": (kcal_in - kcal_out) / _KCAL_PER_KG_FAT,
+            "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
+            "glucagon_from_amino": _GN_FROM_AMINO * amino_app,
+            "mito_training": _MITO_TRAIN_GAIN * relu(act - 0.2),
+        }
+
+    def state_fluxes(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        c: dict[str, torch.Tensor],
+        d: dict[str, torch.Tensor],
+        raw_heads: dict[object, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        """Every state-dependent term of the metabolic ODE, in raw units (mg/dL/min of
+        glucose space; g/min for the pools)."""
+        relu = torch.relu
+        (g, ins, gn, ffa, bhb, lac, hep, lgly, mgly, mito, xa, _fat) = self.raw_state(state).unbind(-1)
+        cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
+        glp1 = (_GLP1_CENTER + _GLP1_SCALE * coupling[..., _GLP1_COUPLING_IDX]).clamp(min=0.1)
+        gb, ib, mg = c["gb"], c["ib"], c["mg_dl_per_g"]
+        k_ii, egp_b, f_gng = c["k_ii"], c["egp_b"], c["f_gng"]
+        app_g = d["app_g"]
+
+        gsir_mod, _ = self.heads[_INSULIN_IDX].post(raw_heads[_INSULIN_IDX])
+        lac_prod, lac_cons = self.heads[_LACTATE_IDX].post(raw_heads[_LACTATE_IDX])
+        _, hep_cons = self.heads[_HEPATIC_IDX].post(raw_heads[_HEPATIC_IDX])
+        store_logit, muscle_break = self.heads[_MUSCLE_GLYCOGEN_IDX].post(
+            raw_heads[_MUSCLE_GLYCOGEN_IDX])
+
         glucose_dev = (g - gb) / _GLUCOSE_NORM_SCALE
         insulin_dev = (ins - ib) / _INSULIN_NORM_SCALE
 
-        prod_raw, cons_raw = self.species_fluxes(
-            state, coupling, external, embedding, time_features)
-
-        # Gut glucose appearance is in the 70 kg reference space. Grams are that
-        # density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
-        app_g = ra * coupling[..., _GUT_GLUCOSE_COUPLING_IDX] / MG_DL_PER_G
-        app_eff = app_g * mg
         fill_l = torch.sigmoid(
             (_GLY_CAPACITY_FRAC * _LIVER_GLY_CENTER - lgly) / (_GLY_FILL_WIDTH_FRAC * _LIVER_GLY_CENTER))
         fill_m = torch.sigmoid(
@@ -647,23 +680,18 @@ class MetabolicModule(MassActionModule):
         ins_excess = relu(ins - ib)
         ins_drive = ins_excess / (ins_excess + ib.clamp(min=1e-3))
         f_liver = _LIVER_DIRECT_FRAC * (0.5 + 0.5 * ins_drive) * fill_l
-        muscle_share = torch.sigmoid(prod_raw[..., _MUSCLE_GLYCOGEN_IDX]) * fill_m
+        muscle_share = torch.sigmoid(store_logit) * fill_m
         f_muscle = muscle_share * (1.0 - f_liver)
         f_plasma = 1.0 - f_liver - f_muscle
         syn_liver = f_liver * app_g
         syn_muscle_oral = f_muscle * app_g
-        appearance_plasma = app_eff * f_plasma
+        appearance_plasma = d["app_eff"] * f_plasma
 
-        k_ii = self.k_ii()
-        egp_b = k_ii * gb
-        f_gng = torch.sigmoid(self.logit_f_gng)
-        glyc_k = nn.functional.softplus(self.log_glyc_ins_k)
-        gng_k = nn.functional.softplus(self.log_gng_ins_k)
-        g_ins_glyco = _ins_gate(ins, ib, glyc_k, _GLYC_INS_N)
-        g_ins_gng = _ins_gate(ins, ib, gng_k, _GNG_INS_N)
-        g_gn = _hill_centred(gn, gn_b, _HGO_GN_N)
+        g_ins_glyco = _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N)
+        g_ins_gng = _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N)
+        g_gn = _hill_centred(gn, c["gn_b"], _HGO_GN_N)
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
-        g_ffa = (ffa.clamp(min=1e-3) / ffa_b) ** _GNG_FFA_EXP
+        g_ffa = (ffa.clamp(min=1e-3) / c["ffa_b"]) ** _GNG_FFA_EXP
         g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M
         glycogenolysis_plasma = ((1.0 - f_gng) * egp_b * (lgly / _LIVER_GLY_CENTER)
                                  * g_ins_glyco * g_gn * g_g)
@@ -674,74 +702,53 @@ class MetabolicModule(MassActionModule):
         brk_liver = glycogenolysis_plasma / mg
 
         avail_m = mgly / (mgly + _MUSCLE_GLY_K)
-        brk_muscle = (_MUSCLE_GLY_FLUX * cons_raw[..., _MUSCLE_GLYCOGEN_IDX]
-                      * relu(act - _MUSCLE_ACT_REST) * avail_m)
+        brk_muscle = _MUSCLE_GLY_FLUX * muscle_break * d["act_above_rest"] * avail_m
 
-        si = _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si)
         uptake_ii = k_ii * g
-        x_eff = torch.maximum(si * xa, -_INS_DEP_BASAL_FRAC * k_ii)
+        x_eff = torch.maximum(c["si"] * xa, -_INS_DEP_BASAL_FRAC * k_ii)
         uptake_id = x_eff * g
-        k_act = _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act)
-        exercise_uptake = k_act * act * relu(g - 0.8 * gb)
+        exercise_uptake = d["exercise_gain"] * relu(g - 0.8 * gb)
         syn_muscle_id = _ID_STORE_FRAC * relu(uptake_id) / mg * fill_m
         syn_muscle = syn_muscle_oral + syn_muscle_id
 
         glp1_excess = relu(glp1 - _GLP1_CENTER)
         incretin = 1.0 + _INCRETIN_GAIN * glp1_excess / (glp1_excess + _K_INCRETIN)
-        k_ins = nn.functional.softplus(self.log_k_ins)
-        gamma = nn.functional.softplus(self.log_gamma)
         glucose_ratio = torch.minimum(g / gb.clamp(min=1.0), torch.ones_like(g))
         effective_ib = ib * torch.clamp(glucose_ratio ** _FAST_INS_EXP, min=_FAST_INS_FLOOR)
-        gsir_mod = prod_raw[..., _INSULIN_IDX]
-        ins_gsir = gamma * gsir_mod * relu(g - gb) * incretin
-        ins_restoring = -k_ins * (ins - effective_ib)
+        ins_gsir = c["gamma"] * gsir_mod * relu(g - gb) * incretin
+        ins_restoring = -c["k_ins"] * (ins - effective_ib)
         ins_rate = ins_restoring + ins_gsir
-        p2 = _P2_MIN + _P2_RANGE * torch.sigmoid(self.log_p2)
-        xa_rate = p2 * (insulin_dev - xa)
+        xa_rate = c["p2"] * (insulin_dev - xa)
 
         hep_target = (glycogenolysis_plasma + gng_plasma) * VG_DL_PER_KG
-        hep_rate = cons_raw[..., _HEPATIC_IDX] * self.cons_scale[_HEPATIC_IDX] * (hep_target - hep)
+        hep_rate = hep_cons * c["hep_cons_scale"] * (hep_target - hep)
 
-        ic50_keto = nn.functional.softplus(self.log_keto_ins_supp)
-        k_keto = nn.functional.softplus(self.log_k_keto)
         glyco_depletion = relu(1.0 - lgly / _LIVER_GLY_CENTER)
-        ketogenesis = (k_keto * ffa / (1.0 + ins / ic50_keto)
+        ketogenesis = (c["k_keto"] * ffa / (1.0 + ins / c["ic50_keto"])
                        * (1.0 + _KETO_GLYC_GAIN * glyco_depletion))
-        k_bhb = (k_keto * ffa_b / (1.0 + ib / ic50_keto)) / _BHB_CENTER
-        bhb_rate = ketogenesis - k_bhb * bhb
+        bhb_rate = ketogenesis - c["k_bhb"] * bhb
 
-        lipid_app = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0)
-        amino_app = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0)
-        lipid_g = lipid_app / _LIPID_UNITS_PER_G
-        amino_g = amino_app / _LIPID_UNITS_PER_G
-        kcal_in = 4.0 * app_g + 9.0 * lipid_g + 4.0 * amino_g
-        kcal_out = _BMR_KCAL_PER_MIN * (mass_kg / BODY_MASS_KG) + _ACT_KCAL_PER_MIN * act
-        fat_rate = (kcal_in - kcal_out) / _KCAL_PER_KG_FAT
-        ffa_from_lipid = _FFA_FROM_LIPID * lipid_app
-        glucagon_from_amino = _GN_FROM_AMINO * amino_app
-        k_gn = nn.functional.softplus(self.log_k_gn)
-        alpha_gn = nn.functional.softplus(self.log_alpha_gn)
-        gn_ins = nn.functional.softplus(self.log_gn_ins)
-        glucagon_stim = alpha_gn * relu(gb - g) / gb.clamp(min=1.0)
-        glucagon_supp = gn_ins * (ins - ib) / (ib + _GN_INS_OFFSET)
-        glucagon_restoring = -k_gn * (gn - gn_b)
-        gn_rate = glucagon_restoring + glucagon_stim - glucagon_supp + glucagon_from_amino
-        k_ffa = ffa.new_tensor(_K_FFA)
-        ic50_lip = nn.functional.softplus(self.log_lip_ic50)
-        lip_max = ffa_b * k_ffa * (1.0 + ib / ic50_lip)
-        lipolysis = lip_max / (1.0 + ins / ic50_lip)
-        ffa_rate = lipolysis - k_ffa * ffa + ffa_from_lipid
+        glucagon_stim = c["alpha_gn"] * relu(gb - g) / gb.clamp(min=1.0)
+        glucagon_supp = c["gn_ins"] * (ins - ib) / (ib + _GN_INS_OFFSET)
+        glucagon_restoring = -c["k_gn"] * (gn - c["gn_b"])
+        gn_rate = glucagon_restoring + glucagon_stim - glucagon_supp + d["glucagon_from_amino"]
+        lipolysis = c["lip_max"] / (1.0 + ins / c["ic50_lip"])
+        ffa_rate = lipolysis - c["k_ffa"] * ffa + d["ffa_from_lipid"]
 
-        mito_rate = -_K_MITO * (mito - mito_sp) + _MITO_TRAIN_GAIN * relu(act - 0.2)
+        mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]
         lactate_from_glyco = _LAC_GLYCO_GAIN * brk_muscle
+        lac_rate = (lac_prod * c["lac_prod_scale"]
+                    - lac_cons * c["lac_cons_scale"] * mito * lac
+                    + lactate_from_glyco)
+        glucose_rate = (appearance_plasma + glycogenolysis_plasma + gng_released
+                        - uptake_ii - uptake_id - exercise_uptake)
+        liver_rate = syn_liver + gng_divert / mg - brk_liver
+        muscle_rate = syn_muscle - brk_muscle
 
         return {
-            "gb": gb, "ib": ib, "ra": ra, "egp_b": egp_b, "k_ii": k_ii, "f_gng": f_gng,
-            "mg_dl_per_g": mg, "body_mass_kg": mass_kg, "ffa_b": ffa_b, "gn_b": gn_b,
             "glucose_dev": glucose_dev, "insulin_dev": insulin_dev,
-            "effective_ib": effective_ib, "incretin": incretin, "k_ins": k_ins, "gamma": gamma,
-            "prod_raw": prod_raw, "cons_raw": cons_raw, "mito": mito,
-            "app_eff": app_eff, "app_g": app_g,
+            "effective_ib": effective_ib, "incretin": incretin,
+            "mito": mito, "gsir_mod": gsir_mod, "muscle_store_logit": store_logit,
             "f_liver": f_liver, "f_muscle": f_muscle, "f_plasma": f_plasma,
             "ins_drive": ins_drive,
             "syn_liver": syn_liver, "syn_muscle": syn_muscle, "syn_muscle_id": syn_muscle_id,
@@ -756,49 +763,43 @@ class MetabolicModule(MassActionModule):
             "ins_gsir": ins_gsir, "ins_restoring": ins_restoring, "ins_rate": ins_rate,
             "xa": xa, "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis, "glyco_depletion": glyco_depletion,
-            "k_bhb": k_bhb, "k_keto": k_keto, "ic50_keto": ic50_keto,
-            "bhb_rate": bhb_rate, "fat_rate": fat_rate, "mito_rate": mito_rate,
-            "lactate_from_glyco": lactate_from_glyco, "mito_sp": mito_sp,
-            "ffa_from_lipid": ffa_from_lipid, "glucagon_from_amino": glucagon_from_amino,
-            "k_gn": k_gn, "alpha_gn": alpha_gn, "gn_ins": gn_ins,
+            "bhb_rate": bhb_rate, "mito_rate": mito_rate,
+            "lactate_from_glyco": lactate_from_glyco, "lactate_rate": lac_rate,
             "glucagon_stim": glucagon_stim, "glucagon_supp": glucagon_supp,
             "glucagon_restoring": glucagon_restoring, "gn_rate": gn_rate,
-            "lipolysis": lipolysis, "lip_max": lip_max, "k_ffa": k_ffa, "ic50_lip": ic50_lip,
-            "ffa_rate": ffa_rate,
+            "lipolysis": lipolysis, "ffa_rate": ffa_rate,
+            "glucose_rate": glucose_rate, "liver_glycogen_rate": liver_rate,
+            "muscle_glycogen_rate": muscle_rate,
         }
 
-    def forward(
+    def step(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> torch.Tensor:
+        f = self.state_fluxes(state, coupling, const, drv, raw)
+        return torch.stack([
+            f["glucose_rate"], f["ins_rate"], f["gn_rate"], f["ffa_rate"], f["bhb_rate"],
+            f["lactate_rate"], f["hep_rate"], f["liver_glycogen_rate"],
+            f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], drv["fat_rate"],
+        ], dim=-1)
+
+    def fluxes(
         self,
         state: torch.Tensor,
         coupling: torch.Tensor,
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-    ) -> torch.Tensor:
-        f = self.fluxes(state, coupling, external, embedding, time_features)
-        prod_raw, cons_raw, mito = f["prod_raw"], f["cons_raw"], f["mito"]
-        raw = self.raw_state(state)
-        rates = prod_raw * self.prod_scale - cons_raw * self.cons_scale * raw
-        out = rates.clone()
-        out[..., _LACTATE_IDX] = (
-            prod_raw[..., _LACTATE_IDX] * self.prod_scale[_LACTATE_IDX]
-            - cons_raw[..., _LACTATE_IDX] * self.cons_scale[_LACTATE_IDX] * mito * raw[..., _LACTATE_IDX]
-            + f["lactate_from_glyco"]
-        )
-        out[..., _FFA_IDX] = f["ffa_rate"]
-        out[..., _GLUCAGON_IDX] = f["gn_rate"]
-        out[..., _BHB_IDX] = f["bhb_rate"]
-        out[..., _GLUCOSE_IDX] = (
-            f["appearance_plasma"] + f["glycogenolysis_plasma"] + f["gng_released"]
-            - f["uptake_ii"] - f["uptake_id"] - f["exercise_uptake"]
-        )
-        out[..., _INSULIN_IDX] = f["ins_rate"]
-        out[..., _INSULIN_ACTION_IDX] = f["xa_rate"]
-        out[..., _HEPATIC_IDX] = f["hep_rate"]
-        out[..., _LIVER_GLYCOGEN_IDX] = (
-            f["syn_liver"] + f["gng_divert"] / f["mg_dl_per_g"] - f["brk_liver"]
-        )
-        out[..., _MUSCLE_GLYCOGEN_IDX] = f["syn_muscle"] - f["brk_muscle"]
-        out[..., _MITO_IDX] = f["mito_rate"]
-        out[..., _FAT_MASS_IDX] = f["fat_rate"]
-        return out
+    ) -> dict[str, torch.Tensor]:
+        """Every named term of the metabolic ODE at one time point — the patient's
+        constants, the protocol's drives and the state's fluxes in one dict. ``step``
+        assembles the rates from the same terms; the carbon-budget test and the
+        probes read them directly."""
+        c = self.constants(embedding)
+        d = self.drives(external, coupling, time_features, c)
+        raw = self.head_outputs(state, coupling, external, embedding, time_features)
+        return {**c, **d, **self.state_fluxes(state, coupling, c, d, raw)}

@@ -64,20 +64,31 @@ class RespiratoryModule(LearnedDynamicsModule):
         spo2 = self.rsp_center[_SPO2] + _SPO2_MAX_Z * self.rsp_scale[_SPO2] * torch.tanh(o[..., 1])
         return torch.stack([rr, spo2], dim=-1)
 
-    def forward(
+    def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        return {
+            "k": _K_MIN + _K_RANGE * torch.sigmoid(self.log_k),
+            "setpoint": self.setpoints_raw(embedding),
+        }
+
+    def drives(
+        self,
+        external: torch.Tensor,
+        coupling: torch.Tensor,
+        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
+        act = external[..., _ACTIVITY_EXTERNAL_IDX]
+        return {"spo2_exercise": _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH)}
+
+    def step(
         self,
         state: torch.Tensor,
         coupling: torch.Tensor,
-        external: torch.Tensor,
-        embedding: torch.Tensor,
-        time_features: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
-        driver = super().forward(state, coupling, external, embedding, time_features)
-        k = _K_MIN + _K_RANGE * torch.sigmoid(self.log_k)
-        sp = self.setpoints_raw(embedding)
-        raw = self.rsp_center + self.rsp_scale * state
-        rate = driver - k * (raw - sp)
-        act = external[..., _ACTIVITY_EXTERNAL_IDX]
-        spo2_ex = _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH)
-        rate_spo2 = rate[..., _SPO2] - spo2_ex
+        raw_s = self.rsp_center + self.rsp_scale * state
+        rate = raw["driver"] - const["k"] * (raw_s - const["setpoint"])
+        rate_spo2 = rate[..., _SPO2] - drv["spo2_exercise"]
         return torch.stack([rate[..., _RR], rate_spo2], dim=-1)

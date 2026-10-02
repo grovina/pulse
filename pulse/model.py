@@ -52,6 +52,26 @@ _SPO2_LO = 70.0
 _SPO2_HI = 100.0
 _SPO2_EPS = 1e-4
 
+# Module evaluation order. Every marker belongs to exactly one module, so the
+# modules' rates concatenated in this order are a permutation of the state.
+_MODULE_ORDER: tuple[str, ...] = (
+    "metabolic", "appetite", "stress", "cardiovascular", "thermoreg", "respiratory",
+    "hepatobiliary",
+)
+_MODULE_ORDER_INDEX: tuple[int, ...] = tuple(
+    i for name in _MODULE_ORDER for i in MODULE_MARKER_INDICES[name])
+if sorted(_MODULE_ORDER_INDEX) != list(range(STATE_DIM)):
+    raise RuntimeError("MODULE_MARKER_INDICES must partition the state vector")
+
+# The PROTOCOL vector a rollout knows in advance, per member and minute (the head
+# bank's exogenous first-layer input): [gut appearance (4) | duodenal delivery (3) |
+# sleep_wake | activity | time features (4)].
+_Z_GUT = 0
+_Z_DUO = GUT_OUTPUT_DIM
+_Z_EXTERNAL = {"sleep_wake": _Z_DUO + DUODENAL_DIM, "activity": _Z_DUO + DUODENAL_DIM + 1}
+_Z_TIME = _Z_DUO + DUODENAL_DIM + 2
+_Z_DIM = _Z_TIME + TIME_FEATURES_DIM
+
 
 def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float) -> torch.Tensor:
     """`x·exp(rate·dt/x)` for x > 0; falls back to `x + rate·dt` at x <= 0 (an initial
@@ -219,6 +239,15 @@ class ModularPhysiologyNetwork(nn.Module):
 
         self.register_buffer("norm_center", torch.tensor(NORM_CENTER, dtype=torch.float32))
         self.register_buffer("norm_scale", torch.tensor(NORM_SCALE, dtype=torch.float32))
+        # Rates are assembled by concatenating the modules' outputs in _MODULE_ORDER
+        # and gathering them back into marker order (not persisted: derived from types).
+        inverse = [0] * STATE_DIM
+        for pos, marker in enumerate(_MODULE_ORDER_INDEX):
+            inverse[marker] = pos
+        self.register_buffer(
+            "_marker_from_module_order", torch.tensor(inverse, dtype=torch.long), persistent=False)
+        # Static index maps for planned rollouts, per (purpose, module, device).
+        self._index_cache: dict[tuple[str, str, str], object] = {}
 
     @classmethod
     def from_checkpoint(cls, checkpoint: dict, strict: bool = True) -> "ModularPhysiologyNetwork":
@@ -287,6 +316,43 @@ class ModularPhysiologyNetwork(nn.Module):
         act = sw * torch.sigmoid(out[..., 1])
         return sw, act
 
+    def resolve_external_inputs(
+        self,
+        embedding: torch.Tensor,
+        time_feats: torch.Tensor,
+        sleep_wake: Optional[torch.Tensor],
+        activity: Optional[torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(sleep_wake, activity)`` over ``time_feats``' leading shape, missing entries
+        filled with the learned default.
+
+        A series that is ``None`` is missing everywhere; a ``NaN`` entry is missing at
+        that member and minute (so one batch can mix logged and unlogged inputs). Where
+        sleep is known but activity is not, the default activity is re-gated by the
+        known sleep state (asleep ⇒ rest), exactly as in ``forward``.
+        ``embedding`` is ``[B, E]`` against ``time_feats[B, T, 4]`` or ``[N, E]``
+        against ``[N, 4]``.
+        """
+        shape = time_feats.shape[:-1]
+        sw = None if sleep_wake is None else sleep_wake.expand(shape)
+        act = None if activity is None else activity.expand(shape)
+        sw_given = None if sw is None else ~torch.isnan(sw)
+        act_given = None if act is None else ~torch.isnan(act)
+        if sw_given is not None and act_given is not None and bool(sw_given.all()) and bool(act_given.all()):
+            return sw, act
+        emb = embedding
+        if emb.dim() < time_feats.dim():
+            emb = emb.unsqueeze(-2).expand(*shape, emb.shape[-1])
+        sw_default, act_default = self.default_external_inputs(emb, time_feats)
+        sw_res = sw_default if sw_given is None else torch.where(sw_given, sw, sw_default)
+        if sw_given is None:
+            fallback = act_default
+        else:
+            fallback = torch.where(
+                sw_given, sw_res * act_default / torch.clamp(sw_default, min=1e-6), act_default)
+        act_res = fallback if act_given is None else torch.where(act_given, act, fallback)
+        return sw_res, act_res
+
     def coupling_for(
         self,
         module: str,
@@ -313,6 +379,36 @@ class ModularPhysiologyNetwork(nn.Module):
                 i = MARKER_INDEX[ch]
                 pieces.append(norm_state[..., i:i + 1])
         return torch.cat(pieces, dim=-1)
+
+    def _step_gather_indices(self, module: str, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+        """Index maps for a planned step: ``module``'s markers out of the normalized
+        state, and its coupling vector (``MODULE_COUPLING_CHANNELS`` order) out of
+        ``cat([norm_state, gut, duodenal])``."""
+        key = ("gather", module, str(device))
+        cached = self._index_cache.get(key)
+        if cached is None:
+            coupling = []
+            for ch in MODULE_COUPLING_CHANNELS[module]:
+                if ch in GUT_CHANNEL_INDEX:
+                    coupling.append(STATE_DIM + GUT_CHANNEL_INDEX[ch])
+                elif ch in DUODENAL_CHANNEL_INDEX:
+                    coupling.append(STATE_DIM + GUT_OUTPUT_DIM + DUODENAL_CHANNEL_INDEX[ch])
+                else:
+                    coupling.append(MARKER_INDEX[ch])
+            cached = (
+                torch.tensor(MODULE_MARKER_INDICES[module], dtype=torch.long, device=device),
+                torch.tensor(coupling, dtype=torch.long, device=device),
+            )
+            self._index_cache[key] = cached
+        return cached
+
+    def _head_input_layout(self, module: str, device: torch.device) -> "_HeadInputLayout":
+        key = ("heads", module, str(device))
+        cached = self._index_cache.get(key)
+        if cached is None:
+            cached = _HeadInputLayout(module, self._modules_by_name[module], device)
+            self._index_cache[key] = cached
+        return cached
 
     def forward(
         self,
@@ -448,32 +544,399 @@ class ModularPhysiologyNetwork(nn.Module):
         else:
             duo = torch.zeros(batch, DUODENAL_DIM, dtype=state.dtype, device=state.device)
 
-        rates = torch.zeros_like(state)
-        ext_as = torch.stack([act, sw], dim=-1)   # [activity, sleep_wake]
-        ext_sa = torch.stack([sw, act], dim=-1)   # [sleep_wake, activity]
-        ext_s = sw.unsqueeze(-1)
-
-        module_specs = (
-            ("metabolic", self._met_idx, ext_as),
-            ("appetite", self._app_idx, ext_s),
-            ("stress", self._str_idx, ext_sa),
-            ("cardiovascular", self._cvs_idx, ext_as),
-            ("thermoreg", self._thm_idx, ext_as),
-            ("respiratory", self._rsp_idx, ext_as),
-            ("hepatobiliary", self._hpb_idx, ext_as),
-        )
-        for name, idx, external in module_specs:
-            coupling = self.coupling_for(name, norm_state, gut_out_batch, duo)
-            mod_rates = self._modules_by_name[name](
-                norm_state[:, idx], coupling, external, emb[name], time_feats,
-            )
-            for i, state_idx in enumerate(idx):
-                rates[:, state_idx] = mod_rates[:, i]
+        external = {"sleep_wake": sw, "activity": act}
+        parts = []
+        for name in _MODULE_ORDER:
+            mod = self._modules_by_name[name]
+            parts.append(mod(
+                norm_state[:, MODULE_MARKER_INDICES[name]],
+                self.coupling_for(name, norm_state, gut_out_batch, duo),
+                torch.stack([external[n] for n in mod.external_inputs], dim=-1),
+                emb[name],
+                time_feats,
+            ))
+        rates = torch.cat(parts, dim=-1).index_select(-1, self._marker_from_module_order)
 
         if is_unbatched:
             rates = rates.squeeze(0)
 
         return rates
+
+
+class _HeadBank:
+    """Every MLP head of every module, evaluated as ONE three-layer network per step.
+
+    The model has ten small Linear-Tanh-Linear-Tanh-Linear heads; called one by one
+    they cost ~70 matmuls and ~200 dispatches per simulated minute. Here their
+    weights are stacked once per rollout (from the CURRENT parameters, so edits and
+    optimizer steps between rollouts are always seen): the hidden layers become one
+    block-diagonal matmul, and the first layer is split by where each input column
+    comes from (``PhysiologyModule.head_input_sources``) —
+
+    * ODE markers (a module's own state and its marker couplings): ``norm_state @ W1``
+      per step;
+    * the protocol (gut / duodenal channels, sleep, activity, time): one matmul over
+      the whole ``[B, T]`` window up front;
+    * the embedding projection and the bias: once per member.
+
+    The blocks are built with differentiable slicing / scattering, so autograd carries
+    every step's gradient back to the original per-head parameters. The arithmetic
+    is the same as calling each head, summed in a different order (float rounding
+    only).
+    """
+
+    def __init__(
+        self,
+        model: "ModularPhysiologyNetwork",
+        emb: dict[str, torch.Tensor],
+        z: torch.Tensor,
+    ) -> None:
+        w1_state: list[torch.Tensor] = []
+        w1_exo: list[torch.Tensor] = []
+        first: list[torch.Tensor] = []
+        w2: list[torch.Tensor] = []
+        b2: list[torch.Tensor] = []
+        w3: list[torch.Tensor] = []
+        b3: list[torch.Tensor] = []
+        self.slots: dict[str, list[tuple[object, int]]] = {}
+        splits: list[int] = []
+        for name in _MODULE_ORDER:
+            mod = model._modules_by_name[name]
+            nets = mod.mlp_heads()
+            if not nets:
+                continue
+            layout = model._head_input_layout(name, z.device)
+            for key, net in nets.items():
+                l1, l2, l3 = _three_layers(name, key, net)
+                W1 = l1.weight
+                H = W1.shape[0]
+                w1_state.append(W1.new_zeros(STATE_DIM, H).index_add(
+                    0, layout.state_rows, W1.index_select(1, layout.state_cols).t()))
+                w1_exo.append(W1.new_zeros(_Z_DIM, H).index_add(
+                    0, layout.exo_rows, W1.index_select(1, layout.exo_cols).t()))
+                first.append(emb[name] @ W1.index_select(1, layout.emb_cols).t() + l1.bias)
+                w2.append(l2.weight.t())
+                b2.append(l2.bias)
+                w3.append(l3.weight.t())
+                b3.append(l3.bias)
+                self.slots.setdefault(name, []).append((key, len(splits)))
+                splits.append(l3.out_features)
+        self.splits = splits
+        self.w1_state = torch.cat(w1_state, dim=1)                     # [S, H]
+        exo = torch.matmul(z, torch.cat(w1_exo, dim=1))               # [B, T, H]
+        self.exo_steps = _per_step(exo + torch.cat(first, dim=-1).unsqueeze(1))
+        self.w2 = torch.block_diag(*w2)
+        self.b2 = torch.cat(b2)
+        self.w3 = torch.block_diag(*w3)
+        self.b3 = torch.cat(b3)
+
+    def __call__(self, norm_state: torch.Tensor, exo_t: torch.Tensor) -> list[torch.Tensor]:
+        h = torch.tanh(torch.addmm(exo_t, norm_state, self.w1_state))
+        h = torch.tanh(torch.addmm(self.b2, h, self.w2))
+        return list(torch.addmm(self.b3, h, self.w3).split(self.splits, dim=-1))
+
+
+def _per_step(x: torch.Tensor) -> tuple[torch.Tensor, ...]:
+    """``[B, T, ...]`` → T contiguous ``[B, ...]`` slices, made once per rollout.
+
+    Unbinding once matters for the backward: a per-step select of the window would
+    materialise a full-size zero gradient on every step (O(T²) memory traffic). The
+    time-major copy gives every slice the same canonical strides (``.contiguous()``
+    would keep a batch-1 window's stride on its size-1 dim), which compiled steps
+    guard on.
+    """
+    if _COMPILED_STEP is not None and torch.is_grad_enabled() and not x.requires_grad:
+        # Compiled steps are specialised on which inputs carry gradient; making every
+        # protocol input carry it keeps that from multiplying the variants (a logged
+        # vs a defaulted sleep series, the teacher's absorption vs the student's).
+        x = x.detach().requires_grad_(True)
+    return x.transpose(0, 1).clone(memory_format=torch.contiguous_format).unbind(0)
+
+
+def _three_layers(name: str, key: object, net: nn.Module) -> tuple[nn.Linear, nn.Linear, nn.Linear]:
+    layers = list(net)
+    shape_ok = (
+        len(layers) == 5
+        and all(isinstance(layers[i], nn.Linear) for i in (0, 2, 4))
+        and all(isinstance(layers[i], nn.Tanh) for i in (1, 3))
+    )
+    if not shape_ok:
+        raise TypeError(
+            f"{name} head {key!r}: the fused integrator expects Linear-Tanh-Linear-Tanh-Linear, "
+            f"got {net}",
+        )
+    return layers[0], layers[2], layers[4]
+
+
+class _HeadInputLayout:
+    """Where each column of one module's head input comes from (see ``_HeadBank``)."""
+
+    def __init__(self, name: str, mod: nn.Module, device: torch.device) -> None:
+        state_rows: list[int] = []
+        state_cols: list[int] = []
+        exo_rows: list[int] = []
+        exo_cols: list[int] = []
+        emb_cols: list[int] = []
+        channels = MODULE_COUPLING_CHANNELS[name]
+        for col, (kind, j) in enumerate(mod.head_input_sources()):
+            if kind == "state":
+                state_rows.append(MODULE_MARKER_INDICES[name][j])
+                state_cols.append(col)
+            elif kind == "coupling":
+                ch = channels[j]
+                if ch in GUT_CHANNEL_INDEX:
+                    exo_rows.append(_Z_GUT + GUT_CHANNEL_INDEX[ch])
+                    exo_cols.append(col)
+                elif ch in DUODENAL_CHANNEL_INDEX:
+                    exo_rows.append(_Z_DUO + DUODENAL_CHANNEL_INDEX[ch])
+                    exo_cols.append(col)
+                else:
+                    state_rows.append(MARKER_INDEX[ch])
+                    state_cols.append(col)
+            elif kind == "external":
+                exo_rows.append(_Z_EXTERNAL[mod.external_inputs[j]])
+                exo_cols.append(col)
+            elif kind == "embedding":
+                emb_cols.append(col)
+            elif kind == "time":
+                exo_rows.append(_Z_TIME + j)
+                exo_cols.append(col)
+            else:
+                raise ValueError(f"{name}: unknown head input source {kind!r}")
+
+        def _t(xs: list[int]) -> torch.Tensor:
+            return torch.tensor(xs, dtype=torch.long, device=device)
+
+        self.state_rows, self.state_cols = _t(state_rows), _t(state_cols)
+        self.exo_rows, self.exo_cols = _t(exo_rows), _t(exo_cols)
+        self.emb_cols = _t(emb_cols)
+
+
+class _ModulePlan:
+    """One module's share of a rollout: its patient constants, its protocol drives
+    unbound per minute, and the index maps from the step's state and coupling."""
+
+    def __init__(
+        self,
+        name: str,
+        mod: nn.Module,
+        const: dict[str, torch.Tensor],
+        drives: dict[str, torch.Tensor],
+        B: int,
+        T: int,
+        state_idx: torch.Tensor,
+        coupling_idx: torch.Tensor,
+        head_slots: list[tuple[object, int]],
+    ) -> None:
+        self.name = name
+        self.module = mod
+        self.const = const
+        self.state_idx = state_idx
+        self.coupling_idx = coupling_idx
+        self.head_slots = head_slots
+        self.fixed: dict[str, torch.Tensor] = {}
+        self.per_step: dict[str, tuple[torch.Tensor, ...]] = {}
+        for k, v in drives.items():
+            if v.dim() == 0:
+                self.fixed[k] = v
+            else:
+                self.per_step[k] = _per_step(v.reshape(B, T, *v.shape[1:]))
+
+
+class _RolloutPlan:
+    """Everything a rollout knows before its first step, computed once.
+
+    ``rates(state, inputs(t))`` then does only the work that depends on the ODE
+    state: the head bank, each module's ``step`` and the coupling gathers. The pointwise
+    ``ModularPhysiologyNetwork.forward`` and this plan call the same module code
+    (``PhysiologyModule``), so they compute the same rates.
+    """
+
+    def __init__(
+        self,
+        model: "ModularPhysiologyNetwork",
+        embedding: torch.Tensor,
+        n_steps: int,
+        dt: float,
+        start_time_minutes,
+        gut: torch.Tensor,
+        duo: torch.Tensor,
+        sleep_wake: Optional[torch.Tensor],
+        activity: Optional[torch.Tensor],
+    ) -> None:
+        B = int(embedding.shape[0])
+        T = int(n_steps)
+        device = embedding.device
+        self.center = model.norm_center
+        self.scale = model.norm_scale
+        self.marker_order = model._marker_from_module_order
+
+        # Absolute clock, per member: computed in float64 exactly like the historical
+        # per-step ``(start + step·dt) % 1440`` Python float, then cast.
+        start = torch.as_tensor(start_time_minutes, dtype=torch.float64, device=device).reshape(-1, 1)
+        clock = torch.arange(T, dtype=torch.float64, device=device) * float(dt)
+        t_abs = torch.remainder(start + clock, 1440.0).to(torch.float32).expand(B, T)
+        time_feats = compute_time_features(t_abs)                       # [B, T, 4]
+        sw, act = model.resolve_external_inputs(embedding, time_feats, sleep_wake, activity)
+        emb = {name: proj(embedding) for name, proj in model.embedding_projections.items()}
+
+        z = torch.cat([gut, duo, sw.unsqueeze(-1), act.unsqueeze(-1), time_feats], dim=-1)
+        self.bank = _HeadBank(model, emb, z)
+        self.gut_steps = _per_step(gut)
+        self.duo_steps = _per_step(duo)
+
+        # Drives see the protocol for the whole window at once, flattened to [B*T].
+        # Marker coupling channels are NaN there: a drive must not read the state.
+        nan_state = torch.full((B, T, STATE_DIM), float("nan"), dtype=gut.dtype, device=device)
+        protocol_coupling = torch.cat([nan_state, gut, duo], dim=-1)
+        external = {"sleep_wake": sw, "activity": act}
+        tf_flat = time_feats.reshape(B * T, -1)
+        self.modules: list[_ModulePlan] = []
+        for name in _MODULE_ORDER:
+            mod = model._modules_by_name[name]
+            state_idx, coupling_idx = model._step_gather_indices(name, device)
+            ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
+            const_window = mod.constants(emb[name].repeat_interleave(T, dim=0))
+            drives = mod.drives(
+                ext.reshape(B * T, -1),
+                protocol_coupling.index_select(-1, coupling_idx).reshape(B * T, -1),
+                tf_flat,
+                const_window,
+            )
+            self.modules.append(_ModulePlan(
+                name, mod, mod.constants(emb[name]), drives, B, T,
+                state_idx, coupling_idx, self.bank.slots.get(name, []),
+            ))
+
+    def inputs(self, t: int) -> tuple[torch.Tensor, ...]:
+        """Step ``t``'s protocol tensors, flat: head-bank first-layer offset, gut,
+        duodenal, then every module's per-step drives in plan order."""
+        return (
+            self.bank.exo_steps[t], self.gut_steps[t], self.duo_steps[t],
+            *(steps[t] for m in self.modules for steps in m.per_step.values()),
+        )
+
+    def rates(self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...]) -> torch.Tensor:
+        exo_t, gut_t, duo_t = step_inputs[:3]
+        drives_t = iter(step_inputs[3:])
+        norm = (state - self.center) / self.scale
+        xin = torch.cat([norm, gut_t, duo_t], dim=-1)
+        heads = self.bank(norm, exo_t)
+        parts = []
+        for m in self.modules:
+            drv = dict(m.fixed)
+            for k in m.per_step:
+                drv[k] = next(drives_t)
+            parts.append(m.module.step(
+                norm.index_select(-1, m.state_idx),
+                xin.index_select(-1, m.coupling_idx),
+                m.const,
+                drv,
+                {key: heads[i] for key, i in m.head_slots},
+            ))
+        return torch.cat(parts, dim=-1).index_select(-1, self.marker_order)
+
+
+def _planned_euler_step(
+    plan: _RolloutPlan, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], dt: float,
+) -> torch.Tensor:
+    """One planned minute: the rates from the plan, then ``euler_step``. The unit
+    ``enable_compiled_steps`` hands to ``torch.compile``."""
+    return euler_step(state, plan.rates(state, step_inputs), dt)
+
+
+_COMPILED_STEP = None
+
+
+def _step_kernel():
+    return _guarded_compiled_step if _COMPILED_STEP is not None else _planned_euler_step
+
+
+def _guarded_compiled_step(
+    plan: "_RolloutPlan", state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], dt: float,
+) -> torch.Tensor:
+    """The compiled step, or — if compiling a new variant fails — the eager step for
+    this and every later call (the step is a pure function, so recomputing is safe)."""
+    global _COMPILED_STEP
+    compiled = _COMPILED_STEP
+    if compiled is not None:
+        try:
+            return compiled(plan, state, step_inputs, dt)
+        except Exception as err:  # noqa: BLE001 — any backend failure means "go eager"
+            _COMPILED_STEP = None
+            print(f"[compile] compiled steps OFF mid-run: {type(err).__name__}: {err}", flush=True)
+    return _planned_euler_step(plan, state, step_inputs, dt)
+
+
+def enable_compiled_steps(model: Optional["ModularPhysiologyNetwork"] = None, *, enabled: bool = True) -> bool:
+    """Run every planned minute through ``torch.compile`` (opt-in; iter 108).
+
+    The planned step is a fixed chain of ~500 small ops; compiled, its forward and
+    backward each become a handful of fused C++ kernels — measured 4.9x on a batch-1
+    240-min window (0.41 s vs 2.0 s forward + backward) on top of the planned
+    integrator. The CPU backend needs a C++ compiler at runtime (the trainer image
+    installs g++). Each new variant — batch 1 vs N, with or without grad — compiles
+    once, lazily, in 30-60 s.
+
+    With ``model``, the compiled step is warmed up here on short rollouts (batch 1
+    and 2, with and without grad) and checked against the eager step, so a missing
+    toolchain or a backend problem surfaces at startup, not mid-run; on any failure
+    or mismatch compiled steps stay OFF and the reason is printed. Returns whether
+    compiled steps are on.
+    """
+    global _COMPILED_STEP
+    _COMPILED_STEP = None
+    if not enabled:
+        return False
+    # Past the limit dynamo would silently run new variants eagerly.
+    torch._dynamo.config.recompile_limit = max(int(torch._dynamo.config.recompile_limit), 64)
+    # The per-step inputs are slices of one window tensor, so their storage offsets
+    # vary; duck sizing would tie those to unrelated sizes and recompile at random.
+    torch.fx.experimental._config.use_duck_shape = False
+    compiled = torch.compile(_planned_euler_step, dynamic=True)
+    if model is None:
+        _COMPILED_STEP = compiled
+        return True
+    try:
+        _COMPILED_STEP = compiled
+        _check_compiled_steps(model)
+    except Exception as err:  # noqa: BLE001 — any backend failure means "stay eager"
+        _COMPILED_STEP = None
+        print(f"[compile] compiled steps OFF: {type(err).__name__}: {err}", flush=True)
+        return False
+    print("[compile] compiled steps ON (warm-up matched the eager step)", flush=True)
+    return True
+
+
+def _check_compiled_steps(model: "ModularPhysiologyNetwork") -> None:
+    global _COMPILED_STEP
+    device = model.norm_center.device
+    meals = [MealEvent(time=1.0, carbs=50.0, fats=10.0, proteins=10.0)]
+    for batch in (1, 2):
+        state = model.norm_center.unsqueeze(0).expand(batch, -1)
+        emb = torch.zeros(batch, model.embedding_dim, device=device, requires_grad=True)
+        results = []
+        compiled = _COMPILED_STEP
+        for kernel in (compiled, None):
+            _COMPILED_STEP = kernel
+            with torch.no_grad():
+                frozen = integrate(model, state, emb, 3, meals=meals)
+            traj = integrate(model, state, emb, 3, meals=meals)
+            (grad,) = torch.autograd.grad(traj.pow(2).sum(), emb)
+            results.append((frozen, traj.detach(), grad))
+        _COMPILED_STEP = compiled
+        for got, want in zip(results[0], results[1]):
+            if not torch.allclose(got, want, rtol=1e-4, atol=1e-5):
+                raise RuntimeError(f"compiled step disagrees with eager at batch {batch}")
+
+
+def _per_member_meals(meals, batch: int) -> Optional[list[list[MealEvent]]]:
+    """``meals`` as one list per batch member, or ``None`` when it is one shared list."""
+    if not meals or isinstance(meals[0], MealEvent):
+        return None
+    if len(meals) != batch:
+        raise ValueError(f"per-member meals: {len(meals)} lists for a batch of {batch}")
+    return [list(m) for m in meals]
 
 
 def integrate(
@@ -482,13 +945,16 @@ def integrate(
     embedding: torch.Tensor,
     n_steps: int,
     dt: float = 1.0,
-    start_time_minutes: float = 360.0,
-    meals: Optional[list[MealEvent]] = None,
+    start_time_minutes: float | torch.Tensor = 360.0,
+    meals: Optional[list] = None,
     sleep_wake: Optional[torch.Tensor] = None,
     activity: Optional[torch.Tensor] = None,
     gut_outputs: Optional[torch.Tensor] = None,
     checkpoint_segments: int = 0,
     duodenal_outputs: Optional[torch.Tensor] = None,
+    member_steps: Optional[torch.Tensor] = None,
+    *,
+    planned: bool = True,
 ) -> torch.Tensor:
     """Integrate the modular ODE forward in time.
 
@@ -499,21 +965,33 @@ def integrate(
     - Batched (``initial_state[B, STATE_DIM]``, ``embedding[B, EMB]``,
       ``gut_outputs[B, T, OUT]``) → ``[B, T, STATE_DIM]``
 
-    ``meals``, ``sleep_wake``, and ``activity`` are shared across batch
-    members (the typical training pattern is "same protocol, different
-    embeddings"). ``gut_outputs`` should be precomputed by
-    :func:`precompute_gut_outputs` whenever ``B > 1`` — gut output
-    depends on the embedding, and per-step ``gut.forward`` cannot be
-    invoked once for a heterogeneous batch.
+    The protocol is shared across batch members or given per member:
 
-    sleep_wake: [n_steps] tensor or None — per-step sleep/wake state
-    activity: [n_steps] tensor or None — per-step activity level
-    gut_outputs: [T, GUT_OUTPUT_DIM] or [B, T, GUT_OUTPUT_DIM] or None
-    duodenal_outputs: [T, 3] duodenal (fat, protein, carb) delivery on the WINDOW-OFFSET clock,
-        as returned by :func:`precompute_duodenal_outputs`, or None to compute it here
-        from ``meals`` (iter 97 — mirrors ``gut_outputs`` so a training signal that
-        assembles its own window, e.g. the distillation's level anchors, can hand the
-        biliary axis its meal stimulus instead of zeros; review item 4.7).
+    - ``meals``: one ``list[MealEvent]`` for everyone, or a list of B such lists.
+    - ``start_time_minutes``: a float, or a ``[B]`` tensor.
+    - ``sleep_wake`` / ``activity``: ``[T]`` (shared) or ``[B, T]``; ``None`` means
+      missing everywhere and a ``NaN`` entry means missing at that member and minute
+      — the model substitutes its learned default (``resolve_external_inputs``).
+    - ``gut_outputs``: ``[T, GUT_OUTPUT_DIM]`` or ``[B, T, GUT_OUTPUT_DIM]``, or None to
+      compute it from ``meals`` on the window-offset clock (``precompute_gut_outputs``).
+    - ``duodenal_outputs``: ``[T, 3]`` or ``[B, T, 3]`` duodenal (fat, protein, carb)
+      delivery on the WINDOW-OFFSET clock, or None to compute it from ``meals``
+      (iter 97 — mirrors ``gut_outputs`` so a training signal that assembles its own
+      window can hand the biliary axis its meal stimulus; review item 4.7).
+    - ``member_steps``: ``[B]`` per-member horizons ≤ ``n_steps``, so protocols of
+      different lengths can share one rollout. Member ``b``'s rows ``[0, member_steps[b])``
+      are exactly its own rollout; after that its state is HELD (not integrated), so a
+      padded minute can neither diverge nor feed a NaN into the shared backward.
+
+    For a ``ModularPhysiologyNetwork`` the rollout is PLANNED (``_RolloutPlan``):
+    everything that does not depend on the ODE state — per-patient constants, the
+    protocol's drives, the embedding and protocol halves of every head's first layer
+    — is computed once for the whole window, and each step runs only the state-
+    dependent work through one fused head network. ``planned=False`` steps the same
+    model through its pointwise ``forward`` one minute at a time instead: the
+    reference the planned path is tested against, and the path to use when module or
+    head forward hooks must fire (the planned step calls ``PhysiologyModule.step``
+    directly). Any other rate model (test stubs) is always stepped pointwise.
 
     checkpoint_segments: if > 0 and grad is enabled, split the n_steps loop
         into roughly this many chunks and use torch.utils.checkpoint on each.
@@ -534,61 +1012,101 @@ def integrate(
         embedding = embedding.unsqueeze(0)
         if gut_outputs is not None and gut_outputs.dim() == 2:
             gut_outputs = gut_outputs.unsqueeze(0)
-
     batch = int(initial_state.shape[0])
-    if gut_outputs is None and meals:
-        # Precompute the whole gut window here so BOTH the batched and the
-        # single-embedding paths take meal absorption on the window-offset
-        # clock (see precompute_gut_outputs). Previously batch==1 fell through
-        # to per-step ``model.forward`` gut calls that computed meal-dt from
-        # absolute minute-of-day, re-introducing the start_time_minutes meal
-        # shift on exactly the benchmark path (which calibrates then integrates
-        # a single embedding). Precomputing centralizes the correct timebase.
-        # Guarded on ``meals``: with no meals there is no absorption to compute,
-        # and skipping keeps gut-less stub models (used in integrator tests)
-        # and the trivial zero-gut path working unchanged.
-        gut_outputs = precompute_gut_outputs(
-            model, embedding, n_steps, dt=dt,
-            start_time_minutes=start_time_minutes, meals=meals,
-        )
-        if gut_outputs.dim() == 2:
-            gut_outputs = gut_outputs.unsqueeze(0)
-    elif batch > 1 and gut_outputs is None:
-        # Preserve the original contract: a heterogeneous batch cannot use the
-        # per-step gut path (gut depends on the embedding), so callers must
-        # precompute. Only reachable now for the no-meal batch>1 case.
-        raise ValueError(
-            "integrate at batch>1 requires precomputed gut_outputs; call "
-            "precompute_gut_outputs(model, embedding, n_steps, ...) first.",
-        )
-
+    if embedding.shape[0] != batch:
+        embedding = embedding.expand(batch, -1)
     device = initial_state.device
+    member_meals = _per_member_meals(meals, batch)
 
-    def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
-        t = torch.tensor(
-            [(start_time_minutes + step * dt) % 1440.0],
-            device=device,
-        ).expand(batch)
-        sw_step = sleep_wake[step].expand(batch) if sleep_wake is not None else None
-        act_step = activity[step].expand(batch) if activity is not None else None
-        gut_step = gut_outputs[:, step] if gut_outputs is not None else None
-        duo_step = duo_outputs[step] if duo_outputs is not None else None
-        rates = model(
-            state, embedding, t, meals,
-            sleep_wake=sw_step, activity=act_step,
-            gut_override=gut_step,
-            duodenal_override=duo_step,
+    if planned and isinstance(model, ModularPhysiologyNetwork):
+        if gut_outputs is None:
+            # The whole gut window up front, on the window-offset clock (see
+            # precompute_gut_outputs) — never the per-step absolute-clock path.
+            if member_meals is not None:
+                gut_outputs = torch.stack([
+                    precompute_gut_outputs(model, embedding[b], n_steps, dt=dt, meals=member_meals[b])
+                    for b in range(batch)
+                ])
+            else:
+                gut_outputs = precompute_gut_outputs(model, embedding, n_steps, dt=dt, meals=meals)
+        gut = gut_outputs[..., :n_steps, :].expand(batch, n_steps, GUT_OUTPUT_DIM)
+        duo = duodenal_outputs
+        if duo is None:
+            if member_meals is not None:
+                duo = torch.stack([
+                    precompute_duodenal_outputs(model, n_steps, dt=dt, meals=member_meals[b])
+                    for b in range(batch)
+                ])
+            else:
+                duo = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
+        duo = duo[..., :n_steps, :].to(gut.dtype).expand(batch, n_steps, DUODENAL_DIM)
+
+        def _series(x: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
+            return None if x is None else x[..., :n_steps].to(device=device, dtype=gut.dtype)
+
+        plan = _RolloutPlan(
+            model, embedding, n_steps, dt, start_time_minutes, gut, duo,
+            _series(sleep_wake), _series(activity),
         )
-        return euler_step(state, rates, dt)
+        held: list[Optional[torch.Tensor]] = [None] * n_steps
+        if member_steps is not None:
+            horizon = torch.as_tensor(member_steps, device=device).reshape(batch, 1)
+            # Row t+1 is written by step t; a member's last row is horizon − 1.
+            hold = torch.arange(n_steps, device=device).unsqueeze(0) >= horizon - 1   # [B, T]
+            held = [
+                column if any_held else None
+                for column, any_held in zip(hold.t().unsqueeze(-1).unbind(0), hold.any(dim=0).tolist())
+            ]
 
-    # Duodenal delivery (gastric emptying) for the whole window, on the WINDOW-OFFSET
-    # clock — the same frame contract as the gut precompute above, and for the same
-    # reason: meal.time is a window offset while the model's t_minutes is absolute time
-    # of day, and mixing them is the iter-87 bug. Embedding-independent, so one call
-    # covers every batch member.
-    duo_outputs = duodenal_outputs
-    if duo_outputs is None and meals and hasattr(model, "duodenal"):
-        duo_outputs = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
+        kernel = _step_kernel()
+
+        def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
+            # The compiled kernel (if on) is specialised on whether its inputs carry
+            # grad; the initial state usually does not, so step 0 runs eagerly and
+            # one compiled variant serves every later step.
+            run = _planned_euler_step if step == 0 else kernel
+            new_state = run(plan, state, plan.inputs(step), dt)
+            if held[step] is not None:
+                new_state = torch.where(held[step], state, new_state)
+            return new_state
+    else:
+        if member_meals is not None or torch.is_tensor(start_time_minutes) or member_steps is not None:
+            raise ValueError("per-member protocols need a ModularPhysiologyNetwork")
+        # Precompute the whole gut window so meal absorption runs on the window-offset
+        # clock even at batch 1: the per-step gut path in ``forward`` would compute
+        # meal-dt from the absolute minute of day (the iter-87 frame bug). Skipped
+        # without meals so gut-less stub models keep working.
+        if gut_outputs is None and meals:
+            gut_outputs = precompute_gut_outputs(
+                model, embedding, n_steps, dt=dt,
+                start_time_minutes=start_time_minutes, meals=meals,
+            )
+        elif batch > 1 and gut_outputs is None:
+            raise ValueError(
+                "integrate at batch>1 requires precomputed gut_outputs; call "
+                "precompute_gut_outputs(model, embedding, n_steps, ...) first.",
+            )
+        # Duodenal delivery on the same window-offset clock, for the same reason.
+        duo_outputs = duodenal_outputs
+        if duo_outputs is None and meals and hasattr(model, "duodenal"):
+            duo_outputs = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
+
+        def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
+            t = torch.tensor(
+                [(start_time_minutes + step * dt) % 1440.0],
+                device=device,
+            ).expand(batch)
+            sw_step = sleep_wake[step].expand(batch) if sleep_wake is not None else None
+            act_step = activity[step].expand(batch) if activity is not None else None
+            gut_step = gut_outputs[:, step] if gut_outputs is not None else None
+            duo_step = duo_outputs[step] if duo_outputs is not None else None
+            rates = model(
+                state, embedding, t, meals,
+                sleep_wake=sw_step, activity=act_step,
+                gut_override=gut_step,
+                duodenal_override=duo_step,
+            )
+            return euler_step(state, rates, dt)
 
     use_checkpointing = (
         checkpoint_segments > 0
