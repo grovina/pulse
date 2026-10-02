@@ -134,7 +134,7 @@ def coupling_prior_loss_on_window(
     over ``eps`` is the edge's sensitivity, scored by ``coupling_band_hinge`` in the
     normalized frame. All rows go through ONE batched ``model.forward`` — the
     unperturbed rate is shared by every prior at a step instead of recomputed per
-    prior (iter 108: 3 samples x 35 edges used to be 210 single-row forwards, about
+    prior (3 samples x 35 edges used to be 210 single-row forwards, about
     the cost of the window's own rollout).
 
     The sensitivity is taken at the trajectory's operating point, so the rows carry

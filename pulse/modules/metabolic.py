@@ -46,8 +46,19 @@ population ``MG_DL_PER_G``, then converted into this patient's mg/dL:
     glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G
     gng     =      f_gng ·EGP_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G
 
-``k_ii`` (obligatory uptake per mg/dL) and ``f_gng`` are learnable POPULATION
-scalars. Every structural gate is normalized to exactly 1 at the patient's basal
+``k_ii`` (obligatory uptake per mg/dL) and ``f_gng`` are the teacher's
+population constants. ``k_ii = 2 / (VG_DL_PER_KG · 95)`` is the uptake that
+puts a typical person at 2 mg/kg/min. ``f_gng`` is one half, Landau's
+post-absorptive share (the teacher's ``Gng_b / Hep_b``). On the iter-107
+weights both had walked, uptake from 0.0114 to 0.0083 per minute and the
+share from 0.50 to 0.37. Uptake cancels at the glucose fixed point, so the
+loss does not defend it, and the smaller turnover is fewer grams of
+glycogenolysis per hour. The share then fell to keep a fed night spending
+liver, which drops a long fast through 60 mg/dL. Restoring both on those
+frozen weights returns the fed night to the teacher and the 48 h fast to
+69.9 mg/dL, with both basals above 60.
+
+Every structural gate is normalized to exactly 1 at the patient's basal
 state (``g_ins`` at I = Ib, ``g_gn`` at Gn = Gnb, ``g_cort`` at Cort_b, ``g_ffa``
 at FFA_b, ``g_G`` at G ≤ Gb), so at the fasted reference ``dG = EGP_b − k_ii·Gb
 = 0`` exactly: Gb is the fixed point, not an attractor. The liver head's
@@ -230,13 +241,12 @@ _RA_BASELINE_MAX_Z = 1.0
 # 0.3/0.5/0.7/1.0: peak +19/+33/+47/+70 mg/dL; 0.8 lands +56 (the untrained peak
 # sits at ~90 min, not 55 — the fresh insulin head has no second phase yet).
 _RA_INIT = 0.8
-# Iter 97: obligatory (insulin-independent) glucose uptake per mg/dL of glucose space —
-# brain, blood cells, renal medulla. A POPULATION scalar, learnable within a band, init
-# at the teacher's uptake_ii = 2.0 mg/kg/min / (1.85 dL/kg · 95 mg/dL) = 0.0114/min, i.e.
-# the typical patient rests at the typical EGP of 2.0 mg/kg/min. Band [0.004, 0.03]/min.
-_KII_MIN = 0.004
-_KII_RANGE = 0.026
-_KII_INIT = 2.0 / (1.85 * 95.0)
+# Obligatory (insulin-independent) glucose uptake per mg/dL of glucose space —
+# brain, blood cells, renal medulla. The teacher's uptake_ii: 2.0 mg/kg/min
+# at Gb 95, so a typical person rests at the typical EGP of 2.0 mg/kg/min.
+# A constant. A free copy walked 0.0114 → 0.0083 and the loss never saw it,
+# because it cancels at the glucose fixed point.
+_K_II = 2.0 / (VG_DL_PER_KG * 95.0)
 # Si: RAW per-minute per normalized-insulin-unit; X = Si·Xa with Xa the lagged
 # signed (I − Ib)/10. Band brackets the Bergman literature range with margin.
 _SI_MIN = 0.0005
@@ -244,8 +254,10 @@ _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
 _KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
 # Fraction of basal EGP that is gluconeogenesis at the fasted reference (teacher
-# Gng_b / Hep_b = 1.0 / 2.0; Landau 1996: 47 % at 14 h). Learnable population scalar.
-_F_GNG_INIT = 0.5
+# Gng_b / Hep_b = 1.0 / 2.0; Landau 1996: 47 % at 14 h). A constant. A free
+# copy walked 0.50 → 0.37 to buy back the grams of glycogenolysis that the
+# shrunken uptake had lost, and that walk is what drops a long fast through 60.
+_F_GNG = 0.5
 # Structural gate constants (teacher iter 97). K's are learnable (softplus, init here);
 # the Hill exponents are shapes and stay fixed.
 _GLYC_INS_K_INIT, _GLYC_INS_N = 25.0, 2.0     # glycogenolysis insulin gate
@@ -489,8 +501,7 @@ class MetabolicModule(MassActionModule):
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
         # Population scalars of the glucose balance (see the module docstring).
-        self.log_k_ii = nn.Parameter(torch.tensor(_logit((_KII_INIT - _KII_MIN) / _KII_RANGE)))
-        self.logit_f_gng = nn.Parameter(torch.tensor(_logit(_F_GNG_INIT)))
+        # Uptake and the gluconeogenic share are constants, not parameters.
         self.log_glyc_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GLYC_INS_K_INIT)))
         self.log_gng_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GNG_INS_K_INIT)))
         self.log_k_ins = nn.Parameter(torch.tensor(_inverse_softplus(_K_INS_INIT)))
@@ -567,7 +578,7 @@ class MetabolicModule(MassActionModule):
             _MITO_LOG_MAX * torch.tanh(self.mito_setpoint_net(embedding).squeeze(-1)))
 
     def k_ii(self) -> torch.Tensor:
-        return _KII_MIN + _KII_RANGE * torch.sigmoid(self.log_k_ii)
+        return self.log_ra.new_tensor(_K_II)
 
     # ---- heads -----------------------------------------------------------------------
 
@@ -596,7 +607,7 @@ class MetabolicModule(MassActionModule):
         return {
             "gb": gb, "ib": ib, "ra": ra, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
             "ffa_b": ffa_b, "gn_b": gn_b, "mito_sp": mito_sp,
-            "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": torch.sigmoid(self.logit_f_gng),
+            "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": k_ii.new_tensor(_F_GNG),
             "glyc_k": nn.functional.softplus(self.log_glyc_ins_k),
             "gng_k": nn.functional.softplus(self.log_gng_ins_k),
             "si": _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si),

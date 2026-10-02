@@ -278,7 +278,7 @@ def _set_runtime(seed: int, *, deterministic: bool, torch_threads: int = 1) -> N
     deterministic algorithms — useful for unit tests / spec verification.
 
     ``torch_threads`` sets the intra-op thread count (0 leaves PyTorch's default,
-    one per core). Iter 108: the default is 1. Every rollout here is a sequential
+    one per core). The default is 1. Every rollout here is a sequential
     chain of tiny ops — dispatch-bound, never FLOP-bound — so intra-op threads have
     nothing to split: measured on the planned integrator, a 240-min window took
     1.78 s on 1 thread and 1.87 s on 2, and 14.9 s on 4 threads sharing the machine
@@ -385,7 +385,7 @@ def train(
     # (0 = once per epoch, the pre-97 cadence); per-signal cadence in aux steps.
     aux_every_k_windows: int = 0,
     aux_cadence: dict[str, int] | None = None,
-    # Iter 108: trajectory windows per optimizer step (1 = per-window SGD).
+    # Trajectory windows per optimizer step (1 = per-window SGD).
     trajectory_windows_per_step: int = 1,
     # Iter 97 (review 4.11): per-signal contribution clip before the joint clip.
     aux_signal_clip: float = 0.0,
@@ -677,7 +677,7 @@ def train(
     embeddings = nn.Embedding(n_patients, EMBEDDING_DIM).to(device)
     nn.init.normal_(embeddings.weight, std=0.1)
     if compile_steps:
-        # Iter 108: opt-in torch.compile of the planned minute step; warmed up and
+        # Opt-in torch.compile of the planned minute step; warmed up and
         # checked against the eager step here, off (with the reason) on any failure.
         enable_compiled_steps(model)
 
@@ -876,7 +876,7 @@ def train(
             aux_blocks = 0
             for n_win in trajectory_signal.iter_windows(model, embeddings, ctx):
                 # One aux step each time the window count crosses a multiple of k
-                # (a trajectory step may consume several windows; iter 108).
+                # (a trajectory step may consume several windows).
                 if aux_every_k_windows > 0 and n_win // aux_every_k_windows > aux_blocks:
                     aux_blocks = n_win // aux_every_k_windows
                     t_pause = time.time()
@@ -2088,7 +2088,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--trajectory-windows-per-step", type=int, default=1,
-        help="Iter 108: trajectory windows per optimizer step. 1 = one SGD step per window "
+        help="Trajectory windows per optimizer step. 1 = one SGD step per window "
              "(the historical schedule). k > 1 rolls k windows as one batched integrate and "
              "averages their losses: ~k x the windows per second (a step costs about the same "
              "at batch 1 and 16) for k x fewer imitation steps. --aux-every-k-windows still "
@@ -2149,14 +2149,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--compile-steps", action="store_true",
-        help="Iter 108: torch.compile the planned minute step (~3-5x per rollout on top of "
+        help="torch.compile the planned minute step (~3-5x per rollout on top of "
              "the planned integrator; needs a C++ compiler — the trainer image has g++). "
              "Its variants compile at startup (~1 min) and are checked against the eager "
              "step there; if that fails, compiled steps stay off and the reason is printed.",
     )
     parser.add_argument(
         "--torch-threads", type=int, default=1,
-        help="Intra-op threads (iter 108: default 1 — rollouts are dispatch-bound and "
+        help="Intra-op threads (default 1 — rollouts are dispatch-bound and "
              "extra threads only add barrier cost; 0 = PyTorch's default of one per core).",
     )
     parser.add_argument(

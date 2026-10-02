@@ -869,7 +869,7 @@ def _guarded_compiled_step(
 
 
 def enable_compiled_steps(model: Optional["ModularPhysiologyNetwork"] = None, *, enabled: bool = True) -> bool:
-    """Run every planned minute through ``torch.compile`` (opt-in; iter 108).
+    """Run every planned minute through ``torch.compile`` (opt-in).
 
     The planned step is a fixed chain of ~500 small ops; compiled, its forward and
     backward each become a handful of fused C++ kernels — measured 4.9x on a batch-1

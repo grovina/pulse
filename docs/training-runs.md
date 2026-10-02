@@ -33,7 +33,7 @@ local.
    logs stream to Cloud Logging. After a run, compare against a prior job with
    `pulse.diagnostics compare` (download both jobs' artifacts from GCS first).
 
-## Where the time goes (iter 108)
+## Where the time goes
 
 Every signal is a rollout of the minute-step ODE, and a step is **dispatch-bound**:
 the model is ~38 K parameters, so the cost of a simulated minute is the number of
@@ -46,7 +46,7 @@ What changed, and what each part bought (measured on one core, same weights, a
 scaled-down phase-2 epoch of `train/spec.json` with one full aux step; the last
 column adds `--compile-steps`, steady state):
 
-| signal | iter 107 | iter 108 | + compiled steps |
+| signal | before | planned step | + compiled steps |
 |---|---|---|---|
 | trajectory window (phase 2, incl. coupling prior) | 12 s | 2.2 s (5.5x) | 0.6 s (20x) |
 | cohort aux step (3 groups) | 228 s | 15.6 s (15x) | 6 s (38x) |

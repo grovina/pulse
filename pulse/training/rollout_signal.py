@@ -456,7 +456,7 @@ class RolloutEvidenceSignal(TrainingSignal):
         # GRADIENT-IDENTICAL to the per-spec path: the per-spec losses share one
         # rollout graph; summing the weighted losses and doing ONE backward
         # accumulates into .grad exactly as per-spec backward did (linearity —
-        # the same argument the iter-68 block above relies on). Iter 108 rolls
+        # the same argument the iter-68 block above relies on). The planned step rolls
         # the step's groups (``groups_per_step``) together: the planned step
         # holds ~0.7 MB of graph per simulated minute at 40 rows (measured:
         # 2880 min, +2.0 GB), against the ~26 GB the old ~1,500-op step
@@ -483,7 +483,7 @@ class RolloutEvidenceSignal(TrainingSignal):
                 for g in group_list for spec in g
             ) or 1e-8
 
-        # Iter 108: every group of the step in ONE rollout (``cohort_statistic_loss_groups``)
+        # Every group of the step in ONE rollout (``cohort_statistic_loss_groups``)
         # and one backward — by linearity the same gradient as a backward per group,
         # with the perturbation draws taken in the same group order as before.
         raw_weighted_sum = 0.0
@@ -652,7 +652,7 @@ class RolloutEvidenceSignal(TrainingSignal):
         v_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
         sat_count: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
 
-        # Iter 108: every arm group of the step in ONE rollout and one backward
+        # Every arm group of the step in ONE rollout and one backward
         # (linearity: the same gradient as a backward per arm group).
         arm_rows = []
         for (_label, _init_mode), members in group_items:

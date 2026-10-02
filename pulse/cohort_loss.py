@@ -152,7 +152,7 @@ def _rollout_arm_states(
         model, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
     )
-    # Iter 108: no gradient checkpointing. Iter 68 added sqrt(T) segments when the
+    # No gradient checkpointing. Iter 68 added sqrt(T) segments when the
     # old ~1,500-op step held ~25 GB of graph for one cohort call; the planned step
     # holds ~0.5-0.7 MB per simulated minute (1440 min x 40 rows: +1.0 GB), and
     # checkpointing it measured 2.5x SLOWER with MORE resident memory (its saved-
@@ -392,8 +392,8 @@ def cohort_statistic_loss_groups(
     optional per-epoch perturbed copy of the group's arms (review 4.10). For each arm
     of each group the rows are ``[S × B]`` — spec ``s``'s initial state across the B
     supervised embeddings — and EVERY arm of EVERY group goes through one
-    ``rollout_arms`` call (iter 108; iter 79 batched specs within a group, and arms and
-    groups still rolled one by one).
+    ``rollout_arms`` call. Iter 79 batched specs within a group; arms and
+    groups used to roll one by one.
 
     Returns ``{spec.name: (loss_tensor, predicted_mean, residual_z)}``. The losses
     share one autograd graph, so the caller sums the weighted per-spec losses and does

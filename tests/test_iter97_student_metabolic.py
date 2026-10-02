@@ -18,7 +18,7 @@ from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
 from pulse.types import (
     BODY_MASS_KG, EMBEDDING_DIM, MARKER_INDEX as MI, MG_DL_PER_G, MODULE_MARKER_INDICES,
-    NORM_CENTER, NORM_SCALE, PHYSIOLOGICAL_MIN, VG_DL,
+    NORM_CENTER, NORM_SCALE, PHYSIOLOGICAL_MIN, VG_DL, VG_DL_PER_KG,
 )
 
 _MET = MODULE_MARKER_INDICES["metabolic"]
@@ -685,6 +685,21 @@ class TestVolumeAndEnergy(unittest.TestCase):
 
 
 class TestLipolysis(unittest.TestCase):
+    def test_uptake_and_gng_share_are_anatomical(self) -> None:
+        """Obligatory uptake is the teacher's 2 mg/kg/min at Gb 95, and the
+        gluconeogenic share is one half. Neither is a parameter, so a
+        perturbation of the module cannot move them."""
+        m = _model(19, perturb=1.0)
+        names = [n for n, _ in m.metabolic.named_parameters()]
+        self.assertNotIn("log_k_ii", names)
+        self.assertNotIn("logit_f_gng", names)
+        args = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+        self.assertAlmostEqual(float(f["k_ii"]), 2.0 / (VG_DL_PER_KG * 95.0), places=6)
+        self.assertAlmostEqual(float(f["f_gng"]), 0.5, places=6)
+        self.assertAlmostEqual(float(m.metabolic.k_ii()), float(f["k_ii"]), places=6)
+
     def test_ffa_clearance_is_anatomical(self) -> None:
         """Clearance is the teacher's 0.20. It is not a parameter, so a
         perturbation of the module cannot move it."""

@@ -1,4 +1,4 @@
-"""Iter 108: the planned integrator computes the model's own rates, faster.
+"""The planned integrator computes the model's own rates, faster.
 
 ``integrate`` evaluates everything that does not depend on the ODE state once per
 rollout (``_RolloutPlan``) and runs every MLP head as one fused network

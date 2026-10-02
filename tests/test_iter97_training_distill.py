@@ -74,7 +74,7 @@ def test_level_window_starts_are_jittered_per_epoch() -> None:
     real = mod.integrate
 
     def spy(model_, init, emb, w, **kw):
-        # Iter 108: the windows of one length roll as one batched call, one start each.
+        # The windows of one length roll as one batched call, one start each.
         starts = torch.as_tensor(kw["start_time_minutes"]).reshape(-1)
         starts_seen.extend(int(s) for s in starts.tolist())
         return real(model_, init, emb, w, **kw)

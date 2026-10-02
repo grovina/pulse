@@ -619,7 +619,7 @@ class ColdModelDistillationSignal(TrainingSignal):
         # encloses the calibration target). (2) abort the calibration step on
         # non-finite loss/grad rather than letting NaN propagate into emb. The
         # caller validates emb finiteness post-return.
-        # Iter 108: not checkpointed. Iter 68 chunked this rollout at sqrt(T) because
+        # Not checkpointed. Iter 68 chunked this rollout at sqrt(T) because
         # one backward through the old ~1,500-op step hung for an hour; the planned
         # step's 1440-min graph is ~0.8 GB and checkpointing it measured 2.5x slower.
         for _ in range(max(0, int(n_steps))):

@@ -21,7 +21,7 @@ against `pulse-model.pt.last-good.pt` + `benchmark.dataset.generated.json`.
 So ~all the gate time is `24 × 512` windowed calibration backprops / 8 workers.
 One knob (`512`) sets it.
 
-Iter 108: every one of those minutes now runs through the planned integrator
+Every one of those minutes now runs through the planned integrator
 (`docs/training-runs.md`, "Where the time goes"), ~2.5x cheaper per simulated
 minute forward and backward, with the same trajectories to float rounding — the
 gate's wall-clock falls by about that factor with no change to what it measures.

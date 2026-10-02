@@ -389,7 +389,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
     # this (and trajectory ``input_dropout``) in phase 3. Literature arm
     # rollouts do not read these fields.
     meal_macro_dropout: float = 0.0
-    # Iter 108: windows per optimizer step. 1 is the historical per-window SGD
+    # Windows per optimizer step. 1 is the historical per-window SGD
     # step; k > 1 rolls k windows (usually k different patients) as one batched
     # integrate and averages their losses — about k times the windows per second,
     # since a step costs nearly the same at batch 1 and batch 16, at the price of k
@@ -624,7 +624,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
         whole run vs ~5,300 imitation steps). ``last_result`` holds the epoch's
         aggregate once the generator is exhausted.
 
-        Iter 108: ``windows_per_step`` windows share one optimizer step — rolled as
+        ``windows_per_step`` windows share one optimizer step — rolled as
         one batched integrate, their per-window losses averaged. 1 (the default) is
         the historical one-window SGD step, rng order included.
         """
