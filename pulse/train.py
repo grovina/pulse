@@ -79,8 +79,12 @@ def _memory_stats() -> dict[str, float | int]:
             obj_t = type(obj)
             if not isinstance(obj_t, type) or not issubclass(obj_t, torch.Tensor):
                 continue
-            n_tensors += 1
+            if issubclass(obj_t, _FakeTensor):
+                continue  # held by torch.compile's caches: metadata only, no storage
             numel = obj.numel()
+            if not isinstance(numel, int):
+                continue  # symbolic size (torch.compile tracing state)
+            n_tensors += 1
             total_elems += numel
             if obj.requires_grad or obj.grad_fn is not None:
                 n_grad_tensors += 1
@@ -99,13 +103,14 @@ def _memory_stats() -> dict[str, float | int]:
 import numpy as np
 import torch
 import torch.nn as nn
+from torch._subclasses.fake_tensor import FakeTensor as _FakeTensor
 
 from .knowledge import (
     ALL_CONTRIBUTIONS, ALL_COHORT_STATISTICS,
     TEACHER_DISTILL_LONG_ONLY, TEACHER_DISTILL_MARKERS,
 )
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES
-from .model import ModularPhysiologyNetwork
+from .model import ModularPhysiologyNetwork, enable_compiled_steps
 from .dose_response import DoseResponseProtocol, MarkerDoseTarget
 from .training import (
     ColdModelDistillationSignal,
@@ -266,15 +271,22 @@ def _load_spec_train_args(path: str) -> list[str]:
     return [a for a in train_args if not a.startswith("--spec")]
 
 
-def _set_runtime(seed: int, *, deterministic: bool) -> None:
+def _set_runtime(seed: int, *, deterministic: bool, torch_threads: int = 1) -> None:
     """Initialize RNGs and PyTorch threading.
 
     ``deterministic=True`` pins threads to 1 and asks PyTorch for
     deterministic algorithms — useful for unit tests / spec verification.
-    Default (``False``) leaves PyTorch free to use all available cores,
-    which is a large win on multi-CPU hosts (Cloud Run, Vertex) where
-    pinning kills throughput. Per-epoch results may differ run-to-run
-    by float-reduction order, but the optimization is stochastic anyway.
+
+    ``torch_threads`` sets the intra-op thread count (0 leaves PyTorch's default,
+    one per core). Iter 108: the default is 1. Every rollout here is a sequential
+    chain of tiny ops — dispatch-bound, never FLOP-bound — so intra-op threads have
+    nothing to split: measured on the planned integrator, a 240-min window took
+    1.78 s on 1 thread and 1.87 s on 2, and 14.9 s on 4 threads sharing the machine
+    with one other busy process (OpenMP barriers spinning against a throttled or
+    shared core). Cloud Run can hand the container fewer cores than requested
+    (cgroup throttling — see the diagnostic below), which is exactly that case.
+    Iter 78 saw 4 pinned threads run slower than the default; on this code the
+    default buys nothing and risks the cliff.
     """
     import os
     np.random.seed(seed)
@@ -286,12 +298,8 @@ def _set_runtime(seed: int, *, deterministic: bool) -> None:
             torch.use_deterministic_algorithms(True, warn_only=True)
         except Exception:
             pass
-    # NB: do NOT force more intra-op threads here. The trajectory rollout is a
-    # sequential 240-step integration of a tiny (~65K-param) model, so the per-op
-    # matmuls are small and extra threads add sync overhead instead of speeding
-    # up: iter 78's second dispatch pinned torch to 4 threads and trajectory got
-    # *slower* (188s/epoch -> 316s). Leave PyTorch's default (physical-core
-    # count) for non-deterministic runs.
+    elif torch_threads > 0:
+        torch.set_num_threads(int(torch_threads))
     # One-shot diagnostic so we can confirm the trainer is actually using the
     # CPU it was scheduled on. Cloud Run / Vertex sometimes hand out fewer
     # cores than the wrapper requested (cgroup throttling), and the symptom
@@ -377,6 +385,8 @@ def train(
     # (0 = once per epoch, the pre-97 cadence); per-signal cadence in aux steps.
     aux_every_k_windows: int = 0,
     aux_cadence: dict[str, int] | None = None,
+    # Iter 108: trajectory windows per optimizer step (1 = per-window SGD).
+    trajectory_windows_per_step: int = 1,
     # Iter 97 (review 4.11): per-signal contribution clip before the joint clip.
     aux_signal_clip: float = 0.0,
     cohort_groups_per_step: int = 0,
@@ -399,8 +409,10 @@ def train(
     benchmark_thresholds_uri: str | None = None,
     benchmark_report_path: str | None = None,
     deterministic: bool = False,
+    torch_threads: int = 1,
+    compile_steps: bool = False,
 ):
-    _set_runtime(seed, deterministic=deterministic)
+    _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
     device = torch.device("cpu")
 
     cnames, cprobs = normalize_contribution_weights(contribution_weights)
@@ -448,6 +460,7 @@ def train(
         n_default_patients=n_default_patients,
         trajectory_band_per_marker=trajectory_band_per_marker,
         shape_markers=tuple(trajectory_shape_markers),
+        windows_per_step=trajectory_windows_per_step,
     )
     cohort_signal = RolloutEvidenceSignal(
         family="cohort",
@@ -611,18 +624,21 @@ def train(
         f"insulin_grid={insulin_sweep_protocol.insulin_sweep_uU_mL} μU/mL, "
         f"sample_patients={insulin_sweep_sample_patients}",
     )
+    # Iter 94: print the anchor settings that decide WHAT this signal can see, not
+    # just the short window. The local-scale floor and the long windows are the
+    # whole point of the iter-94 change and were previously unverifiable from the
+    # logs — the only other record is the checkpoint, which does not exist until
+    # the run is over.
+    anchor_desc = (
+        f"(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}"
+        f" long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}"
+        f" long_only={tuple(cold_distill_anchor_long_only)}"
+        f" local_scale_floor={cold_distill_anchor_local_scale_floor})"
+        if cold_distill_mode == "anchored" else ""
+    )
     print(
         f"Cold-model distillation: weight={cold_distill_weight} pool={cold_distill_pool} mode={cold_distill_mode}"
-        # Iter 94: print the anchor settings that decide WHAT this signal can see, not
-        # just the short window. The local-scale floor and the long windows are the
-        # whole point of the iter-94 change and were previously unverifiable from the
-        # logs — the only other record is the checkpoint, which does not exist until
-        # the run is over.
-        f"{f'(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}'
-           f' long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}'
-           f' long_only={tuple(cold_distill_anchor_long_only)}'
-           f' local_scale_floor={cold_distill_anchor_local_scale_floor})'
-           if cold_distill_mode == 'anchored' else ''} "
+        f"{anchor_desc} "
         f"markers={tuple(cold_distill_markers)} "
         f"protocols/epoch={cold_distill_protocols_per_epoch}/{len(cold_distill_signal._protocols)} "
         f"(rate + long-level on teacher internals; 0=disabled)",
@@ -660,6 +676,10 @@ def train(
 
     embeddings = nn.Embedding(n_patients, EMBEDDING_DIM).to(device)
     nn.init.normal_(embeddings.weight, std=0.1)
+    if compile_steps:
+        # Iter 108: opt-in torch.compile of the planned minute step; warmed up and
+        # checked against the eager step here, off (with the reason) on any failure.
+        enable_compiled_steps(model)
 
     start_epoch = 0
     if resume_from:
@@ -853,8 +873,12 @@ def train(
 
             t_traj = time.time()
             n_win = 0
+            aux_blocks = 0
             for n_win in trajectory_signal.iter_windows(model, embeddings, ctx):
-                if aux_every_k_windows > 0 and n_win % aux_every_k_windows == 0:
+                # One aux step each time the window count crosses a multiple of k
+                # (a trajectory step may consume several windows; iter 108).
+                if aux_every_k_windows > 0 and n_win // aux_every_k_windows > aux_blocks:
+                    aux_blocks = n_win // aux_every_k_windows
                     t_pause = time.time()
                     _run_aux_step()
                     t_traj += time.time() - t_pause  # aux time is booked to the aux signals
@@ -1161,6 +1185,7 @@ def train(
         "meal_window_bias": meal_window_bias,
         # Iter 97 (review 4.1 / 4.11 / 1.5).
         "aux_every_k_windows": aux_every_k_windows,
+        "trajectory_windows_per_step": trajectory_windows_per_step,
         "aux_cadence": dict(aux_cadence),
         "aux_signal_clip": aux_signal_clip,
         "aux_steps_by_signal": dict(aux_steps_by_signal),
@@ -1521,7 +1546,7 @@ def _run_benchmark(
 _RUN_PLUMBING_KEYS = frozenset({
     "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
-    "frozen_ruler", "deterministic", "allow_spec_override",
+    "frozen_ruler", "deterministic", "allow_spec_override", "torch_threads", "compile_steps",
     "init_from", "resume_from",
 })
 
@@ -2062,6 +2087,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "on every n-th aux step so the epoch's wall-clock stays flat.",
     )
     parser.add_argument(
+        "--trajectory-windows-per-step", type=int, default=1,
+        help="Iter 108: trajectory windows per optimizer step. 1 = one SGD step per window "
+             "(the historical schedule). k > 1 rolls k windows as one batched integrate and "
+             "averages their losses: ~k x the windows per second (a step costs about the same "
+             "at batch 1 and 16) for k x fewer imitation steps. --aux-every-k-windows still "
+             "counts windows.",
+    )
+    parser.add_argument(
         "--aux-signal-clip", type=float, default=0.0,
         help="Iter 97 (review 4.11): clip each aux signal's OWN gradient contribution to this "
              "norm before the joint clip (0 = off). Per-signal norms are logged every epoch either way.",
@@ -2113,6 +2146,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "embedded truth arrays of a previous report and records it in the "
             "ruler fingerprint. Same effect as exporting the env var."
         ),
+    )
+    parser.add_argument(
+        "--compile-steps", action="store_true",
+        help="Iter 108: torch.compile the planned minute step (~3-5x per rollout on top of "
+             "the planned integrator; needs a C++ compiler — the trainer image has g++). "
+             "Its variants compile at startup (~1 min) and are checked against the eager "
+             "step there; if that fails, compiled steps stay off and the reason is printed.",
+    )
+    parser.add_argument(
+        "--torch-threads", type=int, default=1,
+        help="Intra-op threads (iter 108: default 1 — rollouts are dispatch-bound and "
+             "extra threads only add barrier cost; 0 = PyTorch's default of one per core).",
     )
     parser.add_argument(
         "--deterministic",
@@ -2263,6 +2308,7 @@ def main():
         phase3_meal_dropout=args.phase3_meal_dropout,
         aux_every_k_windows=args.aux_every_k_windows,
         aux_cadence=_parse_aux_cadence(args.aux_cadence),
+        trajectory_windows_per_step=args.trajectory_windows_per_step,
         aux_signal_clip=args.aux_signal_clip,
         cohort_groups_per_step=args.cohort_groups_per_step,
         rules_arms_per_step=args.rules_arms_per_step,
@@ -2280,6 +2326,8 @@ def main():
         benchmark_thresholds_uri=args.benchmark_thresholds_uri,
         benchmark_report_path=args.benchmark_report_path,
         deterministic=args.deterministic,
+        torch_threads=args.torch_threads,
+        compile_steps=args.compile_steps,
     )
 
     if exit_code != 0:

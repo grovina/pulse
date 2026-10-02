@@ -63,4 +63,10 @@ CMD ["sh", "-c", "uvicorn pulse.server:app --host 0.0.0.0 --port ${PORT:-8080}"]
 # ===========================================================================
 FROM runtime AS train
 
+# `--compile-steps` (iter 108) has torch.compile generate C++ for the CPU backend at
+# runtime, which needs a compiler. Trainer image only; the server stays slim.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 ENTRYPOINT ["python", "-m", "pulse.train"]
