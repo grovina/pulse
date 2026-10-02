@@ -41,7 +41,7 @@ from ..knowledge.full_body import (
     generate_sleep_wake,
     simulate_full_body,
 )
-from ..model import integrate, precompute_gut_outputs
+from ..model import integrate, precompute_duodenal_outputs, precompute_gut_outputs
 from ..modules.base import GutModuleBase
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..training_verifier_loss import training_verifier_surrogate_loss
@@ -389,6 +389,12 @@ class TrajectoryRolloutSignal(TrainingSignal):
     # this (and trajectory ``input_dropout``) in phase 3. Literature arm
     # rollouts do not read these fields.
     meal_macro_dropout: float = 0.0
+    # Iter 108: windows per optimizer step. 1 is the historical per-window SGD
+    # step; k > 1 rolls k windows (usually k different patients) as one batched
+    # integrate and averages their losses — about k times the windows per second,
+    # since a step costs nearly the same at batch 1 and batch 16, at the price of k
+    # times fewer imitation steps per epoch.
+    windows_per_step: int = 1
     # Default-patient distillation: extra cold-model episodes supervised
     # through the zero ("default") embedding. Aligns the trajectory training
     # distribution with the textbook benchmark, which queries every scenario
@@ -460,258 +466,387 @@ class TrajectoryRolloutSignal(TrainingSignal):
     def last_result(self) -> SignalResult:
         return getattr(self, "_last_result", SignalResult())
 
+    def _draw_window(
+        self,
+        patient_idx: int,
+        patient_data: dict,
+        window_idx: int,
+        embeddings: nn.Embedding,
+        rng: np.random.Generator,
+        device: torch.device,
+    ) -> "_Window":
+        """Sample one training window and its inputs. The rng draws (start, meal-macro
+        dropout, sleep / activity dropout) happen here, in this order, per window."""
+        is_default = bool(patient_data.get("is_default", False))
+        trajectory_np = patient_data["trajectory"]
+        patient_meals = patient_data["meals"]
+        n_steps = patient_data["duration_min"]
+        sleep_wake_np = patient_data["sleep_wake"]
+        activity_np = patient_data["activity"]
+
+        win_start = sample_window_start(
+            n_steps,
+            patient_meals,
+            rng,
+            window=TRAIN_WINDOW,
+            meal_bias_prob=self.meal_window_bias,
+        )
+        win_end = min(win_start + TRAIN_WINDOW, n_steps)
+
+        init_row = trajectory_np[win_start].astype(np.float64)
+        for mi in range(STATE_DIM):
+            if np.isnan(init_row[mi]):
+                init_row[mi] = NORM_CENTER[mi]
+        if is_default:
+            embedding = torch.zeros(EMBEDDING_DIM, device=device)
+            patient_id = -1  # default-patient sentinel
+        else:
+            patient_id = int(patient_data["patient_id"])
+            embedding = embeddings(torch.tensor(patient_id, device=device))
+
+        win_meals = meals_in_window(patient_meals, win_start, win_end)
+        meals_defaulted = False
+        if win_meals and self.meal_macro_dropout > 0.0 and rng.random() < self.meal_macro_dropout:
+            win_meals = meals_with_default_macros(win_meals)
+            meals_defaulted = True
+
+        sw_tensor = None
+        act_tensor = None
+        if sleep_wake_np is not None and rng.random() > self.input_dropout:
+            sw_tensor = torch.tensor(
+                sleep_wake_np[win_start:win_end], dtype=torch.float32, device=device,
+            )
+        if activity_np is not None and rng.random() > self.input_dropout:
+            act_tensor = torch.tensor(
+                activity_np[win_start:win_end], dtype=torch.float32, device=device,
+            )
+        absorption_np = patient_data["absorption_profile"]
+        return _Window(
+            patient_idx=patient_idx,
+            patient_id=patient_id,
+            is_default=is_default,
+            window_idx=window_idx,
+            win_start=win_start,
+            win_end=win_end,
+            start_hour=float(patient_data["start_hour"]),
+            win_time=(patient_data["start_hour"] * 60 + win_start) % 1440,
+            initial_state=torch.tensor(init_row, dtype=torch.float32, device=device),
+            embedding=embedding,
+            meals=win_meals,
+            meals_defaulted=meals_defaulted,
+            sleep_wake=sw_tensor,
+            activity=act_tensor,
+            target=torch.tensor(
+                trajectory_np[win_start:win_end], dtype=torch.float32, device=device,
+            ),
+            absorption=(
+                torch.tensor(absorption_np[win_start:win_end], dtype=torch.float32, device=device)
+                if absorption_np is not None else None
+            ),
+            traj_mode=patient_data.get("trajectory_loss_mode", "mse"),
+        )
+
+    def _rollout(
+        self, model: nn.Module, windows: list["_Window"],
+    ) -> list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+        """``(pred_traj, gut_window, duodenal_window)`` per window.
+
+        One window rolls exactly as it always has. Several roll as ONE batched
+        integrate, each row carrying its own clock, meals and (possibly dropped)
+        sleep / activity — a dropped series is NaN, which the model fills with its
+        learned default for that row only.
+        """
+        guts = []
+        duos = []
+        for w in windows:
+            guts.append(precompute_gut_outputs(
+                model, w.embedding, w.steps, dt=1.0, start_time_minutes=w.win_time, meals=w.meals,
+            ))
+            duos.append(precompute_duodenal_outputs(model, w.steps, meals=w.meals))
+        if len(windows) == 1:
+            w = windows[0]
+            pred = integrate(
+                model, w.initial_state, w.embedding, w.steps,
+                dt=1.0, start_time_minutes=w.win_time,
+                meals=w.meals,
+                sleep_wake=w.sleep_wake,
+                activity=w.activity,
+                gut_outputs=guts[0],
+                duodenal_outputs=duos[0],
+            )
+            return [(pred, guts[0], duos[0])]
+
+        T = max(w.steps for w in windows)
+        device = windows[0].initial_state.device
+
+        def pad(x: torch.Tensor, fill: float) -> torch.Tensor:
+            if x.shape[0] == T:
+                return x
+            tail = x.new_full((T - x.shape[0], *x.shape[1:]), fill)
+            return torch.cat([x, tail], dim=0)
+
+        def series(x: torch.Tensor | None) -> torch.Tensor:
+            if x is None:
+                return torch.full((T,), float("nan"), device=device)
+            return pad(x, float("nan"))
+
+        pred = integrate(
+            model,
+            torch.stack([w.initial_state for w in windows]),
+            torch.stack([w.embedding for w in windows]),
+            T,
+            dt=1.0,
+            start_time_minutes=torch.tensor(
+                [float(w.win_time) for w in windows], dtype=torch.float64, device=device),
+            meals=[w.meals for w in windows],
+            sleep_wake=torch.stack([series(w.sleep_wake) for w in windows]),
+            activity=torch.stack([series(w.activity) for w in windows]),
+            gut_outputs=torch.stack([pad(g, 0.0) for g in guts]),
+            duodenal_outputs=torch.stack([pad(d, 0.0) for d in duos]),
+            member_steps=torch.tensor([w.steps for w in windows], device=device),
+        )
+        return [
+            (pred[k, : w.steps], guts[k], duos[k]) for k, w in enumerate(windows)
+        ]
+
     def iter_windows(
         self,
         model: nn.Module,
         embeddings: nn.Embedding,
         ctx: SignalContext,
     ):
-        """Generator: one per-window optimizer step per ``yield``.
+        """Generator: one optimizer step per ``yield``, which yields the number of
+        windows consumed so far this epoch.
 
         Iter 97 (review 4.1): the trainer drives this generator and interleaves
         one joint auxiliary step every k windows, instead of running all ~96
         windows and then a single aux step per epoch (25 literature steps in a
         whole run vs ~5,300 imitation steps). ``last_result`` holds the epoch's
         aggregate once the generator is exhausted.
+
+        Iter 108: ``windows_per_step`` windows share one optimizer step — rolled as
+        one batched integrate, their per-window losses averaged. 1 (the default) is
+        the historical one-window SGD step, rng order included.
         """
         device = ctx.device
         rng = ctx.rng
-        norm_scales = self._norm_scales.to(device)
-        typicals = self._typicals.to(device)
-        abs_scale = self._abs_scale.to(device)
-        cpl_w = self.coupling_weight.at(ctx.epoch)
-        ver_w = self.verifier_weight.at(ctx.epoch)
-        band_patient = float(self.trajectory_band)
-        band_default = float(self.trajectory_band_default)
-        band_vec = self._band_vec.to(device) if self._band_vec is not None else None
-        pointwise_mask = self._pointwise_mask.to(device)
-        shape_idx = self._shape_idx.to(device)
+        k = max(1, int(self.windows_per_step))
 
-        loss_sum = 0.0
-        gut_sum = 0.0
-        coupling_sum = 0.0
-        verifier_sum = 0.0
-        shape_sum = 0.0
+        totals = {"loss": 0.0, "gut": 0.0, "coupling": 0.0, "verifier": 0.0, "shape": 0.0}
         n_windows = 0
         n_defaulted = 0
 
-        for patient_idx, patient_data in enumerate(self._dataset):
-            is_default = bool(patient_data.get("is_default", False))
-            trajectory_np = patient_data["trajectory"]
-            patient_meals = patient_data["meals"]
-            n_steps = patient_data["duration_min"]
-            start_hour = patient_data["start_hour"]
-            sleep_wake_np = patient_data["sleep_wake"]
-            activity_np = patient_data["activity"]
-            absorption_np = patient_data["absorption_profile"]
-            traj_mode = patient_data.get("trajectory_loss_mode", "mse")
-            if is_default:
-                pid_tensor = None
-                pid_for_abort = -1  # default-patient sentinel
-            else:
-                pid_tensor = torch.tensor(patient_data["patient_id"], device=device)
-                pid_for_abort = int(patient_data["patient_id"])
+        def draws():
+            for patient_idx, patient_data in enumerate(self._dataset):
+                for window_idx in range(self.windows_per_patient):
+                    yield patient_idx, patient_data, window_idx
 
-            for window_idx in range(self.windows_per_patient):
-                win_start = sample_window_start(
-                    n_steps,
-                    patient_meals,
-                    rng,
-                    window=TRAIN_WINDOW,
-                    meal_bias_prob=self.meal_window_bias,
-                )
-                win_end = min(win_start + TRAIN_WINDOW, n_steps)
-                win_steps = win_end - win_start
-
-                init_row = trajectory_np[win_start].astype(np.float64)
-                for mi in range(STATE_DIM):
-                    if np.isnan(init_row[mi]):
-                        init_row[mi] = NORM_CENTER[mi]
-                initial_state = torch.tensor(init_row, dtype=torch.float32, device=device)
-                win_time = (start_hour * 60 + win_start) % 1440
-                if is_default:
-                    embedding = torch.zeros(EMBEDDING_DIM, device=device)
-                else:
-                    assert pid_tensor is not None
-                    embedding = embeddings(pid_tensor)
-
-                win_meals = meals_in_window(patient_meals, win_start, win_end)
-                meals_defaulted = False
-                if win_meals and self.meal_macro_dropout > 0.0 and rng.random() < self.meal_macro_dropout:
-                    win_meals = meals_with_default_macros(win_meals)
-                    meals_defaulted = True
-
-                sw_tensor = None
-                act_tensor = None
-                if sleep_wake_np is not None and rng.random() > self.input_dropout:
-                    sw_tensor = torch.tensor(
-                        sleep_wake_np[win_start:win_end],
-                        dtype=torch.float32, device=device,
-                    )
-                if activity_np is not None and rng.random() > self.input_dropout:
-                    act_tensor = torch.tensor(
-                        activity_np[win_start:win_end],
-                        dtype=torch.float32, device=device,
-                    )
-
-                # Precompute gut over the whole window once — vectorized
-                # forward_window across T meals, instead of one
-                # GutModule.forward call per integrate step. The same tensor
-                # also feeds the in-window gut_loss target below, so we
-                # don't pay the gut kernel twice.
-                gut_window = precompute_gut_outputs(
-                    model, embedding, win_steps,
-                    dt=1.0, start_time_minutes=win_time,
-                    meals=win_meals,
-                )
-                pred_traj = integrate(
-                    model, initial_state, embedding, win_steps,
-                    dt=1.0, start_time_minutes=win_time,
-                    meals=win_meals,
-                    sleep_wake=sw_tensor,
-                    activity=act_tensor,
-                    gut_outputs=gut_window,
-                )
-
-                target = torch.tensor(
-                    trajectory_np[win_start:win_end],
-                    dtype=torch.float32, device=device,
-                )
-                mask = ~torch.isnan(target)
-                diff = (pred_traj - target) / norm_scales
-                diff = torch.where(mask, diff, torch.zeros_like(diff))
-                # Banded distillation: only excursions outside ±band cost.
-                # band=0 reduces to pure imitation (identical to plain MSE/Huber).
-                # Iter 97: per-marker bands when configured (review 4.2); the
-                # shape markers drop out of the pointwise term entirely.
-                if band_vec is not None:
-                    band_t: torch.Tensor | float = band_vec
-                    band = float(band_vec.mean())
-                else:
-                    band = band_default if is_default else band_patient
-                    band_t = band
-                pw_mask = mask.float() * pointwise_mask
-                denom = pw_mask.sum().clamp(min=1.0)
-                excess = F.relu(diff.abs() - band_t) * pw_mask
-                if traj_mode == "huber":
-                    d = torch.tensor(self.huber_delta, device=device, dtype=diff.dtype)
-                    quad = 0.5 * excess.pow(2)
-                    lin = d * (excess - 0.5 * d)
-                    per = torch.where(excess < d, quad, lin)
-                    loss = per.sum() / denom
-                else:
-                    loss = excess.pow(2).sum() / denom
-
-                shape_component = 0.0
-                if len(self.shape_markers):
-                    sh_pred = pred_traj[:, shape_idx] / norm_scales[shape_idx]
-                    sh_tgt = torch.where(
-                        mask[:, shape_idx], target[:, shape_idx], torch.zeros_like(target[:, shape_idx]),
-                    ) / norm_scales[shape_idx]
-                    sh_band = band_vec[shape_idx] if band_vec is not None else torch.full(
-                        (len(self.shape_markers),), float(band), device=device,
-                    )
-                    sh_loss = shape_marker_loss(sh_pred, sh_tgt, mask[:, shape_idx], sh_band)
-                    loss = loss + sh_loss
-                    shape_component = float(sh_loss.detach().item())
-                    shape_sum += shape_component
-
-                # Catastrophe fence, not a pull (see SOFT_RANGE_DEADZONE).
-                z_typ = (pred_traj - typicals) / norm_scales
-                deviation = F.relu(z_typ.abs() - SOFT_RANGE_DEADZONE).pow(2).mean()
-                loss = loss + SOFT_RANGE_REG * deviation
-
-                cpl_component = 0.0
-                if cpl_w > 0 and self._priors:
-                    cpl = coupling_prior_loss_on_window(
-                        model,
-                        pred_traj,
-                        embedding,
-                        float(win_time),
-                        win_meals,
-                        sw_tensor,
-                        act_tensor,
-                        self._priors,
-                        n_samples=self.coupling_prior_samples,
-                    )
-                    loss = loss + cpl_w * cpl
-                    cpl_component = float(cpl.detach().item())
-                    coupling_sum += cpl_component
-
-                vloss_component = 0.0
-                if ver_w > 0:
-                    vloss = training_verifier_surrogate_loss(
-                        pred_traj,
-                        meals=win_meals,
-                        start_hour=float(start_hour),
-                        timeline_offset_min=float(win_start),
-                    )
-                    loss = loss + ver_w * vloss
-                    vloss_component = float(vloss.detach().item())
-                    verifier_sum += vloss_component
-
-                gut_loss = torch.tensor(0.0, device=device)
-                if absorption_np is not None and win_meals and self.gut_loss_weight > 0:
-                    target_abs = torch.tensor(
-                        absorption_np[win_start:win_end],
-                        dtype=torch.float32, device=device,
-                    )
-                    # Reuse the precomputed gut window — same kernel call
-                    # would otherwise run a second time here.
-                    # Appearance channels only. The teacher's nutrient_flag is a
-                    # binary appearance-rate gate; the student's is unabsorbed-mass
-                    # survival — matching them is a category error (iter 98).
-                    n_app = GutModuleBase.N_APPEARANCE
-                    gut_loss = (
-                        (gut_window[..., :n_app] - target_abs[..., :n_app]) / abs_scale
-                    ).pow(2).mean()
-                    loss = loss + self.gut_loss_weight * gut_loss
-
-                # Iter 25: strict abort. Per-window context goes into ``extra``
-                # so the abort dump pinpoints the offending (patient, window,
-                # win_start, sub-component breakdown) — iter 24's silent
-                # per-window skip lost exactly this signal.
-                safe_step(
-                    loss,
-                    ctx,
-                    signal=f"{self.name}/window",
-                    extra={
-                        "patient_idx": float(patient_idx),
-                        "patient_id": float(pid_for_abort),
-                        "is_default": float(is_default),
-                        "window_idx": float(window_idx),
-                        "win_start": float(win_start),
-                        "win_end": float(win_end),
-                        "win_steps": float(win_steps),
-                        "n_meals_in_window": float(len(win_meals)),
-                        "traj_mode": 1.0 if traj_mode == "huber" else 0.0,
-                        "band": float(band),
-                        "gut_loss": float(gut_loss.detach().item()),
-                        "coupling_loss": cpl_component,
-                        "verifier_loss": vloss_component,
-                        "shape_loss": shape_component,
-                        "meals_defaulted": float(meals_defaulted),
-                    },
-                )
-                loss_sum += float(loss.detach().item())
-                gut_sum += float(gut_loss.detach().item())
+        pending = draws()
+        while True:
+            chunk = []
+            for patient_idx, patient_data, window_idx in pending:
+                chunk.append(self._draw_window(
+                    patient_idx, patient_data, window_idx, embeddings, rng, device))
+                if len(chunk) == k:
+                    break
+            if not chunk:
+                break
+            losses = []
+            parts = []
+            for w, (pred_traj, gut_window, duo_window) in zip(chunk, self._rollout(model, chunk)):
+                loss, comp = self._window_loss(model, w, pred_traj, gut_window, duo_window, ctx)
+                losses.append(loss)
+                parts.append(comp)
+            loss = losses[0] if len(losses) == 1 else torch.stack(losses).mean()
+            # Iter 25: strict abort. Per-window context goes into ``extra``
+            # so the abort dump pinpoints the offending (patient, window,
+            # win_start, sub-component breakdown) — iter 24's silent
+            # per-window skip lost exactly this signal.
+            safe_step(
+                loss,
+                ctx,
+                signal=f"{self.name}/window",
+                extra=_abort_context(chunk, parts),
+            )
+            for w, lv, comp in zip(chunk, losses, parts):
+                totals["loss"] += float(lv.detach().item())
+                totals["gut"] += comp["gut_loss"]
+                totals["coupling"] += comp["coupling_loss"]
+                totals["verifier"] += comp["verifier_loss"]
+                totals["shape"] += comp["shape_loss"]
                 n_windows += 1
-                n_defaulted += int(meals_defaulted)
-                yield n_windows
+                n_defaulted += int(w.meals_defaulted)
+            yield n_windows
 
+        cpl_on = self.coupling_weight.at(ctx.epoch) > 0 and self._priors
         sub: dict[str, float] = {
-            "gut": gut_sum / max(n_windows, 1),
+            "gut": totals["gut"] / max(n_windows, 1),
         }
-        if cpl_w > 0 and self._priors:
-            sub["coupling"] = coupling_sum / max(n_windows, 1)
-        if ver_w > 0:
-            sub["verifier_surrogate"] = verifier_sum / max(n_windows, 1)
+        if cpl_on:
+            sub["coupling"] = totals["coupling"] / max(n_windows, 1)
+        if self.verifier_weight.at(ctx.epoch) > 0:
+            sub["verifier_surrogate"] = totals["verifier"] / max(n_windows, 1)
         if len(self.shape_markers):
-            sub["shape"] = shape_sum / max(n_windows, 1)
+            sub["shape"] = totals["shape"] / max(n_windows, 1)
         sub["meals_defaulted"] = float(n_defaulted)
 
         self._last_result = SignalResult(
-            loss_sum=loss_sum,
+            loss_sum=totals["loss"],
             n_units=n_windows,
             sub_metrics=sub,
         )
+
+    def _window_loss(
+        self,
+        model: nn.Module,
+        w: "_Window",
+        pred_traj: torch.Tensor,
+        gut_window: torch.Tensor,
+        duo_window: torch.Tensor,
+        ctx: SignalContext,
+    ) -> tuple[torch.Tensor, dict[str, float]]:
+        """Every loss that reads this window's rollout, and its components (detached)."""
+        device = ctx.device
+        norm_scales = self._norm_scales.to(device)
+        typicals = self._typicals.to(device)
+        cpl_w = self.coupling_weight.at(ctx.epoch)
+        ver_w = self.verifier_weight.at(ctx.epoch)
+        band_vec = self._band_vec.to(device) if self._band_vec is not None else None
+
+        target = w.target
+        mask = ~torch.isnan(target)
+        diff = (pred_traj - target) / norm_scales
+        diff = torch.where(mask, diff, torch.zeros_like(diff))
+        # Banded distillation: only excursions outside ±band cost.
+        # band=0 reduces to pure imitation (identical to plain MSE/Huber).
+        # Iter 97: per-marker bands when configured (review 4.2); the
+        # shape markers drop out of the pointwise term entirely.
+        if band_vec is not None:
+            band_t: torch.Tensor | float = band_vec
+            band = float(band_vec.mean())
+        else:
+            band = float(self.trajectory_band_default) if w.is_default else float(self.trajectory_band)
+            band_t = band
+        pw_mask = mask.float() * self._pointwise_mask.to(device)
+        denom = pw_mask.sum().clamp(min=1.0)
+        excess = F.relu(diff.abs() - band_t) * pw_mask
+        if w.traj_mode == "huber":
+            d = torch.tensor(self.huber_delta, device=device, dtype=diff.dtype)
+            quad = 0.5 * excess.pow(2)
+            lin = d * (excess - 0.5 * d)
+            per = torch.where(excess < d, quad, lin)
+            loss = per.sum() / denom
+        else:
+            loss = excess.pow(2).sum() / denom
+
+        comp = {
+            "band": band, "shape_loss": 0.0, "coupling_loss": 0.0,
+            "verifier_loss": 0.0, "gut_loss": 0.0,
+        }
+        if len(self.shape_markers):
+            shape_idx = self._shape_idx.to(device)
+            sh_pred = pred_traj[:, shape_idx] / norm_scales[shape_idx]
+            sh_tgt = torch.where(
+                mask[:, shape_idx], target[:, shape_idx], torch.zeros_like(target[:, shape_idx]),
+            ) / norm_scales[shape_idx]
+            sh_band = band_vec[shape_idx] if band_vec is not None else torch.full(
+                (len(self.shape_markers),), float(band), device=device,
+            )
+            sh_loss = shape_marker_loss(sh_pred, sh_tgt, mask[:, shape_idx], sh_band)
+            loss = loss + sh_loss
+            comp["shape_loss"] = float(sh_loss.detach().item())
+
+        # Catastrophe fence, not a pull (see SOFT_RANGE_DEADZONE).
+        z_typ = (pred_traj - typicals) / norm_scales
+        deviation = F.relu(z_typ.abs() - SOFT_RANGE_DEADZONE).pow(2).mean()
+        loss = loss + SOFT_RANGE_REG * deviation
+
+        if cpl_w > 0 and self._priors:
+            cpl = coupling_prior_loss_on_window(
+                model,
+                pred_traj,
+                w.embedding,
+                float(w.win_time),
+                w.meals,
+                w.sleep_wake,
+                w.activity,
+                self._priors,
+                n_samples=self.coupling_prior_samples,
+                gut_window=gut_window,
+                duodenal_window=duo_window,
+            )
+            loss = loss + cpl_w * cpl
+            comp["coupling_loss"] = float(cpl.detach().item())
+
+        if ver_w > 0:
+            vloss = training_verifier_surrogate_loss(
+                pred_traj,
+                meals=w.meals,
+                start_hour=w.start_hour,
+                timeline_offset_min=float(w.win_start),
+            )
+            loss = loss + ver_w * vloss
+            comp["verifier_loss"] = float(vloss.detach().item())
+
+        if w.absorption is not None and w.meals and self.gut_loss_weight > 0:
+            # Appearance channels only. The teacher's nutrient_flag is a
+            # binary appearance-rate gate; the student's is unabsorbed-mass
+            # survival — matching them is a category error (iter 98).
+            n_app = GutModuleBase.N_APPEARANCE
+            gut_loss = (
+                (gut_window[..., :n_app] - w.absorption[..., :n_app]) / self._abs_scale.to(device)
+            ).pow(2).mean()
+            loss = loss + self.gut_loss_weight * gut_loss
+            comp["gut_loss"] = float(gut_loss.detach().item())
+        return loss, comp
+
+
+@dataclass
+class _Window:
+    """One sampled training window and everything its rollout and losses read."""
+
+    patient_idx: int
+    patient_id: int
+    is_default: bool
+    window_idx: int
+    win_start: int
+    win_end: int
+    start_hour: float
+    win_time: float
+    initial_state: torch.Tensor
+    embedding: torch.Tensor
+    meals: list[MealEvent]
+    meals_defaulted: bool
+    sleep_wake: torch.Tensor | None
+    activity: torch.Tensor | None
+    target: torch.Tensor
+    absorption: torch.Tensor | None
+    traj_mode: str
+
+    @property
+    def steps(self) -> int:
+        return self.win_end - self.win_start
+
+
+def _abort_context(windows: list[_Window], parts: list[dict[str, float]]) -> dict[str, float]:
+    """The NaN-abort dump's per-window context (the first window of a batched step,
+    plus the batch size)."""
+    w, comp = windows[0], parts[0]
+    return {
+        "patient_idx": float(w.patient_idx),
+        "patient_id": float(w.patient_id),
+        "is_default": float(w.is_default),
+        "window_idx": float(w.window_idx),
+        "win_start": float(w.win_start),
+        "win_end": float(w.win_end),
+        "win_steps": float(w.steps),
+        "n_meals_in_window": float(len(w.meals)),
+        "traj_mode": 1.0 if w.traj_mode == "huber" else 0.0,
+        "band": float(comp["band"]),
+        "gut_loss": comp["gut_loss"],
+        "coupling_loss": comp["coupling_loss"],
+        "verifier_loss": comp["verifier_loss"],
+        "shape_loss": comp["shape_loss"],
+        "meals_defaulted": float(w.meals_defaulted),
+        "windows_in_step": float(len(windows)),
+    }

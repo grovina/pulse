@@ -43,7 +43,7 @@ import torch.nn as nn
 from .knowledge.full_body import PatientParams
 from .knowledge.textbook_scenarios.base import cold_model_trajectory
 from .landmarks import LandmarkDirection, post_meal_landmarks
-from .model import integrate, precompute_gut_outputs
+from .model import integrate
 from .modules.gut import MealEvent
 from .types import MARKER_INDEX
 
@@ -225,11 +225,10 @@ def predicted_peaks_batched(
 ) -> torch.Tensor:
     """Soft Δpeak per (marker, dose, embedding).
 
-    Returns ``[B, M, D]`` — B embeddings × M markers × D doses. Runs one
-    batched ``integrate`` per dose (same dose for every embedding in the
-    batch), shared across all supervised markers — the marker dimension
-    just re-extracts peaks from the same trajectory, no extra forward
-    passes.
+    Returns ``[B, M, D]`` — B embeddings × M markers × D doses. Runs ONE
+    batched ``integrate`` over every (dose, embedding) pair, shared across all
+    supervised markers — the marker dimension just re-extracts peaks from the
+    same trajectory, no extra forward passes.
     """
     if len(markers) != len(directions):
         raise ValueError("markers / directions length mismatch")
@@ -241,23 +240,23 @@ def predicted_peaks_batched(
     M = len(markers)
     D = len(protocol.carb_doses_g)
 
-    peaks_per_dose: list[torch.Tensor] = []
-    for dose in protocol.carb_doses_g:
-        meal = MealEvent(
+    # Every dose in ONE batched rollout: row d·B + b is dose d at embedding b.
+    meals = [
+        [MealEvent(
             time=float(protocol.meal_offset_min),
             carbs=float(dose),
             fats=float(protocol.fats_g),
             proteins=float(protocol.proteins_g),
-        )
-        gut = precompute_gut_outputs(
-            model, embeddings, n_steps,
-            dt=1.0, start_time_minutes=t0, meals=[meal],
-        )
-        traj = integrate(
-            model, state_b, embeddings, n_steps,
-            dt=1.0, start_time_minutes=t0, meals=[meal],
-            gut_outputs=gut,
-        )  # [B, T, STATE]
+        )]
+        for dose in protocol.carb_doses_g for _ in range(B)
+    ]
+    trajs = integrate(
+        model, state_b.repeat(D, 1), embeddings.repeat(D, 1), n_steps,
+        dt=1.0, start_time_minutes=t0, meals=meals,
+    ).reshape(D, B, n_steps, -1)
+
+    peaks_per_dose: list[torch.Tensor] = []
+    for traj in trajs:  # [B, T, STATE] per dose
         # Extract Δpeak per (marker, batch). post_meal_landmarks is 1-D
         # over the trajectory window; the inner loops are cheap relative
         # to the integrate above.

@@ -14,7 +14,7 @@ because they need a differentiable soft-peak and a focused weight.
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Sequence
 
 import numpy as np
 import torch
@@ -28,7 +28,9 @@ from .knowledge.cohort_types import (
     StatisticWindow,
     TargetShape,
 )
-from .model import ModularPhysiologyNetwork, integrate, precompute_gut_outputs
+from .model import (
+    ModularPhysiologyNetwork, integrate, precompute_duodenal_outputs, precompute_gut_outputs,
+)
 from .modules.gut import MealEvent
 from .types import MARKER_INDEX, NORM_CENTER
 
@@ -37,8 +39,10 @@ __all__ = [
     "ARM_DEFAULT_SLEEP_WAKE",
     "cohort_statistic_epoch_loss",
     "cohort_statistic_loss_group",
+    "cohort_statistic_loss_groups",
     "cohort_statistic_loss_one_spec",
     "norm_center_initial_state",
+    "rollout_arms",
     "score_batch_statistic",
     "shaped_residual",
 ]
@@ -148,24 +152,90 @@ def _rollout_arm_states(
         model, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
     )
-    # Iter 68 round 3: gradient checkpointing on the cohort rollout. The
-    # iter-67 saga turned out to have TWO memory eaters, not one. Round 1+2
-    # fixed cold-distill (the visible one in watchdog stack traces); round 3
-    # fixes cohort_statistic, which the intra-epoch memprof in r2 caught
-    # red-handed: RSS jumped 879 MB → 26 GB inside one cohort_statistic
-    # compute() call. With 31 specs × 1-3 arms × 13 embeddings × up to 1440
-    # steps unchunked, the held activation graph is ~25 GB. Checkpointing at
-    # sqrt(n_steps) segments mirrors the cold-distill fix and drops this by
-    # ~sqrt(n_steps)×. Same back-compat guarantees: bench-time integrate has
-    # default checkpoint_segments=0 so prediction quality is unaffected.
-    ckpt_segs = max(1, int(n_steps**0.5))
+    # Iter 108: no gradient checkpointing. Iter 68 added sqrt(T) segments when the
+    # old ~1,500-op step held ~25 GB of graph for one cohort call; the planned step
+    # holds ~0.5-0.7 MB per simulated minute (1440 min x 40 rows: +1.0 GB), and
+    # checkpointing it measured 2.5x SLOWER with MORE resident memory (its saved-
+    # tensor hooks now cost more than the graph they save).
     return integrate(
         model, state_batch, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
         sleep_wake=sw, activity=act,
         gut_outputs=gut,
-        checkpoint_segments=ckpt_segs,
     )
+
+
+def rollout_arms(
+    model: ModularPhysiologyNetwork,
+    arm_rows: Sequence[tuple[CohortArmSpec, torch.Tensor, torch.Tensor]],
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
+) -> list[torch.Tensor]:
+    """Roll several arms as ONE batched rollout.
+
+    ``arm_rows`` holds ``(arm, embeddings[N_i, EMB], states[N_i, STATE_DIM])`` per arm.
+    Every row carries its own arm's protocol (meals, start hour, sleep / activity), and
+    arms shorter than the longest are held once their duration is over
+    (``integrate(member_steps=...)``), so each returned ``[N_i, duration_i, STATE_DIM]``
+    is what ``_rollout_arm_states`` returns for that arm alone — at the cost of one
+    rollout instead of one per arm (the step costs about the same at B = 1 and B = 64).
+
+    ``input_dropout`` draws happen per arm in order, exactly as the per-arm path.
+    Not checkpointed (see ``_rollout_arm_states``).
+    """
+    if not arm_rows:
+        return []
+    device = arm_rows[0][2].device
+    T = max(int(arm.duration_min) for arm, _, _ in arm_rows)
+    embs, states, starts, horizons, meals, sws, acts, guts, duos = [], [], [], [], [], [], [], [], []
+    nan = torch.full((T,), float("nan"), dtype=torch.float32, device=device)
+
+    def padded(series: torch.Tensor | None, fill: float) -> torch.Tensor:
+        if series is None:
+            return nan  # missing: the model's learned default, per minute
+        out = torch.full((T,), fill, dtype=torch.float32, device=device)
+        out[: series.shape[0]] = series
+        return out
+
+    for arm, emb_i, state_i in arm_rows:
+        n_i = int(emb_i.shape[0])
+        dur = int(arm.duration_min)
+        arm_meals = _meals_from_spec(arm.meals)
+        sw = _optional_series_tensor(
+            f"{arm.label}.sleep_wake", arm.sleep_wake, dur, device, fill=ARM_DEFAULT_SLEEP_WAKE,
+        )
+        act = _optional_series_tensor(
+            f"{arm.label}.activity", arm.activity, dur, device, fill=ARM_DEFAULT_ACTIVITY,
+        )
+        if input_dropout > 0.0 and rng is not None:
+            if rng.random() < input_dropout:
+                sw = None
+            if rng.random() < input_dropout:
+                act = None
+        embs.append(emb_i)
+        states.append(state_i)
+        starts.append(torch.full((n_i,), float(arm.start_hour * 60.0), dtype=torch.float64, device=device))
+        horizons.append(torch.full((n_i,), dur, dtype=torch.long, device=device))
+        meals.extend([arm_meals] * n_i)
+        sws.append(padded(sw, ARM_DEFAULT_SLEEP_WAKE).expand(n_i, T))
+        acts.append(padded(act, ARM_DEFAULT_ACTIVITY).expand(n_i, T))
+        guts.append(precompute_gut_outputs(model, emb_i, T, dt=1.0, meals=arm_meals))
+        duos.append(precompute_duodenal_outputs(model, T, meals=arm_meals).expand(n_i, T, -1))
+    traj = integrate(
+        model, torch.cat(states), torch.cat(embs), T,
+        dt=1.0, start_time_minutes=torch.cat(starts), meals=meals,
+        sleep_wake=torch.cat(sws), activity=torch.cat(acts),
+        gut_outputs=torch.cat(guts), duodenal_outputs=torch.cat(duos),
+        member_steps=torch.cat(horizons),
+    )
+    out: list[torch.Tensor] = []
+    row = 0
+    for arm, emb_i, _ in arm_rows:
+        n_i = int(emb_i.shape[0])
+        out.append(traj[row:row + n_i, : int(arm.duration_min)])
+        row += n_i
+    return out
 
 
 def _rollout_arm_batched(
@@ -307,6 +377,75 @@ def cohort_statistic_loss_one_spec(
     return score_batch_statistic(pred, spec)
 
 
+def cohort_statistic_loss_groups(
+    model: nn.Module,
+    embeddings_to_supervise: list[torch.Tensor],
+    groups: Sequence[tuple[list[CohortStatisticSpec], list[torch.Tensor], tuple[CohortArmSpec, ...] | None]],
+    *,
+    input_dropout: float = 0.0,
+    rng: np.random.Generator | None = None,
+) -> dict[str, tuple[torch.Tensor, float, float]]:
+    """Batched per-spec losses for several spec GROUPS in one rollout.
+
+    Each group is ``(specs, initial_states, arms_override)``: specs that share one arm
+    protocol (iter 79's grouping condition), one initial state per spec, and an
+    optional per-epoch perturbed copy of the group's arms (review 4.10). For each arm
+    of each group the rows are ``[S × B]`` — spec ``s``'s initial state across the B
+    supervised embeddings — and EVERY arm of EVERY group goes through one
+    ``rollout_arms`` call (iter 108; iter 79 batched specs within a group, and arms and
+    groups still rolled one by one).
+
+    Returns ``{spec.name: (loss_tensor, predicted_mean, residual_z)}``. The losses
+    share one autograd graph, so the caller sums the weighted per-spec losses and does
+    ONE backward: gradient-identical, by linearity, to one backward per group.
+    """
+    if not embeddings_to_supervise or not groups:
+        return {}
+    embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
+    B = int(embs.shape[0])
+
+    arm_rows: list[tuple[CohortArmSpec, torch.Tensor, torch.Tensor]] = []
+    layout: list[tuple[list[CohortStatisticSpec], tuple[CohortArmSpec, ...], int]] = []
+    for specs, initial_states, arms_override in groups:
+        arms = specs[0].arms
+        assert all(s.arms == arms for s in specs), "group specs must share arms"
+        if arms_override is not None:
+            # Iter 97 (review 4.10): a per-epoch perturbed copy of the group's
+            # protocol (meal grams / timing / start hour). Windows stay the spec's.
+            assert len(arms_override) == len(arms)
+            arms = arms_override
+        S = len(specs)
+        # Row r = s*B + b → spec s's init state, embedding b.
+        emb_batch = embs.repeat(S, 1)  # [S*B, EMB]
+        state_batch = torch.stack(list(initial_states), dim=0).repeat_interleave(B, dim=0)
+        layout.append((specs, arms, len(arm_rows)))
+        arm_rows.extend((arm, emb_batch, state_batch) for arm in arms)
+
+    trajs = rollout_arms(model, arm_rows, input_dropout=input_dropout, rng=rng)
+
+    out: dict[str, tuple[torch.Tensor, float, float]] = {}
+    for specs, arms, first in layout:
+        arm_trajs = trajs[first:first + len(arms)]
+        for s_idx, spec in enumerate(specs):
+            mi = MARKER_INDEX[spec.marker_id]
+            rows = slice(s_idx * B, (s_idx + 1) * B)
+            per_arm: list[torch.Tensor] = []
+            for arm_idx, arm in enumerate(arms):
+                win = _arm_window(spec, arm_idx)
+                _validate_window(spec.name, win, arm.duration_min)
+                per_arm.append(
+                    _arm_statistic_batched(
+                        arm_trajs[arm_idx][rows], mi, win, spec.kind, spec.softargmax_beta,
+                    ),
+                )  # [B]
+            if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
+                pred = per_arm[1] - per_arm[0]
+            else:
+                pred = per_arm[0]
+            out[spec.name] = score_batch_statistic(pred, spec)
+    return out
+
+
 def cohort_statistic_loss_group(
     model: nn.Module,
     embeddings_to_supervise: list[torch.Tensor],
@@ -317,68 +456,13 @@ def cohort_statistic_loss_group(
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
 ) -> dict[str, tuple[torch.Tensor, float, float]]:
-    """Batched per-spec loss for specs that share one arm protocol (iter 79).
-
-    Every spec in ``specs`` must have identical ``arms`` (by value) — the
-    grouping condition the signal enforces. They may differ freely in
-    ``marker_id`` / ``window`` / ``kind`` / ``target`` / ``sigma`` and in
-    their ``initial_states`` (cold-init is seeded per spec). For each arm we
-    stack ``[S × B]`` rows (spec s's init state repeated across the B
-    supervised embeddings) and call ``integrate`` ONCE, instead of one
-    rollout per spec — collapsing e.g. the four 2880-step sleep specs or the
-    five 1440-step fast specs into a single long rollout each.
-
-    Returns ``{spec.name: (loss_tensor, predicted_mean, residual_z)}`` — the
-    same per-spec triple ``cohort_statistic_loss_one_spec`` returns. The loss
-    tensors share one autograd graph (the batched rollout), so the caller
-    sums the weighted per-spec losses and does ONE backward for the group:
-    gradient-identical to per-spec backward by linearity, with the per-spec
-    memory bound preserved (one group's graph live at a time).
-    """
-    if not embeddings_to_supervise or not specs:
+    """``cohort_statistic_loss_groups`` for one group of specs sharing one arm protocol."""
+    if not specs:
         return {}
-    arms = specs[0].arms
-    assert all(s.arms == arms for s in specs), "group specs must share arms"
-    if arms_override is not None:
-        # Iter 97 (review 4.10): a per-epoch perturbed copy of the group's
-        # protocol (meal grams / timing / start hour). Windows stay the spec's.
-        assert len(arms_override) == len(arms)
-        arms = arms_override
-
-    embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
-    B = int(embs.shape[0])
-    S = len(specs)
-    # Row r = s*B + b → spec s's init state, embedding b.
-    emb_batch = embs.repeat(S, 1)  # [S*B, EMB]
-    init_stack = torch.stack(list(initial_states), dim=0)  # [S, STATE]
-    state_batch = init_stack.repeat_interleave(B, dim=0)  # [S*B, STATE]
-
-    arm_trajs: list[torch.Tensor] = [
-        _rollout_arm_states(
-            model, emb_batch, arm, state_batch, input_dropout=input_dropout, rng=rng,
-        )  # [S*B, T, STATE]
-        for arm in arms
-    ]
-
-    out: dict[str, tuple[torch.Tensor, float, float]] = {}
-    for s_idx, spec in enumerate(specs):
-        mi = MARKER_INDEX[spec.marker_id]
-        rows = slice(s_idx * B, (s_idx + 1) * B)
-        per_arm: list[torch.Tensor] = []
-        for arm_idx, arm in enumerate(arms):
-            win = _arm_window(spec, arm_idx)
-            _validate_window(spec.name, win, arm.duration_min)
-            per_arm.append(
-                _arm_statistic_batched(
-                    arm_trajs[arm_idx][rows], mi, win, spec.kind, spec.softargmax_beta,
-                ),
-            )  # [B]
-        if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
-            pred = per_arm[1] - per_arm[0]
-        else:
-            pred = per_arm[0]
-        out[spec.name] = score_batch_statistic(pred, spec)
-    return out
+    return cohort_statistic_loss_groups(
+        model, embeddings_to_supervise, [(specs, initial_states, arms_override)],
+        input_dropout=input_dropout, rng=rng,
+    )
 
 
 def cohort_statistic_epoch_loss(

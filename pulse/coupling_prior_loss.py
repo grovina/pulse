@@ -92,62 +92,25 @@ def coupling_band_hinge(sens_norm: torch.Tensor, prior: CouplingPrior) -> torch.
     return torch.where(excess < 1.0, 0.5 * excess.pow(2), excess - 0.5)
 
 
-def coupling_prior_loss_at_step(
-    model: torch.nn.Module,
-    state: torch.Tensor,
-    embedding: torch.Tensor,
-    t_abs: float,
-    meals: list,
-    sleep_wake_step: torch.Tensor | None,
-    activity_step: torch.Tensor | None,
-    priors: list[CouplingPrior],
+def _band_hinge_batched(
+    sens_norm: torch.Tensor, sign: torch.Tensor, lo: torch.Tensor, hi: torch.Tensor,
+    width: torch.Tensor,
 ) -> torch.Tensor:
-    """Scalar loss averaged over priors (sign alignment on ∂(rate_target)/∂(state_source))."""
-    if not priors:
-        return state.new_tensor(0.0)
+    """``coupling_band_hinge`` for many priors at once (``[..., P]`` against ``[P]``)."""
+    s = sens_norm * sign
+    excess = (F.relu(lo - s) + F.relu(s - hi)) / width
+    return torch.where(excess < 1.0, 0.5 * excess.pow(2), excess - 0.5)
 
-    device = state.device
-    total = state.new_tensor(0.0)
-    t_tensor = torch.tensor([t_abs % 1440.0], device=device, dtype=torch.float32)
 
-    for prior in priors:
-        si = MARKER_INDEX[prior.source_marker]
-        ti = MARKER_INDEX[prior.target_marker]
-        eps = _eps_for_marker(prior.source_marker)
-
-        s0 = state
-        s1 = state.clone()
-        s1[si] = s1[si] + eps
-
-        # gut_clock_exempt (iter 90): this is a pointwise finite difference in the
-        # SOURCE STATE only. The gut appearance term depends on (meals, t, embedding)
-        # and not on state, so it is identical in r0 and r1 and cancels exactly in
-        # (r1 - r0). The absolute-vs-window-offset gut clock therefore cannot affect
-        # this loss — the one place the frame contract may be waived.
-        r0 = model(
-            s0.unsqueeze(0),
-            embedding.unsqueeze(0),
-            t_tensor,
-            meals,
-            sleep_wake=sleep_wake_step.unsqueeze(0) if sleep_wake_step is not None else None,
-            activity=activity_step.unsqueeze(0) if activity_step is not None else None,
-            gut_clock_exempt=True,
-        ).squeeze(0)
-        r1 = model(
-            s1.unsqueeze(0),
-            embedding.unsqueeze(0),
-            t_tensor,
-            meals,
-            sleep_wake=sleep_wake_step.unsqueeze(0) if sleep_wake_step is not None else None,
-            activity=activity_step.unsqueeze(0) if activity_step is not None else None,
-            gut_clock_exempt=True,
-        ).squeeze(0)
-
-        sens = (r1[ti] - r0[ti]) / eps
-        sens_n = normalized_sensitivity(sens, prior.source_marker, prior.target_marker)
-        total = total + coupling_band_hinge(sens_n, prior)
-
-    return total / max(len(priors), 1)
+def _sample_indices(n_steps: int, n_samples: int) -> list[int]:
+    indices: list[int] = []
+    for k in range(n_samples):
+        if n_samples == 1:
+            idx = n_steps // 2
+        else:
+            idx = int((k + 1) * (n_steps - 1) / (n_samples + 1))
+        indices.append(max(0, min(n_steps - 1, idx)))
+    return sorted(set(indices))
 
 
 def coupling_prior_loss_on_window(
@@ -160,35 +123,87 @@ def coupling_prior_loss_on_window(
     activity: torch.Tensor | None,
     priors: list[CouplingPrior],
     n_samples: int = 3,
+    *,
+    gut_window: torch.Tensor | None = None,
+    duodenal_window: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Average coupling loss at a few interior timesteps along an integrated trajectory."""
+    """Average coupling loss at a few interior timesteps along an integrated trajectory.
+
+    For each sampled step the trajectory's state is evaluated together with one copy
+    per prior whose SOURCE marker is nudged by ``eps``; the target's rate difference
+    over ``eps`` is the edge's sensitivity, scored by ``coupling_band_hinge`` in the
+    normalized frame. All rows go through ONE batched ``model.forward`` — the
+    unperturbed rate is shared by every prior at a step instead of recomputed per
+    prior (iter 108: 3 samples x 35 edges used to be 210 single-row forwards, about
+    the cost of the window's own rollout).
+
+    The sensitivity is taken at the trajectory's operating point, so the rows carry
+    that minute's gut appearance and duodenal delivery (``gut_window`` /
+    ``duodenal_window``, ``[T, ...]`` on the window-offset clock — what the rollout
+    itself saw). The model is nonlinear: its d(rate)/d(state) depends on the meal
+    input. Through iter 107 the probe ran on the ABSOLUTE clock (so an in-window meal
+    was usually invisible) with zero duodenal drive, i.e. the edges were scored at a
+    fasted operating point whatever the window contained. When the windows are not
+    given they are computed here from ``meals`` on the window-offset clock.
+    """
     n_steps = pred_traj.shape[0]
     if n_steps < 2 or not priors:
         return pred_traj.new_tensor(0.0)
+    device = pred_traj.device
+    dtype = pred_traj.dtype
+    indices = _sample_indices(n_steps, n_samples)
+    I, P = len(indices), len(priors)
+    rows_per_step = 1 + P
+    idx_t = torch.tensor(indices, dtype=torch.long, device=device)
 
-    indices: list[int] = []
-    for k in range(n_samples):
-        if n_samples == 1:
-            idx = n_steps // 2
-        else:
-            idx = int((k + 1) * (n_steps - 1) / (n_samples + 1))
-        idx = max(0, min(n_steps - 1, idx))
-        indices.append(idx)
-    indices = sorted(set(indices))
+    src = [MARKER_INDEX[p.source_marker] for p in priors]
+    tgt = [MARKER_INDEX[p.target_marker] for p in priors]
+    eps = [_eps_for_marker(p.source_marker) for p in priors]
+    nudge = torch.zeros(P, pred_traj.shape[-1], dtype=dtype, device=device)
+    nudge[torch.arange(P, device=device), torch.tensor(src, device=device)] = torch.tensor(
+        eps, dtype=dtype, device=device)
 
-    acc = pred_traj.new_tensor(0.0)
-    for idx in indices:
-        t_abs = start_time_minutes + float(idx)
-        sw_s = sleep_wake[idx] if sleep_wake is not None else None
-        act_s = activity[idx] if activity is not None else None
-        acc = acc + coupling_prior_loss_at_step(
-            model,
-            pred_traj[idx],
-            embedding,
-            t_abs,
-            meals,
-            sw_s,
-            act_s,
-            priors,
-        )
-    return acc / max(len(indices), 1)
+    base = pred_traj.index_select(0, idx_t)                                   # [I, S]
+    states = torch.cat([base.unsqueeze(1), base.unsqueeze(1) + nudge], dim=1)  # [I, 1+P, S]
+    states = states.reshape(I * rows_per_step, -1)
+
+    if gut_window is None or duodenal_window is None:
+        from .model import precompute_duodenal_outputs, precompute_gut_outputs
+        if gut_window is None:
+            gut_window = precompute_gut_outputs(model, embedding, n_steps, meals=meals)
+        if duodenal_window is None:
+            duodenal_window = precompute_duodenal_outputs(model, n_steps, meals=meals)
+
+    def per_row(x: torch.Tensor) -> torch.Tensor:
+        return x.index_select(0, idx_t).repeat_interleave(rows_per_step, dim=0)
+
+    t_rows = torch.tensor(
+        [(start_time_minutes + float(i)) % 1440.0 for i in indices], dtype=torch.float32, device=device,
+    ).repeat_interleave(rows_per_step)
+    rates = model(
+        states,
+        embedding.reshape(1, -1).expand(states.shape[0], -1),
+        t_rows,
+        meals,
+        sleep_wake=per_row(sleep_wake) if sleep_wake is not None else None,
+        activity=per_row(activity) if activity is not None else None,
+        gut_override=per_row(gut_window),
+        duodenal_override=per_row(duodenal_window),
+    ).reshape(I, rows_per_step, -1)
+
+    tgt_t = torch.tensor(tgt, dtype=torch.long, device=device)
+    r0 = rates[:, 0, :].index_select(-1, tgt_t)                                     # [I, P]
+    r1 = rates[:, 1:, :].gather(-1, tgt_t.view(1, P, 1).expand(I, P, 1)).squeeze(-1)  # [I, P]
+
+    def _vec(xs: list[float]) -> torch.Tensor:
+        return torch.tensor(xs, dtype=dtype, device=device)
+
+    ratio = [float(NORM_SCALE[si]) / float(NORM_SCALE[ti]) for si, ti in zip(src, tgt)]
+    bounds = [sorted((float(p.magnitude_range[0]), float(p.magnitude_range[1]))) for p in priors]
+    sens_n = (r1 - r0) / _vec(eps) * _vec(ratio)
+    hinge = _band_hinge_batched(
+        sens_n, _vec([float(p.sign) for p in priors]),
+        _vec([lo for lo, _ in bounds]), _vec([hi for _, hi in bounds]),
+        _vec([max(hi - lo, 1e-6) for lo, hi in bounds]),
+    )
+    return hinge.mean()

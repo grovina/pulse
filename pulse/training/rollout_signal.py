@@ -21,9 +21,9 @@ from torch import nn
 
 from ..cohort_loss import (
     InitialStateFn,
-    _rollout_arm_batched,
-    cohort_statistic_loss_group,
+    cohort_statistic_loss_groups,
     norm_center_initial_state,
+    rollout_arms,
 )
 from ..dose_response import (
     DoseResponseProtocol,
@@ -453,17 +453,16 @@ class RolloutEvidenceSignal(TrainingSignal):
         # cold-init states — collapsing the long shared rollouts. Singleton
         # protocols fall through the same path with S=1 (no behavior change).
         #
-        # GRADIENT-IDENTICAL to the per-spec path: the group's per-spec losses
-        # share one rollout graph; summing the weighted losses and doing ONE
-        # backward per group accumulates into .grad exactly as per-spec
-        # backward did (linearity — the same argument the iter-68 block above
-        # relies on). Memory bound preserved: one group's graph is live at a
-        # time (largest group ≈ 5 specs × B, vs the OOM-causing all-31 graph).
+        # GRADIENT-IDENTICAL to the per-spec path: the per-spec losses share one
+        # rollout graph; summing the weighted losses and doing ONE backward
+        # accumulates into .grad exactly as per-spec backward did (linearity —
+        # the same argument the iter-68 block above relies on). Iter 108 rolls
+        # the step's groups (``groups_per_step``) together: the planned step
+        # holds ~0.7 MB of graph per simulated minute at 40 rows (measured:
+        # 2880 min, +2.0 GB), against the ~26 GB the old ~1,500-op step
+        # reached for a single group call in the iter-67 OOM saga.
         #
-        # ``emb_list`` rebuilt fresh per group (not per spec): within a group
-        # there is one backward, so the shared embeddings(pid) lookup is
-        # traversed once — the r5 shared-graph crash only bites across
-        # independent backwards, which now happen per group, not per spec.
+        # One embeddings(pid) lookup serves the step's single backward.
         # ``snapshot`` backs the isolation policy (non-finite spec dropped).
         snapshot = grad_snapshot(ctx)
 
@@ -484,23 +483,28 @@ class RolloutEvidenceSignal(TrainingSignal):
                 for g in group_list for spec in g
             ) or 1e-8
 
+        # Iter 108: every group of the step in ONE rollout (``cohort_statistic_loss_groups``)
+        # and one backward — by linearity the same gradient as a backward per group,
+        # with the perturbation draws taken in the same group order as before.
         raw_weighted_sum = 0.0
         z_by_spec: dict[str, float] = {}
         loss_by_spec: dict[str, float] = {}
         n_perturbed = 0
+        prepared = []
         for group_specs in group_list:
-            emb_list = build_emb_list()
             init_states = [init_fn(spec) for spec in group_specs]
             arms_override = None
             if self.perturb_protocols and ctx.rng.random() >= self.perturb_fixed_prob:
                 arms_override = perturb_group_arms(group_specs, ctx.rng)
                 if arms_override is not None:
                     n_perturbed += 1
-            results = cohort_statistic_loss_group(
-                model, emb_list, group_specs, init_states, arms_override=arms_override,
-                input_dropout=float(ctx.input_dropout), rng=ctx.rng,
-            )
-            group_loss = None
+            prepared.append((group_specs, init_states, arms_override))
+        results = cohort_statistic_loss_groups(
+            model, build_emb_list(), prepared,
+            input_dropout=float(ctx.input_dropout), rng=ctx.rng,
+        )
+        step_loss = None
+        for group_specs in group_list:
             for spec in group_specs:
                 loss_t, _pred, z = results[spec.name]
                 z_by_spec[spec.name] = z
@@ -514,11 +518,11 @@ class RolloutEvidenceSignal(TrainingSignal):
                         flush=True,
                     )
                     continue
-                group_loss = contrib if group_loss is None else group_loss + contrib
+                step_loss = contrib if step_loss is None else step_loss + contrib
                 raw_weighted_sum += loss_by_spec[spec.name] * sw
-            if group_loss is not None:
-                group_loss.backward()
-            del results, group_loss, emb_list  # release graph leaves promptly
+        if step_loss is not None:
+            step_loss.backward()
+        del results, step_loss  # release graph leaves promptly
 
         raw_avg = raw_weighted_sum / total_weight
 
@@ -648,18 +652,22 @@ class RolloutEvidenceSignal(TrainingSignal):
         v_sum: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
         sat_count: dict[str, float] = {rule.name: 0.0 for rule in self.rules}
 
-        for (label, _init_mode), members in group_items:
+        # Iter 108: every arm group of the step in ONE rollout and one backward
+        # (linearity: the same gradient as a backward per arm group).
+        arm_rows = []
+        for (_label, _init_mode), members in group_items:
             rule_repr, arm_repr = members[0]
             init_state = init_fn(rule_repr, arm_repr)
-            emb_list = build_emb_list()
-            embs = torch.stack(emb_list, dim=0)
-            traj = _rollout_arm_batched(
-                model, embs, arm_repr, init_state,
-                input_dropout=float(ctx.input_dropout), rng=ctx.rng,
-            )
-            rule_ctx = rule_context_for_arm(arm_repr)
+            embs = torch.stack(build_emb_list(), dim=0)
+            arm_rows.append((arm_repr, embs, init_state.unsqueeze(0).expand(B, -1)))
+        trajs = rollout_arms(
+            model, arm_rows, input_dropout=float(ctx.input_dropout), rng=ctx.rng,
+        )
 
-            arm_loss = None
+        step_loss = None
+        for ((label, _init_mode), members), traj in zip(group_items, trajs):
+            arm_repr = members[0][1]
+            rule_ctx = rule_context_for_arm(arm_repr)
             for rule, _arm in members:
                 rw = applied_weight(rule)
                 n_R = n_units[rule.name]
@@ -675,16 +683,15 @@ class RolloutEvidenceSignal(TrainingSignal):
                         flush=True,
                     )
                     continue
-                arm_loss = contrib if arm_loss is None else arm_loss + contrib
+                step_loss = contrib if step_loss is None else step_loss + contrib
                 vs_d = vs.detach()
                 sq_sum[rule.name] += float((vs_d / rule.scale).pow(2).sum().item())
                 v_sum[rule.name] += float(vs_d.sum().item())
                 sat_count[rule.name] += float((vs_d <= 0).float().sum().item())
                 visited[rule.name] += B
-
-            if arm_loss is not None:
-                arm_loss.backward()
-            del traj, embs, emb_list, arm_loss
+        if step_loss is not None:
+            step_loss.backward()
+        del trajs, arm_rows, step_loss
 
         raw_weighted_sum = 0.0
         diags: dict[str, dict[str, float]] = {}

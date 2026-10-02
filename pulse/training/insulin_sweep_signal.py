@@ -327,7 +327,7 @@ class InsulinSweepSignal(TrainingSignal):
         sweep_states: torch.Tensor,
         embeddings: torch.Tensor,
     ) -> torch.Tensor:
-        """Run ``model.metabolic`` once per sweep point, batched across embeddings.
+        """Run ``model.metabolic`` once over every (sweep point, embedding) pair.
 
         ``sweep_states`` is ``[N, STATE_DIM]``; ``embeddings`` is ``[B, EMB]``.
         Returns ``[N, B, 7]``: rates for the 7 metabolic species at each
@@ -357,20 +357,20 @@ class InsulinSweepSignal(TrainingSignal):
         )
         time_feats = compute_time_features(t_minutes).expand(B, -1)
 
-        per_point: list[torch.Tensor] = []
-        for n in range(int(sweep_states.shape[0])):
-            full_state = sweep_states[n]  # [STATE_DIM]
-            full_state_b = full_state.unsqueeze(0).expand(B, -1)
-            norm_state = (full_state_b - net.norm_center) / net.norm_scale
-            met_state = norm_state[:, met_idx]  # [B, n_species]
-            coupling = net.coupling_for(
-                "metabolic", norm_state, zero_gut,
-                torch.zeros(B, DUODENAL_DIM, dtype=torch.float32, device=device),
-            )
-            rates = net.metabolic(met_state, coupling, zero_external, emb_met, time_feats)
-            # Drop internal slow-state rate outputs (iter 55+): no cold target.
-            per_point.append(rates[..., :_N_COLD_METABOLIC])
-        return torch.stack(per_point, dim=0)  # [N, B, 7]
+        # Every (sweep point, embedding) pair in one call: row n·B + b.
+        N = int(sweep_states.shape[0])
+        full_state = sweep_states.unsqueeze(1).expand(N, B, -1).reshape(N * B, -1)
+        norm_state = (full_state - net.norm_center) / net.norm_scale
+        coupling = net.coupling_for(
+            "metabolic", norm_state, zero_gut.repeat(N, 1),
+            torch.zeros(N * B, DUODENAL_DIM, dtype=torch.float32, device=device),
+        )
+        rates = net.metabolic(
+            norm_state[:, met_idx], coupling, zero_external.repeat(N, 1),
+            emb_met.repeat(N, 1), time_feats.repeat(N, 1),
+        )
+        # Drop internal slow-state rate outputs (iter 55+): no cold target.
+        return rates.reshape(N, B, -1)[..., :_N_COLD_METABOLIC]  # [N, B, 7]
 
     def _sweep_losses(
         self,

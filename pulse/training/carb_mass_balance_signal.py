@@ -82,37 +82,30 @@ class CarbMassBalanceSignal(TrainingSignal):
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
 
-    def _glycogen_delta(
-        self, model: nn.Module, embedding: torch.Tensor, dose_g: float,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Net Δ(liver+muscle glycogen) across the fed window for one (emb, dose).
-
-        Returns ``(delta, pre)`` — the post-minus-pre change and the pre-meal
-        baseline total, both in grams. ``pre`` is detached only for logging.
+    def _glycogen_deltas(
+        self, model: nn.Module, embeddings: torch.Tensor, device: torch.device,
+    ) -> torch.Tensor:
+        """Net Δ(liver+muscle glycogen) across the fed window, in grams, for every
+        (embedding, dose) pair — row ``e·D + d`` — from ONE batched rollout (each row
+        carries its own meal).
         """
-        initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
-        start_min = self.start_hour * 60.0
-        meal = MealEvent(
-            time=self.meal_time_min, carbs=float(dose_g),
-            fats=float(self.fats_g), proteins=float(self.proteins_g),
-        )
-        gut = precompute_gut_outputs(
-            model, embedding, self.window_min,
-            dt=1.0, start_time_minutes=start_min, meals=[meal],
-        )
+        doses = list(self.carb_doses_g)
+        n_rows = int(embeddings.shape[0]) * len(doses)
+        initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device).expand(n_rows, -1)
+        meals = [
+            [MealEvent(time=self.meal_time_min, carbs=float(dose_g),
+                       fats=float(self.fats_g), proteins=float(self.proteins_g))]
+            for _ in range(int(embeddings.shape[0])) for dose_g in doses
+        ]
         pred = integrate(
-            model, initial, embedding, self.window_min,
-            dt=1.0, start_time_minutes=start_min, meals=[meal],
-            gut_outputs=gut,
+            model, initial, embeddings.repeat_interleave(len(doses), dim=0), self.window_min,
+            dt=1.0, start_time_minutes=self.start_hour * 60.0, meals=meals,
         )
-        total = pred[:, _LIVER] + pred[:, _MUSCLE]
+        total = pred[..., _LIVER] + pred[..., _MUSCLE]
         # Pre-meal baseline (before the meal lands) vs the last hour of the
         # window (storage has had the whole window to accumulate).
         pre_end = max(1, int(self.meal_time_min))
-        pre = total[:pre_end].mean()
-        post = total[-60:].mean()
-        return post - pre, pre
+        return total[:, -60:].mean(dim=1) - total[:, :pre_end].mean(dim=1)
 
     def compute(
         self,
@@ -136,24 +129,18 @@ class CarbMassBalanceSignal(TrainingSignal):
             return SignalResult()
 
         device = ctx.device
-        over_terms: list[torch.Tensor] = []
-        under_terms: list[torch.Tensor] = []
-        deltas: list[float] = []
-        for emb in emb_list:
-            for dose in self.carb_doses_g:
-                delta, _pre = self._glycogen_delta(model, emb, dose, device)
-                # Normalise the violation by the dose so a 90 g and a 30 g
-                # meal contribute comparable gradient when equally violated.
-                norm = max(float(dose), 1.0)
-                over = torch.relu(delta - float(dose)) / norm   # stored > eaten
-                under = torch.relu(-delta) / norm               # depleted while fed
-                over_terms.append(over.pow(2))
-                under_terms.append(under.pow(2))
-                deltas.append(float(delta.detach().item()))
-
-        over_loss = torch.stack(over_terms).mean()
-        under_loss = torch.stack(under_terms).mean()
+        delta = self._glycogen_deltas(model, torch.stack(emb_list, dim=0), device)
+        dose = torch.tensor(
+            [float(d) for _ in emb_list for d in self.carb_doses_g],
+            dtype=delta.dtype, device=device,
+        )
+        # Normalise the violation by the dose so a 90 g and a 30 g meal contribute
+        # comparable gradient when equally violated.
+        norm = dose.clamp(min=1.0)
+        over_loss = (torch.relu(delta - dose) / norm).pow(2).mean()   # stored > eaten
+        under_loss = (torch.relu(-delta) / norm).pow(2).mean()        # depleted while fed
         loss = over_loss + under_loss
+        deltas = delta.detach().tolist()
 
         n_pairs = len(emb_list) * len(self.carb_doses_g)
         accumulate_grad(

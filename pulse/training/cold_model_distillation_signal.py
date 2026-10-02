@@ -25,7 +25,6 @@ distilled at calibrated embeddings; ``pool`` controls protocol coverage.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -620,17 +619,9 @@ class ColdModelDistillationSignal(TrainingSignal):
         # encloses the calibration target). (2) abort the calibration step on
         # non-finite loss/grad rather than letting NaN propagate into emb. The
         # caller validates emb finiteness post-return.
-        # Iter 68: gradient checkpointing on the calibration integrate. The
-        # iter-67 saga's "phase-2 OOM" turned out to be a single
-        # ``loss.backward()`` through the unchunked ``proto.duration_min``-step
-        # autograd graph hanging > 1 h on the wider iter-66+ model
-        # (EMBEDDING_DIM=64, n_species=4). Chunking the integrate at
-        # ~sqrt(n_steps) segments drops the held-activation memory from
-        # O(T) to O(sqrt(T)) and the backward time correspondingly. Each
-        # chunk's forward is re-executed once during backward — model is in
-        # eval mode here (no dropout/BN), so this is mathematically
-        # equivalent to the unchunked path.
-        ckpt_segs = max(1, int(math.sqrt(max(1, int(proto.duration_min)))))
+        # Iter 108: not checkpointed. Iter 68 chunked this rollout at sqrt(T) because
+        # one backward through the old ~1,500-op step hung for an hour; the planned
+        # step's 1440-min graph is ~0.8 GB and checkpointing it measured 2.5x slower.
         for _ in range(max(0, int(n_steps))):
             opt.zero_grad()
             with torch.enable_grad():
@@ -638,7 +629,6 @@ class ColdModelDistillationSignal(TrainingSignal):
                     model, initial, emb, proto.duration_min,
                     dt=1.0, start_time_minutes=start_min, meals=list(proto.meal_events),
                     gut_outputs=gut, sleep_wake=sw, activity=act,
-                    checkpoint_segments=ckpt_segs,
                 )
                 t = min(pred.shape[0], T)
                 if proto.obs_points:
@@ -910,59 +900,69 @@ class ColdModelDistillationSignal(TrainingSignal):
                 torch.arange(T, dtype=torch.float32, device=device), meal_list,
             ).detach()
         per_marker: dict[str, list[torch.Tensor]] = {m: [] for m, _ in self._marker_idx}
+
+        def rollouts(w: int, t0s: list[int]) -> list[torch.Tensor]:
+            """Free rollouts of ``w`` minutes from the cold state at each ``t0``, under the
+            cold ODE's absorption, sleep/activity and duodenal drive on the WINDOW-OFFSET
+            clock (meal.time − t0; review 4.7). ``out[k][0]`` is the initial state and
+            ``out[k][j] ≈ ref[t0 + j]``.
+
+            All windows of one length run as ONE batched rollout. A row that goes non-
+            finite would poison the shared backward (0·NaN), so if any does the windows
+            are re-run one at a time and only the diverged ones are dropped — the
+            per-window isolation of the serial loop this replaces.
+            """
+            def run(starts_: list[int]) -> torch.Tensor:
+                def window(x: torch.Tensor) -> torch.Tensor:
+                    return torch.stack([x[t0:t0 + w] for t0 in starts_])
+                return integrate(
+                    model, torch.stack([ref_all[t0] for t0 in starts_]),
+                    emb.reshape(1, -1).expand(len(starts_), -1), w, dt=1.0,
+                    start_time_minutes=torch.tensor(
+                        [start_min + t0 for t0 in starts_], dtype=torch.float64, device=device),
+                    sleep_wake=window(sw_all), activity=window(act_all),
+                    gut_outputs=window(absorp),
+                    duodenal_outputs=(window(duo_all) if duo_all is not None
+                                      else torch.zeros(len(starts_), w, 3, device=device)),
+                )
+
+            batched = run(t0s)
+            if bool(torch.isfinite(batched).all()):
+                return list(batched.unbind(0))
+            return [run([t0])[0] for t0 in t0s]
+
         for W, starts in passes:
+            by_length: dict[int, list[int]] = {}
             for t0 in starts:
                 w = min(W, T - t0)
-                if w < 2:
-                    continue
-                # Roll out freely from the cold state at t0. gut_outputs carries the
-                # cold ODE's absorption so the rollout sees the same meal coupling
-                # the reference did. integrate returns out[0]=initial, out[k]≈ref[t0+k].
-                #
-                # Iter 97 (review 4.7): the meals are passed on the WINDOW-OFFSET clock
-                # (meal.time - t0) so the hepatobiliary axis gets its duodenal stimulus
-                # — with meals=[] the biliary markers' level was trained to reproduce
-                # meal-driven secretion with max |duodenal| = 0.0000. When the student
-                # layer's ``duodenal_outputs=`` exists the precomputed slice is passed
-                # explicitly (same frame contract as ``gut_outputs``).
-                win_meals = [
-                    MealEvent(time=m.time - t0, carbs=m.carbs, fats=m.fats, proteins=m.proteins)
-                    for m in meal_list
-                ]
-                extra_kw: dict[str, Any] = {}
-                if duo_all is not None:
-                    extra_kw["duodenal_outputs"] = duo_all[t0:t0 + w]
-                pred = integrate(
-                    model, ref_all[t0], emb, w, dt=1.0,
-                    start_time_minutes=start_min + t0, meals=win_meals,
-                    sleep_wake=sw_all[t0:t0 + w], activity=act_all[t0:t0 + w],
-                    gut_outputs=absorp[t0:t0 + w],
-                    **extra_kw,
-                )
-                if not torch.isfinite(pred).all():
-                    self._n_anchor_skips += 1
-                    continue
-                seg = ref_all[t0:t0 + w]
-                L = min(pred.shape[0], seg.shape[0])
-                for marker, midx in self._marker_idx:
-                    if not self._score_level(marker, W, W_short, has_longer):
+                if w >= 2:
+                    by_length.setdefault(w, []).append(t0)
+            for w, t0s in by_length.items():
+                for t0, pred in zip(t0s, rollouts(w, t0s)):
+                    if not torch.isfinite(pred).all():
+                        self._n_anchor_skips += 1
                         continue
-                    ref_w = seg[:L, midx]
-                    if floor_frac > 0.0:
-                        # What this marker actually does in THIS window, floored.
-                        local = ref_w.max() - ref_w.min()
-                        denom = torch.clamp(local, min=floor_frac * scale[midx])
-                    else:
-                        denom = scale[midx]
-                    resid = (pred[:L, midx] - ref_w) / denom
-                    if level_band > 0.0:
-                        # Dead-zone: the level inside the band is the teacher's own
-                        # uncertainty and costs nothing (review 4.7).
-                        resid = F.relu(resid.abs() - level_band)
-                    per_marker[marker].append(
-                        F.huber_loss(resid, torch.zeros_like(resid),
-                                     delta=_HUBER_DELTA, reduction="mean")
-                    )
+                    seg = ref_all[t0:t0 + w]
+                    L = min(pred.shape[0], seg.shape[0])
+                    for marker, midx in self._marker_idx:
+                        if not self._score_level(marker, W, W_short, has_longer):
+                            continue
+                        ref_w = seg[:L, midx]
+                        if floor_frac > 0.0:
+                            # What this marker actually does in THIS window, floored.
+                            local = ref_w.max() - ref_w.min()
+                            denom = torch.clamp(local, min=floor_frac * scale[midx])
+                        else:
+                            denom = scale[midx]
+                        resid = (pred[:L, midx] - ref_w) / denom
+                        if level_band > 0.0:
+                            # Dead-zone: the level inside the band is the teacher's own
+                            # uncertainty and costs nothing (review 4.7).
+                            resid = F.relu(resid.abs() - level_band)
+                        per_marker[marker].append(
+                            F.huber_loss(resid, torch.zeros_like(resid),
+                                         delta=_HUBER_DELTA, reduction="mean")
+                        )
         return {m: torch.stack(v).mean() for m, v in per_marker.items() if v}
 
     # -- main signal ----------------------------------------------------------
