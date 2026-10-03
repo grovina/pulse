@@ -780,6 +780,17 @@ class TestGlucagon(unittest.TestCase):
             gb = float(m.metabolic.glucose_setpoint_raw(emb))
         return m, TestPerPatientGates._reference_state(m, gb)
 
+    def test_glucagon_stimulus_is_anatomical(self) -> None:
+        """The glucose stimulus on glucagon is the teacher's 3.5. It is not a
+        parameter, so a perturbation cannot move it."""
+        m = _model(22, perturb=1.0)
+        names = [n for n, _ in m.metabolic.named_parameters()]
+        self.assertNotIn("log_alpha_gn", names)
+        args = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            f = m.metabolic.fluxes(*args)
+        self.assertAlmostEqual(float(f["alpha_gn"]), 3.5, places=6)
+
     def test_glucagon_basal_is_anatomical(self) -> None:
         """Gnb is 70 pg/mL for every embedding. The baseline head is gone, so
         a perturbation cannot move it."""

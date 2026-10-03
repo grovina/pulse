@@ -147,11 +147,14 @@ not a head. The hepatic gates are centered on whatever basal the patient
 declares, so a free head moves only the glucagon level. On the iter-108
 weights that head took the prior person from 70 to 98, and the fed-day
 trace sat near 101 against the teacher's 73, while liver, ketones and
-glucose were unchanged when the head was put back at zero. ``k_gn``,
-``α`` and ``β`` stay population scalars (init 0.03 / 3.5 / 0.4, the
-teacher's ``k_gn`` / ``alpha_gn`` / the 0.4 insulin coefficient).
-``β`` stays positive, so the sign lives in ``(I − Ib)``: insulin below
-basal disinhibits the alpha cell even when glucose is back at Gb.
+glucose were unchanged when the head was put back at zero. ``α`` is
+the teacher's 3.5, not a parameter. A free copy walked 3.5 → 0.31, and
+on the iter-109 weights the 48 h rise was 8 pg/mL against a bar of 10.
+Forcing 3.5 leaves a fed day where it is, because the stimulus is zero
+while glucose sits on its basal, and lifts the fast to glucagon 99 and
+glucose 71. ``k_gn`` and ``β`` stay population scalars (init 0.03 /
+0.4). ``β`` stays positive, so the sign lives in ``(I − Ib)``: insulin
+below basal disinhibits the alpha cell even when glucose is back at Gb.
 """
 
 import math
@@ -354,7 +357,7 @@ _LIP_IC50_INIT = 5.0          # teacher IC50_lip
 # fed fixed point. The insulin offset in the denominator is the teacher's
 # constant (Ib + 10), not a learned scale.
 _K_GN_INIT = 0.03             # teacher k_gn (τ ≈ 33 min)
-_ALPHA_GN_INIT = 3.5          # teacher alpha_gn
+_ALPHA_GN = 3.5               # teacher alpha_gn. A free copy walked 3.5 → 0.31.
 _GN_INS_INIT = 0.4            # teacher coefficient on (I − Ib) / (Ib + 10)
 _GN_INS_OFFSET = 10.0
 
@@ -526,7 +529,6 @@ class MetabolicModule(MassActionModule):
         # Glucagon: speed, glucose-stimulus gain, signed-insulin coefficient.
         # Gnb is already the fed fixed point of the restoring term.
         self.log_k_gn = nn.Parameter(torch.tensor(_inverse_softplus(_K_GN_INIT)))
-        self.log_alpha_gn = nn.Parameter(torch.tensor(_inverse_softplus(_ALPHA_GN_INIT)))
         self.log_gn_ins = nn.Parameter(torch.tensor(_inverse_softplus(_GN_INS_INIT)))
 
         # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95, Ib = 10, Ra =
@@ -620,7 +622,7 @@ class MetabolicModule(MassActionModule):
             "ic50_keto": ic50_keto, "k_keto": k_keto,
             "k_bhb": (k_keto * ffa_b / (1.0 + ib / ic50_keto)) / _BHB_CENTER,
             "k_gn": nn.functional.softplus(self.log_k_gn),
-            "alpha_gn": nn.functional.softplus(self.log_alpha_gn),
+            "alpha_gn": self.log_k_gn.new_tensor(_ALPHA_GN),
             "gn_ins": nn.functional.softplus(self.log_gn_ins),
             "k_ffa": k_ffa, "ic50_lip": ic50_lip,
             "lip_max": ffa_b * k_ffa * (1.0 + ib / ic50_lip),
