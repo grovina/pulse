@@ -780,6 +780,16 @@ class TestGlucagon(unittest.TestCase):
             gb = float(m.metabolic.glucose_setpoint_raw(emb))
         return m, TestPerPatientGates._reference_state(m, gb)
 
+    def test_glucagon_basal_is_anatomical(self) -> None:
+        """Gnb is 70 pg/mL for every embedding. The baseline head is gone, so
+        a perturbation cannot move it."""
+        m = _model(21, perturb=1.0)
+        self.assertFalse(hasattr(m.metabolic, "gn_baseline_net"))
+        emb = m.embedding_projections["metabolic"](torch.randn(4, EMBEDDING_DIM))
+        with torch.no_grad():
+            gnb = m.metabolic.gn_setpoint_raw(emb)
+        self.assertTrue(torch.allclose(gnb, torch.full_like(gnb, 70.0)))
+
     def test_gnb_is_the_fed_fixed_point(self) -> None:
         """At G=Gb, I=Ib, Gn=Gnb: dGn=0 even after perturbing k_gn, alpha, and
         the insulin coefficient. Both extras are zero there, so nothing is derived."""

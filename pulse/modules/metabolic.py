@@ -142,11 +142,16 @@ keep the alpha cell on):
     dGn  = −k_gn · (Gn − Gnb) + stim − supp + 0.02 · Ra_protein
 
 At G = Gb and I = Ib both extras are zero, so Gnb is the fed fixed
-point with nothing left to derive. ``k_gn``, ``α`` and ``β`` are
-population scalars (init 0.03 / 3.5 / 0.4, the teacher's ``k_gn`` /
-``alpha_gn`` / the 0.4 insulin coefficient). ``β`` stays positive, so
-the sign lives in ``(I − Ib)``: insulin below basal disinhibits the
-alpha cell even when glucose is back at Gb.
+point with nothing left to derive. Gnb is the marker's typical, 70 pg/mL,
+not a head. The hepatic gates are centered on whatever basal the patient
+declares, so a free head moves only the glucagon level. On the iter-108
+weights that head took the prior person from 70 to 98, and the fed-day
+trace sat near 101 against the teacher's 73, while liver, ketones and
+glucose were unchanged when the head was put back at zero. ``k_gn``,
+``α`` and ``β`` stay population scalars (init 0.03 / 3.5 / 0.4, the
+teacher's ``k_gn`` / ``alpha_gn`` / the 0.4 insulin coefficient).
+``β`` stays positive, so the sign lives in ``(I − Ib)``: insulin below
+basal disinhibits the alpha cell even when glucose is back at Gb.
 """
 
 import math
@@ -287,7 +292,6 @@ _MITO_TRAIN_GAIN = 2.0e-5
 _MITO_LOG_MAX = 0.4
 _MASS_LOG_MAX = 0.25
 _FFA_LOG_MAX = 0.5
-_GN_LOG_MAX = 0.4
 # Fasting insulin: the teacher's restoring law (Polonsky 1988; PatientParams.n / gamma /
 # fast_ins_exp / fast_ins_floor). Not a learned Hill on a mass-action basal.
 _FAST_INS_EXP = 5.0
@@ -541,7 +545,6 @@ class MetabolicModule(MassActionModule):
         self.ra_baseline_net = _zero_head()        # Ra
         self.body_mass_net = _zero_head()          # kg; 70 at zero embedding
         self.ffa_baseline_net = _zero_head()
-        self.gn_baseline_net = _zero_head()
         self.mito_setpoint_net = _zero_head()
 
     # ---- per-patient setpoints -------------------------------------------------------
@@ -570,8 +573,7 @@ class MetabolicModule(MassActionModule):
             _FFA_LOG_MAX * torch.tanh(self.ffa_baseline_net(embedding).squeeze(-1)))
 
     def gn_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        return _GN_CENTER * torch.exp(
-            _GN_LOG_MAX * torch.tanh(self.gn_baseline_net(embedding).squeeze(-1)))
+        return self.log_k_gn.new_full(embedding.shape[:-1], _GN_CENTER)
 
     def mito_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
         return torch.exp(
