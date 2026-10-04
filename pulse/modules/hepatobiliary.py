@@ -56,6 +56,21 @@ ITER 97 — TWO FIXES FROM THE 2026-09-04 REVIEW (items 3.6 and 2.5):
 
 So the two heads whose outputs were unreachable by any loss (intestinal_bile and
 bile_acids) are ConstantFluxHead.
+
+THE CCK REFERENCE IS A CONSTANT, NOT A HEAD. ``cck_b`` is the level the gallbladder
+gate (``relu(cck − cck_b)``) is measured from: the marker's typical, 1.0 pmol/L, for
+every person, which is the teacher's ``CCK_b`` (``randomize_params`` never draws it).
+Iter 98 gave it a ``cck_baseline_net`` (×0.5 to ×2.0 per embedding) that nothing could
+identify: no patient has a CCK basal to recover; the only signals that score this
+module's states take DETACHED embeddings (the cohort statistics are population targets,
+the cold-distill references are the typical person's); and no module reads a
+hepatobiliary state, so its effect on the taped vitals is exactly 0. A per-person head
+with no supervision path is free authority, and iter 109 measured what that does: the
+glucagon-basal head took the prior person from 70 to 98 pg/mL while liver, ketones and
+glucose were unchanged when it was zeroed, because every gate downstream is normalized
+to the person's OWN basal. The person's CCK LEVEL is still representable: it is the
+fixed point of the ``cck`` head's production and clearance, read against this one
+reference.
 """
 
 import math
@@ -109,7 +124,6 @@ _CANALICULAR_OFFSET = 0.15
 # µmol/L per mmol/min of unextracted portal return. Teacher derives this so BA_b
 # is the mass-action fixed point; 145.7 is that derived default.
 _BA_SPILL_GAIN_INIT = 145.7
-_CCK_LOG_MAX = 0.7  # CCK_b = 1 · exp(±0.7 tanh) ∈ [0.50, 2.01]
 
 
 def _logit(p: float) -> float:
@@ -255,17 +269,11 @@ class HepatobiliaryModule(MassActionModule):
         self.log_k_canalicular = nn.Parameter(torch.tensor(0.0))  # exp(0) = 1, healthy
         self.log_k_gb_basal = nn.Parameter(
             torch.tensor(_logit((_K_BASAL_INIT - _K_BASAL_MIN) / _K_BASAL_RANGE)))
-        _bh = max(8, hidden_dim // 4)
-        self.cck_baseline_net = nn.Sequential(
-            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
-        )
-        with torch.no_grad():
-            self.cck_baseline_net[-1].weight.zero_()
-            self.cck_baseline_net[-1].bias.zero_()
 
     def cck_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        return _TYPICALS[_CCK_IDX] * torch.exp(
-            _CCK_LOG_MAX * torch.tanh(self.cck_baseline_net(embedding).squeeze(-1)))
+        """One value for every person: a head here has nothing that could identify it
+        (module docstring)."""
+        return self.log_cck_fat_gain.new_full(embedding.shape[:-1], _TYPICALS[_CCK_IDX])
 
     # ---- the loop, split by what it depends on (see base.PhysiologyModule) ---------
 

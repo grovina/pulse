@@ -7,6 +7,19 @@ Cortisol's negative feedback on CRH is one-sided saturating about the
 patient's basal: high cortisol suppresses CRH; the nocturnal nadir is
 sleep's. A rectifier at 12 µg/dL would leave the whole overnight range
 inert.
+
+The clock is not a person. The drive is one function of the hour for every
+embedding. The teacher's ``randomize_params`` varies the circadian amplitude, the
+basals and the gains, but never ``hpa_rise_start_h`` / ``hpa_peak_h`` /
+``hpa_fall_tau_h``, so no patient has a phase for a head to recover. Through
+iter 109 a ``phase_proj`` head shifted the drive by up to ±2 h per embedding
+anyway: no ground truth, and a +1 h shift moves the five taped vitals by 0.07, so
+the only dense loss barely sees it either. That is free authority, iter 109's
+failure in another organ (the glucagon-basal head took the prior person from 70
+to 98 pg/mL while liver, ketones and glucose were unchanged when it was zeroed,
+because every downstream gate is normalized to the person's OWN level). A phase
+that varies by person comes back as a state that person's sleep timing entrains,
+which is evidence; it does not come back as an offset head.
 """
 
 import math
@@ -93,9 +106,6 @@ class StressModule(MassActionModule):
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
-        self.phase_proj = nn.Linear(embedding_dim, 1)
-        nn.init.normal_(self.phase_proj.weight, std=0.01)
-        nn.init.zeros_(self.phase_proj.bias)
         self.log_k_crh = nn.Parameter(torch.tensor(math.log(_K_CRH)))
         self.log_k_acth = nn.Parameter(torch.tensor(math.log(_K_ACTH)))
         self.log_k_cort = nn.Parameter(torch.tensor(math.log(_K_CORT)))
@@ -116,7 +126,6 @@ class StressModule(MassActionModule):
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {
-            "phase_h": 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1)),
             "cort_b": self.cort_setpoint_raw(embedding),
             "fb_amp": nn.functional.softplus(self._fb_raw),
             "k_crh": torch.exp(self.log_k_crh),
@@ -138,7 +147,7 @@ class StressModule(MassActionModule):
         act = external[..., 1]
         sleep_depth = 1.0 - sw
         hour = _hour_from_time_features(time_features)
-        drive = _hpa_drive((hour - const["phase_h"]) % 24.0)
+        drive = _hpa_drive(hour)
         sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
         crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
         return {
