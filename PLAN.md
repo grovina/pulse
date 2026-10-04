@@ -95,6 +95,25 @@ here.
 | A10 | Delete the `Ra` gain and `ra_baseline_net` | meal amplitude has one per-person gain (f_bio) and one known scale (V_G), not three multiplying ones |
 | A11 | `hepatic_output` is release into plasma (exclude `gng_divert`) | the marker means what the tracer literature the HGO cohort cites measures |
 
+**B2 adoption has a trap, and it is a student/teacher one.** `simulate_full_body`
+is explicit Euler at dt = 1, so a student that adopts ETD with a `k` *copied from a
+teacher constant* realizes `e^{−k}` where the teacher realizes `1 − k`: at the
+shared `k_hr = 0.3` that is a contraction of 0.741 against 0.700, a 6 % per-step
+divergence introduced by the fix. Every one of these constants came from the teacher
+(`k_ffa = 0.20` as Eaton's τ ≈ 5 min, `k_hr`, `p2`, the mass-action `cons_scale`s),
+so adopting in the student alone would trade a known integration error for a new
+distillation mismatch. The first module to adopt must either land together with the
+teacher on the same step, or refit its `k` as `−ln(1 − k_teacher)`. Adoption order is
+set by measurement, not by tidiness: the fast terms improve (hr 0.054 → 0.003, cck
+0.035 → 0.001, glp1 0.022 → 0.002, ffa 0.092 → 0.033) while the slow pulsatile ones
+get *worse* (gallbladder 0.005 → 0.013, intestinal 0.007 → 0.017, lactate, and
+`insulin_slow`), because ETD1 is exact only for forcing that is constant across the
+step. Validate each adoption against a `dt = 1/16` rollout; a `k` that is not the
+coefficient of a term in the rate makes its marker worse. There is deliberately no
+`MassActionModule` default, because `cons·cons_scale` is a decay only where `step`
+keeps that term — a blanket one would hand metabolic glucose (a `ConstantFluxHead`,
+`cons = 1`) a spurious 0.02.
+
 **A7's floor is a deliberate, reversible choice, and the alternative is written and
 tested.** An unbiased estimate of a square must sometimes be negative, and a loss
 may not be, so `relu` clips it — which reintroduces part of the shrinkage force the
@@ -127,7 +146,7 @@ per-marker MAE and the spread of the decoded setpoints).
 | # | Item | Invariant / evidence |
 |---|---|---|
 | B1 | **Per-person insulin sensitivity.** Log-space heads for muscle Si, hepatic insulin sensitivity (the glycogenolysis/GNG gate K), β-cell γ, insulin clearance k_ins | The teacher varies all four per patient (Si σ0.5 loading ir −0.70; glyc_ins_K σ0.25 ir +0.40; γ σ0.3; n σ0.3), so A4's mechanism supervises them directly. **Landed, with this row's own number corrected.** Si alone is **22.5 %** of between-person glucose *incremental* AUC and 20.7 % of insulin iAUC, decile ratio 1.90× / 2.17× (N=150). The "34 % / 31 %" this row first claimed was measured on TOTAL post-meal AUC, which also carries the fasting level — and Gb loads +0.50 on the same insulin-resistance latent that Si loads −0.70 on, so part of that share was Gb, not Si. The conclusion is unchanged (still the largest single axis by a wide margin) but the headline was confounded through the shared latent. The student now realizes **1.77×** between those deciles against the teacher's own pure-Si sweep at 1.81× |
-| B2 | **Exponential (ETD1) stepping of the linear part.** A module may report a decay rate alongside its rate; the integrator steps `x + rate·(1−e^{−k·dt})/k`, which is Euler as k→0 and exact for a pure relaxation | literature time constants are what gets simulated, and the trajectory stops depending on `dt` (today: effective rate +19 % at the CVS default k=0.3, +101 % at its bound 0.8) |
+| B2 | **Exponential (ETD1) stepping of the linear part.** A module may report a decay rate alongside its rate; the integrator steps `x + rate·(1−e^{−k·dt})/k`, which is Euler as k→0 and exact for a pure relaxation. **Integrator landed; no module reports a decay yet**, so nothing has changed behaviourally | literature time constants are what gets simulated, and the trajectory stops depending on `dt` (today: effective rate +19 % at the CVS default k=0.3, +101 % at its bound 0.8) |
 | B3 | **Second-phase insulin.** The teacher's delayed-proportional potentiator state (Toffolo & Cobelli) | OGTT 120-min insulin; the student currently has no way to hold insulin up while glucose falls |
 | B4 | Per-row sweep targets: carry each patient's `PatientParams` into the dataset so the insulin/gut sweeps can score a row against its own teacher | restores per-patient absorption and rate supervision that A6 removes |
 | B5 | Priors replace the iter-106/108/109 freezes: k_ffa, uptake_ii, the gluconeogenic share, Gnb become learnable with log-normal/Beta priors carrying the cited uncertainty, plus the tracer evidence that identifies them | a flat direction with a prior does not drift; a frozen one cannot learn. Restores the teacher's own per-patient spread in all four |
