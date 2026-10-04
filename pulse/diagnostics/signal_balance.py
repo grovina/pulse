@@ -137,15 +137,21 @@ def _build_default_signals(n_patients: int) -> list[TrainingSignal]:
     """
     contrib_weights = {c.name: 1.0 for c in ALL_CONTRIBUTIONS}
     return [
+        # A6 (PLAN.md): both sweeps build their targets from PatientParams() -- the
+        # DEFAULT patient -- so they are statements about the MEDIAN person and
+        # supervise the zero embedding only. Scoring sampled rows against them pulled
+        # every patient toward the median person's absorption kernel and metabolic
+        # rates. This report has to construct them the way the trainer does, or its
+        # balance numbers describe a configuration nothing runs.
         GutDoseSweepSignal(
             n_patients=n_patients,
-            sample_patients=4,
+            sample_patients=0,
             include_default_embedding=True,
             weight=WeightSchedule(1.0),
         ),
         InsulinSweepSignal(
             n_patients=n_patients,
-            sample_patients=4,
+            sample_patients=0,
             include_default_embedding=True,
             weight=WeightSchedule(1.0),
         ),

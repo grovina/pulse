@@ -501,6 +501,16 @@ class RolloutEvidenceSignal(TrainingSignal):
         results = cohort_statistic_loss_groups(
             model, build_emb_list(), prepared,
             input_dropout=float(ctx.input_dropout), rng=ctx.rng,
+            # A7 (PLAN.md): only the SAMPLED rows are population draws. `build_emb_list`
+            # appends the zero embedding last, and zero is the median person, not a draw
+            # — scoring it inside a population mean biases the estimator toward the
+            # median (a lognormal outcome's mean sits above it) and corrupts the
+            # sampling-variance term the debias subtracts, since a fixed member `d` away
+            # from the mean turns the estimate into `bias² + 2·bias·d/B`. It is still
+            # rolled out; it is simply not evidence about a population mean. None here
+            # means "no sampled rows", i.e. the zero-only batch, which is scored as
+            # before because the median person is then all the batch holds.
+            n_population=(len(sampled_pids) if sampled_pids is not None else None),
         )
         step_loss = None
         for group_specs in group_list:

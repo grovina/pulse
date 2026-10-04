@@ -89,11 +89,38 @@ here.
 | A4 | Supervise every per-person head the teacher has ground truth for: Ib, body mass, FFA_b, mito setpoint, cort_b, RR₀, SpO₂₀ — extend `SetpointSupervisionSignal` | each head gets the evidence that identifies it; kills the Ra↔mass confound (measured: ×1.2 on both changes glucose 0.18 mg/dL) |
 | A5 | Delete the heads the teacher does not vary and nothing supervises: HPA phase, CCK basal | no unsupervised per-person authority (the Gnb-drift failure mode) |
 | A6 | Insulin sweep and gut sweep supervise the zero embedding only (they score against `PatientParams()` rates and kernel) | removes a 0.30-weight and a 0.10-weight pull of sampled patients toward the median; per-row targets return in B4 |
-| A7 | Cohort/rule population batches: drop zero, debias the batch-mean loss by its own sampling variance | the loss stops rewarding between-person shrinkage (the term is ≈(2/9)σ²_between/SEM², 1–14 per spec) |
+| A7 | Cohort population batches: drop zero, debias the batch-mean loss by its own sampling variance (**landed, floored — see the note below**) | the loss stops rewarding between-person shrinkage (the term is ≈(2/9)σ²_between/SEM², 1.4–14 per spec). Rule hinges are NOT batch-mean statistics — each member's own violation is scored — so the debias does not apply and zero stays in the rule batch, because a rule holds for the median person too |
 | A8 | Server default → median person; `last_good.pt` carries the prior stats; `--init-from` loads `embeddings_state` | one default person everywhere; a rolling checkpoint re-scores on its own prior; warm start keeps patient identity |
 | A9 | Bioavailability bounded: `f_bio = MG_DL_PER_G · σ(·)` ≤ 1 per channel | absorbed ≤ ingested by construction (today softplus: >1 creates carbon, <1 deletes it unbooked) |
 | A10 | Delete the `Ra` gain and `ra_baseline_net` | meal amplitude has one per-person gain (f_bio) and one known scale (V_G), not three multiplying ones |
 | A11 | `hepatic_output` is release into plasma (exclude `gng_divert`) | the marker means what the tracer literature the HGO cohort cites measures |
+
+**A7's floor is a deliberate, reversible choice, and the alternative is written and
+tested.** An unbiased estimate of a square must sometimes be negative, and a loss
+may not be, so `relu` clips it — which reintroduces part of the shrinkage force the
+debias removes. Measured on Gaussian members as the surviving share of the
+un-debiased force at B = 2: **0.64 at zero bias (exactly 2/π), 0.56 / 0.22 / 0.03 at
+one / two / three between-person sds.** Dropping the zero member even makes the
+zero-bias case *worse* for the seven `n_arm = 1` specs (force 0.44 → 0.64 sd/SEM²),
+because zero had been diluting the variance term; in a toy SGD against a true sd of
+3, the spread settles at 2.08 under the old batch, 1.83 floored, and 3.00 with an
+unbiased gradient.
+
+The straight-through form — `est + (relu(est) − est).detach()`, value floored for the
+adaptive-weight EMA and the logs, gradient unbiased — is a one-line change and a
+ready patch. **It is not adopted, for a reason that is about estimator quality, not
+caution:** the term being subtracted is `s²/B`, and for exactly the specs where the
+bias was largest (`n_arm = 1`, whose σ is a published standard error while
+individuals spread 2.5–8× wider, so `v/SEM²` is 6–64) it is estimated from **1 degree
+of freedom at B = 2**. Passing that straight into the gradient injects noise of the
+same order as the signal it corrects. The floor clips the noise, and clips the
+correct negative gradient with it. So the honest reading is that **at B = 2–4 the
+debias cannot be made both unbiased and quiet, and the real fix is more members** —
+D2's deterministic quadrature over `N(0, I)`, where the "sampling variance" is zero
+by construction and the question disappears. Until then: keep the floor, raise
+`--cohort-sample-patients` above 2, and flip to straight-through in one line if a
+retrain shows the residual shrinkage dominating (watch `setpoint_supervision`'s
+per-marker MAE and the spread of the decoded setpoints).
 
 ### Wave B — right by construction (architecture; needs a retrain to mean anything)
 
