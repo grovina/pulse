@@ -627,6 +627,54 @@ class TestSupervision(unittest.TestCase):
         for key in _TEACHER_FIELD:
             self.assertIn(f"{key}_logmae", result.sub_metrics)
 
+    def test_the_trainers_own_filter_builds_a_NON_EMPTY_dict(self) -> None:
+        """The join the test above does not cross: dataset RECORD -> ``param_targets``.
+
+        ``train.py`` builds the dict with
+        ``{int(r["patient_id"]): r["patient_params"] for r in dataset
+           if not r.get("is_default") and r.get("patient_params")}``.
+        Every failure mode of that comprehension is SILENT -- a renamed record key, a
+        ``None`` the generator forgot to fill, an ``is_default`` flag that accidentally
+        covers everything -- and all of them produce an empty dict, which
+        ``SetpointSupervisionSignal`` treats as "no parameter supervision requested" and
+        skips without complaint. Five per-person heads then train free, which is the
+        iter-109 failure B1/A4 exist to prevent.
+
+        This is also the one code path 749 passing tests do not reach: the bug fixed in
+        this same session (``rollout_signal.py`` rebuilding a deleted constant) lived in
+        trainer-only code and was found by reading, not by a test. So this crosses the
+        join against REAL records from ``generate_trajectory_dataset``, not hand-built
+        dicts, and asserts the dict is non-empty rather than merely well-formed.
+        """
+        from pulse.training.trajectory_signal import generate_trajectory_dataset
+
+        dataset = generate_trajectory_dataset(
+            n_patients=2, seed=0, n_days=1,
+            weight_by_name={"full_body": 1.0}, n_default_patients=1,
+        )
+        param_targets = {
+            int(r["patient_id"]): r["patient_params"] for r in dataset
+            if not r.get("is_default") and r.get("patient_params")
+        }
+        setpoint_targets = {
+            int(r["patient_id"]): r["setpoints"] for r in dataset
+            if not r.get("is_default") and r.get("setpoints")
+        }
+        self.assertEqual(len(param_targets), 2, "the trainer would supervise NO parameters")
+        self.assertEqual(len(setpoint_targets), 2, "the trainer would supervise NO setpoints")
+        # The default patient is excluded by design (it IS PatientParams(), so the
+        # log-ratio target is zero and the zero embedding already decodes there).
+        self.assertTrue(any(r.get("is_default") for r in dataset))
+        for row in param_targets.values():
+            self.assertEqual(set(row), set(_TEACHER_FIELD))
+        # A4: and all twelve markers, not the original six.
+        for row in setpoint_targets.values():
+            self.assertEqual(len(row), 12, sorted(row))
+        # The supervision actually lands: every parameter reports its own residual.
+        _, result = self._fit(_model(0), 1, steps=2, param_targets={0: param_targets[0]})
+        for key in _TEACHER_FIELD:
+            self.assertIn(f"{key}_logmae", result.sub_metrics)
+
     def test_unknown_teacher_keys_are_ignored_rather_than_fatal(self) -> None:
         """The teacher may record a parameter the student has no decode for (B3's
         second-phase potentiator is the next one); that must not kill a run."""
