@@ -46,13 +46,13 @@ def physiology(emb):
     with torch.no_grad():
         e_met = m.embedding_projections['metabolic'](emb)
         e_cvs = m.embedding_projections['cardiovascular'](emb)
-        b = M._GLUCOSE_BASELINE_MAX_Z * torch.tanh(m.metabolic.glucose_baseline_net(e_met).squeeze(-1))
-        Gb = NORM_CENTER[IDX['glucose']] + 30.0 * float(b)
-        sp = C._CVS_BASELINE_MAX_Z * torch.tanh(m.cardiovascular.setpoint_net(e_cvs))
-        scales = {'hr':10.0,'hrv':15.0,'sbp':10.0,'dbp':8.0}
+        # Decoded by the modules themselves: A1 (PLAN.md) moved Gb and the vitals
+        # into log space, so any hand-rebuilt `MAX_Z * tanh(head)` is now wrong.
+        Gb = float(m.metabolic.glucose_setpoint_raw(e_met))
+        sp_raw = m.cardiovascular.setpoints_raw(e_cvs)
         out = {'Gb': Gb}
-        for j,k in enumerate(('hr','hrv','sbp','dbp')):
-            out[k.upper()+'0'] = NORM_CENTER[IDX[k]] + scales[k]*float(sp[j])
+        for j, k in enumerate(('hr','hrv','sbp','dbp')):
+            out[k.upper()+'0'] = float(sp_raw[j])
     return out
 
 # meals in the calibration window only (mirrors the benchmark episodes)

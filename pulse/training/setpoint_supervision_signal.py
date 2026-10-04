@@ -55,7 +55,6 @@ import torch
 import torch.nn as nn
 
 from ..modules import cardiovascular as _cvs
-from ..modules import metabolic as _met
 from ..modules import thermoreg as _thm
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
 from .safe_step import accumulate_grad
@@ -104,9 +103,12 @@ class SetpointSupervisionSignal(TrainingSignal):
 
         # --- decode the per-patient physiology the heads emit (z-units) ---
         e_met = model.embedding_projections["metabolic"](emb)
-        pred_gb_z = _met._GLUCOSE_BASELINE_MAX_Z * torch.tanh(
-            model.metabolic.glucose_baseline_net(e_met).squeeze(-1)
-        )  # [P]
+        # A1: Gb is decoded in LOG space now (95·exp(0.45·tanh), matching the
+        # teacher's lognormal draw), so this signal cannot rebuild the z-score from
+        # `_GLUCOSE_BASELINE_MAX_Z · tanh(head)` any more — that expression was the
+        # z only while the decode was additive. The module owns its decode and
+        # reports the z, the same hand-off `setpoints_z` made for CVS in iter 97.
+        pred_gb_z = model.metabolic.glucose_setpoint_z(e_met)  # [P]
         e_cvs = model.embedding_projections["cardiovascular"](emb)
         cvs = model.cardiovascular
         if hasattr(cvs, "setpoints_z"):

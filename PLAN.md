@@ -125,6 +125,36 @@ move on".
 | C8 | **Inputs the PRD already promises** | none — external inputs | user-reported stress; a pharmacology channel (GLP-1 RA, metformin, SGLT2i) | PRD lists stress as a Stress-module input and it was never implemented; today stress and drugs can only be explained by changing *who the person is* |
 | C9 | **Slow states for adaptation** | `fitness`, `liver_fat` | fitness → Si, HR₀, HRV₀, lactate threshold; liver fat → hepatic Si, FFA_b | The north star. Measured today: 8 weeks of training moves mito capacity +0.8 % (plan expects ~30 %) and resting HR not at all |
 
+**The supervision for C1 and C3 already exists in the literature, and it is
+quantitative.** Two anchors, both of which also say something about the
+architecture:
+
+- **The counter-regulatory hierarchy** (Cryer et al. 1987, *J Clin Invest*
+  [112884](https://www.jci.org/articles/view/112884)): glycaemic thresholds for
+  activation are epinephrine **69 ± 2** mg/dL, glucagon **68 ± 2**, growth
+  hormone **66 ± 2**, cortisol **58 ± 3**, symptoms **53 ± 2**. This is a
+  ranked constraint, which is the strongest kind of weak evidence — an ordering
+  is cheap to encode as hinges and hard to satisfy by accident. It also convicts
+  the current model: both teacher and student fire the hypoglycaemia term into
+  **CRH** at an absolute 70 mg/dL (`stress.py`, `full_body.py` `hypo_acth`), so
+  cortisol is the *first* responder at 70 when the literature puts it *last* at
+  58, and the fast arm that should lead at 69 does not exist. C1 fixes the
+  ordering and the mechanism together, and `_hypo_raw` — the one parameter group
+  no signal currently reaches, because it only acts below 70 mg/dL — gets
+  evidence for the first time.
+- **Sleep restriction is a sensitivity effect, split by tissue** (Donga et al.
+  2010, hyperinsulinaemic euglycaemic clamp, n=9: insulin sensitivity
+  **−19 to −25 %** after a single 4 h night; a companion 4 h-vs-8 h clamp study
+  reports whole-body **−25 %**, peripheral **−29 %**, and **hepatic
+  essentially unchanged** with the gluconeogenic percentage rising). Two things
+  follow. First, C3's sleep debt should act on insulin sensitivity, not on
+  glucose directly — which is why the existing `sleep_restriction_next_day_glucose`
+  cohort (+6 mg/dL) has no mechanism to work through today. Second, the effect is
+  *peripheral and not hepatic*, so it can only be expressed if muscle and hepatic
+  insulin sensitivity are separate quantities — exactly the split B1 introduces.
+  B1 and C3 are therefore the same change seen from two directions, and B1 should
+  land first.
+
 **C1 carries no baroreflex, deliberately.** `full_body.py:1737-1765` records an
 evaluated-and-rejected baroreflex term with four measured reasons: at minute
 resolution the reflex equilibrates inside one step (so it is already folded into
@@ -145,8 +175,22 @@ observable, not for a term that fires on a lag artifact.
 Eight coupling priors are already registered for edges the model cannot express
 (cortisol→FFA, glucagon→FFA, mito→FFA, cortisol→ACTH, GLP-1→ghrelin,
 leptin→ghrelin, glucose→cortisol, glucose→ACTH). Their loss is a gradient-free
-constant today. C1/C3/C5/C6 make most of them real; the rest should be retired
-or rerouted to CRH where both models already act.
+constant today. C1/C3/C5/C6 make most of them real; the three HPA ones should be
+rerouted to **CRH**, which is where both models actually act (cortisol feeds back
+on `crh_target`; the hypoglycaemia term enters `dCRH`), and the FFA ones become
+real when C1 gives lipolysis its epinephrine and glucagon drives.
+
+*A hypothesis worth recording as refuted.* One-sided couplings — glucose→glucagon
+is `α·relu(Gb − G)/Gb`, exactly zero above the patient's own setpoint — have a
+true sensitivity of zero wherever they are inactive, and `coupling_band_hinge`
+declares a band with `lo > 0`, so it should in principle penalise correct
+physiology at every fed sample. Measured on a perturbed model: at G = 140 the
+normalized sensitivity is exactly 0.00000 and the hinge is **0.0014**, because
+`lo` (0.001) is tiny against the band width (0.019). So the effect is real in
+form and negligible in size, and is not worth a change on its own; the same probe
+showed the *active* regime at 2.8× above the declared band, which is just an
+untrained model. Setting `lo = 0` for gated edges is still the more honest
+declaration and can ride along with the reroute.
 
 ### Wave D — the person as an inference problem
 

@@ -49,7 +49,6 @@ from ..knowledge.full_body import (
 )
 from ..knowledge.physiology_rules import PhysiologyRule
 from ..model import integrate, precompute_gut_outputs
-from ..modules import metabolic as _met
 from ..modules.gut import MealEvent
 from ..physiology_rules_loss import rule_context_for_arm
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
@@ -796,10 +795,15 @@ class RolloutEvidenceSignal(TrainingSignal):
         initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
         initial = initial.unsqueeze(0).repeat(P, 1)
         e_met = model.embedding_projections["metabolic"](emb)
-        b_emb = _met._GLUCOSE_BASELINE_MAX_Z * torch.tanh(
-            model.metabolic.glucose_baseline_net(e_met).squeeze(-1)
-        )
-        gb_raw = NORM_CENTER[_GLUCOSE] + float(NORM_SCALE[_GLUCOSE]) * b_emb
+        # Start each patient at their OWN fasting setpoint, via the module's own
+        # decode. This rebuilt `_GLUCOSE_BASELINE_MAX_Z · tanh(head)` by hand until
+        # A1 (PLAN.md) moved Gb into the lognormal family the teacher draws it from;
+        # the constant no longer exists, and a hand-rebuilt decode would have gone on
+        # silently disagreeing with the module's for as long as the two matched in
+        # shape. No test reaches this line — `tests/test_training_signals.py` builds
+        # the signal with `targets={}`, which returns before here — so the stale form
+        # would have surfaced as an AttributeError only once training ran.
+        gb_raw = model.metabolic.glucose_setpoint_raw(e_met)
         initial = initial.clone()
         initial[:, _GLUCOSE] = gb_raw
 

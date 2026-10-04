@@ -32,15 +32,16 @@ grams for the pools via ``mg = 1000/(mass·VG_DL_PER_KG)``). The gut kernel
 emits appearance in the 70 kg reference space; grams are recovered with the
 population ``MG_DL_PER_G``, then converted into this patient's mg/dL:
 
-    dG    = ra·app·f_plasma                       meal appearance not stored
-            + glyco + gng                          hepatic output (two fluxes, below)
+    dG    = app·f_plasma                          meal appearance not stored
+            + glyco + gng_released                 hepatic release (two fluxes, below)
             − k_ii·G − X·G − uptake_ex             obligatory, insulin-dependent, exercise
     dLGly = f_liver·app_g + gng_divert/mg − glyco/mg
     f_liver = 0.30·(0.5 + 0.5·ins_drive)·fill      direct pathway, not a head
     gng_divert = gng · ins_drive^0.25               indirect pathway, insulin above basal
+    gng_released = gng − gng_divert                 what actually reaches plasma
     ins_drive = relu(I − Ib) / (relu(I − Ib) + Ib)
     dMGly = f_muscle·app_g + store·relu(X·G)/mg − brk_M
-    dHep  = k·((glyco + gng)·VG_DL_PER_KG − Hep)   a lagged mg/kg/min readout
+    dHep  = k·((glyco + gng_released)·VG_DL_PER_KG − Hep)  a lagged mg/kg/min readout
 
     EGP_b   = k_ii · Gb_emb                          per patient (basal EGP scales with Gb)
     glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G
@@ -80,10 +81,20 @@ uptake balances it, an absolute floor ``gng/k_ii`` the same for every Gb
 
 Carbon: ``d(G/mg) + dLGly + dMGly = app_g − brk_M − (k_ii·G + X·G +
 uptake_ex − gng − store·relu(X·G))/mg`` identically. A heavier person
-converts a gram of carbohydrate into fewer mg/dL. ``ra`` is only the
-meal-appearance gain.
+converts a gram of carbohydrate into fewer mg/dL. There is no ``ra`` factor:
+A10 deleted it, so ``app_g`` is the gut kernel's bioavailable mass and nothing
+rescales it on the way in (the A10 note among the constants below says why).
 
-``Ib = 10·exp(±0.9·tanh(head))`` is a zero-init per-patient head like Gb.
+A11: ``hepatic_output`` is the two fluxes that REACH PLASMA — glycogenolysis
+plus ``gng_released`` — not ``glyco + gng``. The diverted gluconeogenic carbon
+is on the liver-glycogen ledger, and the HGO cohort's Rizza-1981 / Basu-2000
+tracer EGP does not count it. At the fasted reference ``ins_drive = 0``, so the
+basal readout is unchanged.
+
+``Ib = 10·exp(±0.9·tanh(head))`` is a zero-init per-patient head, and since A1
+so is ``Gb = 95·exp(±0.45·tanh(head))`` — both decoded in the lognormal family
+the teacher draws them from, so zero is the median person and the population
+mean sits above it (PLAN §1).
 Insulin is not mass-action. A learned basal × Hill could sit above Ib in a
 fast (iter 100: 48 h ended at 12.2 µU/mL against the teacher's 3.8). The
 rate is the teacher's restoring law:
@@ -228,24 +239,36 @@ _SLEEP_EXTERNAL_IDX = 1
 _P2_MIN = 0.01
 _P2_RANGE = 0.24
 _P2_INIT = 0.02  # teacher full_body.py PatientParams.p2
-# Max per-patient fasting-glucose offset, z-score units around 95 mg/dL (iter 90: ±2.2
-# gives Gb ∈ [29, 161], covering the teacher's lognormal spread and the benchmark's 60-120).
-_GLUCOSE_BASELINE_MAX_Z = 2.2
+# A1 (PLAN §1/§3) — Gb IS DECODED IN LOG SPACE, like Ib above and for the same
+# reason: the teacher DRAWS it lognormally (`full_body.py`
+# `clip(vary(p.Gb, 0.25, ir=0.50), 70, 130)`), and "the decoder family must
+# match the generative family". The additive decode it replaces
+# (`95 + 30·2.2·tanh`) has E[Gb] = 95 for a zero-mean code, i.e. the mean of a
+# right-skewed population equal to its median — it cannot be right at both, and
+# zero is defined to be the MEDIAN person (PLAN §2). `95·exp(L·tanh)` makes
+# both true by Jensen with no loss term. L = 0.45 spans Gb ∈ [60.6, 148.9]
+# mg/dL (z ∈ [−1.15, +1.80]), which covers the teacher's clipped [70, 130] with
+# 9.4 mg/dL of margin below and 19.0 above. The old ±2.2 z reached [29, 161]:
+# half of that span was glucose no living patient defends, and iter 96 had
+# already had to clip the TEACHER at 70 for exactly that reason. The floor is
+# 0.6 mg/dL above the 60 the benchmark's observed fasting glucose reaches, which
+# is not a gap — Gb is the setpoint and a drawn-down liver settles BELOW it, at
+# the absolute `gng/k_ii` floor that is the same for every Gb.
+_GB_LOG_MAX = 0.45
 # Iter 97: per-patient basal insulin in LOG space so it is positive by construction:
 # Ib = 10·exp(±0.9·tanh) ∈ [4.1, 24.6] µU/mL — the teacher varies Ib with σ = 0.4
 # lognormal loaded on insulin resistance, i.e. roughly this span at ±2σ.
 _IB_LOG_MAX = 0.9
-# Max per-patient meal-appearance (Ra) log-gain offset, pre-softplus units (iter 88).
-_RA_BASELINE_MAX_Z = 1.0
-# Iter 97: `ra` is the per-patient gain on the (now mass-conserving) gut appearance —
-# 1.0 means the kernel's bioavailable mass appears in glucose space as-is. Init below 1
-# so an UNTRAINED student's 75 g meal lands near the teacher's +56.6 mg/dL at 55 min
-# (the teacher clears its load with a trained second-phase insulin response and
-# first-pass hepatic uptake that the fresh student's heads cannot yet supply); the
-# dose-response and mass-balance signals move it from here. Measured at init across
-# 0.3/0.5/0.7/1.0: peak +19/+33/+47/+70 mg/dL; 0.8 lands +56 (the untrained peak
-# sits at ~90 min, not 55 — the fresh insulin head has no second phase yet).
-_RA_INIT = 0.8
+# A10 (PLAN §3): there is no `Ra` here any more. Through iter 109 meal amplitude
+# carried THREE multiplying per-person gains — the gut kernel's `f_bio`, this
+# module's `ra` (`log_ra` + `ra_baseline_net`, iter 80/88) and `1/V_G` via body
+# mass — and glucose data identifies only their product (measured: scaling Ra and
+# body mass together by 1.2 moves glucose 0.18 mg/dL, i.e. the pair is flat).
+# The gain now lives once, as the gut kernel's bioavailable FRACTION, which is
+# also the only one of the three that is bounded by a conservation law; V_G stays
+# a known scale. `Ra_init = 0.8` moved into `GutModuleBase.F_BIO_INIT_FRACTION`,
+# so the cold start is unchanged.
+
 # Obligatory (insulin-independent) glucose uptake per mg/dL of glucose space —
 # brain, blood cells, renal medulla. The teacher's uptake_ii: 2.0 mg/kg/min
 # at Gb 95, so a typical person rests at the typical EGP of 2.0 mg/kg/min.
@@ -510,9 +533,6 @@ class MetabolicModule(MassActionModule):
         self.log_gng_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GNG_INS_K_INIT)))
         self.log_k_ins = nn.Parameter(torch.tensor(_inverse_softplus(_K_INS_INIT)))
         self.log_gamma = nn.Parameter(torch.tensor(_inverse_softplus(_GAMMA_INIT)))
-        # Structural rate-of-appearance gain Ra on the gut glucose-appearance flux
-        # (iter 80): the meal-appearance gain, and nothing else (iter 97).
-        self.log_ra = nn.Parameter(torch.tensor(_inverse_softplus(_RA_INIT)))
         self.log_si = nn.Parameter(torch.tensor(_logit((_SI_INIT - _SI_MIN) / _SI_RANGE)))
         self.log_p2 = nn.Parameter(torch.tensor(_logit((_P2_INIT - _P2_MIN) / _P2_RANGE)))
         self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
@@ -529,8 +549,9 @@ class MetabolicModule(MassActionModule):
         self.log_alpha_gn = nn.Parameter(torch.tensor(_inverse_softplus(_ALPHA_GN_INIT)))
         self.log_gn_ins = nn.Parameter(torch.tensor(_inverse_softplus(_GN_INS_INIT)))
 
-        # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95, Ib = 10, Ra =
-        # softplus(log_ra) for every embedding at cold start; authority grows in training.
+        # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95 and Ib = 10 for
+        # every embedding at cold start; authority grows in training. A10 deleted the
+        # Ra head: meal amplitude is the gut kernel's bioavailable fraction times V_G.
         _bh = max(8, hidden_dim // 4)
 
         def _zero_head() -> nn.Sequential:
@@ -542,7 +563,6 @@ class MetabolicModule(MassActionModule):
 
         self.glucose_baseline_net = _zero_head()   # Gb
         self.insulin_baseline_net = _zero_head()   # Ib
-        self.ra_baseline_net = _zero_head()        # Ra
         self.body_mass_net = _zero_head()          # kg; 70 at zero embedding
         self.ffa_baseline_net = _zero_head()
         self.mito_setpoint_net = _zero_head()
@@ -550,16 +570,29 @@ class MetabolicModule(MassActionModule):
     # ---- per-patient setpoints -------------------------------------------------------
 
     def glucose_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        b_emb = _GLUCOSE_BASELINE_MAX_Z * torch.tanh(self.glucose_baseline_net(embedding).squeeze(-1))
-        return _GLUCOSE_CENTER + _GLUCOSE_NORM_SCALE * b_emb
+        """Gb in mg/dL, decoded in LOG space: ``95·exp(0.45·tanh(head))`` ∈ [60.6, 148.9].
+
+        A1: the teacher draws Gb lognormally, so this decoder's family is the
+        generative family (PLAN §1) and E[Gb] > Gb(0) by Jensen — the zero code is
+        the MEDIAN person and the population mean sits above it, both without a
+        loss term. The additive form it replaces forced E[Gb] = median = 95.
+        """
+        return _GLUCOSE_CENTER * torch.exp(
+            _GB_LOG_MAX * torch.tanh(self.glucose_baseline_net(embedding).squeeze(-1)))
+
+    def glucose_setpoint_z(self, embedding: torch.Tensor) -> torch.Tensor:
+        """Gb as a glucose z-score, for whoever needs to compare against a target.
+
+        The decode's SHAPE is this module's business: `SetpointSupervisionSignal`
+        used to rebuild `_GLUCOSE_BASELINE_MAX_Z · tanh(head)` itself, which was
+        the same z only while the decode stayed additive. Going through here, a
+        later change of family moves one line instead of every consumer.
+        """
+        return (self.glucose_setpoint_raw(embedding) - _GLUCOSE_CENTER) / _GLUCOSE_NORM_SCALE
 
     def insulin_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
         return _INSULIN_CENTER * torch.exp(
             _IB_LOG_MAX * torch.tanh(self.insulin_baseline_net(embedding).squeeze(-1)))
-
-    def appearance_gain(self, embedding: torch.Tensor) -> torch.Tensor:
-        ra_emb = _RA_BASELINE_MAX_Z * torch.tanh(self.ra_baseline_net(embedding).squeeze(-1))
-        return nn.functional.softplus(self.log_ra + ra_emb)
 
     def body_mass_kg(self, embedding: torch.Tensor) -> torch.Tensor:
         return BODY_MASS_KG * torch.exp(
@@ -580,7 +613,7 @@ class MetabolicModule(MassActionModule):
             _MITO_LOG_MAX * torch.tanh(self.mito_setpoint_net(embedding).squeeze(-1)))
 
     def k_ii(self) -> torch.Tensor:
-        return self.log_ra.new_tensor(_K_II)
+        return self.log_si.new_tensor(_K_II)
 
     # ---- heads -----------------------------------------------------------------------
 
@@ -595,7 +628,6 @@ class MetabolicModule(MassActionModule):
         """Per-patient setpoints and the population scalars of the balance."""
         gb = self.glucose_setpoint_raw(embedding)
         ib = self.insulin_setpoint_raw(embedding)
-        ra = self.appearance_gain(embedding)
         mass_kg = self.body_mass_kg(embedding)
         mg = 1000.0 / (mass_kg * VG_DL_PER_KG)
         ffa_b = self.ffa_setpoint_raw(embedding)
@@ -607,7 +639,7 @@ class MetabolicModule(MassActionModule):
         k_ffa = ffa_b.new_tensor(_K_FFA)
         ic50_lip = nn.functional.softplus(self.log_lip_ic50)
         return {
-            "gb": gb, "ib": ib, "ra": ra, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
+            "gb": gb, "ib": ib, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
             "ffa_b": ffa_b, "gn_b": gn_b, "mito_sp": mito_sp,
             "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": k_ii.new_tensor(_F_GNG),
             "glyc_k": nn.functional.softplus(self.log_glyc_ins_k),
@@ -639,9 +671,12 @@ class MetabolicModule(MassActionModule):
         """Meal appearance, the energy ledger and the activity terms — the protocol."""
         relu = nn.functional.relu
         act = external[..., _ACTIVITY_EXTERNAL_IDX]
-        # Gut glucose appearance is in the 70 kg reference space. Grams are that
-        # density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
-        app_g = const["ra"] * coupling[..., _GUT_GLUCOSE_COUPLING_IDX] / MG_DL_PER_G
+        # Gut glucose appearance is in the 70 kg reference space, and it is ALREADY
+        # the bioavailable mass (the kernel's f_bio ≤ MG_DL_PER_G per gram). Grams
+        # are that density / MG_DL_PER_G; this patient's mg/dL uses their own V_G.
+        # A10: no `ra` factor here — a second gain on the same mass is what made
+        # absorbed-vs-ingested unidentifiable, and it is the gut's number to own.
+        app_g = coupling[..., _GUT_GLUCOSE_COUPLING_IDX] / MG_DL_PER_G
         lipid_app = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0)
         amino_app = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0)
         lipid_g = lipid_app / _LIPID_UNITS_PER_G
@@ -733,7 +768,21 @@ class MetabolicModule(MassActionModule):
         ins_rate = ins_restoring + ins_gsir
         xa_rate = c["p2"] * (insulin_dev - xa)
 
-        hep_target = (glycogenolysis_plasma + gng_plasma) * VG_DL_PER_KG
+        # A11: hepatic_output is RELEASE INTO PLASMA, so the gluconeogenic carbon
+        # routed into glycogen (`gng_divert`) is not part of it. The marker's own
+        # cohort spec (`knowledge/cohorts/glucose_handling.meal_hgo_suppression`)
+        # cites Rizza 1981 / Basu 2000, which measure tracer EGP — appearance in
+        # plasma — so a target that included the diverted share was scoring the
+        # student against a quantity the literature does not report. The teacher
+        # already does it this way (`full_body.glucose_fluxes`: `hep_target =
+        # glyco_t + gng_rel_t`); this closes the gap. At the fasted fixed point
+        # ins_drive = 0, so gng_divert = 0 and the basal readout is unchanged at
+        # the textbook 2.0 mg/kg/min. The postprandial one falls further, which is
+        # the direction the cohort's −1.0 ± 0.5 mg/kg/min wants: measured on a
+        # fresh model (75 g meal, 150-240 min window) the suppression goes from
+        # −0.65 to −1.22 mg/kg/min, i.e. from 0.7σ short of the target to 0.4σ
+        # past it, with the fasted arm at 1.95 in both.
+        hep_target = (glycogenolysis_plasma + gng_released) * VG_DL_PER_KG
         hep_rate = hep_cons * c["hep_cons_scale"] * (hep_target - hep)
 
         glyco_depletion = relu(1.0 - lgly / _LIVER_GLY_CENTER)

@@ -3,7 +3,8 @@
 Answers: do per-patient embeddings self-organize into a coherent, physiologically
 spanning, identifiable map that calibration can invert? We sample embeddings from
 the LEARNED prior N(mean, std) and read the per-patient physiology the heads emit
-(glucose baseline Gb, meal gain Ra, and the 4 cardiovascular setpoints), then look
+(glucose baseline Gb, the gut's carbohydrate bioavailability, and the 4
+cardiovascular setpoints), then look
 at range, physiological plausibility, and cross-marker entanglement.
 """
 import torch, numpy as np
@@ -26,15 +27,17 @@ def physiology(emb):
     with torch.no_grad():
         e_met = m.embedding_projections['metabolic'](emb)
         e_cvs = m.embedding_projections['cardiovascular'](emb)
-        b = M._GLUCOSE_BASELINE_MAX_Z * torch.tanh(m.metabolic.glucose_baseline_net(e_met).squeeze(-1))
-        Gb = NORM_CENTER[MARKER_INDEX['glucose']] + NORM_SCALE[MARKER_INDEX['glucose']] * b
-        ra_emb = M._RA_BASELINE_MAX_Z * torch.tanh(m.metabolic.ra_baseline_net(e_met).squeeze(-1))
-        Ra = torch.nn.functional.softplus(m.metabolic.log_ra + ra_emb)
-        sp = C._CVS_BASELINE_MAX_Z * torch.tanh(m.cardiovascular.setpoint_net(e_cvs))  # [K,4]
-        cvs_idx = [MARKER_INDEX[x] for x in ('hr','hrv','sbp','dbp')]
-        cvs = torch.stack([torch.tensor(NORM_CENTER[i]) + torch.tensor(NORM_SCALE[i]) * sp[:, j]
-                           for j, i in enumerate(cvs_idx)], dim=1)
-    return dict(Gb=Gb.numpy(), Ra=Ra.numpy(), HR0=cvs[:,0].numpy(), HRV0=cvs[:,1].numpy(),
+        # Ask each module to decode its own setpoints. This probe used to rebuild
+        # them from the heads and the MAX_Z constants, which silently went stale
+        # twice over: A1 (PLAN.md) moved Gb and the vitals into the lognormal
+        # family the teacher draws them from, and A10 deleted the Ra gain
+        # entirely (meal amplitude is the gut kernel's bioavailable fraction
+        # now). A hand-rebuilt decode is only right while it happens to match.
+        Gb = m.metabolic.glucose_setpoint_raw(e_met)
+        f_bio = m.gut.kernel.bioavailable_fraction(m.embedding_projections['gut'](emb))
+        cvs = m.cardiovascular.setpoints_raw(e_cvs)   # [K,4] = (hr, hrv, sbp, dbp)
+    return dict(Gb=Gb.numpy(), f_bio_carb=f_bio[:, 0].numpy(),
+                HR0=cvs[:,0].numpy(), HRV0=cvs[:,1].numpy(),
                 SBP0=cvs[:,2].numpy(), DBP0=cvs[:,3].numpy())
 
 def summarize(tag, emb):
