@@ -130,6 +130,7 @@ from .training import (
     TrajectoryRolloutSignal,
     WeightSchedule,
 )
+from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
 from .training.trajectory_signal import (
     DEFAULT_CONTRIBUTION_WEIGHTS,
     TRAIN_WINDOW,
@@ -313,6 +314,101 @@ def _set_runtime(seed: int, *, deterministic: bool, torch_threads: int = 1) -> N
     )
 
 
+def _embedding_prior_stats(embeddings: nn.Embedding) -> tuple[list[float], list[float]]:
+    """Per-dimension mean and population std of the patient table: the calibration prior's
+    N(mean, std^2). One function for both save sites -- the final artifact and the rolling
+    ``last_good.pt`` -- so the two cannot drift apart."""
+    with torch.no_grad():
+        table = embeddings.weight.detach().cpu()
+        return table.mean(dim=0).tolist(), table.std(dim=0, unbiased=False).tolist()
+
+
+def _last_good_checkpoint(
+    model: nn.Module,
+    embeddings: nn.Embedding,
+    *,
+    hidden_dim: int,
+    epoch: int,
+    phase: int,
+    metrics: dict[str, float],
+    seed: int,
+) -> dict[str, Any]:
+    """The rolling per-epoch checkpoint: enough for ``--resume-from`` (model, table, epoch) and for
+    ``ModularPhysiologyNetwork.from_checkpoint`` to rebuild a model that carries its own prior.
+
+    Plan A8. It used to hold the table but not the prior stats, which only the final artifact got, so
+    ``scripts/rescore_artifact.py`` / ``pulse.benchmark`` re-scored a mid-run checkpoint on the
+    isotropic-L2 fallback -- a different ruler from the trained-prior one the final artifact is
+    judged on (``benchmark.py`` falls back only when the model has no ``_embedding_prior_mean``).
+    ``seed`` names which simulated people the table's rows are, for ``--init-from`` to check.
+    """
+    prior_mean, prior_std = _embedding_prior_stats(embeddings)
+    return {
+        "model_state": model.state_dict(),
+        "model_config": getattr(model, "constructor_kwargs", None),
+        "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
+        "hidden_dim": hidden_dim,
+        "embedding_dim": EMBEDDING_DIM,
+        "embeddings_state": embeddings.state_dict(),
+        "embedding_prior_mean": prior_mean,
+        "embedding_prior_std": prior_std,
+        "epoch": epoch,
+        "phase": phase,
+        "metrics": metrics,
+        "seed": seed,
+    }
+
+
+def _warm_start_patient_table(
+    embeddings: nn.Embedding, ckpt: dict, source: str, *, seed: int,
+) -> bool:
+    """``--init-from``: restore the patient table ``ckpt`` trained, when it is the same people.
+
+    Plan A8. The seed-42 patients are deterministic -- row i is the same simulated person every run
+    -- and every iteration since 104 has warm-started the decoders. Leaving the table at a fresh
+    N(0, 0.1) makes the decoders warm and the codes cold: the heads already assume a table that the
+    first epochs must then re-derive. Restored only when its shape is this run's (n_patients,
+    EMBEDDING_DIM) and the checkpoint was not trained on a different seed (then row i is another
+    person; both checkpoint kinds record it, a hand-built init.pt may not). Otherwise the fresh
+    init stands and the line printed says why. Returns whether the table was restored.
+    ``--resume-from`` has its own path and does not come through here.
+    """
+    fresh = "patient table stays at its fresh N(0, 0.1) init"
+    state = ckpt.get("embeddings_state")
+    weight = state.get("weight") if isinstance(state, dict) else None
+    if weight is None or not hasattr(weight, "shape"):
+        print(
+            f"[INIT] {source} carries no embeddings_state (a final artifact saved before plan A8 does "
+            f"not; last_good.pt does): {fresh}",
+            flush=True,
+        )
+        return False
+    want = tuple(embeddings.weight.shape)
+    if tuple(weight.shape) != want:
+        print(
+            f"[INIT] {source} embeddings_state is {tuple(weight.shape)}, this run's table is {want}: {fresh}",
+            flush=True,
+        )
+        return False
+    saved_seed = ckpt.get("seed")
+    if saved_seed is not None and int(saved_seed) != int(seed):
+        print(
+            f"[INIT] {source} trained its table on seed {saved_seed}, this run is seed {seed}: its rows "
+            f"are different people; {fresh}",
+            flush=True,
+        )
+        return False
+    embeddings.load_state_dict(state)
+    with torch.no_grad():
+        table = embeddings.weight.detach()
+        print(
+            f"[INIT] {source} patient table restored {want}: centre norm "
+            f"{float(table.mean(dim=0).norm()):.3f}, mean row norm {float(table.norm(dim=-1).mean()):.3f}",
+            flush=True,
+        )
+    return True
+
+
 def train(
     n_patients: int = 20,
     n_epochs: int = 80,
@@ -349,6 +445,7 @@ def train(
     setpoint_supervision_weight: float = 0.0,
     meal_response_weight: float = 0.0,
     embedding_prior_weight: float = 0.0,
+    embedding_prior_center_weight: float = DEFAULT_CENTER_WEIGHT,
     meal_response_sample_patients: int = 4,
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
@@ -526,9 +623,11 @@ def train(
         if not rec.get("is_default") and rec.get("meal_response")
     }
     # Iter 91: shape the patient codes so the calibration prior is well-specified (see
-    # training/embedding_prior_signal.py). Cheap, on from epoch 0.
+    # training/embedding_prior_signal.py). Cheap, on from epoch 0. Plan A2: the per-row scale weight
+    # stays weak; the table's mean has its own, strong one (a gauge direction nothing else holds).
     embedding_prior_signal = EmbeddingPriorSignal(
         weight=WeightSchedule(embedding_prior_weight, enable_at_epoch=0),
+        center_weight=WeightSchedule(embedding_prior_center_weight, enable_at_epoch=0),
     )
     meal_response_signal = RolloutEvidenceSignal(
         family="meal",
@@ -698,6 +797,7 @@ def train(
             f"[INIT] {init_from} missing={list(missing)} unexpected={list(unexpected)}",
             flush=True,
         )
+        _warm_start_patient_table(embeddings, seeded, init_from, seed=seed)
 
     # NOTE: torch.compile was tried for iter 14 (5-epoch local A/B). On a
     # single fixed protocol it gave 2.9x steady-state speedup, but in the
@@ -911,6 +1011,18 @@ def train(
                 + " ".join(f"{k}={v}" for k, v in sorted(aux_steps_by_signal.items())),
                 flush=True,
             )
+            # Plan A2: the signal's own report was never printed, so "watch the centre go to 0"
+            # had nobody watching. centre_norm falling with spread holding is the pin working;
+            # both falling is the weight flattening patients.
+            _emb = results[embedding_prior_signal.name].sub_metrics
+            if _emb:
+                print(
+                    f"[EMBPRIOR] epoch={epoch:3d} centre_norm={_emb['emb_centre_norm']:.4f} "
+                    f"spread={_emb['emb_spread']:.4f} norm_mean={_emb['emb_norm_mean']:.4f} "
+                    f"norm_max={_emb['emb_norm_max']:.4f} std_ratio={_emb['emb_std_ratio']:.2f} "
+                    f"weight={embedding_prior_weight} center_weight={embedding_prior_center_weight}",
+                    flush=True,
+                )
 
             elapsed = time.time() - epoch_start
             mem = _memory_stats()
@@ -939,6 +1051,9 @@ def train(
                 metrics_summary[f"time_{sig_name}_s"] = float(t)
             for sig_name, v in ctx.aux_grad_norms.items():
                 metrics_summary[f"gradnorm_{sig_name}"] = float(np.mean(v))
+            for k in ("emb_centre_norm", "emb_spread"):
+                if k in _emb:
+                    metrics_summary[k] = float(_emb[k])
             for k, v in mem.items():
                 metrics_summary[f"mem_{k}"] = float(v)
             recent_metrics.append(metrics_summary)
@@ -949,17 +1064,10 @@ def train(
             # write), runs every epoch, never re-uploaded to GCS unless an
             # abort fires.
             torch.save(
-                {
-                    "model_state": model.state_dict(),
-                    "model_config": getattr(model, "constructor_kwargs", None),
-                    "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
-                    "hidden_dim": hidden_dim,
-                    "embedding_dim": EMBEDDING_DIM,
-                    "embeddings_state": embeddings.state_dict(),
-                    "epoch": epoch,
-                    "phase": cur_phase,
-                    "metrics": metrics_summary,
-                },
+                _last_good_checkpoint(
+                    model, embeddings, hidden_dim=hidden_dim, epoch=epoch,
+                    phase=cur_phase, metrics=metrics_summary, seed=seed,
+                ),
                 last_good_path,
             )
             if gcs_bucket and gcs_object:
@@ -1094,10 +1202,7 @@ def train(
     # during training; dims the model left near init get strong prior
     # (no eval drift), dims the model heavily used get weak prior
     # (still expressive for legitimate per-patient variation).
-    with torch.no_grad():
-        _emb_table = embeddings.weight.detach().cpu()
-        _emb_prior_mean = _emb_table.mean(dim=0).tolist()
-        _emb_prior_std = _emb_table.std(dim=0, unbiased=False).tolist()
+    _emb_prior_mean, _emb_prior_std = _embedding_prior_stats(embeddings)
 
     checkpoint = {
         "model_state": model.state_dict(),
@@ -1111,6 +1216,10 @@ def train(
         "embedding_dim": EMBEDDING_DIM,
         "embedding_prior_mean": _emb_prior_mean,
         "embedding_prior_std": _emb_prior_std,
+        # Plan A8: the table itself (5 KB), for --init-from to read back. Only last_good.pt carried
+        # it, so a warm start from the final artifact got the decoders without the codes they were
+        # trained against.
+        "embeddings_state": embeddings.state_dict(),
         "n_patients": n_patients,
         "knowledge_sources": [c.name for c in ALL_CONTRIBUTIONS],
         "contribution_weights": contribution_weights
@@ -1152,6 +1261,7 @@ def train(
         "setpoint_supervision_weight": setpoint_supervision_weight,
         "meal_response_weight": meal_response_weight,
         "embedding_prior_weight": embedding_prior_weight,
+        "embedding_prior_center_weight": embedding_prior_center_weight,
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
         "cold_distill_weight": cold_distill_weight,
@@ -1770,7 +1880,27 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "||prior_mean||=0.26, per-dim scales differing 1.7x). Training the codes to be centred "
             "and isotropic makes that prior correct BY CONSTRUCTION. Keep it weak: too strong and "
             "the codes collapse toward the population mean (watch setpoint_supervision's MAE). "
-            "0 disables (default)."
+            "This is the per-row SCALE term; it does not centre the table -- see "
+            "--embedding-prior-center-weight. 0 disables (default)."
+        ),
+    )
+    parser.add_argument(
+        "--embedding-prior-center-weight",
+        type=float,
+        default=DEFAULT_CENTER_WEIGHT,
+        help=(
+            "Weight on ||mean_i e_i||^2, the squared norm of the patient table's mean (plan A2). "
+            "Independent of --embedding-prior-weight (either may be 0). The centre is a gauge "
+            "direction -- every consumer of a code reads it through an affine map -- so the "
+            "reconstruction loss never pins it, and the calibration prior (built at mean(table)) "
+            "disagrees with the soft norm, the hard clamp and the zero-embedding evaluation point "
+            "(all centred at 0). Pinning it centres the cloud on the zero embedding (the median "
+            "person) and makes the fitted embedding_prior_mean ~0 by construction. Strong by "
+            "design (default 1.0, three orders above the per-row weight): the gradient is "
+            "identical on every row, so it moves the cloud rigidly and cannot flatten per-patient "
+            "differences. 1.0 is a constraint when the pin lands on every optimizer step; it lands "
+            "only at aux steps, so how many that is per epoch (--aux-every-k-windows) decides "
+            "what the recipe needs -- see training/embedding_prior_signal.py. 0 disables."
         ),
     )
     parser.add_argument(
@@ -2168,7 +2298,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--init-from", type=str, default=None,
         help="Warm-start model weights from this checkpoint (local path or gs://). "
-             "Missing keys stay at init; unexpected keys are dropped. Epochs start at 0.",
+             "Missing keys stay at init; unexpected keys are dropped. Epochs start at 0. "
+             "Also restores the patient table (embeddings_state) when the checkpoint has one of "
+             "this run's (n_patients, EMBEDDING_DIM) shape and seed; otherwise the table starts "
+             "fresh and the [INIT] log line says why.",
     )
     parser.add_argument(
         "--resume-from", type=str, default=None,
@@ -2277,6 +2410,7 @@ def main():
         setpoint_supervision_weight=args.setpoint_supervision_weight,
         meal_response_weight=args.meal_response_weight,
         embedding_prior_weight=args.embedding_prior_weight,
+        embedding_prior_center_weight=args.embedding_prior_center_weight,
         meal_response_sample_patients=args.meal_response_sample_patients,
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,
