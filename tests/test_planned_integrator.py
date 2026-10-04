@@ -5,12 +5,15 @@ rollout (``_RolloutPlan``) and runs every MLP head as one fused network
 (``_HeadBank``). These tests pin that this is a re-ordering of the same arithmetic,
 not a second model: the planned rollout matches the per-minute ``model.forward``
 reference, per-member protocols match separate rollouts, and the batched training
-helpers built on it match their serial forms.
+helpers built on it match their serial forms. The optional per-marker decay channel
+(PLAN B2, ``euler_step``) goes through the same plan and the same pointwise path, so it
+is pinned here the same way; its numerics are in ``tests/test_etd_step.py``.
 """
 
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 
 from pulse.cohort_loss import _rollout_arm_states, rollout_arms
@@ -28,8 +31,24 @@ from pulse.model import (
     precompute_duodenal_outputs,
     precompute_gut_outputs,
 )
+from pulse.modules import (
+    AppetiteModule,
+    CardiovascularModule,
+    HepatobiliaryModule,
+    MetabolicModule,
+    RespiratoryModule,
+    StressModule,
+    ThermoregModule,
+)
 from pulse.modules.gut import MealEvent
-from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
+from pulse.types import (
+    EMBEDDING_DIM,
+    MARKER_INDEX,
+    MODULE_MARKER_INDICES,
+    NORM_CENTER,
+    NORM_SCALE,
+    STATE_DIM,
+)
 
 MEALS = [
     MealEvent(time=20.0, carbs=60.0, fats=20.0, proteins=25.0),
@@ -50,6 +69,25 @@ def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
         for p in model.parameters():
             p.add_(0.05 * torch.randn(p.shape, generator=g))
     return model
+
+
+_ALL_MODULES = (
+    MetabolicModule, AppetiteModule, StressModule, CardiovascularModule,
+    ThermoregModule, RespiratoryModule, HepatobiliaryModule,
+)
+
+
+def _report_decay(monkeypatch, fn, modules=_ALL_MODULES) -> None:
+    """Make exactly ``modules`` report ``fn(self, state, coupling, const, drv, raw)`` as their
+    decay (a module opts in by defining ``decay_rates`` on its class), whatever the real modules
+    define by the time this runs."""
+    for cls in modules:
+        monkeypatch.setattr(cls, "decay_rates", fn, raising=False)
+    _only_reporting(monkeypatch, modules)
+
+
+def _only_reporting(monkeypatch, modules) -> None:
+    monkeypatch.setattr("pulse.model._reports_decay", lambda mod: type(mod) in modules)
 
 
 def _states(n: int, seed: int) -> torch.Tensor:
@@ -109,6 +147,123 @@ def test_planned_rollout_matches_the_pointwise_reference() -> None:
             assert (gp is None) == (gr is None)
             if gr is not None and float(gr.abs().max()) > 1e-6:
                 _close(gp, gr, 1e-3)
+
+
+def test_planned_rollout_matches_the_pointwise_reference_with_decay(monkeypatch) -> None:
+    """The decay channel is assembled twice — per module in ``_RolloutPlan`` and in
+    ``forward(return_decay=True)`` — and both must hand ``euler_step`` the same thing: states,
+    embedding gradients, parameter gradients and the gradient of a learnable decay scale."""
+    k_scale = torch.nn.Parameter(torch.tensor(0.2))
+
+    def state_dependent(self, state, coupling, const, drv, raw):
+        return k_scale * (0.25 + torch.sigmoid(2.0 * state))
+
+    T = 90
+    t = torch.arange(T, dtype=torch.float32)
+    sw = (torch.sin(t / 15.0) > -0.3).float()
+    act = 0.4 * (torch.cos(t / 9.0) > 0.5).float()
+    g = torch.Generator().manual_seed(7)
+    for modules in (_ALL_MODULES, (CardiovascularModule, MetabolicModule, RespiratoryModule)):
+        model = _live_model(13)
+        _report_decay(monkeypatch, state_dependent, modules)
+        kw = dict(state=_states(3, 8), emb=0.4 * torch.randn(3, EMBEDDING_DIM, generator=g), T=T,
+                  meals=MEALS, sleep_wake=sw, activity=act, start_time_minutes=480.0)
+        out = {}
+        for planned in (False, True):
+            k_scale.grad = None
+            rolled = _roll(model, planned, **dict(kw))
+            assert k_scale.grad is not None, f"planned={planned}: the decay never reached the step"
+            out[planned] = rolled + (k_scale.grad.clone(),)
+        ref, new = out[False], out[True]
+        _close(new[0], ref[0], 1e-5)
+        _close(new[1], ref[1], 1e-4)
+        for gp, gr in zip(new[2], ref[2]):
+            assert (gp is None) == (gr is None)
+            if gr is not None and float(gr.abs().max()) > 1e-6:
+                _close(gp, gr, 1e-3)
+        assert float(ref[3]) != 0.0 and bool(torch.isfinite(new[3]))
+        _close(new[3], ref[3], 1e-3)
+        monkeypatch.undo()
+
+    # ... and the channel is live: the same model without it integrates a different trajectory.
+    _only_reporting(monkeypatch, ())
+    plain = _roll(_live_model(13), True, **dict(kw))
+    assert float((plain[0] - new[0]).abs().max()) > 1e-4
+
+
+def test_decay_is_collected_in_marker_order_like_the_rates(monkeypatch) -> None:
+    """``forward(return_decay=True)`` concatenates the modules' decays in ``_MODULE_ORDER`` and
+    gathers them into marker order exactly as it does the rates: every module's markers get
+    their own values, whichever module they belong to."""
+    model = _live_model(14)
+    state = _states(2, 15)
+    emb = 0.3 * torch.randn(2, EMBEDDING_DIM, generator=torch.Generator().manual_seed(16))
+    gut, duo = torch.zeros(2, 4), torch.zeros(2, 3)
+    t = torch.tensor([400.0, 400.0])
+    want = torch.zeros(STATE_DIM)
+    _only_reporting(monkeypatch, _ALL_MODULES)
+    for name, mod in model._modules_by_name.items():
+        idx = MODULE_MARKER_INDICES[name]
+        vals = 0.01 * (1 + len(want.nonzero())) + 0.001 * torch.arange(len(idx), dtype=torch.float32)
+        want[idx] = vals
+        monkeypatch.setattr(type(mod), "decay_rates", (lambda v: lambda self, state, coupling, const, drv, raw:
+                                                       v.expand(state.shape).clone())(vals), raising=False)
+    rates, decay = model(state, emb, t, [], gut_override=gut, duodenal_override=duo, return_decay=True)
+    assert decay.shape == rates.shape == (2, STATE_DIM)
+    assert torch.equal(decay, want.expand(2, STATE_DIM))
+    # The rates are those of the call that does not ask for the decay.
+    assert torch.equal(rates, model(state, emb, t, [], gut_override=gut, duodenal_override=duo))
+    # Unbatched, the decay is unbatched too.
+    r1, d1 = model(state[0], emb[0], t[0], [], gut_override=gut[0], duodenal_override=duo[0],
+                   return_decay=True)
+    assert d1.shape == r1.shape == (STATE_DIM,) and torch.equal(d1, want)
+
+
+def test_a_module_that_reports_no_decay_contributes_zeros_and_none_reports_none(monkeypatch) -> None:
+    model = _live_model(15)
+    state, emb = _states(2, 17), torch.zeros(2, EMBEDDING_DIM)
+    kw = dict(gut_override=torch.zeros(2, 4), duodenal_override=torch.zeros(2, 3), return_decay=True)
+    t = torch.tensor([400.0, 400.0])
+    _only_reporting(monkeypatch, ())
+    rates, decay = model(state, emb, t, [], **kw)
+    assert decay is None and rates.shape == (2, STATE_DIM)
+    monkeypatch.undo()
+    _report_decay(monkeypatch, lambda self, state, coupling, const, drv, raw: torch.full_like(state, 0.3),
+                  (CardiovascularModule,))
+    _, decay = model(state, emb, t, [], **kw)
+    cvs = MODULE_MARKER_INDICES["cardiovascular"]
+    assert bool((decay[:, cvs] == 0.3).all())
+    assert float(decay.abs().sum() - 0.3 * 2 * len(cvs)) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_a_parameter_only_decay_broadcasts_across_the_batch(monkeypatch) -> None:
+    """Cardiovascular, thermoreg and respiratory keep their k in ``constants``: a decay with no
+    batch dimension must be broadcast to the rate's shape in the plan and in ``forward``."""
+    model = _live_model(16)
+    row = {CardiovascularModule: [0.3, 0.3, 0.3, 0.3], ThermoregModule: [0.025], RespiratoryModule: [0.08, 0.08]}
+    for cls, vals in row.items():
+        monkeypatch.setattr(cls, "decay_rates", (lambda v: lambda self, state, coupling, const, drv, raw:
+                                                 torch.tensor(v))(vals), raising=False)
+    _only_reporting(monkeypatch, tuple(row))
+    emb = 0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(18))
+    state = _states(3, 19)
+    with torch.no_grad():
+        a = integrate(model, state, emb, 30, meals=MEALS, planned=True)
+        b = integrate(model, state, emb, 30, meals=MEALS, planned=False)
+    _close(a, b, 1e-5)
+
+
+def test_a_decay_of_the_wrong_width_is_an_error_that_names_the_module(monkeypatch) -> None:
+    """A module that reports a rate for the wrong number of markers would shift every later
+    module's decay in the concatenation; it must fail where it is made, in the plan and in
+    ``forward``."""
+    model = _live_model(18)
+    _report_decay(monkeypatch, lambda self, state, coupling, const, drv, raw: torch.zeros(state.shape[0], 3),
+                  (CardiovascularModule,))  # it has four markers
+    state, emb = _states(2, 20), torch.zeros(2, EMBEDDING_DIM)
+    for planned in (True, False):
+        with pytest.raises(ValueError, match="cardiovascular.decay_rates"):
+            integrate(model, state, emb, 3, meals=MEALS, planned=planned)
 
 
 def test_per_member_protocols_match_separate_rollouts() -> None:
@@ -248,7 +403,12 @@ def test_drives_never_read_the_state() -> None:
 
 def test_planned_rollout_is_nearly_flat_in_batch_size() -> None:
     """The reason batching pays: a step is dispatch-bound, so 16 members cost far
-    less than 16 rollouts. Loose bound — it guards the design, not the machine."""
+    less than 16 rollouts. Loose bound — it guards the design, not the machine.
+
+    Timed on one intra-op thread, as the trainer runs (``--torch-threads 1``): the 16-member
+    step is multi-threaded where the 1-member step is not, and on four threads next to other
+    busy processes the 16-member / 1-member time ratio measured 10.9, against 1.07 on one
+    thread — a scheduler effect, not the design this test guards."""
     import time
 
     model = _live_model(7)
@@ -263,7 +423,12 @@ def test_planned_rollout_is_nearly_flat_in_batch_size() -> None:
             best = min(best, time.perf_counter() - t0)
         return best
 
-    one, sixteen = run(1), run(16)
+    threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    try:
+        one, sixteen = run(1), run(16)
+    finally:
+        torch.set_num_threads(threads)
     assert sixteen < 4.0 * one, (one, sixteen)
 
 
@@ -311,6 +476,33 @@ def test_compiled_steps_match_the_eager_step() -> None:
         assert enable_compiled_steps(model), "warm-up failed (see the printed reason)"
         state = _states(3, 40)
         emb = 0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(9))
+        compiled = _roll(model, True, state=state, emb=emb, T=30, meals=MEALS)
+    finally:
+        enable_compiled_steps(enabled=False)
+    eager = _roll(model, True, state=state, emb=emb, T=30, meals=MEALS)
+    _close(compiled[0], eager[0], 1e-5)
+    _close(compiled[1], eager[1], 1e-4)
+
+
+def test_compiled_steps_match_the_eager_step_with_decay(monkeypatch) -> None:
+    """The same guard with the decay channel on: the compiled step carries the ETD1 gain (the
+    ``where``-guarded series and closed form, the log and logit coordinates) and must agree with
+    eager, forward and backward. Opt-in for the same reason as the test above."""
+    import os
+
+    if os.environ.get("PULSE_TEST_COMPILE") != "1":
+        pytest.skip("set PULSE_TEST_COMPILE=1 to compile the planned step")
+    from pulse.model import enable_compiled_steps
+
+    def decay(self, state, coupling, const, drv, raw):
+        return 0.05 + 0.75 * torch.sigmoid(3.0 * state)
+
+    _report_decay(monkeypatch, decay)
+    model = _live_model(17)
+    try:
+        assert enable_compiled_steps(model), "warm-up failed (see the printed reason)"
+        state = _states(3, 41)
+        emb = 0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(10))
         compiled = _roll(model, True, state=state, emb=emb, T=30, meals=MEALS)
     finally:
         enable_compiled_steps(enabled=False)
