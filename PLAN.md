@@ -86,11 +86,11 @@ here.
 | A1 | Decode every positive per-person setpoint in log space: HR₀, SBP₀, DBP₀, RR₀, Gb (T0 and SpO₂ stay additive — the teacher draws those additively) | E[setpoint] > setpoint(0) by Jensen, matching the teacher's lognormal draws; median and mean both right with no loss term |
 | A2 | Pin the table mean: `embedding_prior` penalises `‖mean(E)‖²` at a weight that makes it a constraint, not a nudge; keep the existing per-row norm term weak | prior mean = 0 by construction; `_embedding_prior_mean` stops disagreeing with the clamp and the soft norm. **Weight sized, not guessed, and 1.0 was too low:** the pin lands only at joint aux steps (6 per epoch at `--aux-every-k-windows=12`), and Adam divides each coordinate's step by the RMS of *every* gradient that coordinate sees, so the centre relaxes with a time constant of `σ·N/(2·lr·cw)` **pin steps** — three orders above the row term is only enough if the pin lands every optimizer step. Simulated at the spec's own cadence from ‖mean‖ = 0.26: cw=1 ends at 0.136–0.189, cw=10 at 0.025–0.065, cw=30 at 0.013–0.026. Spec set to **10**; the code default stays 1.0, and the new per-epoch `[EMBPRIOR]` line prints `centre_norm` so epochs 5–10 show the real rate rather than the assumed one |
 | A3 | Person-level constants: one `model.person_constants(embedding)` owning basal insulin Ib and body mass, consumed by metabolic AND appetite | one person has one basal insulin (today: two untied heads); removes the appetite copy |
-| A4 | Supervise every per-person head the teacher has ground truth for: Ib, body mass, FFA_b, mito setpoint, cort_b, RR₀, SpO₂₀ — extend `SetpointSupervisionSignal` | each head gets the evidence that identifies it; kills the Ra↔mass confound (measured: ×1.2 on both changes glucose 0.18 mg/dL) |
+| A4 | Supervise every per-person head the teacher has ground truth for: Ib, body mass, FFA_b, mito setpoint, cort_b, RR₀, SpO₂₀ — extend `SetpointSupervisionSignal` | each head gets the evidence that identifies it; kills the Ra↔mass confound (measured: ×1.2 on both changes glucose 0.18 mg/dL). **Landed.** Supervised markers 6 → **12** (added insulin/Ib, ffa, mitochondrial_capacity, cortisol, rr, spo2) plus B1's six non-marker params through a second `param_targets` dict in log-ratio-to-default units; `Episode.patient_params` and the teacher's `setpoints` dict carry the ground truth. Fitted to convergence on 6 teacher patients, all 12 markers and all 6 params converge. **It also found a teacher defect** — see Wave E's blood-pressure item, which is where the one non-converging pair came from |
 | A5 | Delete the heads the teacher does not vary and nothing supervises: HPA phase, CCK basal | no unsupervised per-person authority (the Gnb-drift failure mode). **Not finished:** the `cck` and `gallbladder_bile` species heads still read the embedding while `randomize_params` draws *no* hepatobiliary parameter at all, so a person's resting CCK is still free against a now-pinned gate reference. Those are species heads rather than baseline nets, so they need the C6 couplings (something must read a bile state) before deleting or supervising them is the right move |
 | A6 | Insulin sweep and gut sweep supervise the zero embedding only (they score against `PatientParams()` rates and kernel) | removes a 0.30-weight and a 0.10-weight pull of sampled patients toward the median; per-row targets return in B4 |
 | A7 | Cohort population batches: drop zero, debias the batch-mean loss by its own sampling variance (**landed, floored — see the note below**) | the loss stops rewarding between-person shrinkage (the term is ≈(2/9)σ²_between/SEM², 1.4–14 per spec). Rule hinges are NOT batch-mean statistics — each member's own violation is scored — so the debias does not apply and zero stays in the rule batch, because a rule holds for the median person too |
-| A8 | Server default → median person; `last_good.pt` carries the prior stats; `--init-from` loads `embeddings_state` | one default person everywhere; a rolling checkpoint re-scores on its own prior; warm start keeps patient identity |
+| A8 | Server default → median person; `last_good.pt` carries the prior stats; `--init-from` loads `embeddings_state` | one default person everywhere; a rolling checkpoint re-scores on its own prior; warm start keeps patient identity. **Landed, and the "everywhere" needed a second pass:** fixing the server left `benchmark.deterministic_user_embedding` as its no-prior fallback, so a checkpoint carrying no prior was still *scored* against a user-id-seeded random person and *served* as the default one. Both now call one `model.population_prior_embedding`, with a test that fails on a lone read of `_embedding_prior_mean` at either call site |
 | A9 | Bioavailability bounded: `f_bio = MG_DL_PER_G · σ(·)` ≤ 1 per channel | absorbed ≤ ingested by construction (today softplus: >1 creates carbon, <1 deletes it unbooked) |
 | A10 | Delete the `Ra` gain and `ra_baseline_net` | meal amplitude has one per-person gain (f_bio) and one known scale (V_G), not three multiplying ones |
 | A11 | `hepatic_output` is release into plasma (exclude `gng_divert`) | the marker means what the tracer literature the HGO cohort cites measures |
@@ -303,6 +303,30 @@ Teacher-side defects the analysis measured, plus the real-data gap.
   since ventilation below the ventilatory threshold is carried mostly by tidal
   volume. Equilibrium at act 0.9: **63.1 → 35.0** /min; minutes above the marker's
   declared max of 40 across six 14-day episodes: **926 → 0**; resting value exact.
+- **Blood pressure drawn as two independent lognormals, so 12.6 % of teacher
+  patients were unfittable.** Found by A4: with all 12 markers supervised, every
+  one converged except sbp/dbp, which stalled at 3.04 / 2.94 mmHg. The cause is in
+  the **teacher**, not the student. `randomize_params` drew `SBP0` and `DBP0`
+  independently, so pulse pressure was a *difference of two noises*: measured over
+  4,000 draws it ran **−16.5 to 120.1 mmHg, 12.6 % below 20 and 0.85 % negative**
+  (DBP ≥ SBP). Iter 97 had made `SBP = DBP + PP` true by construction in the
+  *student* and left the teacher generating the targets the old way — so the
+  student was structurally forbidden from fitting an eighth of its training
+  population, and the stall was a floor, not a fitting failure. **Fixed** by
+  sampling DBP and PP (`SBP0 = DBP0 + clip(vary(40, 0.29, ir=+0.40, fit=−0.30),
+  20, 80)`), with σ solved to preserve the old systolic spread
+  (`sqrt(16.8² − 12²) = 11.7 = 40·0.29`) and the clip set to the student's *own*
+  representable span rather than a separately chosen physiological one — a target
+  the student cannot reach is not supervision, it is a standing residual. Two
+  `vary` calls in the same slots, so the RNG stream position is unchanged for every
+  later parameter. Measured after: PP min 20.0 / median 40.1 / max 80.0,
+  **0.00 % unrepresentable**, 1.75 % at a bound, corr(SBP,DBP) 0.79; sbp/dbp MAE
+  **3.04 / 2.94 → 0.95 / 0.60 mmHg**. Both teacher audits re-run on the combined
+  tree: 0/61 rules and 0/40 cohort anchors violated, with `sbp_sleep_dip` and
+  `dbp_sleep_dip` at z = +0.07 each.
+  *The general lesson is the one §1 states: a by-construction invariant installed
+  on one side of a distillation pair is a contradiction until it is installed on
+  both.*
 - The habitual meal hours (9/13/20) sit *after* the generated meals (7–9, 12–14,
   18–20), so most "anticipatory" ghrelin arrives post-meal. C3 subsumes this.
 - `Cort_b` (12) is 3 µg/dL above the default patient's actual 24 h mean (8.95),

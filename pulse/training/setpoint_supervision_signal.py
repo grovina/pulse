@@ -74,7 +74,7 @@ against ``log(target/PatientParams_default)``. Three things follow.
 
 The two halves are averaged over their own observed pairs and summed, so adding six
 parameters does not dilute the per-marker pull that the existing weight was tuned for.
-``param_targets`` empty is a no-op: the trainer wires it in a separate change.
+``param_targets`` empty is a no-op, which is what every non-full_body caller passes.
 
 Body mass is here because it had a head and NO supervision — the one per-person head
 that did active harm, since it scales mg/dL per gram through V_G and so multiplied meal
@@ -92,7 +92,6 @@ import torch
 import torch.nn as nn
 
 from ..knowledge.full_body import PatientParams
-from ..modules import cardiovascular as _cvs
 from ..modules import thermoreg as _thm
 from ..modules.metabolic import PERSON_PARAM_CENTERS
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
@@ -127,6 +126,14 @@ _TEACHER_DEFAULTS: dict[str, float] = {
 def _z(marker: str, raw: float) -> float:
     idx = MARKER_INDEX[marker]
     return (raw - NORM_CENTER[idx]) / float(NORM_SCALE[idx])
+
+
+def _z_t(marker: str, raw: torch.Tensor) -> torch.Tensor:
+    """``_z`` for the prediction side, which is a Tensor and must stay differentiable.
+    Two functions rather than one so neither has to branch on its argument's type; they
+    read the same two constants, which is the part that must not diverge."""
+    idx = MARKER_INDEX[marker]
+    return (raw - float(NORM_CENTER[idx])) / float(NORM_SCALE[idx])
 
 
 def _log_ratio(key: str, raw: float) -> float:
@@ -181,13 +188,10 @@ class SetpointSupervisionSignal(TrainingSignal):
         pred_gb_z = model.metabolic.glucose_setpoint_z(e_met)  # [P]
         e_cvs = model.embedding_projections["cardiovascular"](emb)
         cvs = model.cardiovascular
-        if hasattr(cvs, "setpoints_z"):
-            # Iter 97 (student hand-off): the CVS setpoint head no longer emits four
-            # z-scores — HRV and pulse pressure are LOG offsets and SBP = DBP + PP by
-            # construction. The module owns the decode; we compare in its z frame.
-            pred_cvs_z = cvs.setpoints_z(e_cvs)  # [P, 4] = (hr, hrv, sbp, dbp)
-        else:  # pre-iter-97 head: four tanh-bounded z-scores
-            pred_cvs_z = _cvs._CVS_BASELINE_MAX_Z * torch.tanh(cvs.setpoint_net(e_cvs))
+        # Iter 97 (student hand-off): the CVS setpoint head no longer emits four
+        # z-scores — HRV and pulse pressure are LOG offsets and SBP = DBP + PP by
+        # construction. The module owns the decode; we compare in its z frame.
+        pred_cvs_z = cvs.setpoints_z(e_cvs)  # [P, 4] = (hr, hrv, sbp, dbp)
         # Iter 91: thermoreg now has a per-patient setpoint head too (it was a bare MLP with no
         # restoring structure — the same gap CVS had until iter 89).
         e_thm = model.embedding_projections["thermoreg"](emb)
@@ -196,22 +200,49 @@ class SetpointSupervisionSignal(TrainingSignal):
         )  # [P]
 
         # --- ground truth (z-units), masked per marker ---
-        # Not every contribution simulates a whole patient: only full_body episodes carry
-        # all five setpoints, and a partial dict must not KeyError. Build a [P, 5] target
-        # and a matching mask, and average over the OBSERVED (patient, marker) pairs only.
-        markers = (_GLUCOSE,) + _CVS_MARKERS + (_TEMP,)
+        # Not every contribution simulates a whole patient: a partial dict must not
+        # KeyError. Build a [P, M] target and a matching mask, and average over the
+        # OBSERVED (patient, marker) pairs only.
+        # A4 (PLAN.md): every marker-valued setpoint the student decodes per person and
+        # the teacher draws per patient. Through iter 109 only these six were supervised
+        # (glucose, the four CVS, temp) while `insulin_setpoint_raw`, `ffa_setpoint_raw`,
+        # `mito_setpoint_raw`, `cort_setpoint_raw` and respiratory's two decoded from the
+        # embedding with NOTHING identifying them — and the measured consequence of an
+        # unsupervised per-person head is iter 109's: a basal head walked the prior person
+        # 70 -> 98 pg/mL while liver, ketones and glucose were unchanged when it was
+        # zeroed. The teacher samples all of them (`Episode.setpoints` now records them),
+        # and the per-marker mask means a contribution that carries only some is fine.
+        # `insulin` is the BASAL Ib and `cortisol` the HPA feedback REFERENCE Cort_b, not
+        # a realized 24 h mean — both models centre their gates on the declared basal.
+        e_str = model.embedding_projections["stress"](emb)
+        e_rsp = model.embedding_projections["respiratory"](emb)
+        met = model.metabolic
+
+        pred_rsp_z = model.respiratory.setpoints_z(e_rsp)            # [P, 2] = (rr, spo2)
+        markers = (_GLUCOSE,) + _CVS_MARKERS + (
+            _TEMP, "insulin", "ffa", "mitochondrial_capacity", "cortisol", "rr", "spo2",
+        )
         tgt_rows: list[list[float]] = []
         mask_rows: list[list[float]] = []
         for p in pids:
             sp = self.targets.get(p, {})
             tgt_rows.append([_z(m, sp[m]) if m in sp else 0.0 for m in markers])
             mask_rows.append([1.0 if m in sp else 0.0 for m in markers])
-        tgt_z = torch.tensor(tgt_rows, dtype=torch.float32, device=device)   # [P, 6]
-        mask = torch.tensor(mask_rows, dtype=torch.float32, device=device)   # [P, 6]
+        tgt_z = torch.tensor(tgt_rows, dtype=torch.float32, device=device)   # [P, M]
+        mask = torch.tensor(mask_rows, dtype=torch.float32, device=device)   # [P, M]
 
-        pred_z = torch.cat(
-            [pred_gb_z.unsqueeze(-1), pred_cvs_z, pred_temp_z.unsqueeze(-1)], dim=-1
-        )  # [P, 6]
+        pred_z = torch.cat([
+            pred_gb_z.unsqueeze(-1), pred_cvs_z, pred_temp_z.unsqueeze(-1),
+            _z_t("insulin", met.insulin_setpoint_raw(e_met)).unsqueeze(-1),
+            _z_t("ffa", met.ffa_setpoint_raw(e_met)).unsqueeze(-1),
+            _z_t("mitochondrial_capacity", met.mito_setpoint_raw(e_met)).unsqueeze(-1),
+            _z_t("cortisol", model.stress.cort_setpoint_raw(e_str)).unsqueeze(-1),
+            pred_rsp_z,
+        ], dim=-1)  # [P, len(markers)]
+        assert pred_z.shape[-1] == len(markers), (
+            f"pred_z has {pred_z.shape[-1]} columns against {len(markers)} markers — "
+            "the stack and the marker tuple must stay in the same order"
+        )
 
         denom = mask.sum().clamp_min(1.0)
         loss = (mask * (pred_z - tgt_z).pow(2)).sum() / denom

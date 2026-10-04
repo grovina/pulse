@@ -1425,3 +1425,28 @@ def precompute_gut_outputs(
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     emb_gut = model.embedding_projections["gut"](embedding)
     return model.gut.forward_window(times, meals, emb_gut)
+
+
+def population_prior_embedding(model: "ModularPhysiologyNetwork") -> torch.Tensor:
+    """The person a prediction is FOR when nothing identifies one.
+
+    Plan A2/A8. Returns the population prior mean -- the median person, once the
+    embedding table's mean is pinned to zero -- or zeros for a checkpoint trained
+    before the prior was recorded, which is the default patient the trainer
+    supervises against ``PatientParams()``. Either way it is ONE person, the same
+    one for every caller.
+
+    It exists because that was not true. Both call sites preferred the prior and
+    then disagreed on the fallback: ``server.get_initial_embedding`` returned
+    zeros while ``benchmark.deterministic_user_embedding`` returned
+    ``N(0, 0.1^2)`` seeded from a hash of the user id -- so against a checkpoint
+    with no prior, a brand-new user was scored as a RANDOM person by the
+    benchmark and as the default person by the server, and the two numbers were
+    not comparable. Iter 97 fixed the benchmark's main path and left its
+    fallback; A8 fixed the server. Sharing one function is what actually makes
+    the claim ``A8`` rests on -- one default person, consistently -- hold.
+    """
+    prior_mean = getattr(model, "_embedding_prior_mean", None)
+    if prior_mean is not None:
+        return prior_mean.detach().clone().to(torch.float32)
+    return torch.zeros(model.embedding_dim, dtype=torch.float32)

@@ -27,8 +27,12 @@ field of each committed iter).*
 > 2. **The person is the frontier, not the markers.** The PRD's own example of
 >    individual variation — insulin sensitivity — did not exist as a per-person
 >    quantity at all (one population scalar), while in the teacher it explains
->    34 % of between-person glucose iAUC and 31 % of insulin iAUC after a 75 g meal
->    (bottom-vs-top decile 2.3× / 2.2×, measured over 150 sampled patients). Nine
+>    22.5 % of between-person glucose *incremental* AUC and 20.7 % of insulin iAUC
+>    over the 240 min after a 75 g mixed meal (bottom-vs-top Si decile 2.3× / 2.2×,
+>    measured over 150 sampled patients; see `modules/metabolic.py`). PLAN's earlier
+>    headline of 34 % / 31 % was the same correlation measured on TOTAL post-meal
+>    AUC, which is confounded with the glucose setpoint through the shared
+>    insulin-resistance latent — iAUC is the figure to quote. Nine
 >    per-person heads had no supervision path. The embedding was 40 memorised codes
 >    in 32 dimensions, and the teacher that generates those 40 people draws **56
 >    stochastic parameters, 35 of them purely idiosyncratic** — so the comment in
@@ -75,7 +79,8 @@ models:
 
 A recurring misconception (caught iter 74): the benchmark does **not**
 evaluate at the zero embedding. `benchmark.py` calibrates a per-episode
-embedding (512 Adam steps) or falls back to a non-zero seeded vector. The
+embedding (512 Adam steps) or falls back to the population prior mean (iter 97
+and Plan A2/A8; it used to fall back to a non-zero user-id-seeded vector). The
 **gate** scores only `glucose` and `hr` (≤0.20, ≤0.15); `per_marker` /
 `overall_weighted_mape` score ~14 markers including the hormones;
 `hrv/rr/spo2` are **not scored at all**. The zero embedding still matters

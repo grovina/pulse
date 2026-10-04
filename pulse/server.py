@@ -18,7 +18,7 @@ from .calibration import (
     evaluate_data_loss,
 )
 from .knowledge.textbook_scenarios.flow_story_protocol import dietary_carb_flow_phases_for_ui
-from .model import ModularPhysiologyNetwork, integrate
+from .model import ModularPhysiologyNetwork, integrate, population_prior_embedding
 from .modules.gut import MealEvent
 from .types import (
     GUT_OUTPUT_DIM, MARKER_IDS, MARKER_INDEX, MARKERS,
@@ -354,15 +354,14 @@ def get_initial_embedding(
     supervises against ``PatientParams()``). This used to be N(0, 0.1^2) seeded from a hash of the
     user id, so a brand-new user was predicted as a RANDOM person and calibration started from that
     draw. ``benchmark.py`` stopped doing that in iter 97 (5.11: with nothing to calibrate on, the
-    honest answer is the population prior); the server never did.
+    honest answer is the population prior); the server never did. Both now call
+    ``model.population_prior_embedding``, so the two cannot drift apart again --
+    which they had, in the no-prior fallback: see that function.
     """
     dim = model.embedding_dim
     if embedding and len(embedding) == dim:
         return torch.tensor(np.array(embedding, dtype=np.float32), dtype=torch.float32)
-    prior_mean = getattr(model, "_embedding_prior_mean", None)
-    if prior_mean is not None:
-        return prior_mean.detach().clone().to(torch.float32)
-    return torch.zeros(dim, dtype=torch.float32)
+    return population_prior_embedding(model)
 
 
 def initial_state_from_baseline(baseline: dict[str, float]) -> np.ndarray:

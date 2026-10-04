@@ -145,10 +145,6 @@ _HR_LOG_SP_MAX = 0.56
 _DBP_LOG_SP_MAX = 0.36
 _HRV_LOG_SP_MAX = 1.1
 _PP_LOG_SP_MAX = 0.7
-# RETIRED (A1): the z-score bound of the additive hr / dbp decode. Nothing in this module reads
-# it; the name survives only because the pre-iter-97 fallback branch of SetpointSupervisionSignal
-# and scripts/{iter89_embed_probe,iter89_recovery_test,recovery_arms}.py still import it.
-_CVS_BASELINE_MAX_Z = 3.0
 _HRV_CENTER = float(NORM_CENTER[MARKER_INDEX["hrv"]])
 _PP_CENTER = float(NORM_CENTER[MARKER_INDEX["sbp"]] - NORM_CENTER[MARKER_INDEX["dbp"]])
 # Numerical epsilon inside log() only — HRV / PP are kept strictly positive by the

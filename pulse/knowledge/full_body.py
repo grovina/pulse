@@ -1245,8 +1245,37 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # the benchmark lows (sbp 94, dbp 61). Teacher verified sane across the range.
     p.HR0 = vary(p.HR0, 0.22, ir=0.20, fit=-0.60)   # trained athletes rest low
     p.HRV0 = vary(p.HRV0, 0.4, ir=-0.30, fit=0.55)  # vagal tone up with fitness, down with IR
-    p.SBP0 = vary(p.SBP0, 0.14, ir=0.40, fit=-0.30)
+    # 2026-10-04: sample DIASTOLIC and PULSE PRESSURE, not systolic and diastolic.
+    # Drawing SBP0 and DBP0 as two independent lognormals produces pulse pressures
+    # that are not phenotypes: measured over 4,000 draws, PP ran from -16.5 to 120.1
+    # mmHg, with 12.6 % below 20 and 0.85 % NEGATIVE (DBP >= SBP). A PP of 5.5 mmHg
+    # is a dying patient, not an insulin-resistant one.
+    #
+    # This is the mirror of iter 97's student fix. That iteration made SBP > DBP true
+    # BY CONSTRUCTION in `modules/cardiovascular.py` -- the head emits DBP and a
+    # log pulse pressure, and SBP is rebuilt as their sum -- but left the teacher
+    # generating the targets from two independent draws. So 12.6 % of training
+    # patients had a BP pair the student is structurally FORBIDDEN to fit, and
+    # `SetpointSupervisionSignal` carried a permanent irreducible floor on sbp/dbp
+    # because of it: measured on 3 sampled patients fitted to convergence, sbp and
+    # dbp stall at ~3 mmHg while every other marker reaches ~0, entirely from one
+    # patient whose PP of 5.5 is below the student's 19.9 floor.
+    #
+    # PP keeps SBP0's old loadings (ir +0.40, fit -0.30), so systolic still rises
+    # with insulin resistance and falls with fitness, and now widens with it --
+    # which is the right direction (arterial stiffening raises PP). sigma 0.29 is
+    # solved to preserve SBP0's old spread: sd(SBP0) was 120*0.14 = 16.8, and with
+    # sd(DBP0) = 80*0.15 = 12 the remainder is sqrt(16.8^2 - 12^2) = 11.7 = 40*0.29.
+    # Clipped to the student's OWN representable span, [20, 80] mmHg
+    # (`cardiovascular._PP_LOG_SP_MAX = 0.7` about a 40 mmHg centre), rather than to a
+    # separately-chosen physiological range: a target the student is structurally
+    # forbidden to reach is not supervision, it is a standing residual. Measured after
+    # this change, 6 patients fitted to convergence leave sbp/dbp MAE at 0.95/0.60 mmHg
+    # against 3.04/2.94 before, and what remains is the handful still at a bound.
+    # TWO `vary` calls, as before and in the same slots, so the RNG stream position
+    # is unchanged for every parameter after these -- only the BP values move.
     p.DBP0 = vary(p.DBP0, 0.15, ir=0.40, fit=-0.30)
+    p.SBP0 = p.DBP0 + float(np.clip(vary(40.0, 0.29, ir=0.40, fit=-0.30), 20.0, 80.0))
     p.T0 = p.T0 + rng.normal(0, 0.2)
     # Iter 94: these four clip ranges moved WITH their defaults. Three of them
     # (temp_circ_amp, sleep_hr_frac, sleep_hrv_gain) would otherwise have clipped
@@ -2208,10 +2237,13 @@ class FullBody(KnowledgeContribution):
                 # axis in the population; glyc_ins_K sigma 0.25 ir +0.40 -- hepatic
                 # insulin resistance; gamma and n sigma 0.3), while the student holds all
                 # four at ONE population scalar. Measured over 150 sampled patients, Si
-                # alone explains 34 % of between-person glucose iAUC and 31 % of insulin
-                # iAUC after a 75 g meal, bottom-vs-top decile 2.3x / 2.2x. It is the
-                # PRD's own example of individual variation and the student cannot
-                # represent it.
+                # alone explains 22.5 % of between-person glucose INCREMENTAL AUC and
+                # 20.7 % of insulin iAUC over the 240 min after a 75 g mixed meal,
+                # bottom-vs-top Si decile 2.3x / 2.2x (see modules/metabolic.py: the
+                # 34 % / 31 % this comment used to quote was the same correlation on
+                # TOTAL post-meal AUC, which is confounded with Gb through the shared
+                # insulin-resistance latent). It is the PRD's own example of individual
+                # variation and the student cannot represent it.
                 patient_params={
                     "body_mass_kg": float(params.body_mass_kg),
                     "si": float(params.Si),

@@ -609,9 +609,22 @@ def train(
         for rec in trajectory_signal.dataset
         if not rec.get("is_default") and rec.get("setpoints")
     }
+    # B1/A4 (PLAN.md): the same argument for the quantities that are not markers --
+    # body mass and the insulin-sensitivity family (peripheral Si, hepatic gate IC50,
+    # beta-cell gain, insulin clearance, exercise sensitisation). B1 gave all five a
+    # per-person head; without this dict they would be five FREE per-person heads,
+    # which is the failure iter 109 measured (a basal head walked the prior person
+    # 70 -> 98 pg/mL while nothing downstream moved). The teacher samples every one of
+    # them and `Episode.patient_params` now carries them through the dataset.
+    _param_targets = {
+        int(rec["patient_id"]): rec["patient_params"]
+        for rec in trajectory_signal.dataset
+        if not rec.get("is_default") and rec.get("patient_params")
+    }
     setpoint_supervision_signal = SetpointSupervisionSignal(
         weight=WeightSchedule(setpoint_supervision_weight, enable_at_epoch=0),
         targets=_setpoint_targets,
+        param_targets=_param_targets,
     )
     # Iter 91: unfreeze Ra. iter-90 measured the per-patient meal gain FROZEN (std 0.01), so
     # calibration inflated Gb to fit meal peaks -- which broke person-recovery AND the glucose

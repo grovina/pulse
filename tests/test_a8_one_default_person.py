@@ -3,7 +3,10 @@
 Three small things that were each a different person or a different ruler:
 
 * the server predicted a brand-new user as a RANDOM person (N(0, 0.1^2) seeded from a hash of the
-  user id) while ``benchmark.py`` had used the trained prior mean since iter 97;
+  user id) while ``benchmark.py`` had used the trained prior mean since iter 97 -- and once that
+  was fixed the two STILL disagreed on the no-prior fallback, the server returning zeros and the
+  benchmark its seeded draw, so a checkpoint carrying no prior was scored against one person and
+  served as another. Both now call ``model.population_prior_embedding``;
 * ``last_good.pt`` held the patient table but not ``embedding_prior_{mean,std}``, so a rolling
   checkpoint was re-scored on the isotropic-L2 fallback, not the prior the final artifact is judged on;
 * ``--init-from`` loaded the decoders and left the 40 deterministic seed-42 patients on a fresh
@@ -21,7 +24,7 @@ import torch.nn as nn
 
 from pulse import server
 from pulse import train as train_mod
-from pulse.model import ModularPhysiologyNetwork
+from pulse.model import ModularPhysiologyNetwork, population_prior_embedding
 from pulse.train import (
     _embedding_prior_stats,
     _last_good_checkpoint,
@@ -100,6 +103,55 @@ def test_client_embedding_wins_only_at_the_models_width() -> None:
 
 def test_the_random_seeding_is_gone() -> None:
     assert not hasattr(server, "seeded_embedding") and not hasattr(server, "seed_from_user_id")
+    # The benchmark's own seeded fallback, which outlived iter 97's fix to its main path.
+    from pulse import benchmark
+    assert not hasattr(benchmark, "deterministic_user_embedding")
+
+
+def test_server_and_benchmark_cannot_disagree_about_the_default_person() -> None:
+    """The invariant the shared helper exists for, checked on BOTH branches.
+
+    A8's claim is "one default person, consistently". That held for a checkpoint with a
+    prior and failed without one: the server returned zeros and the benchmark a
+    user-id-seeded draw. A per-call-site reimplementation is how that happened, so this
+    asserts agreement rather than asserting either value.
+    """
+    for with_prior in (True, False):
+        model = _tiny_model()
+        if with_prior:
+            _with_prior(model)
+        shared = population_prior_embedding(model)
+        assert torch.equal(server.get_initial_embedding(model, None), shared)
+        assert shared.shape == (model.embedding_dim,) and shared.dtype == torch.float32
+        # It is ONE person, not a draw: same answer every call, and a copy each time.
+        again = population_prior_embedding(model)
+        assert torch.equal(again, shared) and again is not shared
+        again.add_(1.0)
+        assert torch.equal(population_prior_embedding(model), shared)
+
+
+def test_no_call_site_rebuilds_the_default_person_itself() -> None:
+    """A LONE read of the prior mean is a hand-rolled default person.
+
+    Both modules legitimately read ``_embedding_prior_mean``, but always TOGETHER with
+    ``_embedding_prior_std``: that pair is the calibration regulariser, a different thing
+    from the person a prediction starts at. Reading the mean on its own is what the two
+    deleted implementations did, so that is what this forbids -- the duplication, not the
+    attribute. (Checked as source text because the drift was two code paths agreeing on
+    the prior branch and differing on the fallback, which no single call can observe.)
+    """
+    import pulse.benchmark
+    for mod in (server, pulse.benchmark):
+        lines = Path(mod.__file__).read_text().splitlines()
+        for i, line in enumerate(lines):
+            if "_embedding_prior_mean" not in line:
+                continue
+            near = "\n".join(lines[max(0, i - 2):i + 3])
+            assert "_embedding_prior_std" in near, (
+                f"{Path(mod.__file__).name}:{i + 1} reads the prior MEAN alone:\n"
+                f"{line.strip()}\ncall population_prior_embedding() instead of rebuilding "
+                "the default person -- that duplication is what A8 removed"
+            )
 
 
 def test_simulate_predicts_every_new_user_as_the_same_median_person(monkeypatch: pytest.MonkeyPatch) -> None:
