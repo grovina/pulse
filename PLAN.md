@@ -87,7 +87,7 @@ here.
 | A2 | Pin the table mean: `embedding_prior` penalises `‖mean(E)‖²` at a weight that makes it a constraint, not a nudge; keep the existing per-row norm term weak | prior mean = 0 by construction; `_embedding_prior_mean` stops disagreeing with the clamp and the soft norm |
 | A3 | Person-level constants: one `model.person_constants(embedding)` owning basal insulin Ib and body mass, consumed by metabolic AND appetite | one person has one basal insulin (today: two untied heads); removes the appetite copy |
 | A4 | Supervise every per-person head the teacher has ground truth for: Ib, body mass, FFA_b, mito setpoint, cort_b, RR₀, SpO₂₀ — extend `SetpointSupervisionSignal` | each head gets the evidence that identifies it; kills the Ra↔mass confound (measured: ×1.2 on both changes glucose 0.18 mg/dL) |
-| A5 | Delete the heads the teacher does not vary and nothing supervises: HPA phase, CCK basal | no unsupervised per-person authority (the Gnb-drift failure mode) |
+| A5 | Delete the heads the teacher does not vary and nothing supervises: HPA phase, CCK basal | no unsupervised per-person authority (the Gnb-drift failure mode). **Not finished:** the `cck` and `gallbladder_bile` species heads still read the embedding while `randomize_params` draws *no* hepatobiliary parameter at all, so a person's resting CCK is still free against a now-pinned gate reference. Those are species heads rather than baseline nets, so they need the C6 couplings (something must read a bile state) before deleting or supervising them is the right move |
 | A6 | Insulin sweep and gut sweep supervise the zero embedding only (they score against `PatientParams()` rates and kernel) | removes a 0.30-weight and a 0.10-weight pull of sampled patients toward the median; per-row targets return in B4 |
 | A7 | Cohort population batches: drop zero, debias the batch-mean loss by its own sampling variance (**landed, floored — see the note below**) | the loss stops rewarding between-person shrinkage (the term is ≈(2/9)σ²_between/SEM², 1.4–14 per spec). Rule hinges are NOT batch-mean statistics — each member's own violation is scored — so the debias does not apply and zero stays in the rule batch, because a rule holds for the median person too |
 | A8 | Server default → median person; `last_good.pt` carries the prior stats; `--init-from` loads `embeddings_state` | one default person everywhere; a rolling checkpoint re-scores on its own prior; warm start keeps patient identity |
@@ -272,6 +272,21 @@ sequencing is:
    matching `ruler_fingerprint`.
 3. Only then decide whether B5's priors move the frozen constants anywhere, and
    whether Wave C's hubs are reachable by the supervision we have.
+
+**Every pre-change artifact is now strictly unloadable, and that is correct.**
+A5 removed `stress.phase_proj.*` and `hepatobiliary.cck_baseline_net.*`, A10
+removed `metabolic.log_ra` / `ra_baseline_net`, so `from_checkpoint(strict=True)`
+raises "Unexpected key(s)" on anything through iter 109. That breaks
+`--resume-from`, the server's `MODEL_URI`, `diagnostics/probe.py`'s loader (and
+therefore every diagnostics CLI and most `scripts/`), and several scripts' raw
+strict loads. **No key-dropping shim should be added**: A1 re-decodes Gb, HR, DBP
+and RR in log space, so an old artifact's per-person heads were fitted in a
+different frame, and silently dropping the stale keys would produce a
+plausible-looking model that is wrong rather than a loud failure. `--init-from`
+(strict=False) still works and prints the dropped keys, which is the right route
+for seeding a retrain. One case was fixed rather than left: `lab_sim.py` caught
+every load failure and rendered UNTRAINED cold weights with `trained: False`
+buried in its metadata — the fallback is fine, the silence was not.
 
 **Wave C grows `STATE_DIM`**, which invalidates every checkpoint and every
 benchmark `initial_state` array (`scripts/migrate_benchmark_initial_state.py` is

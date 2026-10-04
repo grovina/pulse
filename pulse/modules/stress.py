@@ -13,13 +13,31 @@ embedding. The teacher's ``randomize_params`` varies the circadian amplitude, th
 basals and the gains, but never ``hpa_rise_start_h`` / ``hpa_peak_h`` /
 ``hpa_fall_tau_h``, so no patient has a phase for a head to recover. Through
 iter 109 a ``phase_proj`` head shifted the drive by up to ±2 h per embedding
-anyway: no ground truth, and a +1 h shift moves the five taped vitals by 0.07, so
-the only dense loss barely sees it either. That is free authority, iter 109's
-failure in another organ (the glucagon-basal head took the prior person from 70
-to 98 pg/mL while liver, ketones and glucose were unchanged when it was zeroed,
-because every downstream gate is normalized to the person's OWN level). A phase
-that varies by person comes back as a state that person's sleep timing entrains,
-which is evidence; it does not come back as an offset head.
+anyway. That is free authority, iter 109's failure in another organ (the
+glucagon-basal head took the prior person from 70 to 98 pg/mL while liver,
+ketones and glucose were unchanged when it was zeroed, because every downstream
+gate is normalized to the person's OWN level). A phase that varies by person
+comes back as a state that person's sleep timing entrains, which is evidence; it
+does not come back as an offset head.
+
+Two qualifications, because the first version of this paragraph overstated both.
+*It was not quite unsupervised:* the ``cortisol_morning_peak`` rule hinges the
+cortisol argmax into 06:00-09:00 and the rules signal does NOT detach its
+embeddings, so a gradient path existed. It could not IDENTIFY a phase — the hinge
+is a fence, zero inside the band — and it was inactive at init. But the fence is
+now load-bearing in a thinner way: on the unshifted clock cortisol peaks at
+**08:44** (ACTH 07:56, CRH 07:27) in a 24 h no-meal run waking at 07:00, which is
+16 min inside the 09:00 edge, and only ``k_crh`` / ``k_acth`` / ``k_cort`` can
+move it now. If a retrain walks that peak past 09:00 there is less machinery to
+pull it back, so it is worth watching.
+*And its effect on the taped vitals is not one number:* at random init a ±1 h
+shift moves hr/sbp/dbp/temp by exactly 0, because their driver MLPs are zero-init
+and literally cannot respond; on a model with every weight nudged by N(0, 0.02)
+it is small but non-zero (glucose 0.009σ mean, 0.033σ max; cortisol itself 0.13σ
+mean, 0.57σ max). Neither is a trained model, and no trained artifact was
+reachable to measure the one that matters. The argument for deleting the head
+rests on the teacher drawing no phase at all, which is structural and checked in
+``tests/test_no_unsupervised_person_heads.py`` — not on a magnitude.
 """
 
 import math
