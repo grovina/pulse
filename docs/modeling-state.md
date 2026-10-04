@@ -6,6 +6,49 @@
 map. The per-iter chronicle lives in `train/spec.json` (the `hypothesis`
 field of each committed iter).*
 
+> **Amended 2026-10-04 (iter 110 branch). Read `PLAN.md` alongside this.** The
+> body of this document still describes the model accurately in its *shape*, and
+> its one meta-pattern ("a parameter no strong gradient reaches") held well enough
+> that iters 98–109 acted on it 12 times. What it cannot describe is the *price*
+> that was paid, because the price arrived after it was written: each of those
+> iterations removed a learned parameter whose gradient was flat and replaced it
+> with the teacher's own constant or law, taking the model from 68,293 parameters
+> to 37,343. Ghrelin, leptin, the whole HPA cascade, ketogenesis, lipolysis,
+> glucagon and the liver's carbon budget are now structural.
+>
+> That is a **fourth disease**, and it is the complement of the one below: a
+> parameter that is frozen *because* no gradient reached it. Three consequences
+> this map should not be read without:
+>
+> 1. **The tiers below understate the problem for the hormones and overstate the
+>    model's freedom.** "Shape/rate only (amplitude floats)" for glucagon, FFA and
+>    BHB is no longer the right description — their rates are the teacher's laws
+>    with population constants, so their amplitude does not float, it is *fixed*.
+> 2. **The person is the frontier, not the markers.** The PRD's own example of
+>    individual variation — insulin sensitivity — did not exist as a per-person
+>    quantity at all (one population scalar), while in the teacher it explains
+>    34 % of between-person glucose iAUC and 31 % of insulin iAUC after a 75 g meal
+>    (bottom-vs-top decile 2.3× / 2.2×, measured over 150 sampled patients). Nine
+>    per-person heads had no supervision path. The embedding was 40 memorised codes
+>    in 32 dimensions, and the teacher that generates those 40 people draws **56
+>    stochastic parameters, 35 of them purely idiosyncratic** — so the comment in
+>    `types.py` justifying `EMBEDDING_DIM = 32` ("the true patient manifold is
+>    low-dimensional") does not hold.
+> 3. **`crh` is no longer a padded constant.** Iter 98 made it a simulated state
+>    in both models, so the "gradient-starved free params" row is stale for it (and
+>    `mitochondrial_capacity` / `fat_mass` now carry day-scale distillation
+>    anchors). `liver_glycogen` and `muscle_glycogen` are on a closed carbon
+>    ledger since iter 97.
+>
+> The *evaluation* section below is still correct and still the thing most often
+> misremembered: the gate calibrates a per-episode embedding and does **not**
+> score at the zero embedding; the zero embedding matters because the textbook
+> scenarios query it. One addition — as of the iter-110 branch the zero embedding
+> is defined as the **median** person with the table's mean pinned to it, and the
+> two cold sweeps supervise it *alone*, which raises its gradient share from 1/5
+> to 1. The PRD's "coupling amplifies information" criterion still has no number,
+> which is why `scripts/amplification_probe.py` exists.
+
 ## The two-layer ceiling
 
 "How complete is the modeling?" has two answers, because there are two
