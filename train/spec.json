@@ -1,9 +1,9 @@
 {
   "schemaVersion": "v1",
   "app": "pulse",
-  "iter": 110,
-  "hypothesis": "Iter 109 put glucagon basal at 70 and the level came back: teacher glucagon error fell from 27.7 to 3.0 pg/mL, and the gate passed. The 48 h rise did not. Glucagon ends at 78 against a bar of basal plus 10, because the stimulus gain walked from the teacher's 3.5 to 0.31. The stimulus is zero while glucose sits on its basal, so it cannot spend a fed night. Forcing 3.5 on the frozen 109 weights leaves that night where it is and lifts the fast to glucagon 99 and glucose 71, with both basals still above 60. Iter 110 makes the gain that constant. Warm-start is the 109 checkpoint with the parameter dropped. The chain, the two basals, and the second meal stay out of the loss and out of the gate.",
-  "expectedEffect": "PRIMARY, in order. (A) BY CONSTRUCTION: there is no log_alpha_gn. alpha_gn is 3.5 after any perturbation. Gnb stays 70. (B) SEALED, pre-registered on the frozen 109 weights with the gain set to 3.5, not a gate cell. The chain passes: 16 h glucose 81.7, 24 h glucose 80.3, 48 h glucose 71.5, glucagon 99.1, BHB 2.80, liver 9.0 g (trained 109: 67.0, glucagon 78.0, which fails glucagon_still_up_48h against 80). Second meal passes, rises 48.2 then 18.6, the same as trained. Two basals pass: target 75 ends at 64.5, ratio 0.803, glucagon 96; target 120 ends at 103.6, ratio 0.801, glucagon 99. FED DAY is unchanged by the gain, because glucose sits on its basal: 48 h liver 85.4 g, BHB 0.24, glucagon 74.0 against trained 85.8 g, 0.24, 71.6 and the teacher 77.5 g, 0.38, 72.9. (C) GATE: noise-floored skill > 0 for glucose and hr on cgm_real and teacher_dynamic; textbook mean >= 0.85; verifier categories pass. Baseline is iter 109 on this ruler (dataset md5 c0f9a8eb): gate passed, cgm glucose MAE 5.90, hr MAE 2.98, headline nMAE 0.550, textbook 0.917, teacher glucagon MAE 2.96 against persistence 7.32. The sealed checks do not change gate.passed. The cortisol hairline is not this iter's target. (D) SUPERVISION: identical to iter 109. FALSIFIER: if the trained chain fails glucagon_still_up_48h, or the fed night goes flat or ketotic, or a basal ends under 60, do not put the stimulus gain back to recover it. RUN PLAN: warm-start gs://grovina-pulse-data/training/jobs/iter110/init.pt; artifact gs://grovina-pulse-data/training/jobs/iter110/model.pt; last_good.pt uploaded every epoch; resume with --resume-from that object. 8 vCPU / 32 Gi; 72 h timeout. Benchmark in the same job after the upload, dataset gs://grovina-pulse-data/benchmarks/benchmark.dataset.iter94.json.",
+  "iter": 111,
+  "hypothesis": "Iter 111 is the person-model cold run. Iter 110 already made the glucagon stimulus the teacher's 3.5, and that constant stays: there is no log_alpha_gn. The person model cannot warm-start from the iter 110 checkpoint. Four per-person setpoints (Gb, HR0, DBP0, RR0) decode in the lognormal family the teacher draws them from, so an iter-110 head weight would decode to a different setpoint at the same output. Two per-person heads the teacher never varies are deleted (stress.phase_proj, hepatobiliary.cck_baseline_net). The metabolic Ra gain is deleted and its authority moved into the gut kernel's bioavailable fraction, now sigma-bounded so absorbed <= ingested. Hepatic output is release into plasma. A strict load of an iter-110 artifact raises on the deleted keys, and a strict=False load would carry mis-scaled per-person decoders. --init-from is absent.",
+  "expectedEffect": "BY CONSTRUCTION (tests, no training needed): alpha_gn is 3.5 after any perturbation and Gnb stays 70; absorbed <= ingested on every gut channel at any embedding norm (the old softplus head reached a bioavailable fraction of 4.9 and exceeded 1 for 13-26% of embeddings at ||e|| 3-8); SBP > DBP > 0 and HRV > 0 for every embedding, now as sums of strictly positive log-decoded terms; a zero embedding decodes to exactly NORM_CENTER for all six setpoints; the population mean of every log-decoded setpoint sits strictly above its zero-embedding value by Jensen (E[HR_sp] - HR_sp(0) 0.000 -> +1.656 against the teacher's own +1.757); the embedding table's mean is pinned to ~0, so the calibration prior's centre and the gate's evaluation point are one place. SUPERVISION CHANGES, which is what needs the gate to judge: the two cold sweeps (gut 0.10, insulin 0.30) now score the zero embedding only, which raises the zero row's gradient share from 1/5 to 1 -- the pull at zero is 5x the old one at unchanged weights, and that is the single most likely source of a regression. Cohort statistics score the debiased batch mean over sampled rows only, with --cohort-sample-patients raised 2 -> 4 so the subtracted sampling variance has 3 degrees of freedom instead of 1. WATCH: textbook_mean_pass_rate (the zero embedding is now pulled harder and is the textbook evaluation point); setpoint_supervision per-marker MAE (the centring term must not flatten per-patient structure); the cortisol argmax, which sits at 08:44 against the 09:00 rule edge with the phase head gone and only k_crh/k_acth/k_cort able to move it. BASELINE: an iter-110 artifact does not load on this tree, so the comparison is iter 110's own report plus a frozen-ruler re-score of THIS artifact.",
   "sourceRef": "HEAD",
   "params": {
     "trainArgs": [
@@ -15,10 +15,10 @@
       "--dose-response-sample-patients=4",
       "--dose-response-markers=glucose:peak:0.7:0.25;insulin:peak:0.4:0.3;glp1:rank:0.3",
       "--gut-dose-sweep-weight=0.10",
-      "--gut-dose-sweep-sample-patients=4",
+      "--gut-dose-sweep-sample-patients=0",
       "--gut-dose-sweep-auc-weight=5.0",
       "--insulin-sweep-weight=0.30",
-      "--insulin-sweep-sample-patients=4",
+      "--insulin-sweep-sample-patients=0",
       "--insulin-sweep-auc-weight=5.0",
       "--insulin-sweep-ranking-weight=1.0",
       "--carb-mass-balance-weight=0.05",
@@ -59,7 +59,7 @@
       "--aux-every-k-windows=12",
       "--aux-cadence=cold_model_distillation:4;carb_mass_balance:4",
       "--aux-signal-clip=5.0",
-      "--cohort-sample-patients=2",
+      "--cohort-sample-patients=4",
       "--cohort-groups-per-step=3",
       "--physiology-rules-sample-patients=2",
       "--rules-arms-per-step=2",
@@ -72,7 +72,7 @@
       "--carb-mass-balance-sample-patients=2",
       "--grad-clip=10.0",
       "--seed=42",
-      "--init-from=gs://grovina-pulse-data/training/jobs/iter110/init.pt"
+      "--embedding-prior-center-weight=10.0"
     ]
   }
 }

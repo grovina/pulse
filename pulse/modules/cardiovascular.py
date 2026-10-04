@@ -74,6 +74,34 @@ and keeps both strictly positive along the whole trajectory, so the clamp
 cannot bind on either. The setpoint head's third output is the log pulse-
 pressure offset, not an SBP offset — decode setpoints through
 ``setpoints_raw`` / ``setpoints_z`` rather than reading the head directly.
+
+PLAN A1 (2026-10-04) — HR AND DBP SETPOINTS JOIN HRV AND PULSE PRESSURE IN LOG
+SPACE. The teacher draws every resting vital lognormally (``vary``: val·exp(σ·z);
+HR0 σ0.22, SBP0 0.14, DBP0 0.15, HRV0 0.4), so ``PatientParams()`` is the population
+MEDIAN and the population mean sits above it: over 20 000 draws mean/median is
+1.0232 for HR0, 1.0112 SBP0, 1.0105 DBP0, 1.0850 HRV0. Through iter 109 HR and DBP
+were decoded ADDITIVELY (iter 89: ``center + 3z·tanh(head)``; iter 97 moved only HRV
+and PP to log space), and for a zero-mean embedding population that gives
+E[setpoint] = center exactly: population mean = median, which contradicts the
+teacher and cannot be right at both points. Measured on a random zero-bias head (odd
+in the embedding) over 20 000 antithetic N(0, I) codes
+(tests/test_a1_log_setpoints.py), E[HR_sp] − HR_sp(0) was +0.000 bpm; it is now
++1.656 (the teacher's own: +1.757). HR and DBP are ``center·exp(L·tanh(head))`` like
+HRV and PP, so E[sp] > sp(0) by Jensen with no loss term, and SBP = DBP + PP, now a
+sum of two log-decoded terms, inherits the shift (E[SBP_sp] − SBP_sp(0): +1.66 →
++2.34 mmHg on that head). The spans keep the floors of the additive ones they
+replace and reach further up, where the teacher's tail is: the additive 100 bpm /
+104 mmHg ceilings were out of reach for 5.3 % / 4.2 % of sampled patients; the log
+ceilings are out of reach for 0.5 % / 0.9 %.
+
+Unchanged: the head layout, ``setpoints_raw``'s [HR, HRV, SBP, DBP] return, rest at
+NORM_CENTER for a fresh model (tanh(0) = 0 ⇒ center·exp(0) = center, exact in
+float32) and ``setpoints_z`` = (raw − center)/scale, which is why
+SetpointSupervisionSignal needed no change. A checkpoint through iter 109 still
+loads (same shapes) but was fit under the additive decode: near a zero head the HR /
+DBP offsets now act 1.31× / 1.20× as strongly (70·0.56 vs 3·10 bpm, 80·0.36 vs 3·8
+mmHg per unit of head output), so it needs the retrain PLAN.md §4 already schedules.
+RR and SpO₂: see respiratory.py.
 """
 
 import math
@@ -102,13 +130,19 @@ _HRV = 1
 _SBP = 2
 _DBP = 3
 
-# Per-patient setpoint offset bound for the ADDITIVE setpoints (hr, dbp), z-score
-# units (per NORM_SCALE): hr 70±30 = 40-100 bpm (eval 49-77), dbp 80±24 = 56-104
-# mmHg (eval 61-88). Still read by SetpointSupervisionSignal for the hr/dbp rows.
-_CVS_BASELINE_MAX_Z = 3.0
-# Log-space setpoint bounds for the POSITIVE quantities (iter 97).
-#   HRV_sp = 40·exp(±1.1·tanh) → [13, 120] ms   (RMSSD spans ~15-100 in adults)
-#   PP_sp  = 40·exp(±0.7·tanh) → [20, 80] mmHg  (physiological pulse pressure)
+# Log-space setpoint bounds. All four head outputs decode as ``center·exp(L·tanh(head))``:
+# strictly positive, a zero head is exactly the center, and a zero-mean embedding population
+# has E[sp] > sp(0) by Jensen — the teacher's lognormal population, with no loss term.
+#   HR_sp  = 70·exp(±0.56·tanh) → [40.0, 122.5] bpm   (A1; replaces 70±30 additive = 40-100,
+#            eval 49-77; L = ln(70/40) = 0.5596 rounded up, so the 40 bpm floor is kept)
+#   DBP_sp = 80·exp(±0.36·tanh) → [55.8, 114.7] mmHg  (A1; replaces 80±24 additive = 56-104,
+#            eval 61-88; L = ln(80/56) = 0.3567 rounded up, so the 56 mmHg floor is kept)
+#   HRV_sp = 40·exp(±1.1·tanh) → [13, 120] ms   (iter 97; RMSSD spans ~15-100 in adults)
+#   PP_sp  = 40·exp(±0.7·tanh) → [20, 80] mmHg  (iter 97; physiological pulse pressure)
+# Equal-ratio spans put the ceiling at center²/floor, which is why the HR / DBP ceilings rose
+# (100 → 122.5, 104 → 114.7) while the floors held.
+_HR_LOG_SP_MAX = 0.56
+_DBP_LOG_SP_MAX = 0.36
 _HRV_LOG_SP_MAX = 1.1
 _PP_LOG_SP_MAX = 0.7
 _HRV_CENTER = float(NORM_CENTER[MARKER_INDEX["hrv"]])
@@ -149,7 +183,7 @@ class CardiovascularModule(LearnedDynamicsModule):
             hidden_dim=hidden_dim,
         )
         # Per-patient setpoint head: one shared hidden layer, four outputs read as
-        #   [hr offset (z), log HRV offset, log pulse-pressure offset, dbp offset (z)].
+        #   [log HR offset, log HRV offset, log pulse-pressure offset, log DBP offset].
         # Final layer zero-init ⇒ every offset is 0 at cold start ⇒ resting HR 70,
         # HRV 40, DBP 80, PP 40 (SBP 120) for the default patient.
         _bh = max(8, hidden_dim // 4)
@@ -173,14 +207,15 @@ class CardiovascularModule(LearnedDynamicsModule):
     def setpoints_raw(self, embedding: torch.Tensor) -> torch.Tensor:
         """Resting ``[HR, HRV, SBP, DBP]`` in raw units for ``embedding[..., E]``.
 
-        ``SBP = DBP + PP`` with ``PP = 40·exp(±0.7·tanh) > 0``: SBP > DBP for every
-        embedding, by construction.
+        Every head output is ``center·exp(L·tanh(·))``, so HR, HRV, PP and DBP are
+        strictly positive and ``SBP = DBP + PP`` with ``PP = 40·exp(±0.7·tanh) > 0``:
+        SBP > DBP > 0 for every embedding, by construction.
         """
         o = self.setpoint_net(embedding)
-        hr = self.cvs_norm_center[_HR] + _CVS_BASELINE_MAX_Z * self.cvs_norm_scale[_HR] * torch.tanh(o[..., 0])
+        hr = self.cvs_norm_center[_HR] * torch.exp(_HR_LOG_SP_MAX * torch.tanh(o[..., 0]))
         hrv = _HRV_CENTER * torch.exp(_HRV_LOG_SP_MAX * torch.tanh(o[..., 1]))
         pp = _PP_CENTER * torch.exp(_PP_LOG_SP_MAX * torch.tanh(o[..., 2]))
-        dbp = self.cvs_norm_center[_DBP] + _CVS_BASELINE_MAX_Z * self.cvs_norm_scale[_DBP] * torch.tanh(o[..., 3])
+        dbp = self.cvs_norm_center[_DBP] * torch.exp(_DBP_LOG_SP_MAX * torch.tanh(o[..., 3]))
         return torch.stack([hr, hrv, dbp + pp, dbp], dim=-1)
 
     def setpoints_z(self, embedding: torch.Tensor) -> torch.Tensor:

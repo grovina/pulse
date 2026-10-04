@@ -148,8 +148,21 @@ class TestGeneratorsAreViews(unittest.TestCase):
                 else:
                     self.assertTrue(np.isnan(ref.trajectory[:, MI[m]]).all(), m)
                     self.assertFalse(np.isnan(ep.trajectory[:, MI[m]]).any(), m)
+        # The point: the view runs the COUPLED teacher, so cortisol has the HPA
+        # cascade's real rhythm rather than resting at its declared Cort_b.
+        # 2026-10-04 (PLAN.md Wave E, E3) RE-BASELINED. This was `c.min() < 7.0`, an
+        # ABSOLUTE nadir pinned to whichever patient seed 5 happened to sample, and
+        # deleting the three dead HPA draws from `randomize_params` moved the stream:
+        # seed 5's nadir is now 7.54 where it was below 7. Nothing about the rhythm
+        # changed -- the DEFAULT patient's nadir is still 3.66 ug/dL at 02:42 and its
+        # peak:nadir 4.39 (scripts/iter97_teacher_validate.py section 5, byte-identical
+        # across E1-E3). So the assertion is now the depth itself, which is what the
+        # test meant and what no stream shift can move: MEASURED peak:nadir over seeds
+        # 0/1/2/5/7/11 = 2.21 / 9.09 / 5.90 / 2.75 / 2.65 / 5.44 against the 4-5x of
+        # Weitzman 1971 for the median patient, so 2.0 is the population floor.
         c = CortisolCircadian().generate_episodes(1, np.random.default_rng(5))[0].trajectory[1440:2880, MI["cortisol"]]
-        self.assertLess(c.min(), 7.0)
+        self.assertGreater(c.max() / c.min(), 2.0)
+        self.assertLess(c.min(), 0.75 * c.mean())
 
 
 if __name__ == "__main__":

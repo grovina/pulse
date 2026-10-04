@@ -36,7 +36,7 @@ from .calibration import (
     calibrate_embedding as _shared_calibrate_embedding,
 )
 from .modules.gut import MealEvent
-from .model import ModularPhysiologyNetwork, integrate
+from .model import ModularPhysiologyNetwork, integrate, population_prior_embedding
 from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .verifier import evaluate_weak_checks
 
@@ -1033,12 +1033,10 @@ def _evaluate_one_episode(
         calibration_report = cal.as_report()
     else:
         # Iter 97 (5.11): with nothing to calibrate on, the honest answer is the
-        # population prior, not a user-id-seeded random vector.
-        prior_mean = getattr(model, "_embedding_prior_mean", None)
-        initial_embedding = (
-            prior_mean.detach().clone() if prior_mean is not None
-            else deterministic_user_embedding(episode.user_id)
-        )
+        # population prior, not a user-id-seeded random vector. A2/A8: and the
+        # SAME answer the server gives -- shared, because the fallback here used
+        # to differ from the server's (see `population_prior_embedding`).
+        initial_embedding = population_prior_embedding(model)
 
     with torch.no_grad():
         predicted = integrate(
@@ -1589,11 +1587,3 @@ def default_thresholds() -> dict[str, Any]:
     except (OSError, json.JSONDecodeError):
         pass
     return dict(_FALLBACK_THRESHOLDS)
-
-
-def deterministic_user_embedding(user_id: str) -> torch.Tensor:
-    digest = hashlib.sha256(f"embedding:{user_id}".encode("utf-8")).hexdigest()
-    seed = int(digest[:8], 16)
-    rng = np.random.default_rng(seed)
-    vector = rng.normal(0, 0.1, size=EMBEDDING_DIM).astype(np.float32)
-    return torch.tensor(vector, dtype=torch.float32)

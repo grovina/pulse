@@ -34,7 +34,7 @@ from .modules import (
     CardiovascularModule, ThermoregModule, RespiratoryModule,
     HepatobiliaryModule, DuodenalDeliveryKernel,
 )
-from .modules.base import compute_time_features
+from .modules.base import PhysiologyModule, compute_time_features
 from .modules.gut import MealEvent
 
 # Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
@@ -73,18 +73,20 @@ _Z_TIME = _Z_DUO + DUODENAL_DIM + 2
 _Z_DIM = _Z_TIME + TIME_FEATURES_DIM
 
 
-def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float) -> torch.Tensor:
+def _exp_step(x: torch.Tensor, rate: torch.Tensor, dt: float | torch.Tensor) -> torch.Tensor:
     """`x·exp(rate·dt/x)` for x > 0; falls back to `x + rate·dt` at x <= 0 (an initial
-    state handed in at zero — never produced by the step itself)."""
+    state handed in at zero — never produced by the step itself). ``dt`` is the step
+    length: a float, or the per-marker ETD1 step ``h`` (see ``_etd_step_size``)."""
     positive = x > 0
     denom = torch.where(positive, x, torch.ones_like(x))
     return torch.where(positive, x * torch.exp(rate * dt / denom), x + rate * dt)
 
 
 def _logit_interval_step(
-    x: torch.Tensor, rate: torch.Tensor, dt: float, lo: float, hi: float,
+    x: torch.Tensor, rate: torch.Tensor, dt: float | torch.Tensor, lo: float, hi: float,
 ) -> torch.Tensor:
-    """Step ``x`` in logit coordinates of ``(x − lo)/(hi − lo)`` so it stays in ``(lo, hi)``."""
+    """Step ``x`` in logit coordinates of ``(x − lo)/(hi − lo)`` so it stays in ``(lo, hi)``.
+    ``dt`` is a float or the per-marker ETD1 step ``h``, as in ``_exp_step``."""
     width = hi - lo
     x_c = x.clamp(lo + _SPO2_EPS, hi - _SPO2_EPS)
     u = (x_c - lo) / width
@@ -94,18 +96,137 @@ def _logit_interval_step(
     return (lo + width * torch.sigmoid(logit_new)).clamp(lo + _SPO2_EPS, hi - _SPO2_EPS)
 
 
-def euler_step(state: torch.Tensor, rates: torch.Tensor, dt: float) -> torch.Tensor:
-    """One forward-Euler step of the raw state, with the positive-by-construction
-    markers (HRV, pulse pressure) stepped multiplicatively and SpO₂ stepped in
-    logit coordinates of (70, 100). Shared by ``integrate`` and anyone who steps
-    the model by hand."""
-    new_state = state + rates * dt
-    hrv_new = _exp_step(state[..., _HRV_IDX], rates[..., _HRV_IDX], dt)
+# PLAN B2 — EXPONENTIAL (ETD1) STEPPING OF THE LINEAR PART.
+#
+# Forward Euler advances a restoring term −k·(x − x*) by the factor (1 − k·dt) where the exact
+# solution contracts by e^{−k·dt}, so the time constant a module declares is not the one the
+# rollout integrates, and the trajectory depends on dt. On a pure relaxation at dt = 1 min:
+#
+#     k       Euler    exact    effective rate   error
+#     0.15    0.850    0.861        0.163         +8 %
+#     0.30    0.700    0.741        0.357        +19 %   cardiovascular default, the teacher's k_hr
+#     0.80    0.200    0.449        1.609       +101 %   the cardiovascular band's ceiling
+#
+# and it is unstable once k·dt > 2, which closes a coarser step (PLAN D6) to any marker whose
+# k·dt would pass that. A module may therefore report a per-marker decay rate k >= 0 (1/min)
+# alongside its rate, and the step advances `x + rate·h` with
+#
+#     h(k, dt) = (1 − e^{−k·dt}) / k            → dt as k → 0,
+#
+# the exact update of the linear part with the rest of the rate held over the step: for
+# rate = F − k·(x − x*) it lands on x* + F/k + (x − x* − F/k)·e^{−k·dt} for any dt, and it is
+# stable for any k >= 0. `rates` stays the TOTAL rate, restoring term included (what `forward`,
+# the rate-matching signals and the coupling probes always saw); the decay annotates it, so the
+# k a module reports must be the coefficient of a `−k·x` already inside that rate — a k for a
+# term that is not there shrinks a step that does not decay. The couplings between markers stay
+# explicit: what is stable is each marker's own restoring term, not the system.
+#
+# THE COORDINATES. `h` replaces `dt` in whatever coordinate a marker is stepped in:
+#   * ordinary markers: `x + rate·h`.
+#   * HRV and pulse pressure are stepped in log space and their `rate` is `x·dlog x/dt`, so
+#     their k is the rate on the LOG deviation (cardiovascular's `k_hrv`, `k_pp`), and
+#     `x·exp(rate·h/x)` is exact for `dlog x/dt = −k·(log x − log x*)`, still strictly positive.
+#     SBP has no update of its own (it is rebuilt as DBP + PP), so the `sbp` slot's decay IS the
+#     pulse pressure's `k_pp`; a module cannot give SBP a separate one. SBP > DBP holds as before.
+#   * SpO₂ is stepped in logit coordinates while its restoring term is linear in SpO₂ itself, so
+#     no exponential is exact there: `h` scales the logit displacement, which is exact to first
+#     order in the deviation and keeps the bound. The logit map's own curvature error, shared
+#     with Euler, remains (x0 in [88, 99.5], x* in [96.5, 99.5], k in [0.02, 0.22], dt = 1: ETD
+#     stays within 0.055 points of the SpO₂-space exponential on average, Euler 0.071; worst 0.51
+#     against 0.74, from 99.5 down to 96.5). What ETD removes is the declared-vs-integrated rate
+#     gap and the step-size dependence (k = 0.22, 94 -> 98 %, 60 min as 6 steps of 10: Euler ends
+#     3.0 points from its own 1-minute trajectory, ETD 5e-5).
+#
+# NUMERICS. `h` is 0/0 at k = 0 (every marker that does not opt in) and its closed form loses
+# digits to cancellation just above it (the float32 autograd derivative of −expm1(−z)/z is off
+# by up to 300 % below z = 1e-6, 12 % below 1e-4 and 0.2 % below 1e-2, against float64), where a
+# small learned k lands. Below |z| = 0.1 a five-term series is used instead (value within 1e-7
+# and derivative within 4e-6 of float64 over |z| < 80). Both branches of the `where` are fed an
+# argument that is safe for THEM: the series sees 0 outside its range (so it cannot overflow)
+# and the closed form sees 1 inside it (so it never divides by zero), because `where`
+# backpropagates through the branch it did not select too, and 0·inf is NaN. (A `clamp(min=0)`
+# on k would fail the other way: torch's clamp has gradient 0 AT the bound, which silently
+# deletes d(step)/dk exactly at k = 0.)
+#
+# ADOPTION (none of it wired in: a module that does not define `decay_rates` is plain Euler,
+# bit for bit). `decay_rates(state, coupling, const, drv, raw)` takes `step`'s arguments and
+# returns k for the module's own markers in its marker order ([..., n_state], zeros where there
+# is no restoring term, or None for none at all). The explicit `−k·(x − x*)` terms that would
+# report:
+#   cardiovascular  [k_hr, k_hrv, k_pp, k_dbp] in marker order (hr, hrv, sbp→pp, dbp)
+#   thermoreg       k (core temperature; already a true 1/min)
+#   respiratory     k per marker (rr, spo2)
+#   stress          k_cort, k_acth, k_crh
+#   metabolic       k_ins (insulin), k_gn (glucagon), k_bhb, k_ffa, p2 (insulin_action),
+#                   hep_cons·hep_cons_scale (hepatic_output), K_MITO, lac_cons·lac_cons_scale·mito
+#   appetite        K_GHR, K_LEP, K_INS_SLOW and glp1's cons·cons_scale
+#   hepatobiliary   cck's cons·cons_scale, k_ileal, k_ba
+# and `MassActionModule.step`'s `cons·cons_scale·raw` consumption IS a decay rate, so a subclass
+# that keeps that `step` can report `cons·cons_scale`. There is deliberately no such default on
+# the base class: the four subclasses rebuild their species' rates, and a blanket one would give
+# glucose (a ConstantFluxHead, cons = 1) a decay of 0.02 for a term its rate does not have.
+#
+# WHERE IT PAYS. ETD1 scales the whole rate by (1 − e^{−z})/z, z = k·dt, which is exact only for a
+# forcing that is constant over the step; once z is small and the inflow is pulsatile that is
+# below the explicit-forcing error, and it can cost. Measured on the iter-109 modules (fresh
+# default model, every marker displaced 0.9 NORM_SCALE, 12 min, max error against a dt = 1/16
+# rollout in NORM_SCALE units, one module adopted at a time, Euler -> ETD):
+#   hr 0.054 -> 0.003, rr 0.013 -> 0.001, temp 0.0023 -> 0.0002, cck 0.035 -> 0.001,
+#   glp1 0.022 -> 0.002, ffa 0.092 -> 0.033, insulin 0.136 -> 0.086;
+#   but the bile loop (k 0.01-0.03: gallbladder 0.005 -> 0.013, intestinal 0.007 -> 0.017) and
+#   lactate (0.002 -> 0.003) get slightly worse. Adopt the fast terms (z >~ 0.05) first, and
+#   check any adoption this way: a k that is not the coefficient of a term in the rate makes its
+#   marker worse.
+# ONE CONDITION: the teacher (`full_body.simulate_full_body`) is explicit Euler at dt = 1, so a
+# student k copied from a teacher constant realizes e^{−k} per minute where the teacher realizes
+# 1 − k (k_hr: 0.741 vs 0.700, k_ffa: 0.819 vs 0.800). The first module to adopt should therefore
+# land with the teacher on the same step, or refit those k as −ln(1 − k_teacher).
+_ETD_SERIES_BELOW = 0.1
+
+
+def _etd_step_size(k: torch.Tensor, dt: float) -> torch.Tensor:
+    """ETD1's effective step ``(1 − e^{−k·dt})/k``, finite and differentiable at k = 0
+    (value ``dt``, d/dk ``−dt²/2``). Exact for either sign of k (k < 0 would be growth), to
+    float32 rounding; in float64 the series below |k·dt| = 0.1 truncates at ~1e-8."""
+    z = k * dt
+    small = z.abs() < _ETD_SERIES_BELOW
+    zs = torch.where(small, z, 0.0)
+    zc = torch.where(small, 1.0, z)
+    series = 1.0 + zs * (-0.5 + zs * (1.0 / 6.0 + zs * (-1.0 / 24.0 + zs * (1.0 / 120.0))))
+    closed = torch.expm1(-zc) / -zc
+    return dt * torch.where(small, series, closed)
+
+
+def _reports_decay(mod: nn.Module) -> bool:
+    """Whether ``mod``'s class defines ``decay_rates`` (a base-class default means "none")."""
+    fn = getattr(type(mod), "decay_rates", None)
+    return fn is not None and fn is not getattr(PhysiologyModule, "decay_rates", None)
+
+
+def euler_step(
+    state: torch.Tensor, rates: torch.Tensor, dt: float, decay: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    """One step of the raw state, with the positive-by-construction markers (HRV, pulse
+    pressure) stepped multiplicatively and SpO₂ stepped in logit coordinates of (70, 100).
+    Shared by ``integrate`` and anyone who steps the model by hand.
+
+    ``decay`` (same shape as ``rates``, per-marker k >= 0 in 1/min) is the restoring rate
+    already inside ``rates``; the step then uses ETD1's ``h(k, dt)`` in place of ``dt`` in
+    every coordinate (see PLAN B2 above). ``None`` is all zeros: forward Euler, bit for bit.
+    The ``sbp`` slot's decay is the pulse pressure's, since SBP is rebuilt as DBP + PP and has
+    no update of its own."""
+    if decay is None:
+        step = h_hrv = h_pp = h_spo2 = dt
+    else:
+        step = _etd_step_size(decay, dt)
+        h_hrv, h_pp, h_spo2 = step[..., _HRV_IDX], step[..., _SBP_IDX], step[..., _SPO2_IDX]
+    new_state = state + rates * step
+    hrv_new = _exp_step(state[..., _HRV_IDX], rates[..., _HRV_IDX], h_hrv)
     pp = state[..., _SBP_IDX] - state[..., _DBP_IDX]
-    pp_new = _exp_step(pp, rates[..., _SBP_IDX] - rates[..., _DBP_IDX], dt)
+    pp_new = _exp_step(pp, rates[..., _SBP_IDX] - rates[..., _DBP_IDX], h_pp)
     dbp_new = new_state[..., _DBP_IDX]
     spo2_new = _logit_interval_step(
-        state[..., _SPO2_IDX], rates[..., _SPO2_IDX], dt, _SPO2_LO, _SPO2_HI)
+        state[..., _SPO2_IDX], rates[..., _SPO2_IDX], h_spo2, _SPO2_LO, _SPO2_HI)
     new_state = new_state.clone()
     new_state[..., _HRV_IDX] = hrv_new
     new_state[..., _SBP_IDX] = dbp_new + pp_new
@@ -421,7 +542,8 @@ class ModularPhysiologyNetwork(nn.Module):
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
+        return_decay: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Compute rates of change for all state variables.
 
         state: [batch, STATE_DIM] or [STATE_DIM]
@@ -438,6 +560,12 @@ class ModularPhysiologyNetwork(nn.Module):
             callers whose result is provably independent of gut timing (the
             coupling-prior finite-difference probe, where the gut term is
             state-independent and cancels between the two evaluations).
+        return_decay: also return the per-marker decay rate (PLAN B2, ``euler_step``)
+            as ``(rates, decay)``, in the same marker order as ``rates``. ``decay`` is
+            ``None`` when no module defines ``decay_rates``, and zeros at the markers of
+            a module that does not. A module that reports one is evaluated a second
+            time for it (its heads fire twice), which is why this is opt-in: the rate
+            callers (coupling probes, distillation) never pay it.
         """
         is_unbatched = state.dim() == 1
         if is_unbatched:
@@ -546,21 +674,60 @@ class ModularPhysiologyNetwork(nn.Module):
 
         external = {"sleep_wake": sw, "activity": act}
         parts = []
+        decays: list[Optional[torch.Tensor]] = []
         for name in _MODULE_ORDER:
             mod = self._modules_by_name[name]
-            parts.append(mod(
-                norm_state[:, MODULE_MARKER_INDICES[name]],
-                self.coupling_for(name, norm_state, gut_out_batch, duo),
-                torch.stack([external[n] for n in mod.external_inputs], dim=-1),
-                emb[name],
-                time_feats,
-            ))
+            own = norm_state[:, MODULE_MARKER_INDICES[name]]
+            coupling = self.coupling_for(name, norm_state, gut_out_batch, duo)
+            ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
+            rate = mod(own, coupling, ext, emb[name], time_feats)
+            parts.append(rate)
+            if return_decay and _reports_decay(mod):
+                # The same composition as ``PhysiologyModule.forward``, so the decay is a
+                # function of exactly the constants, drives and head outputs the rate saw.
+                const = mod.constants(emb[name])
+                drv = mod.drives(ext, coupling, time_feats, const)
+                raw = mod.head_outputs(own, coupling, ext, emb[name], time_feats)
+                decays.append(_as_rate_shape(
+                    mod.decay_rates(own, coupling, const, drv, raw), rate, name))
+            else:
+                decays.append(None)
         rates = torch.cat(parts, dim=-1).index_select(-1, self._marker_from_module_order)
+        decay = _assemble_decay(parts, decays, self._marker_from_module_order)
 
         if is_unbatched:
             rates = rates.squeeze(0)
+            decay = None if decay is None else decay.squeeze(0)
 
-        return rates
+        return (rates, decay) if return_decay else rates
+
+
+def _as_rate_shape(decay: Optional[torch.Tensor], rate: torch.Tensor, name: str) -> torch.Tensor:
+    """A module's decay at its rate's shape: ``None`` is zeros, and a parameter-only decay
+    (no batch dimension) is broadcast across the batch."""
+    if decay is None:
+        return torch.zeros_like(rate)
+    if decay.shape[-1:] != rate.shape[-1:]:
+        raise ValueError(
+            f"{name}.decay_rates returned {tuple(decay.shape)}: one rate per marker of the "
+            f"module ({rate.shape[-1]}, in its marker order) is expected")
+    return torch.broadcast_to(decay, rate.shape)
+
+
+def _assemble_decay(
+    rates_by_module: list[torch.Tensor],
+    decay_by_module: list[Optional[torch.Tensor]],
+    marker_order: torch.Tensor,
+) -> Optional[torch.Tensor]:
+    """The modules' decays concatenated in ``_MODULE_ORDER`` and gathered into marker order,
+    exactly as their rates are; zeros for a module that reports none, ``None`` if none does."""
+    if all(d is None for d in decay_by_module):
+        return None
+    cat = torch.cat([
+        torch.zeros_like(r) if d is None else d
+        for r, d in zip(rates_by_module, decay_by_module)
+    ], dim=-1)
+    return cat.index_select(-1, marker_order)
 
 
 class _HeadBank:
@@ -734,6 +901,7 @@ class _ModulePlan:
         self.state_idx = state_idx
         self.coupling_idx = coupling_idx
         self.head_slots = head_slots
+        self.reports_decay = _reports_decay(mod)
         self.fixed: dict[str, torch.Tensor] = {}
         self.per_step: dict[str, tuple[torch.Tensor, ...]] = {}
         for k, v in drives.items():
@@ -749,7 +917,9 @@ class _RolloutPlan:
     ``rates(state, inputs(t))`` then does only the work that depends on the ODE
     state: the head bank, each module's ``step`` and the coupling gathers. The pointwise
     ``ModularPhysiologyNetwork.forward`` and this plan call the same module code
-    (``PhysiologyModule``), so they compute the same rates.
+    (``PhysiologyModule``), so they compute the same rates. ``rates_and_decay`` adds the
+    modules' decay rates (PLAN B2) from the same constants, drives and head outputs; with no
+    module reporting one the decay is ``None`` and a step is plain Euler.
     """
 
     def __init__(
@@ -817,32 +987,49 @@ class _RolloutPlan:
         )
 
     def rates(self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...]) -> torch.Tensor:
+        return self._evaluate(state, step_inputs, with_decay=False)[0]
+
+    def rates_and_decay(
+        self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...],
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """``(rates, decay)`` for ``euler_step``; ``decay`` is ``None`` if no module reports one."""
+        return self._evaluate(state, step_inputs, with_decay=True)
+
+    def _evaluate(
+        self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], with_decay: bool,
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
         exo_t, gut_t, duo_t = step_inputs[:3]
         drives_t = iter(step_inputs[3:])
         norm = (state - self.center) / self.scale
         xin = torch.cat([norm, gut_t, duo_t], dim=-1)
         heads = self.bank(norm, exo_t)
         parts = []
+        decays: list[Optional[torch.Tensor]] = []
         for m in self.modules:
             drv = dict(m.fixed)
             for k in m.per_step:
                 drv[k] = next(drives_t)
-            parts.append(m.module.step(
-                norm.index_select(-1, m.state_idx),
-                xin.index_select(-1, m.coupling_idx),
-                m.const,
-                drv,
-                {key: heads[i] for key, i in m.head_slots},
-            ))
-        return torch.cat(parts, dim=-1).index_select(-1, self.marker_order)
+            own = norm.index_select(-1, m.state_idx)
+            coupling = xin.index_select(-1, m.coupling_idx)
+            raw = {key: heads[i] for key, i in m.head_slots}
+            rate = m.module.step(own, coupling, m.const, drv, raw)
+            parts.append(rate)
+            if with_decay and m.reports_decay:
+                decays.append(_as_rate_shape(
+                    m.module.decay_rates(own, coupling, m.const, drv, raw), rate, m.name))
+            else:
+                decays.append(None)
+        rates = torch.cat(parts, dim=-1).index_select(-1, self.marker_order)
+        return rates, _assemble_decay(parts, decays, self.marker_order)
 
 
 def _planned_euler_step(
     plan: _RolloutPlan, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], dt: float,
 ) -> torch.Tensor:
-    """One planned minute: the rates from the plan, then ``euler_step``. The unit
-    ``enable_compiled_steps`` hands to ``torch.compile``."""
-    return euler_step(state, plan.rates(state, step_inputs), dt)
+    """One planned minute: the rates (and decay rates) from the plan, then ``euler_step``.
+    The unit ``enable_compiled_steps`` hands to ``torch.compile``."""
+    rates, decay = plan.rates_and_decay(state, step_inputs)
+    return euler_step(state, rates, dt, decay)
 
 
 _COMPILED_STEP = None
@@ -993,6 +1180,11 @@ def integrate(
     head forward hooks must fire (the planned step calls ``PhysiologyModule.step``
     directly). Any other rate model (test stubs) is always stepped pointwise.
 
+    Each step is forward Euler, except at the markers of a module that defines
+    ``decay_rates`` (PLAN B2): those advance by ETD1's ``(1 − e^{−k·dt})/k`` in place of
+    ``dt``, which is the declared time constant and stops the trajectory depending on
+    ``dt``. A model whose modules define none steps exactly as it always did.
+
     checkpoint_segments: if > 0 and grad is enabled, split the n_steps loop
         into roughly this many chunks and use torch.utils.checkpoint on each.
         Memory drops from O(n_steps) intermediate activations held in the
@@ -1091,6 +1283,9 @@ def integrate(
         if duo_outputs is None and meals and hasattr(model, "duodenal"):
             duo_outputs = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
 
+        # Other rate models (test stubs) return rates only and have no decay channel.
+        decay_kw = {"return_decay": True} if isinstance(model, ModularPhysiologyNetwork) else {}
+
         def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
             t = torch.tensor(
                 [(start_time_minutes + step * dt) % 1440.0],
@@ -1100,13 +1295,15 @@ def integrate(
             act_step = activity[step].expand(batch) if activity is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
-            rates = model(
+            out = model(
                 state, embedding, t, meals,
                 sleep_wake=sw_step, activity=act_step,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
+                **decay_kw,
             )
-            return euler_step(state, rates, dt)
+            rates, decay = out if decay_kw else (out, None)
+            return euler_step(state, rates, dt, decay)
 
     use_checkpointing = (
         checkpoint_segments > 0
@@ -1228,3 +1425,28 @@ def precompute_gut_outputs(
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     emb_gut = model.embedding_projections["gut"](embedding)
     return model.gut.forward_window(times, meals, emb_gut)
+
+
+def population_prior_embedding(model: "ModularPhysiologyNetwork") -> torch.Tensor:
+    """The person a prediction is FOR when nothing identifies one.
+
+    Plan A2/A8. Returns the population prior mean -- the median person, once the
+    embedding table's mean is pinned to zero -- or zeros for a checkpoint trained
+    before the prior was recorded, which is the default patient the trainer
+    supervises against ``PatientParams()``. Either way it is ONE person, the same
+    one for every caller.
+
+    It exists because that was not true. Both call sites preferred the prior and
+    then disagreed on the fallback: ``server.get_initial_embedding`` returned
+    zeros while ``benchmark.deterministic_user_embedding`` returned
+    ``N(0, 0.1^2)`` seeded from a hash of the user id -- so against a checkpoint
+    with no prior, a brand-new user was scored as a RANDOM person by the
+    benchmark and as the default person by the server, and the two numbers were
+    not comparable. Iter 97 fixed the benchmark's main path and left its
+    fallback; A8 fixed the server. Sharing one function is what actually makes
+    the claim ``A8`` rests on -- one default person, consistently -- hold.
+    """
+    prior_mean = getattr(model, "_embedding_prior_mean", None)
+    if prior_mean is not None:
+        return prior_mean.detach().clone().to(torch.float32)
+    return torch.zeros(model.embedding_dim, dtype=torch.float32)

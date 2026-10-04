@@ -56,8 +56,21 @@ def load_lab_model(path: str | None = None) -> tuple[ModularPhysiologyNetwork, d
                     p.requires_grad_(False)
                 version = str(ckpt.get("model_version", ckpt.get("trained_at", ckpt_path.stem)))
                 return model, {"path": str(ckpt_path), "trained": True, "version": version}
-            except Exception:
-                pass
+            except Exception as err:  # noqa: BLE001 — cold weights are a valid fallback, silence is not
+                # SAY SO. This swallowed every failure, and the lab then rendered an
+                # UNTRAINED model that looks like a trained one: the only tell was
+                # `trained: False` in the metadata. Loading is strict, and strict is
+                # right — the A1/A5/A10 changes (log-space setpoint decoders, two
+                # deleted per-person heads, the deleted Ra gain) mean a pre-change
+                # artifact is not this architecture, and quietly dropping the keys
+                # would produce a plausible-looking model whose decoders were fitted
+                # in a different frame. So the fallback stays; it just stops being
+                # invisible.
+                print(
+                    f"[lab] {ckpt_path} did not load into the current architecture "
+                    f"({type(err).__name__}: {err}); falling back to UNTRAINED cold weights",
+                    flush=True,
+                )
     model = ModularPhysiologyNetwork()
     model.eval()
     for p in model.parameters():

@@ -18,10 +18,10 @@ from .calibration import (
     evaluate_data_loss,
 )
 from .knowledge.textbook_scenarios.flow_story_protocol import dietary_carb_flow_phases_for_ui
-from .model import ModularPhysiologyNetwork, integrate
+from .model import ModularPhysiologyNetwork, integrate, population_prior_embedding
 from .modules.gut import MealEvent
 from .types import (
-    EMBEDDING_DIM, GUT_OUTPUT_DIM, MARKER_IDS, MARKER_INDEX, MARKERS,
+    GUT_OUTPUT_DIM, MARKER_IDS, MARKER_INDEX, MARKERS,
     NORM_CENTER, NORM_SCALE,
 )
 
@@ -110,7 +110,7 @@ def simulate(body: SimulateRequest):
 
     initial_baseline = normalize_baseline(body.baseline)
     initial_state = initial_state_from_baseline(initial_baseline)
-    initial_embedding = get_initial_embedding(user_id=body.user_id, embedding=body.embedding)
+    initial_embedding = get_initial_embedding(model, body.embedding)
     start_time_minutes = resolve_start_time_minutes(body.start_time_minutes)
     sleep_wake = build_minute_mask(body.sleep_wake, body.check_ins, "sleepWake", duration_min)
     activity = build_minute_mask(body.activity, body.check_ins, "activity", duration_min)
@@ -195,11 +195,6 @@ def simulate(body: SimulateRequest):
         "series": predicted[sample_times].tolist(),
         "carb_flow": carb_flow,
     }
-
-
-def seed_from_user_id(user_id: str) -> int:
-    digest = sha256(user_id.encode("utf-8")).hexdigest()
-    return int(digest[:8], 16)
 
 
 def get_model() -> ModularPhysiologyNetwork:
@@ -348,17 +343,25 @@ def _first_carb_meal_time_min(meals: list[MealEvent]) -> float | None:
     return float(min(carb_meals))
 
 
-def seeded_embedding(user_id: str) -> torch.Tensor:
-    seed = seed_from_user_id(f"embedding:{user_id}")
-    rng = np.random.default_rng(seed)
-    vector = rng.normal(0, 0.1, size=EMBEDDING_DIM).astype(np.float32)
-    return torch.tensor(vector, dtype=torch.float32)
+def get_initial_embedding(
+    model: ModularPhysiologyNetwork, embedding: list[float] | None,
+) -> torch.Tensor:
+    """The person a request starts from, and the one it predicts when calibration does not run.
 
-
-def get_initial_embedding(user_id: str, embedding: list[float] | None) -> torch.Tensor:
-    if embedding and len(embedding) == EMBEDDING_DIM:
+    Plan A8. The client's own embedding when it sent one of the model's width; otherwise the
+    population prior mean -- the median person once the table's mean is pinned to zero (A2) -- and
+    zeros for a checkpoint that carries no prior (zero is the default patient the trainer
+    supervises against ``PatientParams()``). This used to be N(0, 0.1^2) seeded from a hash of the
+    user id, so a brand-new user was predicted as a RANDOM person and calibration started from that
+    draw. ``benchmark.py`` stopped doing that in iter 97 (5.11: with nothing to calibrate on, the
+    honest answer is the population prior); the server never did. Both now call
+    ``model.population_prior_embedding``, so the two cannot drift apart again --
+    which they had, in the no-prior fallback: see that function.
+    """
+    dim = model.embedding_dim
+    if embedding and len(embedding) == dim:
         return torch.tensor(np.array(embedding, dtype=np.float32), dtype=torch.float32)
-    return seeded_embedding(user_id)
+    return population_prior_embedding(model)
 
 
 def initial_state_from_baseline(baseline: dict[str, float]) -> np.ndarray:

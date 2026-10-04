@@ -46,12 +46,11 @@ if str(ENGINE_ROOT) not in sys.path:
 
 from pulse.benchmark import (
     calibrate_embedding,
-    deterministic_user_embedding,
     load_benchmark_dataset,
     measurement_points_from_check_ins,
 )
 from pulse.diagnostics.probe import load_model_from_checkpoint
-from pulse.model import integrate
+from pulse.model import integrate, population_prior_embedding
 from pulse.types import MARKER_IDS, MARKER_INDEX, MARKERS, NORM_CENTER
 
 # Markers we want to probe — everything the model produces *except* the 5
@@ -177,7 +176,7 @@ def main() -> int:
                 sleep_wake=sw, activity=act,
             ).embedding
         else:
-            emb = deterministic_user_embedding(ep.user_id)
+            emb = population_prior_embedding(model)
 
         trajectories.append(predict(model, ep, emb))
         print(

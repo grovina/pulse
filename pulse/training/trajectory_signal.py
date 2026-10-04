@@ -319,6 +319,11 @@ def generate_trajectory_dataset(
             # Iter 90: ground-truth per-patient setpoints (None for contributions that
             # do not simulate a whole patient). Consumed by SetpointSupervisionSignal.
             "setpoints": ep.setpoints,
+            # 2026-10-04 (PLAN.md A4/B1): the non-marker per-patient quantities — body
+            # mass and the insulin-sensitivity family. Same role as `setpoints`, carried
+            # separately because `setpoints` is keyed by marker id and these are not
+            # markers. See knowledge/base.py Episode.patient_params.
+            "patient_params": ep.patient_params,
             # Iter 91: teacher's own standard-meal response for this patient. Consumed by
             # RolloutEvidenceSignal (family=meal) to unfreeze the per-patient meal gain Ra.
             "meal_response": ep.meal_response,

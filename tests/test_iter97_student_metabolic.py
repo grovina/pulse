@@ -144,14 +144,19 @@ class TestGlycogenGates(unittest.TestCase):
     def test_liver_breakdown_has_no_ungated_channel(self) -> None:
         """glycogenolysis = (1 − f_gng)·EGP_b·(LGly/LGly_b)·g_ins·g_gn·g_G, and the
         insulin gate is the teacher's basal-normalized IC50: exactly 1 at I = Ib, 1/(1+(I/K)^2)-
-        shaped above it, → 0 at high insulin. The liver head does not scale it."""
+        shaped above it, → 0 at high insulin. The liver head does not scale it.
+
+        B1: K is the PER-PERSON hepatic IC50, so the gate must be rebuilt from the
+        decode (`person_params`), not from the population scalar — with the hepatic
+        head perturbed the two differ by up to e^±0.75, and reading the scalar here
+        would be the same silent wrong answer A1 found in the Gb supervision."""
         m = _model(4, perturb=1.0)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
         with torch.no_grad():
             ib = met.insulin_setpoint_raw(emb)
-            k = torch.nn.functional.softplus(met.log_glyc_ins_k)
-        for excess in (0.0, 10.0 * float(k)):
+            k = met.person_params(emb)["glyc_ins_k"]
+        for excess in (torch.zeros_like(k), 10.0 * k, 100.0 * k):
             s = state.clone()
             s[:, M._INSULIN_IDX] = (ib + excess - 10.0) / 10.0
             with torch.no_grad():
@@ -186,10 +191,12 @@ class TestPerPatientGates(unittest.TestCase):
 
     @staticmethod
     def _set_gb(m, gb: float) -> None:
-        z = (gb - 95.0) / 30.0 / M._GLUCOSE_BASELINE_MAX_Z
+        """Force the Gb head to decode exactly ``gb``. A1: the decode is
+        ``95·exp(_GB_LOG_MAX·tanh(head))``, so the bias is atanh(log(gb/95)/L)."""
+        u = math.log(gb / 95.0) / M._GB_LOG_MAX     # the tanh output Gb needs
         with torch.no_grad():
             m.metabolic.glucose_baseline_net[-1].weight.zero_()
-            m.metabolic.glucose_baseline_net[-1].bias.fill_(math.atanh(z))
+            m.metabolic.glucose_baseline_net[-1].bias.fill_(math.atanh(u))
 
     def test_gate_stimuli_are_deviations_from_the_patients_own_setpoints(self) -> None:
         m = _model(7)
@@ -421,14 +428,18 @@ class TestSignedInsulinAction(unittest.TestCase):
     def test_negative_insulin_action_reaches_glucose_as_a_floored_source(self) -> None:
         m = _model(11, perturb=0.0)
         met = m.metabolic
-        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0)
+        # B1: `act=0` so the activity sensitisation is exactly 1 and `uptake_id` is the
+        # decoded Si alone — the gain lives in `xa_rate`, not here, but a bout would
+        # still move `xa` and this test is about the floor, not about exercise.
+        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0, act=0.0)
         state[0, M._GLUCOSE_IDX] = 0.0
         state[0, M._INSULIN_ACTION_IDX] = -0.05
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
+            si = float(met.person_params(emb)["si"])
         g = 95.0
         self.assertLess(float(f["uptake_id"]), 0.0)
-        si = float((M._SI_MIN + M._SI_RANGE * torch.sigmoid(met.log_si)).item())
+        self.assertAlmostEqual(float(f["ins_sens_act_gain"]), 1.0, places=7)
         self.assertAlmostEqual(float(f["uptake_id"]), si * -0.05 * g, places=6)
         floor = -M._INS_DEP_BASAL_FRAC * float(f["k_ii"])
         state[0, M._INSULIN_ACTION_IDX] = -20.0
@@ -624,20 +635,76 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
         self.assertGreater(float(tr[-1, MI["bhb"]]), 0.4)
         self.assertGreater(float(tr[-1, MI["bhb"]]), float(tr[0, MI["bhb"]]) + 0.2)
 
-    def test_hepatic_output_target_is_the_two_fluxes_in_mg_per_kg(self) -> None:
+    def test_hepatic_output_target_is_release_into_plasma_in_mg_per_kg(self) -> None:
+        """A11: ``hep_target = (glycogenolysis + gng_RELEASED)·VG_DL_PER_KG``.
+
+        It used to be ``glycogenolysis + gng_plasma``, i.e. total GNG including
+        ``gng_divert`` — the gluconeogenic carbon that the indirect pathway books
+        into liver glycogen and that never enters the blood. The marker is EGP as
+        the tracer literature its cohort spec cites measures it (Rizza 1981; Basu
+        2000 via ``cohorts/glucose_handling.meal_hgo_suppression``), and a tracer
+        sees appearance in plasma. The teacher has always done it this way
+        (``full_body.glucose_fluxes``: ``hep_target = glyco_t + gng_rel_t``).
+        """
         m = _model(15, perturb=0.5)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
-        expected = (f["glycogenolysis_plasma"] + f["gng_plasma"]) * VG_DL / BODY_MASS_KG
+        expected = (f["glycogenolysis_plasma"] + f["gng_released"]) * VG_DL / BODY_MASS_KG
         torch.testing.assert_close(f["hep_target"], expected, atol=1e-5, rtol=1e-5)
-        # and the typical patient at rest reads the textbook 2.0 mg/kg/min
+        # The states here are random, so insulin is generally above Ib: the diverted
+        # share is real and the old definition is strictly larger wherever it is.
+        old_def = (f["glycogenolysis_plasma"] + f["gng_plasma"]) * VG_DL / BODY_MASS_KG
+        self.assertGreater(float((old_def - f["hep_target"]).max()), 0.0)
+        self.assertTrue(bool((f["hep_target"] <= old_def + 1e-6).all()))
+        # Excluding a share cannot make the marker negative: ins_drive < 1 strictly
+        # (it is relu(I-Ib)/(relu(I-Ib)+Ib)), so the divert factor
+        # ins_drive/(ins_drive+1e-3)^0.75 tops out at 0.99925 and gng_released stays
+        # positive. The marker's sanity floor (weak_check_params: [0, 12]) holds.
+        self.assertTrue(bool((f["ins_drive"] < 1.0).all()))
+        self.assertTrue(bool((f["gng_released"] > 0.0).all()))
+        self.assertTrue(bool((f["hep_target"] > 0.0).all()))
+
+    def test_fasted_hepatic_output_is_still_the_textbook_basal_egp(self) -> None:
+        """A11 does not move the fasted readout. At the fasted reference I = Ib, so
+        ``ins_drive = 0`` and ``gng_divert = 0``: excluding the diverted share
+        subtracts exactly zero and the typical patient still reads 2.0 mg/kg/min.
+        Verified below rather than asserted — the value is UNCHANGED by A11."""
         m0 = _model(15, perturb=0.0)
         args = TestPerPatientGates._reference_state(m0, 95.0)
         with torch.no_grad():
             f0 = m0.metabolic.fluxes(*args)
+        self.assertAlmostEqual(float(f0["ins_drive"]), 0.0, places=6)
+        self.assertAlmostEqual(float(f0["gng_divert"]), 0.0, places=9)
+        torch.testing.assert_close(f0["gng_released"], f0["gng_plasma"], atol=1e-9, rtol=1e-9)
         self.assertAlmostEqual(float(f0["hep_target"]), 2.0, places=2)
+        # and it IS the whole basal EGP: glycogenolysis + total GNG = k_ii·Gb·V_G/kg
+        self.assertAlmostEqual(
+            float(f0["hep_target"]),
+            float((f0["glycogenolysis_plasma"] + f0["gng_plasma"]) * VG_DL_PER_KG),
+            places=6)
+        self.assertAlmostEqual(float(f0["hep_target"]), float(f0["egp_b"] * VG_DL_PER_KG), places=6)
+
+    def test_fed_hepatic_output_is_strictly_below_glycogenolysis_plus_total_gng(self) -> None:
+        """The other half of A11: with insulin above basal the indirect pathway is
+        on, so the released flux is strictly less than the produced one."""
+        m = _model(15, perturb=0.0)
+        met = m.metabolic
+        state, coupling, external, emb, tf = TestPerPatientGates._reference_state(m, 95.0)
+        with torch.no_grad():
+            ib = float(met.insulin_setpoint_raw(emb))
+        fed = state.clone()
+        fed[:, M._INSULIN_IDX] = (4.0 * ib - 10.0) / 10.0
+        with torch.no_grad():
+            f = met.fluxes(fed, coupling, external, emb, tf)
+        self.assertGreater(float(f["ins_drive"]), 0.5)
+        self.assertGreater(float(f["gng_divert"]), 0.0)
+        produced = float((f["glycogenolysis_plasma"] + f["gng_plasma"]) * VG_DL_PER_KG)
+        self.assertLess(float(f["hep_target"]), produced - 1e-4)
+        # and the gap is exactly the diverted carbon, in the same unit
+        self.assertAlmostEqual(
+            produced - float(f["hep_target"]), float(f["gng_divert"] * VG_DL_PER_KG), places=6)
 
 
 class TestNoDeadHeads(unittest.TestCase):

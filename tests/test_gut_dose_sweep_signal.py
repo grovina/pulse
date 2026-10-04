@@ -28,6 +28,7 @@ from pulse.training import (
     GutDoseSweepProtocol,
     GutDoseSweepSignal,
     SignalContext,
+    SignalResult,
     WeightSchedule,
     joint_aux_step,
 )
@@ -622,6 +623,81 @@ class TestAppearanceOnly(unittest.TestCase):
         self.assertAlmostEqual(float(rank), 0.0, places=5)
         self.assertAlmostEqual(float(auc), 0.0, places=5)
         self.assertEqual(float(n_inv), 0.0)
+
+
+class TestZeroEmbeddingOnlyByDefault(unittest.TestCase):
+    """PLAN A6: the targets are the DEFAULT patient's absorption kernel, so by default
+    the zero embedding (the median person) is the only row scored against them.
+
+    Until PLAN A6 ``sample_patients = 4`` also scored four sampled rows per step: from epoch 0,
+    at the spec's 0.10 weight, a pull of each patient's absorption toward the median person's.
+    """
+
+    _PROTO = GutDoseSweepProtocol(carb_doses_g=(0.0, 60.0), post_window_min=60)
+
+    def _run(self, **kw: object) -> tuple[SignalResult, list[torch.Tensor], nn.Embedding]:
+        torch.manual_seed(0)
+        model = _tiny_model()
+        emb = nn.Embedding(5, EMBEDDING_DIM)
+        nn.init.normal_(emb.weight, std=0.5)
+        params = list(model.parameters()) + list(emb.parameters())
+        ctx = SignalContext(
+            epoch=0, total_epochs=1, rng=np.random.default_rng(0),
+            device=torch.device("cpu"), optimizer=torch.optim.SGD(params, lr=0.0),
+            params=params, grad_clip=1e9,
+        )
+        sig = GutDoseSweepSignal(n_patients=5, weight=WeightSchedule(1.0), protocol=self._PROTO, **kw)  # type: ignore[arg-type]
+        seen: list[torch.Tensor] = []
+        hook = model.embedding_projections["gut"].register_forward_hook(
+            lambda _m, inp, _out: seen.append(inp[0].detach().clone()),
+        )
+        try:
+            result = sig.compute(model, emb, ctx)
+        finally:
+            hook.remove()
+        return result, seen, emb
+
+    def test_defaults_supervise_exactly_one_embedding_and_it_is_zero(self) -> None:
+        sig = GutDoseSweepSignal()
+        self.assertEqual(sig.sample_patients, 0)
+        self.assertTrue(sig.include_default_embedding)
+        result, seen, emb = self._run()
+        self.assertEqual(len(seen), 1)  # one batched projection call ...
+        self.assertEqual(tuple(seen[0].shape), (1, EMBEDDING_DIM))  # ... over one row ...
+        self.assertEqual(int(torch.count_nonzero(seen[0])), 0)  # ... the zero embedding
+        self.assertEqual(result.sub_metrics["n_dose_emb_pairs"], float(len(self._PROTO.carb_doses_g)))
+        # no table row is in the graph, so nothing is pulled toward the median person's kernel
+        self.assertIsNone(emb.weight.grad)
+
+    def test_a_nonzero_sample_patients_is_still_honoured(self) -> None:
+        result, seen, emb = self._run(sample_patients=2)
+        self.assertEqual(tuple(seen[0].shape), (3, EMBEDDING_DIM))
+        self.assertGreater(float(seen[0][:2].abs().sum()), 0.0)  # the sampled rows ...
+        self.assertEqual(int(torch.count_nonzero(seen[0][2])), 0)  # ... then zero, appended last
+        self.assertEqual(result.sub_metrics["n_dose_emb_pairs"], 3.0 * len(self._PROTO.carb_doses_g))
+        self.assertIsNotNone(emb.weight.grad)  # sampled rows are scored against the default patient
+
+    def test_zero_embedding_off_and_no_patients_is_a_noop(self) -> None:
+        result, seen, _ = self._run(include_default_embedding=False)
+        self.assertEqual(result.n_units, 0)
+        self.assertEqual(seen, [])
+
+    def test_inversion_count_reads_the_zero_row_not_the_first_sampled_row(self) -> None:
+        # select_supervised_embeddings appends the zero embedding LAST. With sampled rows
+        # present the metric used to index row 0 and report a sampled patient's inversions.
+        sig = GutDoseSweepSignal(protocol=GutDoseSweepProtocol(
+            carb_doses_g=(0.0, 30.0, 60.0, 120.0), post_window_min=60,
+        ))
+        T, D = sig.protocol.post_window_min, int(sig._targets.shape[0])
+        correct = [sig._targets[i] for i in range(D)]
+        inverted = [sig._targets[D - 1 - i] for i in range(D)]
+
+        def n_inv(first: list[torch.Tensor], last: list[torch.Tensor]) -> float:
+            per_dose = [torch.stack([first[i], last[i]]) for i in range(D)]  # [B=2, T, C] per dose
+            return float(sig._losses(per_dose, sig._targets, sig._abs_scale, T)[3])
+
+        self.assertEqual(n_inv(first=inverted, last=correct), 0.0)  # zero (last row) is fine
+        self.assertEqual(n_inv(first=correct, last=inverted), float(D * (D - 1) // 2))
 
 
 if __name__ == "__main__":

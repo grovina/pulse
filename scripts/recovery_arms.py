@@ -27,11 +27,10 @@ IDX = {k: MARKER_INDEX[k] for k in ('glucose','hr','hrv','sbp','dbp','temp')}
 def phys(emb):
     with torch.no_grad():
         em = m.embedding_projections['metabolic'](emb); ec = m.embedding_projections['cardiovascular'](emb)
-        b = M._GLUCOSE_BASELINE_MAX_Z*torch.tanh(m.metabolic.glucose_baseline_net(em).squeeze(-1))
-        sp = C._CVS_BASELINE_MAX_Z*torch.tanh(m.cardiovascular.setpoint_net(ec))
-        sc = [10.,15.,10.,8.]
-        o = {'Gb': 95.0+30.0*float(b)}
-        for j,k in enumerate(('hr','hrv','sbp','dbp')): o[k.upper()+'0']=NORM_CENTER[IDX[k]]+sc[j]*float(sp[j])
+        # The modules decode their own setpoints (A1, PLAN.md: both are log-space now).
+        o = {'Gb': float(m.metabolic.glucose_setpoint_raw(em))}
+        sp = m.cardiovascular.setpoints_raw(ec)
+        for j,k in enumerate(('hr','hrv','sbp','dbp')): o[k.upper()+'0']=float(sp[j])
     return o
 
 MEALS=[MealEvent(time=90.0,carbs=60.0,fats=10.0,proteins=15.0)]

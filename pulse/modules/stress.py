@@ -7,6 +7,37 @@ Cortisol's negative feedback on CRH is one-sided saturating about the
 patient's basal: high cortisol suppresses CRH; the nocturnal nadir is
 sleep's. A rectifier at 12 µg/dL would leave the whole overnight range
 inert.
+
+The clock is not a person. The drive is one function of the hour for every
+embedding. The teacher's ``randomize_params`` varies the circadian amplitude, the
+basals and the gains, but never ``hpa_rise_start_h`` / ``hpa_peak_h`` /
+``hpa_fall_tau_h``, so no patient has a phase for a head to recover. Through
+iter 109 a ``phase_proj`` head shifted the drive by up to ±2 h per embedding
+anyway. That is free authority, iter 109's failure in another organ (the
+glucagon-basal head took the prior person from 70 to 98 pg/mL while liver,
+ketones and glucose were unchanged when it was zeroed, because every downstream
+gate is normalized to the person's OWN level). A phase that varies by person
+comes back as a state that person's sleep timing entrains, which is evidence; it
+does not come back as an offset head.
+
+Two qualifications, because the first version of this paragraph overstated both.
+*It was not quite unsupervised:* the ``cortisol_morning_peak`` rule hinges the
+cortisol argmax into 06:00-09:00 and the rules signal does NOT detach its
+embeddings, so a gradient path existed. It could not IDENTIFY a phase — the hinge
+is a fence, zero inside the band — and it was inactive at init. But the fence is
+now load-bearing in a thinner way: on the unshifted clock cortisol peaks at
+**08:44** (ACTH 07:56, CRH 07:27) in a 24 h no-meal run waking at 07:00, which is
+16 min inside the 09:00 edge, and only ``k_crh`` / ``k_acth`` / ``k_cort`` can
+move it now. If a retrain walks that peak past 09:00 there is less machinery to
+pull it back, so it is worth watching.
+*And its effect on the taped vitals is not one number:* at random init a ±1 h
+shift moves hr/sbp/dbp/temp by exactly 0, because their driver MLPs are zero-init
+and literally cannot respond; on a model with every weight nudged by N(0, 0.02)
+it is small but non-zero (glucose 0.009σ mean, 0.033σ max; cortisol itself 0.13σ
+mean, 0.57σ max). Neither is a trained model, and no trained artifact was
+reachable to measure the one that matters. The argument for deleting the head
+rests on the teacher drawing no phase at all, which is structural and checked in
+``tests/test_no_unsupervised_person_heads.py`` — not on a magnitude.
 """
 
 import math
@@ -93,9 +124,6 @@ class StressModule(MassActionModule):
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
-        self.phase_proj = nn.Linear(embedding_dim, 1)
-        nn.init.normal_(self.phase_proj.weight, std=0.01)
-        nn.init.zeros_(self.phase_proj.bias)
         self.log_k_crh = nn.Parameter(torch.tensor(math.log(_K_CRH)))
         self.log_k_acth = nn.Parameter(torch.tensor(math.log(_K_ACTH)))
         self.log_k_cort = nn.Parameter(torch.tensor(math.log(_K_CORT)))
@@ -116,7 +144,6 @@ class StressModule(MassActionModule):
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {
-            "phase_h": 2.0 * torch.tanh(self.phase_proj(embedding).squeeze(-1)),
             "cort_b": self.cort_setpoint_raw(embedding),
             "fb_amp": nn.functional.softplus(self._fb_raw),
             "k_crh": torch.exp(self.log_k_crh),
@@ -138,7 +165,7 @@ class StressModule(MassActionModule):
         act = external[..., 1]
         sleep_depth = 1.0 - sw
         hour = _hour_from_time_features(time_features)
-        drive = _hpa_drive((hour - const["phase_h"]) % 24.0)
+        drive = _hpa_drive(hour)
         sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
         crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
         return {

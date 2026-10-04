@@ -95,6 +95,22 @@ from ..types import BODY_MASS_KG, VG_DL_PER_KG, VG_DL, MG_DL_PER_G  # noqa: E402
 # iteration (measured, see PatientParams).
 CARB_APPEARANCE_GAIN = MG_DL_PER_G
 
+# --- 2026-10-04 (PLAN.md Wave E, E1) ----------------------------------------------
+# The population-typical basal endogenous glucose production. DeFronzo (1989);
+# Rothman 1991 (Science) -- it is the same 2.0 the ``Hep_b`` default declares, and
+# the same number ``uptake_ii``'s default is solved from. It is a POPULATION
+# reference on purpose: ``resolve_derived_params`` splits the patient's EGP about it
+# because the literature claim it encodes ("the EGP EXCESS of type-2 diabetes is
+# gluconeogenic" -- Magnusson 1992) is itself a statement about a population typical.
+# This is not the iter-95/96 frame error, which was a rate law referenced to a
+# population constant where the physiology references the INDIVIDUAL's setpoint
+# (``h`` = Gb * h_frac); nothing here enters a rate law.
+EGP_TYPICAL_MG_KG_MIN = 2.0
+# Ceiling on the gluconeogenic share of basal EGP: glycogenolysis stays >= 15% of it.
+# Carried over from the iter-97 ``min(Gng_b, 0.85 * Hep_b)`` clip, whose intent was
+# that the glycogen pool always has a basal outflow to be first-order in.
+_F_GNG_MAX = 0.85
+
 # Iter 97: kernels integrate to >= 99.7% of their mass. A gamma-2 kernel
 # rate^2 t e^{-rate t} has retained 1 - (1 + x) e^{-x} of its mass at x = rate * t;
 # x = 8 gives 0.997. The fixed 300-min cutoff destroyed 12.6% of the slow fraction
@@ -186,6 +202,15 @@ class PatientParams:
     # liver's own glucose suppression, Sg = uptake_ii * (1 + hep_autoreg_m).
     # Default 0.01138 * 1.6 = 0.0182 -- the value iters 21-96 carried, now with
     # its two halves named.
+    # 2026-10-04 (PLAN.md Wave E, E3): and it is a REPORTED DIAGNOSTIC, not an input.
+    # Nothing in `glucose_fluxes` or `simulate_full_body` reads it -- the two terms it
+    # linearizes (`uptake_ii * G` and the one-sided `(Gb/G)^hep_autoreg_m`) are what
+    # the ODE integrates. It is kept because it is the number the Bergman literature
+    # and the student's history are stated in (scripts/iter97_teacher_validate.py
+    # prints it, modules/metabolic.py's and modules/base.py's comments argue about it)
+    # and because, unlike the three HPA parameters deleted in E3, it is DERIVED and so
+    # costs no RNG draw and no stream position. It could still be deleted outright; the
+    # only edits that needs are that print and the iter-97 derivation test.
     Sg: float = 0.0182
     # Iter 97: UNCHANGED at 0.0004, and that is a finding. When the kernel first
     # became mass-conserving the same +58.7 mg/dL excursion seemed to need Si 2-4x
@@ -272,9 +297,27 @@ class PatientParams:
     # Iter 97 removes both parameters. The fasting fall is now a flux deficit:
     # glycogenolysis is first-order in the liver pool, so as the pool empties EGP
     # falls toward gluconeogenesis alone and glucose settles where obligatory
-    # uptake balances it -- an ABSOLUTE floor of ~65-70 mg/dL (Cahill 2006) for
-    # every patient, because `uptake_ii` and `Gng_b` are population-level while
-    # only the glycogenolytic share of EGP scales with Gb.
+    # uptake balances it. Iter 97 could then call that floor ABSOLUTE (~65-70 mg/dL,
+    # Cahill 2006) for every patient, because `uptake_ii` and `Gng_b` were both
+    # population-level and only the glycogenolytic share of EGP scaled with Gb.
+    #
+    # E1 (2026-10-04) keeps the floor absolute from BELOW and gives it up ABOVE, on
+    # purpose. `Gng_b` is unchanged for every patient at or under the typical EGP
+    # (see resolve_derived_params), so the low end of the floor is bit-for-bit iter
+    # 97's: MEASURED 48 h after a dinner, Gb 70 lands at glucose 67.2 / BHB 0.70, and
+    # across 60 sampled patients the lowest glucose inside the 8->16 h and 12->24 h
+    # fast arms is 66.2 and 65.9 against the `glucose_fasting_floor` rule's 65 --
+    # exactly the before numbers. (Booking the DEFICIT gluconeogenically too, i.e.
+    # Gng_b = f_gng * Hep_b for everyone, was measured and rejected: it took that
+    # same worst patient to 63.7 inside the 24 h arm and the Gb-70 patient to 60.7 at
+    # 48 h.) Above the typical EGP the floor now rises with the patient: Gb 130 at
+    # 48 h goes glucose 73.6 -> 112.5 mg/dL, BHB 3.96 -> 2.23 mM, liver glycogen
+    # 1.0 -> 14.2 g, and at 12 h it rests at 129.3 instead of having already dumped
+    # its pool to 113.0. That is the honest direction: a type-2 diabetic fasting 48 h
+    # does not reach 70 mg/dL, its EGP excess is gluconeogenic (Magnusson 1992) and
+    # gluconeogenesis is not glycogen-limited, so iter 97's 73.6 was the artifact of
+    # charging that excess to a pool that then emptied -- which also drove BHB 3.96,
+    # above Cahill's 2-3 mM at 48 h, where 2.23 is inside it.
     #
     # Insulin's fall in fasting is far steeper than the glucose fall that
     # drives it (Polonsky 1988: basal insulin roughly halves while glucose
@@ -480,14 +523,49 @@ class PatientParams:
     # clinically (DeFronzo 1989: the fasting glucose of type-2 diabetes correlates
     # with EGP, not with disposal).
     Hep_b: float = 2.0
-    # Basal gluconeogenesis, mg/kg/min. Landau 1996 (JCI): 47% of EGP at 14 h of
-    # fasting, 67% at 22 h, 93% at 42 h; Rothman 1991 (Science): 64% at 22 h. 1.2
-    # is 60% of the typical EGP -- the post-absorptive share -- and it is
-    # POPULATION-level (varied only mildly), because it is what sets the absolute
-    # prolonged-fast glucose floor. Glycogenolysis at basal = Hep_b - Gng_b.
-    # 1.0 = 50% of the typical EGP (Landau's 47% at 14 h). MEASURED: at 1.2 the
-    # 48 h floor landed at 84 mg/dL because the glucagon/FFA/insulin gates lift GNG
-    # ~25% in the fast; at 1.0 it lands at ~67 (Cahill 65-70).
+    # --- 2026-10-04 (PLAN.md Wave E, E1): THE GNG SHARE IS THE SAMPLED QUANTITY --
+    # `f_gng` is the per-patient gluconeogenic FRACTION of basal EGP; `Gng_b`
+    # (mg/kg/min) is DERIVED from it in resolve_derived_params. 0.5 is Landau 1996
+    # (JCI): 47% of EGP at 14 h of fasting (67% at 22 h, 93% at 42 h; Rothman 1991
+    # Science, 64% at 22 h) -- the post-absorptive share, and exactly the 1.0/2.0
+    # the absolute default already encoded, so the default patient is unchanged.
+    #
+    # Iter 97 derived Hep_b from Gb but left Gng_b an ABSOLUTE ~1.0 with only a
+    # `min(Gng_b, 0.85*Hep_b)` ceiling, so a high-Gb patient's whole fasting EGP
+    # excess was booked as GLYCOGENOLYSIS -- the glycogenolytic share ran 0.32 /
+    # 0.44 / 0.50 / 0.57 / 0.59 / 0.63 across Gb 70 / 85 / 95 / 110 / 115 / 130 --
+    # and the liver could not hold its pool while eating. MEASURED on 190 g
+    # carbohydrate/day (the `iter97_teacher_validate` STD_DAY: 50/65/75 g at
+    # 08/13/19, 8 h sleep, no activity, liver from 100 g), day-4 mean liver glycogen
+    # and day-4 mean BHB, before -> after:
+    #     Gb  70   143 g / 0.07 mM  ->  143 g / 0.07 mM   (identity below EGP_TYPICAL)
+    #     Gb  85   122 g / 0.07     ->  122 g / 0.07      (identity)
+    #     Gb  95    88 g / 0.21     ->   88 g / 0.21      (identity at EGP_TYPICAL)
+    #     Gb 110    49 g / 0.81     ->   91 g / 0.19
+    #     Gb 115    41 g / 1.01     ->   92 g / 0.18
+    #     Gb 130    26 g / 1.60     ->   95 g / 0.15
+    # and over the SAME 80 sampled patients on that diet, day-4 mean BHB median
+    # 0.353 -> 0.112 and max 2.922 -> 1.355, the share above 1 mM 26.3% -> 2.5%,
+    # corr(log Hep_b, log BHB) +0.79 -> +0.27, corr(Gb, BHB) +0.75 -> +0.12, and the
+    # day-4 liver pool min 17.9 -> 34.6 g, median 71.6 -> 100.3 g. A fed person with
+    # prediabetic fasting glucose is not ketotic; iter 97 was distilling
+    # "hyperglycaemia implies ketosis" into the student, and it contradicted the
+    # Magnusson 1992 citation the `vary` call for this parameter already carried
+    # ("the EGP excess of type-2 diabetes is largely gluconeogenic"). The student
+    # already holds the FRACTION (modules/metabolic.py GNG_SHARE = 1.0/2.0), so this
+    # also makes teacher and student agree structurally rather than only at Gb 95.
+    #
+    # The residual fed-ketosis tail is no longer Gb: the worst of the 80 (BHB 1.355)
+    # has Gb 96 -- a normal fasting glucose -- and gets there because `LGly_b` is
+    # sampled over 70-130 g while the fed carbohydrate load is fixed, so a large-pool
+    # patient rests at ~45% of its OWN declared pool and `keto_glyc_gain`'s gate
+    # (1 + 13*(1 - LGly/LGly_b)) reads that as a fast. That is a separate defect of
+    # the ketogenesis gate's frame, not of this split, and it is what remains to fix.
+    f_gng: float = 0.5
+    # Basal gluconeogenesis, mg/kg/min. DERIVED from f_gng; the default is the
+    # default f_gng's value at the typical EGP (0.5 * 2.0), i.e. unchanged from iter
+    # 97, so a raw PatientParams() and a resolved one are still the same patient.
+    # Glycogenolysis at basal = Hep_b - Gng_b.
     Gng_b: float = 1.0
     # Hepatic response lag to its hormonal drive (tau 25 min: hepatic insulin
     # action on glycogenolysis, Cherrington 1999). `hepatic_output` relaxes to the
@@ -658,7 +736,18 @@ class PatientParams:
     # HPA: ACTH drives cortisol; cortisol feeds back on ACTH
     Cort_b: float = 12.0
     k_cort: float = 0.02
-    cort_circ_amp: float = 5.0   # legacy (iter<=90 cortisol's own circadian; unused since iter 91)
+    # 2026-10-04 (PLAN.md Wave E, E3): `cort_circ_amp` DELETED. Iter 91 moved
+    # cortisol's circadian into its secretagogue (the ACTH/CRH cascade carries the
+    # rhythm) and iter 98 rebuilt that cascade, so the field had been unread by the
+    # ODE for 18 iterations while `randomize_params` kept drawing it -- and
+    # `synthetic_users.PROFILES` overrode it in TWO profiles, which therefore did
+    # nothing: `shift_worker` had no circadian change at all beyond its Cort_b, and
+    # `anxious_stress` got its amplitude only from the `acth_circ_amp` override it
+    # happens to also carry. A parameter a profile sets and the ODE ignores is worse
+    # than a missing one, because the profile reads as covered. Replacements that the
+    # cascade does read: `acth_circ_amp` (amplitude, via the derived `crh_circ_amp`),
+    # `hpa_rise_start_h` / `hpa_peak_h` (phase -- which is the shift worker's actual
+    # phenotype), `crh_fb_amp` / `hypo_acth` / `cort_activity` (reactivity).
     cort_gluco: float = 0.0012
     ACTH_b: float = 30.0
     k_acth: float = 0.04
@@ -690,13 +779,18 @@ class PatientParams:
     # follows its secretagogue with a fixed ratio asleep and awake. 0.35 keeps the
     # nadir at 3-5 ug/dL and leaves a +6 awakening response when it is lifted.
     hpa_sleep_supp: float = 0.35
-    k_acth_to_cort: float = 0.006   # legacy (iter<=90 additive ACTH->cortisol term; unused since iter 91)
+    # 2026-10-04 (E3): `k_acth_to_cort` DELETED -- iter 91 replaced the additive
+    # ACTH->cortisol term with the proportional target below and nothing read it since.
     # Iter 91: cortisol's relaxation target is cort_per_acth * ACTH (see the HPA block). Set so
     # the ACTH rhythm carries cortisol across its physiological range; tuned by measurement below.
     # Iter 97: 0.42 -> 0.45 with the asymmetric drive (the mid-range ACTH is no
     # longer the mean): peak 17-18 ug/dL, nadir 3.7, 24 h mean ~9.5.
     cort_per_acth: float = 0.45
-    cort_feedback_acth: float = 0.025
+    # 2026-10-04 (E3): `cort_feedback_acth` DELETED. Cortisol's negative feedback is
+    # `crh_fb_amp` on CRH (iter 97 put it at the top of the cascade, where the
+    # glucocorticoid receptors are), so this one was the iter-90 feedback-on-ACTH gain
+    # left behind. The HPA block's comment still names it as the thing Cort_b is the
+    # reference for; `crh_fb_amp` is.
     hypo_acth: float = 0.025
     CRH_b: float = 100.0
     k_crh: float = 0.08
@@ -860,7 +954,41 @@ class PatientParams:
     k_rr: float = 0.1
     SpO2_0: float = 98.0
     k_spo2: float = 0.5
-    rr_lactate_gain: float = 0.4
+    # --- 2026-10-04 (PLAN.md Wave E, E2): THE ACTIVITY DRIVE IS SATURATING -------
+    # Through iter 109 `dRR` carried `+ act * 5.0` OUTSIDE the relaxation, against
+    # k_rr = 0.1, so the equilibrium was RR0 + 50*act: MEASURED 20.0 / 25.4 / 30.7 /
+    # 40.9 / 49.3 / 57.8 / 63.1 / 68.4 /min at act 0.1 / 0.2 / 0.3 / 0.5 / 0.65 /
+    # 0.8 / 0.9 / 1.0, and across six randomized 14-day episodes 926 minutes above
+    # the `rr` marker's declared max of 40 (154 per episode, 6 of 6 episodes), peak
+    # 60.4. Maximal human breathing frequency is ~40-60 /min in a trained athlete and
+    # ~35-45 in an untrained adult, and act 0.5 is moderate effort, not maximal.
+    #
+    # Two changes. The drive is now a TARGET inside the relaxation, as the activity
+    # drive in `dT` already is (`exercise_temp_target`), so what the constant declares
+    # is what the equilibrium is -- the x10 hidden in 1/k_rr is how 5 /min became 50.
+    # And it SATURATES: respiratory frequency is sigmoid in effort because minute
+    # ventilation below the ventilatory threshold is carried mostly by tidal volume
+    # (Hey 1966; Gallagher 1987 -- VT plateaus near 50-60% of vital capacity and only
+    # then does frequency take over), and above it frequency runs into its own
+    # mechanical ceiling. A Hill n=2 in `act` reproduces that shape where no linear
+    # gain could: flat at light effort, steepest through the threshold, capped at max.
+    # MEASURED after: 15.8 / 18.4 / 21.3 / 26.3 / 30.3 / 33.5 / 35.0 / 36.1 /min at
+    # the same activities (31.5 at the 0.7 of the `moderate_exercise_bout` arm, a
+    # +16.5 rise against that rule's >= 5), and 0 minutes above 40 across the same six
+    # episodes, peak 35.0 -- including the RR0 = 17.8 patient the old law took to 58.4.
+    # The resting value is EXACT: at act 0 and Lac = Lac_b both drives are 0, so RR
+    # equilibrates at RR0 + the sleep shift exactly as before -- the default patient's
+    # asleep equilibrium is RR0 - sleep_rr_drop = 12.000 to 3 decimals both before and
+    # after -- which is what keeps the `rr_sleep_dip` anchor (-2.5 +/- 1.5) untouched.
+    act_rr_gain: float = 20.0      # /min at maximal effort, the saturated value
+    rr_act_K: float = 0.5          # activity fraction at half-maximal drive (Hill n=2)
+    # 0.4 -> 6.0: same change of frame. The old 0.4 was multiplied by 1/k_rr too, so
+    # its equilibrium contribution was already up to 4.0 /min; 6.0 declares the
+    # metabolic-acidosis component directly. MEASURED contribution 1.0 / 1.2 / 2.7 /
+    # 4.1 / 4.7 / 5.0 /min at act 0.3 / 0.5 / 0.65 / 0.8 / 0.9 / 1.0: it carries the
+    # supra-threshold part of the rise, which is where it belongs -- and `lac_thresh`
+    # is fitness-loaded, so a fitter patient reaches a given RR at a higher activity.
+    rr_lactate_gain: float = 6.0
     spo2_exercise_dip: float = 1.5
 
     # Meal absorption
@@ -1062,10 +1190,20 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # is a flux deficit, so `fast_gb_drop` no longer exists. Five draws, as before.
     # Obligatory uptake per mg/dL varies little between people.
     p.uptake_ii = vary(p.uptake_ii, 0.06)
-    # Basal gluconeogenesis: mildly higher with insulin resistance (Magnusson 1992:
-    # the EGP excess of type-2 diabetes is largely gluconeogenic). Kept narrow because
-    # it sets the ABSOLUTE prolonged-fast glucose floor.
-    p.Gng_b = vary(p.Gng_b, 0.10, ir=0.40)
+    # Gluconeogenic FRACTION of basal EGP: mildly higher with insulin resistance
+    # (Magnusson 1992: the EGP excess of type-2 diabetes is largely gluconeogenic).
+    # E1 (2026-10-04): this draw used to land on the ABSOLUTE Gng_b, which is what
+    # made the excess glycogenolytic and the high-Gb patient ketotic (see f_gng in
+    # PatientParams); the ir=0.40 loading Magnusson licenses belongs on the fraction.
+    # Same slot, same spread, same loading, so `vary` consumes the SAME draw it did
+    # for `Gng_b` and E1 ALONE leaves the stream exactly where it was -- the
+    # stream-order warning above applies to this line too. (E3, below, then deletes
+    # three dead draws and does move the stream; that is deliberate and re-baselined
+    # there.) Kept narrow -- sigma 0.10, ~0.41-0.61 at +/-2 sigma, realized
+    # gluconeogenic share 0.42-0.79 over 80 patients -- because f_gng * EGP_TYPICAL is
+    # what sets the prolonged-fast glucose floor, and that floor is absolute (see the
+    # block at fast_ins_exp).
+    p.f_gng = vary(p.f_gng, 0.10, ir=0.40)
     p.k_hep = float(np.clip(vary(p.k_hep, 0.35), 0.02, 0.09))
     p.glyc_ins_K = float(np.clip(vary(p.glyc_ins_K, 0.25, ir=0.40), 12.0, 50.0))  # hepatic insulin resistance
     p.gng_cort_amp = float(np.clip(vary(p.gng_cort_amp, 0.3), 0.10, 0.45))
@@ -1073,12 +1211,29 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.Lep_b = vary(p.Lep_b, 0.5, ir=0.45)     # leptin tracks adiposity, co-travels with IR
     p.GLP1_b = vary(p.GLP1_b, 0.3)
     p.Cort_b = vary(p.Cort_b, 0.3)
-    p.cort_circ_amp = vary(p.cort_circ_amp, 0.3)
     p.ACTH_b = vary(p.ACTH_b, 0.25)
     p.k_acth = float(np.clip(vary(p.k_acth, 0.3), 0.02, 0.08))
     p.acth_circ_amp = vary(p.acth_circ_amp, 0.35)
-    p.k_acth_to_cort = float(np.clip(vary(p.k_acth_to_cort, 0.35), 0.002, 0.012))
-    p.cort_feedback_acth = float(np.clip(vary(p.cort_feedback_acth, 0.35), 0.012, 0.045))
+    # 2026-10-04 (PLAN.md Wave E, E3): THREE DRAWS REMOVED, AND THE STREAM MOVED.
+    # `cort_circ_amp` (which sat between Cort_b and ACTH_b), `k_acth_to_cort` and
+    # `cort_feedback_acth` were drawn here and read by nothing (see their
+    # declarations); the stream-order warning at the top of this function is the reason
+    # they survived iters 91-109 as dead draws. MEASURED against the pre-deletion
+    # module over seeds 0-11: every parameter up to and including `Cort_b` is
+    # bit-identical and every one from `ACTH_b` on has moved, which is exactly the
+    # three draws and nothing else -- and E1's `f_gng` is exactly the draw `Gng_b`
+    # used to take (old Gng_b == 2 * new f_gng to 1e-12 on all twelve). So a fixed
+    # seed now samples a DIFFERENT patient from ACTH_b onward and the fixed-seed
+    # baselines have been re-measured rather than compared:
+    # the two teacher audits were re-run at the same seeds afterwards and still give
+    # 0/61 rules violated and 0/40 anchors contradicted at |z| >= 2, with mean |z|
+    # 0.497 -> 0.533 and max |z| 1.60 -> 1.83 over E1-E3 together (N=12). That move is
+    # 12-patient sampling noise plus E1, not a change in the population: every
+    # parameter's marginal AND joint law is untouched, because z_ir and z_fit are drawn
+    # before any `vary` and each `vary` consumes exactly one i.i.d. normal, so removing
+    # three of them only re-indexes which seed gives which patient.
+    # Keeping a dead draw to protect a seed was the worse trade: `synthetic_users`
+    # overrode one of the three in two profiles and got nothing.
     p.hypo_acth = float(np.clip(vary(p.hypo_acth, 0.35), 0.012, 0.045))
     p.cort_activity = float(np.clip(vary(p.cort_activity, 0.35), 0.12, 0.8))
     # Iter 82: widen resting-vital baseline diversity to cover the benchmark /
@@ -1090,8 +1245,37 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # the benchmark lows (sbp 94, dbp 61). Teacher verified sane across the range.
     p.HR0 = vary(p.HR0, 0.22, ir=0.20, fit=-0.60)   # trained athletes rest low
     p.HRV0 = vary(p.HRV0, 0.4, ir=-0.30, fit=0.55)  # vagal tone up with fitness, down with IR
-    p.SBP0 = vary(p.SBP0, 0.14, ir=0.40, fit=-0.30)
+    # 2026-10-04: sample DIASTOLIC and PULSE PRESSURE, not systolic and diastolic.
+    # Drawing SBP0 and DBP0 as two independent lognormals produces pulse pressures
+    # that are not phenotypes: measured over 4,000 draws, PP ran from -16.5 to 120.1
+    # mmHg, with 12.6 % below 20 and 0.85 % NEGATIVE (DBP >= SBP). A PP of 5.5 mmHg
+    # is a dying patient, not an insulin-resistant one.
+    #
+    # This is the mirror of iter 97's student fix. That iteration made SBP > DBP true
+    # BY CONSTRUCTION in `modules/cardiovascular.py` -- the head emits DBP and a
+    # log pulse pressure, and SBP is rebuilt as their sum -- but left the teacher
+    # generating the targets from two independent draws. So 12.6 % of training
+    # patients had a BP pair the student is structurally FORBIDDEN to fit, and
+    # `SetpointSupervisionSignal` carried a permanent irreducible floor on sbp/dbp
+    # because of it: measured on 3 sampled patients fitted to convergence, sbp and
+    # dbp stall at ~3 mmHg while every other marker reaches ~0, entirely from one
+    # patient whose PP of 5.5 is below the student's 19.9 floor.
+    #
+    # PP keeps SBP0's old loadings (ir +0.40, fit -0.30), so systolic still rises
+    # with insulin resistance and falls with fitness, and now widens with it --
+    # which is the right direction (arterial stiffening raises PP). sigma 0.29 is
+    # solved to preserve SBP0's old spread: sd(SBP0) was 120*0.14 = 16.8, and with
+    # sd(DBP0) = 80*0.15 = 12 the remainder is sqrt(16.8^2 - 12^2) = 11.7 = 40*0.29.
+    # Clipped to the student's OWN representable span, [20, 80] mmHg
+    # (`cardiovascular._PP_LOG_SP_MAX = 0.7` about a 40 mmHg centre), rather than to a
+    # separately-chosen physiological range: a target the student is structurally
+    # forbidden to reach is not supervision, it is a standing residual. Measured after
+    # this change, 6 patients fitted to convergence leave sbp/dbp MAE at 0.95/0.60 mmHg
+    # against 3.04/2.94 before, and what remains is the handful still at a bound.
+    # TWO `vary` calls, as before and in the same slots, so the RNG stream position
+    # is unchanged for every parameter after these -- only the BP values move.
     p.DBP0 = vary(p.DBP0, 0.15, ir=0.40, fit=-0.30)
+    p.SBP0 = p.DBP0 + float(np.clip(vary(40.0, 0.29, ir=0.40, fit=-0.30), 20.0, 80.0))
     p.T0 = p.T0 + rng.normal(0, 0.2)
     # Iter 94: these four clip ranges moved WITH their defaults. Three of them
     # (temp_circ_amp, sleep_hr_frac, sleep_hrv_gain) would otherwise have clipped
@@ -1165,7 +1349,45 @@ def resolve_derived_params(params: PatientParams) -> PatientParams:
     # Basal EGP is what holds the declared fasting glucose against obligatory
     # uptake; its glycogenolytic share is what is left after gluconeogenesis.
     params.Hep_b = params.uptake_ii * params.Gb * VG_DL_PER_KG
-    params.Gng_b = float(min(params.Gng_b, 0.85 * params.Hep_b))   # glycogenolysis >= 15% of EGP
+    # E1 (2026-10-04): the two fluxes split the patient's EGP about the POPULATION
+    # TYPICAL, and the sampled gluconeogenic fraction sets the pivot:
+    #     Gng_b   = f_gng * EGP_TYPICAL + (Hep_b - EGP_TYPICAL)+
+    #     glyco_b = Hep_b - Gng_b
+    # i.e. GLYCOGENOLYSIS absorbs the EGP deficit and GLUCONEOGENESIS absorbs the
+    # excess, which is the two literatures in one line. The excess is Magnusson 1992
+    # (13-C NMR): in type-2 diabetes gluconeogenesis is higher (0.59 vs 0.42
+    # mg/kg/min) while net hepatic glycogenolysis is LOWER (0.44 vs 0.65), so basal
+    # glycogenolysis is a property of the liver's own turnover and booking 100% of
+    # the excess to GNG is the CONSERVATIVE reading of the measurement, not an
+    # overreach. The deficit is Cahill 2006 via iter 97: gluconeogenesis is the
+    # obligatory supply that makes the prolonged-fast floor absolute, so the flux a
+    # low-EGP patient lacks has to come off glycogenolysis. MEASURED when the deficit
+    # was booked gluconeogenically instead (Gng_b = f_gng * Hep_b for every patient):
+    # the lowest-Gb patient of 60 sampled fell to 63.7 mg/dL inside the 12->24 h fast
+    # arm against the `glucose_fasting_floor` rule's 65, and 60.7 at 48 h.
+    #
+    # Iter 97's `Gng_b` was f_gng * EGP_TYPICAL with the excess booked to
+    # glycogenolysis, so this is one term moved, and it is an IDENTITY at the typical
+    # EGP: the default patient, the 75 g meal, the 24 h fast and the carbon ledger are
+    # bit-for-bit unchanged. Verified end to end -- scripts/iter97_teacher_validate.py
+    # differs in exactly ONE of its 56 output lines, the Gb-130 fast in section 3.
+    #
+    # The realized gluconeogenic share Gng_b/Hep_b is U-shaped in Hep_b, not monotone
+    # -- MEASURED 0.68 / 0.56 / 0.50 / 0.57 / 0.59 / 0.63 at Gb 70 / 85 / 95 / 110 /
+    # 115 / 130 -- and that is Landau 1996's own observation rather than an artifact:
+    # the GNG share rises whenever glycogenolysis is the smaller flux, which is why
+    # it goes 47% at 14 h -> 67% at 22 h -> 93% at 42 h of fasting as the pool runs
+    # down. A low-EGP liver is in the same position as a longer-fasted one.
+    params.f_gng = float(np.clip(params.f_gng, 1e-3, _F_GNG_MAX))
+    params.Gng_b = (params.f_gng * EGP_TYPICAL_MG_KG_MIN
+                    + max(params.Hep_b - EGP_TYPICAL_MG_KG_MIN, 0.0))
+    # Guard, not a tuning knob: glycogenolysis stays >= 15% of EGP, so the pool always
+    # has a basal outflow for `glyco_t` to be first-order in. It binds only for
+    # Hep_b < f_gng * EGP_TYPICAL / 0.85, i.e. below 1.64 mg/kg/min at the widest
+    # sampled f_gng -- MEASURED 1 patient in 400 (sampled f_gng 0.375-0.698, realized
+    # share 0.376-0.850, Hep_b 1.33-3.33) -- and for callers that override Hep_b, Gb or
+    # f_gng by hand, as synthetic_users and the textbook scenarios do.
+    params.Gng_b = float(min(params.Gng_b, _F_GNG_MAX * params.Hep_b))
     # Glucose effectiveness = obligatory uptake + hepatic autoregulation, linearized.
     params.Sg = params.uptake_ii * (1.0 + params.hep_autoreg_m)
     params.acth_per_crh = params.ACTH_b / max(params.CRH_b, 1e-6)
@@ -1708,8 +1930,11 @@ def simulate_full_body(
         # too compressed to carry cortisol's real 4-5x swing.
         #
         # Cort_b is RETAINED as the per-patient reference level -- it is the threshold for
-        # cortisol's downstream effects (cort_feedback_acth, cort_gluco, cort_hr) and for the
+        # cortisol's downstream effects (crh_fb_amp, cort_gluco, cort_hr) and for the
         # student's normalization -- but it is no longer cortisol's relaxation target.
+        # (E3, 2026-10-04: the feedback gain this comment used to name was
+        # `cort_feedback_acth`, which iter 97 superseded with `crh_fb_amp` on CRH and
+        # which nothing read; it is deleted.)
         # Iter 97 (item 3.9): asymmetric drive, quiescent evening, steep pre-dawn rise
         # peaking at awakening; sleep suppression applied ONCE, to CRH.
         drive = _hpa_drive(t_abs, params.hpa_rise_start_h, params.hpa_peak_h, params.hpa_fall_tau_h)
@@ -1798,8 +2023,12 @@ def simulate_full_body(
         # --- Respiratory ---
         sleep_rr_shift = -params.sleep_rr_drop * sleep_depth
         lac_excess = max(Lac - params.Lac_b, 0)
-        lactate_drive = params.rr_lactate_gain * lac_excess / (lac_excess + 2.0)
-        dRR = -params.k_rr * (RR - params.RR0 - sleep_rr_shift) + act * 5.0 + lactate_drive
+        # E2 (2026-10-04): both drives are equilibrium OFFSETS in /min, inside the
+        # relaxation -- see act_rr_gain for the measured table and why the linear
+        # `+ act * 5.0` outside it put RR at 63 /min at act 0.9.
+        lactate_rise = params.rr_lactate_gain * lac_excess / (lac_excess + 2.0)
+        act_rise = params.act_rr_gain * act * act / (act * act + params.rr_act_K ** 2)
+        dRR = -params.k_rr * (RR - params.RR0 - sleep_rr_shift - act_rise - lactate_rise)
         spo2_exercise_effect = params.spo2_exercise_dip * max(act - 0.5, 0)
         dSpO2 = -params.k_spo2 * (SpO2 - params.SpO2_0) - spo2_exercise_effect
 
@@ -1976,6 +2205,52 @@ class FullBody(KnowledgeContribution):
                     # so its resting level now has a ground-truth target instead of having to be
                     # discovered from trajectories. temp is a thin-margin gate marker.
                     "temp": float(params.T0),
+                    # 2026-10-04 (PLAN.md A4): the rest of the per-patient heads the
+                    # student already HAS. Each of these is sampled per patient here and
+                    # was being discarded, so the corresponding head had no evidence that
+                    # could identify it; measured on the taped vitals, perturbing them
+                    # changes almost nothing (mito +30 % -> 0.015, cort_b +50 % -> 0.03
+                    # mg/dL, and RR0/SpO2_0 exactly 0, respiratory being a sink), which is
+                    # precisely why the trajectory loss cannot supervise them and a direct
+                    # target must. `insulin` is the BASAL Ib, not a resting observation.
+                    # `cortisol` is Cort_b, the REFERENCE the HPA feedback and the
+                    # gluconeogenic gate are centred on -- deliberately not the realized
+                    # 24 h mean, which for the default patient is 8.95 against a Cort_b of
+                    # 12, since both teacher and student use the declared basal as the
+                    # gate's origin.
+                    "insulin": float(params.Ib),
+                    "ffa": float(params.FFA_b),
+                    "cortisol": float(params.Cort_b),
+                    "rr": float(params.RR0),
+                    "spo2": float(params.SpO2_0),
+                    "mitochondrial_capacity": float(params.mito_0),
+                },
+                # 2026-10-04 (PLAN.md A4/B1): per-patient quantities that are not markers.
+                # `body_mass_kg` is the one that currently does active harm: it scales
+                # mg/dL per gram through V_G, so it multiplies meal amplitude exactly as
+                # the Ra gain does, and measured, scaling both by 1.2 together moves
+                # glucose by 0.18 mg/dL -- the two are confounded and only their product
+                # is identified. Supervising mass (and deleting Ra, PLAN.md A10) breaks
+                # that degeneracy with the teacher's own number.
+                # The insulin-sensitivity family is here for B1: the teacher varies all
+                # four per patient (Si sigma 0.5 loading ir -0.70, the strongest single
+                # axis in the population; glyc_ins_K sigma 0.25 ir +0.40 -- hepatic
+                # insulin resistance; gamma and n sigma 0.3), while the student holds all
+                # four at ONE population scalar. Measured over 150 sampled patients, Si
+                # alone explains 22.5 % of between-person glucose INCREMENTAL AUC and
+                # 20.7 % of insulin iAUC over the 240 min after a 75 g mixed meal,
+                # bottom-vs-top Si decile 2.3x / 2.2x (see modules/metabolic.py: the
+                # 34 % / 31 % this comment used to quote was the same correlation on
+                # TOTAL post-meal AUC, which is confounded with Gb through the shared
+                # insulin-resistance latent). It is the PRD's own example of individual
+                # variation and the student cannot represent it.
+                patient_params={
+                    "body_mass_kg": float(params.body_mass_kg),
+                    "si": float(params.Si),
+                    "glyc_ins_k": float(params.glyc_ins_K),
+                    "gamma": float(params.gamma),
+                    "k_ins": float(params.n),
+                    "act_insulin_sens": float(params.act_insulin_sens),
                 },
                 # Iter 91: this patient's TRUE postprandial glucose peak-rise for a standard
                 # meal. Measured on iter-90: the student's per-patient meal gain (Ra) is FROZEN

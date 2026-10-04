@@ -619,6 +619,7 @@ class GutModuleBase(nn.Module):
     Iter 97 — THE KERNEL IS A NORMALIZED DENSITY TIMES A LEARNED MASS GAIN.
 
         K_ij(t; emb) = f_bio_ij(emb) · density_ij(t; emb)
+        f_bio_ij(emb) = APPEARANCE_UNITS_PER_G_j · frac_ij(emb),  frac = σ(MLP(emb)) ∈ (0, 1)
         appearance_j(t) = Σ_i  macros_i · K_ij(t) with K diagonal (carbs→glucose, fat→lipid, protein→amino).
 
     where ``density_ij`` is a learned MIXTURE over a fixed bank of gamma
@@ -629,6 +630,9 @@ class GutModuleBase(nn.Module):
     * ``K(0) = 0``                       — nothing appears at the instant of the meal;
     * ``∫ K_ij dt = f_bio_ij``           — the integral of appearance is the ingested
                                            mass times a learned per-patient gain;
+    * ``frac_ij ≤ 1``                    — and that gain is a BIOAVAILABLE FRACTION of
+                                           one gram's worth of appearance units, so
+                                           absorbed ≤ ingested on every channel;
     * ``K -> 0`` smoothly               — and every basis component has < 1 % of its
                                            mass beyond ``MEAL_ACTIVE_WINDOW_MIN``
                                            (asserted in tests), so the active-window
@@ -654,20 +658,62 @@ class GutModuleBase(nn.Module):
     basis — it runs once per (meal, patient) rather than once per time step,
     and a freshly built kernel is already a plausible absorption curve: the
     output layer starts at zero with its bias set to the priors in
-    ``_INIT_MIXTURE`` / ``_INIT_F_BIO`` (fitted to the teacher: carbohydrate
+    ``_INIT_MIXTURE`` / ``F_BIO_INIT_FRACTION`` (fitted to the teacher: carbohydrate
     peaking ~45 min with a slow tail, fat ~65 min, protein ~50 min), so training starts in
     the right regime and the embedding's authority over shape and gain grows
     from zero.
 
-    ``f_bio`` is in APPEARANCE UNITS PER GRAM. Since iter 97 the teacher's
-    carbohydrate kernel is MASS-CONSERVING: one gram integrates to
+    ``f_bio`` is in APPEARANCE UNITS PER GRAM, and it factors into a fixed unit
+    conversion times a learned BIOAVAILABLE FRACTION. Since iter 97 the
+    teacher's carbohydrate kernel is MASS-CONSERVING: one gram integrates to
     ``MG_DL_PER_G`` (= 1000 / V_G = 7.72 mg/dL of glucose space,
     ``pulse.types``) and fat/protein appear as ``3.0 × g/min``. The student's
-    kernel carries the same convention in ``APPEARANCE_UNITS_PER_G`` and
-    initializes ``f_bio`` at it (so ``f_bio = 1`` means "all of it appears");
-    the metabolic module divides by the same constant to recover grams for
-    its carbon budget. When the teacher's units change, only this constant
-    and the init move.
+    kernel carries the same convention in ``APPEARANCE_UNITS_PER_G``; the
+    metabolic module divides by the same constant to recover grams for its
+    carbon budget. When the teacher's units change, only this constant and the
+    init move.
+
+    A9/A10 (PLAN §3) — THE FRACTION IS BOUNDED BY 1 (A9), AND IT IS THE ONLY
+    PER-PERSON GAIN ON MEAL AMPLITUDE (A10).
+
+    Through iter 109 the head was ``softplus(raw)``, unbounded above: a fraction
+    above 1 made the gut emit carbon that was never eaten, and one below 1 deleted
+    carbon that no ledger booked as malabsorbed, so the metabolic carbon test
+    closed on a mass the meal never contained.
+    ``σ`` fixes both by construction — ``absorbed ≤ ingested`` is now a property
+    of the functional form, which is the iter-97 lesson applied to the one place
+    it was skipped. It also removes the identifiability problem A10 names:
+    ``MetabolicModule`` used to multiply this gain by its own per-person ``Ra``
+    and by ``1/V_G`` (body mass), three gains whose product is all that glucose
+    data sees (measured: scaling Ra and body mass together by 1.2 moves glucose
+    0.18 mg/dL). ``Ra`` is gone and ``frac`` carries that authority alone.
+
+    The init is ``σ(logit(0.8)) = 0.8`` on every channel, which is exactly the
+    deleted ``Ra`` init, so the per-gram gain that reaches glucose is the same
+    number it was. Nominally ``0.8 × MG_DL_PER_G`` = 6.178 units/g either way;
+    measured at the zero embedding, 6.188 before against 6.194 after, the 0.09 %
+    spread being this layer's own 0.01-std weight noise around that bias.
+    Measured end to end, a fresh model's 75 g carbohydrate peak averages 24.54
+    mg/dL before and 24.23 after over six seeds (−1.3 %); per-seed it scatters
+    ±10 %, because deleting two heads shifts the global RNG stream and "seed 0"
+    is then a different draw, not a different model of the same person.
+
+    Iter 97 chose 0.8 because an UNTRAINED student has neither a second-phase
+    insulin response nor first-pass hepatic uptake, so at full bioavailability
+    its 75 g peak overshot the teacher's +56.6 mg/dL at 55 min (iter-97 sweep at
+    init, Ra 0.3/0.5/0.7/1.0: peak +19/+33/+47/+70 mg/dL, 0.8 landing +56). That
+    calibration has since gone stale — iters 98–109 made the direct pathway take
+    30 % of appearance and restored ``uptake_ii``, and the same 0.8 now reaches
+    +24.5, not +56 — but it is stale by the same factor with the gain here or in
+    ``Ra``, so re-fitting it is a separate measurement from moving it.
+
+    0.8 is also where the sigmoid still has gradient: at a fraction of 0.98 the
+    slope is 0.02 against 0.16 here, and a bounded fraction initialized on its
+    own ceiling is the dead-gradient pattern this file avoids everywhere else.
+    The cost is that a fresh kernel's AUC is deliberately 80 % of the teacher's
+    absorption on every channel (measured 0.806/0.801/0.803 for carb/fat/
+    protein), which ``tests/test_iter97_student_gut.py`` now pins as the ratio
+    rather than as 1.
 
     The 4th output channel, ``nutrient_flag``, is no longer a separate MLP.
     It is ``1 − exp(−unabsorbed_mass / FLAG_GATE_SCALE_G)`` where
@@ -694,6 +740,11 @@ class GutModuleBase(nn.Module):
     # Appearance units per gram of macro, per channel — the teacher's convention
     # (see the class docstring). Order: (glucose, lipid, amino).
     APPEARANCE_UNITS_PER_G: tuple[float, float, float] = (MG_DL_PER_G, 3.0, 3.0)
+
+    # Cold-start bioavailable fraction on every channel: the gain that A10 moved
+    # out of the deleted ``MetabolicModule.log_ra`` (init 0.8) and into the one
+    # place the mass is booked. See the class docstring for why 0.8 and not 1.
+    F_BIO_INIT_FRACTION: float = 0.8
 
     # The basis bank as (gamma shape, gamma rate /min). Each component is chosen by
     # its PEAK time ``(shape − 1) / rate`` and its shape is raised for the slow
@@ -743,7 +794,9 @@ class GutModuleBase(nn.Module):
         )
 
         # Input is ONLY the embedding. Output: mixture logits for each of the
-        # three diagonal channels over the basis, plus one f_bio per channel.
+        # three diagonal channels over the basis, plus one bioavailability
+        # logit per channel (A9: f_bio = units_per_g · σ(logit), never above
+        # units_per_g, so the kernel cannot absorb more than was eaten).
         output_dim = self.N_MACROS * self.n_basis + self.N_MACROS
         self.kernel = nn.Sequential(
             nn.Linear(embedding_dim, hidden_dim),
@@ -760,7 +813,7 @@ class GutModuleBase(nn.Module):
             for i in range(self.N_MACROS):
                 w = torch.tensor(self._INIT_MIXTURE[i], dtype=torch.float32)
                 logits[i] = torch.log(w + 1e-3)
-                f_raw[i] = _inverse_softplus(self.APPEARANCE_UNITS_PER_G[i])
+                f_raw[i] = _logit(self.F_BIO_INIT_FRACTION)
             n_logit = self.N_MACROS * self.n_basis
             bias[:n_logit] = logits.reshape(-1)
             bias[n_logit:] = f_raw
@@ -801,14 +854,27 @@ class GutModuleBase(nn.Module):
     # ---- the learned part -----------------------------------------------------
 
     def mixture(self, embedding: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """``(weights[..., 3, n_basis], f_bio[..., 3])`` — one mixture per macro."""
+        """``(weights[..., 3, n_basis], f_bio[..., 3])`` — one mixture per macro.
+
+        ``f_bio`` is ``APPEARANCE_UNITS_PER_G × bioavailable_fraction``, so a
+        channel's integral is at most one gram's worth of appearance units per
+        gram ingested — the A9 bound, carried by ``σ`` and not by a loss.
+        """
         raw = self.kernel(embedding)
         n_logit = self.N_MACROS * self.n_basis
         logits = raw[..., :n_logit].reshape(*raw.shape[:-1], self.N_MACROS, self.n_basis)
         weights = torch.softmax(logits, dim=-1)
-        f_bio = nn.functional.softplus(raw[..., n_logit:]).reshape(
-            *raw.shape[:-1], self.N_MACROS)
-        return weights, f_bio
+        frac = torch.sigmoid(raw[..., n_logit:]).reshape(*raw.shape[:-1], self.N_MACROS)
+        return weights, self.appearance_units_per_g * frac
+
+    def bioavailable_fraction(self, embedding: torch.Tensor) -> torch.Tensor:
+        """``[..., 3]`` — the absorbed SHARE of each ingested macro, in (0, 1).
+
+        The same σ ``mixture`` applies, exposed so a probe or a test can read the
+        fraction without knowing the unit convention it is multiplied by.
+        """
+        raw = self.kernel(embedding)
+        return torch.sigmoid(raw[..., self.N_MACROS * self.n_basis:])
 
     def response_and_flag(
         self,
@@ -850,8 +916,13 @@ class GutModuleBase(nn.Module):
         return self.response_and_flag(macros, weights, f_bio, density, survival)
 
 
-def _inverse_softplus(y: float) -> float:
-    return math.log(math.expm1(y))
+def _logit(p: float) -> float:
+    """Inverse sigmoid — place a σ-bounded fraction's bias at a target fraction.
+
+    A9 replaced the kernel's unbounded ``softplus`` bioavailability with ``σ``,
+    so the init is a logit, not an inverse softplus.
+    """
+    return math.log(p / (1.0 - p))
 
 
 def compute_time_features(t_minutes: torch.Tensor) -> torch.Tensor:

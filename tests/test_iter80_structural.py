@@ -2,12 +2,22 @@
 
 Two changes under test:
 
-1. Learned model — structural glucose rate-of-appearance term
-   (``MetabolicModule.log_ra``): a meal must raise blood glucose in
-   proportion to the gut glucose-appearance flux, by construction, instead
-   of relying on the glucose SpeciesHead MLP to discover the amplitude
-   against the fasting-equilibrium constraint (the iter-79 amplitude gap:
-   ~0.16 mg/dL/g realised vs the 0.7 dose-response target).
+1. Learned model — structural glucose rate-of-appearance: a meal must raise
+   blood glucose in proportion to the gut glucose-appearance flux, by
+   construction, instead of relying on the glucose SpeciesHead MLP to discover
+   the amplitude against the fasting-equilibrium constraint (the iter-79
+   amplitude gap: ~0.16 mg/dL/g realised vs the 0.7 dose-response target).
+
+   The GAIN moved. Iter 80 put it in ``MetabolicModule.log_ra``; A10 (PLAN.md)
+   deleted that, because meal amplitude carried three multiplying per-person
+   gains — the gut kernel's bioavailability, ``Ra``, and ``1/V_G`` via body mass
+   — and glucose data identifies only their product (measured: scaling Ra and
+   body mass together by 1.2 moves glucose 0.18 mg/dL). The single surviving
+   gain is the gut kernel's bioavailable FRACTION, which A9 bounded by 1 so that
+   absorbed ≤ ingested holds by construction. These tests therefore assert the
+   same four properties against ``GutModuleBase`` instead: the gain exists and is
+   positive, it is silent with no meal, raising it raises the peak, and the
+   dose-response gradient reaches it.
 
 2. Teacher — hepatic-output split + glycogen->ketosis coupling
    (``full_body``): conservation-exact at the fed calibration state (acute
@@ -49,18 +59,35 @@ def _glucose_peak(model: ModularPhysiologyNetwork, carbs: float) -> float:
 
 
 class TestGlucoseAppearanceTerm(unittest.TestCase):
-    def test_param_exists_and_positive_gain(self) -> None:
+    """The meal-appearance gain, at its A10 home: the gut kernel's bioavailability."""
+
+    @staticmethod
+    def _set_carb_fraction(model: ModularPhysiologyNetwork, fraction: float) -> None:
+        """Pin the carbohydrate channel's bioavailable fraction to ``fraction``.
+
+        The kernel's last layer emits mixture logits then one bioavailability
+        logit per macro, so the carbohydrate one is the first output after the
+        mixture block. Written through the bias with the weights left alone, so
+        the change is uniform over embeddings.
+        """
+        k = model.gut.kernel
+        n_logit = k.N_MACROS * k.n_basis
+        with torch.no_grad():
+            k.kernel[-1].bias[n_logit] = math.log(fraction / (1.0 - fraction))
+
+    def test_gain_exists_and_is_a_positive_fraction(self) -> None:
         m = ModularPhysiologyNetwork()
-        self.assertTrue(hasattr(m.metabolic, "log_ra"))
-        ra = torch.nn.functional.softplus(m.metabolic.log_ra.detach())
-        self.assertGreater(float(ra), 0.0, "rate-of-appearance gain must be strictly positive")
+        frac = m.gut.kernel.bioavailable_fraction(
+            m.embedding_projections["gut"](torch.zeros(m.embedding_dim)))
+        self.assertEqual(tuple(frac.shape), (3,))
+        self.assertTrue(bool((frac > 0.0).all()), "bioavailable fraction must be strictly positive")
+        self.assertTrue(bool((frac < 1.0).all()), "A9: absorbed cannot exceed ingested")
 
     def test_silent_when_fasted(self) -> None:
-        """No meal => gut appearance ~0 => the Ra APPEARANCE term must not move glucose.
+        """No meal => gut appearance ~0 => the appearance term must not move glucose.
 
-        Iter 97: Ra is ONLY the meal-appearance gain (grams <-> mg/dL is the
-        constant MG_DL_PER_G for everyone), so a no-meal rollout is byte-identical
-        for any Ra; the appearance flux itself is pinned at exactly zero as well.
+        The flux is pinned at exactly zero, and the gain is then irrelevant: a
+        no-meal rollout is identical for any bioavailability.
         """
         m = ModularPhysiologyNetwork()
         emb = torch.zeros(m.embedding_dim)
@@ -75,27 +102,25 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
             tf = compute_time_features(torch.arange(180.0) + 360.0)
             f = m.metabolic.fluxes(ns[:, met_idx], coupling, ext, e_met, tf)
         self.assertEqual(float(f["appearance_plasma"].abs().sum()), 0.0,
-                         "Ra appearance term must be exactly silent with no meal")
+                         "appearance term must be exactly silent with no meal")
         peak_default = _glucose_peak(m, carbs=0.0)
-        with torch.no_grad():
-            m.metabolic.log_ra.copy_(torch.tensor(-30.0))  # softplus ~ 0
+        self._set_carb_fraction(m, 1e-6)
         peak_off = _glucose_peak(m, carbs=0.0)
         self.assertAlmostEqual(peak_default, peak_off, places=3,
-                               msg="Ra term changed fasting glucose; it must be silent with no meal")
+                               msg="appearance gain changed fasting glucose; it must be silent")
 
     def test_amplitude_increases_with_gain(self) -> None:
-        """A higher appearance gain must raise the postprandial glucose peak."""
+        """A higher bioavailable fraction must raise the postprandial glucose peak."""
         m = ModularPhysiologyNetwork()
-        with torch.no_grad():
-            m.metabolic.log_ra.copy_(torch.tensor(math.log(0.1)))
+        self._set_carb_fraction(m, 0.1)
         low = _glucose_peak(m, carbs=60.0)
-        with torch.no_grad():
-            m.metabolic.log_ra.copy_(torch.tensor(math.log(1.0)))
+        self._set_carb_fraction(m, 0.95)
         high = _glucose_peak(m, carbs=60.0)
-        self.assertGreater(high, low + 1.0, "higher Ra gain must raise the 60 g glucose peak")
+        self.assertGreater(high, low + 1.0,
+                           "a higher bioavailable fraction must raise the 60 g glucose peak")
 
     def test_gradient_reaches_gain(self) -> None:
-        """The amplitude is now a parameter the dose-response gradient can move."""
+        """The amplitude is a parameter the dose-response gradient can move."""
         m = ModularPhysiologyNetwork()
         emb = torch.zeros(m.embedding_dim)
         init = torch.tensor(NORM_CENTER, dtype=torch.float32)
@@ -105,8 +130,11 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
         traj = integrate(m, init, emb, 120, dt=1.0, start_time_minutes=360.0, meals=meals, gut_outputs=gut)
         loss = (traj[:, gi].max() - 140.0) ** 2  # "peak should be higher"
         loss.backward()
-        self.assertIsNotNone(m.metabolic.log_ra.grad)
-        self.assertNotEqual(float(m.metabolic.log_ra.grad), 0.0)
+        bias_grad = m.gut.kernel.kernel[-1].bias.grad
+        self.assertIsNotNone(bias_grad)
+        n_logit = m.gut.kernel.N_MACROS * m.gut.kernel.n_basis
+        self.assertNotEqual(float(bias_grad[n_logit]), 0.0,
+                            "the carbohydrate bioavailability logit must receive gradient")
 
 
 def _run_teacher(duration_min, meals, params):

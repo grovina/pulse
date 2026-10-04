@@ -49,7 +49,6 @@ from ..knowledge.full_body import (
 )
 from ..knowledge.physiology_rules import PhysiologyRule
 from ..model import integrate, precompute_gut_outputs
-from ..modules import metabolic as _met
 from ..modules.gut import MealEvent
 from ..physiology_rules_loss import rule_context_for_arm
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
@@ -502,6 +501,16 @@ class RolloutEvidenceSignal(TrainingSignal):
         results = cohort_statistic_loss_groups(
             model, build_emb_list(), prepared,
             input_dropout=float(ctx.input_dropout), rng=ctx.rng,
+            # A7 (PLAN.md): only the SAMPLED rows are population draws. `build_emb_list`
+            # appends the zero embedding last, and zero is the median person, not a draw
+            # — scoring it inside a population mean biases the estimator toward the
+            # median (a lognormal outcome's mean sits above it) and corrupts the
+            # sampling-variance term the debias subtracts, since a fixed member `d` away
+            # from the mean turns the estimate into `bias² + 2·bias·d/B`. It is still
+            # rolled out; it is simply not evidence about a population mean. None here
+            # means "no sampled rows", i.e. the zero-only batch, which is scored as
+            # before because the median person is then all the batch holds.
+            n_population=(len(sampled_pids) if sampled_pids is not None else None),
         )
         step_loss = None
         for group_specs in group_list:
@@ -796,10 +805,15 @@ class RolloutEvidenceSignal(TrainingSignal):
         initial = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
         initial = initial.unsqueeze(0).repeat(P, 1)
         e_met = model.embedding_projections["metabolic"](emb)
-        b_emb = _met._GLUCOSE_BASELINE_MAX_Z * torch.tanh(
-            model.metabolic.glucose_baseline_net(e_met).squeeze(-1)
-        )
-        gb_raw = NORM_CENTER[_GLUCOSE] + float(NORM_SCALE[_GLUCOSE]) * b_emb
+        # Start each patient at their OWN fasting setpoint, via the module's own
+        # decode. This rebuilt `_GLUCOSE_BASELINE_MAX_Z · tanh(head)` by hand until
+        # A1 (PLAN.md) moved Gb into the lognormal family the teacher draws it from;
+        # the constant no longer exists, and a hand-rebuilt decode would have gone on
+        # silently disagreeing with the module's for as long as the two matched in
+        # shape. No test reaches this line — `tests/test_training_signals.py` builds
+        # the signal with `targets={}`, which returns before here — so the stale form
+        # would have surfaced as an AttributeError only once training ran.
+        gb_raw = model.metabolic.glucose_setpoint_raw(e_met)
         initial = initial.clone()
         initial[:, _GLUCOSE] = gb_raw
 

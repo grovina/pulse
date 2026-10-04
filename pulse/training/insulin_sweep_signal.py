@@ -247,13 +247,34 @@ class InsulinSweepSignal(TrainingSignal):
     """Direct distillation of metabolic-module rates against cold-model curves.
 
     Pre-computes cold targets at construction (closed-form, fast). Per
-    epoch: stack zero embedding plus a sampled subset of patient
-    embeddings into one batched call to ``model.metabolic`` for each
-    sweep point, compute mse / rank / auc losses, backward + step.
+    epoch: stack the supervised embeddings into one batched call to
+    ``model.metabolic`` for each sweep point, compute mse / rank / auc losses,
+    backward + step.
+
+    Supervises the ZERO embedding only (PLAN A6). All seven target rates come
+    from ``PatientParams()`` — the teacher's median person (PLAN section 2) — so
+    they state the median person's GSIR, clearance, lipolysis, ketogenesis and
+    hepatic-output curves, which is exactly what zero means. Until PLAN A6,
+    ``sample_patients = 4`` also scored four SAMPLED rows per step against those
+    same rates: from epoch 0, at the spec's 0.30 weight, a pull of each sampled
+    patient's metabolic rates onto the median person's, opposed to the
+    per-patient Gb / setpoint supervision and erasing the between-person
+    variation in secretion and clearance that the teacher draws per patient. The
+    4 predates iter 12 and was never tuned (the iter-32 review lists the flag as
+    vestigial).
+
+    A nonzero ``sample_patients`` is still honoured, but it is the wrong
+    experiment until each sampled row is scored against its OWN ``PatientParams``
+    (PLAN B4, per-row targets) — so this is a scoping fix, not an abandonment of
+    per-patient rate supervision. Every loss term is a mean over rows, so one row
+    also removes the 1/5 it put on the zero row's gradient: at an unchanged weight
+    the pull at zero is 5x the old one.
     """
 
     n_patients: int = 0
-    sample_patients: int = 4
+    # 0: zero embedding only. A sampled row is scored against the DEFAULT
+    # patient's rates, i.e. pulled toward the median person (PLAN A6).
+    sample_patients: int = 0
     include_default_embedding: bool = True
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     protocol: InsulinSweepProtocol = field(default_factory=InsulinSweepProtocol)
