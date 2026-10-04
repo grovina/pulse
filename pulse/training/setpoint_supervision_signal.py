@@ -45,17 +45,56 @@ Only patients whose episode carries ground-truth setpoints are supervised (the f
 teacher); other contributions do not simulate a whole patient and are skipped. Default
 patients use the zero embedding, whose zero-init heads already decode to NORM_CENTER —
 which is exactly PatientParams()'s resting state — so they need no supervision.
+
+PLAN A4/B1 (2026-10-04) — A SECOND TARGET DICT FOR THE QUANTITIES THAT ARE NOT MARKERS.
+``targets`` is keyed by marker id and compared in z-units, which is only defined for a
+quantity that HAS a NORM_SCALE. Body mass and B1's insulin-sensitivity family
+(``si``, ``glyc_ins_k``, ``gamma``, ``k_ins``, ``act_insulin_sens``) have none: they are
+rate constants and gate IC50s, not measurements. They arrive in ``param_targets``, kept
+separate for the reason the teacher keeps ``Episode.setpoints`` and
+``Episode.patient_params`` separate — one is observable and one is a parameter — and the
+keys are the teacher's own, so ``rec["patient_params"]`` goes in unchanged.
+
+The frame is the LOG-RATIO TO EACH SIDE'S OWN DEFAULT: ``log(pred/student_centre)``
+against ``log(target/PatientParams_default)``. Three things follow.
+
+  * It is the space the teacher DRAWS them in (``vary`` is ``val·exp(σ·z)``), so a
+    residual here is a residual in the generative coordinate, and it is the frame the
+    student's own decoders are built in (``centre·exp(L·tanh(head))``, PLAN §1).
+  * It is the only frame in which the student's ``si`` and the teacher's ``Si`` are the
+    same quantity at all: the student's is per NORMALIZED insulin unit, i.e. exactly
+    10× the teacher's per-µU/mL value, and the two defaults absorb that ratio. Nothing
+    else in this signal needs to know about the normalization.
+  * A 2× error costs (log 2)² = 0.48 on EVERY parameter. Dividing by each quantity's
+    own σ instead would cost 1.9 on Si (σ 0.5) and 7.7 on glyc_ins_K (σ 0.25) for the
+    same 2× miss — i.e. it would weight the NARROWEST quantity hardest, which is
+    backwards: Si is the axis that carries 22.5 % of between-person glucose iAUC on its
+    own (measured over 150 teacher patients; see ``modules/metabolic.py``), and
+    glyc_ins_K is narrow precisely because the teacher varies it less.
+
+The two halves are averaged over their own observed pairs and summed, so adding six
+parameters does not dilute the per-marker pull that the existing weight was tuned for.
+``param_targets`` empty is a no-op: the trainer wires it in a separate change.
+
+Body mass is here because it had a head and NO supervision — the one per-person head
+that did active harm, since it scales mg/dL per gram through V_G and so multiplied meal
+amplitude exactly as the deleted ``Ra`` gain did (measured: ×1.2 on both moves glucose
+0.18 mg/dL, i.e. only the product was identified). A10 deleted ``Ra``; this identifies
+what is left with the teacher's own kg.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import torch
 import torch.nn as nn
 
+from ..knowledge.full_body import PatientParams
 from ..modules import cardiovascular as _cvs
 from ..modules import thermoreg as _thm
+from ..modules.metabolic import PERSON_PARAM_CENTERS
 from ..types import MARKER_INDEX, NORM_CENTER, NORM_SCALE
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
@@ -65,19 +104,50 @@ _CVS_MARKERS = ("hr", "hrv", "sbp", "dbp")
 _GLUCOSE = "glucose"
 _TEMP = "temp"
 
+# A4/B1 — `Episode.patient_params` key -> the PatientParams field it was recorded from.
+# The student's own centre for the same key is `PERSON_PARAM_CENTERS` (metabolic.py);
+# the pair defines the log-ratio frame, and the ONLY entry where the two differ is
+# `si` (0.004 vs 4e-4 = the 10× insulin normalization, see the module docstring).
+_TEACHER_FIELD: dict[str, str] = {
+    "body_mass_kg": "body_mass_kg",
+    "si": "Si",
+    "glyc_ins_k": "glyc_ins_K",
+    "gamma": "gamma",
+    "k_ins": "n",
+    "act_insulin_sens": "act_insulin_sens",
+}
+_PARAMS: tuple[str, ...] = tuple(_TEACHER_FIELD)
+# Read once at import: a teacher default that moves must move the frame with it, not
+# silently rescale every residual.
+_TEACHER_DEFAULTS: dict[str, float] = {
+    k: float(getattr(PatientParams(), f)) for k, f in _TEACHER_FIELD.items()
+}
+
 
 def _z(marker: str, raw: float) -> float:
     idx = MARKER_INDEX[marker]
     return (raw - NORM_CENTER[idx]) / float(NORM_SCALE[idx])
 
 
+def _log_ratio(key: str, raw: float) -> float:
+    """A teacher draw in the frame the decode is compared in: ``log(raw/default)``."""
+    return math.log(raw / _TEACHER_DEFAULTS[key])
+
+
 @dataclass
 class SetpointSupervisionSignal(TrainingSignal):
-    """MSE, in z-units, between each patient's decoded and true resting setpoints."""
+    """MSE between each patient's decoded and true per-person physiology: resting
+    setpoints in z-units (``targets``), and the quantities that have no NORM_SCALE in
+    log-ratio-to-default units (``param_targets``, A4/B1 — see the module docstring)."""
 
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     # pid -> {marker_id: raw setpoint}. Only patients with a learned embedding row.
     targets: dict[int, dict[str, float]] = field(default_factory=dict)
+    # pid -> {patient_params key: raw teacher value}, i.e. `rec["patient_params"]`
+    # unchanged. Empty = no-op (A4/B1; the trainer wires it separately). Keys this
+    # model has no decode for are ignored, so the teacher can record more than the
+    # student can represent without breaking the run.
+    param_targets: dict[int, dict[str, float]] = field(default_factory=dict)
 
     name: str = "setpoint_supervision"
     source: str = "Iter 90 recovery test: embedding->physiology map was not invertible"
@@ -93,11 +163,11 @@ class SetpointSupervisionSignal(TrainingSignal):
         ctx: SignalContext,
     ) -> SignalResult:
         w = self.weight_at(ctx.epoch)
-        if w <= 0 or not self.targets:
+        if w <= 0 or (not self.targets and not self.param_targets):
             return SignalResult()
 
         device = ctx.device
-        pids = sorted(self.targets)
+        pids = sorted(set(self.targets) | set(self.param_targets))
         pid_t = torch.tensor(pids, dtype=torch.long, device=device)
         emb = embeddings(pid_t)  # [P, EMBEDDING_DIM]
 
@@ -133,7 +203,7 @@ class SetpointSupervisionSignal(TrainingSignal):
         tgt_rows: list[list[float]] = []
         mask_rows: list[list[float]] = []
         for p in pids:
-            sp = self.targets[p]
+            sp = self.targets.get(p, {})
             tgt_rows.append([_z(m, sp[m]) if m in sp else 0.0 for m in markers])
             mask_rows.append([1.0 if m in sp else 0.0 for m in markers])
         tgt_z = torch.tensor(tgt_rows, dtype=torch.float32, device=device)   # [P, 6]
@@ -156,6 +226,35 @@ class SetpointSupervisionSignal(TrainingSignal):
                 s = float(NORM_SCALE[MARKER_INDEX[m]])
                 err = ((pred_z[:, j] - tgt_z[:, j]).abs() * mj).sum() / mj.sum()
                 sub[f"{m}_mae"] = float(err * s)
+
+        # --- A4/B1: the per-person quantities that are not markers, in log-ratio units ---
+        if self.param_targets:
+            pp = model.metabolic.person_params(e_met)
+            pred_lr = torch.stack(
+                [torch.log(pp[k] / PERSON_PARAM_CENTERS[k]) for k in _PARAMS], dim=-1)
+            p_tgt_rows: list[list[float]] = []
+            p_mask_rows: list[list[float]] = []
+            for p in pids:
+                tp = self.param_targets.get(p, {})
+                ok = [k in tp and float(tp[k]) > 0.0 for k in _PARAMS]
+                p_tgt_rows.append(
+                    [_log_ratio(k, float(tp[k])) if o else 0.0 for k, o in zip(_PARAMS, ok)])
+                p_mask_rows.append([1.0 if o else 0.0 for o in ok])
+            p_tgt = torch.tensor(p_tgt_rows, dtype=torch.float32, device=device)
+            p_mask = torch.tensor(p_mask_rows, dtype=torch.float32, device=device)
+            p_resid = pred_lr - p_tgt
+            # Its own mean, then summed: six parameters must not halve the gradient the
+            # markers already get (the weight was tuned on the markers alone).
+            param_loss = (p_mask * p_resid.pow(2)).sum() / p_mask.sum().clamp_min(1.0)
+            loss = loss + param_loss
+            with torch.no_grad():
+                sub["param_loss"] = float(param_loss)
+                for j, k in enumerate(_PARAMS):
+                    mj = p_mask[:, j]
+                    if float(mj.sum()) == 0.0:
+                        continue
+                    # Unit-free and readable as a fraction: 0.10 is a 10 % miss.
+                    sub[f"{k}_logmae"] = float((p_resid[:, j].abs() * mj).sum() / mj.sum())
 
         accumulate_grad(
             w * loss,

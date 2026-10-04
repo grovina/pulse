@@ -95,6 +95,75 @@ basal readout is unchanged.
 so is ``Gb = 95·exp(±0.45·tanh(head))`` — both decoded in the lognormal family
 the teacher draws them from, so zero is the median person and the population
 mean sits above it (PLAN §1).
+
+B1 (PLAN §3) — THE INSULIN-SENSITIVITY FAMILY IS PER PERSON, AND MUSCLE IS NOT
+LIVER. Five quantities now decode from the embedding as
+``population_scalar · exp(L·tanh(head))`` with a zero-init head, the same
+lognormal family as Gb and Ib and for the same reason — the teacher DRAWS all
+five lognormally, so a zero-mean code must decode to the MEDIAN and the
+population mean must sit above it, which Jensen gives for free and an additive
+decode cannot give at all:
+
+    si            peripheral (muscle) Si   teacher Si               σ0.5   L 1.25
+    hep_ins_k     hepatic gate IC50        teacher glyc_ins_K       σ0.25  L 0.75
+    gamma         β-cell gain              teacher gamma            σ0.3   L 0.75
+    k_ins         insulin clearance        teacher n                σ0.3   L 0.75
+    act_ins_sens  exercise sensitisation   teacher act_insulin_sens σ0.3   L 0.75
+
+L is 2.5σ of the teacher's own draw, except the hepatic gate's 3σ, which covers
+its clip ([12, 50] around 25) end to end. Measured over 4,000
+``randomize_params`` draws the teacher's ±2σ log-ratios are Si [−1.00, +0.98],
+glyc_ins_K [−0.49, +0.50], gamma [−0.61, +0.60], n [−0.60, +0.60] and
+act_insulin_sens [−0.59, +0.60] against the reachable ±1.25 / ±0.75, so no
+sampled patient sits on a bound. A zero embedding decodes to the population
+scalar exactly, so the cold start is bit-identical to iter 109.
+
+This is the item the plan is about. The PRD's own example of individual
+variation is "exact insulin sensitivity", and through iter 109 all four of the
+student's copies were ONE population scalar. Measured over 150 sampled teacher
+patients after a 75 g mixed meal, incremental AUC over the 240 min after the
+meal: corr(log Si, glucose iAUC) = −0.48, i.e. Si alone explains 22.5 % of
+between-person glucose iAUC and 20.7 % of insulin iAUC, and the bottom-vs-top Si
+decile is 6114 vs 3215 = 1.90× on glucose and 6491 vs 2990 = 2.17× on insulin.
+(PLAN's headline 34 % / 31 % is the same quantity measured on TOTAL post-meal
+AUC — corr −0.58, R² 33.8 % — which also carries the fasting level, and Gb loads
++0.50 on the same insulin-resistance latent that Si loads −0.70 on, so part of
+that share is Gb. The direction, the decile ratio and the conclusion are
+unchanged: it is the largest single axis by a wide margin.) The student could
+imitate that only through meal amplitude, so glucose and insulin both moved for
+the wrong reason, and no insulin-sensitising intervention (training, metformin,
+weight loss, sleep) had a lever to act on. It now realizes 1.77× between those
+same two Si deciles, against 1.81× on the teacher's own pure-Si sweep.
+
+Muscle and liver are SEPARATE quantities, not one "insulin sensitivity": ``si``
+multiplies ``xa`` into ``uptake_id`` (peripheral disposal) while the hepatic
+factor moves the IC50 of both hepatic gates (``g_ins_glyco``, ``g_ins_gng``).
+Donga 2010's clamp after sleep restriction is peripheral −29 % with hepatic
+essentially unchanged, which is not expressible at all if the two are one
+number — PLAN §3 records that as the reason the carve is exactly here, and C3's
+sleep debt is the consumer. ONE factor moves BOTH hepatic gates: the teacher
+varies only ``glyc_ins_K`` (``gng_ins_K`` is 80 for every patient), so a second
+per-person decode on the GNG gate would be a head no ground truth can reach —
+the iter-109 glucagon-basal failure mode — whereas one liver with one insulin
+sensitivity costs one degree of freedom that ``glyc_ins_k`` supervises.
+
+``act_ins_sens`` is not a re-parameterization: the teacher's ``si_effective =
+Si·(1 + act_insulin_sens·act)`` had NO counterpart here, so acute exercise
+reached glucose only through the insulin-INDEPENDENT ``exercise_uptake`` and did
+not sensitise insulin action at all. It enters where the teacher puts it, INSIDE
+the remote-insulin lag (``xa_rate``), not at the uptake site: the teacher's tape
+writes ``insulin_action`` as ``X/(Si·10)``, which is exactly this product with
+Si divided out, and ``cold_model_distillation_signal`` scores the student's
+column against it — a gain applied after the lag would leave the student short
+by ``(1 + act_ins_sens·act)`` for every minute of every bout, and would
+sensitise instantly where the teacher ramps with τ = 1/p2 = 50 min. At the
+median 0.3 a moderate bout (act 0.5) raises insulin-dependent uptake 15 % and a
+maximal one 30 %.
+
+All five are supervised against the teacher's own draw by
+``SetpointSupervisionSignal`` (PLAN A4), in log-ratio-to-default units; without
+that they would be five free per-person heads, which is the disease PLAN is
+about.
 Insulin is not mass-action. A learned basal × Hill could sit above Ib in a
 fast (iter 100: 48 h ended at 12.2 µU/mL against the teacher's 3.8). The
 rate is the teacher's restoring law:
@@ -103,15 +172,16 @@ rate is the teacher's restoring law:
     dI            = −k_ins · (I − effective_Ib) + γ · mod · relu(G − Gb) · incretin
 
 GSIR is identically 0 at G ≤ Gb; fasting insulin is attracted to the
-glucose-gated basal, not a learned floor. ``k_ins`` and ``γ`` are population
-scalars (init 0.15 / 0.05, the teacher's ``n`` / ``gamma``); ``mod`` is a
-learned state-dependent gain. The thresholds that leaked (glycogen catabolic
+glucose-gated basal, not a learned floor. ``k_ins`` and ``γ`` are per-person
+about a population scalar (centre 0.15 / 0.05, the teacher's ``n`` / ``gamma``;
+B1 above); ``mod`` is a learned state-dependent gain. The thresholds that leaked (glycogen catabolic
 gates) are DELETED, not clamped: muscle breakdown is ``relu(act − 0.10)``,
 liver breakdown is the insulin gate above. ``mitochondrial_capacity`` has
 ONE role — a scale on the clearance of lactate — and no other
-head sees it. ``insulin_action`` is lagged ``(I − Ib)/10``, signed; it is not
-a concentration, so ``raw_state`` does not floor it at 0. The only bound on
-how negative it can drive glucose is ``x_eff = max(Si·X, −0.05·k_ii)``.
+head sees it. ``insulin_action`` is lagged ``(1 + act_ins_sens·act)·(I − Ib)/10``,
+signed; it is not a concentration, so ``raw_state`` does not floor it at 0. The
+only bound on how negative it can drive glucose is
+``x_eff = max(Si·X, −0.05·k_ii)``.
 BHB is the teacher's ketogenesis, not a mass-action head plus a rectifier
 on FFA excess (iter 101: insulin tracked the 48 h teacher at 3.15 vs 3.83
 and BHB still ended at 0.23 vs 3.14):
@@ -276,7 +346,8 @@ _IB_LOG_MAX = 0.9
 # because it cancels at the glucose fixed point.
 _K_II = 2.0 / (VG_DL_PER_KG * 95.0)
 # Si: RAW per-minute per normalized-insulin-unit; X = Si·Xa with Xa the lagged
-# signed (I − Ib)/10. Band brackets the Bergman literature range with margin.
+# signed (I − Ib)/10. Band brackets the Bergman literature range with margin —
+# the band bounds the POPULATION centre; B1's per-person factor multiplies it.
 _SI_MIN = 0.0005
 _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
@@ -313,7 +384,15 @@ _GN_FROM_AMINO = 0.02
 _K_MITO = 1.0 / (14.0 * 1440.0)
 _MITO_TRAIN_GAIN = 2.0e-5
 _MITO_LOG_MAX = 0.4
-_MASS_LOG_MAX = 0.25
+# Body mass: 70·exp(±0.45·tanh) ∈ [44.6, 109.8] kg. A4/B1 — 0.25 reached only
+# [54.5, 89.9], and the teacher clips mass at [52, 110] with 1.7 % of 4,000 draws
+# ABOVE 89.9 (max 110.0): those patients sat on a saturated tanh, where the head has
+# no gradient and the decoded mass is simply wrong. 0.45 leaves 0.025 % outside.
+# Widening it is only safe now: A10 deleted the `Ra` gain mass was confounded with
+# (×1.2 on both moved glucose 0.18 mg/dL, i.e. the pair was flat), and this iteration
+# supervises mass against the teacher's own kg, so the span is identified rather than
+# free. Zero still decodes to 70 kg, so no default person moves.
+_MASS_LOG_MAX = 0.45
 _FFA_LOG_MAX = 0.5
 # Fasting insulin: the teacher's restoring law (Polonsky 1988; PatientParams.n / gamma /
 # fast_ins_exp / fast_ins_floor). Not a learned Hill on a mass-action basal.
@@ -321,6 +400,37 @@ _FAST_INS_EXP = 5.0
 _FAST_INS_FLOOR = 0.25
 _K_INS_INIT = 0.15
 _GAMMA_INIT = 0.05
+# B1 (PLAN §3) — the per-person log HALF-WIDTHS of the insulin-sensitivity family.
+# Each decode is `population_scalar · exp(L·tanh(head))`, so the reachable factor is
+# [e^−L, e^+L] about whatever the scalar holds and the zero code decodes to the
+# scalar exactly. L = 2.5σ of the teacher's own draw; realized σ(log) over 4,000
+# `randomize_params` draws is 0.499 / 0.247 / 0.301 / 0.303 / 0.297 against the
+# declared 0.5 / 0.25 / 0.3 / 0.3 / 0.3, and the teacher's ±2σ log-ratios measured
+# on the same draws are:
+#   si            L 1.25 → ×[0.287, 3.490]   [−1.00, +0.98]
+#   hep_ins_k     L 0.75 → ×[0.472, 2.117]   [−0.49, +0.50] — 3σ, chosen so the span
+#                   also covers the teacher's CLIP [12, 50] = [−0.73, +0.69] end to
+#                   end: 0 of 4,000 draws is unreachable
+#   gamma         L 0.75 → ×[0.472, 2.117]   [−0.61, +0.60]
+#   k_ins         L 0.75 → ×[0.472, 2.117]   [−0.60, +0.60]
+#   act_ins_sens  L 0.75 → ×[0.472, 2.117]   [−0.59, +0.60] — here the clip's FLOOR
+#                   (0.1, i.e. −1.10 = 3.7σ) is below the span's 0.142, which bounds
+#                   the 0.5 % of draws the clip's own lower tail produces
+# so every span contains ±2σ with margin — the tightest is gamma's lower edge at 0.46σ
+# (0.137 in log units), the loosest the hepatic gate's 1.0σ — and no sampled patient
+# saturates a tanh. Wider is not free: the span IS the per-person authority, and PLAN
+# §3's rule is that authority needs the evidence that identifies it
+# (`SetpointSupervisionSignal`).
+_SI_LOG_MAX = 1.25
+_HEP_INS_K_LOG_MAX = 0.75
+_GAMMA_LOG_MAX = 0.75
+_K_INS_LOG_MAX = 0.75
+_ACT_INS_SENS_LOG_MAX = 0.75
+# Teacher `si_effective = Si·(1 + act_insulin_sens·act)` (full_body.py). The student
+# had NO activity term on insulin action at all, so this population scalar is new
+# rather than moved; 0.3 is the teacher's default (clip [0.1, 0.6], loading fit +0.35,
+# i.e. exercise sensitisation is itself a trainable adaptation).
+_ACT_INS_SENS_INIT = 0.3
 # --- glycogen pools --------------------------------------------------------------------
 _LIVER_GLY_CENTER = NORM_CENTER[MARKER_INDEX["liver_glycogen"]]      # 100 g
 _MUSCLE_GLY_CENTER = NORM_CENTER[MARKER_INDEX["muscle_glycogen"]]    # 400 g
@@ -380,6 +490,31 @@ _K_GN_INIT = 0.03             # teacher k_gn (τ ≈ 33 min)
 _ALPHA_GN_INIT = 3.5          # teacher alpha_gn
 _GN_INS_INIT = 0.4            # teacher coefficient on (I − Ib) / (Ib + 10)
 _GN_INS_OFFSET = 10.0
+
+
+# B1/A4 — the student's MEDIAN PERSON for every quantity `person_params` decodes, i.e.
+# the value a zero embedding gets. `SetpointSupervisionSignal` compares the decode
+# against the teacher's draw as a log-ratio to each side's own default, and this is the
+# student's half of that frame: it is what makes `si` (per normalized insulin unit) and
+# the teacher's `Si` (per µU/mL) the same quantity despite the 10× normalization.
+PERSON_PARAM_CENTERS: dict[str, float] = {
+    "body_mass_kg": BODY_MASS_KG,
+    "si": _SI_INIT,
+    "glyc_ins_k": _GLYC_INS_K_INIT,
+    "gamma": _GAMMA_INIT,
+    "k_ins": _K_INS_INIT,
+    "act_insulin_sens": _ACT_INS_SENS_INIT,
+}
+# The log half-width of each decode above, for whoever needs to know what is reachable
+# (the span tests, and a calibration that wants to know when a target is out of range).
+PERSON_PARAM_LOG_MAX: dict[str, float] = {
+    "body_mass_kg": _MASS_LOG_MAX,
+    "si": _SI_LOG_MAX,
+    "glyc_ins_k": _HEP_INS_K_LOG_MAX,
+    "gamma": _GAMMA_LOG_MAX,
+    "k_ins": _K_INS_LOG_MAX,
+    "act_insulin_sens": _ACT_INS_SENS_LOG_MAX,
+}
 
 
 def _logit(p: float) -> float:
@@ -534,6 +669,8 @@ class MetabolicModule(MassActionModule):
         self.log_k_ins = nn.Parameter(torch.tensor(_inverse_softplus(_K_INS_INIT)))
         self.log_gamma = nn.Parameter(torch.tensor(_inverse_softplus(_GAMMA_INIT)))
         self.log_si = nn.Parameter(torch.tensor(_logit((_SI_INIT - _SI_MIN) / _SI_RANGE)))
+        # B1: the teacher's `act_insulin_sens`, which the student had no counterpart for.
+        self.log_act_ins_sens = nn.Parameter(torch.tensor(_inverse_softplus(_ACT_INS_SENS_INIT)))
         self.log_p2 = nn.Parameter(torch.tensor(_logit((_P2_INIT - _P2_MIN) / _P2_RANGE)))
         self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
         # Ketogenesis: IC50 on absolute insulin (µU/mL) and keto_max. The
@@ -566,6 +703,15 @@ class MetabolicModule(MassActionModule):
         self.body_mass_net = _zero_head()          # kg; 70 at zero embedding
         self.ffa_baseline_net = _zero_head()
         self.mito_setpoint_net = _zero_head()
+        # B1: the insulin-sensitivity family, each a log FACTOR on its population
+        # scalar (so a zero code is bit-identical to iter 109). `hepatic_ins_k_net`
+        # moves both hepatic gate IC50s together — one liver, one insulin
+        # sensitivity — and is separate from `insulin_sens_net`, which is muscle.
+        self.insulin_sens_net = _zero_head()         # si, peripheral
+        self.hepatic_ins_k_net = _zero_head()        # glyc_ins_K and gng_ins_K
+        self.beta_cell_gain_net = _zero_head()       # γ
+        self.insulin_clearance_net = _zero_head()    # k_ins
+        self.act_insulin_sens_net = _zero_head()     # act_insulin_sens
 
     # ---- per-patient setpoints -------------------------------------------------------
 
@@ -612,6 +758,46 @@ class MetabolicModule(MassActionModule):
         return torch.exp(
             _MITO_LOG_MAX * torch.tanh(self.mito_setpoint_net(embedding).squeeze(-1)))
 
+    @staticmethod
+    def _person_factor(net: nn.Module, log_max: float, embedding: torch.Tensor) -> torch.Tensor:
+        """``exp(L·tanh(head(e)))`` — the per-person log factor every B1 decode shares.
+
+        Positive for every embedding including the ‖e‖ = 8 calibration clamp, bounded
+        by ``[e^−L, e^+L]`` because tanh saturates, and exactly 1 at a zero-init head.
+        """
+        return torch.exp(log_max * torch.tanh(net(embedding).squeeze(-1)))
+
+    def person_params(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        """The per-person quantities under the teacher's OWN keys (B1 + A4).
+
+        These are the keys of ``Episode.patient_params``, so
+        ``SetpointSupervisionSignal`` can compare the decode against the teacher's
+        draw without a translation table on the model side. ``si`` is in the
+        student's frame (per NORMALIZED insulin unit, hence 10× the teacher's ``Si``);
+        the supervision compares log-ratios to each side's own median person, which
+        is the only frame in which the two are the same quantity.
+
+        ``hep_ins_k_factor`` is dimensionless and multiplies BOTH hepatic gate IC50s
+        (see the module docstring on why one factor, not two heads).
+        """
+        hep = self._person_factor(self.hepatic_ins_k_net, _HEP_INS_K_LOG_MAX, embedding)
+        glyc_k = nn.functional.softplus(self.log_glyc_ins_k) * hep
+        return {
+            "body_mass_kg": self.body_mass_kg(embedding),
+            "si": ((_SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si))
+                   * self._person_factor(self.insulin_sens_net, _SI_LOG_MAX, embedding)),
+            "glyc_ins_k": glyc_k,
+            "gng_ins_k": nn.functional.softplus(self.log_gng_ins_k) * hep,
+            "hep_ins_k_factor": hep,
+            "gamma": (nn.functional.softplus(self.log_gamma)
+                      * self._person_factor(self.beta_cell_gain_net, _GAMMA_LOG_MAX, embedding)),
+            "k_ins": (nn.functional.softplus(self.log_k_ins)
+                      * self._person_factor(self.insulin_clearance_net, _K_INS_LOG_MAX, embedding)),
+            "act_insulin_sens": (
+                nn.functional.softplus(self.log_act_ins_sens)
+                * self._person_factor(self.act_insulin_sens_net, _ACT_INS_SENS_LOG_MAX, embedding)),
+        }
+
     def k_ii(self) -> torch.Tensor:
         return self.log_si.new_tensor(_K_II)
 
@@ -628,7 +814,8 @@ class MetabolicModule(MassActionModule):
         """Per-patient setpoints and the population scalars of the balance."""
         gb = self.glucose_setpoint_raw(embedding)
         ib = self.insulin_setpoint_raw(embedding)
-        mass_kg = self.body_mass_kg(embedding)
+        pp = self.person_params(embedding)
+        mass_kg = pp["body_mass_kg"]
         mg = 1000.0 / (mass_kg * VG_DL_PER_KG)
         ffa_b = self.ffa_setpoint_raw(embedding)
         gn_b = self.gn_setpoint_raw(embedding)
@@ -642,12 +829,15 @@ class MetabolicModule(MassActionModule):
             "gb": gb, "ib": ib, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
             "ffa_b": ffa_b, "gn_b": gn_b, "mito_sp": mito_sp,
             "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": k_ii.new_tensor(_F_GNG),
-            "glyc_k": nn.functional.softplus(self.log_glyc_ins_k),
-            "gng_k": nn.functional.softplus(self.log_gng_ins_k),
-            "si": _SI_MIN + _SI_RANGE * torch.sigmoid(self.log_si),
+            # B1: four of these are per-person factors on their population scalar,
+            # decoded once in `person_params` so nothing recomputes a head.
+            "glyc_k": pp["glyc_ins_k"],
+            "gng_k": pp["gng_ins_k"],
+            "si": pp["si"],
             "k_act": _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act),
-            "k_ins": nn.functional.softplus(self.log_k_ins),
-            "gamma": nn.functional.softplus(self.log_gamma),
+            "k_ins": pp["k_ins"],
+            "gamma": pp["gamma"],
+            "act_ins_sens": pp["act_insulin_sens"],
             "p2": _P2_MIN + _P2_RANGE * torch.sigmoid(self.log_p2),
             "ic50_keto": ic50_keto, "k_keto": k_keto,
             "k_bhb": (k_keto * ffa_b / (1.0 + ib / ic50_keto)) / _BHB_CENTER,
@@ -688,6 +878,13 @@ class MetabolicModule(MassActionModule):
             "app_eff": app_g * const["mg_dl_per_g"],
             "act_above_rest": relu(act - _MUSCLE_ACT_REST),
             "exercise_gain": const["k_act"] * act,
+            # B1: the teacher's `si_effective = Si·(1 + act_insulin_sens·act)`. `act`
+            # is an external input and the sensitivity is a per-person constant, so
+            # the product is a drive and `state_fluxes` reads it rather than reaching
+            # for `external` again. `relu` on `act`, not on the product: a malformed
+            # negative activity would otherwise be able to INVERT insulin action,
+            # which is the catastrophe wall `x_eff`'s floor exists to keep away from.
+            "ins_sens_act_gain": 1.0 + const["act_ins_sens"] * relu(act),
             "fat_rate": (kcal_in - kcal_out) / _KCAL_PER_KG_FAT,
             "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
             "glucagon_from_amino": _GN_FROM_AMINO * amino_app,
@@ -766,7 +963,14 @@ class MetabolicModule(MassActionModule):
         ins_gsir = c["gamma"] * gsir_mod * relu(g - gb) * incretin
         ins_restoring = -c["k_ins"] * (ins - effective_ib)
         ins_rate = ins_restoring + ins_gsir
-        xa_rate = c["p2"] * (insulin_dev - xa)
+        # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
+        # which is the teacher's `dX = −p2·X + p3·(I − Ib)` with `p3 = Si_eff·p2`
+        # exactly (divide both by Si: the student's `xa` is Si-free by construction).
+        # Putting the gain here and not on `uptake_id` is what makes the student's
+        # `insulin_action` column the same quantity the teacher writes on its tape
+        # (`X/(Si·10)`), and gives the sensitisation the teacher's τ = 1/p2 ramp
+        # instead of switching it on the minute a bout starts.
+        xa_rate = c["p2"] * (insulin_dev * d["ins_sens_act_gain"] - xa)
 
         # A11: hepatic_output is RELEASE INTO PLASMA, so the gluconeogenic carbon
         # routed into glycogen (`gng_divert`) is not part of it. The marker's own
@@ -823,7 +1027,8 @@ class MetabolicModule(MassActionModule):
             "g_cort": g_cort, "g_ffa": g_ffa, "g_g": g_g,
             "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
             "ins_gsir": ins_gsir, "ins_restoring": ins_restoring, "ins_rate": ins_rate,
-            "xa": xa, "xa_rate": xa_rate, "hep_target": hep_target, "hep_rate": hep_rate,
+            "xa": xa, "xa_rate": xa_rate, "xa_drive": insulin_dev * d["ins_sens_act_gain"],
+            "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis, "glyco_depletion": glyco_depletion,
             "bhb_rate": bhb_rate, "mito_rate": mito_rate,
             "lactate_from_glyco": lactate_from_glyco, "lactate_rate": lac_rate,

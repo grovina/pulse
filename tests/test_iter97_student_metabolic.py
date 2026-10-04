@@ -144,14 +144,19 @@ class TestGlycogenGates(unittest.TestCase):
     def test_liver_breakdown_has_no_ungated_channel(self) -> None:
         """glycogenolysis = (1 − f_gng)·EGP_b·(LGly/LGly_b)·g_ins·g_gn·g_G, and the
         insulin gate is the teacher's basal-normalized IC50: exactly 1 at I = Ib, 1/(1+(I/K)^2)-
-        shaped above it, → 0 at high insulin. The liver head does not scale it."""
+        shaped above it, → 0 at high insulin. The liver head does not scale it.
+
+        B1: K is the PER-PERSON hepatic IC50, so the gate must be rebuilt from the
+        decode (`person_params`), not from the population scalar — with the hepatic
+        head perturbed the two differ by up to e^±0.75, and reading the scalar here
+        would be the same silent wrong answer A1 found in the Gb supervision."""
         m = _model(4, perturb=1.0)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
         with torch.no_grad():
             ib = met.insulin_setpoint_raw(emb)
-            k = torch.nn.functional.softplus(met.log_glyc_ins_k)
-        for excess in (0.0, 10.0 * float(k)):
+            k = met.person_params(emb)["glyc_ins_k"]
+        for excess in (torch.zeros_like(k), 10.0 * k, 100.0 * k):
             s = state.clone()
             s[:, M._INSULIN_IDX] = (ib + excess - 10.0) / 10.0
             with torch.no_grad():
@@ -423,14 +428,18 @@ class TestSignedInsulinAction(unittest.TestCase):
     def test_negative_insulin_action_reaches_glucose_as_a_floored_source(self) -> None:
         m = _model(11, perturb=0.0)
         met = m.metabolic
-        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0)
+        # B1: `act=0` so the activity sensitisation is exactly 1 and `uptake_id` is the
+        # decoded Si alone — the gain lives in `xa_rate`, not here, but a bout would
+        # still move `xa` and this test is about the floor, not about exercise.
+        state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0, act=0.0)
         state[0, M._GLUCOSE_IDX] = 0.0
         state[0, M._INSULIN_ACTION_IDX] = -0.05
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
+            si = float(met.person_params(emb)["si"])
         g = 95.0
         self.assertLess(float(f["uptake_id"]), 0.0)
-        si = float((M._SI_MIN + M._SI_RANGE * torch.sigmoid(met.log_si)).item())
+        self.assertAlmostEqual(float(f["ins_sens_act_gain"]), 1.0, places=7)
         self.assertAlmostEqual(float(f["uptake_id"]), si * -0.05 * g, places=6)
         floor = -M._INS_DEP_BASAL_FRAC * float(f["k_ii"])
         state[0, M._INSULIN_ACTION_IDX] = -20.0
