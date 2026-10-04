@@ -436,10 +436,10 @@ def train(
     dose_response_sample_patients: int = 4,
     dose_response_markers: tuple[MarkerDoseTarget, ...] = (),
     gut_dose_sweep_weight: float = 0.0,
-    gut_dose_sweep_sample_patients: int = 4,
+    gut_dose_sweep_sample_patients: int = 0,
     gut_dose_sweep_auc_weight: float = 1.0,
     insulin_sweep_weight: float = 0.0,
-    insulin_sweep_sample_patients: int = 4,
+    insulin_sweep_sample_patients: int = 0,
     insulin_sweep_auc_weight: float = 1.0,
     insulin_sweep_ranking_weight: float = 1.0,
     setpoint_supervision_weight: float = 0.0,
@@ -1805,8 +1805,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gut-dose-sweep-sample-patients",
         type=int,
-        default=4,
-        help="Patient embeddings sampled per epoch for the gut dose sweep (zero embedding always included).",
+        default=0,
+        help="Patient embeddings sampled per epoch for the gut dose sweep, IN ADDITION to the zero embedding. 0 (the default since PLAN.md A6) means zero only: the sweep's targets come from PatientParams(), the DEFAULT patient, so scoring sampled rows against them pulled every patient toward the median person's absorption kernel. Per-row targets return as PLAN B4.",
     )
     parser.add_argument(
         "--gut-dose-sweep-auc-weight",
@@ -1840,8 +1840,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--insulin-sweep-sample-patients",
         type=int,
-        default=4,
-        help="Patient embeddings sampled per epoch for the insulin sweep (zero embedding always included).",
+        default=0,
+        help="Patient embeddings sampled per epoch for the insulin sweep, IN ADDITION to the zero embedding. 0 (the default since PLAN.md A6) means zero only, for the same reason as the gut sweep: its seven metabolic-rate targets are the DEFAULT patient's.",
     )
     parser.add_argument(
         "--insulin-sweep-auc-weight",
