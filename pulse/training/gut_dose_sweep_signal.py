@@ -19,9 +19,9 @@ training signal nominally supervised the gut, but only indirectly:
 
 This signal closes that gap: it directly supervises ``model.gut.forward_window``
 against the analytical cold-model absorption profile across an explicit
-dose sweep, at the zero embedding (and a few sampled patients). One
-vectorized kernel call per (embedding, dose) pair — cheap, focused,
-gradient lands exactly on the gut pipeline (kernel + gut embedding projection).
+dose sweep, at the zero embedding. One vectorized kernel call per
+(embedding, dose) pair — cheap, focused, gradient lands exactly on the gut
+pipeline (kernel + gut embedding projection).
 """
 
 from __future__ import annotations
@@ -107,13 +107,29 @@ class GutDoseSweepSignal(TrainingSignal):
     against the matching cold target and MSE-step the gut kernel +
     embedding projection.
 
-    Always supervises the zero embedding (the benchmark uses it) plus a
-    random subset of patient embeddings so the kernel learns the *shape*
-    of the dose response across the embedding manifold, not just at zero.
+    Supervises the ZERO embedding only (PLAN A6). The targets are built from
+    ``PatientParams()`` — the teacher's median person (PLAN section 2) — so they
+    state the median person's dose-response shape, which is exactly what zero
+    means. Until PLAN A6, ``sample_patients = 4`` also scored four SAMPLED rows per
+    step against those same targets: from epoch 0, at the spec's 0.10 weight, a
+    pull of each sampled patient's absorption kernel onto the median person's,
+    opposed to the per-patient setpoint supervision and erasing per-person
+    absorption (in the teacher, absorption rates explain 12-28 % of
+    between-person meal-peak variance). The 4 predates iter 12 and was never
+    tuned (the iter-32 review lists the flag as vestigial).
+
+    A nonzero ``sample_patients`` is still honoured, but it is the wrong
+    experiment until each sampled row is scored against its OWN ``PatientParams``
+    (PLAN B4, per-row targets) — so this is a scoping fix, not an abandonment of
+    per-patient absorption supervision. Every loss term is a mean over rows, so
+    one row also removes the 1/5 it put on the zero row's gradient: at an
+    unchanged weight the pull at zero is 5x the old one.
     """
 
     n_patients: int = 0
-    sample_patients: int = 4
+    # 0: zero embedding only. A sampled row is scored against the DEFAULT
+    # patient's profile, i.e. pulled toward the median person (PLAN A6).
+    sample_patients: int = 0
     include_default_embedding: bool = True
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     protocol: GutDoseSweepProtocol = field(default_factory=GutDoseSweepProtocol)
@@ -207,9 +223,11 @@ class GutDoseSweepSignal(TrainingSignal):
           the integral collapses the time dimension before squaring.
 
         ``n_inversions_at_zero_emb`` counts pairs (i, j) where the pred AUC
-        on the ranked channel at the *first* batch element (the zero
-        embedding under ``include_default_embedding``) violates the cold
-        target's dose ordering.
+        on the ranked channel at the *last* batch element (the zero embedding
+        under ``include_default_embedding``: ``select_supervised_embeddings``
+        appends it after the sampled rows, so with ``sample_patients > 0`` the
+        first element is a sampled patient) violates the cold target's dose
+        ordering.
         """
         device = abs_scale.device
         per_dose_mse = []
@@ -245,7 +263,7 @@ class GutDoseSweepSignal(TrainingSignal):
         auc_loss = ((pred_aucs - auc_targets) / auc_scale).pow(2).mean()
 
         with torch.no_grad():
-            zero_aucs = pred_aucs[:, 0, 0]
+            zero_aucs = pred_aucs[:, -1, 0]
             # An inversion is "the lower-dose embedding (i) shows more AUC than
             # the higher-dose one (j)" on a pair where the cold target itself
             # ranks j > i (i.e. ``rank_mask[i, j] > 0``).

@@ -3,8 +3,9 @@ Differentiable cohort statistic losses for population-level priors.
 
 Rolls the modular model forward under each arm's protocol per sampled
 patient embedding, extracts a scalar statistic per arm (mean, peak,
-soft-argmax time), and penalizes the squared z-score versus the literature
-target: ``((predicted - target) / sigma) ** 2``.
+soft-argmax time), and penalizes the squared z-score of the BATCH MEAN versus
+the literature target at its standard error, less the batch's own sampling
+variance (``score_batch_statistic``: iter 97, corrected by PLAN A7).
 
 This is the PRD's cohort / summary-statistic supervision in concrete
 form — quantitative effect sizes, not just orderings. Slope-vs-dose
@@ -303,29 +304,120 @@ def shaped_residual(pred_mean: torch.Tensor, spec: CohortStatisticSpec) -> torch
     raise ValueError(f"Unknown target shape: {spec.shape}")
 
 
-def score_batch_statistic(
+def _check_n_population(n_population: int | None, n_members: int) -> int:
+    """How many leading members are population draws: ``n_population``, else all.
+
+    ``None`` and ``0`` both mean "no restriction". ``0`` is the zero-only batch of
+    ``sample_patients = 0``: there are no draws, so the median person is the only
+    evidence the batch holds and it is scored as before.
+    """
+    if n_population is None or n_population == 0:
+        return n_members
+    if n_population < 0 or n_population > n_members:
+        raise ValueError(
+            f"n_population={n_population} must lie in [0, {n_members}]: "
+            f"the first n of the {n_members} supervised members are population draws",
+        )
+    return int(n_population)
+
+
+def _debiased_sq_residual(
     pred: torch.Tensor, spec: CohortStatisticSpec,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """``(mean, resid, resid^2 - s^2/B)`` for population draws ``pred[B]``.
+
+    The third value is the UNFLOORED estimate of the squared (shaped) bias --
+    ``score_batch_statistic`` floors it. At ``B == 1`` it is ``resid^2``.
+    """
+    B = int(pred.shape[0])
+    mean = pred.mean()
+    resid = shaped_residual(mean, spec)
+    est = resid.pow(2)
+    if B >= 2:
+        est = est - pred.var(correction=1) / B
+    return mean, resid, est
+
+
+def score_batch_statistic(
+    pred: torch.Tensor, spec: CohortStatisticSpec, n_population: int | None = None,
 ) -> tuple[torch.Tensor, float, float]:
-    """Loss for a batch of per-embedding statistics ``pred[B]`` (iter 97, review 4.3).
+    """Loss for a batch of per-embedding statistics ``pred[B]`` (iter 97, review 4.3; PLAN A7).
 
     A cohort statistic is a claim about a POPULATION MEAN. The loss therefore
     scores the batch mean against the target with the standard error of a
     mean of ``n`` subjects, ``sem = sigma / sqrt(n)`` (``n`` = ``spec.n_arm``
-    or the batch size). Until iter 97 every individual was scored against the
-    individual sigma, so between-patient spread that the literature itself
-    reports set an irreducible floor (``Var_between / sigma^2``: 4.8 for
-    small_carb_glucose_peak, 3.6 for ogtt_120min) that no correct model could
-    remove, and the gradient pushed every patient toward the mean.
+    or the number of population members). Until iter 97 every individual was
+    scored against the individual sigma, so between-patient spread that the
+    literature itself reports set an irreducible floor (``Var_between / sigma^2``:
+    4.8 for small_carb_glucose_peak, 3.6 for ogtt_120min) that no correct model
+    could remove, and the gradient pushed every patient toward the mean.
 
-    Returns ``(loss, pred_mean, z)`` with ``z`` the shaped residual over the
-    INDIVIDUAL sigma — the same number the teacher audit reports.
+    Iter 97 kept that floor in expectation. For ``B`` members drawn from the
+    model's population (mean ``mu``, between-person variance ``v`` of the
+    statistic), ``bias = mu - target`` and ``resid = mean(pred) - target``,
+
+        E[resid^2] = bias^2 + Var(mean) = bias^2 + v / B.
+
+    The second term is charged every step and is cut by making members more ALIKE,
+    not more accurate. Against ``sem^2 = sigma^2 / n`` it is ``v / sigma^2`` when
+    ``n = B`` (the per-individual floor again, with the bias term ``B`` times
+    heavier) and ``v / (B sigma^2)`` for the seven ``n_arm = 1`` specs, whose sigma
+    is a published standard error while individuals spread 2.5-8x wider:
+    (2.5..8)^2 / B, or (2/9)(2.5..8)^2 = 1.4-14 for the old "2 sampled rows + zero"
+    batch, where only the two sampled rows vary.
+
+    The loss therefore subtracts the estimator's own sampling variance. With
+    ``s^2`` the unbiased (``1/(B-1)``) sample variance of ``pred``, E[s^2] = v, so
+
+        E[resid^2 - s^2 / B] = (bias^2 + v / B) - v / B = bias^2.
+
+    Equivalently ``resid^2 - s^2/B`` is the mean of ``(x_i - target)(x_j - target)``
+    over ordered pairs ``i != j``: independent draws share no deviation, so each
+    pair's expectation is ``bias^2`` (at ``B = 2`` it is the product of the two
+    residuals, positive only when both members sit on the same side of the target).
+    ``band`` / ``at_most`` / ``at_least`` apply the same expression to the shaped
+    residual: exact away from the allowed region's edge, and 0 inside it.
+
+    The result is floored at zero. The floor is what makes this a LOSS rather than
+    an estimator: the estimate goes negative whenever the batch mean is nearer the
+    target than its own spread explains, which means "indistinguishable from the
+    target at this batch size", and the gradient of that is zero. The price is an
+    upward bias, ``E[(resid^2 - s^2/B)^-]``, so part of the shrinkage force
+    survives (Gaussian members, simulated): at zero bias a fraction 0.64 of the
+    un-debiased force at ``B = 2`` (exactly 2/pi; 0.58 at 3, 0.55 at 4, 0.48 as
+    ``B -> inf``), and at ``B = 2`` still 0.56, 0.22 and 0.03 of it at one, two and
+    three between-person sds of bias.
+
+    ``B == 1``: ``s^2`` is undefined -- a single member cannot separate bias from
+    spread -- so the batch is scored as before, ``resid^2 / sem^2``.
+
+    ``n_population``: only the first ``n_population`` members are population
+    draws; the mean, ``s^2`` and ``n`` are taken over those and the rest are
+    rolled out by the caller but not scored here. The zero embedding (appended
+    LAST by ``training.embedding_sampler``) is the MEDIAN person (PLAN section 2),
+    and a lognormal outcome's mean sits above its median (PLAN section 1: Si 1.14,
+    Ib 1.08, HRV0 1.09), so scoring it inside a population mean pulled the
+    estimator toward the median. It is also not a draw: with ``k`` draws plus one
+    fixed member ``d`` away from ``mu``, Var(mean) = k v / B^2 but
+    E[s^2 / B] = (k v + d^2) / B^2, and the debiased estimate becomes
+    ``bias^2 + 2 bias d / B``. Dropping it also drops its dilution of the variance
+    term (``2v/9`` -> ``v/2`` at two draws), and the floor does not win that back
+    at zero bias: the force on the between-person sd is 0.64 sd/sem^2 against the
+    old batch's 0.44 for the ``n_arm = 1`` specs, 1.27 sd/sigma^2 against 1.33 for
+    the ``n = B`` ones (Gaussian members, simulated; zero held at ``mu``).
+    ``None`` scores every member; so does ``0`` (no draws -- the median person is
+    all the batch holds, as under ``sample_patients = 0``).
+
+    Returns ``(loss, pred_mean, z)``: ``pred_mean`` over the population members and
+    ``z`` the shaped residual over the INDIVIDUAL sigma -- the same number the
+    teacher audit reports.
     """
+    pred = pred[: _check_n_population(n_population, int(pred.shape[0]))]
     B = int(pred.shape[0])
     n = int(spec.n_arm) if spec.n_arm is not None else max(B, 1)
     sem = float(spec.sigma) / (float(n) ** 0.5)
-    mean = pred.mean()
-    resid = shaped_residual(mean, spec)
-    loss = (resid / sem).pow(2)
+    mean, resid, est = _debiased_sq_residual(pred, spec)
+    loss = F.relu(est) / (sem * sem)
     pred_mean = float(mean.detach().item())
     z = float(resid.detach().item()) / float(spec.sigma)
     return loss, pred_mean, z
@@ -336,6 +428,7 @@ def cohort_statistic_loss_one_spec(
     embeddings_to_supervise: list[torch.Tensor],
     spec: CohortStatisticSpec,
     initial_state: torch.Tensor,
+    n_population: int | None = None,
 ) -> tuple[torch.Tensor, float, float]:
     """Batch-mean statistic scored against the target at its SEM (iter 97).
 
@@ -345,11 +438,13 @@ def cohort_statistic_loss_one_spec(
     residual_z_detached) — see ``score_batch_statistic``. The caller decides which embeddings deserve
     supervision (typically a sampled subset of patient embeddings plus the
     zero "default" embedding the benchmark uses) — see
-    ``training.embedding_sampler``.
+    ``training.embedding_sampler``. ``n_population`` says how many of them (the
+    first n) are population draws; the rest are rolled out but not scored.
     """
     if not embeddings_to_supervise:
         zero = torch.tensor(0.0, device=initial_state.device)
         return zero, 0.0, 0.0
+    _check_n_population(n_population, len(embeddings_to_supervise))  # before any rollout
 
     embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
     mi = MARKER_INDEX[spec.marker_id]
@@ -374,7 +469,7 @@ def cohort_statistic_loss_one_spec(
     else:
         raise ValueError(f"Unknown statistic kind: {spec.kind}")
 
-    return score_batch_statistic(pred, spec)
+    return score_batch_statistic(pred, spec, n_population)
 
 
 def cohort_statistic_loss_groups(
@@ -384,6 +479,7 @@ def cohort_statistic_loss_groups(
     *,
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
+    n_population: int | None = None,
 ) -> dict[str, tuple[torch.Tensor, float, float]]:
     """Batched per-spec losses for several spec GROUPS in one rollout.
 
@@ -398,9 +494,17 @@ def cohort_statistic_loss_groups(
     Returns ``{spec.name: (loss_tensor, predicted_mean, residual_z)}``. The losses
     share one autograd graph, so the caller sums the weighted per-spec losses and does
     ONE backward: gradient-identical, by linearity, to one backward per group.
+
+    ``n_population`` (PLAN A7): the first n of ``embeddings_to_supervise`` are
+    population draws and the rest (the zero embedding, which
+    ``training.embedding_sampler`` appends last) are not part of the scored mean. The
+    forward pass is unchanged -- every row is still rolled -- so a trailing zero keeps
+    whatever gradient other losses send through its row; only this loss stops reading
+    it. See ``score_batch_statistic``.
     """
     if not embeddings_to_supervise or not groups:
         return {}
+    _check_n_population(n_population, len(embeddings_to_supervise))  # before any rollout
     embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
     B = int(embs.shape[0])
 
@@ -442,7 +546,7 @@ def cohort_statistic_loss_groups(
                 pred = per_arm[1] - per_arm[0]
             else:
                 pred = per_arm[0]
-            out[spec.name] = score_batch_statistic(pred, spec)
+            out[spec.name] = score_batch_statistic(pred, spec, n_population)
     return out
 
 
@@ -455,13 +559,14 @@ def cohort_statistic_loss_group(
     *,
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
+    n_population: int | None = None,
 ) -> dict[str, tuple[torch.Tensor, float, float]]:
     """``cohort_statistic_loss_groups`` for one group of specs sharing one arm protocol."""
     if not specs:
         return {}
     return cohort_statistic_loss_groups(
         model, embeddings_to_supervise, [(specs, initial_states, arms_override)],
-        input_dropout=input_dropout, rng=rng,
+        input_dropout=input_dropout, rng=rng, n_population=n_population,
     )
 
 
@@ -471,12 +576,14 @@ def cohort_statistic_epoch_loss(
     specs: list[CohortStatisticSpec],
     device: torch.device | str,
     initial_state_fn: InitialStateFn | None = None,
+    n_population: int | None = None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
     """Weighted average loss across all specs and the supplied embeddings.
 
     ``initial_state_fn`` returns the integration starting state for a given
     spec. Defaults to ``norm_center_initial_state`` when not provided; pass a
-    cold-model-derived factory to mirror benchmark conditions.
+    cold-model-derived factory to mirror benchmark conditions. ``n_population``
+    is forwarded to every spec (see ``score_batch_statistic``).
 
     Returns (loss_tensor, per_spec_z_residuals).
     """
@@ -488,7 +595,7 @@ def cohort_statistic_epoch_loss(
     z_by_spec: dict[str, float] = {}
     for spec in specs:
         loss, _pred, z = cohort_statistic_loss_one_spec(
-            model, embeddings_to_supervise, spec, init_fn(spec),
+            model, embeddings_to_supervise, spec, init_fn(spec), n_population,
         )
         total = total + spec.weight * loss
         weight_sum += spec.weight

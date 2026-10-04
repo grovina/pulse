@@ -6,18 +6,26 @@ parameters move under positive weight, and a zero weight is a no-op.
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
+from unittest import mock
 
 import numpy as np
 import torch
 import torch.nn as nn
 
+from pulse import cohort_loss
 from pulse.knowledge.cohort_types import (
     CohortArmSpec,
     CohortStatisticSpec,
     StatisticKind,
     StatisticWindow,
 )
-from pulse.cohort_loss import cohort_statistic_loss_one_spec
+from pulse.cohort_loss import (
+    cohort_statistic_epoch_loss,
+    cohort_statistic_loss_group,
+    cohort_statistic_loss_groups,
+    cohort_statistic_loss_one_spec,
+)
 from pulse.model import ModularPhysiologyNetwork
 from pulse.training import (
     RolloutEvidenceSignal,
@@ -445,6 +453,118 @@ class TestCohortStatisticProtocolBatchingEquivalence(unittest.TestCase):
                     torch.allclose(p.grad, ref_g, atol=1e-6, rtol=1e-4),
                     msg=f"gradient mismatch on param shape {tuple(p.shape)}",
                 )
+
+
+def _short_glucose_spec() -> CohortStatisticSpec:
+    """40-minute fasted / fed arms: the cheapest protocol that still exercises gut -> glucose."""
+    return CohortStatisticSpec(
+        name="short_glucose_meal", source="test", description="test",
+        arms=(
+            CohortArmSpec(label="fasted", duration_min=40, start_hour=8.0, meals=()),
+            CohortArmSpec(label="fed", duration_min=40, start_hour=8.0, meals=((5.0, 50.0, 10.0, 15.0),)),
+        ),
+        marker_id="glucose", kind=StatisticKind.DELTA_MEANS,
+        window=StatisticWindow(start_min=20, end_min=38),
+        # ~5000 away from anything the toy model emits, so resid^2 >> s^2/B: the debiased
+        # loss is live and every gradient below is a real one, not a floored zero.
+        target=5000.0, sigma=10.0,
+    )
+
+
+class TestZeroEmbeddingLeavesThePopulationMean(unittest.TestCase):
+    """PLAN A7: the zero embedding is rolled out with the sampled rows but is not
+    part of the population-mean estimator (``n_population``)."""
+
+    @classmethod
+    def _grouped(cls, with_zero: bool, n_population: int | None):
+        """One backward through the grouped loss: (loss, mean, z, zero.grad, param grads)."""
+        cls.model.zero_grad(set_to_none=True)
+        zero = torch.zeros(EMBEDDING_DIM, requires_grad=True)
+        embs = [r.clone() for r in cls.rows] + ([zero] if with_zero else [])
+        out = cohort_statistic_loss_groups(
+            cls.model, embs, [([cls.spec], [cls.state], None)], n_population=n_population,
+        )
+        loss, mean, z = out[cls.spec.name]
+        loss.backward()
+        grads = {n: p.grad.clone() for n, p in cls.model.named_parameters() if p.grad is not None}
+        return float(loss.detach()), mean, z, zero.grad, grads
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        torch.manual_seed(5)
+        cls.model = _tiny_model()
+        cls.spec = _short_glucose_spec()
+        cls.state = torch.tensor(NORM_CENTER, dtype=torch.float32)
+        cls.rows = [torch.randn(EMBEDDING_DIM), torch.randn(EMBEDDING_DIM)]
+        cls.draws_only = cls._grouped(with_zero=False, n_population=None)
+        with mock.patch.object(cohort_loss, "rollout_arms", wraps=cohort_loss.rollout_arms) as spy:
+            cls.restricted = cls._grouped(with_zero=True, n_population=2)
+        cls.arm_rows = spy.call_args.args[1]
+        cls.everyone = cls._grouped(with_zero=True, n_population=None)
+
+    def test_scored_mean_is_the_two_draws_alone(self) -> None:
+        ref, got = self.draws_only, self.restricted
+        self.assertGreater(ref[0], 0.0, "test is trivial if the loss is floored")
+        self.assertAlmostEqual(got[0], ref[0], delta=abs(ref[0]) * 1e-4)
+        self.assertAlmostEqual(got[1], ref[1], delta=abs(ref[1]) * 1e-4 + 1e-4)
+        self.assertAlmostEqual(got[2], ref[2], delta=abs(ref[2]) * 1e-4 + 1e-6)
+        # ... and so are the gradients on the model: rows are independent in the rollout, so
+        # carrying the zero row along must not move the two draws' contribution.
+        self.assertEqual(set(got[4]), set(ref[4]))
+        self.assertGreater(len(ref[4]), 0)
+        for name, g in ref[4].items():
+            self.assertTrue(
+                torch.allclose(got[4][name], g, rtol=1e-3, atol=1e-5 * float(g.abs().max()) + 1e-9),
+                msg=f"gradient on {name} changed when the (unscored) zero row was rolled",
+            )
+
+    def test_including_zero_changes_the_scored_mean_so_the_restriction_does_something(self) -> None:
+        self.assertNotEqual(self.everyone[1], self.restricted[1])
+
+    def test_zero_row_is_still_rolled_out_but_receives_no_gradient_from_this_loss(self) -> None:
+        self.assertTrue(self.arm_rows)
+        for _arm, emb_batch, _state in self.arm_rows:
+            self.assertEqual(int(emb_batch.shape[0]), 3)  # 2 sampled + zero: forward pass unchanged
+            self.assertEqual(float(emb_batch[-1].detach().abs().sum()), 0.0)  # and the zero row is last
+        self.assertEqual(float(self.restricted[3].abs().sum()), 0.0)
+        self.assertGreater(float(self.everyone[3].abs().sum()), 0.0)
+
+    def test_one_spec_path_agrees(self) -> None:
+        zero = torch.zeros(EMBEDDING_DIM)
+        restricted = cohort_statistic_loss_one_spec(
+            self.model, [*self.rows, zero], self.spec, self.state, n_population=2,
+        )
+        self.assertAlmostEqual(
+            float(restricted[0].detach()), self.draws_only[0], delta=abs(self.draws_only[0]) * 1e-4,
+        )
+        self.assertAlmostEqual(restricted[1], self.draws_only[1], delta=abs(self.draws_only[1]) * 1e-4 + 1e-4)
+
+    def test_group_and_epoch_wrappers_forward_n_population(self) -> None:
+        zero = torch.zeros(EMBEDDING_DIM)
+        name, ref_loss, ref_mean, ref_z = self.spec.name, *self.draws_only[:3]
+        group = cohort_statistic_loss_group(
+            self.model, [*self.rows, zero], [self.spec], [self.state], n_population=2,
+        )
+        self.assertAlmostEqual(float(group[name][0].detach()), ref_loss, delta=abs(ref_loss) * 1e-4)
+        self.assertAlmostEqual(group[name][1], ref_mean, delta=abs(ref_mean) * 1e-4 + 1e-4)
+        total, z_by_spec = cohort_statistic_epoch_loss(
+            self.model, [*self.rows, zero], [self.spec], "cpu", lambda _spec: self.state, n_population=2,
+        )
+        self.assertAlmostEqual(float(total.detach()), ref_loss, delta=abs(ref_loss) * 1e-4)  # weight 1
+        self.assertAlmostEqual(z_by_spec[name], ref_z, delta=abs(ref_z) * 1e-4 + 1e-6)
+
+    def test_bad_n_population_fails_before_any_rollout(self) -> None:
+        zero = torch.zeros(EMBEDDING_DIM)
+        with mock.patch.object(cohort_loss, "rollout_arms") as spy:
+            with self.assertRaises(ValueError):
+                cohort_statistic_loss_groups(
+                    self.model, [*self.rows, zero], [([self.spec], [self.state], None)], n_population=4,
+                )
+            with self.assertRaises(ValueError):
+                cohort_statistic_loss_one_spec(
+                    self.model, [*self.rows, zero], self.spec, self.state, n_population=-1,
+                )
+        spy.assert_not_called()
 
 
 if __name__ == "__main__":
