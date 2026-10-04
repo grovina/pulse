@@ -43,6 +43,16 @@ class Episode:
                worse than simply predicting the population mean. Carrying the setpoints lets
                ``SetpointSupervisionSignal`` supervise the embedding's decoded physiology
                directly. ``None`` for contributions that do not model a whole patient.
+    patient_params: optional {name: value} — per-patient quantities that are NOT markers,
+               so they have no place in ``setpoints`` but are decoded from the embedding
+               just the same (body mass; the insulin-sensitivity family). Same argument as
+               ``setpoints`` one paragraph up, and the same measured failure behind it: a
+               per-patient head with no ground truth is free authority, and iter 109
+               measured where that ends — the glucagon-basal head walked the prior person
+               from 70 to 98 pg/mL while nothing downstream moved, because every hepatic
+               gate is normalized to the patient's OWN basal. The quantities here are the
+               ones the teacher varies per patient and the student had to either guess or
+               hold at a population constant. ``None`` as for ``setpoints``.
     """
     trajectory: np.ndarray
     meals: list[tuple[float, float, float, float]] = field(default_factory=list)
@@ -53,6 +63,7 @@ class Episode:
     absorption_profile: np.ndarray | None = None  # (n_steps, 4): glucose/lipid/amino appearance + nutrient flag
     source: str = ""
     setpoints: dict[str, float] | None = None
+    patient_params: dict[str, float] | None = None
     # Iter 91: this patient's TRUE postprandial response to a standard 75 g meal
     # (glucose_peak_rise mg/dL, glucose_time_to_peak_min). The per-patient meal AMPLITUDE
     # the student's Ra head needs -- iter-90 measured Ra frozen (std 0.01) because nothing

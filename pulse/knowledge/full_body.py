@@ -1976,6 +1976,49 @@ class FullBody(KnowledgeContribution):
                     # so its resting level now has a ground-truth target instead of having to be
                     # discovered from trajectories. temp is a thin-margin gate marker.
                     "temp": float(params.T0),
+                    # 2026-10-04 (PLAN.md A4): the rest of the per-patient heads the
+                    # student already HAS. Each of these is sampled per patient here and
+                    # was being discarded, so the corresponding head had no evidence that
+                    # could identify it; measured on the taped vitals, perturbing them
+                    # changes almost nothing (mito +30 % -> 0.015, cort_b +50 % -> 0.03
+                    # mg/dL, and RR0/SpO2_0 exactly 0, respiratory being a sink), which is
+                    # precisely why the trajectory loss cannot supervise them and a direct
+                    # target must. `insulin` is the BASAL Ib, not a resting observation.
+                    # `cortisol` is Cort_b, the REFERENCE the HPA feedback and the
+                    # gluconeogenic gate are centred on -- deliberately not the realized
+                    # 24 h mean, which for the default patient is 8.95 against a Cort_b of
+                    # 12, since both teacher and student use the declared basal as the
+                    # gate's origin.
+                    "insulin": float(params.Ib),
+                    "ffa": float(params.FFA_b),
+                    "cortisol": float(params.Cort_b),
+                    "rr": float(params.RR0),
+                    "spo2": float(params.SpO2_0),
+                    "mitochondrial_capacity": float(params.mito_0),
+                },
+                # 2026-10-04 (PLAN.md A4/B1): per-patient quantities that are not markers.
+                # `body_mass_kg` is the one that currently does active harm: it scales
+                # mg/dL per gram through V_G, so it multiplies meal amplitude exactly as
+                # the Ra gain does, and measured, scaling both by 1.2 together moves
+                # glucose by 0.18 mg/dL -- the two are confounded and only their product
+                # is identified. Supervising mass (and deleting Ra, PLAN.md A10) breaks
+                # that degeneracy with the teacher's own number.
+                # The insulin-sensitivity family is here for B1: the teacher varies all
+                # four per patient (Si sigma 0.5 loading ir -0.70, the strongest single
+                # axis in the population; glyc_ins_K sigma 0.25 ir +0.40 -- hepatic
+                # insulin resistance; gamma and n sigma 0.3), while the student holds all
+                # four at ONE population scalar. Measured over 150 sampled patients, Si
+                # alone explains 34 % of between-person glucose iAUC and 31 % of insulin
+                # iAUC after a 75 g meal, bottom-vs-top decile 2.3x / 2.2x. It is the
+                # PRD's own example of individual variation and the student cannot
+                # represent it.
+                patient_params={
+                    "body_mass_kg": float(params.body_mass_kg),
+                    "si": float(params.Si),
+                    "glyc_ins_k": float(params.glyc_ins_K),
+                    "gamma": float(params.gamma),
+                    "k_ins": float(params.n),
+                    "act_insulin_sens": float(params.act_insulin_sens),
                 },
                 # Iter 91: this patient's TRUE postprandial glucose peak-rise for a standard
                 # meal. Measured on iter-90: the student's per-patient meal gain (Ra) is FROZEN
