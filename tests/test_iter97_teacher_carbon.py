@@ -162,15 +162,70 @@ class TestFastedState(unittest.TestCase):
         t0 = int((19 - 6) * 60)
         return traj, t0
 
-    def test_fast_floor_is_absolute_not_proportional(self):
+    def test_fast_floor_is_absolute_below_the_typical_egp(self):
+        """2026-10-04 (PLAN.md Wave E, E1) REPLACES `..._absolute_not_proportional`.
+
+        Iter 97 asserted ONE band, 60-82 mg/dL, for Gb 70/95/130 at 48 h, plus a
+        spread below 0.35 of the fed spread. It could, because `Gng_b` was a
+        population constant -- and that is exactly what booked a high-Gb patient's
+        whole EGP excess to glycogenolysis and left it fed-ketotic at 1.60 mM BHB on
+        190 g carbohydrate/day (see PatientParams.f_gng). The floor is now absolute
+        only where gluconeogenesis is: at or below the population-typical EGP.
+
+        MEASURED at 48 h in this frame, before -> after: Gb 70 67.3 -> 67.3, Gb 95
+        75.1 -> 75.1 (both IDENTICAL -- `Gng_b` is unchanged for Hep_b <= EGP_TYPICAL),
+        Gb 130 73.6 -> 112.7. The spread/fed-spread the old test bounded is now 0.76,
+        so the guarantee that replaces it is the pair below: Cahill's band for every
+        patient whose EGP is at or under the typical, and `Gng_b` pinned there by
+        identity. A type-2 diabetic fasting 48 h does not reach 70 mg/dL, and the
+        73.6 that passed here was produced by emptying the liver by hour 24.
+        """
         g48 = {}
         for gb in (70.0, 95.0, 130.0):
             traj, t0 = self._fast(gb)
             g48[gb] = traj[t0 + 48 * 60 - 30: t0 + 48 * 60 + 30, MI["glucose"]].mean()
-        for gb, g in g48.items():
-            self.assertTrue(60.0 <= g <= 82.0, f"Gb {gb}: 48 h glucose {g:.1f}")
-        # The 48 h spread is a small fraction of the fed spread (proportional would be 1.0).
-        self.assertLess((g48[130.0] - g48[70.0]) / 60.0, 0.35)
+        for gb in (70.0, 95.0):
+            self.assertTrue(60.0 <= g48[gb] <= 82.0, f"Gb {gb}: 48 h glucose {g48[gb]:.1f}")
+        # Above the typical EGP the floor rises with the patient, but it still FALLS
+        # a long way from the fed setpoint and stays out of the fed range.
+        self.assertLess(g48[130.0], 130.0 - 10.0)
+        self.assertGreater(g48[130.0], g48[95.0])
+        # The parameter-level identity that makes the two low lines exact.
+        for gb in (70.0, 85.0, 95.0):
+            q = PatientParams(); q.Gb = gb; q = resolve_derived_params(q)
+            self.assertLessEqual(q.Hep_b, fb.EGP_TYPICAL_MG_KG_MIN + 1e-12)
+            self.assertAlmostEqual(q.Gng_b, q.f_gng * fb.EGP_TYPICAL_MG_KG_MIN, places=12)
+
+    def test_prolonged_fast_ketosis_stops_being_a_readout_of_gb(self):
+        """E1: 48 h BHB was MONOTONE in fasting glucose. Cahill 2006 says 2-3 mM.
+
+        MEASURED at 48 h after the day-0 dinner, before -> after, Gb 70 / 85 / 95 /
+        110 / 130:
+            before  0.67 / 1.92 / 3.04 / 3.86 / 3.96   (rising all the way)
+            after   0.67 / 1.92 / 3.04 / 2.56 / 2.19   (peaking at the typical EGP)
+        Before, a patient's 48 h ketosis was essentially a reading of its fasting
+        glucose, because its glycogenolytic flux was -- the pool of the Gb-110 and
+        Gb-130 patients was spent (3.5 g and 1.0 g at 48 h, i.e. the floor) and
+        `keto_glyc_gain`'s depletion gate was wide open. After, every patient at or
+        above the typical EGP is inside Cahill's 2-3 mM band and the pool is still
+        alive (13.6 g, 14.9 g).
+
+        The LOW-Gb shortfall (0.67 mM at 48 h against Cahill's 2-3) is unchanged and
+        PRE-EXISTING: that patient's Gng_b is iter 97's, it still has 63 g of liver
+        glycogen at 48 h, and closing it needs the glycogen pool sized per patient --
+        not this split.
+        """
+        bhb48 = {}
+        for gb in (70.0, 85.0, 95.0, 110.0, 130.0):
+            traj, t0 = self._fast(gb)
+            bhb48[gb] = float(traj[t0 + 48 * 60, MI["bhb"]])
+            # `bhb_plateau_capped` (Cahill 2006; Owen 1969) caps the trajectory at 5 mM.
+            self.assertLess(traj[t0:t0 + 48 * 60, MI["bhb"]].max(), 5.0, f"Gb {gb}")
+        # Hyperglycaemia no longer buys ketosis: above the typical EGP, 48 h BHB is in
+        # band and no higher than the median patient's.
+        for gb in (110.0, 130.0):
+            self.assertTrue(2.0 <= bhb48[gb] <= 3.0, f"Gb {gb}: 48 h BHB {bhb48[gb]:.2f}")
+            self.assertLessEqual(bhb48[gb], bhb48[95.0])
 
     def test_ghrelin_rises_in_a_fast(self):
         traj, t0 = self._fast(95.0)

@@ -116,6 +116,20 @@ class CalibrationSettings:
     huber_delta: float = 1.0
     # Accept the calibrated embedding only if held-out loss fell by this fraction.
     accept_rel_improvement: float = 0.01
+    # An accepted update must not make the FITTED points materially worse either.
+    # Acceptance is decided on the last `holdout_fraction` of DISTINCT check-in
+    # times, which for a sparse window is a single time — and a single time can
+    # improve by luck while the overall fit degrades. Measured on the D5 probe
+    # (8 synthetic patients, one 60-minute window, glucose-only observations): of
+    # 7 accepted windows, 2 ended with in-sample glucose MAE at or above the
+    # prior-mean embedding's, and one went from 0.112 to 0.416 mg/dL — 3.7x worse
+    # than not calibrating at all, accepted on the strength of one held-out point.
+    # The PRD asks to "accept updates only when validation loss improves
+    # meaningfully"; one point is not meaningful on its own, so the train loss is
+    # required not to regress past this fraction. 0.10 leaves room for a genuine
+    # regularisation trade (the prior pulling a little train loss for a better
+    # hold-out) while catching the pathology above by a wide margin.
+    accept_max_train_regression: float = 0.10
     checkpoint_segments: int = 0
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -134,6 +148,8 @@ class CalibrationSettings:
             huber_delta=_env_float("PULSE_BENCHMARK_HUBER_DELTA", cls.huber_delta),
             accept_rel_improvement=_env_float(
                 "PULSE_BENCHMARK_ACCEPT_REL_IMPROVEMENT", cls.accept_rel_improvement),
+            accept_max_train_regression=_env_float(
+                "PULSE_BENCHMARK_ACCEPT_MAX_TRAIN_REGRESSION", cls.accept_max_train_regression),
         )
         return replace(base, **overrides) if overrides else base
 
@@ -141,6 +157,10 @@ class CalibrationSettings:
         d = asdict(self)
         d["forward_map"] = "continuous [0, last_check_in] in the episode frame"
         d["loss"] = "huber(residual / NORM_SCALE) + prior + soft norm; hold-out on last check-in times"
+        d["acceptance"] = (
+            "held-out improves by accept_rel_improvement AND the fitted points do not "
+            "regress past accept_max_train_regression"
+        )
         return d
 
 
@@ -420,10 +440,20 @@ def calibrate_embedding(
                        val_data, baseline_train, baseline_val, final_loss, n_train, 0)
 
     improved = best_step > 0 and best_val <= baseline_val * (1.0 - st.accept_rel_improvement)
-    if improved:
+    # The held-out set is the last `holdout_fraction` of DISTINCT check-in times, so
+    # on a sparse window it can be ONE time, and one time can improve by luck while
+    # the fit degrades (see `accept_max_train_regression`). Require both.
+    train_regressed = (
+        st.accept_max_train_regression >= 0.0
+        and math.isfinite(best_train)
+        and math.isfinite(baseline_train)
+        and best_train > baseline_train * (1.0 + st.accept_max_train_regression)
+    )
+    if improved and not train_regressed:
         return _result(best_emb, True, "accepted", steps_run, best_step, best_train, best_val,
                        baseline_train, baseline_val, final_loss, n_train, n_val)
-    return _result(e0, False, "no_improvement", steps_run, 0, baseline_train, baseline_val,
+    reason = "train_regressed" if improved else "no_improvement"
+    return _result(e0, False, reason, steps_run, 0, baseline_train, baseline_val,
                    baseline_train, baseline_val, final_loss, n_train, n_val)
 
 

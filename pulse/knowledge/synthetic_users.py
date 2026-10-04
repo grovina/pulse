@@ -5,7 +5,32 @@ Each profile represents a distinct physiological archetype with specific
 parameter overrides. Sparse observation schedules mimic what a real user
 would actually log (a few glucose reads, occasional HR, meal logs, etc.)
 over a 14-day period.
+
+TWO FINDINGS RECORDED HERE RATHER THAN SILENTLY FIXED (2026-10-04).
+
+**Nothing consumes PROFILES.** Grepped across `pulse/`, `scripts/` and `tests/`:
+the only references are `tests/test_synthetic_user_overrides.py` and two comments
+in `full_body.py` explaining that two profiles overrode a dead parameter.
+`benchmark.py`'s `synthetic_users` argument is a different thing — dicts carrying
+`ground_truth` / `sparse_observations`, built elsewhere. So the trap these profiles
+posed (declaring a phenotype the teacher never reads) could not actually bite
+anything; it is fixed above anyway, because a fixture that is wrong while unused is
+a fixture that is wrong when revived.
+
+**The set does not span the population it is meant to represent.** Every profile's
+insulin sensitivity sits at or BELOW the teacher's default of 4e-4, which is the
+population MEDIAN (the teacher draws Si lognormally, so default = median):
+athletic_lean 4e-4 (exactly the median), healthy_active 3e-4, young_healthy 2.5e-4,
+sedentary_office 1.5e-4, elderly_moderate 1.2e-4, insulin_resistant 8e-5. The
+ORDERING is sensible; the level is not — the most insulin-sensitive profile here is
+the median person, so nothing in the set represents the upper half of the
+distribution, and the two profiles whose names promise health ("healthy_active",
+"young_healthy") are less insulin-sensitive than the typical person. A trained
+athlete should sit near 6e-4 (the teacher's +2 sd on the fitness axis). Left as a
+modeling decision for the owner rather than re-tuned here: the values are a claim
+about physiology, and changing them is not a side effect of fixing dead keys.
 """
+
 
 from dataclasses import dataclass
 
@@ -65,8 +90,21 @@ PROFILES = [
     UserProfile(
         name="shift_worker",
         description="Night shift worker with disrupted circadian rhythm",
+        # A shift worker's phenotype is a SHIFTED PHASE, not a damped amplitude, and
+        # this profile used to declare neither. It set `cort_circ_amp`, which iter 98
+        # stopped reading when it replaced the flat HPA block with the CRH -> ACTH ->
+        # cortisol cascade; `param_overrides` is applied by setattr, so the override
+        # silently created an orphan attribute and the profile had NO circadian change
+        # at all beyond its basal for 18 iterations. Wave E deleted the dead field, so
+        # the trap would now be a silent no-op rather than a silent no-op -- fixed by
+        # naming the parameters the cascade actually reads. `hpa_rise_start_h` /
+        # `hpa_peak_h` (defaults 2.0 / 6.5) are the phase; `acth_circ_amp` is the
+        # amplitude, and `crh_circ_amp` is derived from it by resolve_derived_params,
+        # which this module already calls.
         param_overrides={
-            "Cort_b": 14.0, "cort_circ_amp": 3.0,
+            "Cort_b": 14.0,
+            "hpa_rise_start_h": 12.0, "hpa_peak_h": 16.5,
+            "acth_circ_amp": 12.0,
             "HR0": 75.0, "HRV0": 32.0, "T0": 36.8,
             "Lep_b": 13.0, "Ghr_b": 120.0,
         },
@@ -75,8 +113,14 @@ PROFILES = [
         name="anxious_stress",
         description="Chronically stressed with elevated cortisol baseline",
         param_overrides={
-            "Cort_b": 18.0, "cort_circ_amp": 6.0,
+            # `cort_circ_amp` dropped: iter 98's cascade does not read it (Wave E
+            # deleted the field). This profile is about REACTIVITY, and the live knobs
+            # for that are `crh_fb_amp` (feedback strength), `hypo_acth` and
+            # `cort_activity`; the amplitude it already overrode, `acth_circ_amp`, is
+            # read.
+            "Cort_b": 18.0,
             "ACTH_b": 42.0, "acth_circ_amp": 12.0,
+            "crh_fb_amp": 0.25, "cort_activity": 0.55,
             "HR0": 80.0, "HRV0": 28.0,
             "SBP0": 130.0, "DBP0": 85.0,
             "Gb": 100.0,

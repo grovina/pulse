@@ -239,9 +239,51 @@ Teacher-side defects the analysis measured, plus the real-data gap.
   Gb-130 patient ends day 4 at 19 g liver glycogen and 1.6 mM BHB; ~20 % of
   sampled patients exceed 1 mM. This contradicts the teacher's own Magnusson-1992
   citation (the T2D excess is gluconeogenic). The student's fixed 50/50 share has
-  the same shape, milder. Fix: scale `Gng_b` with Gb so the share, not the
-  glycogenolytic flux, carries the excess.
-- Respiratory rate equilibrates at RR₀ + 50·activity (63 /min at 0.9).
+  the same shape, milder.
+  **This document's first prescription — "scale `Gng_b` with Gb" — was wrong, and
+  was measured to be wrong.** Proportional scaling across the whole range
+  re-creates the iter-93 / review-3.3 failure that iter 97 fixed: the Gb-130
+  patient then fasts to 97 mg/dL at 48 h (iter 93's exact number) and the Gb-70
+  patient to 60.7, breaking `glucose_fasting_floor` at 63.7 in the 24 h arm. The
+  excess must be split **one-sidedly about the population-typical EGP**:
+  `Gng_b = f_gng·min(Hep_b, 2.0) + relu(Hep_b − 2.0)`, so glycogenolysis absorbs
+  the deficit (iter 97's Cahill argument for an absolute prolonged-fast floor) and
+  gluconeogenesis absorbs the excess (Magnusson measured GNG higher *and* net
+  hepatic glycogenolysis lower in T2D). The sampled quantity becomes the *fraction*
+  `f_gng`, which is also what B5 needs a Beta prior over. Measured over 80
+  patients: day-4 BHB above 1 mM **26.3 % → 2.5 %**, corr(Gb, BHB) **+0.75 →
+  +0.12**, the Gb-130 patient's `extended_fast_bhb_overnight` **+6.39σ → +0.36σ**.
+  **The student still carries the defect**: `_F_GNG = 0.5` multiplies the patient's
+  own `egp_b = k_ii·gb`, so its fed high-Gb patient still spends its pool. Mirroring
+  the teacher's split there is parameter-free and differentiable.
+- **A separate defect this uncovered, which this plan mis-attributed.** Wave E
+  expected the fix to stop the default patient's liver glycogen drifting from 100 g.
+  It structurally cannot: the new split is an *identity* at the typical EGP, so the
+  default patient is bit-identical. The drift (−6 g/day, decaying to an ~82 g
+  asymptote, bounded not runaway) is a pre-existing imbalance in
+  `glyc_syn_frac_L` / `LGly_b` / the basal glycogenolytic flux, and
+  `extended_fast_liver_glycogen_level` is **+0.99σ for the default patient both
+  before and after**. The old Gb-coupled depletion had been *cancelling* that error
+  in the population mean, which is why no anchor caught it. Its own item, since
+  fixing it moves the 24 h-fast reference numbers.
+- **A third, in the residual.** The worst remaining fed-ketotic patient has Gb 96 —
+  a normal fasting glucose. `LGly_b` is sampled over 70–130 g against a fixed fed
+  carbohydrate load, so a large-pool patient permanently sits at ~45 % of its *own*
+  declared pool and `keto_glyc_gain`'s gate `1 + 13·(1 − LGly/LGly_b)` reads that as
+  a fast. The gate should read an absolute pool level, or `LGly_b` should co-vary
+  with intake.
+- **`extended_fast_liver_glycogen_level` may be the wrong anchor for this
+  population.** It is a healthy-cohort mean (60 ± 20 g at 16–22 h) applied to a
+  population spanning Gb 70–130. After the fix the population mean is 88 g (+1.40σ)
+  *because* high-Gb patients correctly hold their glycogen — which is what Magnusson
+  measured in T2D. Either the anchor needs a cohort restriction or the pool needs
+  re-sizing; the two errors were cancelling.
+- Respiratory rate equilibrated at RR₀ + 50·activity (63 /min at 0.9); **fixed**,
+  by moving both drives inside the relaxation as equilibrium offsets (the ×10 hidden
+  in 1/k_rr is how "5 /min" became 50) and saturating the activity term (Hill n=2),
+  since ventilation below the ventilatory threshold is carried mostly by tidal
+  volume. Equilibrium at act 0.9: **63.1 → 35.0** /min; minutes above the marker's
+  declared max of 40 across six 14-day episodes: **926 → 0**; resting value exact.
 - The habitual meal hours (9/13/20) sit *after* the generated meals (7–9, 12–14,
   18–20), so most "anticipatory" ghrelin arrives post-meal. C3 subsumes this.
 - `Cort_b` (12) is 3 µg/dL above the default patient's actual 24 h mean (8.95),
