@@ -415,11 +415,19 @@ class TestCohortStatisticProtocolBatchingEquivalence(unittest.TestCase):
         self.assertIn(2, [len(g) for g in groups.values()])
 
         # --- reference: iter-68 per-spec backward ---
+        # `n_population=2` matches what the signal passes (A7, PLAN.md): the two
+        # sampled rows are population draws and the trailing zero embedding is the
+        # median person, which is rolled out but not scored inside a population mean.
+        # This test is about GROUPING being equivalent to per-spec, so both paths have
+        # to agree on which members the statistic is over; without it the reference
+        # averages 3 members against the signal's 2 and the equivalence fails for a
+        # reason that has nothing to do with batching (measured: 249.1 vs 166.2).
+        n_population = 2
         opt.zero_grad(set_to_none=True)
         ref_raw = 0.0
         for spec in specs:
             loss_t, _, _ = cohort_statistic_loss_one_spec(
-                model, fresh_emb_list(), spec, init_fn(spec),
+                model, fresh_emb_list(), spec, init_fn(spec), n_population,
             )
             ((w * spec.weight / total_weight) * loss_t).backward()
             ref_raw += float(loss_t.detach()) * spec.weight

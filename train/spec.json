@@ -72,7 +72,7 @@
       "--carb-mass-balance-sample-patients=2",
       "--grad-clip=10.0",
       "--seed=42",
-      "--embedding-prior-center-weight=1.0"
+      "--embedding-prior-center-weight=10.0"
     ]
   }
 }
