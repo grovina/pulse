@@ -5,6 +5,10 @@ SBP 96.1 / DBP 97.1 and a 12 h rest rollout inverted for 716 of 720 min, and
 HRV pinned at the 0-ms clamp for hundreds of minutes on 2 of 8 random
 embeddings. These tests repeat both probes against the new parameterization
 (pulse pressure and HRV in log space; multiplicative integrator step).
+
+PLAN A1 moved the HR and DBP setpoints to log space as well; the ordering and
+positivity pins at the ‖e‖ = 8 calibration clamp, for all six decoded setpoints
+including respiratory's, live in tests/test_a1_log_setpoints.py.
 """
 
 from __future__ import annotations
