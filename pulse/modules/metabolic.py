@@ -44,13 +44,17 @@ population ``MG_DL_PER_G``, then converted into this patient's mg/dL:
     dHep  = k·((glyco + gng_released)·VG_DL_PER_KG − Hep)  a lagged mg/kg/min readout
 
     EGP_b   = k_ii · Gb_emb                          per patient (basal EGP scales with Gb)
-    glyco   = (1 − f_gng)·EGP_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G
-    gng     =      f_gng ·EGP_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G
+    GNG_b   = f_gng·EGP_typical + relu(EGP_b − EGP_typical)
+    GNG_b   = min(GNG_b, 0.85·EGP_b)                 glycogenolysis stays ≥ 15% of EGP
+    glyco_b = EGP_b − GNG_b                          the deficit is glycogenolytic
+    glyco   = glyco_b · (LGly/LGly_b) · g_ins_glyco · g_gn · g_G
+    gng     = GNG_b · g_cort·√g_gn·g_ffa·g_ins_gng·g_G
 
 ``k_ii`` (obligatory uptake per mg/dL) and ``f_gng`` are the teacher's
 population constants. ``k_ii = 2 / (VG_DL_PER_KG · 95)`` is the uptake that
-puts a typical person at 2 mg/kg/min. ``f_gng`` is one half, Landau's
-post-absorptive share (the teacher's ``Gng_b / Hep_b``). On the iter-107
+puts a typical person at 2 mg/kg/min. ``f_gng`` is one half of that typical
+output (Landau's post-absorptive share), which is the teacher's share at
+Gb 95. On the iter-107
 weights both had walked, uptake from 0.0114 to 0.0083 per minute and the
 share from 0.50 to 0.37. Uptake cancels at the glucose fixed point, so the
 loss does not defend it, and the smaller turnover is fewer grams of
@@ -75,9 +79,12 @@ is zero, so the fasted fixed point is unchanged. On the iter-106 weights the
 store logit had gone to zero: a day of meals synthesized 0 g and glycogenolysis
 removed 61 g, and the second morning was a fast.
 The fasting fall emerges from pool depletion — glycogenolysis is first order
-in ``LGly``, so EGP falls toward GNG alone and glucose settles where obligatory
-uptake balances it, an absolute floor ``gng/k_ii`` the same for every Gb
-(item 3.3). ``Gb_fasted``, the drop and the floor are gone.
+in ``LGly``, so EGP falls toward gluconeogenesis alone and glucose settles
+where obligatory uptake balances it (item 3.3). ``GNG_b`` is ``f_gng`` of the
+population-typical output for a person at or below it, so that floor does not
+fall with a low Gb, and the excess above the typical output is gluconeogenic,
+so a high Gb carries a higher floor. At Gb 95 the split is half and half.
+``Gb_fasted``, the drop and the floor are gone.
 
 Carbon: ``d(G/mg) + dLGly + dMGly = app_g − brk_M − (k_ii·G + X·G +
 uptake_ex − gng − store·relu(X·G))/mg`` identically. A heavier person
@@ -355,11 +362,32 @@ _SI_MIN = 0.0005
 _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
 _KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
-# Fraction of basal EGP that is gluconeogenesis at the fasted reference (teacher
-# Gng_b / Hep_b = 1.0 / 2.0; Landau 1996: 47 % at 14 h). A constant. A free
+# Gluconeogenic fraction of the POPULATION-TYPICAL EGP (teacher f_gng; Landau
+# 1996: 47 % at 14 h). At Gb 95 that is half of the person's own output. A constant. A free
 # copy walked 0.50 → 0.37 to buy back the grams of glycogenolysis that the
 # shrunken uptake had lost, and that walk is what drops a long fast through 60.
 _F_GNG = 0.5
+# Teacher ``_F_GNG_MAX``: glycogenolysis keeps a basal outflow, so the pool
+# stays first-order in its own level. Binds only below the student's reachable
+# Gb (the log decode floors near 61 mg/dL; the cap binds near 56 at f_gng 0.5).
+_GNG_SHARE_CAP = 0.85
+
+
+def basal_hepatic_split(
+    egp_b: torch.Tensor, f_gng: torch.Tensor | float = _F_GNG,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Basal ``(glycogenolysis, gluconeogenesis)`` in mg/dL/min.
+
+    The teacher's ``resolve_derived_params`` split. ``EGP_typical`` is
+    ``_K_II * 95`` (2 mg/kg/min). Gluconeogenesis takes ``f_gng`` of that
+    typical output plus whatever this person's EGP has above it; glycogenolysis
+    is the remainder and absorbs the deficit. The cap keeps glycogenolysis at
+    least 15% of EGP. At the median person both fluxes are half of EGP.
+    """
+    typical = torch.as_tensor(_K_II * 95.0, dtype=egp_b.dtype, device=egp_b.device)
+    gng = f_gng * typical + torch.relu(egp_b - typical)
+    gng = torch.minimum(gng, _GNG_SHARE_CAP * egp_b)
+    return egp_b - gng, gng
 # Structural gate constants (teacher iter 97). K's are learnable (softplus, init here);
 # the Hill exponents are shapes and stay fixed.
 _GLYC_INS_K_INIT, _GLYC_INS_N = 25.0, 2.0     # glycogenolysis insulin gate
@@ -823,6 +851,9 @@ class MetabolicModule(MassActionModule):
         gn_b = self.gn_setpoint_raw(embedding)
         mito_sp = self.mito_setpoint_raw(embedding)
         k_ii = self.k_ii()
+        egp_b = k_ii * gb
+        f_gng = k_ii.new_tensor(_F_GNG)
+        glyco_b, gng_b = basal_hepatic_split(egp_b, f_gng)
         ic50_keto = nn.functional.softplus(self.log_keto_ins_supp)
         k_keto = nn.functional.softplus(self.log_k_keto)
         k_ffa = ffa_b.new_tensor(_K_FFA)
@@ -830,7 +861,8 @@ class MetabolicModule(MassActionModule):
         return {
             "gb": gb, "ib": ib, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
             "ffa_b": ffa_b, "gn_b": gn_b, "mito_sp": mito_sp,
-            "k_ii": k_ii, "egp_b": k_ii * gb, "f_gng": k_ii.new_tensor(_F_GNG),
+            "k_ii": k_ii, "egp_b": egp_b, "f_gng": f_gng,
+            "glyco_b": glyco_b, "gng_b": gng_b,
             # B1: four of these are per-person factors on their population scalar,
             # decoded once in `person_params` so nothing recomputes a head.
             "glyc_k": pp["glyc_ins_k"],
@@ -908,7 +940,7 @@ class MetabolicModule(MassActionModule):
         cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
         glp1 = (_GLP1_CENTER + _GLP1_SCALE * coupling[..., _GLP1_COUPLING_IDX]).clamp(min=0.1)
         gb, ib, mg = c["gb"], c["ib"], c["mg_dl_per_g"]
-        k_ii, egp_b, f_gng = c["k_ii"], c["egp_b"], c["f_gng"]
+        k_ii = c["k_ii"]
         app_g = d["app_g"]
 
         gsir_mod, _ = self.heads[_INSULIN_IDX].post(raw_heads[_INSULIN_IDX])
@@ -940,9 +972,9 @@ class MetabolicModule(MassActionModule):
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
         g_ffa = (ffa.clamp(min=1e-3) / c["ffa_b"]) ** _GNG_FFA_EXP
         g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M
-        glycogenolysis_plasma = ((1.0 - f_gng) * egp_b * (lgly / _LIVER_GLY_CENTER)
+        glycogenolysis_plasma = (c["glyco_b"] * (lgly / _LIVER_GLY_CENTER)
                                  * g_ins_glyco * g_gn * g_g)
-        gng_plasma = (f_gng * egp_b * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g)
+        gng_plasma = c["gng_b"] * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g
         gng_divert = gng_plasma * ins_drive / (
             ins_drive + _GNG_DIVERT_EPS).pow(1.0 - _GNG_DIVERT_EXP)
         gng_released = gng_plasma - gng_divert

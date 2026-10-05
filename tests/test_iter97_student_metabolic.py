@@ -12,6 +12,7 @@ import unittest
 
 import torch
 
+from pulse.knowledge.full_body import PatientParams, resolve_derived_params
 from pulse.model import ModularPhysiologyNetwork, integrate, precompute_gut_outputs
 from pulse.modules import metabolic as M
 from pulse.modules.base import compute_time_features
@@ -142,7 +143,7 @@ class TestGlycogenGates(unittest.TestCase):
         self.assertTrue(bool((f["brk_muscle"] > 0).all()))
 
     def test_liver_breakdown_has_no_ungated_channel(self) -> None:
-        """glycogenolysis = (1 − f_gng)·EGP_b·(LGly/LGly_b)·g_ins·g_gn·g_G, and the
+        """glycogenolysis = glyco_b·(LGly/LGly_b)·g_ins·g_gn·g_G, and the
         insulin gate is the teacher's basal-normalized IC50: exactly 1 at I = Ib, 1/(1+(I/K)^2)-
         shaped above it, → 0 at high insulin. The liver head does not scale it.
 
@@ -163,8 +164,8 @@ class TestGlycogenGates(unittest.TestCase):
                 f = met.fluxes(s, coupling, external, emb, tf)
             expected_gate = (1 + (ib / k) ** 2) / (1 + ((ib + excess) / k) ** 2)
             torch.testing.assert_close(f["g_ins_glyco"], expected_gate, atol=1e-6, rtol=1e-5)
-            expected = ((1 - f["f_gng"]) * f["egp_b"] * (100.0 + 60.0 * s[:, M._LIVER_GLYCOGEN_IDX]).clamp(min=0) / 100.0
-                        * f["g_ins_glyco"] * f["g_gn"] * f["g_g"])
+            pool = (100.0 + 60.0 * s[:, M._LIVER_GLYCOGEN_IDX]).clamp(min=0) / 100.0
+            expected = f["glyco_b"] * pool * f["g_ins_glyco"] * f["g_gn"] * f["g_g"]
             torch.testing.assert_close(f["glycogenolysis_plasma"], expected, atol=1e-6, rtol=1e-5)
             torch.testing.assert_close(f["brk_liver"], f["glycogenolysis_plasma"] / f["mg_dl_per_g"], atol=1e-7, rtol=1e-6)
         self.assertLess(float(f["g_ins_glyco"].max()), 0.02)
@@ -248,9 +249,11 @@ class TestPerPatientGates(unittest.TestCase):
         return state, coupling, external, emb, tf
 
     def test_gb_is_an_exact_fixed_point_for_every_patient(self) -> None:
-        """At the fasted reference dG = EGP_b − k_ii·Gb = 0 exactly, and glycogenolysis is
-        exactly (1 − f_gng)·EGP_b. With the pool halved, glycogenolysis halves: the fasting
-        fall emerges from depletion, not from a moved setpoint (there is no Gb_fasted)."""
+        """At the fasted reference dG = EGP_b − k_ii·Gb = 0 exactly: the two basal
+        fluxes sum to EGP_b whatever the one-sided split assigns each of them.
+        With the pool halved, glycogenolysis halves and gluconeogenesis does not:
+        the fasting fall emerges from depletion, not from a moved setpoint
+        (there is no Gb_fasted)."""
         m = _model(9, perturb=1.0)
         met = m.metabolic
         self.assertFalse(hasattr(met, "log_gb_drop_abs"))
@@ -261,17 +264,57 @@ class TestPerPatientGates(unittest.TestCase):
                 f = met.fluxes(*args)
                 rate = met(*args)[0, M._GLUCOSE_IDX]
             self.assertAlmostEqual(float(rate), 0.0, places=5, msg=f"Gb={gb}")
-            self.assertAlmostEqual(float(f["glycogenolysis_plasma"]), float((1 - f["f_gng"]) * f["egp_b"]), places=6)
-            self.assertAlmostEqual(float(f["gng_plasma"]), float(f["f_gng"] * f["egp_b"]), places=6)
+            self.assertAlmostEqual(
+                float(f["glycogenolysis_plasma"] + f["gng_plasma"]), float(f["egp_b"]), places=5, msg=f"Gb={gb}")
+            self.assertAlmostEqual(float(f["glycogenolysis_plasma"]), float(f["glyco_b"]), places=6)
+            self.assertAlmostEqual(float(f["gng_plasma"]), float(f["gng_b"]), places=6)
             self.assertAlmostEqual(float(f["egp_b"]), float(f["k_ii"]) * gb, places=6)
             args_half = self._reference_state(m, gb, lgly=50.0)
             with torch.no_grad():
                 f_half = met.fluxes(*args_half)
             self.assertAlmostEqual(
                 float(f_half["glycogenolysis_plasma"]),
-                float(0.5 * (1 - f_half["f_gng"]) * f_half["egp_b"]),
+                float(0.5 * f_half["glyco_b"]),
                 places=5, msg=f"Gb={gb}",
             )
+            self.assertAlmostEqual(float(f_half["gng_plasma"]), float(f_half["gng_b"]), places=5, msg=f"Gb={gb}")
+
+    def test_basal_split_matches_the_teacher(self) -> None:
+        """The one-sided split, in mg/kg/min, is resolve_derived_params at f_gng 0.5.
+        Identity at Gb 95; at 130 the excess is gluconeogenic and glycogenolysis
+        stays at the typical half; at 70 the deficit comes off glycogenolysis."""
+        m = _model(11, perturb=1.0)
+        for gb in (70.0, 95.0, 130.0):
+            self._set_gb(m, gb)
+            teacher = resolve_derived_params(PatientParams(Gb=gb, f_gng=0.5))
+            with torch.no_grad():
+                f = m.metabolic.fluxes(*self._reference_state(m, gb))
+            self.assertAlmostEqual(float(f["gng_b"]) * VG_DL_PER_KG, teacher.Gng_b, places=5, msg=f"Gb={gb}")
+            self.assertAlmostEqual(
+                float(f["glyco_b"]) * VG_DL_PER_KG, teacher.Hep_b - teacher.Gng_b, places=5, msg=f"Gb={gb}")
+            if gb == 95.0:
+                self.assertAlmostEqual(float(f["gng_b"]), float(f["glyco_b"]), places=5)
+
+    def test_the_share_cap_keeps_a_glycogenolytic_outflow(self) -> None:
+        """Below the student's reachable Gb the cap binds, and the split stays
+        differentiable on both sides of the typical EGP."""
+        typical = M._K_II * 95.0
+        low = torch.tensor(0.4, requires_grad=True)
+        glyco, gng = M.basal_hepatic_split(low, 0.5)
+        self.assertAlmostEqual(float(gng.detach()), M._GNG_SHARE_CAP * 0.4, places=6)
+        self.assertAlmostEqual(float(glyco.detach()), (1.0 - M._GNG_SHARE_CAP) * 0.4, places=6)
+        gng.backward()
+        self.assertIsNotNone(low.grad)
+
+        above = torch.tensor(typical + 0.4, requires_grad=True)
+        _, gng_hi = M.basal_hepatic_split(above, 0.5)
+        gng_hi.backward()
+        self.assertAlmostEqual(float(above.grad), 1.0, places=5)
+
+        below = torch.tensor(typical - 0.2, requires_grad=True)
+        _, gng_lo = M.basal_hepatic_split(below, 0.5)
+        gng_lo.backward()
+        self.assertAlmostEqual(float(below.grad), 0.0, places=5)
 
     def test_hepatic_heads_do_not_scale_the_carbon_budget(self) -> None:
         """Liver storage is the direct-pathway fraction. The liver head has no

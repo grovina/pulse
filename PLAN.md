@@ -272,9 +272,11 @@ Teacher-side defects the analysis measured, plus the real-data gap.
   `f_gng`, which is also what B5 needs a Beta prior over. Measured over 80
   patients: day-4 BHB above 1 mM **26.3 % → 2.5 %**, corr(Gb, BHB) **+0.75 →
   +0.12**, the Gb-130 patient's `extended_fast_bhb_overnight` **+6.39σ → +0.36σ**.
-  **The student still carries the defect**: `_F_GNG = 0.5` multiplies the patient's
-  own `egp_b = k_ii·gb`, so its fed high-Gb patient still spends its pool. Mirroring
-  the teacher's split there is parameter-free and differentiable.
+  The student uses the same split (`basal_hepatic_split`), with `f_gng` held at
+  one half. There is no per-person fraction head: the teacher's sampled `f_gng`
+  (σ 0.10) is the residual a Beta prior would identify, and a head without that
+  evidence is the free-parameter failure this plan exists to stop. At the median
+  person the split is an identity, so the default patient does not move.
 - **A separate defect this uncovered, which this plan mis-attributed.** Wave E
   expected the fix to stop the default patient's liver glycogen drifting from 100 g.
   It structurally cannot: the new split is an *identity* at the typical EGP, so the

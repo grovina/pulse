@@ -552,8 +552,10 @@ class PatientParams:
     # "hyperglycaemia implies ketosis" into the student, and it contradicted the
     # Magnusson 1992 citation the `vary` call for this parameter already carried
     # ("the EGP excess of type-2 diabetes is largely gluconeogenic"). The student
-    # already holds the FRACTION (modules/metabolic.py GNG_SHARE = 1.0/2.0), so this
-    # also makes teacher and student agree structurally rather than only at Gb 95.
+    # uses the same split (`pulse.modules.metabolic.basal_hepatic_split`) with f_gng held
+    # at one half: the teacher's per-patient fraction has no student head. At the
+    # median person the two are identical; away from it both book the deficit to
+    # glycogenolysis and the excess to gluconeogenesis.
     #
     # The residual fed-ketosis tail is no longer Gb: the worst of the 80 (BHB 1.355)
     # has Gb 96 -- a normal fasting glucose -- and gets there because `LGly_b` is

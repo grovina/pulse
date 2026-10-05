@@ -714,11 +714,10 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
 
     def test_the_parameter_count_grew_by_the_five_heads_and_one_scalar(self) -> None:
         """+1,326: five zero-init heads (265 each at the default widths — Linear(20,12)
-        + Linear(12,1)) plus the activity sensitivity's population scalar. The metabolic
-        module goes 19,488 → 20,814 and the whole model 38,711 → 40,037; only the
-        module's own total is asserted, because the model's depends on every other
-        module. 3.4 % more parameters for the PRD's own example of individual
-        variation, all of them supervised."""
+        + Linear(12,1)) plus the activity sensitivity's population scalar. Iter 110
+        removed ``log_alpha_gn``, so the module total is 20,813 rather than the
+        20,814 counted before that constant. Only the module's own total is
+        asserted, because the model's depends on every other module."""
         m = ModularPhysiologyNetwork()
         heads = ("insulin_sens_net", "hepatic_ins_k_net", "beta_cell_gain_net",
                  "insulin_clearance_net", "act_insulin_sens_net")
@@ -727,7 +726,8 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 20814)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 20813)
+        self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 
 if __name__ == "__main__":
