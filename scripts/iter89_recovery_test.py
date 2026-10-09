@@ -11,9 +11,22 @@ If calibration cannot beat prior_mean here, it is not identifying individuals at
 
 We also track HRV0, which is NOT observed - it tests the claim that off-axis
 physiology is ill-posed and gets dragged along spurious entanglement.
+
+Si is the metabolic module's person_params['si'] (student frame: per normalized
+insulin unit, 10x the teacher's Si). It is not a marker; glucose is what identifies it.
 """
 import sys, time
+from pathlib import Path
+
+# An editable install can shadow this tree (amplification_probe.py). The checkpoint's
+# architecture is this repo's, so the probe has to import this repo.
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import torch, numpy as np
+import pulse
+assert Path(pulse.__file__).resolve().is_relative_to(_ROOT), f"shadowed pulse: {pulse.__file__}"
 
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.types import MARKER_INDEX, NORM_CENTER, EMBEDDING_DIM
@@ -24,20 +37,17 @@ from pulse.modules import cardiovascular as C
 
 N_PEOPLE = int(sys.argv[1]) if len(sys.argv) > 1 else 3
 N_STEPS = int(sys.argv[2]) if len(sys.argv) > 2 else 512
+CKPT = sys.argv[3] if len(sys.argv) > 3 else "/tmp/iter111.pt"
 # Trimmed vs the benchmark's 720/504 so this is tractable on a 4GB CPU box
 # (calibration costs ~1 full rollout per Adam step). Same structure, shorter horizon.
 DURATION = 420
 CAL_END = 294
 WINDOW = 180
 
-ck = torch.load('/tmp/iter89.pt', map_location='cpu', weights_only=False)
-m = ModularPhysiologyNetwork(
-    embedding_dim=ck['embedding_dim'],
-    metabolic_hidden=48, cardiovascular_hidden=48, gut_hidden=32,
-    appetite_hidden=24, stress_hidden=24, thermoreg_hidden=16, respiratory_hidden=16,
-)
-m.load_state_dict(ck['model_state']); m.eval()
+ck = torch.load(CKPT, map_location='cpu', weights_only=False)
+m = ModularPhysiologyNetwork.from_checkpoint(ck); m.eval()
 pm = torch.tensor(ck['embedding_prior_mean']); ps = torch.tensor(ck['embedding_prior_std'])
+print(f'checkpoint {CKPT}  people={N_PEOPLE}  adam_steps={N_STEPS}  duration={DURATION}')
 
 IDX = {k: MARKER_INDEX[k] for k in ('glucose','hr','hrv','sbp','dbp','temp')}
 
@@ -49,8 +59,9 @@ def physiology(emb):
         # Decoded by the modules themselves: A1 (PLAN.md) moved Gb and the vitals
         # into log space, so any hand-rebuilt `MAX_Z * tanh(head)` is now wrong.
         Gb = float(m.metabolic.glucose_setpoint_raw(e_met))
+        Si = float(m.metabolic.person_params(e_met)['si'])
         sp_raw = m.cardiovascular.setpoints_raw(e_cvs)
-        out = {'Gb': Gb}
+        out = {'Gb': Gb, 'Si': Si}
         for j, k in enumerate(('hr','hrv','sbp','dbp')):
             out[k.upper()+'0'] = float(sp_raw[j])
     return out
@@ -69,7 +80,12 @@ def person_initial_state(phys):
 def err(a, b, keys):
     return {k: abs(a[k]-b[k]) for k in keys}
 
-KEYS = ['Gb','HR0','SBP0','DBP0','HRV0']
+def num(x):
+    """Gb and the vitals are O(10-100); Si is O(1e-3). Don't round Si to 0.00."""
+    ax = abs(float(x))
+    return f'{x:.2f}' if ax == 0 or ax >= 0.05 else f'{x:.4g}'
+
+KEYS = ['Gb','Si','HR0','SBP0','DBP0','HRV0']
 torch.manual_seed(7)
 rows = []
 prior_phys = physiology(pm)
@@ -103,8 +119,8 @@ for i in range(N_PEOPLE):
           f'cos(rec,true)={cos:+.3f}  ||rec||={res.embedding.norm():.2f} ||true||={emb_true.norm():.2f}')
     for k in KEYS:
         obs_tag = '' if k != 'HRV0' else '  [UNOBSERVED]'
-        print(f'   {k:5} true {true_phys[k]:7.2f} | calib {rec_phys[k]:7.2f} (err {e_cal[k]:5.2f})'
-              f' | prior-mean {prior_phys[k]:7.2f} (err {e_pri[k]:5.2f}){obs_tag}')
+        print(f'   {k:5} true {num(true_phys[k]):>10} | calib {num(rec_phys[k]):>10} (err {num(e_cal[k]):>10})'
+              f' | prior-mean {num(prior_phys[k]):>10} (err {num(e_pri[k]):>10}){obs_tag}')
 
 print('\n================ SUMMARY: does calibration beat the population mean? ================')
 print(f'{"marker":8} {"mean |err| calib":>17} {"mean |err| prior":>17} {"skill (1-c/p)":>14}')
@@ -112,7 +128,7 @@ for k in KEYS:
     c = np.mean([r[0][k] for r in rows]); p = np.mean([r[1][k] for r in rows])
     skill = 1 - c/p if p > 1e-9 else float('nan')
     tag = '  <- UNOBSERVED' if k == 'HRV0' else ''
-    print(f'{k:8} {c:17.2f} {p:17.2f} {skill:13.2f}{tag}')
+    print(f'{k:8} {num(c):>17} {num(p):>17} {skill:13.2f}{tag}')
 print(f'\nmean cos(recovered, true embedding) = {np.mean([r[2] for r in rows]):+.3f}  '
       f'(1.0 = embedding itself recovered; ~0 = different code, same physiology)')
 print(f'mean ||recovered - true|| = {np.mean([r[3] for r in rows]):.2f}   '

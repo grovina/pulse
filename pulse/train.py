@@ -131,6 +131,7 @@ from .training import (
     WeightSchedule,
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
+from .training.insulin_sweep_signal import patient_from_record
 from .training.trajectory_signal import (
     DEFAULT_CONTRIBUTION_WEIGHTS,
     TRAIN_WINDOW,
@@ -581,23 +582,6 @@ def train(
         protocol=dose_response_protocol,
         perturb_protocols=perturb_protocols,
     )
-    gut_dose_sweep_protocol = GutDoseSweepProtocol()
-    gut_dose_sweep_signal = GutDoseSweepSignal(
-        n_patients=n_patients,
-        sample_patients=gut_dose_sweep_sample_patients,
-        weight=WeightSchedule(gut_dose_sweep_weight, enable_at_epoch=0),
-        protocol=gut_dose_sweep_protocol,
-        auc_weight=gut_dose_sweep_auc_weight,
-    )
-    insulin_sweep_protocol = InsulinSweepProtocol()
-    insulin_sweep_signal = InsulinSweepSignal(
-        n_patients=n_patients,
-        sample_patients=insulin_sweep_sample_patients,
-        weight=WeightSchedule(insulin_sweep_weight, enable_at_epoch=0),
-        protocol=insulin_sweep_protocol,
-        auc_weight=insulin_sweep_auc_weight,
-        ranking_weight=insulin_sweep_ranking_weight,
-    )
     # Iter 90: supervise the embedding->physiology map against the teacher's KNOWN
     # per-patient setpoints. The recovery test showed the map is not invertible --
     # calibration recovers a person's fasting glucose worse than predicting the
@@ -616,11 +600,36 @@ def train(
     # which is the failure iter 109 measured (a basal head walked the prior person
     # 70 -> 98 pg/mL while nothing downstream moved). The teacher samples every one of
     # them and `Episode.patient_params` now carries them through the dataset.
+    # B4 reads the same dict: each sampled sweep row is scored against the teacher
+    # patient those fields name. The zero embedding is not in this map; it stays
+    # PatientParams().
     _param_targets = {
         int(rec["patient_id"]): rec["patient_params"]
         for rec in trajectory_signal.dataset
         if not rec.get("is_default") and rec.get("patient_params")
     }
+    _sweep_patients = {
+        pid: patient_from_record(raw) for pid, raw in _param_targets.items()
+    }
+    gut_dose_sweep_protocol = GutDoseSweepProtocol()
+    gut_dose_sweep_signal = GutDoseSweepSignal(
+        n_patients=n_patients,
+        sample_patients=gut_dose_sweep_sample_patients,
+        patient_params=_sweep_patients,
+        weight=WeightSchedule(gut_dose_sweep_weight, enable_at_epoch=0),
+        protocol=gut_dose_sweep_protocol,
+        auc_weight=gut_dose_sweep_auc_weight,
+    )
+    insulin_sweep_protocol = InsulinSweepProtocol()
+    insulin_sweep_signal = InsulinSweepSignal(
+        n_patients=n_patients,
+        sample_patients=insulin_sweep_sample_patients,
+        patient_params=_sweep_patients,
+        weight=WeightSchedule(insulin_sweep_weight, enable_at_epoch=0),
+        protocol=insulin_sweep_protocol,
+        auc_weight=insulin_sweep_auc_weight,
+        ranking_weight=insulin_sweep_ranking_weight,
+    )
     setpoint_supervision_signal = SetpointSupervisionSignal(
         weight=WeightSchedule(setpoint_supervision_weight, enable_at_epoch=0),
         targets=_setpoint_targets,
@@ -726,6 +735,7 @@ def train(
         f"auc_weight={gut_dose_sweep_auc_weight}, "
         f"doses={gut_dose_sweep_protocol.carb_doses_g} g, "
         f"sample_patients={gut_dose_sweep_sample_patients}, "
+        f"patient_targets={len(_sweep_patients)}, "
         f"post_window={gut_dose_sweep_protocol.post_window_min}min",
     )
     print(
@@ -734,7 +744,8 @@ def train(
         f"ranking_weight={insulin_sweep_ranking_weight}, "
         f"glucose_grid={insulin_sweep_protocol.glucose_sweep_mg_dL} mg/dL, "
         f"insulin_grid={insulin_sweep_protocol.insulin_sweep_uU_mL} μU/mL, "
-        f"sample_patients={insulin_sweep_sample_patients}",
+        f"sample_patients={insulin_sweep_sample_patients}, "
+        f"patient_targets={len(_sweep_patients)}",
     )
     # Iter 94: print the anchor settings that decide WHAT this signal can see, not
     # just the short window. The local-scale floor and the long windows are the
@@ -1819,7 +1830,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--gut-dose-sweep-sample-patients",
         type=int,
         default=0,
-        help="Patient embeddings sampled per epoch for the gut dose sweep, IN ADDITION to the zero embedding. 0 (the default since PLAN.md A6) means zero only: the sweep's targets come from PatientParams(), the DEFAULT patient, so scoring sampled rows against them pulled every patient toward the median person's absorption kernel. Per-row targets return as PLAN B4.",
+        help="Patient embeddings sampled per epoch for the gut dose sweep, in addition to the zero embedding. 0 scores only the zero embedding, against PatientParams() (the median person). Above 0, each sampled row is scored against that patient's own teacher PatientParams from the trajectory record; a sampled patient with no patient_params aborts the run.",
     )
     parser.add_argument(
         "--gut-dose-sweep-auc-weight",
@@ -1854,7 +1865,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--insulin-sweep-sample-patients",
         type=int,
         default=0,
-        help="Patient embeddings sampled per epoch for the insulin sweep, IN ADDITION to the zero embedding. 0 (the default since PLAN.md A6) means zero only, for the same reason as the gut sweep: its seven metabolic-rate targets are the DEFAULT patient's.",
+        help="Patient embeddings sampled per epoch for the insulin sweep, in addition to the zero embedding. 0 scores only the zero embedding, against PatientParams() (the median person). Above 0, each sampled row is scored against that patient's own teacher PatientParams from the trajectory record; a sampled patient with no patient_params aborts the run.",
     )
     parser.add_argument(
         "--insulin-sweep-auc-weight",

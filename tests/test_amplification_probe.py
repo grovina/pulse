@@ -38,6 +38,7 @@ import torch
 
 from pulse.benchmark import BenchmarkEpisode
 from pulse.calibration import CalibrationSettings, MeasurementPoint
+from pulse.measurement import interstitial_glucose
 from pulse.modules.gut import MealEvent
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER
 
@@ -202,9 +203,24 @@ class TestHarnessIsNotBroken(unittest.TestCase):
         cls.model = _model()
         cls.patient = _patient(cls.model, scale=0.5)
         cls.settings = CalibrationSettings(max_steps=25, lr=0.05, patience=8)
-        cls.unit = _score_patient(
-            cls.model, cls.patient, PROTO, ("glucose",), ("insulin", "ghrelin"),
-            e_prior=amp.prior_embedding(cls.model), settings=cls.settings)
+        # The probe records the plasma state as the glucose observation. A meter
+        # reads the interstitial lag of that state; scoring stays on the plasma
+        # trajectory the model generated.
+        lagged = interstitial_glucose(cls.patient.truth[:, MARKER_INDEX["glucose"]])
+        real = amp.calibrate_embedding
+
+        def _meter(model, obs, *args, **kwargs):
+            metered = [
+                MeasurementPoint(time=o.time, marker_id=o.marker_id,
+                                 value=float(lagged[o.time]) if o.marker_id == "glucose" else o.value)
+                for o in obs
+            ]
+            return real(model, metered, *args, **kwargs)
+
+        with mock.patch.object(amp, "calibrate_embedding", _meter):
+            cls.unit = _score_patient(
+                cls.model, cls.patient, PROTO, ("glucose",), ("insulin", "ghrelin"),
+                e_prior=amp.prior_embedding(cls.model), settings=cls.settings)
 
     def test_calibration_accepts_and_moves_the_embedding(self) -> None:
         self.assertTrue(self.unit.accepted, self.unit.reason)
@@ -350,8 +366,13 @@ class TestAccounting(unittest.TestCase):
     def test_the_true_embedding_reproduces_its_own_observations_through_the_calibration_forward(self) -> None:
         from pulse.calibration import evaluate_data_loss
         p = self.patient
-        obs = [MeasurementPoint(time=t, marker_id=mk, value=float(p.truth[t, MARKER_INDEX[mk]]))
-               for mk in ("glucose", "hr") for t in PROTO.obs_times()]
+        # Glucose observations are the interstitial reading of the plasma trajectory.
+        glucose = interstitial_glucose(p.truth[:, MARKER_INDEX["glucose"]])
+        obs = []
+        for mk in ("glucose", "hr"):
+            for t in PROTO.obs_times():
+                value = float(glucose[t]) if mk == "glucose" else float(p.truth[t, MARKER_INDEX[mk]])
+                obs.append(MeasurementPoint(time=t, marker_id=mk, value=value))
         sw, act = PROTO.masks()
         kw = dict(start_time_minutes=PROTO.start_time_minutes, sleep_wake=sw, activity=act)
         at_truth = evaluate_data_loss(self.model, p.embedding, obs, p.initial_state, PROTO.meals(),

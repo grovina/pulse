@@ -19,7 +19,8 @@ training signal nominally supervised the gut, but only indirectly:
 
 This signal closes that gap: it directly supervises ``model.gut.forward_window``
 against the analytical cold-model absorption profile across an explicit
-dose sweep, at the zero embedding. One vectorized kernel call per
+dose sweep. The zero embedding is the median person. A sampled row is scored
+against that patient's own teacher patient. One vectorized kernel call per
 (embedding, dose) pair — cheap, focused, gradient lands exactly on the gut
 pipeline (kernel + gut embedding projection).
 """
@@ -38,7 +39,7 @@ from ..model import ModularPhysiologyNetwork
 from ..modules.base import GutModuleBase
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..types import GUT_OUTPUT_DIM
-from .embedding_sampler import select_supervised_embeddings
+from .embedding_sampler import select_supervised_rows
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
@@ -107,29 +108,23 @@ class GutDoseSweepSignal(TrainingSignal):
     against the matching cold target and MSE-step the gut kernel +
     embedding projection.
 
-    Supervises the ZERO embedding only (PLAN A6). The targets are built from
-    ``PatientParams()`` — the teacher's median person (PLAN section 2) — so they
-    state the median person's dose-response shape, which is exactly what zero
-    means. Until PLAN A6, ``sample_patients = 4`` also scored four SAMPLED rows per
-    step against those same targets: from epoch 0, at the spec's 0.10 weight, a
-    pull of each sampled patient's absorption kernel onto the median person's,
-    opposed to the per-patient setpoint supervision and erasing per-person
-    absorption (in the teacher, absorption rates explain 12-28 % of
-    between-person meal-peak variance). The 4 predates iter 12 and was never
-    tuned (the iter-32 review lists the flag as vestigial).
-
-    A nonzero ``sample_patients`` is still honoured, but it is the wrong
-    experiment until each sampled row is scored against its OWN ``PatientParams``
-    (PLAN B4, per-row targets) — so this is a scoping fix, not an abandonment of
-    per-patient absorption supervision. Every loss term is a mean over rows, so
-    one row also removes the 1/5 it put on the zero row's gradient: at an
-    unchanged weight the pull at zero is 5x the old one.
+    The zero embedding is the median person and is scored against
+    ``PatientParams()``. A sampled row is scored against that patient's own
+    teacher ``PatientParams`` (PLAN B4). A6 had stopped sampling because every
+    row was scored against the median person's absorption kernel, so
+    ``sample_patients = 4`` pulled each patient's absorption onto the median
+    from epoch 0. The trajectory record's ``patient_params`` is the ground
+    truth; a sampled id with no entry raises rather than falling back to the
+    median target.
     """
 
     n_patients: int = 0
-    # 0: zero embedding only. A sampled row is scored against the DEFAULT
-    # patient's profile, i.e. pulled toward the median person (PLAN A6).
+    # 0: zero embedding only, against PatientParams(). Above 0, each sampled
+    # row is scored against patient_params[pid].
     sample_patients: int = 0
+    # pid -> the teacher patient that row was simulated from. Empty is correct
+    # when nothing is sampled. A sampled pid absent from this map is an error.
+    patient_params: dict[int, PatientParams] = field(default_factory=dict)
     include_default_embedding: bool = True
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     protocol: GutDoseSweepProtocol = field(default_factory=GutDoseSweepProtocol)
@@ -152,15 +147,12 @@ class GutDoseSweepSignal(TrainingSignal):
     category: str = "gut"
 
     def __post_init__(self) -> None:
-        params = PatientParams()
-        targets = np.stack([
-            _cold_target_for_dose(
-                d, self.protocol.fats_g, self.protocol.proteins_g,
-                self.protocol.post_window_min, params,
-            )[..., :GutModuleBase.N_APPEARANCE]
-            for d in self.protocol.carb_doses_g
-        ])  # [D, T, N_APPEARANCE] — appearance only; nutrient_flag is not distilled
-        self._targets = torch.tensor(targets, dtype=torch.float32)
+        # The zero row's profile. Each recorded teacher patient gets its own;
+        # body mass scales mg/dL per gram, so two patients do not share a curve.
+        self._targets = self._appearance_targets(PatientParams())
+        # Built on first use. A run that does not sample pays nothing, and a
+        # sampled patient is built once.
+        self._patient_targets: dict[int, torch.Tensor] = {}
 
         # Per-channel scales — single source of truth in modules.gut so this
         # signal and TrajectoryRolloutSignal supervise the kernel on the same
@@ -173,26 +165,45 @@ class GutDoseSweepSignal(TrainingSignal):
             GUT_OUTPUT_SCALE[:GutModuleBase.N_APPEARANCE], dtype=torch.float32,
         )
 
-        # Pairwise cold-target AUC gaps and the dose-ordering mask. For each
-        # ordered pair (i, j) and channel c, we want
-        #   pred_AUC(d_j, c) − pred_AUC(d_i, c) ≥ rank_margin × tgt_gap[i, j, c]
-        # whenever ``tgt_gap > 0``. Channels whose targets don't actually
-        # rank the swept dose (lipid/amino under fixed fats/proteins) are
-        # masked out — the constraint applies only where the cold model
-        # itself says "more dose ⇒ more AUC".
-        tgt_aucs = self._targets.sum(dim=1)                              # [D, C]
-        tgt_gap = tgt_aucs.unsqueeze(0) - tgt_aucs.unsqueeze(1)          # [D, D, C], gap[i,j] = j − i
-        self._rank_target_gap = tgt_gap
-        self._rank_mask = (tgt_gap > 0).to(torch.float32)
-
-        # Cached cold-target AUC and its normalization scale, used by the
-        # AUC-matching term. The scale is the typical "AUC magnitude"
-        # under a kernel-shaped profile: peak ≈ abs_scale, time-integral
-        # ≈ peak · T / 4 (triangular-ish profile across the window).
-        # Dividing the squared error by this scale keeps the per-channel
-        # contributions comparable across channels with different units.
-        self._auc_targets = tgt_aucs                                     # [D, C]
+        # Median-person AUC, kept for callers that read the zero-row target.
+        # The loss itself ranks and matches AUC from the targets it is given,
+        # which are per row once patients are sampled. The scale is the typical
+        # "AUC magnitude" under a kernel-shaped profile: peak ≈ abs_scale,
+        # time-integral ≈ peak · T / 4. Dividing by it keeps channels with
+        # different units on comparable footing.
+        self._auc_targets = self._targets.sum(dim=1)                     # [D, C]
         self._auc_scale = self._abs_scale * float(self.protocol.post_window_min) / 4.0  # [C]
+
+    def _appearance_targets(self, params: PatientParams) -> torch.Tensor:
+        """Cold appearance profiles for one patient, ``[D, T, N_APPEARANCE]``."""
+        targets = np.stack([
+            _cold_target_for_dose(
+                d, self.protocol.fats_g, self.protocol.proteins_g,
+                self.protocol.post_window_min, params,
+            )[..., :GutModuleBase.N_APPEARANCE]
+            for d in self.protocol.carb_doses_g
+        ])
+        return torch.tensor(targets, dtype=torch.float32)
+
+    def _targets_for(self, pid: int | None) -> torch.Tensor:
+        """Appearance target for one supervised row. ``None`` is the zero embedding."""
+        if pid is None:
+            return self._targets
+        params = self.patient_params.get(pid)
+        if params is None:
+            raise RuntimeError(
+                f"gut dose sweep sampled patient {pid} with no patient_params; "
+                "refusing to score that row against the median person"
+            )
+        cached = self._patient_targets.get(pid)
+        if cached is None:
+            cached = self._appearance_targets(params)
+            self._patient_targets[pid] = cached
+        return cached
+
+    def _targets_for_rows(self, pids: list[int | None]) -> torch.Tensor:
+        """Stack per-row profiles on a batch axis: ``[D, B, T, C]``."""
+        return torch.stack([self._targets_for(pid) for pid in pids], dim=1)
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
@@ -222,14 +233,19 @@ class GutDoseSweepSignal(TrainingSignal):
           magnitude directly; cannot be diluted by time-averaging because
           the integral collapses the time dimension before squaring.
 
+        ``targets`` is ``[D, T, C]`` (one profile, broadcast across the batch)
+        or ``[D, B, T, C]`` (each row its own patient). Rank hinges and the
+        AUC term are taken from that tensor, not from the median cache.
+
         ``n_inversions_at_zero_emb`` counts pairs (i, j) where the pred AUC
         on the ranked channel at the *last* batch element (the zero embedding
-        under ``include_default_embedding``: ``select_supervised_embeddings``
+        under ``include_default_embedding``: ``select_supervised_rows``
         appends it after the sampled rows, so with ``sample_patients > 0`` the
-        first element is a sampled patient) violates the cold target's dose
-        ordering.
+        first element is a sampled patient) violates that row's cold target
+        dose ordering.
         """
         device = abs_scale.device
+        per_row = targets.dim() == 4
         per_dose_mse = []
         for di, pred in enumerate(per_dose_pred):
             tgt = targets[di]
@@ -239,35 +255,47 @@ class GutDoseSweepSignal(TrainingSignal):
         pred_stack = torch.stack(per_dose_pred, dim=0)               # [D, B, T, C]
         pred_aucs = pred_stack.sum(dim=2)                            # [D, B, C]
         pred_gap = pred_aucs.unsqueeze(0) - pred_aucs.unsqueeze(1)   # [D, D, B, C]
-        rank_target_gap = self._rank_target_gap.to(device)
-        rank_mask = self._rank_mask.to(device)
-        margin_required = self.protocol.rank_margin * rank_target_gap
+        if per_row:
+            tgt_aucs = targets.sum(dim=2)                            # [D, B, C]
+            tgt_gap = tgt_aucs.unsqueeze(0) - tgt_aucs.unsqueeze(1)  # [D, D, B, C]
+            rank_mask = (tgt_gap > 0).to(torch.float32)
+            zero_mask = rank_mask[:, :, -1, 0]
+            auc_targets = tgt_aucs
+            n_active = rank_mask.sum()
+        else:
+            tgt_aucs = targets.sum(dim=1)                            # [D, C]
+            tgt_gap = tgt_aucs.unsqueeze(0) - tgt_aucs.unsqueeze(1)  # [D, D, C]
+            rank_mask = (tgt_gap > 0).to(torch.float32)
+            zero_mask = rank_mask[..., 0]
+            tgt_gap = tgt_gap.unsqueeze(2)                           # [D, D, 1, C]
+            rank_mask = rank_mask.unsqueeze(2)
+            auc_targets = tgt_aucs.unsqueeze(1)                      # [D, 1, C]
+            n_active = rank_mask.sum() * float(pred_aucs.shape[1])
+        margin_required = self.protocol.rank_margin * tgt_gap
         norm = abs_scale * float(T)
-        violation = torch.relu(margin_required.unsqueeze(2) - pred_gap) / norm
-        violation = violation * rank_mask.unsqueeze(2)
-        B = int(pred_aucs.shape[1])
-        n_active = rank_mask.sum() * float(B)
+        violation = torch.relu(margin_required - pred_gap) / norm
+        violation = violation * rank_mask
         if float(n_active) > 0:
             rank_loss = violation.sum() / n_active
         else:
             rank_loss = torch.zeros((), device=device)
 
-        # AUC-matching term. ``pred_aucs`` is [D, B, C]; ``self._auc_targets``
-        # is [D, C] (broadcasts across batch). Normalize by per-channel AUC
-        # scale so glucose / lipid / amino contribute on comparable footing.
-        # Mean over D·B·C already-collapsed scalars, not over D·B·T·C
-        # mostly-zero per-time-step errors, so a uniform multiplicative
-        # over-amp lands a real per-dose penalty.
-        auc_targets = self._auc_targets.to(device).unsqueeze(1)      # [D, 1, C]
+        # AUC-matching term. ``pred_aucs`` is [D, B, C]; the target is that
+        # shape too when each row has its own patient, and [D, 1, C] when one
+        # profile is broadcast. Normalize by per-channel AUC scale so glucose
+        # / lipid / amino contribute on comparable footing. Mean over D·B·C
+        # already-collapsed scalars, not over D·B·T·C mostly-zero per-time-step
+        # errors, so a uniform multiplicative over-amp lands a real per-dose
+        # penalty.
         auc_scale = self._auc_scale.to(device)                       # [C]
         auc_loss = ((pred_aucs - auc_targets) / auc_scale).pow(2).mean()
 
         with torch.no_grad():
             zero_aucs = pred_aucs[:, -1, 0]
             # An inversion is "the lower-dose embedding (i) shows more AUC than
-            # the higher-dose one (j)" on a pair where the cold target itself
-            # ranks j > i (i.e. ``rank_mask[i, j] > 0``).
-            inv = (zero_aucs.unsqueeze(1) > zero_aucs.unsqueeze(0)) & (rank_mask[..., 0] > 0)
+            # the higher-dose one (j)" on a pair where that row's cold target
+            # itself ranks j > i.
+            inv = (zero_aucs.unsqueeze(1) > zero_aucs.unsqueeze(0)) & (zero_mask > 0)
             n_inv_zero = inv.sum().to(torch.float32)
 
         return mse_loss, rank_loss, auc_loss, n_inv_zero
@@ -282,7 +310,7 @@ class GutDoseSweepSignal(TrainingSignal):
         if w <= 0:
             return SignalResult()
 
-        emb_list = select_supervised_embeddings(
+        rows = select_supervised_rows(
             embeddings=embeddings,
             n_patients=self.n_patients,
             sample_patients=self.sample_patients,
@@ -290,20 +318,20 @@ class GutDoseSweepSignal(TrainingSignal):
             device=ctx.device,
             include_default=self.include_default_embedding,
         )
-        if not emb_list:
+        if not rows:
             return SignalResult()
 
         device = ctx.device
-        targets = self._targets.to(device)        # [D, T, 4]
+        targets = self._targets_for_rows([pid for pid, _emb in rows]).to(device)  # [D, B, T, C]
         abs_scale = self._abs_scale.to(device)
         T = self.protocol.post_window_min
         times = torch.arange(T, dtype=torch.float32, device=device)
         net = cast(ModularPhysiologyNetwork, model)
 
-        # Batch all embeddings into one kernel call per dose: B = len(emb_list).
+        # Batch all embeddings into one kernel call per dose: B = len(rows).
         # forward_window vectorizes across (B, T, M=1), so the inner loop is
         # per-dose only — D kernel calls instead of D × B.
-        embs = torch.stack(emb_list, dim=0)  # [B, EMB]
+        embs = torch.stack([emb for _pid, emb in rows], dim=0)  # [B, EMB]
         emb_gut = net.embedding_projections["gut"](embs)  # [B, EMB_GUT]
         B = int(embs.shape[0])
 

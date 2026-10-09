@@ -46,7 +46,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..knowledge.full_body import PatientParams, glucose_fluxes
+from ..knowledge.full_body import PatientParams, glucose_fluxes, resolve_derived_params
 from ..model import ModularPhysiologyNetwork
 from ..modules.base import compute_time_features
 from ..types import (
@@ -58,7 +58,7 @@ from ..types import (
     NORM_CENTER,
     NORM_SCALE,
 )
-from .embedding_sampler import select_supervised_embeddings
+from .embedding_sampler import select_supervised_rows
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
@@ -242,6 +242,40 @@ def _build_baseline_state(params: PatientParams) -> np.ndarray:
     return state
 
 
+# Episode.patient_params key -> PatientParams field. These are the keys the
+# trajectory record carries (the same dict setpoint supervision reads). A key
+# this map requires and the record lacks is a hole in the teacher target, so
+# it raises instead of leaving that field at the median person. Keys the map
+# does not know are ignored: the teacher may record a parameter this sweep
+# does not read.
+_RECORD_FIELD: dict[str, str] = {
+    "body_mass_kg": "body_mass_kg",
+    "si": "Si",
+    "glyc_ins_k": "glyc_ins_K",
+    "gamma": "gamma",
+    "k_ins": "n",
+    "act_insulin_sens": "act_insulin_sens",
+}
+
+
+def patient_from_record(raw: dict[str, float]) -> PatientParams:
+    """The teacher patient a trajectory record's ``patient_params`` names.
+
+    Starts from ``PatientParams()`` and writes every recorded field, then
+    resolves derived quantities the way the teacher does after it samples.
+    """
+    missing = [key for key in _RECORD_FIELD if key not in raw]
+    if missing:
+        raise ValueError(
+            f"patient_params is missing {missing}; refusing to fill those "
+            "fields from the median person"
+        )
+    params = PatientParams()
+    for key, field_name in _RECORD_FIELD.items():
+        setattr(params, field_name, float(raw[key]))
+    return resolve_derived_params(params)
+
+
 @dataclass
 class InsulinSweepSignal(TrainingSignal):
     """Direct distillation of metabolic-module rates against cold-model curves.
@@ -251,30 +285,23 @@ class InsulinSweepSignal(TrainingSignal):
     ``model.metabolic`` for each sweep point, compute mse / rank / auc losses,
     backward + step.
 
-    Supervises the ZERO embedding only (PLAN A6). All seven target rates come
-    from ``PatientParams()`` — the teacher's median person (PLAN section 2) — so
-    they state the median person's GSIR, clearance, lipolysis, ketogenesis and
-    hepatic-output curves, which is exactly what zero means. Until PLAN A6,
-    ``sample_patients = 4`` also scored four SAMPLED rows per step against those
-    same rates: from epoch 0, at the spec's 0.30 weight, a pull of each sampled
-    patient's metabolic rates onto the median person's, opposed to the
-    per-patient Gb / setpoint supervision and erasing the between-person
-    variation in secretion and clearance that the teacher draws per patient. The
-    4 predates iter 12 and was never tuned (the iter-32 review lists the flag as
-    vestigial).
-
-    A nonzero ``sample_patients`` is still honoured, but it is the wrong
-    experiment until each sampled row is scored against its OWN ``PatientParams``
-    (PLAN B4, per-row targets) — so this is a scoping fix, not an abandonment of
-    per-patient rate supervision. Every loss term is a mean over rows, so one row
-    also removes the 1/5 it put on the zero row's gradient: at an unchanged weight
-    the pull at zero is 5x the old one.
+    The zero embedding is the median person and is scored against
+    ``PatientParams()``. A sampled row is scored against that patient's own
+    teacher ``PatientParams`` (PLAN B4). A6 had stopped sampling because every
+    row, sampled or not, was scored against the median person's seven rates, so
+    ``sample_patients = 4`` pulled each patient's secretion and clearance onto
+    the median from epoch 0. The trajectory record's ``patient_params`` is the
+    ground truth; a sampled id with no entry raises rather than falling back
+    to the median target.
     """
 
     n_patients: int = 0
-    # 0: zero embedding only. A sampled row is scored against the DEFAULT
-    # patient's rates, i.e. pulled toward the median person (PLAN A6).
+    # 0: zero embedding only, against PatientParams(). Above 0, each sampled
+    # row is scored against patient_params[pid].
     sample_patients: int = 0
+    # pid -> the teacher patient that row was simulated from. Empty is correct
+    # when nothing is sampled. A sampled pid absent from this map is an error.
+    patient_params: dict[int, PatientParams] = field(default_factory=dict)
     include_default_embedding: bool = True
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(0.0))
     protocol: InsulinSweepProtocol = field(default_factory=InsulinSweepProtocol)
@@ -286,30 +313,19 @@ class InsulinSweepSignal(TrainingSignal):
     category: str = "metabolic"
 
     def __post_init__(self) -> None:
-        params = PatientParams()
-
-        # Cold targets and per-point sweep states.
-        g_targets = np.stack([
-            _cold_metabolic_rates(g, params.Ib, params) for g in self.protocol.glucose_sweep_mg_dL
-        ])  # [Ng, 7]
-        i_targets = np.stack([
-            _cold_metabolic_rates(params.Gb, i, params) for i in self.protocol.insulin_sweep_uU_mL
-        ])  # [Ni, 7]
-        self._g_targets = torch.tensor(g_targets, dtype=torch.float32)
-        self._i_targets = torch.tensor(i_targets, dtype=torch.float32)
-
-        # Pre-built sweep states (full STATE_DIM tensors for module input).
-        baseline = _build_baseline_state(params)
-        gi = MARKER_INDEX["glucose"]
-        ii = MARKER_INDEX["insulin"]
-        g_states = np.tile(baseline, (len(self.protocol.glucose_sweep_mg_dL), 1))
-        for k, g in enumerate(self.protocol.glucose_sweep_mg_dL):
-            g_states[k, gi] = float(g)
-        i_states = np.tile(baseline, (len(self.protocol.insulin_sweep_uU_mL), 1))
-        for k, ival in enumerate(self.protocol.insulin_sweep_uU_mL):
-            i_states[k, ii] = float(ival)
-        self._g_states = torch.tensor(g_states, dtype=torch.float32)
-        self._i_states = torch.tensor(i_states, dtype=torch.float32)
+        # The zero row. A sampled row builds the same curves from its own
+        # teacher patient the first time it is drawn; Gb, Ib and the basal
+        # state come from that patient, not from the median.
+        g_t, i_t, g_s, i_s = self._curves_for_params(PatientParams())
+        self._g_targets = g_t
+        self._i_targets = i_t
+        self._g_states = g_s
+        self._i_states = i_s
+        # Built on first use. A run that does not sample pays nothing, and a
+        # sampled patient is built once.
+        self._patient_curves: dict[
+            int, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+        ] = {}
 
         # Per-species weights and a normalization scale (NORM_SCALE for
         # the cold-modelled metabolic species, in the order the module
@@ -327,17 +343,61 @@ class InsulinSweepSignal(TrainingSignal):
         if self._g_species_w.shape != (7,) or self._i_species_w.shape != (7,):
             raise ValueError("species_weights must have length 7")
 
-        # Pairwise gap targets for monotonicity hinges.
-        # GSIR is monotone increasing in G (above threshold h);
-        # clearance term is monotone decreasing in I.
-        g_dI = self._g_targets[:, _MET_LOCAL_INSULIN]  # [Ng]
-        i_dI = self._i_targets[:, _MET_LOCAL_INSULIN]  # [Ni]
-        g_gap = g_dI.unsqueeze(0) - g_dI.unsqueeze(1)   # [Ng, Ng], gap[i, j] = j - i
-        i_gap = i_dI.unsqueeze(0) - i_dI.unsqueeze(1)   # [Ni, Ni]
-        self._g_rank_gap = g_gap
-        self._i_rank_gap = i_gap
-        self._g_rank_mask = (g_gap > 0).to(torch.float32)
-        self._i_rank_mask = (i_gap > 0).to(torch.float32)
+    def _curves_for_params(
+        self, params: PatientParams,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Cold targets and sweep states for one patient.
+
+        Returns ``(g_targets [Ng, 7], i_targets [Ni, 7], g_states [Ng, STATE],
+        i_states [Ni, STATE])``. The glucose sweep holds insulin at this
+        patient's Ib; the insulin sweep holds glucose at this patient's Gb.
+        """
+        g_targets = np.stack([
+            _cold_metabolic_rates(g, params.Ib, params) for g in self.protocol.glucose_sweep_mg_dL
+        ])
+        i_targets = np.stack([
+            _cold_metabolic_rates(params.Gb, i, params) for i in self.protocol.insulin_sweep_uU_mL
+        ])
+        baseline = _build_baseline_state(params)
+        gi = MARKER_INDEX["glucose"]
+        ii = MARKER_INDEX["insulin"]
+        g_states = np.tile(baseline, (len(self.protocol.glucose_sweep_mg_dL), 1))
+        for k, g in enumerate(self.protocol.glucose_sweep_mg_dL):
+            g_states[k, gi] = float(g)
+        i_states = np.tile(baseline, (len(self.protocol.insulin_sweep_uU_mL), 1))
+        for k, ival in enumerate(self.protocol.insulin_sweep_uU_mL):
+            i_states[k, ii] = float(ival)
+        return (
+            torch.tensor(g_targets, dtype=torch.float32),
+            torch.tensor(i_targets, dtype=torch.float32),
+            torch.tensor(g_states, dtype=torch.float32),
+            torch.tensor(i_states, dtype=torch.float32),
+        )
+
+    def _curves_for_row(
+        self, pid: int | None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Curves for one supervised row. ``None`` is the zero embedding."""
+        if pid is None:
+            return self._g_targets, self._i_targets, self._g_states, self._i_states
+        params = self.patient_params.get(pid)
+        if params is None:
+            raise RuntimeError(
+                f"insulin sweep sampled patient {pid} with no patient_params; "
+                "refusing to score that row against the median person"
+            )
+        cached = self._patient_curves.get(pid)
+        if cached is None:
+            cached = self._curves_for_params(params)
+            self._patient_curves[pid] = cached
+        return cached
+
+    def _batch(
+        self, pids: list[int | None],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Stack per-row curves on a new batch axis: ``[N, B, ...]``."""
+        curves = [self._curves_for_row(pid) for pid in pids]
+        return tuple(torch.stack([c[i] for c in curves], dim=1) for i in range(4))  # type: ignore[return-value]
 
     def weight_at(self, epoch: int) -> float:
         return self.weight.at(epoch)
@@ -350,10 +410,11 @@ class InsulinSweepSignal(TrainingSignal):
     ) -> torch.Tensor:
         """Run ``model.metabolic`` once over every (sweep point, embedding) pair.
 
-        ``sweep_states`` is ``[N, STATE_DIM]``; ``embeddings`` is ``[B, EMB]``.
-        Returns ``[N, B, 7]``: rates for the 7 metabolic species at each
-        (sweep-point, embedding) pair, with no meal, no stress, no
-        activity. Mirrors the input construction in
+        ``sweep_states`` is ``[N, STATE_DIM]`` (one operating point, broadcast
+        across the batch) or ``[N, B, STATE_DIM]`` (each row its own patient).
+        ``embeddings`` is ``[B, EMB]``. Returns ``[N, B, 7]``: rates for the
+        7 metabolic species at each (sweep-point, embedding) pair, with no
+        meal, no stress, no activity. Mirrors the input construction in
         ``ModularPhysiologyNetwork.forward`` so the supervision sees
         exactly what the integrator sees at this operating point.
         """
@@ -380,7 +441,14 @@ class InsulinSweepSignal(TrainingSignal):
 
         # Every (sweep point, embedding) pair in one call: row n·B + b.
         N = int(sweep_states.shape[0])
-        full_state = sweep_states.unsqueeze(1).expand(N, B, -1).reshape(N * B, -1)
+        if sweep_states.dim() == 2:
+            full_state = sweep_states.unsqueeze(1).expand(N, B, -1).reshape(N * B, -1)
+        else:
+            if int(sweep_states.shape[1]) != B:
+                raise ValueError(
+                    f"sweep states have batch {int(sweep_states.shape[1])}, embeddings have {B}"
+                )
+            full_state = sweep_states.reshape(N * B, -1)
         norm_state = (full_state - net.norm_center) / net.norm_scale
         coupling = net.coupling_for(
             "metabolic", norm_state, zero_gut.repeat(N, 1),
@@ -396,18 +464,19 @@ class InsulinSweepSignal(TrainingSignal):
     def _sweep_losses(
         self,
         pred: torch.Tensor,           # [N, B, 7]
-        target: torch.Tensor,         # [N, 7]
+        target: torch.Tensor,         # [N, B, 7]
         species_w: torch.Tensor,      # [7]
-        rank_gap: torch.Tensor,       # [N, N]
-        rank_mask: torch.Tensor,      # [N, N]
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """MSE / rank / AUC losses for one sweep axis.
+
+        ``target`` is per row. Rank hinges are that row's own cold-model dI
+        gaps, so a patient whose GSIR curve is steeper is not judged against
+        the median person's gaps.
 
         * ``mse`` — per-element squared error normalized by NORM_SCALE,
           weighted per species, then averaged.
         * ``rank`` — pairwise hinge on dI: violations counted only on
-          pairs where the cold-model dI gap is positive. Mirrors the
-          gut sweep's ranking term.
+          pairs where that row's cold-model dI gap is positive.
         * ``auc`` — sum-over-grid undiluted amplitude term per species,
           normalized by NORM_SCALE × N (the typical "AUC magnitude"
           under the integrated rate). Plays the same dilution-defeating
@@ -416,31 +485,32 @@ class InsulinSweepSignal(TrainingSignal):
         device = pred.device
         norm = self._met_norm_scale.to(device)            # [7]
         species_w = species_w.to(device)                   # [7]
-        target_b = target.unsqueeze(1)                     # [N, 1, 7]
+        target = target.to(device)
 
-        err = (pred - target_b) / norm                     # [N, B, 7]
+        err = (pred - target) / norm                       # [N, B, 7]
         per_species = (err.pow(2)).mean(dim=(0, 1))        # [7]
         denom = species_w.sum().clamp_min(1e-8)
         mse_loss = (per_species * species_w).sum() / denom
 
         # Sum across grid for AUC term, [B, 7]
         pred_sums = pred.sum(dim=0)
-        target_sums = target.sum(dim=0).unsqueeze(0)       # [1, 7]
+        target_sums = target.sum(dim=0)                    # [B, 7]
         auc_norm = norm * float(int(pred.shape[0]))
         auc_err = (pred_sums - target_sums) / auc_norm     # [B, 7]
         per_species_auc = (auc_err.pow(2)).mean(dim=0)     # [7]
         auc_loss = (per_species_auc * species_w).sum() / denom
 
-        # Rank hinge on dI only.
+        # Rank hinge on dI only, against each row's own cold curve.
         pred_dI = pred[..., _MET_LOCAL_INSULIN]            # [N, B]
+        tgt_dI = target[..., _MET_LOCAL_INSULIN]           # [N, B]
         pred_gap = pred_dI.unsqueeze(0) - pred_dI.unsqueeze(1)  # [N, N, B]
-        rank_gap = rank_gap.to(device)
-        rank_mask = rank_mask.to(device)
-        margin_required = self.protocol.rank_margin * rank_gap   # [N, N]
+        rank_gap = tgt_dI.unsqueeze(0) - tgt_dI.unsqueeze(1)    # [N, N, B]
+        rank_mask = (rank_gap > 0).to(torch.float32)
+        margin_required = self.protocol.rank_margin * rank_gap
         norm_dI = norm[_MET_LOCAL_INSULIN]
-        violation = torch.relu(margin_required.unsqueeze(2) - pred_gap) / norm_dI
-        violation = violation * rank_mask.unsqueeze(2)
-        n_active = rank_mask.sum() * float(int(pred.shape[1]))
+        violation = torch.relu(margin_required - pred_gap) / norm_dI
+        violation = violation * rank_mask
+        n_active = rank_mask.sum()
         rank_loss = (
             violation.sum() / n_active if float(n_active) > 0
             else torch.zeros((), device=device)
@@ -458,7 +528,7 @@ class InsulinSweepSignal(TrainingSignal):
         if w <= 0:
             return SignalResult()
 
-        emb_list = select_supervised_embeddings(
+        rows = select_supervised_rows(
             embeddings=embeddings,
             n_patients=self.n_patients,
             sample_patients=self.sample_patients,
@@ -466,26 +536,23 @@ class InsulinSweepSignal(TrainingSignal):
             device=ctx.device,
             include_default=self.include_default_embedding,
         )
-        if not emb_list:
+        if not rows:
             return SignalResult()
 
         device = ctx.device
         net = cast(ModularPhysiologyNetwork, model)
-        embs = torch.stack(emb_list, dim=0)  # [B, EMB]
+        pids = [pid for pid, _emb in rows]
+        embs = torch.stack([emb for _pid, emb in rows], dim=0)  # [B, EMB]
+        g_target, i_target, g_states, i_states = self._batch(pids)
 
-        g_states = self._g_states.to(device)
-        i_states = self._i_states.to(device)
-
-        g_pred = self._sweep_rates(net, g_states, embs)  # [Ng, B, 7]
-        i_pred = self._sweep_rates(net, i_states, embs)  # [Ni, B, 7]
+        g_pred = self._sweep_rates(net, g_states.to(device), embs)  # [Ng, B, 7]
+        i_pred = self._sweep_rates(net, i_states.to(device), embs)  # [Ni, B, 7]
 
         g_mse, g_rank, g_auc = self._sweep_losses(
-            g_pred, self._g_targets.to(device), self._g_species_w,
-            self._g_rank_gap, self._g_rank_mask,
+            g_pred, g_target.to(device), self._g_species_w,
         )
         i_mse, i_rank, i_auc = self._sweep_losses(
-            i_pred, self._i_targets.to(device), self._i_species_w,
-            self._i_rank_gap, self._i_rank_mask,
+            i_pred, i_target.to(device), self._i_species_w,
         )
 
         mse_loss = 0.5 * (g_mse + i_mse)

@@ -22,6 +22,34 @@ import torch
 import torch.nn as nn
 
 
+def select_supervised_rows(
+    embeddings: nn.Embedding,
+    n_patients: int,
+    sample_patients: int,
+    rng: np.random.Generator,
+    device: torch.device | str,
+    include_default: bool = True,
+) -> list[tuple[int | None, torch.Tensor]]:
+    """Embeddings to supervise this epoch, each with the patient id it belongs to.
+
+    Patient rows come from ``embeddings.forward`` so their gradients flow back
+    into the table. The zero embedding is ``(None, zeros)`` and is appended
+    last: it is the median person, not a draw, and it has no grad of its own.
+    ``None`` is the sentinel so patient 0 is not confused with that row.
+    """
+    rows: list[tuple[int | None, torch.Tensor]] = []
+    if n_patients > 0 and sample_patients > 0:
+        k = min(sample_patients, n_patients)
+        pids = rng.choice(n_patients, size=k, replace=False)
+        for pid in pids:
+            pid_i = int(pid)
+            pid_t = torch.tensor(pid_i, dtype=torch.long, device=device)
+            rows.append((pid_i, embeddings(pid_t)))
+    if include_default:
+        rows.append((None, torch.zeros(embeddings.embedding_dim, device=device)))
+    return rows
+
+
 def select_supervised_embeddings(
     embeddings: nn.Embedding,
     n_patients: int,
@@ -33,19 +61,10 @@ def select_supervised_embeddings(
     """Return embeddings to supervise this epoch.
 
     Always grad-enabled tensors, suitable for forward-then-backward through
-    the model. Patient embeddings come from ``embeddings.forward`` so their
-    gradients flow back into the embedding table; the zero embedding is a
-    fresh tensor with no grad of its own (only model parameters update).
+    the model. See ``select_supervised_rows`` for which row is which patient.
     """
-    emb_list: list[torch.Tensor] = []
-    if n_patients > 0 and sample_patients > 0:
-        k = min(sample_patients, n_patients)
-        pids = rng.choice(n_patients, size=k, replace=False)
-        for pid in pids:
-            pid_t = torch.tensor(int(pid), dtype=torch.long, device=device)
-            emb_list.append(embeddings(pid_t))
-    if include_default:
-        emb_list.append(
-            torch.zeros(embeddings.embedding_dim, device=device),
+    return [
+        emb for _pid, emb in select_supervised_rows(
+            embeddings, n_patients, sample_patients, rng, device, include_default,
         )
-    return emb_list
+    ]

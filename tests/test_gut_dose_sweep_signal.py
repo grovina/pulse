@@ -33,6 +33,7 @@ from pulse.training import (
     joint_aux_step,
 )
 from pulse.training.gut_dose_sweep_signal import _cold_target_for_dose
+from pulse.training.insulin_sweep_signal import patient_from_record
 from pulse.types import EMBEDDING_DIM, GUT_OUTPUT_DIM
 
 
@@ -41,6 +42,11 @@ def _tiny_model() -> ModularPhysiologyNetwork:
         metabolic_hidden=16, appetite_hidden=12, stress_hidden=12,
         cardiovascular_hidden=16, thermoreg_hidden=8, respiratory_hidden=8,
     )
+
+
+def _median_patients(n: int) -> dict[int, PatientParams]:
+    """One median teacher per embedding row, so a sampled row has a target."""
+    return {i: PatientParams() for i in range(n)}
 
 
 class TestAbsScale(unittest.TestCase):
@@ -142,6 +148,7 @@ class TestSignalGating(unittest.TestCase):
         opt = torch.optim.Adam(params, lr=1e-2)
         sig = GutDoseSweepSignal(
             n_patients=2, sample_patients=2, weight=WeightSchedule(1.0),
+            patient_params=_median_patients(2),
         )
         ctx = SignalContext(
             epoch=0, total_epochs=1, rng=np.random.default_rng(0),
@@ -220,6 +227,7 @@ class TestGradientFlow(unittest.TestCase):
         opt = torch.optim.SGD(params, lr=1e-2)
         sig = GutDoseSweepSignal(
             n_patients=1, sample_patients=1, weight=WeightSchedule(1.0),
+            patient_params=_median_patients(1),
         )
         ctx = SignalContext(
             epoch=0, total_epochs=1, rng=np.random.default_rng(0),
@@ -253,6 +261,7 @@ class TestLearningSanity(unittest.TestCase):
         opt = torch.optim.Adam(params, lr=5e-3)
         sig = GutDoseSweepSignal(
             n_patients=1, sample_patients=1, weight=WeightSchedule(1.0),
+            patient_params=_median_patients(1),
             protocol=GutDoseSweepProtocol(
                 carb_doses_g=(0.0, 30.0, 60.0, 90.0),
                 post_window_min=120,
@@ -333,6 +342,7 @@ class TestRankingTerm(unittest.TestCase):
         )
         sig = GutDoseSweepSignal(
             n_patients=1, sample_patients=1,
+            patient_params=_median_patients(1),
             weight=WeightSchedule(1.0),
             protocol=proto, ranking_weight=0.0, auc_weight=0.0,
         )
@@ -463,6 +473,7 @@ class TestAucMatchingTerm(unittest.TestCase):
         )
         sig_off = GutDoseSweepSignal(
             n_patients=1, sample_patients=1,
+            patient_params=_median_patients(1),
             weight=WeightSchedule(1.0),
             protocol=proto, ranking_weight=0.0, auc_weight=0.0,
         )
@@ -626,11 +637,8 @@ class TestAppearanceOnly(unittest.TestCase):
 
 
 class TestZeroEmbeddingOnlyByDefault(unittest.TestCase):
-    """PLAN A6: the targets are the DEFAULT patient's absorption kernel, so by default
-    the zero embedding (the median person) is the only row scored against them.
-
-    Until PLAN A6 ``sample_patients = 4`` also scored four sampled rows per step: from epoch 0,
-    at the spec's 0.10 weight, a pull of each patient's absorption toward the median person's.
+    """With ``sample_patients = 0`` the zero embedding is the only row, and it is scored
+    against ``PatientParams()``. Sampling without a teacher patient for that row raises.
     """
 
     _PROTO = GutDoseSweepProtocol(carb_doses_g=(0.0, 60.0), post_window_min=60)
@@ -669,13 +677,20 @@ class TestZeroEmbeddingOnlyByDefault(unittest.TestCase):
         # no table row is in the graph, so nothing is pulled toward the median person's kernel
         self.assertIsNone(emb.weight.grad)
 
-    def test_a_nonzero_sample_patients_is_still_honoured(self) -> None:
-        result, seen, emb = self._run(sample_patients=2)
+    def test_sampling_without_patient_params_fails(self) -> None:
+        with self.assertRaises(RuntimeError) as caught:
+            self._run(sample_patients=2)
+        self.assertIn("no patient_params", str(caught.exception))
+
+    def test_a_sampled_row_is_scored_and_zero_stays_last(self) -> None:
+        result, seen, emb = self._run(
+            sample_patients=2, patient_params=_median_patients(5),
+        )
         self.assertEqual(tuple(seen[0].shape), (3, EMBEDDING_DIM))
         self.assertGreater(float(seen[0][:2].abs().sum()), 0.0)  # the sampled rows ...
         self.assertEqual(int(torch.count_nonzero(seen[0][2])), 0)  # ... then zero, appended last
         self.assertEqual(result.sub_metrics["n_dose_emb_pairs"], 3.0 * len(self._PROTO.carb_doses_g))
-        self.assertIsNotNone(emb.weight.grad)  # sampled rows are scored against the default patient
+        self.assertIsNotNone(emb.weight.grad)
 
     def test_zero_embedding_off_and_no_patients_is_a_noop(self) -> None:
         result, seen, _ = self._run(include_default_embedding=False)
@@ -683,7 +698,7 @@ class TestZeroEmbeddingOnlyByDefault(unittest.TestCase):
         self.assertEqual(seen, [])
 
     def test_inversion_count_reads_the_zero_row_not_the_first_sampled_row(self) -> None:
-        # select_supervised_embeddings appends the zero embedding LAST. With sampled rows
+        # select_supervised_rows appends the zero embedding LAST. With sampled rows
         # present the metric used to index row 0 and report a sampled patient's inversions.
         sig = GutDoseSweepSignal(protocol=GutDoseSweepProtocol(
             carb_doses_g=(0.0, 30.0, 60.0, 120.0), post_window_min=60,
@@ -698,6 +713,78 @@ class TestZeroEmbeddingOnlyByDefault(unittest.TestCase):
 
         self.assertEqual(n_inv(first=inverted, last=correct), 0.0)  # zero (last row) is fine
         self.assertEqual(n_inv(first=correct, last=inverted), float(D * (D - 1) // 2))
+
+
+class TestPerPatientTargets(unittest.TestCase):
+    """PLAN B4: a sampled row is scored against its own teacher PatientParams.
+    The zero row stays on PatientParams(). Body mass is the recorded field that
+    scales appearance (mg/dL per gram).
+    """
+
+    _PROTO = GutDoseSweepProtocol(carb_doses_g=(0.0, 60.0), post_window_min=60)
+
+    def test_the_sampled_row_uses_its_patient_and_the_zero_row_uses_the_median(self) -> None:
+        heavy = patient_from_record({
+            "body_mass_kg": 110.0, "si": 0.0004, "glyc_ins_k": 25.0,
+            "gamma": 0.05, "k_ins": 0.15, "act_insulin_sens": 0.3,
+        })
+        sig = GutDoseSweepSignal(protocol=self._PROTO, patient_params={0: heavy})
+        own = sig._targets_for(0)
+        zero = sig._targets_for(None)
+        expected = np.stack([
+            _cold_target_for_dose(d, self._PROTO.fats_g, self._PROTO.proteins_g, 60, heavy)[..., :3]
+            for d in self._PROTO.carb_doses_g
+        ])
+        self.assertTrue(np.allclose(own.numpy(), expected))
+        self.assertTrue(torch.equal(zero, sig._targets))
+        self.assertFalse(torch.allclose(own, zero))
+        batch = sig._targets_for_rows([0, None])
+        self.assertEqual(tuple(batch.shape), (2, 2, 60, 3))
+        self.assertTrue(torch.equal(batch[:, 0], own))
+        self.assertTrue(torch.equal(batch[:, 1], zero))
+
+    def test_matching_each_row_to_its_own_target_is_zero_loss(self) -> None:
+        heavy = PatientParams(body_mass_kg=110.0)
+        sig = GutDoseSweepSignal(protocol=self._PROTO, patient_params={0: heavy})
+        own = sig._targets_for(0)
+        zero = sig._targets_for(None)
+        targets = sig._targets_for_rows([0, None])
+        D = int(own.shape[0])
+        T = self._PROTO.post_window_min
+        matched = [torch.stack([own[i], zero[i]]) for i in range(D)]
+        mse, rank, auc, n_inv = sig._losses(matched, targets, sig._abs_scale, T)
+        self.assertAlmostEqual(float(mse), 0.0, places=5)
+        self.assertAlmostEqual(float(rank), 0.0, places=5)
+        self.assertAlmostEqual(float(auc), 0.0, places=5)
+        self.assertEqual(float(n_inv), 0.0)
+        # Both rows predicting the median leaves a residual on the sampled row.
+        median_both = [zero[i].unsqueeze(0).expand(2, -1, -1) for i in range(D)]
+        mse_median, _, _, _ = sig._losses(median_both, targets, sig._abs_scale, T)
+        self.assertGreater(float(mse_median), 1e-6)
+
+    def test_compute_loss_moves_when_the_sampled_patient_moves(self) -> None:
+        torch.manual_seed(0)
+        model = _tiny_model()
+        model.eval()
+        emb = nn.Embedding(1, EMBEDDING_DIM)
+        nn.init.normal_(emb.weight, std=0.3)
+        heavy = PatientParams(body_mass_kg=110.0)
+
+        def loss(patients: dict[int, PatientParams]) -> float:
+            sig = GutDoseSweepSignal(
+                n_patients=1, sample_patients=1, weight=WeightSchedule(1.0),
+                protocol=self._PROTO, patient_params=patients,
+            )
+            params = list(model.parameters()) + list(emb.parameters())
+            ctx = SignalContext(
+                epoch=0, total_epochs=1, rng=np.random.default_rng(0),
+                device=torch.device("cpu"), optimizer=torch.optim.SGD(params, lr=0.0),
+                params=params, grad_clip=1e9,
+            )
+            model.zero_grad(set_to_none=True)
+            return sig.compute(model, emb, ctx).loss_sum
+
+        self.assertGreater(abs(loss({0: heavy}) - loss({0: PatientParams()})), 1e-4)
 
 
 if __name__ == "__main__":
