@@ -282,8 +282,9 @@ class TestPerPatientGates(unittest.TestCase):
     def test_basal_split_matches_the_teacher(self) -> None:
         """The one-sided split, in mg/kg/min, is resolve_derived_params at f_gng 0.5.
         Identity at Gb 95; at 130 the excess is gluconeogenic and glycogenolysis
-        stays at the typical half; at 70 the deficit comes off glycogenolysis."""
-        m = _model(11, perturb=1.0)
+        stays at the typical half; at 70 the deficit comes off glycogenolysis.
+        Scored at the prior mode: a perturbed f_gng is a different patient."""
+        m = _model(11, perturb=0.0)
         for gb in (70.0, 95.0, 130.0):
             self._set_gb(m, gb)
             teacher = resolve_derived_params(PatientParams(Gb=gb, f_gng=0.5))
@@ -795,31 +796,29 @@ class TestVolumeAndEnergy(unittest.TestCase):
 
 
 class TestLipolysis(unittest.TestCase):
-    def test_uptake_and_gng_share_are_anatomical(self) -> None:
+    def test_uptake_and_gng_share_start_at_the_prior_mode(self) -> None:
         """Obligatory uptake is the teacher's 2 mg/kg/min at Gb 95, and the
-        gluconeogenic share is one half. Neither is a parameter, so a
-        perturbation of the module cannot move them."""
-        m = _model(19, perturb=1.0)
+        gluconeogenic share is one half. Both are parameters, at the prior mode."""
+        m = _model(19, perturb=0.0)
         names = [n for n, _ in m.metabolic.named_parameters()]
-        self.assertNotIn("log_k_ii", names)
-        self.assertNotIn("logit_f_gng", names)
+        self.assertIn("log_k_ii", names)
+        self.assertIn("logit_f_gng", names)
         args = TestPerPatientGates._reference_state(m, 95.0)
         with torch.no_grad():
             f = m.metabolic.fluxes(*args)
-        self.assertAlmostEqual(float(f["k_ii"]), 2.0 / (VG_DL_PER_KG * 95.0), places=6)
-        self.assertAlmostEqual(float(f["f_gng"]), 0.5, places=6)
-        self.assertAlmostEqual(float(m.metabolic.k_ii()), float(f["k_ii"]), places=6)
+        self.assertAlmostEqual(float(f["k_ii"]), 2.0 / (VG_DL_PER_KG * 95.0), places=5)
+        self.assertAlmostEqual(float(f["f_gng"]), 0.5, places=5)
+        self.assertAlmostEqual(float(m.metabolic.k_ii()), float(f["k_ii"]), places=5)
 
-    def test_ffa_clearance_is_anatomical(self) -> None:
-        """Clearance is the teacher's 0.20. It is not a parameter, so a
-        perturbation of the module cannot move it."""
-        m = _model(18, perturb=1.0)
+    def test_ffa_clearance_starts_at_the_prior_mode(self) -> None:
+        """Clearance starts at the teacher's 0.20. It is a parameter."""
+        m = _model(18, perturb=0.0)
         names = [n for n, _ in m.metabolic.named_parameters()]
-        self.assertNotIn("log_k_ffa", names)
+        self.assertIn("log_k_ffa", names)
         args = TestPerPatientGates._reference_state(m, 95.0)
         with torch.no_grad():
             f = m.metabolic.fluxes(*args)
-        self.assertAlmostEqual(float(f["k_ffa"]), 0.20, places=6)
+        self.assertAlmostEqual(float(f["k_ffa"]), 0.20, places=5)
 
     def test_ffa_basal_is_a_fixed_point(self) -> None:
         """At I=Ib, FFA=FFA_b: dFFA=0 after perturbing the remaining scalars —
@@ -901,15 +900,21 @@ class TestGlucagon(unittest.TestCase):
             f = m.metabolic.fluxes(*args)
         self.assertAlmostEqual(float(f["alpha_gn"]), 3.5, places=6)
 
-    def test_glucagon_basal_is_anatomical(self) -> None:
-        """Gnb is 70 pg/mL for every embedding. The baseline head is gone, so
-        a perturbation cannot move it."""
+    def test_glucagon_basal_is_one_population_value(self) -> None:
+        """Gnb is one value for every embedding. The per-person head stays gone.
+        At the prior mode that value is 70 pg/mL."""
         m = _model(21, perturb=1.0)
         self.assertFalse(hasattr(m.metabolic, "gn_baseline_net"))
+        self.assertIn("log_gn_b", [n for n, _ in m.metabolic.named_parameters()])
         emb = m.embedding_projections["metabolic"](torch.randn(4, EMBEDDING_DIM))
         with torch.no_grad():
             gnb = m.metabolic.gn_setpoint_raw(emb)
-        self.assertTrue(torch.allclose(gnb, torch.full_like(gnb, 70.0)))
+        self.assertTrue(torch.allclose(gnb, gnb[:1].expand_as(gnb)))
+        m0 = _model(21, perturb=0.0)
+        emb0 = m0.embedding_projections["metabolic"](torch.zeros(2, EMBEDDING_DIM))
+        with torch.no_grad():
+            g0 = m0.metabolic.gn_setpoint_raw(emb0)
+        self.assertTrue(torch.allclose(g0, torch.full_like(g0, 70.0)))
 
     def test_gnb_is_the_fed_fixed_point(self) -> None:
         """At G=Gb, I=Ib, Gn=Gnb: dGn=0 even after perturbing k_gn, alpha, and

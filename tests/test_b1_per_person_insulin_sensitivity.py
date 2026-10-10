@@ -712,12 +712,12 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
             self.assertTrue(bool(torch.isfinite(p.grad).all()), msg=name)
             self.assertGreater(float(p.grad.abs().max()), 0.0, msg=name)
 
-    def test_the_parameter_count_grew_by_the_five_heads_and_one_scalar(self) -> None:
-        """+1,326: five zero-init heads (265 each at the default widths — Linear(20,12)
-        + Linear(12,1)) plus the activity sensitivity's population scalar. Iter 110
-        removed ``log_alpha_gn``, so the module total is 20,813 rather than the
-        20,814 counted before that constant. Only the module's own total is
-        asserted, because the model's depends on every other module."""
+    def test_the_metabolic_parameter_count(self) -> None:
+        """Five zero-init heads (265 each at the default widths) plus the activity
+        sensitivity's population scalar. On top of iter 110's 20,813: the
+        potentiator column widened four learned heads' first layers by the hidden
+        width (+192), and the four population priors are one scalar each (+4).
+        Only the module's own total is asserted."""
         m = ModularPhysiologyNetwork()
         heads = ("insulin_sens_net", "hepatic_ins_k_net", "beta_cell_gain_net",
                  "insulin_clearance_net", "act_insulin_sens_net")
@@ -726,7 +726,7 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 20813)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21009)
         self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 

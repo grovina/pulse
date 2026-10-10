@@ -15,7 +15,6 @@ of plasma insulin (τ = 4 h).
 import math
 
 import torch
-import torch.nn as nn
 
 from .base import BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule
 from ..types import (
@@ -45,7 +44,6 @@ _GUT_GLUCOSE = 5
 
 _INSULIN_CENTER = NORM_CENTER[MARKER_INDEX["insulin"]]
 _INSULIN_SCALE = NORM_SCALE[MARKER_INDEX["insulin"]]
-_IB_LOG_MAX = 0.9
 _FAT_CENTER = NORM_CENTER[MARKER_INDEX["fat_mass"]]
 _FAT_SCALE = NORM_SCALE[MARKER_INDEX["fat_mass"]]
 _GLP1_CENTER = NORM_CENTER[MARKER_INDEX["glp1"]]
@@ -112,24 +110,22 @@ class AppetiteModule(MassActionModule):
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
-        _bh = max(8, hidden_dim // 4)
-        self.insulin_baseline_net = nn.Sequential(
-            nn.Linear(embedding_dim, _bh), nn.Tanh(), nn.Linear(_bh, 1),
-        )
-        with torch.no_grad():
-            self.insulin_baseline_net[-1].weight.zero_()
-            self.insulin_baseline_net[-1].bias.zero_()
-
-    def insulin_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        return _INSULIN_CENTER * torch.exp(
-            _IB_LOG_MAX * torch.tanh(self.insulin_baseline_net(embedding).squeeze(-1)))
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {
-            "ib": self.insulin_setpoint_raw(embedding).clamp(min=1e-3),
             "glp1_prod_scale": self.prod_scale[_GLP1_IDX],
             "glp1_cons_scale": self.cons_scale[_GLP1_IDX],
         }
+
+    def bind_person(self, const, person):
+        """Basal insulin is the metabolic module's decode. This module has no second one."""
+        if person is None or "ib" not in person:
+            raise RuntimeError(
+                "appetite reads the metabolic basal insulin and has no decode of its own"
+            )
+        bound = dict(const)
+        bound["ib"] = person["ib"]
+        return bound
 
     def drives(
         self,

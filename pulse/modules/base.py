@@ -281,6 +281,17 @@ class PhysiologyModule(nn.Module):
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {}
 
+    def bind_person(
+        self,
+        const: dict[str, torch.Tensor],
+        person: dict[str, torch.Tensor] | None,
+    ) -> dict[str, torch.Tensor]:
+        """Quantities decoded once for the whole body, merged into this module's constants.
+
+        A module that reads one overrides this. The default has nothing to merge.
+        """
+        return const
+
     def drives(
         self,
         external: torch.Tensor,
@@ -351,8 +362,9 @@ class PhysiologyModule(nn.Module):
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
+        person: dict[str, torch.Tensor] | None = None,
     ) -> torch.Tensor:
-        const = self.constants(embedding)
+        const = self.bind_person(self.constants(embedding), person)
         drv = self.drives(external, coupling, time_features, const)
         raw = self.head_outputs(state, coupling, external, embedding, time_features)
         return self.step(state, coupling, const, drv, raw)

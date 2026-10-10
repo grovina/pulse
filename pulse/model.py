@@ -531,6 +531,22 @@ class ModularPhysiologyNetwork(nn.Module):
             self._index_cache[key] = cached
         return cached
 
+    def person_quantities(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Basal insulin and body mass, decoded once from the metabolic projection.
+
+        ``embedding`` is the person code ``[B, E]``, not a module's private
+        projection. Appetite reads ``ib`` from here; it does not decode its own.
+        """
+        if embedding.dim() != 2:
+            raise ValueError(
+                f"person_quantities expects the person code [B, E], got {tuple(embedding.shape)}"
+            )
+        met = self.embedding_projections["metabolic"](embedding)
+        return {
+            "ib": self.metabolic.insulin_setpoint_raw(met).clamp(min=1e-3),
+            "body_mass_kg": self.metabolic.body_mass_kg(met),
+        }
+
     def forward(
         self,
         state: torch.Tensor,
@@ -673,6 +689,7 @@ class ModularPhysiologyNetwork(nn.Module):
             duo = torch.zeros(batch, DUODENAL_DIM, dtype=state.dtype, device=state.device)
 
         external = {"sleep_wake": sw, "activity": act}
+        person = self.person_quantities(embedding)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
         for name in _MODULE_ORDER:
@@ -680,12 +697,12 @@ class ModularPhysiologyNetwork(nn.Module):
             own = norm_state[:, MODULE_MARKER_INDICES[name]]
             coupling = self.coupling_for(name, norm_state, gut_out_batch, duo)
             ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
-            rate = mod(own, coupling, ext, emb[name], time_feats)
+            rate = mod(own, coupling, ext, emb[name], time_feats, person)
             parts.append(rate)
             if return_decay and _reports_decay(mod):
                 # The same composition as ``PhysiologyModule.forward``, so the decay is a
                 # function of exactly the constants, drives and head outputs the rate saw.
-                const = mod.constants(emb[name])
+                const = mod.bind_person(mod.constants(emb[name]), person)
                 drv = mod.drives(ext, coupling, time_feats, const)
                 raw = mod.head_outputs(own, coupling, ext, emb[name], time_feats)
                 decays.append(_as_rate_shape(
@@ -960,13 +977,17 @@ class _RolloutPlan:
         nan_state = torch.full((B, T, STATE_DIM), float("nan"), dtype=gut.dtype, device=device)
         protocol_coupling = torch.cat([nan_state, gut, duo], dim=-1)
         external = {"sleep_wake": sw, "activity": act}
+        person = model.person_quantities(embedding)
+        person_window = {k: v.repeat_interleave(T, dim=0) for k, v in person.items()}
         tf_flat = time_feats.reshape(B * T, -1)
         self.modules: list[_ModulePlan] = []
         for name in _MODULE_ORDER:
             mod = model._modules_by_name[name]
             state_idx, coupling_idx = model._step_gather_indices(name, device)
             ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
-            const_window = mod.constants(emb[name].repeat_interleave(T, dim=0))
+            const_window = mod.bind_person(
+                mod.constants(emb[name].repeat_interleave(T, dim=0)), person_window,
+            )
             drives = mod.drives(
                 ext.reshape(B * T, -1),
                 protocol_coupling.index_select(-1, coupling_idx).reshape(B * T, -1),
@@ -974,7 +995,7 @@ class _RolloutPlan:
                 const_window,
             )
             self.modules.append(_ModulePlan(
-                name, mod, mod.constants(emb[name]), drives, B, T,
+                name, mod, mod.bind_person(mod.constants(emb[name]), person), drives, B, T,
                 state_idx, coupling_idx, self.bank.slots.get(name, []),
             ))
 

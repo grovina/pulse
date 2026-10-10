@@ -119,6 +119,31 @@ OGTT_INSULIN_MEAN = CohortStatisticSpec(
 
 
 # ---------------------------------------------------------------------------
+# 75 g OGTT → insulin at 120 min, the tail
+# ---------------------------------------------------------------------------
+# PMID 3525269, 247 healthy subjects with normal glucose tolerance: insulin
+# at 2 h is 0.24 ± 0.01 nmol/L (SEM). At 6.945 pmol/L per µU/mL that is
+# 34.6 ± 1.44 µU/mL. The 3 h mean above can be met by a high peak and a
+# crash; this window is the sample itself, 110–130 min after the load
+# (the arm's meal is at minute 60). Sigma is the published SEM, so n_arm
+# stays 1 and the loss is not tightened by the training batch.
+OGTT_INSULIN_120 = CohortStatisticSpec(
+    name="ogtt_75g_insulin_120min",
+    source="PMID 3525269 — 75 g OGTT, 247 healthy subjects, normal glucose tolerance",
+    description="75 g OGTT → insulin ≈ 34.6 µU/mL at 120 min (0.24 nmol/L)",
+    arms=(
+        CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
+    ),
+    marker_id="insulin",
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    window=StatisticWindow(start_min=170, end_min=190),
+    target=34.6,
+    sigma=1.44,
+    n_arm=1,
+)
+
+
+# ---------------------------------------------------------------------------
 # Mixed meal → hepatic glucose output suppression
 # ---------------------------------------------------------------------------
 # Rizza et al. (1981); Basu et al. (2000): physiological postprandial
@@ -181,6 +206,7 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     OGTT_GLUCOSE_LATE,
     OGTT_INSULIN_PEAK,
     OGTT_INSULIN_MEAN,
+    OGTT_INSULIN_120,
     MEAL_HGO_SUPPRESSION,
     SMALL_CARB_GLUCOSE_PEAK,
 ]

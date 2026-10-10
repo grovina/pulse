@@ -2,8 +2,8 @@
   "schemaVersion": "v1",
   "app": "pulse",
   "iter": 112,
-  "hypothesis": "Iter 112 restores per-person sweep targets on top of the person model, warm-started from iter 111. Each sampled insulin-sweep and gut-sweep row is scored against its own teacher PatientParams; the zero embedding remains the median person and is still scored against PatientParams(). Iter 111 had set both sample-patients flags to 0. The thing to watch is real CGM glucose skill (iter 111: MAE 7.23, skill +0.10) against the teacher gains iter 111 made (glucagon MAE 1.08, cortisol MAE 0.31).",
-  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter111/model.pt. Gut and insulin sweeps sample 4 patients again and score each sampled row against that patient's teacher PatientParams; a sampled row with no patient_params aborts the run. The zero row stays on PatientParams(). WATCH real CGM glucose skill against iter 111 (MAE 7.23, skill +0.10), and whether the teacher gains iter 111 made hold (glucagon MAE 1.08, cortisol MAE 0.31).",
+  "hypothesis": "Iter 112 warm-starts from iter 111 onto the tree where second-phase insulin is a state, basal insulin is one decode, and k_ii, f_gng, k_ffa and glucagon basal are population parameters under a prior. Tensors whose shape changed stay at their new init. Sampled sweep rows are scored against each row's own teacher patient; the zero embedding stays the median person. Watch real CGM glucose skill against iter 111 (MAE 7.23, skill +0.10), the cohort residuals including two-hour insulin at 34.6 \u00b1 1.44 \u00b5U/mL, setpoint spread, and the literature share of the step. Glucagon MAE 1.08 and cortisol MAE 0.31 are the teacher-side gains to hold.",
+  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter111/model.pt. Matching tensors and the patient table load. Widened metabolic heads and the removed appetite basal head stay at the new init; the four priors start at their modes. Gut and insulin sweeps sample 4 patients and score each row against that patient's teacher PatientParams. WATCH real CGM skill against iter 111 (+0.10), ogtt_75g_insulin_120min, setpoint spread, and [LITSHARE]. Teacher-tape MAE is reported and is not acceptance.",
   "sourceRef": "HEAD",
   "params": {
     "trainArgs": [
@@ -73,7 +73,8 @@
       "--carb-mass-balance-sample-patients=2",
       "--grad-clip=10.0",
       "--seed=42",
-      "--embedding-prior-center-weight=10.0"
+      "--embedding-prior-center-weight=10.0",
+      "--population-prior-weight=1.0"
     ]
   }
 }

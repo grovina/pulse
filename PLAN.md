@@ -1,387 +1,748 @@
-# Plan — the person model, the frozen constants, and the missing hubs
+# Plan — a simulation of human physiology, trained by the literature
 
-*Written 2026-10-04, against HEAD `ea16d0d` (iter 109). Companion to
-`docs/review-2026-09-04.md` (the iter-96 review, whose A–E list iter 97 executed)
-and `docs/modeling-state.md` (the completeness map). This document is the
-successor to both: the review's three diseases are fixed, and what the
-2026-10-03 analysis found is a **fourth** that iters 97–109 made worse while
-fixing the third.*
+*Written 2026-10-09. Supersedes the 2026-10-04 plan ("the person model, the
+frozen constants, and the missing hubs"). That plan's measurements still
+bind; they are restated under the item that would otherwise repeat the
+mistake. The completeness map remains `docs/modeling-state.md`. The
+authoring surfaces remain `pulse/knowledge/AUTHORING.md`.*
 
-## 0. The picture in one paragraph
+## 1. Destination
 
-Layer 1 of the PRD hierarchy is now real: carbon closes, the gut kernel is a
-normalized density, SBP > DBP and HRV > 0 hold in the coordinates rather than in
-a docstring, Gb is a fixed point, and the ruler is honest. What iters 98–109
-did to get there was **replace learned physiology with the teacher's own laws
-and constants** — 68,293 parameters to 37,343, with ghrelin, leptin, the whole
-HPA cascade, ketogenesis, lipolysis, glucagon and the liver's carbon budget now
-structural. Each of those was individually the right call against a flat
-gradient direction. Collectively they moved the model *down* the PRD hierarchy:
-quantities that the PRD assigns to layer 3 (medical knowledge — "priors, not
-constraints") and layer 4 (individual variation — "learned from this person")
-are now layer 1 (imposed architecture). The model is a differentiable copy of
-its teacher, and a copy cannot overturn the thing it copies.
+A simulation of human physiology. What the scientific record has
+established about the body enters as gradients, at the granularity the
+evidence supports, through one schema. A later paper can move the model,
+including a law that was copied from the teacher.
 
-The fourth disease is therefore: **the model has lost the ability to represent a
-person.** Its most important individual axis — insulin sensitivity, the PRD's own
-example — does not exist. Nine per-patient heads have no supervision path at
-all. The embedding is 40 memorized codes in 32 dimensions, three different
-"default persons" are in use at once, and two signals actively pull every
-patient toward the median one.
+The simulation is done enough to extend when three things are true at
+once:
 
-## 1. Principles this plan is held to
+- A published finding has a state and a pathway to act on.
+- That finding is an evidence item — protocol, observation, sigma,
+  citation, authority — and the training step gives it a gradient.
+- Held-out findings and real measurements move the right way. Agreement
+  with the teacher tape is not the score.
 
-Beyond the PRD's four layers, three rules decide every choice below.
+Personalization is a consequence. A body that cannot represent
+between-person variation cannot absorb the literature that is about
+that variation. It is not a separate product goal.
 
-**Right by construction beats fitted.** Where an invariant is physics
-(conservation, positivity, ordering) it belongs in the coordinates or the
-functional form, not in a loss. This is the iter-97 lesson and it holds.
+## 2. What a finding is
 
-**Flat is not the same as fixed.** When a parameter's gradient cancels at the
-fixed point, the remedy is a *prior plus the evidence that identifies it*, not a
-constant. A δ-prior is infinitely confident; the PRD forbids exactly that
-("strong claims become tight constraints, weak claims loose ones"). A frozen
-constant also deletes real between-person variation: the teacher varies Gnb,
-k_ffa, uptake_ii and the gluconeogenic share per patient, and iters 106–109
-replaced all four with one number.
+The native training example is an `EvidenceItem`
+(`pulse/knowledge/evidence.py`): a protocol, an observation operator, a
+reliability, and an authority. Literature and real measurements outrank
+the teacher on any marker they both cover.
 
-**The decoder family must match the generative family.** The teacher draws
-almost every parameter lognormally, so the median person is `PatientParams()`
-and the population *mean* is above it (Si mean/median 1.14, Ib 1.08, HRV₀ 1.09).
-A student that decodes a setpoint as `center + scale·tanh(head)` has
-E[setpoint] = center for a zero-mean code — it cannot be simultaneously right at
-the median and in the mean. Decoding positive quantities in log space makes both
-true by Jensen, with no loss term. This single observation resolves the "is zero
-the median or the mean" tension that otherwise forces a choice.
+A finding enters at the smallest surface that captures it.
 
-## 2. What zero means, decided
+| The finding | Where it goes |
+|---|---|
+| X raises or lowers Y, with a magnitude band | `CouplingPrior` in `pulse/knowledge/coupling_priors/` |
+| In protocol P, marker M had statistic S ± σ | `CohortStatisticSpec` in `pulse/knowledge/cohorts/`, registered in `cohort_statistics.py` |
+| A direction, floor, ceiling, or timing on one trajectory | `PhysiologyRule` in `pulse/knowledge/physiology_rules.py` |
+| A dose scales a peak, a rank, or a slope | `OperatorKind.DOSE_*`, scored by `RolloutEvidenceSignal` |
+| A local input→output map the trajectory loss cannot reach | A sweep signal, after `signal-balance` shows the trajectory term dominating that module |
+| Conservation, positivity, ordering, a fixed point | The coordinates or the functional form, in `pulse/modules/` |
 
-**Zero is the median person, and the embedding table's mean is pinned to zero.**
+The teacher tape (`TEACHER_TAPE_MARKERS`: glucose, hr, sbp, dbp, temp)
+is wearable-frequency fill. Distillation
+(`TEACHER_DISTILL_MARKERS`: crh, insulin_action, insulin_slow,
+mitochondrial_capacity, fat_mass, gallbladder_bile, intestinal_bile)
+covers internals no paper reports as a time series. A marker that gains
+a cohort statistic leaves the distill list. `teacher_literature_collisions()`
+stays empty.
 
-Both halves are needed, and together they are consistent *only* with log-space
-decoders (§1). The consequences, each of which is a work item:
+Today the registries hold 40 cohort statistics, 61 physiology rules, and
+37 coupling priors. That is the schema, exercised on one region of
+physiology. It is not the literature.
 
-- `PatientParams()` is the median patient (measured: it sits at the 44th–57th
-  percentile of every daily-mean marker), so supervising zero against it is
-  correct, and the textbook scenarios and the lab keep their meaning.
-- The calibration prior becomes `N(0, diag σ)` by construction instead of a
-  post-hoc fit to whatever cloud the reconstruction loss left behind. The soft
-  norm penalty and the hard clamp, which are already centred on zero, stop
-  disagreeing with the prior mean, which is currently not.
-- Every consumer uses the same person. The server's user-id-seeded random vector
-  goes; a new user gets the median person and a band.
-- Population statistics stop being estimated by "mean of 2 random rows + zero".
+## 3. How work is ordered
 
-## 3. Work items
+Three rules decide what is next.
 
-Grouped by wave. Within a wave, items are independent and can land in parallel.
-Each carries its **invariant** (what becomes true by construction) or its
-**evidence** (what identifies it), because an item with neither is how we got
-here.
+**A finding needs a degree of freedom.** Encoding a result whose pathway
+does not exist produces a zero gradient or a parameter that gets frozen.
+Iters 98–109 did the second: learned laws were replaced by the teacher's
+constants, and the parameter count fell from 68,293 to 37,343. Each
+replacement was locally right. Together they made a copy, and a copy
+cannot be overturned by the next paper.
 
-### Wave A — one person, consistently (no new states; no `STATE_DIM` change)
+**A new state lands with the evidence that identifies it.** Teacher
+mechanism, student mechanism, and the cohort or rule that supervises it
+arrive together, with the benchmark `initial_state` migration
+(`scripts/migrate_benchmark_initial_state.py`). A state alone repeats
+the inert-glycogen failure.
 
-| # | Item | Invariant / evidence |
+**The schema grows when a finding has no home, and it grows once.** A
+paper does not get its own loss class. If the decision table above
+cannot express the finding, the table gains one operator, and later
+papers of that shape use it.
+
+## 4. Where this stands (2026-10-09)
+
+The simulator is eight modules and 30 states: metabolic, appetite,
+stress, cardiovascular, thermoregulation, respiratory, gut,
+hepatobiliary. Carbon closes. Glucose's basal is a fixed point. The gut
+kernel is a normalized density bounded by what was eaten. The embedding
+is 32-dimensional; zero is the median person; the table mean is pinned
+to zero. Twelve per-person setpoints are supervised. Muscle insulin
+sensitivity is a different quantity from hepatic insulin sensitivity,
+and on a pure sensitivity sweep the student realizes 1.77× between
+deciles against the teacher's 1.81×.
+
+Iter 111 is the cold run of that person model. The next hypothesis
+records its gate as real-CGM glucose MAE 7.23 mg/dL, skill +0.10,
+glucagon MAE 1.08, cortisol MAE 0.31. The insulin potentiator is in
+the student, the same delayed law as the teacher (`k_pot` 0.025,
+`w` 0.3), and `ogtt_75g_insulin_120min` scores the tail.
+
+In the working tree, not yet committed: iter 112 (per-person sweep
+targets, warm-started from iter 111), an interstitial glucose lag
+(`pulse/measurement.py`), window-local calibration state
+(`pulse/calibration.py`), and a probe of whether a meal and a fast pull
+insulin sensitivity and fasting glucose apart
+(`scripts/si_gb_calibration_window.py`).
+
+The four former pins are population parameters under a prior, with no
+per-person head: obligatory uptake `k_ii`, the gluconeogenic fraction
+`f_gng` (mode one half), FFA clearance `k_ffa` (mode 0.20), and glucagon
+basal (mode 70 pg/mL). The teacher varies uptake, the fraction and
+glucagon basal per patient; clearance is one value for every patient.
+Second-phase insulin is the teacher's delayed potentiator in both models
+(`ins_phase2_frac` 0.3, `k_pot` 0.025). Appetite reads the metabolic
+module's basal insulin. The exponential
+integrator exists and no module reports a decay.
+
+## 5. Movement 1 — a body a gradient can move
+
+This movement ends when a published number can change a person-axis or a
+population law, the literature items already in the registry receive
+real optimizer steps, and a flat direction is reported before anyone
+freezes it.
+
+M1.4 added `insulin_potentiator`. Nothing else in this movement adds a state.
+
+### M1.1 Calibration window — in progress
+
+**Question.** Can a glucose window tell fasting glucose (Gb) apart from
+insulin sensitivity (Si)? Both move post-meal glucose. Gb also sets the
+fasting level. Calibration freezes the weights and fits the embedding.
+
+**What is already written.** `scripts/si_gb_calibration_window.py` opens
+the two heads onto orthogonal embedding axes and compares a 180-minute
+fast with a 75 g meal. `pulse/measurement.py` lags plasma glucose by
+8 minutes (Rebrin & Steil; the usual CGM delay is 5–10). The calibration
+changes keep the window's initial state on that window and spin it up
+from the person's quasi-steady state.
+
+**Acceptance.** A meal gradient carries an Si component a fast does not.
+A glucose observation is interstitial, not plasma. A shifted start or an
+unlogged meal moves the window state and does not become part of the
+embedding that is kept.
+
+**Branch.** If, on teacher patients, recovering Gb and Si from a window
+is no better than predicting the population mean, stop adding person
+heads. The next work stays inside this item: the observation model
+(lag, noise, the disturbance of an unlogged meal). Further per-person axes wait until a window can see
+the ones that exist.
+
+### M1.2 Per-person sweep targets — iter 112, spec staged
+
+**Change.** `GutDoseSweepSignal` and `InsulinSweepSignal` score each
+sampled row against that row's teacher `PatientParams`. The zero
+embedding stays the median person and is scored against
+`PatientParams()`. A sampled row with no `patient_params` aborts.
+`--gut-dose-sweep-sample-patients` and
+`--insulin-sweep-sample-patients` go from 0 back to 4. Warm start is
+`gs://grovina-pulse-data/training/jobs/iter111/model.pt`.
+
+**Why it was removed.** Iter 111 set both flags to 0 so the two sweeps
+(weights 0.10 and 0.30) would stop pulling sampled patients toward the
+median. Restoring them without per-row targets would restore that pull.
+
+**Acceptance.** The zero row's target is unchanged. A non-zero row's
+target is its own teacher. On the gate, real-CGM glucose skill stays
+positive against iter 111's +0.10, and the teacher-side gains hold
+(glucagon MAE 1.08, cortisol MAE 0.31). Setpoint-supervision MAE and
+the spread of the decoded setpoints are the shrinkage watch: the
+centring term must leave per-patient structure in place.
+
+### M1.3 One basal insulin, one body mass — landed
+
+The appetite decode is gone. `person_quantities` reads basal insulin and
+body mass from the metabolic projection of the person code, and appetite
+binds that insulin before it steps. A test sets the metabolic head to a
+teacher patient's Ib of 18 µU/mL; both the metabolic fixed point and the
+value appetite reads are that patient's. Body mass had only the one
+decode already. The sweeps still supervise it against the teacher's
+`body_mass_kg`; they do not decode a second one.
+
+### M1.4 Second-phase insulin — landed in the equations
+
+The teacher's secretion was already
+`gamma * ((1 − w) * (G − h)+ + w * Pot) * incretin`, with
+`dPot = −k_pot * (Pot − (G − h)+)`, `w = 0.3`, `k_pot = 0.025`.
+The student now has the same state (`insulin_potentiator`) and the
+same constants. At a constant glucose the stimulus collapses to
+`relu(G − Gb)`, so steady secretion and the fasting fixed point are
+unchanged. While glucose falls, secretion is still the previous half
+hour. `ogtt_75g_insulin_120min` is the tail: 34.6 ± 1.44 µU/mL
+(PMID 3525269, the SEM, `n_arm` 1) over minutes 110–130 after the load.
+Whether a trained checkpoint sits in that band is the next run's question.
+
+### M1.5 Priors replace the four frozen constants — population parameters landed
+
+**Constants.** `k_ii` (uptake that puts a typical person at
+2 mg/kg/min), `f_gng` (one half; Landau's post-absorptive share),
+`k_ffa` (0.20, Eaton's τ ≈ 5 min), glucagon basal (70 pg/mL). On the
+iter-107 weights the first two had walked — uptake 0.0114 → 0.0083 per
+minute, share 0.50 → 0.37 — and the walk is why they were pinned. A pin
+deletes the teacher's per-patient spread and cannot be moved by a later
+paper.
+
+**Change.** Each becomes learnable. The prior is the distribution the
+citation already implies: log-normal for the rate constants, Beta for
+the fraction. The evidence that identifies them is the tracer literature
+those citations are (Landau for the gluconeogenic share and the
+prolonged-fast floor, Eaton for the FFA time constant, the glucagon
+basal the marker's typical already states). `f_gng` is the fraction in
+the one-sided split, not a rescaling of all EGP with Gb. That
+rescaling was measured to be wrong: a Gb-130 patient then fasts to
+97 mg/dL at 48 h, and a Gb-70 patient to 60.7, breaking
+`glucose_fasting_floor`.
+
+**The split, unchanged at the median.**
+`Gng_b = f_gng · min(Hep_b, 2.0) + relu(Hep_b − 2.0)`, with
+glycogenolysis absorbing the deficit and gluconeogenesis the excess,
+and glycogenolysis kept at least 15% of EGP. At the typical EGP the
+split is an identity, so the default patient does not move. There is no
+per-person `f_gng` head until the Beta prior and the tracer evidence
+exist; a head without them is the free-parameter failure this movement
+exists to stop.
+
+**Landed.** Each is one population parameter, initialised at the old pin,
+with `PopulationPriorSignal` (default weight 1). `k_ii` and `k_ffa` and
+glucagon basal are log-normal; `f_gng` is Beta, concentration matched to
+the teacher's `vary(f_gng, 0.10)`. Eaton's clearance prior is
+`k_ffa` in the queue. Landau's 14 h / 22 h / 42 h shares stay blocked:
+hepatic output is the sum, and the prior only holds the post-absorptive
+mode. There is still no per-person head. The spread acceptance below is
+open until a head arrives with a target.
+
+**Acceptance.** At the median person, basal glucose, the 48 h fast, and
+the fed night match the pinned law within the prior width. Across
+teacher patients the student's spread in the four quantities is the
+teacher's spread, not a point. A direction the loss does not identify
+stays at the prior. It does not walk, and it is not pinned. The mode
+and the restoring gradient are tested. The spread is not.
+
+### M1.6 Exponential stepping, one module at a time
+
+The integrator is in `pulse/model.py`. A module that does not define
+`decay_rates` is Euler, bit for bit. Nothing defines it yet.
+
+**The trap.** The teacher integrates explicit Euler at dt = 1. A student
+that copies a teacher `k` and then steps ETD1 realizes `e^{−k}` where
+the teacher realizes `1 − k`. At `k_hr = 0.3` that is 0.741 against
+0.700, a 6% per-step divergence introduced by the fix. The first module
+to adopt either lands together with the teacher on the same step, or
+uses `k = −ln(1 − k_teacher)`.
+
+**Where it helps.** Measured on the teacher constants: hr 0.054 → 0.003,
+cck 0.035 → 0.001, glp1 0.022 → 0.002, ffa 0.092 → 0.033. The slow
+pulsatile states get worse (gallbladder, intestinal bile, lactate,
+`insulin_slow`), because ETD1 is exact only for forcing that is constant
+across the step. There is no `MassActionModule` default: handing
+metabolic glucose a spurious decay would be a bug, not a cleanup.
+
+**Acceptance, per module.** A `dt = 1/16` rollout of that module agrees
+with the ETD1 step more closely than Euler does, and the marker's
+teacher residual falls. A module whose residual rises does not adopt.
+Adoption order follows that measurement, starting with hr, cck, glp1,
+and ffa.
+
+### M1.7 Identifiability, before the corpus grows
+
+**Change.** A gate artifact: the eigen-spectrum of the Fisher
+information of the total loss with respect to the population scalars and
+the per-person heads.
+
+**Acceptance.** Every flat direction is either covered by a prior plus
+the evidence that identifies it, or listed. The list is what the next
+iteration is allowed to freeze, and only after the prior exists. M1.5
+is the first consumer of this artifact.
+
+### M1.8 The literature items already written must receive steps — the log lands
+
+Iter 97 measured the failure mode this item exists to close: in a
+21-hour run the literature stack took 25 optimizer steps, while
+pointwise teacher imitation took the rest. The current spec puts cohort
+statistics at weight 0.15, physiology rules at 0.05, dose response at
+0.40, cold distill at 0.30, with an auxiliary step every 12 trajectory
+windows and cold distill on a slower cadence than the cohorts.
+
+**Change.** The training log prints, per epoch, the optimizer-step count
+and the gradient-norm share of three families: literature (cohorts,
+rules, dose-response), teacher tape, and distillation. The cadence is
+then set so the literature family is a real fraction of the step, on
+the order of the other two, not a few dozen steps in a day.
+
+**Landed.** Each epoch prints `[LITSHARE]`: contributions and the
+gradient-norm share of literature (cohorts, rules, dose-response),
+teacher tape, distillation, and everything else. The cadence is not
+retuned here. That waits for a run, and a run whose literature count
+is the iter-97 pattern is not a completed movement.
+
+**Acceptance.** A run records those shares. A movement-1 retrain whose
+literature step count is the iter-97 pattern is not a completed
+movement, whatever the gate says.
+
+### Movement 1 retrain
+
+M1.1's branch is read before more person heads are added. M1.2 trains
+on the iter 111 checkpoint as iter 112. M1.3, M1.4 and the population
+half of M1.5 are in the tree. A warm start drops appetite's old basal
+head and starts the four priors at their modes. The per-person spread
+of those four is still open. They change what a warm start means, so
+they ride the next run with the potentiator.
+
+M1.6 lands inside whichever module it touches and does not force that run. M1.7 is an
+artifact of the run, not a reason to delay it. M1.8 is a property of
+the run.
+
+The run is scored against iter 111 on a frozen ruler with a matching
+`ruler_fingerprint`. The score is real-CGM skill, the cohort z-residuals,
+and setpoint spread. Teacher-tape MAE is reported and is not the
+acceptance criterion.
+
+## 6. Movement 2 — physiology, in the order the literature unlocks
+
+Each hub below is one landing: teacher mechanism in
+`pulse/knowledge/full_body.py`, student mechanism in the module named,
+the cohort statistics and rules that identify it, and the benchmark
+initial-state migration. `STATE_DIM` grows, so every checkpoint from
+before that landing is unloadable. That is the same rule as the person
+model: a strict load fails loudly. `--init-from` (strict=False) is how
+a retrain is seeded. No key-dropping shim. An old head fitted in a
+different state vector is a wrong model that looks plausible.
+
+A hub is accepted when its new evidence items move and the items already
+in the registry still hold, on the frozen ruler.
+
+### M2.1 Sympathoadrenal arm
+
+Lives in the stress module. The HPA axis and the sympathoadrenal system
+are the two arms of one stress response.
+
+**States.** `sns_tone` (neural, τ ≈ 1–2 min). `epinephrine` (pg/mL,
+τ ≈ 2 min).
+
+**Connections.** In: activity, hypoglycaemia, the stress input (M2.8),
+sleep. Out: heart rate, HRV, blood pressure, hepatic glucose output,
+lipolysis, glucagon, α2-inhibition of insulin secretion, thermogenesis.
+
+**Evidence to author before the state is considered present.**
+
+- Cryer et al. 1987, *J Clin Invest* 112884. Glycaemic thresholds, as an
+  ordering: epinephrine 69 ± 2 mg/dL, glucagon 68 ± 2, growth hormone
+  66 ± 2, cortisol 58 ± 3, symptoms 53 ± 2. Both models today fire
+  hypoglycaemia into CRH at an absolute 70 mg/dL, so cortisol responds
+  first, at the threshold where epinephrine should. The cohort is a
+  ranked hinge, not a new glucose target.
+- An exercise arm in which hepatic glucose output and FFA rise during
+  the bout. Today muscle uptake switches off below 0.8 · Gb instead.
+
+**What this makes writable.** Wearable HR and HRV become metabolic
+information. Counter-regulation has a fast arm. The eight coupling
+priors that are gradient-free constants today, because the edge cannot
+be expressed, become real where they are epinephrine or glucagon onto
+FFA; the three HPA priors (cortisol→ACTH, glucose→cortisol,
+glucose→ACTH) reroute to CRH, which is where both models act.
+
+**Baroreflex stays out.** It was measured and rejected
+(`full_body.py` around the activity–HR block): at minute resolution the
+reflex equilibrates inside one step; steady-period SBP has sd 0.40 mmHg;
+the residual that does exist is a first-order lag at exercise
+transitions (peak ±17.7 mmHg), and feeding it back would add ~18 bpm/min
+to the rise and subtract it from recovery, corrupting an HRR1 that
+matches Cole 1999; HR and SBP co-rise under central command
+(correlation +0.964). A baroreflex returns with orthostasis, a
+vasoactive drug, or a change in blood volume — M2.10 — not with this hub.
+
+### M2.2 The stomach
+
+**States.** `gastric_fat`, `gastric_protein`, `gastric_carb`, in grams.
+
+**Mechanism.** Emptying sets duodenal delivery, which sets absorption.
+Emptying slows with GLP-1, CCK, hyperglycaemia, meal fat, and total
+load. One compartment replaces the two independent kernels. Mass is
+conserved by accounting, so the kernel can be modulated. The iter-97
+normalized density conserved mass only because its shape was frozen.
+
+**Evidence.** A carb-only load and an equicaloric high-fat load have
+different glucose-appearance time courses (the fat load empties more
+slowly). A GLP-1 elevation slows emptying. Both are cohort arms with
+published appearance or glucose curves. Carb absorption today ignores
+the meal's fat and size.
+
+**What this makes writable.** Meal-composition literature. A GLP-1
+agonist counterfactual, which is otherwise a change of who the person
+is.
+
+### M2.3 Clock and sleep debt
+
+Depends on M1's split between muscle and hepatic insulin sensitivity,
+which has landed. The sleep effect in the literature is peripheral.
+
+**States.** `circ_phase_offset`, in hours, bounded, so there is no angle
+to wrap. `sleep_debt`, in hours, at least 0.
+
+**Mechanism.** Sleep midpoint moves the phase offset. Debt acts on
+insulin sensitivity, cortisol, ghrelin, leptin, heart rate, and blood
+pressure. Modules read `hour − offset`. This replaces three imposed
+waveforms: the HPA drive, ghrelin's anticipation at 09:00/13:00/20:00,
+and leptin's 02:00 cosine. The deleted per-person HPA phase head
+belongs here, as a state driven by the person's sleep, not as free
+authority on the embedding.
+
+**Evidence.** Donga et al. 2010, hyperinsulinaemic euglycaemic clamp,
+n = 9: insulin sensitivity −19 to −25% after one 4-hour night. The
+companion 4 h-vs-8 h clamp: whole-body −25%, peripheral −29%, hepatic
+essentially unchanged, gluconeogenic fraction up. The existing
+`sleep_restriction_next_day_glucose` cohort (+6 mg/dL) has no mechanism:
+five nights of 4 h against 8 h changes next-day glucose by less than
+0.05% in the current teacher. The cohort target moves from a glucose
+delta to a peripheral-sensitivity delta. Hepatic sensitivity is
+constrained to stay put.
+
+**A known teacher defect this hub inherits.** The habitual anticipation
+hours (9/13/20) sit after the generated meals (7–9, 12–14, 18–20), so
+most "anticipatory" ghrelin arrives post-meal. The clock replaces that
+schedule rather than shifting the constants.
+
+### M2.4 Energy expenditure
+
+**No new stored species.** A flux node: VO₂, VCO₂, respiratory quotient,
+exported as coupling. BMR + activity + diet-induced thermogenesis +
+thermogenesis → heat, CO₂, O₂ demand, substrate oxidation.
+
+**Evidence.** Respiratory rate tracks CO₂ production, not lactate and
+temperature. A meal raises expenditure (diet-induced thermogenesis) with
+a published time course. An exercise bout raises VO₂ with intensity.
+Fat mass stops counting carbon that went to glycogen, because the energy
+ledger and the carbon ledger name the same grams.
+
+**Acceptance.** At rest, RR equals the person's RR₀. The activity term
+remains the saturated Hill form already installed (equilibrium at
+activity 0.9 went from 63.1 to 35.0 /min; minutes above the marker max
+of 40 across six 14-day episodes went from 926 to 0). Expenditure during
+a bout is within the cohort sigma of the cited VO₂.
+
+### M2.5 Incretin and the islet
+
+**State.** `gip`.
+
+**Mechanism.** GIP is the larger incretin. Amino acids stimulate insulin.
+GLP-1 suppresses glucagon. Protein raises insulin today only indirectly,
+because secretion is gated by `relu(G − Gb)`. Glucagon has no GLP-1 term.
+
+**Evidence.** A protein meal raises insulin with little glucose rise
+(existing meal machinery, a new arm). GIP and GLP-1 peaks have published
+levels and timings on a mixed meal; GLP-1 already has
+`large_meal_glp1_peak` and `meal_glp1_rise`. A GLP-1 elevation lowers
+glucagon during a meal, which `ogtt_glucagon_suppression` currently
+attributes to glucose and insulin alone.
+
+**Depends on.** M2.2 if the incretin stimulus is duodenal delivery. The
+GLP-1 state already exists, so the glucagon term can land against the
+current nutrient flag and be re-pointed at the duodenum when the stomach
+lands.
+
+### M2.6 Hepatobiliary links out
+
+**No new state.** Intestinal bile modulates fat absorption. Bile acids
+stimulate GLP-1 (TGR5). Four states — cck, gallbladder bile, intestinal
+bile, serum bile acids — currently contribute nothing to the coupling
+graph. Their cohort statistics (`cck_fasting_basal`,
+`cck_postprandial_peak`, `cck_time_to_peak`, `bile_acids_fasting`,
+`bile_acids_time_to_peak`, `bile_acids_postprandial_peak`) supervise a
+loop nothing else reads.
+
+**The open A5 item closes here.** `randomize_params` draws no
+hepatobiliary parameter, but the cck and gallbladder species heads still
+read the embedding, so a person's resting CCK is free against a pinned
+reference. Once bile has an outgoing effect, those heads are either
+supervised by a drawn parameter or they stop reading the embedding.
+Until this hub, they are not deleted: deleting the only reader of a
+state that is about to gain a reader is the wrong order.
+
+### M2.7 Renal glucose and the Cori cycle
+
+**No new stored species.** Glycosuria above the published threshold, near
+180 mg/dL. Lactate returns as gluconeogenic substrate.
+
+**Evidence.** Urinary glucose appearance above the threshold on a
+hyperglycaemic clamp or a large OGTT, with a sigma. Below the threshold
+the flux is zero by construction. Lactate infused or produced by
+exercise reappears as glucose (Cori), which is what lets an exercise
+arm's carbon close.
+
+**What this makes writable.** An SGLT2-inhibitor counterfactual, which
+lowers the threshold.
+
+### M2.8 Inputs the schema already promises
+
+**No new state.** A user-reported stress input to the stress module. A
+pharmacology channel whose first ligands are a GLP-1 receptor agonist, a
+biguanide, and an SGLT2 inhibitor.
+
+**Order.** The channel arrives when its target exists: GLP-1 agonism
+after M2.2 and M2.5, SGLT2 after M2.7, metformin against hepatic insulin
+sensitivity (already a per-person quantity). Stress arrives with M2.1,
+because that is the arm it drives. Until then, stress and drugs can only
+be represented by changing the person.
+
+**Evidence.** Each ligand is a published protocol: dose, timing, and the
+statistic it is known to move (emptying, hepatic glucose output, urinary
+glucose), with the cited sigma.
+
+### M2.9 Slow adaptation
+
+**States.** `fitness`. `liver_fat`.
+
+**Mechanism.** Fitness raises insulin sensitivity, lowers HR₀, raises
+HRV₀, and moves the lactate threshold. Liver fat lowers hepatic insulin
+sensitivity and raises FFA basal.
+
+**Evidence.** A training-block cohort: weeks of exercise, with the
+published change in insulin sensitivity and resting heart rate. A
+hepatic-fat cohort: liver fat against hepatic insulin sensitivity.
+Measured on the current teacher, 8 weeks of training moves mitochondrial
+capacity +0.8% and resting heart rate not at all. Those are the
+residuals this hub has to beat, not the targets.
+
+**Depends on.** M1.8 and M2.4. A 16-week protocol at one-minute steps is
+about 160,000 steps per patient. This hub is the one that forces
+multi-rate integration: vitals at 1 minute, metabolic state at 1–5
+minutes, slow pools hourly. The multi-rate step lands with this hub,
+not as a separate refactor. Shorter hubs stay on the one-minute step.
+
+### M2.10 Systems the nine hubs still do not cover
+
+Same landing contract. Each waits until the findings that need it are
+the ones being encoded, and until the hub it depends on exists. They
+are named so the destination stays a body, not a better glucose model.
+
+| System | What it has to represent | Waits on |
 |---|---|---|
-| A1 | Decode every positive per-person setpoint in log space: HR₀, SBP₀, DBP₀, RR₀, Gb (T0 and SpO₂ stay additive — the teacher draws those additively) | E[setpoint] > setpoint(0) by Jensen, matching the teacher's lognormal draws; median and mean both right with no loss term |
-| A2 | Pin the table mean: `embedding_prior` penalises `‖mean(E)‖²` at a weight that makes it a constraint, not a nudge; keep the existing per-row norm term weak | prior mean = 0 by construction; `_embedding_prior_mean` stops disagreeing with the clamp and the soft norm. **Weight sized, not guessed, and 1.0 was too low:** the pin lands only at joint aux steps (6 per epoch at `--aux-every-k-windows=12`), and Adam divides each coordinate's step by the RMS of *every* gradient that coordinate sees, so the centre relaxes with a time constant of `σ·N/(2·lr·cw)` **pin steps** — three orders above the row term is only enough if the pin lands every optimizer step. Simulated at the spec's own cadence from ‖mean‖ = 0.26: cw=1 ends at 0.136–0.189, cw=10 at 0.025–0.065, cw=30 at 0.013–0.026. Spec set to **10**; the code default stays 1.0, and the new per-epoch `[EMBPRIOR]` line prints `centre_norm` so epochs 5–10 show the real rate rather than the assumed one |
-| A3 | Person-level constants: one `model.person_constants(embedding)` owning basal insulin Ib and body mass, consumed by metabolic AND appetite | one person has one basal insulin (today: two untied heads); removes the appetite copy |
-| A4 | Supervise every per-person head the teacher has ground truth for: Ib, body mass, FFA_b, mito setpoint, cort_b, RR₀, SpO₂₀ — extend `SetpointSupervisionSignal` | each head gets the evidence that identifies it; kills the Ra↔mass confound (measured: ×1.2 on both changes glucose 0.18 mg/dL). **Landed.** Supervised markers 6 → **12** (added insulin/Ib, ffa, mitochondrial_capacity, cortisol, rr, spo2) plus B1's six non-marker params through a second `param_targets` dict in log-ratio-to-default units; `Episode.patient_params` and the teacher's `setpoints` dict carry the ground truth. Fitted to convergence on 6 teacher patients, all 12 markers and all 6 params converge. **It also found a teacher defect** — see Wave E's blood-pressure item, which is where the one non-converging pair came from |
-| A5 | Delete the heads the teacher does not vary and nothing supervises: HPA phase, CCK basal | no unsupervised per-person authority (the Gnb-drift failure mode). **Not finished:** the `cck` and `gallbladder_bile` species heads still read the embedding while `randomize_params` draws *no* hepatobiliary parameter at all, so a person's resting CCK is still free against a now-pinned gate reference. Those are species heads rather than baseline nets, so they need the C6 couplings (something must read a bile state) before deleting or supervising them is the right move |
-| A6 | Insulin sweep and gut sweep supervise the zero embedding only (they score against `PatientParams()` rates and kernel) | removes a 0.30-weight and a 0.10-weight pull of sampled patients toward the median; per-row targets return in B4 |
-| A7 | Cohort population batches: drop zero, debias the batch-mean loss by its own sampling variance (**landed, floored — see the note below**) | the loss stops rewarding between-person shrinkage (the term is ≈(2/9)σ²_between/SEM², 1.4–14 per spec). Rule hinges are NOT batch-mean statistics — each member's own violation is scored — so the debias does not apply and zero stays in the rule batch, because a rule holds for the median person too |
-| A8 | Server default → median person; `last_good.pt` carries the prior stats; `--init-from` loads `embeddings_state` | one default person everywhere; a rolling checkpoint re-scores on its own prior; warm start keeps patient identity. **Landed, and the "everywhere" needed a second pass:** fixing the server left `benchmark.deterministic_user_embedding` as its no-prior fallback, so a checkpoint carrying no prior was still *scored* against a user-id-seeded random person and *served* as the default one. Both now call one `model.population_prior_embedding`, with a test that fails on a lone read of `_embedding_prior_mean` at either call site |
-| A9 | Bioavailability bounded: `f_bio = MG_DL_PER_G · σ(·)` ≤ 1 per channel | absorbed ≤ ingested by construction (today softplus: >1 creates carbon, <1 deletes it unbooked) |
-| A10 | Delete the `Ra` gain and `ra_baseline_net` | meal amplitude has one per-person gain (f_bio) and one known scale (V_G), not three multiplying ones |
-| A11 | `hepatic_output` is release into plasma (exclude `gng_divert`) | the marker means what the tracer literature the HGO cohort cites measures |
+| Blood volume and vascular tone | Orthostasis, haemorrhage, a vasoactive drug. Pressure as a consequence of volume and tone, not four independent vitals | M2.1. The baroreflex returns here |
+| Kidney beyond glucose | Water, sodium, potassium, acid–base. Thirst and urine as observations | M2.7 is the glucose term only |
+| Inflammation | A slow cytokine state, so illness and recovery are a protocol | M2.9's slow timescale |
+| Sex steroids | A cycle, because a large part of the endocrine literature is stratified by it and the model is one body | The HPA and gonadotropin axes sharing CRH's pattern: a driver, a pituitary state, a gland |
+| Drug kinetics | A compartment with a half-life. M2.8 is an input; a drug that accumulates is a state | The target pathway for that drug |
 
-**B2 adoption has a trap, and it is a student/teacher one.** `simulate_full_body`
-is explicit Euler at dt = 1, so a student that adopts ETD with a `k` *copied from a
-teacher constant* realizes `e^{−k}` where the teacher realizes `1 − k`: at the
-shared `k_hr = 0.3` that is a contraction of 0.741 against 0.700, a 6 % per-step
-divergence introduced by the fix. Every one of these constants came from the teacher
-(`k_ffa = 0.20` as Eaton's τ ≈ 5 min, `k_hr`, `p2`, the mass-action `cons_scale`s),
-so adopting in the student alone would trade a known integration error for a new
-distillation mismatch. The first module to adopt must either land together with the
-teacher on the same step, or refit its `k` as `−ln(1 − k_teacher)`. Adoption order is
-set by measurement, not by tidiness: the fast terms improve (hr 0.054 → 0.003, cck
-0.035 → 0.001, glp1 0.022 → 0.002, ffa 0.092 → 0.033) while the slow pulsatile ones
-get *worse* (gallbladder 0.005 → 0.013, intestinal 0.007 → 0.017, lactate, and
-`insulin_slow`), because ETD1 is exact only for forcing that is constant across the
-step. Validate each adoption against a `dt = 1/16` rollout; a `k` that is not the
-coefficient of a term in the rate makes its marker worse. There is deliberately no
-`MassActionModule` default, because `cons·cons_scale` is a decay only where `step`
-keeps that term — a blanket one would hand metabolic glucose (a `ConstantFluxHead`,
-`cons = 1`) a spurious 0.02.
+## 7. Movement 3 — the intake scales
 
-**A7's floor is a deliberate, reversible choice, and the alternative is written and
-tested.** An unbiased estimate of a square must sometimes be negative, and a loss
-may not be, so `relu` clips it — which reintroduces part of the shrinkage force the
-debias removes. Measured on Gaussian members as the surviving share of the
-un-debiased force at B = 2: **0.64 at zero bias (exactly 2/π), 0.56 / 0.22 / 0.03 at
-one / two / three between-person sds.** Dropping the zero member even makes the
-zero-bias case *worse* for the seven `n_arm = 1` specs (force 0.44 → 0.64 sd/SEM²),
-because zero had been diluting the variance term; in a toy SGD against a true sd of
-3, the spread settles at 2.08 under the old batch, 1.83 floored, and 3.00 with an
-unbiased gradient.
+Movement 2 adds places a finding can act. This movement makes adding the
+finding the same operation every time, and makes the corpus the thing
+the optimizer integrates.
 
-The straight-through form — `est + (relu(est) − est).detach()`, value floored for the
-adaptive-weight EMA and the logs, gradient unbiased — is a one-line change and a
-ready patch. **It is not adopted, for a reason that is about estimator quality, not
-caution:** the term being subtracted is `s²/B`, and for exactly the specs where the
-bias was largest (`n_arm = 1`, whose σ is a published standard error while
-individuals spread 2.5–8× wider, so `v/SEM²` is 6–64) it is estimated from **1 degree
-of freedom at B = 2**. Passing that straight into the gradient injects noise of the
-same order as the signal it corrects. The floor clips the noise, and clips the
-correct negative gradient with it. So the honest reading is that **at B = 2–4 the
-debias cannot be made both unbiased and quiet, and the real fix is more members** —
-D2's deterministic quadrature over `N(0, I)`, where the "sampling variance" is zero
-by construction and the question disappears. Until then: keep the floor, raise
-`--cohort-sample-patients` above 2, and flip to straight-through in one line if a
-retrain shows the residual shrinkage dominating (watch `setpoint_supervision`'s
-per-marker MAE and the spread of the decoded setpoints).
+### M3.1 One door
 
-### Wave B — right by construction (architecture; needs a retrain to mean anything)
+A published finding enters through the table in §2. `RolloutEvidenceSignal`
+is already the scorer for cohorts, rules, and dose operators. A new
+paper appends a spec to a registry. It does not add a module under
+`pulse/training/`.
 
-| # | Item | Invariant / evidence |
-|---|---|---|
-| B1 | **Per-person insulin sensitivity.** Log-space heads for muscle Si, hepatic insulin sensitivity (the glycogenolysis/GNG gate K), β-cell γ, insulin clearance k_ins | The teacher varies all four per patient (Si σ0.5 loading ir −0.70; glyc_ins_K σ0.25 ir +0.40; γ σ0.3; n σ0.3), so A4's mechanism supervises them directly. **Landed, with this row's own number corrected.** Si alone is **22.5 %** of between-person glucose *incremental* AUC and 20.7 % of insulin iAUC, decile ratio 1.90× / 2.17× (N=150). The "34 % / 31 %" this row first claimed was measured on TOTAL post-meal AUC, which also carries the fasting level — and Gb loads +0.50 on the same insulin-resistance latent that Si loads −0.70 on, so part of that share was Gb, not Si. The conclusion is unchanged (still the largest single axis by a wide margin) but the headline was confounded through the shared latent. The student now realizes **1.77×** between those deciles against the teacher's own pure-Si sweep at 1.81× |
-| B2 | **Exponential (ETD1) stepping of the linear part.** A module may report a decay rate alongside its rate; the integrator steps `x + rate·(1−e^{−k·dt})/k`, which is Euler as k→0 and exact for a pure relaxation. **Integrator landed; no module reports a decay yet**, so nothing has changed behaviourally | literature time constants are what gets simulated, and the trajectory stops depending on `dt` (today: effective rate +19 % at the CVS default k=0.3, +101 % at its bound 0.8) |
-| B3 | **Second-phase insulin.** The teacher's delayed-proportional potentiator state (Toffolo & Cobelli) | OGTT 120-min insulin; the student currently has no way to hold insulin up while glucose falls |
-| B4 | Per-row sweep targets: carry each patient's `PatientParams` into the dataset so the insulin/gut sweeps can score a row against its own teacher | restores per-patient absorption and rate supervision that A6 removes |
-| B5 | Priors replace the iter-106/108/109 freezes: k_ffa, uptake_ii, the gluconeogenic share, Gnb become learnable with log-normal/Beta priors carrying the cited uncertainty, plus the tracer evidence that identifies them | a flat direction with a prior does not drift; a frozen one cannot learn. Restores the teacher's own per-patient spread in all four |
-| B6 | Identifiability audit as a gate artifact: eigen-spectrum of the Fisher information of the total loss w.r.t. the population scalars and the per-person heads | every flat direction is covered by evidence or a prior, and we find out *before* the next freeze |
+A sweep signal remains the exception it already is: a local map the
+trajectory loss cannot reach, justified by `signal-balance`, removed
+when an evidence item covers that marker. The gut and insulin sweeps
+are teacher-rate supervision of maps the cohorts do not pin pointwise.
+They stay until M1.2's per-person targets and the cohort residuals say
+the maps are held by evidence. They are not a pattern to copy per organ.
 
-### Wave C — the missing hubs (new states; `STATE_DIM` grows; teacher must change in step)
+### M3.2 Residuals and conflicts are visible
 
-Each hub lands as: teacher mechanism → student mechanism → supervision
-(cohort/rule/anchor) → benchmark dataset migration. A hub without supervision is
-the inert-glycogen failure repeated, so none of these are "add the state and
-move on".
+Every evidence item already has a name, a source string, and a sigma.
+The training artifact gains a per-item z-residual, written next to the
+checkpoint the way the benchmark report is.
 
-| # | Hub | New state(s) | What it connects | Why it is the next one |
-|---|---|---|---|---|
-| C1 | **Sympathoadrenal arm** (lives in the Stress module: the HPA axis and the sympathoadrenal system are the two arms of one central stress response, so this is not a new organ) | `sns_tone` (neural, τ≈1–2 min), `epinephrine` (adrenal medullary, pg/mL, τ≈2 min) | in: activity, hypoglycaemia, the stress input (C8), sleep; out: HR, HRV (the vagal readout), BP, HGO, lipolysis, glucagon, α2-inhibition of insulin secretion, thermogenesis | Wearable HR/HRV is the densest signal a user has, and this is what turns it into metabolic information. Exercise and hypoglycaemia are both broken without it: during a bout HGO and FFA do not rise, and muscle uptake is instead switched off below 0.8·Gb; counter-regulation is glucagon plus slow CRH→cortisol with no fast arm. **No baroreflex term** — see the note below |
-| C2 | **Energy expenditure** | none — a flux node (VO₂, VCO₂, RQ) exported as coupling | BMR + activity + DIT + thermogenesis → heat, CO₂, O₂ demand, substrate oxidation | PRD says RR tracks CO₂ production; today RR reads lactate and temperature. Closes the energy ledger against the carbon ledger (fat mass currently counts carbon that went to glycogen) |
-| C3 | **Circadian phase + sleep homeostat** | `circ_phase_offset` (hours of internal-vs-external phase, bounded, so there is no angle to wrap), `sleep_debt` (hours, ≥ 0) | sleep midpoint → phase offset; debt → Si, cortisol, ghrelin/leptin, HR/BP | Replaces three imposed waveforms (HPA drive, ghrelin's 09/13/20 anticipation, leptin's 02:00 cosine) with one entrained clock every module reads as `hour − offset` — the PRD's "learned consequence of SCN input, not an imposed waveform". It is also where A5's deleted per-person HPA phase head belongs: phase becomes a state driven by the person's own sleep behaviour, not free per-person authority. The sleep cohort's +6 mg/dL has nowhere to live today (measured: 5 nights of 4 h vs 8 h changes next-day glucose by <0.05 %) |
-| C4 | **Gastric emptying as the shared upstream** | `gastric_fat`, `gastric_protein`, `gastric_carb` (grams in the stomach) | emptying → duodenal delivery → absorption; slowed by GLP-1, CCK, hyperglycaemia, meal fat and total load | One mechanism replaces two independent kernels in both models. It also **upgrades** the conservation argument rather than losing it: iter 97 made `∫K = f_bio·mass` true by parameterizing a fixed normalized density, which conserves mass only because the shape is frozen; an explicit stomach compartment conserves it by accounting, and can therefore be *modulated* — which a fixed kernel cannot be. Carb absorption currently ignores the meal's fat and size (a pizza absorbs like juice), and no GLP-1-agonist counterfactual is expressible without it |
-| C5 | **Incretin and islet** | `gip` | GIP (the larger incretin), amino acids → insulin, GLP-1 → glucagon suppression | Protein raises insulin only indirectly today, because secretion is gated by `relu(G − Gb)`; glucagon has no GLP-1 term |
-| C6 | **Hepatobiliary links out** | none | intestinal bile → fat absorption; bile acids → GLP-1 (TGR5) | Four states nothing reads: the module contributes zero to coupling amplification |
-| C7 | **Renal glucose + Cori cycle** | none — flux terms | glycosuria above ~180 mg/dL; lactate → gluconeogenic substrate | carbon closure at high glucose, and the SGLT2 counterfactual |
-| C8 | **Inputs the PRD already promises** | none — external inputs | user-reported stress; a pharmacology channel (GLP-1 RA, metformin, SGLT2i) | PRD lists stress as a Stress-module input and it was never implemented; today stress and drugs can only be explained by changing *who the person is* |
-| C9 | **Slow states for adaptation** | `fitness`, `liver_fat` | fitness → Si, HR₀, HRV₀, lactate threshold; liver fat → hepatic Si, FFA_b | The north star. Measured today: 8 weeks of training moves mito capacity +0.8 % (plan expects ~30 %) and resting HR not at all |
+Two items on the same protocol and marker whose targets disagree beyond
+their sigmas are recorded as a conflict. They are not averaged into a
+target neither paper reported. Resolving a conflict means narrowing the
+protocol until the papers describe different conditions, or widening a
+sigma that was tighter than its source.
 
-**The supervision for C1 and C3 already exists in the literature, and it is
-quantitative.** Two anchors, both of which also say something about the
-architecture:
+### M3.3 A held-out set
 
-- **The counter-regulatory hierarchy** (Cryer et al. 1987, *J Clin Invest*
-  [112884](https://www.jci.org/articles/view/112884)): glycaemic thresholds for
-  activation are epinephrine **69 ± 2** mg/dL, glucagon **68 ± 2**, growth
-  hormone **66 ± 2**, cortisol **58 ± 3**, symptoms **53 ± 2**. This is a
-  ranked constraint, which is the strongest kind of weak evidence — an ordering
-  is cheap to encode as hinges and hard to satisfy by accident. It also convicts
-  the current model: both teacher and student fire the hypoglycaemia term into
-  **CRH** at an absolute 70 mg/dL (`stress.py`, `full_body.py` `hypo_acth`), so
-  cortisol is the *first* responder at 70 when the literature puts it *last* at
-  58, and the fast arm that should lead at 69 does not exist. C1 fixes the
-  ordering and the mechanism together, and `_hypo_raw` — the one parameter group
-  no signal currently reaches, because it only acts below 70 mg/dL — gets
-  evidence for the first time.
-- **Sleep restriction is a sensitivity effect, split by tissue** (Donga et al.
-  2010, hyperinsulinaemic euglycaemic clamp, n=9: insulin sensitivity
-  **−19 to −25 %** after a single 4 h night; a companion 4 h-vs-8 h clamp study
-  reports whole-body **−25 %**, peripheral **−29 %**, and **hepatic
-  essentially unchanged** with the gluconeogenic percentage rising). Two things
-  follow. First, C3's sleep debt should act on insulin sensitivity, not on
-  glucose directly — which is why the existing `sleep_restriction_next_day_glucose`
-  cohort (+6 mg/dL) has no mechanism to work through today. Second, the effect is
-  *peripheral and not hepatic*, so it can only be expressed if muscle and hepatic
-  insulin sensitivity are separate quantities — exactly the split B1 introduces.
-  B1 and C3 are therefore the same change seen from two directions, and B1 should
-  land first.
+A sealed list of evidence items, absent from the training registries,
+scored at the gate the way `cgm_real` is scored today. The first sealed
+set is small and quantitative: OGTT and clamp results that are not
+already the anchors in `cohorts/glucose_handling.py`, a sleep-restriction
+clamp that is not Donga once Donga is in the training set, and an
+exercise-plus-meal study. The sealed list lives with the benchmark
+inputs and is cited. Adding an item to training means it leaves the
+sealed list.
 
-**C1 carries no baroreflex, deliberately.** `full_body.py:1737-1765` records an
-evaluated-and-rejected baroreflex term with four measured reasons: at minute
-resolution the reflex equilibrates inside one step (so it is already folded into
-the effective `act_hr_gain`/`k_hr`); there is nothing to reflex against, because
-the activity-independent part of SBP has sd 0.40 mmHg in steady periods (a ~1 bpm
-effect, below the noise floor); the residual that does exist is a first-order lag
-artifact concentrated at exercise transitions (peak ±17.7 mmHg), so feeding it to
-`−k_baro·resid` would add ~18 bpm/min to the exercise rise and subtract the same
-from recovery, corrupting an HRR1 that currently matches Cole 1999; and the sign
-is wrong anyway, since central command resets the operating point upward so HR and
-SBP co-rise (realized corr +0.964). That analysis stands, and the sbp→hr prior is
-correctly absent. A baroreflex becomes meaningful only once the model has
-something to buffer — orthostasis, a vasoactive drug (C8), or blood-volume change
-— and it should be added with those, not before. The PRD lists the baroreflex
-under medical knowledge, which is an argument for a prior once the mechanism is
-observable, not for a term that fires on a lag artifact.
+### M3.4 What gets read, and in what order
 
-Eight coupling priors are already registered for edges the model cannot express
-(cortisol→FFA, glucagon→FFA, mito→FFA, cortisol→ACTH, GLP-1→ghrelin,
-leptin→ghrelin, glucose→cortisol, glucose→ACTH). Their loss is a gradient-free
-constant today. C1/C3/C5/C6 make most of them real; the three HPA ones should be
-rerouted to **CRH**, which is where both models actually act (cortisol feeds back
-on `crh_target`; the hypoglycaemia term enters `dCRH`), and the FFA ones become
-real when C1 gives lipolysis its epinephrine and glucagon drives.
+The corpus fills by reading, into the existing schema, in an order that
+follows Movement 2. A hub's evidence list in §6 is the reading list for
+that landing. Beyond those lists, the order is:
 
-*A hypothesis worth recording as refuted.* One-sided couplings — glucose→glucagon
-is `α·relu(Gb − G)/Gb`, exactly zero above the patient's own setpoint — have a
-true sensitivity of zero wherever they are inactive, and `coupling_band_hinge`
-declares a band with `lo > 0`, so it should in principle penalise correct
-physiology at every fed sample. Measured on a perturbed model: at G = 140 the
-normalized sensitivity is exactly 0.00000 and the hinge is **0.0014**, because
-`lo` (0.001) is tiny against the band width (0.019). So the effect is real in
-form and negligible in size, and is not worth a change on its own; the same probe
-showed the *active* regime at 2.8× above the declared band, which is just an
-untrained model. Setting `lo = 0` for gated edges is still the more honest
-declaration and can ride along with the reroute.
+1. The textbooks the project already treats as the source of a sign or a
+   time constant (Guyton, Boron & Boulpaep, Williams), encoded as
+   coupling priors and hinges. One line each. These are the cheap
+   breadth.
+2. The quantitative papers those textbooks cite for a number, encoded as
+   cohort statistics with the paper's own sigma. These are the amplitude.
+3. Primary papers that contradict an item already in the corpus.
+   Contradiction is a conflict record (M3.2), and it is how a copied
+   teacher law gets overturned.
 
-### Wave D — the person as an inference problem
+A finding with no sigma is a hinge or a prior, not a cohort target with
+an invented one. The authoring note stands: sigma is the
+literature-reported SD when the paper gives it; an estimate is marked as
+an estimate in the spec, and `cohort-ablation` has to show the spec a
+non-zero gradient before it is trusted.
 
-| # | Item | Invariant / evidence |
-|---|---|---|
-| D1 | Low-dimensional named latent (≈6–10 factors: insulin resistance, β-cell, fitness, adiposity, chronotype, HPA reactivity, gastric emptying) with a fresh teacher population every epoch and an amortized encoder `q(z | observations)` | no table, so no warm-start identity problem; the calibration prior is exact; the encoder *is* the PRD's "future: amortized inference" |
-| D2 | Population statistics by deterministic quadrature over `N(0, I)` (sigma points), not by a 3-member random batch | the cohort loss stops carrying sampling variance that only shrinkage reduces |
-| D3 | Calibration estimates `(z, x₀, disturbances)`, with x₀ spun up from the person's own quasi-steady state | a short night or an unlogged meal stops being absorbed into *who the person is* |
-| D4 | Measurement models: CGM interstitial lag + noise; learned subjective-report likelihoods including negative reports | PRD "epistemological humility" with the sensor physics in the right place |
-| D5 | An amplification metric: calibrate on marker set A, score held-out set B | the PRD success criterion "coupling amplifies information" currently has no number |
-| D6 | Multi-rate integration (vitals 1 min, metabolic 1–5 min, slow pools hourly) | the only affordable route to weeks–months; a 16-week protocol is 160k single-minute steps per patient |
+Real datasets are rulers, not a substitute for this reading.
+`cgm_real` is one subject's fourteen nights. CGMacros (45 subjects,
+healthy / prediabetes / T2D, two CGMs, Fitbit, meal macros) and the
+BIG IDEAs Lab set (Dexcom G6, Empatica E4, standardized breakfasts) are
+the next rulers. They score a checkpoint. They do not replace a cohort
+statistic that has a citation.
 
-### Wave E — grounding
+### M3.5 The person as an inference problem
 
-Teacher-side defects the analysis measured, plus the real-data gap.
+This waits until M1.1 says a window can identify the axes that exist,
+and until M1.7 says which of those axes carry information.
 
-- **High-Gb ketosis.** `Hep_b = uptake·Gb·V_G` with `Gng_b` fixed near 1.0 books
-  a person's whole elevated fasting output as glycogenolysis. On 190 g carb/day a
-  Gb-130 patient ends day 4 at 19 g liver glycogen and 1.6 mM BHB; ~20 % of
-  sampled patients exceed 1 mM. This contradicts the teacher's own Magnusson-1992
-  citation (the T2D excess is gluconeogenic). The student's fixed 50/50 share has
-  the same shape, milder.
-  **This document's first prescription — "scale `Gng_b` with Gb" — was wrong, and
-  was measured to be wrong.** Proportional scaling across the whole range
-  re-creates the iter-93 / review-3.3 failure that iter 97 fixed: the Gb-130
-  patient then fasts to 97 mg/dL at 48 h (iter 93's exact number) and the Gb-70
-  patient to 60.7, breaking `glucose_fasting_floor` at 63.7 in the 24 h arm. The
-  excess must be split **one-sidedly about the population-typical EGP**:
-  `Gng_b = f_gng·min(Hep_b, 2.0) + relu(Hep_b − 2.0)`, so glycogenolysis absorbs
-  the deficit (iter 97's Cahill argument for an absolute prolonged-fast floor) and
-  gluconeogenesis absorbs the excess (Magnusson measured GNG higher *and* net
-  hepatic glycogenolysis lower in T2D). The sampled quantity becomes the *fraction*
-  `f_gng`, which is also what B5 needs a Beta prior over. Measured over 80
-  patients: day-4 BHB above 1 mM **26.3 % → 2.5 %**, corr(Gb, BHB) **+0.75 →
-  +0.12**, the Gb-130 patient's `extended_fast_bhb_overnight` **+6.39σ → +0.36σ**.
-  The student uses the same split (`basal_hepatic_split`), with `f_gng` held at
-  one half. There is no per-person fraction head: the teacher's sampled `f_gng`
-  (σ 0.10) is the residual a Beta prior would identify, and a head without that
-  evidence is the free-parameter failure this plan exists to stop. At the median
-  person the split is an identity, so the default patient does not move.
-- **A separate defect this uncovered, which this plan mis-attributed.** Wave E
-  expected the fix to stop the default patient's liver glycogen drifting from 100 g.
-  It structurally cannot: the new split is an *identity* at the typical EGP, so the
-  default patient is bit-identical. The drift (−6 g/day, decaying to an ~82 g
-  asymptote, bounded not runaway) is a pre-existing imbalance in
-  `glyc_syn_frac_L` / `LGly_b` / the basal glycogenolytic flux, and
-  `extended_fast_liver_glycogen_level` is **+0.99σ for the default patient both
-  before and after**. The old Gb-coupled depletion had been *cancelling* that error
-  in the population mean, which is why no anchor caught it. Its own item, since
-  fixing it moves the 24 h-fast reference numbers.
-- **A third, in the residual.** The worst remaining fed-ketotic patient has Gb 96 —
-  a normal fasting glucose. `LGly_b` is sampled over 70–130 g against a fixed fed
-  carbohydrate load, so a large-pool patient permanently sits at ~45 % of its *own*
-  declared pool and `keto_glyc_gain`'s gate `1 + 13·(1 − LGly/LGly_b)` reads that as
-  a fast. The gate should read an absolute pool level, or `LGly_b` should co-vary
-  with intake.
-- **`extended_fast_liver_glycogen_level` may be the wrong anchor for this
-  population.** It is a healthy-cohort mean (60 ± 20 g at 16–22 h) applied to a
-  population spanning Gb 70–130. After the fix the population mean is 88 g (+1.40σ)
-  *because* high-Gb patients correctly hold their glycogen — which is what Magnusson
-  measured in T2D. Either the anchor needs a cohort restriction or the pool needs
-  re-sizing; the two errors were cancelling.
-- Respiratory rate equilibrated at RR₀ + 50·activity (63 /min at 0.9); **fixed**,
-  by moving both drives inside the relaxation as equilibrium offsets (the ×10 hidden
-  in 1/k_rr is how "5 /min" became 50) and saturating the activity term (Hill n=2),
-  since ventilation below the ventilatory threshold is carried mostly by tidal
-  volume. Equilibrium at act 0.9: **63.1 → 35.0** /min; minutes above the marker's
-  declared max of 40 across six 14-day episodes: **926 → 0**; resting value exact.
-- **Blood pressure drawn as two independent lognormals, so 12.6 % of teacher
-  patients were unfittable.** Found by A4: with all 12 markers supervised, every
-  one converged except sbp/dbp, which stalled at 3.04 / 2.94 mmHg. The cause is in
-  the **teacher**, not the student. `randomize_params` drew `SBP0` and `DBP0`
-  independently, so pulse pressure was a *difference of two noises*: measured over
-  4,000 draws it ran **−16.5 to 120.1 mmHg, 12.6 % below 20 and 0.85 % negative**
-  (DBP ≥ SBP). Iter 97 had made `SBP = DBP + PP` true by construction in the
-  *student* and left the teacher generating the targets the old way — so the
-  student was structurally forbidden from fitting an eighth of its training
-  population, and the stall was a floor, not a fitting failure. **Fixed** by
-  sampling DBP and PP (`SBP0 = DBP0 + clip(vary(40, 0.29, ir=+0.40, fit=−0.30),
-  20, 80)`), with σ solved to preserve the old systolic spread
-  (`sqrt(16.8² − 12²) = 11.7 = 40·0.29`) and the clip set to the student's *own*
-  representable span rather than a separately chosen physiological one — a target
-  the student cannot reach is not supervision, it is a standing residual. Two
-  `vary` calls in the same slots, so the RNG stream position is unchanged for every
-  later parameter. Measured after: PP min 20.0 / median 40.1 / max 80.0,
-  **0.00 % unrepresentable**, 1.75 % at a bound, corr(SBP,DBP) 0.79; sbp/dbp MAE
-  **3.04 / 2.94 → 0.95 / 0.60 mmHg**. Both teacher audits re-run on the combined
-  tree: 0/61 rules and 0/40 cohort anchors violated, with `sbp_sleep_dip` and
-  `dbp_sleep_dip` at z = +0.07 each.
-  *The general lesson is the one §1 states: a by-construction invariant installed
-  on one side of a distillation pair is a contradiction until it is installed on
-  both.*
-- The habitual meal hours (9/13/20) sit *after* the generated meals (7–9, 12–14,
-  18–20), so most "anticipatory" ghrelin arrives post-meal. C3 subsumes this.
-- `Cort_b` (12) is 3 µg/dL above the default patient's actual 24 h mean (8.95),
-  so every cortisol gate runs at a standing offset.
-- Three sampled HPA parameters are never read; `Sg` is computed and unused.
-- Schedule diversity: every teacher person eats and sleeps on one template, and
-  activity is zero except one bout on 60 % of days. No chronotype variation, and
-  none of the low-level daily movement a wearable actually reports.
-- Real data is one subject's 14 nights.
-  [CGMacros](https://physionet.org/content/cgmacros/) (45 subjects across
-  healthy/prediabetes/T2D, two CGMs, Fitbit, meal macros) and the
-  [BIG IDEAs Lab set](https://physionet.org/content/big-ideas-glycemic-wearable/)
-  (Dexcom G6 + Empatica E4, standardized breakfasts) are the obvious next rulers.
+The embedding table is 40 memorized codes. The teacher draws each person
+from latent axes plus per-parameter noise. The replacement is a named
+latent of a handful of factors — insulin resistance, β-cell function,
+fitness, adiposity, chronotype, HPA reactivity, gastric emptying — with
+a fresh teacher population every epoch and an encoder from observations
+to that latent. Population statistics are then a deterministic
+quadrature over that latent, which removes the sampling variance that
+M1's cohort debias can only floor at a batch of four. Calibration
+estimates the latent, the initial state, and a disturbance, and keeps
+only the latent.
 
-## 4. How each wave is judged
+Until M1.1's branch is resolved, building the encoder would amortize a
+recovery that may not exist.
 
-**Wave A and B1–B3 are structural claims, provable without a trained
-checkpoint**: an invariant either holds for every embedding and every protocol or
-it does not. Those are tests, and they are the acceptance criteria.
+## 8. How a step is judged
 
-**Everything that changes what training can learn needs a retrain to mean
-anything.** No trained artifact is reachable from this session (GCS returns 401),
-so nothing here can be scored against iter 109's gate from here. The honest
-sequencing is:
+A structural claim (a fixed point, a conservation bound, a decode family)
+is a test. It passes for every embedding and every protocol, or it does
+not. It does not need a checkpoint.
 
-1. Land A + B1–B3 behind tests, with the invariant probes as the gate.
-2. Retrain once on Cloud Run; compare against iter 109 on a frozen ruler with a
-   matching `ruler_fingerprint`.
-3. Only then decide whether B5's priors move the frozen constants anywhere, and
-   whether Wave C's hubs are reachable by the supervision we have.
+Anything that changes what training can learn needs a retrain. The
+comparison is against the previous accepted checkpoint, on a frozen ruler
+with a matching `ruler_fingerprint`.
 
-**Every pre-change artifact is now strictly unloadable, and that is correct.**
-A5 removed `stress.phase_proj.*` and `hepatobiliary.cck_baseline_net.*`, A10
-removed `metabolic.log_ra` / `ra_baseline_net`, so `from_checkpoint(strict=True)`
-raises "Unexpected key(s)" on anything through iter 109. That breaks
-`--resume-from`, the server's `MODEL_URI`, `diagnostics/probe.py`'s loader (and
-therefore every diagnostics CLI and most `scripts/`), and several scripts' raw
-strict loads. **No key-dropping shim should be added**: A1 re-decodes Gb, HR, DBP
-and RR in log space, so an old artifact's per-person heads were fitted in a
-different frame, and silently dropping the stale keys would produce a
-plausible-looking model that is wrong rather than a loud failure. `--init-from`
-(strict=False) still works and prints the dropped keys, which is the right route
-for seeding a retrain. One case was fixed rather than left: `lab_sim.py` caught
-every load failure and rendered UNTRAINED cold weights with `trained: False`
-buried in its metadata — the fallback is fine, the silence was not.
+Accepted means:
 
-**Wave C grows `STATE_DIM`**, which invalidates every checkpoint and every
-benchmark `initial_state` array (`scripts/migrate_benchmark_initial_state.py` is
-the migration path). Each hub therefore lands with its teacher mechanism, its
-supervision, and its dataset migration in one piece — never the state alone.
+- The new evidence items' z-residuals fall.
+- The evidence items already in the registry do not break. A break is a
+  residual that moves from inside its sigma to well outside it.
+- Real-CGM glucose skill stays at or above the last accepted run. Iter
+  111's +0.10 is the current floor.
+- The literature-family step share (M1.8) is reported.
+- Flat directions (M1.7) are listed, not silently pinned.
 
-**The falsifier for this plan as a whole.** If, after A + B1–B3 and a retrain,
-per-patient recovery of Gb and Si is still no better than predicting the
-population mean, then the person model is not the fourth disease and the next
-iteration is about the *evidence* a calibration window carries, not about how the
-person is parameterized.
+Teacher-tape agreement is logged. It is not acceptance.
+
+## 9. Measurements that still bind
+
+These were measured while writing the 2026-10-04 plan or the September
+review. A later item that contradicts one of them has to remeasure it.
+
+**Log-space decodes.** The teacher draws almost every positive parameter
+lognormally, so the median person is `PatientParams()` and the population
+mean lies above it. A setpoint decoded as `center + scale·tanh` has
+expectation equal to the center for a zero-mean code, and cannot be right
+at the median and in the mean. Log-space decoding makes both true. Zero
+is the median person. The embedding table's mean is pinned to zero. The
+centring weight in the spec is 10; weight 1 does not pin at the spec's
+cadence, because the penalty lands only on auxiliary steps and Adam
+scales the step by the RMS of every gradient that coordinate sees.
+
+**Cohort debias floor.** An unbiased estimate of a square can be
+negative, and a loss cannot, so the debias is clipped. At batch size 2
+the clip keeps about 0.64 of the shrinkage force at zero bias. The
+straight-through gradient is written and tested and not adopted: for the
+specs where the bias is largest, the variance term has one degree of
+freedom. The fix is more members, and then the quadrature in M3.5.
+`--cohort-sample-patients` is 4 until then.
+
+**Insulin sensitivity's share.** Si is 22.5% of between-person glucose
+incremental AUC and 20.7% of insulin iAUC (N = 150). The earlier 34% /
+31% was total post-meal AUC, which includes the fasting level. Gb loads
++0.50 on the same insulin-resistance latent that Si loads −0.70 on.
+
+**High-Gb ketosis.** Proportional scaling of the gluconeogenic share
+with Gb recreates the iter-93 failure (Gb 130 fasts to 97 mg/dL at 48 h).
+The one-sided split in M1.5 is the form that held: day-4 BHB above 1 mM
+fell from 26.3% to 2.5% of 80 patients, and corr(Gb, BHB) from +0.75 to
++0.12. The median patient's liver-glycogen drift (−6 g/day toward about
+82 g) is a different defect, in `glyc_syn_frac_L` / `LGly_b` / basal
+glycogenolytic flux. The split cannot fix it, because the split is an
+identity at the typical EGP. `extended_fast_liver_glycogen_level` is a
+healthy-cohort anchor (60 ± 20 g) applied to a population whose
+high-Gb patients correctly hold glycogen. Fixing the drift moves the
+24 h-fast reference numbers; the anchor needs a cohort restriction or
+the pool needs re-sizing, and the two errors have been cancelling.
+
+**Blood pressure.** The teacher now draws diastolic pressure and pulse
+pressure, with pulse pressure clipped to the span the student can
+represent (20–80 mmHg). Independent lognormals for SBP and DBP made
+12.6% of patients unfittable. An invariant installed on one side of a
+distillation pair is installed on both.
+
+**Respiratory rate.** Both drives sit inside the relaxation as
+equilibrium offsets, and the activity term is a Hill function of n = 2.
+The old form equilibrated at RR₀ + 50·activity.
+
+**Checkpoint compatibility.** The person-model landing removed heads and
+changed decode families. A strict load of an earlier artifact raises.
+That is correct. Silently dropping keys would serve a model whose
+setpoints were fitted in another frame.
+
+**Coupling-prior hinge on a gated edge.** Above the patient's glucose
+setpoint the glucagon response to glucose is exactly zero, and a hinge
+with a positive lower band penalizes that. Measured, the penalty is
+0.0014 against a band width of 0.019. Real in form, negligible in size.
+Setting the lower band to zero for gated edges can ride along with the
+M2.1 reroute. It is not its own item.
+
+**Cortisol basal.** `Cort_b` is 12 µg/dL, and the default patient's 24 h
+mean is 8.95. Every cortisol gate runs at a standing offset until the
+basal and the mean name the same number. M2.3 is the natural place,
+because the waveform is what produces the mean.
+
+## 10. The queue
+
+The operational form of Movement 3 is `pulse/knowledge/queue.py`. It is
+the list of findings not already in the cohort, rule, and prior
+registries.
+
+An item is **ready** when its marker exists, a gradient can reach the
+pathway, and the arm we can run is the paper's protocol. An agent lands
+a ready item on the surface the item names, then sets its status to
+integrated and its `spec_name` to the registry entry.
+
+An item is **blocked** on a hub from this plan (`m1.4`, `m1.5`,
+`m2.1`–`m2.3`, `m2.5`–`m2.9`). An item is **backlog** when the number is
+real but the protocol or the population is not the one we simulate.
+Cole 1999 is the example: median heart-rate recovery of 17 bpm
+(IQR 12–23) in referred adults during a cool-down, which is not the
+moderate-bout arm and not the median person.
+
+When an agent finishes an item, it reads another paper and files it.
+A blocked paper stays blocked. The ready list is allowed to be empty.
+As of the first filing it is empty: the one ready finding, the diastolic
+ceiling during aerobic exercise, is landed as
+`dbp_does_not_rise_with_exercise`. The two-hour OGTT insulin from
+PMID 3525269 is `ogtt_75g_insulin_120min`, scored against the potentiator.

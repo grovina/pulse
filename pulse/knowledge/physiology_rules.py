@@ -170,6 +170,17 @@ def hinge_min_rise(traj: torch.Tensor, col: int, pre: slice, post: slice, min_ri
     return torch.relu(min_rise - delta)
 
 
+def hinge_max_rise(traj: torch.Tensor, col: int, pre: slice, post: slice, max_rise: float) -> torch.Tensor:
+    """Violation when ``mean(post) - mean(pre) > max_rise``.
+
+    A fall, or a rise inside the ceiling, is zero. Use for a marker the
+    literature says does not rise, where the published claim is a ceiling
+    rather than a mean.
+    """
+    delta = traj[post, col].mean() - traj[pre, col].mean()
+    return torch.relu(delta - max_rise)
+
+
 def _safe_window_corr(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Pearson correlation of two window series with a scale-free guard.
 
@@ -1675,6 +1686,31 @@ HRV_INVERSE_TO_HR = PhysiologyRule(
 )
 
 
+# Companion of SBP_RISES_WITH_EXERCISE, which already cites this fact and
+# never encoded it. Dynamic aerobic exercise raises systolic pressure and
+# leaves diastolic unchanged or slightly lower (ACSM; Lim et al. 1996, the
+# same sources as the systolic rule). The ceiling is 10 mmHg: a diastolic
+# rise as large as the 15 mmHg systolic minimum on this same arm is a
+# violation, and a fall is free. This is not a mean.
+DBP_DOES_NOT_RISE_WITH_EXERCISE = PhysiologyRule(
+    name="dbp_does_not_rise_with_exercise",
+    source="Lim et al. (1996); ACSM exercise testing guidelines",
+    description=(
+        "Diastolic BP rises by less than 10 mmHg across a moderate aerobic "
+        "bout. A fall is allowed. The ceiling sits inside the 15 mmHg "
+        "systolic minimum required on the same arm."
+    ),
+    arms=(_MODERATE_EXERCISE_ARM,),
+    predicate=lambda traj, ctx: hinge_max_rise(
+        traj, ctx.col("dbp"),
+        pre=ctx.window(0.0, 30.0),
+        post=ctx.window(60.0, 90.0),
+        max_rise=10.0,
+    ),
+    scale=10.0,
+)
+
+
 SBP_RISES_WITH_EXERCISE = PhysiologyRule(
     name="sbp_rises_with_exercise",
     source="Lim et al. (1996); ACSM exercise testing guidelines",
@@ -2050,6 +2086,7 @@ PHYSIOLOGY_RULES: list[PhysiologyRule] = [
     HRV_HIGHER_DURING_SLEEP,
     HRV_INVERSE_TO_HR,
     SBP_RISES_WITH_EXERCISE,
+    DBP_DOES_NOT_RISE_WITH_EXERCISE,
     SBP_MORNING_SURGE,
     SBP_FALLS_DURING_SLEEP,
     # Thermoreg

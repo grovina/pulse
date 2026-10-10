@@ -2097,6 +2097,7 @@ def simulate_full_body(
             BA,
             Fat,
             Ins_slow,
+            Pot,
         ]
 
     return trajectory, absorption_profile

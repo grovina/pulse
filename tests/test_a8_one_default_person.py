@@ -29,6 +29,7 @@ from pulse.train import (
     _embedding_prior_stats,
     _last_good_checkpoint,
     _warm_start_patient_table,
+    load_compatible_state_dict,
     train,
 )
 from pulse.types import EMBEDDING_DIM, MARKER_IDS
@@ -233,6 +234,26 @@ def _fresh(n: int = 4) -> nn.Embedding:
     emb = nn.Embedding(n, EMBEDDING_DIM)
     nn.init.normal_(emb.weight, std=0.1)
     return emb
+
+
+def test_a_widened_tensor_stays_at_init_and_the_rest_loads() -> None:
+    class Box(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.wide = nn.Parameter(torch.ones(3))
+            self.keep = nn.Parameter(torch.zeros(2))
+
+    model = Box()
+    missing, unexpected, mismatched = load_compatible_state_dict(model, {
+        "wide": torch.zeros(2),
+        "keep": torch.full((2,), 7.0),
+        "gone": torch.zeros(1),
+    })
+    assert torch.equal(model.keep, torch.full((2,), 7.0))
+    assert torch.equal(model.wide, torch.ones(3))
+    assert unexpected == ["gone"]
+    assert mismatched == ["wide checkpoint (2,) model (3,)"]
+    assert missing == []
 
 
 def test_init_from_restores_a_saved_table(capsys: pytest.CaptureFixture[str]) -> None:

@@ -233,7 +233,12 @@ class TestFromInitSanity(unittest.TestCase):
     def _check(self, tr):
         self.assertFalse(bool(torch.isnan(tr).any()))
         lo = torch.tensor(PHYSIOLOGICAL_MIN); hi = torch.tensor(PHYSIOLOGICAL_MAX)
-        at_clamp = ((tr <= lo + 1e-6) | (tr >= hi - 1e-6)).any(dim=0)
+        center = torch.tensor(NORM_CENTER)
+        # A marker whose resting value is the envelope floor (the potentiator, at 0)
+        # sits there on a fast. That is the resting state, not a runaway.
+        low_hit = (tr <= lo + 1e-6) & (center > lo + 1e-6)
+        high_hit = tr >= hi - 1e-6
+        at_clamp = (low_hit | high_hit).any(dim=0)
         self.assertFalse(bool(at_clamp.any()), msg=f"at clamp: {[i for i in range(len(at_clamp)) if at_clamp[i]]}")
         g, hr, temp = tr[:, MI["glucose"]], tr[:, MI["hr"]], tr[:, MI["temp"]]
         self.assertTrue(60 <= float(g.min()) and float(g.max()) <= 180, msg=f"glucose {float(g.min())}-{float(g.max())}")

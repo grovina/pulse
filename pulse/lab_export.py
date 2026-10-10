@@ -102,6 +102,7 @@ GRAPH_LABEL: dict[str, str] = {
     "temp": "Temperature",
     "insulin_action": "Insulin action",
     "insulin_slow": "Slow insulin",
+    "insulin_potentiator": "Potentiator",
     "cck": "CCK",
     "gallbladder_bile": "Gallbladder",
     "intestinal_bile": "Intestine",

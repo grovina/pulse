@@ -176,10 +176,16 @@ fast (iter 100: 48 h ended at 12.2 µU/mL against the teacher's 3.8). The
 rate is the teacher's restoring law:
 
     effective_Ib = Ib · max((min(G, Gb)/Gb)^5, 0.25)
-    dI            = −k_ins · (I − effective_Ib) + γ · mod · relu(G − Gb) · incretin
+    dPot         = −k_pot · (Pot − relu(G − Gb))
+    stim         = (1 − w) · relu(G − Gb) + w · Pot
+    dI           = −k_ins · (I − effective_Ib) + γ · mod · stim · incretin
 
-GSIR is identically 0 at G ≤ Gb; fasting insulin is attracted to the
-glucose-gated basal, not a learned floor. ``k_ins`` and ``γ`` are per-person
+``k_pot`` is 0.025 and ``w`` is 0.3, the teacher's constants (τ = 40 min,
+Toffolo & Cobelli). At a constant glucose, Pot sits at relu(G − Gb) and
+stim collapses to that same value, so the steady secretion is unchanged.
+While glucose is falling, Pot is still the glucose of the previous half
+hour and secretion stays up. GSIR is identically 0 at G ≤ Gb with Pot at 0;
+fasting insulin is attracted to the glucose-gated basal, not a learned floor. ``k_ins`` and ``γ`` are per-person
 about a population scalar (centre 0.15 / 0.05, the teacher's ``n`` / ``gamma``;
 B1 above); ``mod`` is a learned state-dependent gain. The thresholds that leaked (glycogen catabolic
 gates) are DELETED, not clamped: muscle breakdown is ``relu(act − 0.10)``,
@@ -280,14 +286,15 @@ _N_EXTERNAL = 2
 # Species order matches MODULE_MARKER_INDICES["metabolic"]:
 # 0: glucose, 1: insulin, 2: glucagon, 3: ffa, 4: bhb, 5: lactate,
 # 6: hepatic_output, 7: liver_glycogen, 8: muscle_glycogen,
-# 9: mitochondrial_capacity, 10: insulin_action, 11: fat_mass.
-_TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0, 0.0, 18.0]
+# 9: mitochondrial_capacity, 10: insulin_action, 11: fat_mass,
+# 12: insulin_potentiator.
+_TYPICALS = [95.0, 10.0, 70.0, 0.5, 0.1, 1.0, 2.0, 100.0, 400.0, 1.0, 0.0, 18.0, 0.0]
 # NORM_SCALE per species, in the same order, so the module can rebuild the RAW
 # concentration for the mass-action consumption term (iter 95).
 _NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["metabolic"]]
 # cons_scale = 1/τ in the mass-action rate equation (glycogen and glucose no longer use
 # theirs — they have explicit flux forms — but the slots keep the protocol uniform).
-_CONS_SCALES = [0.02, 0.1, 0.03, 0.04, 0.03, 0.02, 0.04, 7e-4, 3.3e-5, 2.5e-5, 0.02, 0.0]
+_CONS_SCALES = [0.02, 0.1, 0.03, 0.04, 0.03, 0.02, 0.04, 7e-4, 3.3e-5, 2.5e-5, 0.02, 0.0, 0.0]
 
 _GLUCOSE_IDX = 0
 _INSULIN_IDX = 1
@@ -301,7 +308,12 @@ _MUSCLE_GLYCOGEN_IDX = 8
 _MITO_IDX = 9
 _INSULIN_ACTION_IDX = 10
 _FAT_MASS_IDX = 11
-_N_SPECIES = 12
+_POT_IDX = 12
+_N_SPECIES = 13
+# Teacher PatientParams.k_pot / ins_phase2_frac. Population constants: a learned
+# w without the 120-minute insulin anchor walks the first-phase gain instead.
+_K_POT = 0.025
+_PHASE2_FRAC = 0.3
 
 # Index of the gut glucose-appearance channel within the `coupling` tensor.
 _GUT_GLUCOSE_COUPLING_IDX = 0
@@ -352,9 +364,11 @@ _IB_LOG_MAX = 0.9
 # Obligatory (insulin-independent) glucose uptake per mg/dL of glucose space —
 # brain, blood cells, renal medulla. The teacher's uptake_ii: 2.0 mg/kg/min
 # at Gb 95, so a typical person rests at the typical EGP of 2.0 mg/kg/min.
-# A constant. A free copy walked 0.0114 → 0.0083 and the loss never saw it,
-# because it cancels at the glucose fixed point.
+# The mode of a log-normal prior (teacher ``vary(uptake_ii, 0.06)``). A free
+# copy with no prior walked 0.0114 → 0.0083, because the glucose fixed point
+# cancels it. The prior is what holds an unidentified direction.
 _K_II = 2.0 / (VG_DL_PER_KG * 95.0)
+_K_II_LOG_SIGMA = 0.06
 # Si: RAW per-minute per normalized-insulin-unit; X = Si·Xa with Xa the lagged
 # signed (I − Ib)/10. Band brackets the Bergman literature range with margin —
 # the band bounds the POPULATION centre; B1's per-person factor multiplies it.
@@ -363,10 +377,15 @@ _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
 _KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
 # Gluconeogenic fraction of the POPULATION-TYPICAL EGP (teacher f_gng; Landau
-# 1996: 47 % at 14 h). At Gb 95 that is half of the person's own output. A constant. A free
-# copy walked 0.50 → 0.37 to buy back the grams of glycogenolysis that the
-# shrunken uptake had lost, and that walk is what drops a long fast through 60.
+# 1996: 47 % at 14 h). At Gb 95 that is half of the person's own output. The
+# mode of a Beta prior. A free copy walked 0.50 → 0.37 to buy back the grams
+# of glycogenolysis the shrunken uptake had lost, and that walk is what drops
+# a long fast through 60. The concentration matches the absolute spread of
+# the teacher's ``vary(f_gng, 0.10)``.
 _F_GNG = 0.5
+_F_GNG_LOG_SIGMA = 0.10
+_F_GNG_ABS_SD = _F_GNG * math.sqrt(math.exp(_F_GNG_LOG_SIGMA ** 2) - 1.0)
+_F_GNG_BETA_CONC = (1.0 / (4.0 * _F_GNG_ABS_SD ** 2) - 1.0) / 2.0
 # Teacher ``_F_GNG_MAX``: glycogenolysis keeps a basal outflow, so the pool
 # stays first-order in its own level. Binds only below the student's reachable
 # Gb (the log decode floors near 61 mg/dL; the cap binds near 56 at f_gng 0.5).
@@ -507,8 +526,11 @@ _BHB_CENTER = NORM_CENTER[MARKER_INDEX["bhb"]]  # teacher BHB_b / typical
 # --- lipolysis -----------------------------------------------------------------
 # Teacher full_body.dFFA (Nurjhan 1986; Jensen 1989; Eaton 1969; iter 93).
 # lip_max is derived so FFA_b is the fed fixed point. Clearance cancels
-# there, so it is the teacher's time constant, not a learned level.
+# there, so the level does not identify it. The prior does: median is the
+# teacher's 0.20 (τ = 5 min, half-time 3.5 min). Eaton 1969's 2–4 min
+# half-time is a factor of two in the rate; the log-sigma is half of that.
 _K_FFA = 0.20                 # teacher k_ffa (τ ≈ 5 min)
+_K_FFA_LOG_SIGMA = 0.5 * math.log(2.0)
 _LIP_IC50_INIT = 5.0          # teacher IC50_lip
 
 # --- glucagon ----------------------------------------------------------------------
@@ -521,6 +543,15 @@ _K_GN_INIT = 0.03             # teacher k_gn (τ ≈ 33 min)
 _ALPHA_GN = 3.5               # teacher alpha_gn. A free copy walked 3.5 → 0.31.
 _GN_INS_INIT = 0.4            # teacher coefficient on (I − Ib) / (Ib + 10)
 _GN_INS_OFFSET = 10.0
+# Glucagon basal. The marker typical is 70 pg/mL. Log-sigma is the teacher's
+# ``vary(Gnb)`` default, the between-person spread, used here as the prior on
+# the single population value. Not a per-person head: one of those walked the
+# prior person from 70 to 98 while every gate, being centred on the person's
+# own basal, stayed still.
+_GN_LOG_SIGMA = 0.30
+
+# Names a queue item can point at. The prior is the surface these citations land on.
+POPULATION_PRIOR_NAMES = ("k_ii", "f_gng", "k_ffa", "gn_b")
 
 
 # B1/A4 — the student's MEDIAN PERSON for every quantity `person_params` decodes, i.e.
@@ -687,6 +718,7 @@ class MetabolicModule(MassActionModule):
                 _MITO_IDX: lambda inp, hd: ConstantFluxHead(),
                 _INSULIN_ACTION_IDX: lambda inp, hd: ConstantFluxHead(),
                 _FAT_MASS_IDX: lambda inp, hd: ConstantFluxHead(),
+                _POT_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
@@ -694,7 +726,11 @@ class MetabolicModule(MassActionModule):
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
 
         # Population scalars of the glucose balance (see the module docstring).
-        # Uptake and the gluconeogenic share are constants, not parameters.
+        # The four that used to be pins are parameters at the prior mode.
+        self.log_k_ii = nn.Parameter(torch.tensor(math.log(_K_II)))
+        self.logit_f_gng = nn.Parameter(torch.zeros(()))
+        self.log_k_ffa = nn.Parameter(torch.tensor(math.log(_K_FFA)))
+        self.log_gn_b = nn.Parameter(torch.tensor(math.log(_GN_CENTER)))
         self.log_glyc_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GLYC_INS_K_INIT)))
         self.log_gng_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GNG_INS_K_INIT)))
         self.log_k_ins = nn.Parameter(torch.tensor(_inverse_softplus(_K_INS_INIT)))
@@ -782,7 +818,7 @@ class MetabolicModule(MassActionModule):
             _FFA_LOG_MAX * torch.tanh(self.ffa_baseline_net(embedding).squeeze(-1)))
 
     def gn_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        return self.log_k_gn.new_full(embedding.shape[:-1], _GN_CENTER)
+        return self.log_gn_b.exp().expand(embedding.shape[:-1])
 
     def mito_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
         return torch.exp(
@@ -829,7 +865,13 @@ class MetabolicModule(MassActionModule):
         }
 
     def k_ii(self) -> torch.Tensor:
-        return self.log_si.new_tensor(_K_II)
+        return self.log_k_ii.exp()
+
+    def f_gng_value(self) -> torch.Tensor:
+        return torch.sigmoid(self.logit_f_gng)
+
+    def k_ffa_value(self) -> torch.Tensor:
+        return self.log_k_ffa.exp()
 
     # ---- heads -----------------------------------------------------------------------
 
@@ -852,11 +894,11 @@ class MetabolicModule(MassActionModule):
         mito_sp = self.mito_setpoint_raw(embedding)
         k_ii = self.k_ii()
         egp_b = k_ii * gb
-        f_gng = k_ii.new_tensor(_F_GNG)
+        f_gng = self.f_gng_value()
         glyco_b, gng_b = basal_hepatic_split(egp_b, f_gng)
         ic50_keto = nn.functional.softplus(self.log_keto_ins_supp)
         k_keto = nn.functional.softplus(self.log_k_keto)
-        k_ffa = ffa_b.new_tensor(_K_FFA)
+        k_ffa = self.k_ffa_value()
         ic50_lip = nn.functional.softplus(self.log_lip_ic50)
         return {
             "gb": gb, "ib": ib, "mg_dl_per_g": mg, "body_mass_kg": mass_kg,
@@ -936,7 +978,8 @@ class MetabolicModule(MassActionModule):
         """Every state-dependent term of the metabolic ODE, in raw units (mg/dL/min of
         glucose space; g/min for the pools)."""
         relu = torch.relu
-        (g, ins, gn, ffa, bhb, lac, hep, lgly, mgly, mito, xa, _fat) = self.raw_state(state).unbind(-1)
+        (g, ins, gn, ffa, bhb, lac, hep, lgly, mgly, mito, xa, _fat, pot) = (
+            self.raw_state(state).unbind(-1))
         cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
         glp1 = (_GLP1_CENTER + _GLP1_SCALE * coupling[..., _GLP1_COUPLING_IDX]).clamp(min=0.1)
         gb, ib, mg = c["gb"], c["ib"], c["mg_dl_per_g"]
@@ -994,7 +1037,10 @@ class MetabolicModule(MassActionModule):
         incretin = 1.0 + _INCRETIN_GAIN * glp1_excess / (glp1_excess + _K_INCRETIN)
         glucose_ratio = torch.minimum(g / gb.clamp(min=1.0), torch.ones_like(g))
         effective_ib = ib * torch.clamp(glucose_ratio ** _FAST_INS_EXP, min=_FAST_INS_FLOOR)
-        ins_gsir = c["gamma"] * gsir_mod * relu(g - gb) * incretin
+        g_above = relu(g - gb)
+        pot_rate = -_K_POT * (pot - g_above)
+        phase2_stim = (1.0 - _PHASE2_FRAC) * g_above + _PHASE2_FRAC * pot
+        ins_gsir = c["gamma"] * gsir_mod * phase2_stim * incretin
         ins_restoring = -c["k_ins"] * (ins - effective_ib)
         ins_rate = ins_restoring + ins_gsir
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
@@ -1061,6 +1107,7 @@ class MetabolicModule(MassActionModule):
             "g_cort": g_cort, "g_ffa": g_ffa, "g_g": g_g,
             "uptake_ii": uptake_ii, "uptake_id": uptake_id, "exercise_uptake": exercise_uptake,
             "ins_gsir": ins_gsir, "ins_restoring": ins_restoring, "ins_rate": ins_rate,
+            "g_above": g_above, "pot": pot, "pot_rate": pot_rate, "phase2_stim": phase2_stim,
             "xa": xa, "xa_rate": xa_rate, "xa_drive": insulin_dev * d["ins_sens_act_gain"],
             "hep_target": hep_target, "hep_rate": hep_rate,
             "ketogenesis": ketogenesis, "glyco_depletion": glyco_depletion,
@@ -1086,6 +1133,7 @@ class MetabolicModule(MassActionModule):
             f["glucose_rate"], f["ins_rate"], f["gn_rate"], f["ffa_rate"], f["bhb_rate"],
             f["lactate_rate"], f["hep_rate"], f["liver_glycogen_rate"],
             f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], drv["fat_rate"],
+            f["pot_rate"],
         ], dim=-1)
 
     def fluxes(

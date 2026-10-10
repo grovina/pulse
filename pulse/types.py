@@ -290,6 +290,13 @@ MARKERS = [
         "insulin_slow", "Insulin (slow)", "μU/mL", System.APPETITE, 10.0,
         "internal", 0, 80, "#c2410c", "Timer",
     ),
+    # Delayed-proportional insulin secretion (Toffolo & Cobelli). Tracks (G − Gb)+
+    # with τ = 40 min. Fasting equilibrium is 0, so a checkpoint that predates the
+    # marker pads to the right value. Not a concentration of insulin.
+    MarkerDef(
+        "insulin_potentiator", "Insulin potentiator", "mg/dL", System.METABOLIC, 0.0,
+        "internal", 0, 200, "#ea580c", "Timer",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -414,6 +421,7 @@ NORM_SCALE = [
     4.0,    # bile_acids: ±4 µmol/L (typical 6.0; fasting interval 4.4-14.1, postprandial to 20.2)
     3.0,    # fat_mass: ±3 kg (weeks-scale; a 24 h fast is ~0.2 kg)
     10.0,   # insulin_slow: same excursion as insulin, lagged
+    30.0,   # insulin_potentiator: tracks (G − Gb)+; a meal excursion, not a basal
 ]
 
 # Diagnostic envelopes (lab display, sanity tests). NOT applied by the

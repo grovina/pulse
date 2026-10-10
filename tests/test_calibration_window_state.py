@@ -115,11 +115,24 @@ class TestInterstitialLag(unittest.TestCase):
 class TestQuasiSteady(unittest.TestCase):
     def test_spinup_reaches_the_persons_glucose(self) -> None:
         model = _model()
-        _wire_glucose(model)
-        direction = model.embedding_projections["metabolic"].weight.detach()[0]
-        direction = direction / direction.norm().clamp(min=1e-6)
+        # The glucose head's first layer is a random draw. Pin the sign: projected
+        # component 0 is the embedding's first coordinate, and a negative code
+        # lowers Gb. A zero code keeps the head at zero.
+        net = model.metabolic.glucose_baseline_net
+        proj = model.embedding_projections["metabolic"]
+        with torch.no_grad():
+            proj.weight.zero_()
+            proj.bias.zero_()
+            proj.weight[0, 0] = 1.0
+            net[0].weight.zero_()
+            net[0].bias.zero_()
+            net[0].weight[0, 0] = 1.0
+            net[-1].weight.zero_()
+            net[-1].bias.zero_()
+            net[-1].weight[0, 0] = 1.5
         nominal = torch.tensor(NORM_CENTER, dtype=torch.float32)
-        person = 0.8 * direction
+        person = torch.zeros(model.embedding_dim)
+        person[0] = -0.8
         gi = MARKER_INDEX["glucose"]
         qss_person = quasi_steady_state(
             model, person, nominal, spinup_minutes=120, start_time_minutes=360.0,

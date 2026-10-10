@@ -35,14 +35,11 @@ from pulse.types import EMBEDDING_DIM, MARKER_INDEX as MI, MG_DL_PER_G, NORM_CEN
 _CENTER = torch.tensor(NORM_CENTER)
 
 # A fresh model's 75 g carbohydrate meal peak, mg/dL above the pre-meal level,
-# averaged over four seeds. MEASURED on the pre-A9/A10 tree (Ra = 0.8 ×
-# f_bio = MG_DL_PER_G): per-seed 24.95 / 24.64 / 22.01 / 28.40, mean 25.00.
-# After (f_bio = 0.8 × MG_DL_PER_G, no Ra): 27.38 / 22.07 / 21.91 / 28.47,
-# mean 24.96 — 0.2 % apart. The per-seed numbers move ±10 % and the mean does
-# not, because deleting two heads shifts the global RNG stream: "seed 0" is a
-# different DRAW after the change, not a different model of the same person, so
-# the distribution is the only thing a seeded comparison can hold fixed.
-_PRE_CHANGE_MEAN_PEAK = 25.00
+# averaged over four seeds. The anchor is the distribution, not a seed: widening
+# a head shifts the global RNG stream, so "seed 0" is a different draw.
+# Measured after the potentiator (30 % of secretion lags the glucose): per-seed
+# 29.97 / 27.59 / 29.43 / 29.71, mean 29.17. The pre-potentiator mean was 25.00.
+_PRE_CHANGE_MEAN_PEAK = 29.17
 _PEAK_TOLERANCE = 0.15
 
 
@@ -58,9 +55,8 @@ def _model(seed: int = 0, hidden: int = 32) -> ModularPhysiologyNetwork:
 def _meal_peak(m: ModularPhysiologyNetwork, carbs: float = 75.0, n: int = 120) -> float:
     """Glucose rise above the pre-meal level for a carbohydrate-only meal at +30.
 
-    120 min is enough: the untrained peak lands 53-59 min after the meal (the fresh
-    insulin head has no second phase, so it is later than the teacher's 55 but not
-    by much), and the measured peaks are identical at n = 120, 180 and 300.
+    120 min is enough for the untrained peak. The potentiator lags 30 % of
+    secretion, so the rise is a little higher than the memoryless cold start.
     """
     meals = [MealEvent(time=30.0, carbs=carbs, fats=0.0, proteins=0.0)]
     with torch.no_grad():

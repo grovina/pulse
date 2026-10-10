@@ -131,6 +131,8 @@ from .training import (
     WeightSchedule,
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
+from .training.population_prior_signal import PopulationPriorSignal
+from .training.step_share import step_share
 from .training.insulin_sweep_signal import patient_from_record
 from .training.trajectory_signal import (
     DEFAULT_CONTRIBUTION_WEIGHTS,
@@ -447,6 +449,7 @@ def train(
     meal_response_weight: float = 0.0,
     embedding_prior_weight: float = 0.0,
     embedding_prior_center_weight: float = DEFAULT_CENTER_WEIGHT,
+    population_prior_weight: float = 1.0,
     meal_response_sample_patients: int = 4,
     carb_mass_balance_weight: float = 0.0,
     carb_mass_balance_sample_patients: int = 2,
@@ -651,6 +654,9 @@ def train(
         weight=WeightSchedule(embedding_prior_weight, enable_at_epoch=0),
         center_weight=WeightSchedule(embedding_prior_center_weight, enable_at_epoch=0),
     )
+    population_prior_signal = PopulationPriorSignal(
+        weight=WeightSchedule(population_prior_weight, enable_at_epoch=0),
+    )
     meal_response_signal = RolloutEvidenceSignal(
         family="meal",
         weight=WeightSchedule(meal_response_weight, enable_at_epoch=enable_at),
@@ -703,6 +709,7 @@ def train(
         setpoint_supervision_signal,
         meal_response_signal,
         embedding_prior_signal,
+        population_prior_signal,
         carb_mass_balance_signal,
         cold_distill_signal,
         physiology_rules_signal,
@@ -816,9 +823,11 @@ def train(
         print(f"[RESUME] {resume_from} -> epoch {start_epoch} (Adam moments reset)")
     elif init_from:
         seeded = _load_checkpoint_uri(init_from)
-        missing, unexpected = model.load_state_dict(seeded["model_state"], strict=False)
+        missing, unexpected, mismatched = load_compatible_state_dict(
+            model, seeded["model_state"])
         print(
-            f"[INIT] {init_from} missing={list(missing)} unexpected={list(unexpected)}",
+            f"[INIT] {init_from} missing={missing} unexpected={unexpected} "
+            f"shape_mismatch={mismatched}",
             flush=True,
         )
         _warm_start_patient_table(embeddings, seeded, init_from, seed=seed)
@@ -1022,6 +1031,18 @@ def train(
                 f"{nm}={np.mean(v):.3f}x{len(v)}"
                 for nm, v in sorted(ctx.aux_grad_norms.items())
             )
+            _share = step_share(
+                aux_grad_norms=ctx.aux_grad_norms,
+                traj_grad_norms=ctx.traj_grad_norms,
+            )
+            print(
+                "[LITSHARE] epoch={:3d} ".format(epoch)
+                + " ".join(
+                    f"{fam}={_share[fam]['steps']:.0f}/{_share[fam]['norm_share']:.2f}"
+                    for fam in ("literature", "tape", "distill", "other")
+                ),
+                flush=True,
+            )
             print(
                 f"[GRADNORM] epoch={epoch:3d} phase={cur_phase} "
                 f"traj_mean={_tn.mean() if _tn.size else 0.0:.3f} traj_max={_tn.max() if _tn.size else 0.0:.3f} "
@@ -1063,6 +1084,12 @@ def train(
                 "lr": float(scheduler.get_last_lr()[0]),
                 "elapsed_s": float(elapsed),
                 "aux_steps_epoch": float(aux_step_idx),
+                "lit_steps": float(_share["literature"]["steps"]),
+                "tape_steps": float(_share["tape"]["steps"]),
+                "distill_steps": float(_share["distill"]["steps"]),
+                "lit_norm_share": float(_share["literature"]["norm_share"]),
+                "tape_norm_share": float(_share["tape"]["norm_share"]),
+                "distill_norm_share": float(_share["distill"]["norm_share"]),
                 "traj_grad_norm_mean": float(_tn.mean()) if _tn.size else 0.0,
                 "trajectory_avg_loss": float(traj.avg_loss),
                 "trajectory_n_windows": float(traj.n_units),
@@ -1286,6 +1313,7 @@ def train(
         "meal_response_weight": meal_response_weight,
         "embedding_prior_weight": embedding_prior_weight,
         "embedding_prior_center_weight": embedding_prior_center_weight,
+        "population_prior_weight": population_prior_weight,
         "carb_mass_balance_weight": carb_mass_balance_weight,
         "carb_mass_balance_sample_patients": carb_mass_balance_sample_patients,
         "cold_distill_weight": cold_distill_weight,
@@ -1369,6 +1397,36 @@ def resume_start_epoch(checkpoint: dict) -> int:
 def _gcs_sibling(gcs_object: str, name: str) -> str:
     prefix = gcs_object.rsplit("/", 1)[0] if "/" in gcs_object else ""
     return f"{prefix}/{name}" if prefix else name
+
+
+def load_compatible_state_dict(
+    module: nn.Module, state: dict,
+) -> tuple[list[str], list[str], list[str]]:
+    """Load every checkpoint tensor whose shape still matches.
+
+    ``strict=False`` still raises on a size mismatch. A head widened by a new
+    state column stays at its new init. Copying a slice of the old weight
+    would be a different model that looks warm.
+    """
+    current = module.state_dict()
+    keep: dict[str, torch.Tensor] = {}
+    mismatched: list[str] = []
+    unexpected: list[str] = []
+    for key, value in state.items():
+        if key not in current:
+            unexpected.append(key)
+            continue
+        if tuple(value.shape) != tuple(current[key].shape):
+            mismatched.append(
+                f"{key} checkpoint {tuple(value.shape)} model {tuple(current[key].shape)}"
+            )
+            continue
+        keep[key] = value
+    missing, also_unexpected = module.load_state_dict(keep, strict=False)
+    unexpected.extend(also_unexpected)
+    skipped = {item.split(" ", 1)[0] for item in mismatched}
+    missing = [key for key in missing if key not in skipped]
+    return list(missing), unexpected, mismatched
 
 
 def _load_checkpoint_uri(uri: str) -> dict:
@@ -1909,6 +1967,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--population-prior-weight",
+        type=float,
+        default=1.0,
+        help=(
+            "Weight on the negative log density of k_ii, f_gng, k_ffa and glucagon "
+            "basal. These used to be pins. The gradient is zero at the citation mode "
+            "and restoring away from it, so a direction nothing identifies stays put "
+            "and a later measurement can move it. 0 disables."
+        ),
+    )
+    parser.add_argument(
         "--embedding-prior-center-weight",
         type=float,
         default=DEFAULT_CENTER_WEIGHT,
@@ -2435,6 +2504,7 @@ def main():
         meal_response_weight=args.meal_response_weight,
         embedding_prior_weight=args.embedding_prior_weight,
         embedding_prior_center_weight=args.embedding_prior_center_weight,
+        population_prior_weight=args.population_prior_weight,
         meal_response_sample_patients=args.meal_response_sample_patients,
         carb_mass_balance_weight=args.carb_mass_balance_weight,
         carb_mass_balance_sample_patients=args.carb_mass_balance_sample_patients,

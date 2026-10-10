@@ -120,17 +120,18 @@ class TestCalibrationFrame(unittest.TestCase):
         self.assertEqual([m.time for m in kept], [-MEAL_ACTIVE_WINDOW_MIN + 1.0, -100.0, 50.0])
 
     def test_calibrate_embedding_runs_on_the_continuous_map(self) -> None:
-        # Smoke: a few Adam steps, embedding moves, window_size accepted but inert.
+        # The first window_settle_steps update only the window state. A few
+        # embedding steps have to come after that. window_size is accepted but inert.
         res_a = calibrate_embedding(
             model=self.model, observations=self.obs, initial_state=self.init,
             meals=self.meals, duration_min=self.duration, start_time_minutes=self.t0,
-            n_steps=3, lr=0.05, l2_weight=0.0, sleep_wake=self.sw, activity=self.act,
+            n_steps=12, lr=0.05, l2_weight=0.0, sleep_wake=self.sw, activity=self.act,
             window_size=240,
         )
         res_b = calibrate_embedding(
             model=self.model, observations=self.obs, initial_state=self.init,
             meals=self.meals, duration_min=self.duration, start_time_minutes=self.t0,
-            n_steps=3, lr=0.05, l2_weight=0.0, sleep_wake=self.sw, activity=self.act,
+            n_steps=12, lr=0.05, l2_weight=0.0, sleep_wake=self.sw, activity=self.act,
             window_size=60,
         )
         self.assertTrue(torch.allclose(res_a.embedding, res_b.embedding))
