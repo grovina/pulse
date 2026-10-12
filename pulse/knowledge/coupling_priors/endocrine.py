@@ -48,21 +48,12 @@ COUPLING_PRIORS: list[CouplingPrior] = [
     _p("lactate", "rr", +1, (0.05, 0.6)),
     _p("temp", "hr", +1, (0.05, 0.5)),
     _p("temp", "rr", +1, (0.02, 0.3)),
-    # 2026-10-04 (PLAN.md): hypoglycaemia enters the axis at **CRH** in both models
-    # (`dCRH += hypo_crh*relu(70 - G)`), and neither `dACTH` nor `dCort` reads glucose
-    # directly, so `glucose -> cortisol` and `glucose -> acth` were both structurally
-    # zero and are replaced by the one edge that exists. Teacher sensitivity,
-    # normalized: -0.125 for any G below the threshold, exactly 0 above it -- hence
-    # `lo = 0`, since a glucose sample above the threshold is the common case and its
-    # correct sensitivity is zero.
-    #
-    # NOTE (Cryer et al. 1987, J Clin Invest 112884): that threshold is 70 mg/dL in
-    # both models, but the measured glycaemic threshold for CORTISOL is 58 +/- 3,
-    # while epinephrine's is 69 +/- 2 and glucagon's 68 +/- 2. So the model's slowest
-    # counter-regulatory arm currently fires FIRST, at a threshold belonging to an arm
-    # it does not have. Fixing that is PLAN.md C1 (the sympathoadrenal hub), which
-    # moves this threshold to 58 and introduces the fast arm; this prior is written
-    # against the mechanism as it stands today.
+    # Hypoglycaemia enters the axis at CRH (`dCRH += hypo_crh * relu(58 - G)`).
+    # Neither ACTH nor cortisol reads glucose directly, so glucose→cortisol and
+    # glucose→ACTH are structurally zero and the edge that exists is this one.
+    # Sensitivity is zero above 58 mg/dL, which is the common case, hence `lo = 0`.
+    # Cryer et al. 1987 (J Clin Invest 112884): cortisol's threshold is 58 ± 3;
+    # epinephrine's is 69 ± 2 and lives on sns_tone, not on this prior.
     _p("glucose", "crh", -1, (0.0, 0.16)),
     _p("crh", "acth", +1, (0.002, 0.03)),
     _p("fat_mass", "leptin", +1, (0.001, 0.02)),

@@ -297,6 +297,17 @@ MARKERS = [
         "insulin_potentiator", "Insulin potentiator", "mg/dL", System.METABOLIC, 0.0,
         "internal", 0, 200, "#ea580c", "Timer",
     ),
+    # Sympathoadrenal arm. Appended so earlier indices stay put; a short
+    # checkpoint state pads with these typicals (resting tone, resting
+    # epinephrine).
+    MarkerDef(
+        "sns_tone", "Sympathetic tone", "fraction", System.STRESS, 0.20,
+        "internal", 0, 1, "#7c3aed", "Activity",
+    ),
+    MarkerDef(
+        "epinephrine", "Epinephrine", "pg/mL", System.STRESS, 30.0,
+        "internal", 0, 1500, "#db2777", "Zap",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -422,6 +433,8 @@ NORM_SCALE = [
     3.0,    # fat_mass: ±3 kg (weeks-scale; a 24 h fast is ~0.2 kg)
     10.0,   # insulin_slow: same excursion as insulin, lagged
     30.0,   # insulin_potentiator: tracks (G − Gb)+; a meal excursion, not a basal
+    0.25,   # sns_tone: rest 0.2, a moderate bout is about +2σ
+    100.0,  # epinephrine: rest 30 pg/mL, a moderate bout is a few hundred
 ]
 
 # Diagnostic envelopes (lab display, sanity tests). NOT applied by the
@@ -475,7 +488,7 @@ MODULE_MARKER_IDS: dict[str, list[str]] = {
 # coupling vector from this table — it is not a comment. Channels that are
 # not ODE markers (gut.*, duodenal.*) are the absorption clocks.
 MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
-    "metabolic": GUT_CHANNEL_IDS + ("cortisol", "glp1"),
+    "metabolic": GUT_CHANNEL_IDS + ("cortisol", "glp1", "epinephrine"),
     "appetite": (
         "insulin", "duodenal.fat", "duodenal.protein", "duodenal.carb",
         "fat_mass", "gut.glucose_appearance",
@@ -498,6 +511,7 @@ _MARKER_SYSTEM = {m.id: m.system.value for m in MARKERS}
 _COUPLING_SIGN: dict[tuple[str, str], int] = {
     ("cortisol", "metabolic"): +1,
     ("glp1", "metabolic"): +1,
+    ("epinephrine", "metabolic"): +1,
     ("insulin", "appetite"): -1,
     ("fat_mass", "appetite"): +1,
     ("glucose", "stress"): -1,

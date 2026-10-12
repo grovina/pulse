@@ -201,6 +201,68 @@ SMALL_CARB_GLUCOSE_PEAK = CohortStatisticSpec(
 # is left at the default (cold).
 _ = InitMode  # intentional: marker that init_mode is reviewed for this batch.
 
+# ---------------------------------------------------------------------------
+# Upright bicycle, 40 min, splanchnic glucose output
+# ---------------------------------------------------------------------------
+# Wahren, Felig, Ahlborg and Jorfeldt, J Clin Invest 1971;50:2715 (PMID
+# 5129319). Healthy postabsorptive men. Splanchnic glucose production is
+# estimated hepatic blood flow times the arterial–hepatic venous
+# difference. At 800 kg-m/min (130 W; 1 kg-m/min = 0.163 W), n = 7:
+# rest 0.82 ± 0.10 mmol/min, 40 min 2.23 ± 0.49. The model's moderate
+# bout is activity 0.7. The delta, on the 70 kg reference mass, is
+# (2.23 − 0.82) × 180 / 70 = 3.63 mg/kg/min. The SEM of the difference
+# is sqrt(0.49² + 0.10²) × 180 / 70 = 1.29, so n_arm stays 1.
+_WAHREN_MIN = 80
+_WAHREN_REST = tuple(0.0 for _ in range(_WAHREN_MIN))
+_WAHREN_BOUT = tuple(0.0 if t < 20 else 0.7 for t in range(_WAHREN_MIN))
+WAHREN_EXERCISE_HGO = CohortStatisticSpec(
+    name="wahren_800_splanchnic_glucose",
+    source="Wahren et al. (1971) J Clin Invest — splanchnic glucose output, 800 kg-m/min",
+    description=(
+        "40 min of moderate cycling raises splanchnic glucose output "
+        "by ≈ 3.63 mg/kg/min above rest (2.23 vs 0.82 mmol/min)"
+    ),
+    arms=(
+        CohortArmSpec(
+            label="rest", duration_min=_WAHREN_MIN, start_hour=10.0,
+            meals=(), activity=_WAHREN_REST,
+        ),
+        CohortArmSpec(
+            label="cycle_800", duration_min=_WAHREN_MIN, start_hour=10.0,
+            meals=(), activity=_WAHREN_BOUT,
+        ),
+    ),
+    marker_id="hepatic_output",
+    kind=StatisticKind.DELTA_MEANS,
+    window=StatisticWindow(start_min=55, end_min=70),
+    target=3.63,
+    sigma=1.29,
+    n_arm=1,
+)
+
+
+# Same bout, Table II. Arterial glucose, mmol/L, n = 9: rest 4.16 ± 0.12,
+# 40 min 4.62 ± 0.33. The rise is 0.46 × 18 = 8.28 mg/dL. The SEM of the
+# difference, unpaired, is sqrt(0.12² + 0.33²) × 18 = 6.32. Read with the
+# splanchnic spec: production and this rise together are what identify
+# exercise uptake.
+WAHREN_EXERCISE_GLUCOSE = CohortStatisticSpec(
+    name="wahren_800_arterial_glucose",
+    source="Wahren et al. (1971) J Clin Invest — arterial glucose, 800 kg-m/min",
+    description=(
+        "40 min of moderate cycling raises arterial glucose "
+        "by ≈ 8.3 mg/dL (4.62 vs 4.16 mmol/L)"
+    ),
+    arms=WAHREN_EXERCISE_HGO.arms,
+    marker_id="glucose",
+    kind=StatisticKind.DELTA_MEANS,
+    window=StatisticWindow(start_min=55, end_min=70),
+    target=8.28,
+    sigma=6.32,
+    n_arm=1,
+)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     OGTT_GLUCOSE_PEAK,
     OGTT_GLUCOSE_LATE,
@@ -209,4 +271,6 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     OGTT_INSULIN_120,
     MEAL_HGO_SUPPRESSION,
     SMALL_CARB_GLUCOSE_PEAK,
+    WAHREN_EXERCISE_HGO,
+    WAHREN_EXERCISE_GLUCOSE,
 ]

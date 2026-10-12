@@ -25,9 +25,42 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..sympathoadrenal import (
+    EPI_B, EPI_DRIVE_K, EPI_SPAN, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
+    HYPO_CORT_MGDL, HYPO_EPI_MGDL, INS_EPI_GAIN, K_EPI, K_SNS, LIP_EPI_GAIN,
+    SNS_ACT, SNS_B, SNS_HYPO, SNS_SLEEP,
+)
 from ..types import STATE_DIM, MARKER_INDEX
 from .base import Episode, KnowledgeContribution, CouplingPrior
 from .evidence import TEACHER_TAPE_MARKERS, mask_trajectory
+
+
+def _epi_drive(epi: float) -> float:
+    """Saturating excess of epinephrine above its basal. Zero at rest."""
+    excess = max(float(epi) / EPI_B - 1.0, 0.0)
+    return excess / (excess + EPI_DRIVE_K)
+
+
+def _sns_target(act: float, sleep_depth: float, g: float) -> float:
+    raw = (SNS_B + SNS_ACT * act - SNS_SLEEP * sleep_depth
+           + SNS_HYPO * max(HYPO_EPI_MGDL - g, 0.0))
+    return min(1.0, max(0.0, raw))
+
+
+def _epi_target(sns: float) -> float:
+    raw = EPI_B + EPI_SPAN * (sns - SNS_B) / SNS_ACT
+    return max(raw, 0.5 * EPI_B)
+
+
+def _sns_exercise(sns: float) -> float:
+    """Activity's share of sympathetic tone: 0 at rest, 1 at activity 1.
+
+    Heart rate, blood pressure and the exercise temperature target read
+    this instead of activity. Once tone has settled, the vital matches
+    the old activity gain. The baroreflex stays out; see the
+    cardiovascular block.
+    """
+    return max(sns - SNS_B, 0.0) / SNS_ACT
 
 
 def _circadian(t_abs_min: float, amplitude: float, peak_hour: float) -> float:
@@ -1425,6 +1458,7 @@ def glucose_fluxes(
     params: PatientParams,
     G: float, I: float, X: float, Gn: float, Cort: float, FFA: float,
     LGly: float, MGly: float, Hep: float, Ra_carb: float, act: float,
+    epi: float = EPI_B,
 ) -> dict[str, float]:
     """Every glucose-carbon flux at one instant, in ONE set of units.
 
@@ -1451,7 +1485,8 @@ def glucose_fluxes(
     x_eff = max(X, -params.ins_dep_basal_frac * params.uptake_ii)  # signed insulin action, floored
     uptake_ii = params.uptake_ii * G
     uptake_id = x_eff * G
-    uptake_ex = act * 0.02 * max(G - Gb * 0.8, 0.0)
+    # Contraction-mediated. Zero at rest. Does not switch off below basal.
+    uptake_ex = EXERCISE_UPTAKE_K * act * max(G, 0.0)
 
     # --- glycogen synthesis, debited from glucose ---
     fill_L = min(1.0, max(0.0, (params.LGly_max - LGly) / params.glyc_fill_width_L))
@@ -1469,6 +1504,9 @@ def glucose_fluxes(
     g_G = (Gb / max(G, 1.0)) ** params.hep_autoreg_m if G > Gb else 1.0    # one-sided by physiology
     glyco_b = params.Hep_b - params.Gng_b
     glyco_t = glyco_b * (LGly / params.LGly_b) * g_ins_glyco * g_gn * g_G
+    # Catecholamine glycogenolysis. Resting epinephrine is an excess of
+    # zero, so the fasted target is unchanged.
+    glyco_t *= 1.0 + HEP_EPI_GAIN * _epi_drive(epi)
     gng_total = params.Gng_b * g_cort * np.sqrt(g_gn) * g_ffa * g_ins_gng * g_G
     gng_divert = gng_total * ins_drive ** params.gng_divert_exp                 # indirect pathway -> glycogen
     gng_rel_t = gng_total - gng_divert
@@ -1724,6 +1762,8 @@ def simulate_full_body(
     Pot = 0.0
     Ins_slow = params.Ib
     CRH = params.CRH_b
+    Sns = SNS_B
+    Epi = EPI_B
     Mito = params.mito_0
     Fat = params.Fat_b
     ns = noise_scale
@@ -1759,7 +1799,7 @@ def simulate_full_body(
         phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
         glyco_avail = min(phi_L / phi_L0, 1.0)
 
-        fl = glucose_fluxes(params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act)
+        fl = glucose_fluxes(params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act, Epi)
         dG = fl["dG"]
         dLGly = fl["dLGly"]
         dMGly = fl["dMGly"]
@@ -1777,8 +1817,11 @@ def simulate_full_body(
         g_above = max(G - params.h, 0.0)
         dPot = -params.k_pot * (Pot - g_above)
         w2 = params.ins_phase2_frac
+        # α2-adrenergic inhibition of glucose-stimulated secretion. The
+        # restoring term is untouched, so fasting insulin stays put.
+        alpha2 = 1.0 / (1.0 + INS_EPI_GAIN * _epi_drive(Epi))
         dI = (-params.n * (I - effective_Ib)
-              + params.gamma * ((1.0 - w2) * g_above + w2 * Pot) * incretin_factor)
+              + params.gamma * ((1.0 - w2) * g_above + w2 * Pot) * incretin_factor * alpha2)
 
         glucagon_stim = params.alpha_gn * max(params.Gb - G, 0) / max(params.Gb, 1)
         # Iter 91: suppression responds to insulin ABOVE BASAL, not absolute insulin. With
@@ -1796,12 +1839,14 @@ def simulate_full_body(
         # 3 days, ~0.5-0.7 pg/mL per fasted hour -- which a rectified term could not
         # produce (the teacher rose 0.25/h, from the glucose signal alone).
         glucagon_supp = 0.4 * (I - params.Ib) / (params.Ib + 10.0)
-        dGn = -params.k_gn * (Gn - params.Gnb) + glucagon_stim - glucagon_supp + 0.02 * Ra_protein
+        dGn = (-params.k_gn * (Gn - params.Gnb - GN_EPI_SPAN * _epi_drive(Epi))
+               + glucagon_stim - glucagon_supp + 0.02 * Ra_protein)
         # Glucagon reaches glucose through hepatic output (g_gn in glucose_fluxes),
         # not through a separate additive term.
         ra_norm = Ra / (Ra + params.K_ra_norm)
 
-        lipolysis = params.lip_max / (1 + I / params.IC50_lip)
+        lipolysis = (params.lip_max / (1 + I / params.IC50_lip)
+                     * (1.0 + LIP_EPI_GAIN * _epi_drive(Epi)))
         dFFA = lipolysis - params.k_ffa * FFA + 0.01 * Ra_fat
 
         # glyco_depletion ∈ [0,1): 0 when the liver is full (fed calibration —
@@ -1948,7 +1993,10 @@ def simulate_full_body(
         hypo_crh = params.hypo_acth * params.k_crh / (params.k_acth * max(params.acth_per_crh, 1e-6))
         act_crh = params.cort_activity * params.k_crh / (params.k_acth * max(params.acth_per_crh, 1e-6))
         dCRH = -params.k_crh * (CRH - crh_target)
-        dCRH += hypo_crh * max(70.0 - G, 0)
+        dCRH += hypo_crh * max(HYPO_CORT_MGDL - G, 0.0)
+        sns_target = _sns_target(act, sleep_depth, G)
+        dSns = -K_SNS * (Sns - sns_target)
+        dEpi = -K_EPI * (Epi - _epi_target(Sns))
         dCRH += act_crh * act
         dACTH = -params.k_acth * (ACTH - params.acth_per_crh * max(CRH, 0.0))
 
@@ -1992,9 +2040,13 @@ def simulate_full_body(
         # trajectory signal whose realized HR-SBP correlation is +0.96.
         circ_hr = _circadian(t_abs, params.hr_circ_amp, peak_hour=14.0)
         sleep_hr_shift = -params.sleep_hr_frac * params.HR0 * sleep_depth
+        # Settled tone tracks activity, so the gain is the old act_hr_gain.
+        # Tone below rest (sleep) does not subtract: sleep bradycardia is
+        # sleep_hr_shift. Tone above rest during hypoglycaemia does raise HR.
+        sns_ex = _sns_exercise(Sns)
         dHR = (-params.k_hr * (HR - params.HR0 - circ_hr - sleep_hr_shift)
                 + params.cort_hr * cort_dev
-                + params.act_hr_gain * act
+                + params.act_hr_gain * sns_ex
                 + params.meal_hr_gain * ra_norm)
         hrv_sleep_mult = 1.0 + (params.sleep_hrv_gain - 1.0) * sleep_depth
         # Iter 97: cortisol's vagal effect is two-sided, as it already is for HR and BP
@@ -2004,9 +2056,9 @@ def simulate_full_body(
         sleep_sbp_shift = -params.sleep_bp_frac * params.SBP0 * sleep_depth
         sleep_dbp_shift = -params.sleep_bp_frac * params.DBP0 * sleep_depth
         dSBP = (-params.k_bp * (SBP - params.SBP0 - sleep_sbp_shift)
-                + params.cort_bp * cort_dev + params.act_sbp_gain * act)
+                + params.cort_bp * cort_dev + params.act_sbp_gain * sns_ex)
         dDBP = (-params.k_bp * (DBP - params.DBP0 - sleep_dbp_shift)
-                + params.cort_bp * cort_dev * 0.5 + params.act_dbp_gain * act)
+                + params.cort_bp * cort_dev * 0.5 + params.act_dbp_gain * sns_ex)
 
         # --- Thermoregulation ---
         circ_temp = _circadian(t_abs, params.temp_circ_amp, peak_hour=16.0)
@@ -2018,7 +2070,7 @@ def simulate_full_body(
                     + 0.25 * 4.0 * Ra_protein / 3.0)
         dit = params.temp_dit_gain * dit_kcal
         sleep_temp_shift = -params.sleep_temp_drop * sleep_depth
-        exercise_temp_target = params.temp_exercise_gain * act
+        exercise_temp_target = params.temp_exercise_gain * sns_ex
         dT = (-params.k_temp * (T - params.T0 - circ_temp - sleep_temp_shift - exercise_temp_target)
               + dit)
 
@@ -2075,6 +2127,8 @@ def simulate_full_body(
         INT = max(INT + dINT, 0.0)
         BA = max(BA + dBA + rng.normal(0, ns * 0.2), 0.1)
         CRH = max(CRH + dCRH + rng.normal(0, ns * 0.8), 10.0)
+        Sns = min(max(Sns + dSns, 0.0), 1.0)
+        Epi = max(Epi + dEpi, 1.0)
         Mito = max(Mito + dMito, 0.2)
         Fat = max(Fat + dFat, 4.0)
 
@@ -2098,6 +2152,8 @@ def simulate_full_body(
             Fat,
             Ins_slow,
             Pot,
+            Sns,
+            Epi,
         ]
 
     return trajectory, absorption_profile

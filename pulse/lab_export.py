@@ -496,6 +496,7 @@ def _carbon_flux(params: PatientParams, state: np.ndarray, ra: float, act: float
         float(state[mi["hepatic_output"]]),
         float(ra),
         float(act),
+        float(state[mi["epinephrine"]]),
     )
     mg = fl["mg_dl_per_g"]
     kg = params.body_mass_kg / 1000.0

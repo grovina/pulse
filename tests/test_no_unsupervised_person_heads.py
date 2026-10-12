@@ -220,7 +220,7 @@ class TestHpaCascadeStillTrains(unittest.TestCase):
     _CASCADE = ("_fb_raw", "_hypo_raw", "_act_raw", "log_k_crh", "log_k_acth", "log_k_cort")
 
     def _rollout_grads(self, m: ModularPhysiologyNetwork) -> None:
-        """Every gate live: cortisol above its basal (feedback), glucose under 70
+        """Every gate live: cortisol above its basal (feedback), glucose under 58
         (hypoglycaemia drive), activity on. The loss reads the cascade's own states."""
         m.zero_grad()
         s0 = torch.tensor(NORM_CENTER).clone()

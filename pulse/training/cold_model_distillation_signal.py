@@ -318,9 +318,9 @@ class ColdModelDistillationSignal(TrainingSignal):
          when it has gone stale (``recalib_every`` epochs). The embedding is
          **detached** — it parametrizes *where* we distil, not *what*.
       3. Run the learned model at that embedding and score ``markers``
-         (``TEACHER_DISTILL_MARKERS``: CRH, insulin_action, insulin_slow,
-         bile pools, and on long windows mitochondrial_capacity and
-         fat_mass) against the cold reference.
+         (``TEACHER_DISTILL_MARKERS``: CRH, sympathetic tone, epinephrine,
+         insulin_action, insulin_slow, bile pools, and on long windows
+         mitochondrial_capacity and fat_mass) against the cold reference.
 
     The protocol pool is *broad over protocols, centred on the population-
     mean patient* (cold references from ``simulate_full_body(PatientParams())``)

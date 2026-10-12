@@ -7,7 +7,10 @@ import unittest
 import torch
 
 from pulse.modules.base import compute_time_features
-from pulse.modules.stress import StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX, _ACTH_PER_CRH
+from pulse.modules.stress import (
+    EPI_B, SNS_B, StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX, _EPI_IDX,
+    _SNS_IDX, _ACTH_PER_CRH,
+)
 from pulse.types import (
     EMBEDDING_DIM, MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
     TIME_FEATURES_DIM,
@@ -18,8 +21,9 @@ _CENTER = torch.tensor([NORM_CENTER[i] for i in _STRESS])
 _SCALE = torch.tensor([NORM_SCALE[i] for i in _STRESS])
 
 
-def _norm(cortisol: float, acth: float, crh: float = 100.0) -> torch.Tensor:
-    raw = torch.tensor([[cortisol, acth, crh]], dtype=torch.float32)
+def _norm(cortisol: float, acth: float, crh: float = 100.0,
+          sns: float = SNS_B, epi: float = EPI_B) -> torch.Tensor:
+    raw = torch.tensor([[cortisol, acth, crh, sns, epi]], dtype=torch.float32)
     return (raw - _CENTER) / _SCALE
 
 
@@ -33,7 +37,7 @@ _BALANCED = _time(0.0)
 class TestStressModuleStructure(unittest.TestCase):
     def test_crh_is_internal_marker_in_stress_module(self) -> None:
         self.assertIn("crh", MARKER_INDEX)
-        self.assertEqual(len(_STRESS), 3)
+        self.assertEqual(len(_STRESS), 5)
         self.assertIn(MARKER_INDEX["crh"], _STRESS)
 
     def test_module_local_index_order(self) -> None:
@@ -46,12 +50,12 @@ class TestStressModuleStructure(unittest.TestCase):
         self.assertEqual(_BALANCED.shape[-1], TIME_FEATURES_DIM)
         rate = module(_norm(12.0, 30.0), torch.zeros(1, 2), torch.zeros(1, 2),
                       torch.zeros(1, EMBEDDING_DIM), _BALANCED)
-        self.assertEqual(rate.shape, (1, 3))
+        self.assertEqual(rate.shape, (1, 5))
 
     def test_raw_state_round_trips(self) -> None:
         module = StressModule(embedding_dim=EMBEDDING_DIM)
         raw = module.raw_state(_norm(4.4, 8.0, 60.0))
-        torch.testing.assert_close(raw, torch.tensor([[4.4, 8.0, 60.0]]))
+        torch.testing.assert_close(raw, torch.tensor([[4.4, 8.0, 60.0, SNS_B, EPI_B]]))
 
 
 class TestCascadeMechanism(unittest.TestCase):
@@ -106,6 +110,34 @@ class TestCascadeMechanism(unittest.TestCase):
         self.assertGreater(float(morning[0, _CRH_IDX]), float(evening[0, _CRH_IDX]))
         self.assertAlmostEqual(float(morning[0, _CORTISOL_IDX]), float(evening[0, _CORTISOL_IDX]),
                                places=6)
+
+    def test_resting_tone_and_epinephrine_are_a_fixed_point(self) -> None:
+        module = self._module()
+        awake_rest = torch.tensor([[1.0, 0.0]])
+        rate = module(
+            _norm(12.0, 30.0, 100.0), torch.zeros(1, 2), awake_rest,
+            torch.zeros(1, EMBEDDING_DIM), _BALANCED,
+        )
+        self.assertAlmostEqual(float(rate[0, _SNS_IDX]), 0.0, places=4)
+        self.assertAlmostEqual(float(rate[0, _EPI_IDX]), 0.0, places=3)
+
+    def test_glucose_between_the_cryer_thresholds_raises_tone_not_crh(self) -> None:
+        module = self._module()
+        awake_rest = torch.tensor([[1.0, 0.0]])
+        emb = torch.zeros(1, EMBEDDING_DIM)
+        state = _norm(12.0, 30.0, 100.0)
+
+        def at(mgdl: float) -> torch.Tensor:
+            coupling = torch.tensor([[(mgdl - 95.0) / 30.0, 0.0]])
+            return module(state, coupling, awake_rest, emb, _BALANCED)
+
+        with torch.no_grad():
+            r95, r65, r50 = at(95.0), at(65.0), at(50.0)
+        self.assertAlmostEqual(float(r95[0, _SNS_IDX]), 0.0, places=4)
+        self.assertAlmostEqual(float(r65[0, _CRH_IDX]), float(r95[0, _CRH_IDX]), places=5)
+        self.assertGreater(float(r65[0, _SNS_IDX]), 0.0)
+        self.assertGreater(float(r50[0, _CRH_IDX]), float(r95[0, _CRH_IDX]))
+        self.assertGreater(float(r50[0, _SNS_IDX]), float(r65[0, _SNS_IDX]))
 
     def test_hypoglycaemia_raises_crh(self) -> None:
         module = self._module()

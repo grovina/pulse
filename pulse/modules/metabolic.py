@@ -6,7 +6,7 @@ hepatic glucose output, the two glycogen pools, mitochondrial capacity and the
 remote-insulin latent. Mass-action kinetics where the state IS a species in
 equilibrium; explicit structural forms where it is not (glucose, the pools,
 hepatic output, insulin, insulin action — the PRD's "relaxation (c)"). Receives nutrient
-appearance from Gut, cortisol from Stress and GLP-1 from Appetite.
+appearance from Gut, cortisol and epinephrine from Stress, and GLP-1 from Appetite.
 Lipid appearance is an FFA source and amino appearance a glucagon source
 (the teacher's ``0.01 * Ra_fat`` / ``0.02 * Ra_protein``), not just calories
 into fat mass.
@@ -233,7 +233,7 @@ keep the alpha cell on):
 
     stim = α · relu(Gb − G) / Gb
     supp = β · (I − Ib) / (Ib + 10)
-    dGn  = −k_gn · (Gn − Gnb) + stim − supp + 0.02 · Ra_protein
+    dGn  = −k_gn · (Gn − Gnb − span · epi_drive) + stim − supp + 0.02 · Ra_protein
 
 At G = Gb and I = Ib both extras are zero, so Gnb is the fed fixed
 point with nothing left to derive. Gnb is the marker's typical, 70 pg/mL,
@@ -259,6 +259,10 @@ import torch.nn as nn
 from .base import (
     ConstantFluxHead, MassActionModule, SpeciesHead,
 )
+from ..sympathoadrenal import (
+    EPI_B, EPI_DRIVE_K, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
+    INS_EPI_GAIN, LIP_EPI_GAIN,
+)
 from ..types import (
     BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
     MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE, VG_DL_PER_KG,
@@ -276,8 +280,10 @@ _FFA_CENTER = NORM_CENTER[MARKER_INDEX["ffa"]]
 _FFA_SCALE = NORM_SCALE[MARKER_INDEX["ffa"]]
 _GLP1_CENTER = NORM_CENTER[MARKER_INDEX["glp1"]]
 _GLP1_SCALE = NORM_SCALE[MARKER_INDEX["glp1"]]
+_EPI_CENTER = NORM_CENTER[MARKER_INDEX["epinephrine"]]
+_EPI_SCALE = NORM_SCALE[MARKER_INDEX["epinephrine"]]
 
-# Coupling: gut(4) + cortisol + glp1, from MODULE_COUPLING_CHANNELS.
+# Coupling: gut(4) + cortisol + glp1 + epinephrine, from MODULE_COUPLING_CHANNELS.
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["metabolic"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
@@ -320,6 +326,7 @@ _GUT_GLUCOSE_COUPLING_IDX = 0
 # cortisol is metabolic coupling[GUT_OUTPUT_DIM]; activity is external[0].
 _CORTISOL_COUPLING_IDX = GUT_OUTPUT_DIM
 _GLP1_COUPLING_IDX = GUT_OUTPUT_DIM + 1
+_EPI_COUPLING_IDX = GUT_OUTPUT_DIM + 2
 _LIPID_COUPLING_IDX = 1
 _AMINO_COUPLING_IDX = 2
 _ACTIVITY_EXTERNAL_IDX = 0
@@ -375,7 +382,9 @@ _K_II_LOG_SIGMA = 0.06
 _SI_MIN = 0.0005
 _SI_RANGE = 0.0195
 _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
-_KACT_MIN, _KACT_RANGE, _KACT_INIT = 0.0, 0.06, 0.02          # teacher exercise uptake
+# Exercise uptake, mg/dL/min per unit activity per mg/dL. The teacher's
+# coefficient. The range reaches four times that.
+_KEX_MIN, _KEX_RANGE, _KEX_INIT = 0.0, 0.06, EXERCISE_UPTAKE_K
 # Gluconeogenic fraction of the POPULATION-TYPICAL EGP (teacher f_gng; Landau
 # 1996: 47 % at 14 h). At Gb 95 that is half of the person's own output. The
 # mode of a Beta prior. A free copy walked 0.50 → 0.37 to buy back the grams
@@ -588,6 +597,12 @@ def _inverse_softplus(y: float) -> float:
     return math.log(math.expm1(y))
 
 
+def _epi_drive(epi: torch.Tensor) -> torch.Tensor:
+    """Saturating excess of epinephrine above its basal. Zero at rest."""
+    excess = torch.relu(epi / EPI_B - 1.0)
+    return excess / (excess + EPI_DRIVE_K)
+
+
 def _ins_gate(i: torch.Tensor, ib: torch.Tensor, k: torch.Tensor, n: float) -> torch.Tensor:
     """IC50 suppression normalized at basal insulin: 1 at I = Ib, → 0 at high insulin,
     → 1 + (Ib/K)^n as insulin falls to zero (signed, saturating). Teacher `_glyc_ins_gate`."""
@@ -731,6 +746,8 @@ class MetabolicModule(MassActionModule):
         self.logit_f_gng = nn.Parameter(torch.zeros(()))
         self.log_k_ffa = nn.Parameter(torch.tensor(math.log(_K_FFA)))
         self.log_gn_b = nn.Parameter(torch.tensor(math.log(_GN_CENTER)))
+        self._hep_epi_raw = nn.Parameter(torch.tensor(_inverse_softplus(HEP_EPI_GAIN)))
+        self._lip_epi_raw = nn.Parameter(torch.tensor(_inverse_softplus(LIP_EPI_GAIN)))
         self.log_glyc_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GLYC_INS_K_INIT)))
         self.log_gng_ins_k = nn.Parameter(torch.tensor(_inverse_softplus(_GNG_INS_K_INIT)))
         self.log_k_ins = nn.Parameter(torch.tensor(_inverse_softplus(_K_INS_INIT)))
@@ -739,7 +756,7 @@ class MetabolicModule(MassActionModule):
         # B1: the teacher's `act_insulin_sens`, which the student had no counterpart for.
         self.log_act_ins_sens = nn.Parameter(torch.tensor(_inverse_softplus(_ACT_INS_SENS_INIT)))
         self.log_p2 = nn.Parameter(torch.tensor(_logit((_P2_INIT - _P2_MIN) / _P2_RANGE)))
-        self.log_k_act = nn.Parameter(torch.tensor(_logit((_KACT_INIT - _KACT_MIN) / _KACT_RANGE)))
+        self.log_k_ex = nn.Parameter(torch.tensor(_logit((_KEX_INIT - _KEX_MIN) / _KEX_RANGE)))
         # Ketogenesis: IC50 on absolute insulin (µU/mL) and keto_max. The
         # glycogen-emptying gain is a constant; clearance is derived from these.
         self.log_keto_ins_supp = nn.Parameter(torch.tensor(_inverse_softplus(_KETO_INS_SUPP_INIT)))
@@ -910,7 +927,7 @@ class MetabolicModule(MassActionModule):
             "glyc_k": pp["glyc_ins_k"],
             "gng_k": pp["gng_ins_k"],
             "si": pp["si"],
-            "k_act": _KACT_MIN + _KACT_RANGE * torch.sigmoid(self.log_k_act),
+            "k_ex": _KEX_MIN + _KEX_RANGE * torch.sigmoid(self.log_k_ex),
             "k_ins": pp["k_ins"],
             "gamma": pp["gamma"],
             "act_ins_sens": pp["act_insulin_sens"],
@@ -922,6 +939,8 @@ class MetabolicModule(MassActionModule):
             "gn_ins": nn.functional.softplus(self.log_gn_ins),
             "k_ffa": k_ffa, "ic50_lip": ic50_lip,
             "lip_max": ffa_b * k_ffa * (1.0 + ib / ic50_lip),
+            "hep_epi": nn.functional.softplus(self._hep_epi_raw),
+            "lip_epi": nn.functional.softplus(self._lip_epi_raw),
             "lac_prod_scale": self.prod_scale[_LACTATE_IDX],
             "lac_cons_scale": self.cons_scale[_LACTATE_IDX],
             "hep_cons_scale": self.cons_scale[_HEPATIC_IDX],
@@ -953,7 +972,7 @@ class MetabolicModule(MassActionModule):
             "app_g": app_g,
             "app_eff": app_g * const["mg_dl_per_g"],
             "act_above_rest": relu(act - _MUSCLE_ACT_REST),
-            "exercise_gain": const["k_act"] * act,
+            "exercise_gain": const["k_ex"] * act,
             # B1: the teacher's `si_effective = Si·(1 + act_insulin_sens·act)`. `act`
             # is an external input and the sensitivity is a per-person constant, so
             # the product is a drive and `state_fluxes` reads it rather than reaching
@@ -1017,6 +1036,9 @@ class MetabolicModule(MassActionModule):
         g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M
         glycogenolysis_plasma = (c["glyco_b"] * (lgly / _LIVER_GLY_CENTER)
                                  * g_ins_glyco * g_gn * g_g)
+        epi = (_EPI_CENTER + _EPI_SCALE * coupling[..., _EPI_COUPLING_IDX]).clamp(min=1.0)
+        epi_drive = _epi_drive(epi)
+        glycogenolysis_plasma = glycogenolysis_plasma * (1.0 + c["hep_epi"] * epi_drive)
         gng_plasma = c["gng_b"] * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g
         gng_divert = gng_plasma * ins_drive / (
             ins_drive + _GNG_DIVERT_EPS).pow(1.0 - _GNG_DIVERT_EXP)
@@ -1029,7 +1051,7 @@ class MetabolicModule(MassActionModule):
         uptake_ii = k_ii * g
         x_eff = torch.maximum(c["si"] * xa, -_INS_DEP_BASAL_FRAC * k_ii)
         uptake_id = x_eff * g
-        exercise_uptake = d["exercise_gain"] * relu(g - 0.8 * gb)
+        exercise_uptake = d["exercise_gain"] * relu(g)
         syn_muscle_id = _ID_STORE_FRAC * relu(uptake_id) / mg * fill_m
         syn_muscle = syn_muscle_oral + syn_muscle_id
 
@@ -1040,7 +1062,8 @@ class MetabolicModule(MassActionModule):
         g_above = relu(g - gb)
         pot_rate = -_K_POT * (pot - g_above)
         phase2_stim = (1.0 - _PHASE2_FRAC) * g_above + _PHASE2_FRAC * pot
-        ins_gsir = c["gamma"] * gsir_mod * phase2_stim * incretin
+        ins_gsir = (c["gamma"] * gsir_mod * phase2_stim * incretin
+                    / (1.0 + INS_EPI_GAIN * epi_drive))
         ins_restoring = -c["k_ins"] * (ins - effective_ib)
         ins_rate = ins_restoring + ins_gsir
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
@@ -1076,9 +1099,10 @@ class MetabolicModule(MassActionModule):
 
         glucagon_stim = c["alpha_gn"] * relu(gb - g) / gb.clamp(min=1.0)
         glucagon_supp = c["gn_ins"] * (ins - ib) / (ib + _GN_INS_OFFSET)
-        glucagon_restoring = -c["k_gn"] * (gn - c["gn_b"])
+        glucagon_restoring = -c["k_gn"] * (gn - (c["gn_b"] + GN_EPI_SPAN * epi_drive))
         gn_rate = glucagon_restoring + glucagon_stim - glucagon_supp + d["glucagon_from_amino"]
-        lipolysis = c["lip_max"] / (1.0 + ins / c["ic50_lip"])
+        lipolysis = (c["lip_max"] / (1.0 + ins / c["ic50_lip"])
+                     * (1.0 + c["lip_epi"] * epi_drive))
         ffa_rate = lipolysis - c["k_ffa"] * ffa + d["ffa_from_lipid"]
 
         mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]

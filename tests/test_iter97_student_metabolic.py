@@ -88,7 +88,12 @@ class TestCarbonBudget(unittest.TestCase):
             tr = integrate(m, typ, emb, n, start_time_minutes=360, meals=meals, sleep_wake=sw, activity=act)
             gut = precompute_gut_outputs(m, emb, n, meals=meals)
             ns = (tr - _CENTER) / _SCALE
-            coupling = torch.cat([gut, ns[:, MI["cortisol"]:MI["cortisol"] + 1], ns[:, MI["glp1"]:MI["glp1"] + 1]], -1)
+            coupling = torch.cat([
+                gut,
+                ns[:, MI["cortisol"]:MI["cortisol"] + 1],
+                ns[:, MI["glp1"]:MI["glp1"] + 1],
+                ns[:, MI["epinephrine"]:MI["epinephrine"] + 1],
+            ], -1)
             external = torch.stack([act, sw], -1)
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(n, -1)
             tf = compute_time_features(torch.tensor([(360 + s) % 1440.0 for s in range(n)]))
@@ -762,6 +767,10 @@ class TestNoDeadHeads(unittest.TestCase):
         m.train()
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m)
+        # Basal epinephrine makes the two gains' factor exactly 1, so a
+        # resting coupling gives them a zero gradient by construction.
+        coupling = coupling.clone()
+        coupling[:, M._EPI_COUPLING_IDX] = 2.0
         emb = emb.detach().requires_grad_(True)
         rates = met(state, coupling, external, emb, tf)
         rates.abs().sum().backward()

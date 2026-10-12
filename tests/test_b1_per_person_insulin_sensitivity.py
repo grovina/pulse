@@ -714,9 +714,10 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
 
     def test_the_metabolic_parameter_count(self) -> None:
         """Five zero-init heads (265 each at the default widths) plus the activity
-        sensitivity's population scalar. On top of iter 110's 20,813: the
-        potentiator column widened four learned heads' first layers by the hidden
-        width (+192), and the four population priors are one scalar each (+4).
+        sensitivity's population scalar. 21009 was the count after the
+        potentiator and the four priors. Epinephrine as a coupling input
+        widens the four learned heads' first layers by the hidden width
+        (+192). The hepatic and lipolysis gains are one scalar each (+2).
         Only the module's own total is asserted."""
         m = ModularPhysiologyNetwork()
         heads = ("insulin_sens_net", "hepatic_ins_k_net", "beta_cell_gain_net",
@@ -726,7 +727,7 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21009)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21203)
         self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 

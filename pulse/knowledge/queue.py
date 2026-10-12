@@ -81,8 +81,8 @@ QUEUE: tuple[QueueItem, ...] = (
         marker_id="ffa",
         spec_name="ffa_rises_with_exercise",
         note=(
-            "The rule is already in the registry. The gradient is dead until "
-            "m2.1 gives lipolysis an epinephrine drive. Do not add a second spec."
+            "Lipolysis is multiplied by epinephrine above basal, and that "
+            "gain is a parameter. This rule is what moves it."
         ),
     ),
     QueueItem(
@@ -97,7 +97,13 @@ QUEUE: tuple[QueueItem, ...] = (
         ),
         marker_id="glucose",
         blocked_on="m2.1",
-        note="Both models fire hypoglycaemia into CRH at 70 mg/dL. There is no epinephrine state.",
+        note=(
+            "Both models now have sns_tone and epinephrine. Epinephrine's "
+            "drive starts at 69 mg/dL and cortisol's hypoglycaemic drive at "
+            "58. The ranked hinge still cannot train: an arm has no insulin "
+            "clamp, and a day without food stays near 83 mg/dL. Growth "
+            "hormone has no state."
+        ),
     ),
     QueueItem(
         id="donga-2010-sleep-clamp",
@@ -120,7 +126,7 @@ QUEUE: tuple[QueueItem, ...] = (
     QueueItem(
         id="wahren-1971-exercise-hgo",
         citation="Wahren et al. (1971) J Clin Invest — splanchnic glucose output in exercise",
-        status=Status.BLOCKED,
+        status=Status.INTEGRATED,
         surface="cohort",
         claim=(
             "Healthy postabsorptive men, upright bicycle, 40 min. Splanchnic "
@@ -132,10 +138,27 @@ QUEUE: tuple[QueueItem, ...] = (
             "and 5-fold at 400, 800, and 1200 kg-m/min (1 kg-m/min = 0.163 W)."
         ),
         marker_id="hepatic_output",
-        blocked_on="m2.1",
+        spec_name="wahren_800_splanchnic_glucose",
         note=(
-            "The number is filed. It still cannot train until the "
-            "sympathoadrenal arm exists."
+            "The 800 kg-m/min load, on activity 0.7, as a rise in "
+            "hepatic_output. The 400 and 1200 loads are not separate specs. "
+            "Arterial glucose on the same bout is wahren_800_arterial_glucose."
+        ),
+    ),
+    QueueItem(
+        id="wahren-1971-exercise-glucose",
+        citation="Wahren et al. (1971) J Clin Invest — arterial glucose in exercise",
+        status=Status.INTEGRATED,
+        surface="cohort",
+        claim=(
+            "Same men and the same 800 kg-m/min bout. Arterial glucose, "
+            "mmol/L, mean ± SE, n = 9: rest 4.16 ± 0.12, 40 min 4.62 ± 0.33."
+        ),
+        marker_id="glucose",
+        spec_name="wahren_800_arterial_glucose",
+        note=(
+            "The rise, 8.28 ± 6.32 mg/dL, on the splanchnic spec's arms. "
+            "Together they are what move exercise uptake."
         ),
     ),
     QueueItem(

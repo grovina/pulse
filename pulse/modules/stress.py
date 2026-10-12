@@ -3,6 +3,10 @@ Stress / HPA Axis module.
 
 The cascade is CRH → ACTH → cortisol. Circadian drive, sleep suppression,
 hypoglycaemia and activity enter at CRH; ACTH tracks CRH; cortisol tracks ACTH.
+Sympathetic tone and epinephrine are the fast arm: activity, sleep and
+glucose below 69 mg/dL set the tone, and epinephrine follows it. Cortisol's
+hypoglycaemic drive starts at 58 mg/dL, so it is not the first response.
+The metabolic module reads epinephrine.
 Cortisol's negative feedback on CRH is one-sided saturating about the
 patient's basal: high cortisol suppresses CRH; the nocturnal nadir is
 sleep's. A rectifier at 12 µg/dL would leave the whole overnight range
@@ -46,7 +50,14 @@ import torch
 import torch.nn as nn
 
 from .base import ConstantFluxHead, MassActionModule
-from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..sympathoadrenal import (
+    EPI_B, EPI_SPAN, HYPO_CORT_MGDL, HYPO_EPI_MGDL, K_EPI, K_SNS, SNS_ACT, SNS_B,
+    SNS_HYPO, SNS_SLEEP,
+)
+from ..types import (
+    MARKER_INDEX, MARKERS, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES,
+    NORM_CENTER, NORM_SCALE,
+)
 
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["stress"])
 _N_EXTERNAL = 2
@@ -54,10 +65,16 @@ _N_EXTERNAL = 2
 _CORTISOL_IDX = 0
 _ACTH_IDX = 1
 _CRH_IDX = 2
+_SNS_IDX = 3
+_EPI_IDX = 4
+
+_STRESS_IDS = tuple(MARKERS[i].id for i in MODULE_MARKER_INDICES["stress"])
+if _STRESS_IDS != ("cortisol", "acth", "crh", "sns_tone", "epinephrine"):
+    raise RuntimeError(f"stress marker order changed: {_STRESS_IDS}")
 
 _TYPICALS = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["stress"]]
 _NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["stress"]]
-_CONS_SCALES = [0.02, 0.04, 0.08]
+_CONS_SCALES = [0.02, 0.04, 0.08, K_SNS, K_EPI]
 
 _CORT_B = float(_TYPICALS[_CORTISOL_IDX])
 _ACTH_B = float(_TYPICALS[_ACTH_IDX])
@@ -95,6 +112,17 @@ def _hpa_drive(hour: torch.Tensor) -> torch.Tensor:
     return torch.where(rising, rise_val, fall_val)
 
 
+def _sns_target(act: torch.Tensor, sleep_depth: torch.Tensor, g: torch.Tensor) -> torch.Tensor:
+    raw = (SNS_B + SNS_ACT * act - SNS_SLEEP * sleep_depth
+           + SNS_HYPO * torch.relu(HYPO_EPI_MGDL - g))
+    return raw.clamp(min=0.0, max=1.0)
+
+
+def _epi_target(sns: torch.Tensor) -> torch.Tensor:
+    raw = EPI_B + EPI_SPAN * (sns - SNS_B) / SNS_ACT
+    return raw.clamp(min=0.5 * EPI_B)
+
+
 def _hour_from_time_features(time_features: torch.Tensor) -> torch.Tensor:
     sin_t = time_features[..., 0]
     cos_t = time_features[..., 1]
@@ -107,7 +135,7 @@ class StressModule(MassActionModule):
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__(
-            n_species=3,
+            n_species=5,
             n_coupling=_N_COUPLING,
             n_external=_N_EXTERNAL,
             embedding_dim=embedding_dim,
@@ -118,6 +146,8 @@ class StressModule(MassActionModule):
                 _CORTISOL_IDX: lambda inp, hd: ConstantFluxHead(),
                 _ACTH_IDX: lambda inp, hd: ConstantFluxHead(),
                 _CRH_IDX: lambda inp, hd: ConstantFluxHead(),
+                _SNS_IDX: lambda inp, hd: ConstantFluxHead(),
+                _EPI_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
@@ -171,6 +201,8 @@ class StressModule(MassActionModule):
         return {
             "crh_target_open_loop": crh_target * sleep_suppression,
             "act_drive": const["act_gain"] * act,
+            "activity": act,
+            "sleep_depth": sleep_depth,
         }
 
     def step(
@@ -185,15 +217,20 @@ class StressModule(MassActionModule):
         cort = raw_s[..., _CORTISOL_IDX]
         acth = raw_s[..., _ACTH_IDX]
         crh = raw_s[..., _CRH_IDX]
+        sns = raw_s[..., _SNS_IDX]
+        epi = raw_s[..., _EPI_IDX]
         g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
 
         fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / const["cort_b"]))
         fb = torch.relu(fb)
         crh_target = drv["crh_target_open_loop"] * (1.0 - const["fb_amp"] * fb)
-        hypo = const["hypo_gain"] * torch.relu(70.0 - g)
+        hypo = const["hypo_gain"] * torch.relu(HYPO_CORT_MGDL - g)
 
         d_crh = -const["k_crh"] * (crh - crh_target) + hypo + drv["act_drive"]
         d_acth = -const["k_acth"] * (acth - _ACTH_PER_CRH * crh)
         cort_target = (_CORT_PER_ACTH * acth.clamp(min=0.0)).clamp(min=0.5)
         d_cort = -const["k_cort"] * (cort - cort_target)
-        return torch.stack([d_cort, d_acth, d_crh], dim=-1)
+        sns_target = _sns_target(drv["activity"], drv["sleep_depth"], g)
+        d_sns = -K_SNS * (sns - sns_target)
+        d_epi = -K_EPI * (epi - _epi_target(sns))
+        return torch.stack([d_cort, d_acth, d_crh, d_sns, d_epi], dim=-1)

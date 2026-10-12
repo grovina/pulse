@@ -82,6 +82,8 @@ TEACHER_DISTILL_MARKERS: tuple[str, ...] = (
     "fat_mass",
     "gallbladder_bile",
     "intestinal_bile",
+    "sns_tone",
+    "epinephrine",
 )
 TEACHER_DISTILL_LONG_ONLY: tuple[str, ...] = (
     "mitochondrial_capacity",

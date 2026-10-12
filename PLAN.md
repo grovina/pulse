@@ -80,7 +80,7 @@ papers of that shape use it.
 
 ## 4. Where this stands (2026-10-09)
 
-The simulator is eight modules and 30 states: metabolic, appetite,
+The simulator is eight modules and 33 states: metabolic, appetite,
 stress, cardiovascular, thermoregulation, respiratory, gut,
 hepatobiliary. Carbon closes. Glucose's basal is a fixed point. The gut
 kernel is a normalized density bounded by what was eaten. The embedding
@@ -96,12 +96,8 @@ glucagon MAE 1.08, cortisol MAE 0.31. The insulin potentiator is in
 the student, the same delayed law as the teacher (`k_pot` 0.025,
 `w` 0.3), and `ogtt_75g_insulin_120min` scores the tail.
 
-In the working tree, not yet committed: iter 112 (per-person sweep
-targets, warm-started from iter 111), an interstitial glucose lag
-(`pulse/measurement.py`), window-local calibration state
-(`pulse/calibration.py`), and a probe of whether a meal and a fast pull
-insulin sensitivity and fasting glucose apart
-(`scripts/si_gb_calibration_window.py`).
+Iter 112 trained that tree. `sns_tone` and `epinephrine` are the
+sympathoadrenal states (M2.1).
 
 The four former pins are population parameters under a prior, with no
 per-person head: obligatory uptake `k_ii`, the gluconeogenic fraction
@@ -329,35 +325,42 @@ different state vector is a wrong model that looks plausible.
 A hub is accepted when its new evidence items move and the items already
 in the registry still hold, on the frozen ruler.
 
-### M2.1 Sympathoadrenal arm
+### M2.1 Sympathoadrenal arm — states landed, Cryer still blocked
 
 Lives in the stress module. The HPA axis and the sympathoadrenal system
 are the two arms of one stress response.
 
-**States.** `sns_tone` (neural, τ ≈ 1–2 min). `epinephrine` (pg/mL,
-τ ≈ 2 min).
+**States.** `sns_tone` (neural, τ = 1.5 min, rest 0.2). `epinephrine`
+(pg/mL, τ = 2 min, rest 30). Appended at the tail of `MARKERS`.
 
-**Connections.** In: activity, hypoglycaemia, the stress input (M2.8),
-sleep. Out: heart rate, HRV, blood pressure, hepatic glucose output,
-lipolysis, glucagon, α2-inhibition of insulin secretion, thermogenesis.
+**Connections.** In: activity, glucose below 69 mg/dL, sleep. The
+reported-stress input stays with M2.8. Out, in the teacher: heart rate,
+blood pressure and the exercise temperature follow settled tone, with
+the same gain they had on activity. Out, in both models: epinephrine
+raises glycogenolysis and lipolysis, lifts glucagon's target, and
+inhibits glucose-stimulated insulin. Exercise blood-glucose uptake is
+contraction-mediated, proportional to arterial glucose and to work, and
+zero at rest. The student's cardiovascular module still reads activity;
+the tape carries the vital. Cortisol's hypoglycaemic drive starts at
+58 mg/dL.
 
-**Evidence to author before the state is considered present.**
+The hepatic gain, the lipolysis gain and the uptake coefficient are
+student parameters, initialised at the teacher's 5, 0.5 and 0.015.
+Resting epinephrine is an excess of zero, and resting uptake is zero,
+so fed fixed points do not move.
 
-- Cryer et al. 1987, *J Clin Invest* 112884. Glycaemic thresholds, as an
-  ordering: epinephrine 69 ± 2 mg/dL, glucagon 68 ± 2, growth hormone
-  66 ± 2, cortisol 58 ± 3, symptoms 53 ± 2. Both models today fire
-  hypoglycaemia into CRH at an absolute 70 mg/dL, so cortisol responds
-  first, at the threshold where epinephrine should. The cohort is a
-  ranked hinge, not a new glucose target.
-- An exercise arm in which hepatic glucose output and FFA rise during
-  the bout. Today muscle uptake switches off below 0.8 · Gb instead.
+**Evidence.** `wahren_800_splanchnic_glucose` is the 800 kg-m/min
+splanchnic rise, 3.63 ± 1.29 mg/kg/min, on activity 0.7.
+`wahren_800_arterial_glucose` is the same bout's arterial rise,
+8.28 ± 6.32 mg/dL. The teacher sits on both: splanchnic output about
+3.5, glucose about 9. `ffa_rises_with_exercise` moves the lipolysis gain.
 
-**What this makes writable.** Wearable HR and HRV become metabolic
-information. Counter-regulation has a fast arm. The eight coupling
-priors that are gradient-free constants today, because the edge cannot
-be expressed, become real where they are epinephrine or glucagon onto
-FFA; the three HPA priors (cortisol→ACTH, glucose→cortisol,
-glucose→ACTH) reroute to CRH, which is where both models act.
+Cryer et al. 1987, *J Clin Invest* 112884, is not yet a training item.
+The thresholds are epinephrine 69 ± 2, glucagon 68 ± 2, growth hormone
+66 ± 2, cortisol 58 ± 3, symptoms 53 ± 2. Growth hormone and symptoms
+have no state. Glucagon's response below a person's own basal is a
+separate law. The order cannot be scored: an arm has no insulin clamp,
+and a day without food stays near 83 mg/dL.
 
 **Baroreflex stays out.** It was measured and rejected
 (`full_body.py` around the activity–HR block): at minute resolution the
@@ -498,9 +501,10 @@ biguanide, and an SGLT2 inhibitor.
 
 **Order.** The channel arrives when its target exists: GLP-1 agonism
 after M2.2 and M2.5, SGLT2 after M2.7, metformin against hepatic insulin
-sensitivity (already a per-person quantity). Stress arrives with M2.1,
-because that is the arm it drives. Until then, stress and drugs can only
-be represented by changing the person.
+sensitivity (already a per-person quantity). The reported-stress input
+drives the arm M2.1 landed; the input itself is not in the schema yet.
+Until then, a reported stress and a drug can only be represented by
+changing the person.
 
 **Evidence.** Each ligand is a published protocol: dose, timing, and the
 statistic it is known to move (emptying, hepatic glucose output, urinary
