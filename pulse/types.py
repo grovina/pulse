@@ -10,6 +10,7 @@ class System(str, Enum):
     THERMOREG = "thermoreg"
     RESPIRATORY = "respiratory"
     HEPATOBILIARY = "hepatobiliary"
+    GASTRIC = "gastric"
 
 
 @dataclass(frozen=True)
@@ -308,6 +309,21 @@ MARKERS = [
         "epinephrine", "Epinephrine", "pg/mL", System.STRESS, 30.0,
         "internal", 0, 1500, "#db2777", "Zap",
     ),
+    # The stomach. Empty at rest. A meal adds grams; they leave at one
+    # shared calorie rate (pulse/gastric.py). Appended so earlier indices
+    # stay put.
+    MarkerDef(
+        "gastric_carb", "Gastric carbohydrate", "g", System.GASTRIC, 0.0,
+        "internal", 0, 200, "#b45309", "Wheat",
+    ),
+    MarkerDef(
+        "gastric_protein", "Gastric protein", "g", System.GASTRIC, 0.0,
+        "internal", 0, 150, "#a16207", "Beef",
+    ),
+    MarkerDef(
+        "gastric_fat", "Gastric fat", "g", System.GASTRIC, 0.0,
+        "internal", 0, 150, "#854d0e", "Droplet",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -435,6 +451,9 @@ NORM_SCALE = [
     30.0,   # insulin_potentiator: tracks (G − Gb)+; a meal excursion, not a basal
     0.25,   # sns_tone: rest 0.2, a moderate bout is about +2σ
     100.0,  # epinephrine: rest 30 pg/mL, a moderate bout is a few hundred
+    25.0,   # gastric_carb: a meal is a few tens of grams
+    20.0,   # gastric_protein
+    20.0,   # gastric_fat
 ]
 
 # Diagnostic envelopes (lab display, sanity tests). NOT applied by the
@@ -502,6 +521,7 @@ MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
     ),
     "respiratory": ("lactate", "temp"),
     "hepatobiliary": ("duodenal.fat", "duodenal.protein"),
+    "gastric": (),
 }
 
 _MARKER_SYSTEM = {m.id: m.system.value for m in MARKERS}

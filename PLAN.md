@@ -80,11 +80,12 @@ papers of that shape use it.
 
 ## 4. Where this stands (2026-10-09)
 
-The simulator is eight modules and 33 states: metabolic, appetite,
+The simulator is nine modules and 36 states: metabolic, appetite,
 stress, cardiovascular, thermoregulation, respiratory, gut,
-hepatobiliary. Carbon closes. Glucose's basal is a fixed point. The gut
-kernel is a normalized density bounded by what was eaten. The embedding
-is 32-dimensional; zero is the median person; the table mean is pinned
+hepatobiliary, gastric. Carbon closes. Glucose's basal is a fixed point.
+A meal leaves the stomach at one calorie rate, and appearance is that
+outflow times the bioavailable fraction. The embedding is
+32-dimensional; zero is the median person; the table mean is pinned
 to zero. Twelve per-person setpoints are supervised. Muscle insulin
 sensitivity is a different quantity from hepatic insulin sensitivity,
 and on a pure sensitivity sweep the student realizes 1.77× between
@@ -374,23 +375,34 @@ vasoactive drug, or a change in blood volume — M2.10 — not with this hub.
 
 ### M2.2 The stomach
 
-**States.** `gastric_fat`, `gastric_protein`, `gastric_carb`, in grams.
+**States.** `gastric_carb`, `gastric_protein`, `gastric_fat`, in grams.
+Landed. The teacher, the student's appearance, duodenal delivery and the
+ODE pool are the same update.
 
-**Mechanism.** Emptying sets duodenal delivery, which sets absorption.
-Emptying slows with GLP-1, CCK, hyperglycaemia, meal fat, and total
-load. One compartment replaces the two independent kernels. Mass is
-conserved by accounting, so the kernel can be modulated. The iter-97
-normalized density conserved mass only because its shape was frozen.
+**Mechanism.** One compartment. Brener, Hendrix and McHugh,
+Gastroenterology 1983: glucose solutions of 0.05, 0.125 and 0.25 g/ml
+all left at 2.13 kcal/min once the loop was closed. Carbohydrate,
+protein and fat share that rate in proportion to the calories still in
+the stomach, so fat lowers the carbohydrate gram-rate and lengthens the
+meal. The integral is the grams swallowed. The student fraction stays
+0.8 at init; the teacher's integral is the whole gram. The rate is a
+parameter on the student (`log_empty_kcal`, init 2.13) and the constant
+on the teacher.
 
-**Evidence.** A carb-only load and an equicaloric high-fat load have
-different glucose-appearance time courses (the fat load empties more
-slowly). A GLP-1 elevation slows emptying. Both are cohort arms with
-published appearance or glucose curves. Carb absorption today ignores
-the meal's fat and size.
+**Measured, noise-free, meal at minute 60.** A 75 g OGTT peaks at 168
+mg/dL in the 60–180 window (target 150 ± 25) and the 90–150 min-post
+mean is 116 (ceiling 140). Insulin peaks at 79 (target 60 ± 25). Insulin
+at 120 min is 40 against 34.6 ± 1.44. Fifty grams of carbohydrate alone
+appears at 4.11 mg/dL/min and peaks glucose at 168; the same
+carbohydrate with 30 g of fat appears at 1.75 and peaks at 127.
 
-**What this makes writable.** Meal-composition literature. A GLP-1
-agonist counterfactual, which is otherwise a change of who the person
-is.
+**Not this increment.** GLP-1 and hyperglycaemia cannot slow a rate that
+is computed from the meal before the step. The CCK cohort (peak 6.8 ±
+0.4 within 10 min of a liquid mixed meal) is the open-loop spike this
+cap does not make: on the mixed-meal arm CCK rises to about 1.8 and
+holds for the emptying. Cunningham and Read 1989 is the glucose curve
+for fat slowing emptying; the table is not in hand, so that cohort stays
+queued. Do not put the two kernels back to recover the CCK peak.
 
 ### M2.3 Clock and sleep debt
 

@@ -12,8 +12,7 @@ import numpy as np
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.full_body import (
     PatientParams, glucose_fluxes, bile_fluxes, resolve_derived_params, randomize_params,
-    simulate_full_body, MG_DL_PER_G, BODY_MASS_KG, VG_DL_PER_KG, _meal_absorption,
-    _kernel_cutoff_min,
+    simulate_full_body, MG_DL_PER_G, BODY_MASS_KG, VG_DL_PER_KG, compute_absorption_profile,
 )
 from pulse.types import MARKER_INDEX as MI
 
@@ -87,16 +86,19 @@ class TestOneFluxTwoLedgers(unittest.TestCase):
         # And the day is not glycogen-negative by construction: the pool cycles around its typical.
         self.assertGreater(LG.mean(), 0.75 * p.LGly_b)
 
-    def test_kernel_is_mass_conserving_and_untruncated(self):
+    def test_the_stomach_returns_the_grams_it_was_given(self):
+        """Whatever the patient's other parameters, a meal's carbohydrate leaves
+        the stomach as carbohydrate. 80 g is 320 kcal, gone inside four hours."""
         rng = np.random.default_rng(7)
         worst = 0.0
-        for _ in range(100):
+        for _ in range(20):
             p = randomize_params(rng)
-            for rate in (p.meal_absorption_fast_rate, p.meal_absorption_slow_rate):
-                t = np.arange(0, _kernel_cutoff_min(rate) + 1.0)
-                mass = sum(_meal_absorption(float(tt), 0.0, 1.0, rate) for tt in t) / MG_DL_PER_G
-                worst = max(worst, abs(1.0 - mass))
-        self.assertLess(worst, 0.01, f"kernel loses {worst*100:.2f}% of ingested carbohydrate")
+            mass = sum(
+                compute_absorption_profile(float(tt), [(0.0, 80.0, 10.0, 15.0)], p)[0]
+                for tt in range(400)
+            ) / p.mg_dl_per_g()
+            worst = max(worst, abs(80.0 - mass))
+        self.assertLess(worst, 0.05, f"stomach lost {worst:.3f} g of carbohydrate")
 
 
 class TestDerivedFixedPoints(unittest.TestCase):
@@ -228,11 +230,14 @@ class TestFastedState(unittest.TestCase):
             self.assertLessEqual(bhb48[gb], bhb48[95.0])
 
     def test_ghrelin_rises_in_a_fast(self):
+        """The pre-dinner minute is already post-absorptive: lunch has left.
+        The rise is from the post-dinner nadir. 24 h is well above it, and
+        48 h is higher still (Espelund / Natalucci: a fast raises ghrelin)."""
         traj, t0 = self._fast(95.0)
         ghr = traj[:, MI["ghrelin"]]
-        base = ghr[t0 - 1]
-        self.assertGreater(ghr[t0 + 24 * 60] / base, 1.08)
-        self.assertGreater(ghr[t0 + 48 * 60] / base, ghr[t0 + 24 * 60] / base)
+        nadir = ghr[t0:t0 + 8 * 60].min()
+        self.assertGreater(ghr[t0 + 24 * 60] / nadir, 1.3)
+        self.assertGreater(ghr[t0 + 48 * 60], ghr[t0 + 24 * 60])
 
     def test_sub_basal_insulin_accelerates_glycogenolysis(self):
         p = resolve_derived_params(PatientParams())
@@ -300,11 +305,11 @@ class TestFollowUpFixedPointsAndCounterRegulation(unittest.TestCase):
     def test_fasting_glucagon_rises_at_the_marliss_slope(self):
         traj, t0 = TestFastedState._fast(TestFastedState(), 95.0)
         gn = traj[:, MI["glucagon"]]
-        # 8-16 h after a real dinner (post-dinner glycogen still high) the rise is
-        # ~0.35/h; the rule's own arm starts 8 h fasted from rest and passes at >= 0.5/h.
-        self.assertGreater((gn[t0 + 16 * 60] - gn[t0 + 8 * 60]) / 8.0, 0.3)      # pg/mL per h, 8-16 h
-        self.assertGreater((gn[t0 + 24 * 60] - gn[t0 + 12 * 60]) / 12.0, 0.45)   # 12-24 h
-        self.assertTrue(1.3 <= gn[t0 + 48 * 60] / gn[t0 - 1] <= 1.6)             # +30-60% at 48 h
+        # Dinner leaves over about five hours and insulin is still up at 8 h,
+        # so 8-16 h is the tail, not the fast. The rise is from 12 h on.
+        self.assertGreater((gn[t0 + 24 * 60] - gn[t0 + 12 * 60]) / 12.0, 0.45)
+        self.assertGreater((gn[t0 + 48 * 60] - gn[t0 + 24 * 60]) / 24.0, 0.3)
+        self.assertTrue(1.2 <= gn[t0 + 48 * 60] / gn[t0 + 16 * 60] <= 1.8)
 
     def test_sub_basal_insulin_disinhibits_the_alpha_cell(self):
         """The alpha-cell insulin term is signed: glucagon rises when insulin falls

@@ -29,10 +29,11 @@ from .types import (
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE,
 )
+from .gastric import EMPTY_KCAL_PER_MIN, swallow_from_meals
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
     CardiovascularModule, ThermoregModule, RespiratoryModule,
-    HepatobiliaryModule, DuodenalDeliveryKernel,
+    HepatobiliaryModule, DuodenalDeliveryKernel, GastricModule,
 )
 from .modules.base import PhysiologyModule, compute_time_features
 from .modules.gut import MealEvent
@@ -56,7 +57,7 @@ _SPO2_EPS = 1e-4
 # modules' rates concatenated in this order are a permutation of the state.
 _MODULE_ORDER: tuple[str, ...] = (
     "metabolic", "appetite", "stress", "cardiovascular", "thermoreg", "respiratory",
-    "hepatobiliary",
+    "hepatobiliary", "gastric",
 )
 _MODULE_ORDER_INDEX: tuple[int, ...] = tuple(
     i for name in _MODULE_ORDER for i in MODULE_MARKER_INDICES[name])
@@ -285,8 +286,9 @@ class ModularPhysiologyNetwork(nn.Module):
         self.thermoreg = ThermoregModule(self._emb_dims["thermoreg"], thermoreg_hidden)
         self.respiratory = RespiratoryModule(self._emb_dims["respiratory"], respiratory_hidden)
         self.hepatobiliary = HepatobiliaryModule(self._emb_dims["hepatobiliary"], hepatobiliary_hidden)
-        # Duodenal delivery (gastric emptying) — NOT the gut module's systemic
-        # appearance channels. Takes no embedding, so it needs no precompute path.
+        self.gastric = GastricModule(0)
+        # Duodenal delivery is the same compartment as the stomach and the gut's
+        # appearance. It takes no embedding; the rate is the gastric module's.
         self.duodenal = DuodenalDeliveryKernel()
 
         self._modules_by_name = {
@@ -297,6 +299,7 @@ class ModularPhysiologyNetwork(nn.Module):
             "thermoreg": self.thermoreg,
             "respiratory": self.respiratory,
             "hepatobiliary": self.hepatobiliary,
+            "gastric": self.gastric,
         }
         for name, mod in self._modules_by_name.items():
             n_expected = len(MODULE_COUPLING_CHANNELS[name])
@@ -488,8 +491,11 @@ class ModularPhysiologyNetwork(nn.Module):
         invoke a module directly must use this rather than rebuilding the
         layout by hand.
         """
+        channels = MODULE_COUPLING_CHANNELS[module]
+        if not channels:
+            return norm_state.new_zeros(*norm_state.shape[:-1], 0)
         pieces = []
-        for ch in MODULE_COUPLING_CHANNELS[module]:
+        for ch in channels:
             if ch in GUT_CHANNEL_INDEX:
                 i = GUT_CHANNEL_INDEX[ch]
                 pieces.append(gut_outputs[..., i:i + 1])
@@ -558,6 +564,7 @@ class ModularPhysiologyNetwork(nn.Module):
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
+        swallow_override: Optional[torch.Tensor] = None,
         return_decay: bool = False,
     ) -> torch.Tensor | tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Compute rates of change for all state variables.
@@ -617,8 +624,11 @@ class ModularPhysiologyNetwork(nn.Module):
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
 
-        # Project embeddings per module
+        # Project embeddings per module. A module with no projection (the stomach)
+        # reads none.
         emb = {name: proj(embedding) for name, proj in self.embedding_projections.items()}
+        for name in _MODULE_ORDER:
+            emb.setdefault(name, embedding.new_zeros(batch, 0))
 
         # --- Gut module (not an ODE — processes meals) ---
         # Per-batch gut output is required when batch > 1: gut depends on
@@ -670,7 +680,10 @@ class ModularPhysiologyNetwork(nn.Module):
                     "silently mis-time meal absorption (the iter-87 frame bug). Pass "
                     "gut_clock_exempt=True only if the gut term provably cancels out.",
                 )
-            gut_out = self.gut(float(t_minutes[0].item()), meals, emb["gut"][0])
+            gut_out = self.gut(
+                float(t_minutes[0].item()), meals, emb["gut"][0],
+                kcal_per_min=self.gastric.empty_kcal(),
+            )
             gut_out_batch = gut_out.unsqueeze(0)
         else:
             raise ValueError(
@@ -688,7 +701,21 @@ class ModularPhysiologyNetwork(nn.Module):
         else:
             duo = torch.zeros(batch, DUODENAL_DIM, dtype=state.dtype, device=state.device)
 
-        external = {"sleep_wake": sw, "activity": act}
+        if swallow_override is None:
+            swallow = torch.zeros(batch, 3, dtype=state.dtype, device=state.device)
+        else:
+            swallow = swallow_override.to(dtype=state.dtype, device=state.device)
+            if swallow.dim() == 1:
+                swallow = swallow.unsqueeze(0)
+            if swallow.shape[0] == 1 and batch > 1:
+                swallow = swallow.expand(batch, -1)
+        external = {
+            "sleep_wake": sw,
+            "activity": act,
+            "swallow_carb": swallow[:, 0],
+            "swallow_protein": swallow[:, 1],
+            "swallow_fat": swallow[:, 2],
+        }
         person = self.person_quantities(embedding)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
@@ -948,6 +975,7 @@ class _RolloutPlan:
         start_time_minutes,
         gut: torch.Tensor,
         duo: torch.Tensor,
+        swallow: torch.Tensor,
         sleep_wake: Optional[torch.Tensor],
         activity: Optional[torch.Tensor],
     ) -> None:
@@ -966,6 +994,8 @@ class _RolloutPlan:
         time_feats = compute_time_features(t_abs)                       # [B, T, 4]
         sw, act = model.resolve_external_inputs(embedding, time_feats, sleep_wake, activity)
         emb = {name: proj(embedding) for name, proj in model.embedding_projections.items()}
+        for name in _MODULE_ORDER:
+            emb.setdefault(name, embedding.new_zeros(B, 0))
 
         z = torch.cat([gut, duo, sw.unsqueeze(-1), act.unsqueeze(-1), time_feats], dim=-1)
         self.bank = _HeadBank(model, emb, z)
@@ -976,7 +1006,13 @@ class _RolloutPlan:
         # Marker coupling channels are NaN there: a drive must not read the state.
         nan_state = torch.full((B, T, STATE_DIM), float("nan"), dtype=gut.dtype, device=device)
         protocol_coupling = torch.cat([nan_state, gut, duo], dim=-1)
-        external = {"sleep_wake": sw, "activity": act}
+        external = {
+            "sleep_wake": sw,
+            "activity": act,
+            "swallow_carb": swallow[..., 0],
+            "swallow_protein": swallow[..., 1],
+            "swallow_fat": swallow[..., 2],
+        }
         person = model.person_quantities(embedding)
         person_window = {k: v.repeat_interleave(T, dim=0) for k, v in person.items()}
         tf_flat = time_feats.reshape(B * T, -1)
@@ -1138,6 +1174,23 @@ def _check_compiled_steps(model: "ModularPhysiologyNetwork") -> None:
                 raise RuntimeError(f"compiled step disagrees with eager at batch {batch}")
 
 
+def _swallow_window(
+    n_steps: int,
+    meals,
+    batch: int,
+    member_meals: Optional[list[list[MealEvent]]],
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Grams swallowed at each minute, ``[B, T, 3]`` carbohydrate, protein, fat."""
+    if member_meals is not None:
+        return torch.stack([
+            swallow_from_meals(n_steps, member_meals[b], device) for b in range(batch)
+        ]).to(dtype)
+    one = swallow_from_meals(n_steps, meals or [], device).to(dtype)
+    return one.unsqueeze(0).expand(batch, n_steps, 3)
+
+
 def _per_member_meals(meals, batch: int) -> Optional[list[list[MealEvent]]]:
     """``meals`` as one list per batch member, or ``None`` when it is one shared list."""
     if not meals or isinstance(meals[0], MealEvent):
@@ -1253,12 +1306,13 @@ def integrate(
             else:
                 duo = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
         duo = duo[..., :n_steps, :].to(gut.dtype).expand(batch, n_steps, DUODENAL_DIM)
+        swallow = _swallow_window(n_steps, meals, batch, member_meals, device, gut.dtype)
 
         def _series(x: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
             return None if x is None else x[..., :n_steps].to(device=device, dtype=gut.dtype)
 
         plan = _RolloutPlan(
-            model, embedding, n_steps, dt, start_time_minutes, gut, duo,
+            model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
             _series(sleep_wake), _series(activity),
         )
         held: list[Optional[torch.Tensor]] = [None] * n_steps
@@ -1303,6 +1357,10 @@ def integrate(
         duo_outputs = duodenal_outputs
         if duo_outputs is None and meals and hasattr(model, "duodenal"):
             duo_outputs = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
+        swallow = (
+            swallow_from_meals(n_steps, meals, device).to(dtype=initial_state.dtype)
+            if meals and isinstance(model, ModularPhysiologyNetwork) else None
+        )
 
         # Other rate models (test stubs) return rates only and have no decay channel.
         decay_kw = {"return_decay": True} if isinstance(model, ModularPhysiologyNetwork) else {}
@@ -1316,11 +1374,15 @@ def integrate(
             act_step = activity[step].expand(batch) if activity is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
+            swallow_kw = {}
+            if swallow is not None:
+                swallow_kw["swallow_override"] = swallow[step]
             out = model(
                 state, embedding, t, meals,
                 sleep_wake=sw_step, activity=act_step,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
+                **swallow_kw,
                 **decay_kw,
             )
             rates, decay = out if decay_kw else (out, None)
@@ -1394,9 +1456,10 @@ def precompute_duodenal_outputs(
     """
     if meals is None:
         meals = []
-    device = model.duodenal.log_fast_rate.device
+    device = model.duodenal._anchor.device
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
-    return model.duodenal.forward_window(times, meals)
+    rate = model.gastric.empty_kcal() if hasattr(model, "gastric") else EMPTY_KCAL_PER_MIN
+    return model.duodenal.forward_window(times, meals, rate)
 
 
 def precompute_gut_outputs(
@@ -1445,7 +1508,8 @@ def precompute_gut_outputs(
     # part of the absorption timebase.
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     emb_gut = model.embedding_projections["gut"](embedding)
-    return model.gut.forward_window(times, meals, emb_gut)
+    rate = model.gastric.empty_kcal() if hasattr(model, "gastric") else EMPTY_KCAL_PER_MIN
+    return model.gut.forward_window(times, meals, emb_gut, kcal_per_min=rate)
 
 
 def population_prior_embedding(model: "ModularPhysiologyNetwork") -> torch.Tensor:

@@ -34,6 +34,7 @@ from pulse.model import (
 from pulse.modules import (
     AppetiteModule,
     CardiovascularModule,
+    GastricModule,
     HepatobiliaryModule,
     MetabolicModule,
     RespiratoryModule,
@@ -73,7 +74,7 @@ def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
 
 _ALL_MODULES = (
     MetabolicModule, AppetiteModule, StressModule, CardiovascularModule,
-    ThermoregModule, RespiratoryModule, HepatobiliaryModule,
+    ThermoregModule, RespiratoryModule, HepatobiliaryModule, GastricModule,
 )
 
 

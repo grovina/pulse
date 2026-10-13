@@ -22,7 +22,7 @@ import unittest
 
 import torch
 
-from pulse.modules.gut import GutModule, MEAL_ACTIVE_WINDOW_MIN, MealEvent, combine_meals
+from pulse.modules.gut import GutModule, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 
 
 def _perturb(gut: GutModule, std: float = 0.5, seed: int = 0) -> None:
@@ -45,30 +45,6 @@ def _reference_forward_window(
     return torch.stack([gut(float(t.item()), meals, embedding) for t in times])
 
 
-def _per_meal_forward(
-    gut: GutModule,
-    t: float,
-    meals: list[MealEvent],
-    embedding: torch.Tensor,
-) -> torch.Tensor:
-    """Reference: kernel called once per active meal, then combined
-    (appearance summed, flags as 1 − Π(1 − f))."""
-    rows = []
-    for meal in meals:
-        dt = t - meal.time
-        if dt < 0 or dt > MEAL_ACTIVE_WINDOW_MIN:
-            continue
-        macros = torch.tensor(
-            [meal.carbs, meal.fats, meal.proteins], dtype=torch.float32,
-        ).unsqueeze(0)
-        dt_t = torch.tensor(dt, dtype=torch.float32).unsqueeze(0)
-        emb_b = embedding.unsqueeze(0)
-        rows.append(gut.kernel.forward_single_meal(macros, dt_t, emb_b).squeeze(0))
-    if not rows:
-        return torch.zeros(4)
-    return combine_meals(torch.stack(rows, dim=0))
-
-
 class TestGutForwardEquivalence(unittest.TestCase):
     """``forward(t, meals, emb)`` (vectorized over meals) should match
     the per-meal loop bit-for-bit modulo float-reduction order."""
@@ -85,36 +61,29 @@ class TestGutForwardEquivalence(unittest.TestCase):
             MealEvent(time=300.0, carbs=80.0, fats=20.0, proteins=30.0),
         ]
 
-    def test_matches_per_meal_loop_at_active_time(self) -> None:
-        """t=200 → meals at 20 and 120 are active (180/80 min ago); meal at 300 inactive."""
+    def test_matches_the_window_at_one_minute(self) -> None:
+        """One minute of ``forward`` is that row of ``forward_window``."""
         out = self.gut(200.0, self.meals, self.embedding)
-        ref = _per_meal_forward(self.gut, 200.0, self.meals, self.embedding)
-        torch.testing.assert_close(out, ref, atol=1e-6, rtol=1e-5)
+        ref = self.gut.forward_window(torch.tensor([200.0]), self.meals, self.embedding)
+        torch.testing.assert_close(out, ref.squeeze(0), atol=1e-6, rtol=1e-5)
 
     def test_no_active_meals_returns_zero(self) -> None:
         """t=10 is before any meal → zero output."""
         out = self.gut(10.0, self.meals, self.embedding)
-        ref = _per_meal_forward(self.gut, 10.0, self.meals, self.embedding)
-        torch.testing.assert_close(out, ref, atol=1e-6, rtol=1e-5)
-        self.assertEqual(float(out.abs().sum()), 0.0)
+        self.assertEqual(float(out.detach().abs().sum()), 0.0)
 
     def test_empty_meal_list(self) -> None:
         out = self.gut(200.0, [], self.embedding)
         self.assertEqual(float(out.abs().sum()), 0.0)
 
-    def test_meal_just_outside_active_window(self) -> None:
-        """A meal at age = MEAL_ACTIVE_WINDOW_MIN + 1 must not contribute — and,
-        iter 97, the kernel just INSIDE the window is already negligible, so the
-        mask is a no-op rather than a cliff."""
+    def test_a_finished_meal_has_left(self) -> None:
+        """Once the calories are gone the appearance is zero, including at the
+        old 720 min lookback. This meal is a few hundred kcal."""
         meals = [MealEvent(time=0.0, carbs=50.0, fats=10.0, proteins=20.0)]
-        t = MEAL_ACTIVE_WINDOW_MIN + 1.0
-        out = self.gut(t, meals, self.embedding)
-        ref = _per_meal_forward(self.gut, t, meals, self.embedding)
-        torch.testing.assert_close(out, ref, atol=1e-6, rtol=1e-5)
-        self.assertEqual(float(out.abs().sum()), 0.0)
-        inside = self.gut(MEAL_ACTIVE_WINDOW_MIN - 1.0, meals, self.embedding)
-        peak = self.gut.forward_window(torch.arange(0, 480.0), meals, self.embedding).amax(dim=0)
-        self.assertTrue(bool((inside[:3] < 0.01 * peak[:3]).all()), msg=f"{inside} vs peak {peak}")
+        out = self.gut(MEAL_ACTIVE_WINDOW_MIN, meals, self.embedding)
+        self.assertEqual(float(out.detach().abs().sum()), 0.0)
+        early = self.gut(1.0, meals, self.embedding)
+        self.assertGreater(float(early[0].detach()), 0.0)
 
 
 class TestGutForwardWindowEquivalence(unittest.TestCase):
@@ -252,16 +221,21 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
             )
         self.assertLess(flags[-1], 1.0)
 
-    def test_dose_sweep_via_forward_window_is_exactly_proportional(self) -> None:
+    def test_a_larger_meal_leaves_at_the_same_rate_for_longer(self) -> None:
+        """Both loads are above 2.13 kcal/min, so the early rate matches and the
+        larger meal is still leaving after the smaller one has gone. The integral
+        over a window that covers both is the dose."""
         emb = torch.randn(8)
-        times = torch.arange(0, 300, dtype=torch.float32)
+        times = torch.arange(0, 900, dtype=torch.float32)
         meals_a = [MealEvent(time=0.0, carbs=30.0, fats=6.0, proteins=10.0)]
         meals_b = [MealEvent(time=0.0, carbs=120.0, fats=24.0, proteins=40.0)]
         out_a = self.gut.forward_window(times, meals_a, emb)
         out_b = self.gut.forward_window(times, meals_b, emb)
-        torch.testing.assert_close(
-            out_b[..., :3], 4 * out_a[..., :3], atol=1e-4, rtol=1e-4,
-        )
+        torch.testing.assert_close(out_b[0, :3], out_a[0, :3], atol=1e-4, rtol=1e-4)
+        gone_a = int((out_a[:, 0] > 1e-4).sum())
+        gone_b = int((out_b[:, 0] > 1e-4).sum())
+        self.assertGreater(gone_b, gone_a + 60)
+        torch.testing.assert_close(out_b[:, :3].sum(0), 4 * out_a[:, :3].sum(0), atol=1e-2, rtol=1e-3)
 
 
 class TestGutForwardWindowSpeedup(unittest.TestCase):

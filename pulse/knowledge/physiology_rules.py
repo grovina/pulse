@@ -535,6 +535,28 @@ _MIXED_MEAL_DINNER_ARM = CohortArmSpec(
     meals=((60.0, 75.0, 25.0, 20.0),),
 )
 
+# The same meals, long enough to see them leave. 75 g carbohydrate with
+# 25 g fat and 20 g protein is about 600 kcal, ~4.7 h at 2.13 kcal/min,
+# so a 300 min arm still has food in the stomach at the end.
+_MIXED_MEAL_BREAKFAST_LONG_ARM = CohortArmSpec(
+    label="mixed_meal_breakfast_long",
+    duration_min=480,
+    start_hour=8.0,
+    meals=((60.0, 75.0, 25.0, 20.0),),
+)
+_OGTT_75G_LONG_ARM = CohortArmSpec(
+    label="ogtt_75g_long",
+    duration_min=480,
+    start_hour=8.0,
+    meals=((60.0, 75.0, 0.0, 0.0),),
+)
+_MIXED_MEAL_DINNER_LONG_ARM = CohortArmSpec(
+    label="mixed_meal_dinner_long",
+    duration_min=480,
+    start_hour=19.0,
+    meals=((60.0, 75.0, 25.0, 20.0),),
+)
+
 # Overnight fast extension: from 8h fasted (start) to 16h fasted.
 # Used for ketogenesis / FFA rise / ghrelin rise rules.
 _FAST_8H_TO_16H_ARM = CohortArmSpec(
@@ -710,15 +732,13 @@ GHRELIN_FALLS_AFTER_MEAL = PhysiologyRule(
         "drop reflects nutrient sensing rather than carb-only effects."
     ),
     arms=(_MIXED_MEAL_BREAKFAST_ARM, _OGTT_75G_ARM, _MIXED_MEAL_DINNER_ARM),
-    # Iter 97 (review 4.12): Cummings 2001 puts the postprandial NADIR at -30..
-    # -50 % (60-90 min post-meal). This rule's post window is 15-60 min after the
-    # meal — the descent, not the nadir — so its mean sits at roughly -20 %,
-    # 20 pg/mL at a typical 100. 30 pg/mL was the nadir value scored on the
-    # descent.
+    # Cummings 2001: the nadir is 60-90 min after the meal, -30 to -50 %.
+    # Fat shares the calorie rate, so the first 15 min barely moves ghrelin.
+    # The post window is that nadir (60-120 min after the meal at t=60).
     predicate=lambda traj, ctx: hinge_min_drop(
         traj, ctx.col("ghrelin"),
         pre=ctx.window(30.0, 60.0),
-        post=ctx.window(75.0, 120.0),
+        post=ctx.window(120.0, 180.0),
         min_drop=20.0,
     ),
     scale=30.0,
@@ -850,15 +870,14 @@ GLP1_RETURNS_TO_BASELINE_POSTPRANDIAL = PhysiologyRule(
     name="glp1_returns_to_baseline_postprandial",
     source="Holst (2007) review; Drucker (2006)",
     description=(
-        "Plasma GLP-1 returns toward baseline (≤ 15 pmol/L, ~1.5x "
-        "typical 10 pmol/L) by 3 h post-meal. Anchors the postprandial "
-        "tail so the rise-peak-decay shape cannot drift into a "
-        "sustained elevation regime."
+        "Plasma GLP-1 is back near baseline (≤ 15 pmol/L) once the "
+        "meal has left the stomach. A mixed meal of this size is still "
+        "emptying at 3 h, so the window is 5-6 h after it started."
     ),
-    arms=(_MIXED_MEAL_BREAKFAST_ARM, _OGTT_75G_ARM, _MIXED_MEAL_DINNER_ARM),
+    arms=(_MIXED_MEAL_BREAKFAST_LONG_ARM, _OGTT_75G_LONG_ARM, _MIXED_MEAL_DINNER_LONG_ARM),
     predicate=lambda traj, ctx: hinge_max_value(
         traj, ctx.col("glp1"),
-        window=ctx.window(240.0, 300.0),  # 3–4 h post-meal start (meal at t=60)
+        window=ctx.window(360.0, 420.0),
         ceiling=15.0,
     ),
     scale=10.0,
@@ -1148,15 +1167,14 @@ INSULIN_RETURNS_TO_BASAL_POSTPRANDIAL = PhysiologyRule(
     name="insulin_returns_to_basal_postprandial",
     source="Polonsky et al. (1988); Vilsbøll et al. (2003)",
     description=(
-        "Plasma insulin returns to ≤ 15 μU/mL by 240 min post-load "
-        "(~1.5x basal). Anchors the tail of the rise-peak-decay "
-        "envelope so post-meal insulin doesn't drift into "
-        "hyperinsulinaemic territory."
+        "Plasma insulin is back to ≤ 15 μU/mL once the meal has left "
+        "the stomach (~1.5x basal). The window is 5-6 h after a mixed "
+        "meal that takes about 4.7 h to empty."
     ),
-    arms=(_MIXED_MEAL_BREAKFAST_ARM, _OGTT_75G_ARM, _MIXED_MEAL_DINNER_ARM),
+    arms=(_MIXED_MEAL_BREAKFAST_LONG_ARM, _OGTT_75G_LONG_ARM, _MIXED_MEAL_DINNER_LONG_ARM),
     predicate=lambda traj, ctx: hinge_max_value(
         traj, ctx.col("insulin"),
-        window=ctx.window(240.0, 300.0),
+        window=ctx.window(360.0, 420.0),
         ceiling=15.0,
     ),
     scale=10.0,
@@ -1999,7 +2017,7 @@ LIVER_GLYCOGEN_REPLENISHES_POSTPRANDIAL = PhysiologyRule(
     predicate=lambda traj, ctx: hinge_min_rise(
         traj, ctx.col("liver_glycogen"),
         pre=ctx.window(0.0, 60.0),
-        post=ctx.window(180.0, 300.0),  # 2–4 h post-meal
+        post=ctx.window(240.0, 300.0),  # 3–4 h after the meal, still arriving
         min_rise=10.0,
     ),
     scale=10.0,

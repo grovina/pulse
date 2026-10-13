@@ -1,25 +1,13 @@
 """
-Gut & Absorption module.
+Gut appearance.
 
-Learned absorption kernel that maps meals to nutrient appearance in the
-bloodstream. Not an ODE — processes meal history into time-varying signals.
-Multiple meals superimpose linearly (physically valid for normal eating).
+What reaches the blood is the stomach's outflow (``pulse.gastric``) times
+the bioavailable fraction. The fraction is per person and per macro; the
+time course is the calorie rate, shared with the teacher and with duodenal
+delivery. A larger meal lasts longer. It does not leave faster.
 
-Two batched APIs share one underlying kernel:
-- ``forward(t, meals, embedding)``: single time-point. Vectorizes across
-  the active meal list, so the kernel runs once on ``(M_active, ...)``
-  instead of M_active sequential calls.
-- ``forward_window(times, meals, embedding)``: every time-point in a
-  window at once. Vectorizes across both T and M. Replaces the per-step
-  Python loop the trajectory signal used for gut-loss supervision.
-
-Iter 97: the kernel is ``f_bio(emb) · density(t; emb)`` with an analytic,
-normalized, zero-at-origin basis (see ``base.GutModuleBase``), so the
-learned MLP runs once per patient and time enters only through the basis.
-The appearance channels are additive across meals; ``nutrient_flag`` is
-``1 − exp(−unabsorbed_mass / 10 g)`` and combines across meals as
-``1 − Π(1 − flag_m)`` (which is the same statement about the summed
-unabsorbed mass), so it stays in [0, 1) for any number of meals.
+``forward`` is one minute. ``forward_window`` is the whole window, stepped
+from the start so a late query still sees what was swallowed earlier.
 """
 
 from dataclasses import dataclass
@@ -28,6 +16,7 @@ import torch
 import torch.nn as nn
 
 from .base import GutModuleBase
+from ..gastric import FLAG_GATE_SCALE_G, EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals
 from ..types import GUT_OUTPUT_DIM
 
 
@@ -39,21 +28,10 @@ class MealEvent:
     proteins: float
 
 
-# Maximum age of a meal that still contributes to absorption (minutes).
-#
-# Iter 97: a NUMERICAL NO-OP, not a cliff. Every component of the kernel's basis
-# bank carries < 1 % of its mass beyond this age by construction
-# (``GutModuleBase._KERNEL_BASIS``; asserted in tests/test_gut_module.py), so the
-# mask only saves compute on long-dead meals. Through iter 96 the kernel ended in
-# a hard step here (0.49 → 0 at 479 → 481 min for a 60 g meal), which for a 19:00
-# dinner put a −8 mg/dL/h glucose cliff at 03:00 — inside the scored pre-dawn
-# window. Raising this constant is safe; lowering it below ~480 is not.
-#
-# 720, not 480: the teacher's mass-conserving kernels (iter 97) run to 8/rate,
-# and its slow carbohydrate component still holds ~1.5 % of a meal at 480 min
-# (15 % of a 60 g load appears after 240 min). The window — which is ALSO the
-# meal lookback used by the trajectory signal and the benchmark — must cover
-# what the teacher absorbs, or the student sees a fasted input on a fed state.
+# How far back a protocol keeps a meal. 720 min at 2.13 kcal/min is about
+# 1500 kcal, so an ordinary meal has left and a very large one has not been
+# dropped while it is still emptying. The trajectory signal and the benchmark
+# use the same lookback.
 MEAL_ACTIVE_WINDOW_MIN: float = 720.0
 
 
@@ -72,37 +50,6 @@ GUT_OUTPUT_SCALE: tuple[float, float, float, float] = (2.0, 0.3, 0.5, 1.0)
 APPEARANCE_UNITS_PER_G: tuple[float, float, float] = GutModuleBase.APPEARANCE_UNITS_PER_G
 
 
-def _active_meal_tensors(
-    t_minutes: float,
-    meals: list[MealEvent],
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor] | None:
-    """Return (macros[M_active, 3], dt[M_active]) for meals active at ``t_minutes``,
-    or ``None`` if no meal is active."""
-    rows = []
-    dts = []
-    for meal in meals:
-        dt = t_minutes - meal.time
-        if 0.0 <= dt <= MEAL_ACTIVE_WINDOW_MIN:
-            rows.append((meal.carbs, meal.fats, meal.proteins))
-            dts.append(dt)
-    if not rows:
-        return None
-    macros = torch.tensor(rows, dtype=torch.float32, device=device)
-    dt_tensor = torch.tensor(dts, dtype=torch.float32, device=device)
-    return macros, dt_tensor
-
-
-def combine_meals(per_meal: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-    """Sum the appearance channels over the meal axis (dim −2) and combine the
-    flags as ``1 − Π(1 − flag_m)``. ``per_meal[..., M, 4]`` → ``[..., 4]``."""
-    if mask is not None:
-        per_meal = per_meal * mask.unsqueeze(-1).to(per_meal.dtype)
-    appearance = per_meal[..., :3].sum(dim=-2)
-    flag = 1.0 - torch.prod(1.0 - per_meal[..., 3], dim=-1)
-    return torch.cat([appearance, flag.unsqueeze(-1)], dim=-1)
-
-
 class GutModule(nn.Module):
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__()
@@ -116,6 +63,7 @@ class GutModule(nn.Module):
         t_minutes: float,
         meals: list[MealEvent],
         embedding: torch.Tensor,
+        kcal_per_min: torch.Tensor | float = EMPTY_KCAL_PER_MIN,
     ) -> torch.Tensor:
         """Total nutrient appearance at one time-point from all active meals.
 
@@ -124,19 +72,15 @@ class GutModule(nn.Module):
         """
         if not meals:
             return self._zero_output.clone()
-        active = _active_meal_tensors(t_minutes, meals, self._zero_output.device)
-        if active is None:
-            return self._zero_output.clone()
-        macros, dt = active
-        emb_batch = embedding.unsqueeze(0).expand(macros.shape[0], -1)
-        per_meal = self.kernel.forward_single_meal(macros, dt, emb_batch)  # [M, 4]
-        return combine_meals(per_meal)
+        times = torch.tensor([float(t_minutes)], dtype=torch.float32, device=self._zero_output.device)
+        return self.forward_window(times, meals, embedding, kcal_per_min=kcal_per_min).squeeze(0)
 
     def forward_window(
         self,
         times: torch.Tensor,
         meals: list[MealEvent],
         embedding: torch.Tensor,
+        kcal_per_min: torch.Tensor | float = EMPTY_KCAL_PER_MIN,
     ) -> torch.Tensor:
         """All time-points in a window at once.
 
@@ -172,26 +116,19 @@ class GutModule(nn.Module):
             out = self._zero_output.to(device).expand(B, T, -1).clone()
             return out.squeeze(0) if unbatched else out
 
-        macros = torch.tensor(
-            [(m.carbs, m.fats, m.proteins) for m in meals],
-            dtype=torch.float32, device=device,
-        )  # [M, 3]
-        meal_times = torch.tensor(
-            [m.time for m in meals], dtype=torch.float32, device=device,
-        )  # [M]
-
-        dt = times.unsqueeze(1) - meal_times.unsqueeze(0)  # [T, M]
-        mask = ((dt >= 0.0) & (dt <= MEAL_ACTIVE_WINDOW_MIN)).to(torch.float32)  # [T, M]
-
-        weights, f_bio = self.kernel.mixture(embedding)      # [B, 3, K], [B, 3]
-        density = self.kernel.basis_density(dt)              # [T, M, K]
-        survival = self.kernel.basis_survival(dt)            # [T, M, K]
-
-        # appearance[b,t,m,j] = macros[m,j] · f_bio[b,j] · Σ_k w[b,j,k] · basis_k(dt[t,m])
-        appearance = torch.einsum("bjk,tmk,mj,bj->btmj", weights, density, macros, f_bio)
-        unabsorbed = torch.einsum("bjk,tmk,mj->btm", weights, survival, macros)
-        m = mask.unsqueeze(0)
-        appearance = (appearance * m.unsqueeze(-1)).sum(dim=2)               # [B, T, 3]
-        flag = 1.0 - torch.exp(-(unabsorbed * m).sum(dim=2) / self.kernel.FLAG_GATE_SCALE_G)
-        out = torch.cat([appearance, flag.unsqueeze(-1)], dim=-1)            # [B, T, 4]
+        # The queried times may be a single late minute. The compartment has
+        # to be stepped from the start of the window to reach it.
+        last = int(times.detach().amax().item())
+        horizon = max(last + 1, T)
+        swallow = swallow_from_meals(horizon, meals, device)
+        left, filled = simulate(swallow, kcal_per_min)
+        idx = times.round().to(torch.long).clamp(0, horizon - 1)
+        grams = left.index_select(0, idx)                              # [T, 3] carb, protein, fat
+        present = filled.index_select(0, idx).sum(dim=-1)              # [T]
+        _, f_bio = self.kernel.mixture(embedding)                       # [B, 3] appearance units per gram
+        # Channel order is glucose, lipid, amino — carbohydrate, fat, protein.
+        ordered = torch.stack([grams[:, 0], grams[:, 2], grams[:, 1]], dim=-1)
+        appearance = ordered.unsqueeze(0) * f_bio.unsqueeze(1)
+        flag = 1.0 - torch.exp(-present / FLAG_GATE_SCALE_G)
+        out = torch.cat([appearance, flag.view(1, T, 1).expand(B, T, 1)], dim=-1)
         return out.squeeze(0) if unbatched else out

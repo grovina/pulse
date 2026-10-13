@@ -76,12 +76,16 @@ class TestLoopConservation(unittest.TestCase):
         self.assertTrue(bool((f_l["extraction"] < f_h["extraction"]).all()))
         self.assertTrue(bool((f_l["spillover"] > f_h["spillover"]).all()))
 
-    def test_duodenal_kernel_has_no_hard_age_mask(self) -> None:
+    def test_twenty_grams_of_fat_has_left_long_before_500_minutes(self) -> None:
+        """20 g of fat is 180 kcal, about 84 min at 2.13 kcal/min. Delivery is
+        the emptying, so it is present early and gone once the stomach is."""
         k = DuodenalDeliveryKernel()
         meals = [MealEvent(time=0.0, carbs=0.0, fats=20.0, proteins=0.0)]
         with torch.no_grad():
-            out = k.forward_window(torch.tensor([500.0]), meals)
-        self.assertGreater(float(out[0].sum()), 0.0)
+            early = k.forward_window(torch.tensor([10.0]), meals)
+            late = k.forward_window(torch.tensor([500.0]), meals)
+        self.assertGreater(float(early[0].sum()), 0.0)
+        self.assertEqual(float(late[0].sum()), 0.0)
 
 
 class TestBelowTypicalIsRepresentable(unittest.TestCase):

@@ -25,6 +25,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..gastric import EMPTY_KCAL_PER_MIN, step_grams
 from ..sympathoadrenal import (
     EPI_B, EPI_DRIVE_K, EPI_SPAN, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
     HYPO_CORT_MGDL, HYPO_EPI_MGDL, INS_EPI_GAIN, K_EPI, K_SNS, LIP_EPI_GAIN,
@@ -115,17 +116,9 @@ def _hpa_drive(t_abs_min: float, rise_start_h: float, peak_h: float,
 # metabolic ledger share them without importing teacher code.
 from ..types import BODY_MASS_KG, VG_DL_PER_KG, VG_DL, MG_DL_PER_G  # noqa: E402
 
-# Iter 97: the carbohydrate appearance kernel is MASS-CONSERVING. The integral of
-# `_meal_absorption` over all time is carbs (g) * MG_DL_PER_G, i.e. the whole
-# ingested carbohydrate appears in glucose space and nowhere else. Through iter 96
-# this gain was 2.55 -- a phenomenological scale that put 32% of the meal into
-# glucose space and left the other 68% unaccounted for -- because the kernel was
-# ~3x too peaky for a real absorption curve and the gain was the knob that held the
-# glucose excursion at the literature +40-60 mg/dL. Mass now comes from the kernel;
-# amplitude comes from where physiology puts it: hepatic first-pass uptake into
-# glycogen (`glyc_syn_frac_L`, debited from glucose -- see the metabolic block) and
-# insulin-stimulated disposal (`Si`), which is why both were re-sized in this
-# iteration (measured, see PatientParams).
+# A gram of carbohydrate that leaves the stomach appears in glucose space.
+# The time course is the gastric compartment (pulse/gastric.py); this constant
+# is only the unit change, grams to mg/dL.
 CARB_APPEARANCE_GAIN = MG_DL_PER_G
 
 # --- 2026-10-04 (PLAN.md Wave E, E1) ----------------------------------------------
@@ -143,75 +136,6 @@ EGP_TYPICAL_MG_KG_MIN = 2.0
 # Carried over from the iter-97 ``min(Gng_b, 0.85 * Hep_b)`` clip, whose intent was
 # that the glycogen pool always has a basal outflow to be first-order in.
 _F_GNG_MAX = 0.85
-
-# Iter 97: kernels integrate to >= 99.7% of their mass. A gamma-2 kernel
-# rate^2 t e^{-rate t} has retained 1 - (1 + x) e^{-x} of its mass at x = rate * t;
-# x = 8 gives 0.997. The fixed 300-min cutoff destroyed 12.6% of the slow fraction
-# at the default slow rate and 66% at the floor of the sampled range -- 3.8% of all
-# ingested carbohydrate on average across the population, 14.4% in the worst
-# patient, silently. The truncation is now a property of the kernel, not a number.
-_KERNEL_CUTOFF_X = 8.0
-
-
-def _kernel_cutoff_min(rate: float) -> float:
-    return _KERNEL_CUTOFF_X / max(rate, 1e-6)
-
-
-def _meal_absorption(t: float, meal_time: float, carbs: float,
-                     rate: float = 0.03, gain: float = CARB_APPEARANCE_GAIN) -> float:
-    dt = t - meal_time
-    if dt < 0 or dt > _kernel_cutoff_min(rate):
-        return 0.0
-    return carbs * rate * rate * dt * np.exp(-rate * dt) * gain
-
-
-def _fat_absorption(t: float, meal_time: float, fats: float,
-                    rate: float = 0.015) -> float:
-    dt = t - meal_time
-    if dt < 0 or dt > _kernel_cutoff_min(rate):
-        return 0.0
-    return fats * rate * rate * dt * np.exp(-rate * dt) * 3.0
-
-
-def _duodenal_delivery(t: float, meal_time: float, grams: float,
-                       fast_rate: float = 0.10, slow_rate: float = 0.005,
-                       slow_frac: float = 0.35) -> float:
-    """Nutrient delivery INTO THE DUODENUM (g/min) — gastric emptying.
-
-    Iter 95. Distinct from `_fat_absorption` / `_protein_absorption`, which are
-    SYSTEMIC appearance: fat reaches the blood via chylomicrons and peaks around
-    60 min, whereas duodenal I-cells see nutrient arriving within minutes. Driving
-    CCK from systemic appearance put the modelled peak at +68 min against a
-    literature +10 min — the wrong signal, not the wrong gain.
-
-    TWO COMPONENTS, following the same fast/slow split this module already uses for
-    carbohydrate absorption, because one component cannot fit the CCK data:
-
-      fast  gamma-shaped, peaking at 1/fast_rate = 10 min — the rapid liquid-phase
-            emptying (plus cephalic phase) that produces the sharp early CCK peak
-            and its fall to roughly half by 30 min.
-      slow  exponential, tau = 1/slow_rate = 200 min — continued emptying of the
-            solid phase, which is what keeps CCK elevated for the observed 3-5 h.
-
-    A single fast kernel reproduces the peak but loses the plateau; a single slow one
-    reproduces neither. Measured: with one exponential, peak and the +30 min value
-    moved together and no (rate, gain) pair satisfied both anchors at once.
-    """
-    dt = t - meal_time
-    if dt < 0:
-        return 0.0
-    fast = fast_rate * fast_rate * dt * np.exp(-fast_rate * dt)
-    slow = slow_rate * np.exp(-slow_rate * dt)
-    return grams * ((1.0 - slow_frac) * fast + slow_frac * slow)
-
-
-def _protein_absorption(t: float, meal_time: float, proteins: float,
-                        rate: float = 0.02) -> float:
-    dt = t - meal_time
-    if dt < 0 or dt > _kernel_cutoff_min(rate):
-        return 0.0
-    return proteins * rate * rate * dt * np.exp(-rate * dt) * 3.0
-
 
 @dataclass
 class PatientParams:
@@ -446,26 +370,17 @@ class PatientParams:
     # would ship inert — and the iter-94 ruler finding is that the gate cannot tell a
     # constant from a simulator.
     #
-    # CCK. Duodenal I-cells respond to intraluminal FAT and PROTEIN (not carbohydrate),
-    # so the drive reads Ra_fat and Ra_protein. Literature: fasting 0.8-1.2 pmol/L,
-    # peak 6.5-7.1 within ~10 min of a mixed meal, ~3.5 at 30 min, elevated 3-5 h.
-    # k_cck = 1/tau; tau ~ 8 min gives the fast rise and the fall to ~3.5 by 30 min.
+    # CCK. Duodenal I-cells respond to fat and protein arriving from the stomach,
+    # not to carbohydrate and not to what has already reached the blood.
+    # Fasting is about 1 pmol/L. A liquid mixed meal peaks near 7 within about
+    # 10 min (Liddle 1985); that early spike is the open-loop emptying this
+    # compartment does not have. Here CCK follows the calorie-limited delivery
+    # for as long as the meal is leaving.
     CCK_b: float = 1.0            # pmol/L, fasting
-    # CCK is cleared fast — plasma half-life ~1-3 min — so it tracks duodenal delivery
-    # closely rather than smoothing it. tau = 1/k_cck = 2.9 min.
+    # Plasma half-life is a few minutes, so CCK tracks delivery.
     k_cck: float = 0.35           # /min
-    # Gains are per (g/min) of DUODENAL delivery, not of systemic appearance.
-    # Calibrated (not guessed) against the three QUANTITATIVE CCK anchors at once:
-    # peak 6.5-7.1 pmol/L, peak time 5-20 min, and ~2.5-4.5 pmol/L at +30 min.
-    # The "elevated for 3-5 h" statement in the same sources is qualitative, so it is
-    # NOT fitted to: the model realizes +17% over basal at +3 h, which is in the right
-    # direction but is not evidence of anything and must not be quoted as a match.
-    cck_fat_gain: float = 2.25    # fat is the strongest I-cell stimulus
-    cck_prot_gain: float = 0.79   # protein is weaker (0.35x)
-    # Gastric emptying, two-component (see _duodenal_delivery).
-    duo_fast_rate: float = 0.10          # /min, gamma peaking at 10 min (liquid phase)
-    duo_slow_rate: float = 0.005         # /min, tau 200 min tail (solid phase)
-    duo_slow_frac: float = 0.35          # share of the meal on the slow route
+    cck_fat_gain: float = 2.25    # per g/min of duodenal fat
+    cck_prot_gain: float = 0.79   # per g/min of duodenal protein
     # Gallbladder. A POOL in mmol of bile acids (content, not volume — the gallbladder
     # concentrates bile ~10x, so content is what conserves round the loop). Emptying is
     # CCK-gated and PROPORTIONAL TO CONTENT, which makes it exponential: that is what
@@ -1026,25 +941,6 @@ class PatientParams:
     rr_lactate_gain: float = 6.0
     spo2_exercise_dip: float = 1.5
 
-    # Meal absorption
-    # Iter 92: fast-carb rate 0.03 -> 0.040. The gamma-2 kernel peaks at 1/rate, so
-    # 0.03 put carb appearance at 33 min and the resulting glucose peak at 68 min --
-    # late against the literature's 45-60 min for a mixed meal, and it dragged the
-    # whole postprandial cascade with it (insulin peak 74 min vs 30-60, ghrelin nadir
-    # 126 min vs 60-90). 0.040 measured (N=30): glucose peak 57 min, insulin 62 min.
-    # Total carb appearance is unchanged -- the kernel's integral is rate-independent
-    # (see CARB_APPEARANCE_GAIN, which holds the excursion amplitude fixed).
-    # Iter 97: the kernel is now MASS-CONSERVING, so its shape has to be the shape
-    # of a real absorption curve rather than a peak scaled to fit. Tracer studies of
-    # a 75 g oral load (Dalla Man 2004/2005; Ferrannini 1985): Ra rises to 5-6
-    # mg/kg/min by 30-45 min, PLATEAUS there through ~90 min, is still ~3 at 120
-    # and ~1.5 at 180. A single gamma-2 cannot plateau. Two components: a fast
-    # gamma-2 at 0.030 (peak 33 min) carrying 30% and a slow one at 0.012 (peak 83
-    # min) carrying 70% reproduce that shape with the whole load.
-    meal_absorption_fast_rate: float = 0.030
-    meal_absorption_slow_rate: float = 0.012
-    meal_absorption_slow_fraction: float = 0.70
-
     # Glycogen pools (iter 76 — Move D first concrete step). Liver and muscle
     # glycogen as flux integrators (dGly/dt = synthesis − breakdown), no longer
     # padded constants. Anatomically separate tissues with separate turnover
@@ -1337,9 +1233,6 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.rr_lactate_gain = vary(p.rr_lactate_gain, 0.2)
     p.RR0 = vary(p.RR0, 0.15, fit=-0.20)
     p.SpO2_0 = min(100, max(94, p.SpO2_0 + rng.normal(0, 1)))
-    p.meal_absorption_fast_rate = float(np.clip(vary(p.meal_absorption_fast_rate, 0.2), 0.01, 0.08))
-    p.meal_absorption_slow_rate = float(np.clip(vary(p.meal_absorption_slow_rate, 0.25), 0.004, 0.04))
-    p.meal_absorption_slow_fraction = float(np.clip(vary(p.meal_absorption_slow_fraction, 0.2), 0.35, 0.8))
     # Glycogen pool sizes vary across patients (training/diet history); the
     # flux gains stay fixed so the dynamics shape is consistent. Caps track
     # the baselines so a larger pool can still fill. Cold-distill references
@@ -1538,28 +1431,39 @@ def glucose_fluxes(
     }
 
 
+def _stomach_at(
+    t: float,
+    meals: list[tuple[float, float, float, float]],
+    kcal_per_min: float = EMPTY_KCAL_PER_MIN,
+) -> tuple[float, float, float]:
+    """Grams of carb, protein and fat leaving the stomach at minute ``t``."""
+    carb = protein = fat = 0.0
+    pending = sorted(meals, key=lambda m: m[0])
+    pi = 0
+    delivered = (0.0, 0.0, 0.0)
+    for minute in range(int(t) + 1):
+        while pi < len(pending) and pending[pi][0] <= minute + 1e-6:
+            _mt, mc, mf, mp = pending[pi]
+            carb += mc
+            fat += mf
+            protein += mp
+            pi += 1
+        d_carb, d_protein, d_fat = step_grams(carb, protein, fat, kcal_per_min)
+        carb -= d_carb
+        protein -= d_protein
+        fat -= d_fat
+        delivered = (d_carb, d_protein, d_fat)
+    return delivered
+
+
 def duodenal_delivery(
     t: float,
     meals: list[tuple[float, float, float, float]],
     params: PatientParams,
 ) -> dict[str, float]:
     """Fat, protein, and carbohydrate delivery into the duodenum (g/min)."""
-    fat = sum(
-        _duodenal_delivery(t, mt, mf, params.duo_fast_rate,
-                           params.duo_slow_rate, params.duo_slow_frac)
-        for mt, _mc, mf, _mp in meals
-    )
-    protein = sum(
-        _duodenal_delivery(t, mt, mp, params.duo_fast_rate,
-                           params.duo_slow_rate, params.duo_slow_frac)
-        for mt, _mc, _mf, mp in meals
-    )
-    carb = sum(
-        _duodenal_delivery(t, mt, mc, params.duo_fast_rate,
-                           params.duo_slow_rate, params.duo_slow_frac)
-        for mt, mc, _mf, _mp in meals
-    )
-    return {"fat": fat, "protein": protein, "carb": carb}
+    d_carb, d_protein, d_fat = _stomach_at(t, meals)
+    return {"fat": d_fat, "protein": d_protein, "carb": d_carb}
 
 
 def bile_fluxes(
@@ -1698,20 +1602,10 @@ def compute_absorption_profile(
 
     Returns (glucose_appearance, lipid_appearance, amino_appearance, nutrient_flag).
     """
-    fast_rate = params.meal_absorption_fast_rate
-    slow_rate = params.meal_absorption_slow_rate
-    slow_frac = params.meal_absorption_slow_fraction
-    fast_frac = 1.0 - slow_frac
-
-    carb_total = 0.0
-    fat_total = 0.0
-    protein_total = 0.0
-    for mt, mc, mf, mp in meals:
-        carb_total += fast_frac * _meal_absorption(t, mt, mc, fast_rate, params.mg_dl_per_g())
-        carb_total += slow_frac * _meal_absorption(t, mt, mc, slow_rate, params.mg_dl_per_g())
-        fat_total += _fat_absorption(t, mt, mf)
-        protein_total += _protein_absorption(t, mt, mp)
-
+    d_carb, d_protein, d_fat = _stomach_at(t, meals)
+    carb_total = d_carb * params.mg_dl_per_g()
+    fat_total = d_fat * 3.0
+    protein_total = d_protein * 3.0
     nutrient_flag = 1.0 if (carb_total + fat_total + protein_total) > 0.01 else 0.0
     return carb_total, fat_total, protein_total, nutrient_flag
 
@@ -1775,6 +1669,9 @@ def simulate_full_body(
     # of 100. Basal production is simply Ghr_b * k_ghr, whose equilibrium is exactly Ghr_b.
     ghr_base_prod = params.Ghr_b * params.k_ghr
     glp1_base_prod = params.GLP1_b * params.k_glp1
+    g_carb = g_protein = g_fat = 0.0
+    pending_meals = sorted(meals, key=lambda m: m[0])
+    meal_i = 0
 
     for t in range(duration_min):
         t_abs = (start_hour * 60 + t) % 1440
@@ -1782,8 +1679,21 @@ def simulate_full_body(
         act = float(activity[t])
         sleep_depth = 1.0 - sw
 
-        # --- Gut absorption ---
-        Ra_carb, Ra_fat, Ra_protein, nutrient_flag = compute_absorption_profile(t, meals, params)
+        # --- Gut absorption: one compartment, calorie-limited ---
+        while meal_i < len(pending_meals) and pending_meals[meal_i][0] <= t + 1e-6:
+            _mt, mc, mf, mp = pending_meals[meal_i]
+            g_carb += mc
+            g_fat += mf
+            g_protein += mp
+            meal_i += 1
+        d_carb, d_protein, d_fat = step_grams(g_carb, g_protein, g_fat)
+        g_carb -= d_carb
+        g_protein -= d_protein
+        g_fat -= d_fat
+        Ra_carb = d_carb * params.mg_dl_per_g()
+        Ra_fat = d_fat * 3.0
+        Ra_protein = d_protein * 3.0
+        nutrient_flag = 1.0 if (Ra_carb + Ra_fat + Ra_protein) > 0.01 else 0.0
         absorption_profile[t] = [Ra_carb, Ra_fat, Ra_protein, nutrient_flag]
         Ra = Ra_carb
 
@@ -1865,7 +1775,7 @@ def simulate_full_body(
                 + params.lac_glyco_gain * fl["brk_M_g"])
 
         # --- Hepatobiliary: the enterohepatic circulation (iter 95) ---
-        duo = duodenal_delivery(t, meals, params)
+        duo = {"fat": d_fat, "protein": d_protein, "carb": d_carb}
         bf = bile_fluxes(
             params, CCK, GB, INT, BA,
             duo["fat"], duo["protein"], duo["carb"],
@@ -2154,6 +2064,9 @@ def simulate_full_body(
             Pot,
             Sns,
             Epi,
+            g_carb,
+            g_protein,
+            g_fat,
         ]
 
     return trajectory, absorption_profile

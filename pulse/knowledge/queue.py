@@ -163,13 +163,19 @@ QUEUE: tuple[QueueItem, ...] = (
     ),
     QueueItem(
         id="fat-slows-emptying",
-        citation="A carb-only load versus an equicaloric high-fat load",
+        citation="Cunningham & Read, Br J Nutr 1989;61:285 — fat in a meal and the glucose curve",
         status=Status.BLOCKED,
         surface="cohort",
         claim="Fat in a meal slows glucose appearance relative to the same carbohydrate alone.",
         marker_id="glucose",
         blocked_on="m2.2",
-        note="Needs a stomach. The citation is the finding; the primary paper is picked when the hub is built.",
+        note=(
+            "The compartment is in (Brener 1983, 2.13 kcal/min): 50 g of "
+            "carbohydrate appears at 4.11 mg/dL/min and with 30 g of fat at "
+            "1.75. This item stays blocked until a published glucose or "
+            "emptying number is the cohort target. The peaks quoted from "
+            "Cunningham were not in the paper's table."
+        ),
     ),
     QueueItem(
         id="glp1-delays-emptying",
@@ -179,6 +185,11 @@ QUEUE: tuple[QueueItem, ...] = (
         claim="Raised GLP-1 slows gastric emptying and flattens the glucose curve.",
         marker_id="glucose",
         blocked_on="m2.2",
+        note=(
+            "The stomach is in, and its rate is fixed from the meal before "
+            "the step. A GLP-1 brake has to read the hormone inside the "
+            "minute, which this compartment does not."
+        ),
     ),
     QueueItem(
         id="nuttall-protein-insulin",

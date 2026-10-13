@@ -79,6 +79,7 @@ import torch
 import torch.nn as nn
 
 from .base import ConstantFluxHead, MassActionModule, SpeciesHead
+from ..gastric import EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals
 from ..types import DUODENAL_DIM, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
 # Species order matches MODULE_MARKER_INDICES["hepatobiliary"]:
@@ -131,96 +132,50 @@ def _logit(p: float) -> float:
 
 
 class DuodenalDeliveryKernel(nn.Module):
-    """Nutrient delivery INTO THE DUODENUM (g/min) — gastric emptying.
+    """Nutrient delivery INTO THE DUODENUM (g/min) — the gastric compartment.
 
-    This is NOT the gut module's appearance output. Those channels are SYSTEMIC
-    appearance: fat reaches the blood via chylomicrons and peaks around 60 min,
-    whereas duodenal I-cells see nutrient arriving within minutes of the meal.
-    Driving CCK from systemic appearance put the TEACHER's modelled CCK peak at
-    +68 min against a literature +10, and no gain could have fixed it — it was the
-    wrong signal, not the wrong size (measured; see the iter-95 commit). The student
-    would inherit exactly the same error from the same channel, so it gets the same
-    separate kernel the teacher does.
+    The same calorie rate as the teacher (``pulse.gastric``). Fat, protein and
+    carbohydrate leave in proportion to the calories still in the stomach.
+    This is not the gut module's systemic appearance: that multiplies the same
+    grams by the bioavailable fraction. Duodenal I-cells see the grams.
 
-    Two components, matching `full_body._duodenal_delivery` and the fast/slow split
-    the gut module already uses for carbohydrate:
-
-      fast  gamma-shaped, peaking at 1/fast_rate ≈ 10 min — rapid liquid-phase
-            emptying, which produces the sharp early CCK peak.
-      slow  exponential, τ ≈ 200 min — solid-phase emptying, which is what keeps CCK
-            elevated for the observed 3-5 h.
-
-    A single component reproduces the peak or the plateau but not both (measured on
-    the teacher across a 16-point sweep).
-
-    Deliberately NOT per-patient: it takes no embedding, so it is cheap, batch-
-    independent, and needs no precompute path in `model.py`. Gastric emptying does
-    vary between people, and that is a later question — making it per-patient now
-    would add a third unsupervised embedding→physiology map, which is the thing
-    iter 90 found goes wrong when nothing supervises it.
+    It takes no embedding. The rate is the population constant unless the caller
+    passes the gastric module's parameter.
     """
 
     def __init__(self) -> None:
         super().__init__()
-        # Bounded so the fast component's peak time stays in a physiological window:
-        # fast_rate ∈ (0.02, 0.22) → peak at 1/rate ∈ (4.5, 50) min.
-        self.log_fast_rate = nn.Parameter(torch.tensor(_logit((0.10 - 0.02) / 0.20)))
-        self.log_slow_rate = nn.Parameter(torch.tensor(_logit((0.005 - 0.001) / 0.019)))
-        self.logit_slow_frac = nn.Parameter(torch.tensor(_logit(0.35)))
+        self.register_buffer("_anchor", torch.zeros(()), persistent=False)
 
-    def rates(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        fast = 0.02 + 0.20 * torch.sigmoid(self.log_fast_rate)
-        slow = 0.001 + 0.019 * torch.sigmoid(self.log_slow_rate)
-        frac = torch.sigmoid(self.logit_slow_frac)
-        return fast, slow, frac
-
-    def forward_window(self, times: torch.Tensor, meals: list) -> torch.Tensor:
-        """Delivery at every time in ``times`` at once -> ``[T, 3]`` (fat, protein, carb).
-
-        ``times`` are WINDOW-OFFSET minutes, the same frame as ``meal.time``.
-        No hard age mask: both components decay smoothly (gamma-2 and exponential),
-        so a late dinner cannot cliff CCK the way the old 480-min step did.
-        """
-        device = self.log_fast_rate.device
-        T = int(times.shape[0])
+    def forward_window(
+        self,
+        times: torch.Tensor,
+        meals: list,
+        kcal_per_min: torch.Tensor | float = EMPTY_KCAL_PER_MIN,
+    ) -> torch.Tensor:
+        """Delivery at every time in ``times`` -> ``[T, 3]`` (fat, protein, carb)."""
+        device = self._anchor.device
+        queried = int(times.shape[0])
         if not meals:
-            return torch.zeros(T, DUODENAL_DIM, dtype=torch.float32, device=device)
-        fast_rate, slow_rate, slow_frac = self.rates()
-        meal_times = torch.tensor([m.time for m in meals], dtype=torch.float32,
-                                  device=device)
-        macros = torch.tensor(
-            [(m.fats, m.proteins, m.carbs) for m in meals],
-            dtype=torch.float32, device=device)
-        dt = times.to(device).unsqueeze(1) - meal_times.unsqueeze(0)
-        active = (dt >= 0.0).to(torch.float32)
-        dt = dt.clamp(min=0.0)
-        fast = fast_rate * fast_rate * dt * torch.exp(-fast_rate * dt)
-        slow = slow_rate * torch.exp(-slow_rate * dt)
-        shape = ((1.0 - slow_frac) * fast + slow_frac * slow) * active
-        return shape @ macros
+            return torch.zeros(queried, DUODENAL_DIM, dtype=torch.float32, device=device)
+        times = times.to(device)
+        last = int(times.detach().amax().item())
+        horizon = max(last + 1, queried)
+        swallow = swallow_from_meals(horizon, meals, device)
+        left, _filled = simulate(swallow, kcal_per_min)
+        idx = times.round().to(torch.long).clamp(0, horizon - 1)
+        grams = left.index_select(0, idx)  # carb, protein, fat
+        return torch.stack([grams[:, 2], grams[:, 1], grams[:, 0]], dim=-1)
 
-    def forward(self, t_minutes: torch.Tensor, meals: list) -> torch.Tensor:
-        """Return ``[fat, protein, carb]`` delivery in g/min at ``t_minutes``."""
-        device = self.log_fast_rate.device
-        out = torch.zeros(DUODENAL_DIM, dtype=torch.float32, device=device)
-        if not meals:
-            return out
-        fast_rate, slow_rate, slow_frac = self.rates()
+    def forward(
+        self,
+        t_minutes: torch.Tensor,
+        meals: list,
+        kcal_per_min: torch.Tensor | float = EMPTY_KCAL_PER_MIN,
+    ) -> torch.Tensor:
         t = float(t_minutes) if not torch.is_tensor(t_minutes) else float(t_minutes.item())
-        for m in meals:
-            dt = t - m.time
-            if dt < 0.0:
-                continue
-            dt_t = torch.as_tensor(dt, dtype=torch.float32, device=device)
-            fast = fast_rate * fast_rate * dt_t * torch.exp(-fast_rate * dt_t)
-            slow = slow_rate * torch.exp(-slow_rate * dt_t)
-            shape = (1.0 - slow_frac) * fast + slow_frac * slow
-            out = out + shape * torch.stack([
-                torch.as_tensor(float(m.fats), dtype=torch.float32, device=device),
-                torch.as_tensor(float(m.proteins), dtype=torch.float32, device=device),
-                torch.as_tensor(float(m.carbs), dtype=torch.float32, device=device),
-            ])
-        return out
+        times = torch.tensor([t], dtype=torch.float32, device=self._anchor.device)
+        return self.forward_window(times, meals, kcal_per_min).squeeze(0)
 
 
 class HepatobiliaryModule(MassActionModule):

@@ -102,8 +102,10 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
             with torch.no_grad():
                 out = gut.forward_window(times, _MEAL, emb)[:, 0]
             peak_t = int(out.argmax())
+            self.assertEqual(peak_t, 0)
             tail = out[peak_t:]
-            self.assertTrue(bool((tail[1:] <= tail[:-1] + 1e-7).all()))
+            # The calorie cap is flat; float noise on that plateau is ~1e-6.
+            self.assertTrue(bool((tail[1:] <= tail[:-1] + 1e-5).all()))
 
     def test_kernel_is_diagonal(self) -> None:
         """Carbohydrate does not appear on the lipid or amino channel."""
@@ -133,17 +135,22 @@ class TestFreshKernelIsPhysiological(unittest.TestCase):
         self.teacher = np.array(
             [compute_absorption_profile(float(t), [(0.0, 60.0, 20.0, 25.0)], p) for t in range(600)])
 
-    def test_carbohydrate_peaks_at_30_to_60_minutes(self) -> None:
-        # Oral glucose appearance peaks at 30-60 min (Dalla Man 2007; the teacher's
-        # two-component kernel puts a 60 g load at 46 min).
-        self.assertTrue(30 <= int(self.student[:, 0].argmax()) <= 60)
+    def test_appearance_is_at_the_cap_from_the_first_minute(self) -> None:
+        """The compartment delivers at 2.13 kcal/min as soon as the meal is in.
+        A gamma peaking at 30-60 min was the previous kernel, not this law."""
+        self.assertEqual(int(self.student[:, 0].argmax()), 0)
+        early = self.student[:30, 0]
+        self.assertLess(float(early.max() - early.min()) / float(early.max()), 0.02)
 
-    def test_fat_and_protein_are_slower_than_carbohydrate(self) -> None:
-        t_glu = int(self.student[:, 0].argmax())
-        t_ami = int(self.student[:, 2].argmax())
-        t_lip = int(self.student[:, 1].argmax())
-        self.assertLess(t_glu, t_ami)
-        self.assertLess(t_ami, t_lip)
+    def test_fat_in_the_same_meal_slows_the_carbohydrate(self) -> None:
+        carb_only = [MealEvent(time=0.0, carbs=60.0, fats=0.0, proteins=0.0)]
+        with_fat = [MealEvent(time=0.0, carbs=60.0, fats=20.0, proteins=25.0)]
+        times = torch.arange(0, 600, dtype=torch.float32)
+        with torch.no_grad():
+            plain = self.gut.forward_window(times, carb_only, torch.zeros(16))
+            mixed = self.gut.forward_window(times, with_fat, torch.zeros(16))
+        self.assertLess(float(mixed[0, 0]), 0.6 * float(plain[0, 0]))
+        self.assertGreater(int((mixed[:, 0] > 1e-3).sum()), int((plain[:, 0] > 1e-3).sum()))
 
     def test_auc_is_the_init_fraction_of_the_teacher_within_10_percent(self) -> None:
         """A10: the fresh fraction is ``F_BIO_INIT_FRACTION`` (0.8), not 1, so the

@@ -54,6 +54,7 @@ MODULE_LAYOUT: dict[str, tuple[float, float]] = {
     "metabolic": (0.50, 0.52),
     "hepatobiliary": (0.78, 0.52),
     "gut": (0.50, 0.70),
+    "gastric": (0.78, 0.70),
     "thermoreg": (0.22, 0.78),
 }
 
@@ -66,6 +67,7 @@ MODULE_TITLE: dict[str, str] = {
     "thermoreg": "Heat",
     "respiratory": "Breath",
     "hepatobiliary": "Bile",
+    "gastric": "Stomach",
 }
 
 MODULE_KIND: dict[str, str] = {
@@ -77,6 +79,7 @@ MODULE_KIND: dict[str, str] = {
     "thermoreg": "learned",
     "respiratory": "learned",
     "hepatobiliary": "mass_action",
+    "gastric": "mass_action",
 }
 
 CHANNEL_META: dict[str, dict[str, str]] = {
