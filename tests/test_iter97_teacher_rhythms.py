@@ -184,7 +184,7 @@ class TestCohortReencodings(unittest.TestCase):
         pinned = {s.name for s in ALL_COHORT_STATISTICS if s.n_arm == 1}
         for name in ("cck_fasting_basal", "cck_postprandial_peak", "postprandial_hr_rise",
                      "leptin_fed_vs_fasted", "extended_fast_liver_glycogen_overnight",
-                     "fasting_breakfast_glucose_morning", "sleep_restriction_next_day_glucose"):
+                     "fasting_breakfast_glucose_morning", "donga_2010_basal_glucose"):
             self.assertIn(name, pinned)
 
     def test_every_24h_arm_sleeps_at_night_and_rests(self):

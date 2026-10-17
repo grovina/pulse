@@ -141,7 +141,7 @@ def test_adaptive_cap_and_multiply_in_the_cohort_signal() -> None:
 # --- 4.10: protocol perturbation ---------------------------------------------------
 
 def test_perturbation_keeps_meals_on_their_side_of_every_window() -> None:
-    from pulse.knowledge.cohorts.sleep import SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE as S
+    from pulse.knowledge.cohorts.sleep import DONGA_2010_BASAL_GLUCOSE as S
     rng = np.random.default_rng(3)
     lo, hi = S.window.start_min, S.window.end_min
     for _ in range(50):
@@ -160,7 +160,7 @@ def test_perturbation_keeps_meals_on_their_side_of_every_window() -> None:
 
 def test_short_arms_are_not_perturbed_and_fixed_protocol_is_sampled() -> None:
     assert perturb_group_arms([_toy_meal_spec()], np.random.default_rng(0)) is None
-    from pulse.knowledge.cohorts.sleep import SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE as S
+    from pulse.knowledge.cohorts.sleep import DONGA_2010_BASAL_GLUCOSE as S
     sig = RolloutEvidenceSignal(specs=[S], perturb_protocols=True, perturb_fixed_prob=0.25)
     assert sig.perturb_fixed_prob == 0.25
 

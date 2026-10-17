@@ -1,11 +1,13 @@
 """
 Respiratory module.
 
-Respiratory rate and SpO₂. Lactate and temperature are the coupling inputs.
-RR relaxes to a per-patient setpoint; SpO₂ is stepped in logit coordinates of
-(70, 100) by the integrator so saturation cannot leave that interval.
-Above moderate effort, SpO₂ has the teacher's exercise dip
-(``spo2_exercise_dip * relu(activity − 0.5)``) so the marker is not a
+Respiratory rate and SpO₂. Frequency above the resting setpoint is the CO₂
+Hill in ``expenditure.frequency_offset``: zero at the resting output, the
+same saturated shape the activity drive had, and silent to lactate and
+temperature. The meal reaches it through gut appearance. SpO₂ is stepped
+in logit coordinates of (70, 100) by the integrator so saturation cannot
+leave that interval. Above moderate effort, SpO₂ has the teacher's exercise
+dip (``spo2_exercise_dip * relu(activity − 0.5)``) so the marker is not a
 constant that a 95–100 band can pass.
 
 Setpoint decode (PLAN A1, 2026-10-04): the teacher draws RR0 lognormally and SpO2_0
@@ -21,9 +23,17 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
+from ..bile import fat_bile_factor_t
+from ..expenditure import frequency_offset_t, gas_exchange_t
+from ..types import (
+    BODY_MASS_KG, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
+    MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
+)
 
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["respiratory"])
+_BILE_COUPLING_IDX = 3
+_INT_BILE_CENTER = NORM_CENTER[MARKER_INDEX["intestinal_bile"]]
+_INT_BILE_SCALE = NORM_SCALE[MARKER_INDEX["intestinal_bile"]]
 _N_EXTERNAL = 2
 _N_STATE = 2
 _RR = 0
@@ -56,6 +66,7 @@ _LOG_K_INIT = math.log(
     ((_K_INIT - _K_MIN) / _K_RANGE) / (1.0 - (_K_INIT - _K_MIN) / _K_RANGE)
 )
 _ACTIVITY_EXTERNAL_IDX = 0
+_LIPID_UNITS_PER_G = 3.0
 # Teacher PatientParams.spo2_exercise_dip. Zero at rest and easy activity.
 _SPO2_EXERCISE_DIP = 1.5
 _SPO2_ACT_THRESH = 0.5
@@ -111,7 +122,16 @@ class RespiratoryModule(LearnedDynamicsModule):
         const: dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
         act = external[..., _ACTIVITY_EXTERNAL_IDX]
-        return {"spo2_exercise": _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH)}
+        carb_g = coupling[..., 0].clamp(min=0.0) / MG_DL_PER_G
+        fat_g = coupling[..., 1].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        prot_g = coupling[..., 2].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        return {
+            "spo2_exercise": _SPO2_EXERCISE_DIP * nn.functional.relu(act - _SPO2_ACT_THRESH),
+            "act": act,
+            "carb_g": carb_g,
+            "fat_g": fat_g,
+            "prot_g": prot_g,
+        }
 
     def step(
         self,
@@ -123,5 +143,21 @@ class RespiratoryModule(LearnedDynamicsModule):
     ) -> torch.Tensor:
         raw_s = self.rsp_center + self.rsp_scale * state
         rate = raw["driver"] - const["k"] * (raw_s - const["setpoint"])
+        # Absorbed fat, not the grams that left the stomach. The fraction is 1
+        # at the resting intestinal content, so a meal with bile present is the
+        # unscaled gas exchange. The channel is an ODE marker: drives() cannot
+        # read it, and the rise is rebuilt here from the grams drives() stored.
+        int_bile = (
+            _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _BILE_COUPLING_IDX]
+        ).clamp(min=0.0)
+        bile = fat_bile_factor_t(int_bile)
+        mass = state.new_tensor(BODY_MASS_KG)
+        _kcal, _vo2, vco2, _rq = gas_exchange_t(
+            mass, drv["act"], drv["carb_g"], drv["fat_g"] * bile, drv["prot_g"])
+        rise = frequency_offset_t(vco2, mass)
+        # The CO₂ offset is inside the relaxation, so the equilibrium is
+        # RR₀ + rise and a zero driver does not add a second copy of it.
+        rate_rr = raw["driver"][..., _RR] - const["k"][..., _RR] * (
+            raw_s[..., _RR] - const["setpoint"][..., _RR] - rise)
         rate_spo2 = rate[..., _SPO2] - drv["spo2_exercise"]
-        return torch.stack([rate[..., _RR], rate_spo2], dim=-1)
+        return torch.stack([rate_rr, rate_spo2], dim=-1)

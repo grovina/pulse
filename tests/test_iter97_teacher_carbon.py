@@ -10,6 +10,8 @@ import unittest
 import numpy as np
 
 import pulse.knowledge.full_body as fb
+from pulse.circadian import peripheral_factor
+from pulse.incretin import GIP_B, incretin_factor
 from pulse.knowledge.full_body import (
     PatientParams, glucose_fluxes, bile_fluxes, resolve_derived_params, randomize_params,
     simulate_full_body, MG_DL_PER_G, BODY_MASS_KG, VG_DL_PER_KG, compute_absorption_profile,
@@ -69,16 +71,23 @@ class TestOneFluxTwoLedgers(unittest.TestCase):
         LG, MG, Hep = traj[day, MI["liver_glycogen"]], traj[day, MI["muscle_glycogen"]], traj[day, MI["hepatic_output"]]
         Ra = absp[day, 0]
         X = np.zeros_like(I); x = 0.0
+        # The recorded debt is the end of the minute. The flux used the debt
+        # it started with, and insulin action scales with that debt.
+        debt_in = np.empty(len(I))
+        debt_in[0] = traj[day.start - 1, MI["sleep_debt"]]
+        debt_in[1:] = traj[day.start:day.stop - 1, MI["sleep_debt"]]
         for k in range(len(I)):
             X[k] = x
-            x += -p.p2 * x + p.Si * p.p2 * (I[k] - p.Ib)
-        acc = {k: 0.0 for k in ("ra", "uptake_ii", "uptake_id", "uptake_ex", "gng_rel_flux", "gng_divert", "brk_M_g", "syn_M_id")}
+            x += -p.p2 * x + p.Si * peripheral_factor(float(debt_in[k])) * p.p2 * (I[k] - p.Ib)
+        acc = {k: 0.0 for k in ("ra", "uptake_ii", "uptake_id", "uptake_ex", "urinary", "gng_rel_flux", "gng_divert", "brk_M_g", "syn_M_id")}
         for k in range(len(G)):
-            fl = glucose_fluxes(p, G[k], I[k], X[k], Gn[k], Cort[k], FFA[k], LG[k], MG[k], Hep[k], Ra[k], 0.0)
+            fl = glucose_fluxes(
+                p, G[k], I[k], X[k], Gn[k], Cort[k], FFA[k], LG[k], MG[k], Hep[k],
+                Ra[k], 0.0, debt=float(debt_in[k]))
             for kk in acc:
                 acc[kk] += fl[kk]
         kg = BODY_MASS_KG / 1000.0
-        booked = ((acc["ra"] - acc["uptake_ii"] - acc["uptake_id"] - acc["uptake_ex"]) / MG_DL_PER_G
+        booked = ((acc["ra"] - acc["uptake_ii"] - acc["uptake_id"] - acc["uptake_ex"] - acc["urinary"]) / MG_DL_PER_G
                   + (acc["gng_rel_flux"] + acc["gng_divert"]) * kg - acc["brk_M_g"]
                   + acc["syn_M_id"])
         pools = (G[-1] - G[0]) / MG_DL_PER_G + (LG[-1] - LG[0]) + (MG[-1] - MG[0])
@@ -259,10 +268,11 @@ class TestMealAndIncretin(unittest.TestCase):
         p = resolve_derived_params(PatientParams())
         n, mt = 420, 120
         traj, _ = _run(p, [(float(mt), 75.0, 5.0, 10.0)], n, start_hour=8.0)
-        g = traj[:, MI["glucose"]]; glp = traj[:, MI["glp1"]]
+        g = traj[:, MI["glucose"]]; glp = traj[:, MI["glp1"]]; gip = traj[:, MI["gip"]]
         gsir = p.gamma * np.maximum(g - p.h, 0)
         ex = np.maximum(glp - p.GLP1_b, 0)
-        inc = 1 + p.incretin_gain * ex / (ex + p.K_incretin)
+        ex_gip = np.maximum(gip - GIP_B, 0)
+        inc = np.array([incretin_factor(float(a), float(b)) for a, b in zip(ex, ex_gip)])
         share = (gsir * (inc - 1)).sum() / (gsir * inc).sum()
         self.assertTrue(0.5 <= share <= 0.7, f"incretin share {share:.2f}")
         # And basal GLP-1 carries NO incretin effect (the absolute-vs-above-basal fix).

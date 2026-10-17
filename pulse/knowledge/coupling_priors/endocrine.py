@@ -45,9 +45,7 @@ COUPLING_PRIORS: list[CouplingPrior] = [
     _p("insulin", "ghrelin", -1, (0.005, 0.05)),
     _p("glp1", "ghrelin", -1, (0.001, 0.02)),
     _p("leptin", "ghrelin", -1, (0.0005, 0.01)),
-    _p("lactate", "rr", +1, (0.05, 0.6)),
     _p("temp", "hr", +1, (0.05, 0.5)),
-    _p("temp", "rr", +1, (0.02, 0.3)),
     # Hypoglycaemia enters the axis at CRH (`dCRH += hypo_crh * relu(58 - G)`).
     # Neither ACTH nor cortisol reads glucose directly, so glucose→cortisol and
     # glucose→ACTH are structurally zero and the edge that exists is this one.

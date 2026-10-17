@@ -11,6 +11,7 @@ class System(str, Enum):
     RESPIRATORY = "respiratory"
     HEPATOBILIARY = "hepatobiliary"
     GASTRIC = "gastric"
+    CIRCADIAN = "circadian"
 
 
 @dataclass(frozen=True)
@@ -324,6 +325,24 @@ MARKERS = [
         "gastric_fat", "Gastric fat", "g", System.GASTRIC, 0.0,
         "internal", 0, 150, "#854d0e", "Droplet",
     ),
+    # The clock. Phase is hours ahead of the wall clock (a later sleeper is
+    # positive). Debt is the shortfall against an 8 h night; during the night
+    # itself the state counts hours slept, as a negative number, and becomes
+    # the shortfall at 09:00. Appended so earlier indices stay put.
+    MarkerDef(
+        "circ_phase_offset", "Circadian phase", "h", System.CIRCADIAN, 0.0,
+        "internal", -6, 6, "#6366f1", "Clock",
+    ),
+    MarkerDef(
+        "sleep_debt", "Sleep debt", "h", System.CIRCADIAN, 0.0,
+        "internal", -16, 16, "#312e81", "Moon",
+    ),
+    # GIP. Appended so earlier indices stay put. Basal matches GLP-1's
+    # 10 pmol/L; the meal scale is the Vollmer ratio, not an absolute peak.
+    MarkerDef(
+        "gip", "GIP", "pmol/L", System.APPETITE, 10.0,
+        "hormonal", 0, 150, "#d946ef", "Candy",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -454,6 +473,9 @@ NORM_SCALE = [
     25.0,   # gastric_carb: a meal is a few tens of grams
     20.0,   # gastric_protein
     20.0,   # gastric_fat
+    2.0,    # circ_phase_offset: a couple of hours is the shift a few nights make
+    4.0,    # sleep_debt: one restricted night (Donga 2010) is 4 h
+    15.0,   # gip: ±15 pmol/L, the same meal scale as GLP-1
 ]
 
 # Diagnostic envelopes (lab display, sanity tests). NOT applied by the
@@ -471,7 +493,7 @@ PHYSIOLOGICAL_LIMIT_K = 20.0
 def _physiological_min(marker: MarkerDef, center: float, scale: float) -> float:
     if marker.id == "spo2":
         return 70.0
-    if marker.id == "insulin_action":
+    if marker.id in ("insulin_action", "circ_phase_offset", "sleep_debt"):
         return center - PHYSIOLOGICAL_LIMIT_K * scale
     return max(0.0, center - PHYSIOLOGICAL_LIMIT_K * scale)
 
@@ -507,21 +529,29 @@ MODULE_MARKER_IDS: dict[str, list[str]] = {
 # coupling vector from this table — it is not a comment. Channels that are
 # not ODE markers (gut.*, duodenal.*) are the absorption clocks.
 MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
-    "metabolic": GUT_CHANNEL_IDS + ("cortisol", "glp1", "epinephrine"),
+    "metabolic": GUT_CHANNEL_IDS + (
+        "cortisol", "glp1", "epinephrine", "sleep_debt", "gip", "duodenal.protein",
+        "intestinal_bile",
+    ),
     "appetite": (
         "insulin", "duodenal.fat", "duodenal.protein", "duodenal.carb",
-        "fat_mass", "gut.glucose_appearance",
+        "fat_mass", "gut.glucose_appearance", "circ_phase_offset",
     ),
-    "stress": ("glucose", "cortisol"),
+    "stress": ("glucose", "cortisol", "circ_phase_offset"),
     "cardiovascular": (
         "cortisol", "temp", "glucose", "insulin", "gut.glucose_appearance",
     ),
     "thermoreg": (
         "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance", "cortisol",
+        "intestinal_bile",
     ),
-    "respiratory": ("lactate", "temp"),
+    "respiratory": (
+        "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance",
+        "intestinal_bile",
+    ),
     "hepatobiliary": ("duodenal.fat", "duodenal.protein"),
     "gastric": (),
+    "circadian": (),
 }
 
 _MARKER_SYSTEM = {m.id: m.system.value for m in MARKERS}
@@ -541,8 +571,6 @@ _COUPLING_SIGN: dict[tuple[str, str], int] = {
     ("glucose", "cardiovascular"): +1,
     ("insulin", "cardiovascular"): +1,
     ("cortisol", "thermoreg"): +1,
-    ("lactate", "respiratory"): +1,
-    ("temp", "respiratory"): +1,
 }
 
 COUPLING_GRAPH = [

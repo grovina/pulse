@@ -50,8 +50,8 @@ def test_sleep_arm_matches_the_cohort_files_convention() -> None:
     # The cohort files are the reference for the convention: their sleep arms
     # put 0 at night. If this ever disagrees with the rules arm, one of them is
     # inverted again.
-    from pulse.knowledge.cohorts.sleep import SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE
-    arm = SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE.arms[0]
+    from pulse.knowledge.cohorts.sleep import DONGA_2010_BASAL_GLUCOSE
+    arm = DONGA_2010_BASAL_GLUCOSE.arms[0]
     sw = np.asarray(arm.sleep_wake)
     night_idx = int(((3.0 - arm.start_hour) % 24) * 60)  # 03:00 of the first night
     assert sw[night_idx] < 0.5

@@ -8,6 +8,7 @@ from .thermoreg import ThermoregModule
 from .respiratory import RespiratoryModule
 from .hepatobiliary import HepatobiliaryModule, DuodenalDeliveryKernel
 from .gastric import GastricModule
+from .circadian import CircadianModule
 
 __all__ = [
     "MassActionModule",
@@ -22,4 +23,5 @@ __all__ = [
     "HepatobiliaryModule",
     "DuodenalDeliveryKernel",
     "GastricModule",
+    "CircadianModule",
 ]

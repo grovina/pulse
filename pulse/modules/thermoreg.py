@@ -37,10 +37,15 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..types import MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS, NORM_SCALE
+from ..bile import fat_bile_factor_t
+from ..expenditure import dit_kcal_t
+from ..types import MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS, NORM_CENTER, NORM_SCALE
 
-# Coupling: gut glucose/lipid/amino appearance + cortisol.
+# Coupling: gut glucose/lipid/amino appearance, cortisol, then intestinal bile.
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["thermoreg"])
+_BILE_COUPLING_IDX = 4
+_INT_BILE_CENTER = NORM_CENTER[MARKER_INDEX["intestinal_bile"]]
+_INT_BILE_SCALE = NORM_SCALE[MARKER_INDEX["intestinal_bile"]]
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
@@ -105,8 +110,7 @@ class ThermoregModule(LearnedDynamicsModule):
         carb_g = coupling[..., 0:1].clamp(min=0.0) / MG_DL_PER_G
         fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
         prot_g = coupling[..., 2:3].clamp(min=0.0) / _LIPID_UNITS_PER_G
-        dit_kcal = 0.08 * 4.0 * carb_g + 0.03 * 9.0 * fat_g + 0.25 * 4.0 * prot_g
-        return {"dit": _TEMP_DIT_GAIN * dit_kcal}
+        return {"dit": _TEMP_DIT_GAIN * dit_kcal_t(carb_g, fat_g, prot_g)}
 
     def step(
         self,
@@ -118,4 +122,13 @@ class ThermoregModule(LearnedDynamicsModule):
     ) -> torch.Tensor:
         # Learned drivers (circadian, exercise, sleep, cortisol) plus the restoring
         # force toward the per-patient setpoint and diet-induced thermogenesis.
-        return raw["driver"] - const["k"] * (state - const["setpoint"]) * _TEMP_NORM_SCALE + drv["dit"]
+        # The fat share of that heat is the absorbed grams. At the resting
+        # intestinal content the fraction is 1 and this is the drive as computed.
+        int_bile = (
+            _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _BILE_COUPLING_IDX:_BILE_COUPLING_IDX + 1]
+        ).clamp(min=0.0)
+        bile = fat_bile_factor_t(int_bile)
+        fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        fat_dit = _TEMP_DIT_GAIN * dit_kcal_t(torch.zeros_like(fat_g), fat_g, torch.zeros_like(fat_g))
+        dit = drv["dit"] + fat_dit * (bile - 1.0)
+        return raw["driver"] - const["k"] * (state - const["setpoint"]) * _TEMP_NORM_SCALE + dit

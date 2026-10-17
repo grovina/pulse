@@ -55,6 +55,7 @@ MODULE_LAYOUT: dict[str, tuple[float, float]] = {
     "hepatobiliary": (0.78, 0.52),
     "gut": (0.50, 0.70),
     "gastric": (0.78, 0.70),
+    "circadian": (0.22, 0.16),
     "thermoreg": (0.22, 0.78),
 }
 
@@ -68,6 +69,7 @@ MODULE_TITLE: dict[str, str] = {
     "respiratory": "Breath",
     "hepatobiliary": "Bile",
     "gastric": "Stomach",
+    "circadian": "Clock",
 }
 
 MODULE_KIND: dict[str, str] = {
@@ -80,6 +82,7 @@ MODULE_KIND: dict[str, str] = {
     "respiratory": "learned",
     "hepatobiliary": "mass_action",
     "gastric": "mass_action",
+    "circadian": "mass_action",
 }
 
 CHANNEL_META: dict[str, dict[str, str]] = {
@@ -500,6 +503,7 @@ def _carbon_flux(params: PatientParams, state: np.ndarray, ra: float, act: float
         float(ra),
         float(act),
         float(state[mi["epinephrine"]]),
+        float(state[mi["sleep_debt"]]),
     )
     mg = fl["mg_dl_per_g"]
     kg = params.body_mass_kg / 1000.0
@@ -508,7 +512,7 @@ def _carbon_flux(params: PatientParams, state: np.ndarray, ra: float, act: float
     ra_g = fl["ra"] / mg
     uptake_g = uptake / mg
     booked = (
-        (fl["ra"] - uptake) / mg
+        (fl["ra"] - uptake - fl["urinary"]) / mg
         + (fl["gng_rel_flux"] + fl["gng_divert"]) * kg
         - fl["brk_M_g"]
         + store
@@ -522,6 +526,7 @@ def _carbon_flux(params: PatientParams, state: np.ndarray, ra: float, act: float
         "gng_rel": fl["gng_rel_flux"] * kg,
         "gng_divert": fl["gng_divert"] * kg,
         "uptake": uptake_g - store,
+        "urinary": fl["urinary"] / mg,
         "brk_M": fl["brk_M_g"],
         "oxidized": uptake_g - store + fl["brk_M_g"],
         "residual": pools - booked,

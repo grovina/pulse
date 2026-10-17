@@ -39,7 +39,7 @@ def _fluxes(met, glucose: float, pot: float):
     state[0, _POT_IDX] = pot / 30.0
     emb = torch.zeros(1, met.embedding_dim)
     coupling = torch.zeros(1, met.n_coupling)
-    external = torch.tensor([[0.0, 1.0]])
+    external = torch.tensor([[0.0, 1.0, 0.0]])
     tf = compute_time_features(torch.tensor([8.0 * 60.0]))
     with torch.no_grad():
         return met.fluxes(state, coupling, external, emb, tf)

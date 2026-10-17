@@ -29,6 +29,7 @@ from pulse.knowledge.full_body import (
     PatientParams, resolve_derived_params, simulate_full_body, glucose_fluxes,
     MG_DL_PER_G, BODY_MASS_KG,
 )
+from pulse.incretin import GIP_B, incretin_factor
 from pulse.types import MARKER_INDEX as MI, MARKERS
 
 assert Path(fb.__file__).resolve().is_relative_to(_ROOT), fb.__file__
@@ -137,9 +138,11 @@ def section_meal(p):
         x = traj[:, MI[m]]; pre = x[mt - 1]; post = x[mt:]
         k = int(np.argmax(post)) if mode == "max" else int(np.argmin(post))
         print(f"  {m:15s} pre {pre:7.2f} -> {post[k]:7.2f} ({post[k]-pre:+6.2f}) at +{k} min")
-    g = traj[:, MI["glucose"]]; glp = traj[:, MI["glp1"]]
-    gsir = p.gamma * np.maximum(g - p.h, 0); ex = np.maximum(glp - p.GLP1_b, 0)
-    inc = 1 + p.incretin_gain * ex / (ex + p.K_incretin)
+    g = traj[:, MI["glucose"]]; glp = traj[:, MI["glp1"]]; gip = traj[:, MI["gip"]]
+    gsir = p.gamma * np.maximum(g - p.h, 0)
+    ex = np.maximum(glp - p.GLP1_b, 0)
+    ex_gip = np.maximum(gip - GIP_B, 0)
+    inc = np.array([incretin_factor(float(a), float(b)) for a, b in zip(ex, ex_gip)])
     print(f"  glucose at +120 {g[mt+120]:.1f}, +180 {g[mt+180]:.1f}; insulin mean +90..+240 {traj[mt+90:mt+240, MI['insulin']].mean():.1f}")
     print(f"  incretin share of glucose-stimulated secretion {(gsir*(inc-1)).sum()/(gsir*inc).sum():.2f} (Nauck 0.5-0.7)")
     print("  dose slope: " + ", ".join(f"{c:.0f} g +{probe(p, c)[mt:, MI['glucose']].max() - probe(p, c)[mt-1, MI['glucose']]:.1f}"

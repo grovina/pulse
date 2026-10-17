@@ -29,7 +29,7 @@ class TestPhysiologicalBounds(unittest.TestCase):
         self.assertEqual(len(PHYSIOLOGICAL_MAX), STATE_DIM)
         for marker, lo, hi in zip(MARKERS, PHYSIOLOGICAL_MIN, PHYSIOLOGICAL_MAX):
             self.assertGreater(hi, lo)
-            if marker.id == "insulin_action":
+            if marker.id in ("insulin_action", "circ_phase_offset", "sleep_debt"):
                 self.assertLess(lo, 0.0)
             elif marker.id == "spo2":
                 self.assertEqual(lo, 70.0)

@@ -33,7 +33,7 @@ from .gastric import EMPTY_KCAL_PER_MIN, swallow_from_meals
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
     CardiovascularModule, ThermoregModule, RespiratoryModule,
-    HepatobiliaryModule, DuodenalDeliveryKernel, GastricModule,
+    HepatobiliaryModule, DuodenalDeliveryKernel, GastricModule, CircadianModule,
 )
 from .modules.base import PhysiologyModule, compute_time_features
 from .modules.gut import MealEvent
@@ -57,7 +57,7 @@ _SPO2_EPS = 1e-4
 # modules' rates concatenated in this order are a permutation of the state.
 _MODULE_ORDER: tuple[str, ...] = (
     "metabolic", "appetite", "stress", "cardiovascular", "thermoreg", "respiratory",
-    "hepatobiliary", "gastric",
+    "hepatobiliary", "gastric", "circadian",
 )
 _MODULE_ORDER_INDEX: tuple[int, ...] = tuple(
     i for name in _MODULE_ORDER for i in MODULE_MARKER_INDICES[name])
@@ -66,7 +66,8 @@ if sorted(_MODULE_ORDER_INDEX) != list(range(STATE_DIM)):
 
 # The PROTOCOL vector a rollout knows in advance, per member and minute (the head
 # bank's exogenous first-layer input): [gut appearance (4) | duodenal delivery (3) |
-# sleep_wake | activity | time features (4)].
+# sleep_wake | activity | time features (4)]. The SGLT2 input is not in this vector.
+# It reaches the urinary law through the external dict, and the heads do not read it.
 _Z_GUT = 0
 _Z_DUO = GUT_OUTPUT_DIM
 _Z_EXTERNAL = {"sleep_wake": _Z_DUO + DUODENAL_DIM, "activity": _Z_DUO + DUODENAL_DIM + 1}
@@ -267,10 +268,6 @@ class ModularPhysiologyNetwork(nn.Module):
             "cardiovascular": 16,
             "thermoreg": 8,
             "respiratory": 8,
-            # Iter 95: the enterohepatic loop. 8 is deliberately modest — most of the
-            # axis's behaviour is structural (see modules/hepatobiliary.py), so the
-            # embedding only needs to carry per-patient gains, not the mechanism.
-            "hepatobiliary": 8,
         }
         self.embedding_projections = nn.ModuleDict({
             name: nn.Linear(embedding_dim, dim)
@@ -285,8 +282,9 @@ class ModularPhysiologyNetwork(nn.Module):
         self.cardiovascular = CardiovascularModule(self._emb_dims["cardiovascular"], cardiovascular_hidden)
         self.thermoreg = ThermoregModule(self._emb_dims["thermoreg"], thermoreg_hidden)
         self.respiratory = RespiratoryModule(self._emb_dims["respiratory"], respiratory_hidden)
-        self.hepatobiliary = HepatobiliaryModule(self._emb_dims["hepatobiliary"], hepatobiliary_hidden)
+        self.hepatobiliary = HepatobiliaryModule(0, hepatobiliary_hidden)
         self.gastric = GastricModule(0)
+        self.circadian = CircadianModule(0)
         # Duodenal delivery is the same compartment as the stomach and the gut's
         # appearance. It takes no embedding; the rate is the gastric module's.
         self.duodenal = DuodenalDeliveryKernel()
@@ -300,6 +298,7 @@ class ModularPhysiologyNetwork(nn.Module):
             "respiratory": self.respiratory,
             "hepatobiliary": self.hepatobiliary,
             "gastric": self.gastric,
+            "circadian": self.circadian,
         }
         for name, mod in self._modules_by_name.items():
             n_expected = len(MODULE_COUPLING_CHANNELS[name])
@@ -561,6 +560,7 @@ class ModularPhysiologyNetwork(nn.Module):
         meals: list[MealEvent],
         sleep_wake: Optional[torch.Tensor] = None,
         activity: Optional[torch.Tensor] = None,
+        sglt2: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
@@ -575,6 +575,7 @@ class ModularPhysiologyNetwork(nn.Module):
         meals: list of MealEvent
         sleep_wake: [batch] or None — 0=asleep, 1=awake
         activity: [batch] or None — 0=rest, 1=vigorous
+        sglt2: [batch] or None — 0 is no drug, 1 is empagliflozin 25 mg/day
         duodenal_override: [batch, DUODENAL_DIM] duodenal (fat, protein, carb) delivery
             for this step, computed by ``integrate`` on the WINDOW-OFFSET clock. Same
             frame contract as ``gut_override``. When absent, delivery is zero rather
@@ -620,6 +621,10 @@ class ModularPhysiologyNetwork(nn.Module):
             act = sw * act_default / torch.clamp(sw_default, min=1e-6)
         if act.dim() == 0:
             act = act.expand(batch)
+        drug = torch.zeros(batch, dtype=state.dtype, device=state.device) if sglt2 is None else sglt2
+        if drug.dim() == 0:
+            drug = drug.expand(batch)
+        drug = torch.nan_to_num(drug, nan=0.0)
 
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
@@ -712,6 +717,7 @@ class ModularPhysiologyNetwork(nn.Module):
         external = {
             "sleep_wake": sw,
             "activity": act,
+            "sglt2": drug,
             "swallow_carb": swallow[:, 0],
             "swallow_protein": swallow[:, 1],
             "swallow_fat": swallow[:, 2],
@@ -978,6 +984,7 @@ class _RolloutPlan:
         swallow: torch.Tensor,
         sleep_wake: Optional[torch.Tensor],
         activity: Optional[torch.Tensor],
+        sglt2: Optional[torch.Tensor],
     ) -> None:
         B = int(embedding.shape[0])
         T = int(n_steps)
@@ -993,6 +1000,7 @@ class _RolloutPlan:
         t_abs = torch.remainder(start + clock, 1440.0).to(torch.float32).expand(B, T)
         time_feats = compute_time_features(t_abs)                       # [B, T, 4]
         sw, act = model.resolve_external_inputs(embedding, time_feats, sleep_wake, activity)
+        drug = sw.new_zeros(sw.shape) if sglt2 is None else torch.nan_to_num(sglt2.expand(sw.shape), nan=0.0)
         emb = {name: proj(embedding) for name, proj in model.embedding_projections.items()}
         for name in _MODULE_ORDER:
             emb.setdefault(name, embedding.new_zeros(B, 0))
@@ -1009,6 +1017,7 @@ class _RolloutPlan:
         external = {
             "sleep_wake": sw,
             "activity": act,
+            "sglt2": drug,
             "swallow_carb": swallow[..., 0],
             "swallow_protein": swallow[..., 1],
             "swallow_fat": swallow[..., 2],
@@ -1210,6 +1219,7 @@ def integrate(
     meals: Optional[list] = None,
     sleep_wake: Optional[torch.Tensor] = None,
     activity: Optional[torch.Tensor] = None,
+    sglt2: Optional[torch.Tensor] = None,
     gut_outputs: Optional[torch.Tensor] = None,
     checkpoint_segments: int = 0,
     duodenal_outputs: Optional[torch.Tensor] = None,
@@ -1233,6 +1243,8 @@ def integrate(
     - ``sleep_wake`` / ``activity``: ``[T]`` (shared) or ``[B, T]``; ``None`` means
       missing everywhere and a ``NaN`` entry means missing at that member and minute
       — the model substitutes its learned default (``resolve_external_inputs``).
+    - ``sglt2``: ``[T]`` or ``[B, T]``. ``None`` is no drug. ``1`` is empagliflozin
+      25 mg/day. A missing entry is no drug, not a learned default.
     - ``gut_outputs``: ``[T, GUT_OUTPUT_DIM]`` or ``[B, T, GUT_OUTPUT_DIM]``, or None to
       compute it from ``meals`` on the window-offset clock (``precompute_gut_outputs``).
     - ``duodenal_outputs``: ``[T, 3]`` or ``[B, T, 3]`` duodenal (fat, protein, carb)
@@ -1313,7 +1325,7 @@ def integrate(
 
         plan = _RolloutPlan(
             model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
-            _series(sleep_wake), _series(activity),
+            _series(sleep_wake), _series(activity), _series(sglt2),
         )
         held: list[Optional[torch.Tensor]] = [None] * n_steps
         if member_steps is not None:
@@ -1372,6 +1384,7 @@ def integrate(
             ).expand(batch)
             sw_step = sleep_wake[step].expand(batch) if sleep_wake is not None else None
             act_step = activity[step].expand(batch) if activity is not None else None
+            drug_step = sglt2[step].expand(batch) if sglt2 is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
             swallow_kw = {}
@@ -1379,7 +1392,7 @@ def integrate(
                 swallow_kw["swallow_override"] = swallow[step]
             out = model(
                 state, embedding, t, meals,
-                sleep_wake=sw_step, activity=act_step,
+                sleep_wake=sw_step, activity=act_step, sglt2=drug_step,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
                 **swallow_kw,

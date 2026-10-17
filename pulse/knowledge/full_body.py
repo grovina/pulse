@@ -25,7 +25,20 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..bile import fat_bile_factor
+from ..circadian import (
+    HEPATIC_K, lipolysis_scale, peripheral_factor, retain_basal, step_clock,
+)
+from ..expenditure import (
+    KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT,
+    dit_kcal, frequency_offset, gas_exchange,
+)
 from ..gastric import EMPTY_KCAL_PER_MIN, step_grams
+from ..renal import urinary_rate
+from ..incretin import (
+    GIP_B, amino_insulin_rate, gip_rate, glp1_glucagon_rate,
+    glucagon_from_protein, incretin_factor,
+)
 from ..sympathoadrenal import (
     EPI_B, EPI_DRIVE_K, EPI_SPAN, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
     HYPO_CORT_MGDL, HYPO_EPI_MGDL, INS_EPI_GAIN, K_EPI, K_SNS, LIP_EPI_GAIN,
@@ -184,10 +197,8 @@ class PatientParams:
     # report).
     p2: float = 0.02
     n: float = 0.15
-    # Iter 97: 0.07 -> 0.05, re-sized with the incretin effect (see K_incretin):
-    # glucose-stimulated insulin release is now amplified up to 3.5x by ABOVE-BASAL
-    # GLP-1 rather than 1.4x by basal GLP-1, so the same ~55 uU/mL peak needs less
-    # gamma.
+    # Iter 97: 0.07 -> 0.05, re-sized with the incretin effect. The factor lives
+    # in pulse.incretin and is 1 at basal.
     gamma: float = 0.05
     # --- Iter 97: SECOND-PHASE INSULIN SECRETION ------------------------------
     # Bergman's insulin equation is dI = -n(I - Ib) + gamma (G - h)+ * t: secretion
@@ -651,9 +662,6 @@ class PatientParams:
     k_ins_slow: float = 1.0 / 240.0
     body_mass_kg: float = 70.0
     Fat_b: float = 18.0
-    bmr_kcal_per_min: float = 1.15
-    act_kcal_per_min: float = 4.0
-    kcal_per_kg_fat: float = 7700.0
     mito_0: float = 1.0
     k_mito: float = 1.0 / (14.0 * 1440.0)
     mito_train_gain: float = 2.0e-5
@@ -669,19 +677,6 @@ class PatientParams:
     # the kernel became mass-conserving and then broadened (a lower, longer Ra);
     # the realized GLP-1 peak for 75 g stays in the cited 20-25 pmol/L.
     glp1_meal_gain: float = 0.7
-    # --- Iter 97: THE INCRETIN EFFECT WAS 7% ------------------------------------
-    # The incretin factor was `1 + GLP1 / (GLP1 + 15)` on ABSOLUTE GLP-1: basal
-    # GLP-1 (10) already gave 1.40, the meal peak (26.5) 1.64, so removing the meal
-    # rise changed the insulin AUC by 7%. Nauck 1986: the oral/IV isoglycaemic
-    # insulin ratio is 2-3, i.e. 50-70% of the oral insulin response is incretin.
-    # Same absolute-vs-above-basal shape iter 91 fixed for glucagon and ghrelin.
-    # Now `1 + incretin_gain * g / (g + K_incretin)` with g = GLP-1 above basal:
-    # 1.0 at basal, ~3.5 at the meal peak (GLP-1 +16 pmol/L). gamma was re-sized
-    # alongside. MEASURED as the share of glucose-stimulated secretion carried by
-    # the incretin factor along the standard-meal trajectory: 0.62 (Nauck 0.5-0.7);
-    # at 2.5 it was 0.50.
-    incretin_gain: float = 4.0
-    K_incretin: float = 10.0
 
     # HPA: ACTH drives cortisol; cortisol feeds back on ACTH
     Cort_b: float = 12.0
@@ -926,19 +921,10 @@ class PatientParams:
     # the same activities (31.5 at the 0.7 of the `moderate_exercise_bout` arm, a
     # +16.5 rise against that rule's >= 5), and 0 minutes above 40 across the same six
     # episodes, peak 35.0 -- including the RR0 = 17.8 patient the old law took to 58.4.
-    # The resting value is EXACT: at act 0 and Lac = Lac_b both drives are 0, so RR
-    # equilibrates at RR0 + the sleep shift exactly as before -- the default patient's
-    # asleep equilibrium is RR0 - sleep_rr_drop = 12.000 to 3 decimals both before and
-    # after -- which is what keeps the `rr_sleep_dip` anchor (-2.5 +/- 1.5) untouched.
-    act_rr_gain: float = 20.0      # /min at maximal effort, the saturated value
-    rr_act_K: float = 0.5          # activity fraction at half-maximal drive (Hill n=2)
-    # 0.4 -> 6.0: same change of frame. The old 0.4 was multiplied by 1/k_rr too, so
-    # its equilibrium contribution was already up to 4.0 /min; 6.0 declares the
-    # metabolic-acidosis component directly. MEASURED contribution 1.0 / 1.2 / 2.7 /
-    # 4.1 / 4.7 / 5.0 /min at act 0.3 / 0.5 / 0.65 / 0.8 / 0.9 / 1.0: it carries the
-    # supra-threshold part of the rise, which is where it belongs -- and `lac_thresh`
-    # is fitness-loaded, so a fitter patient reaches a given RR at a higher activity.
-    rr_lactate_gain: float = 6.0
+    # The resting value is exact: at rest, with no meal, VCO₂ is the resting
+    # output and the Hill offset is 0, so RR equilibrates at RR0 plus the sleep
+    # shift. The numbers above include the lactate term this hub removed. The
+    # Hill itself is unchanged, and it now reads CO₂ rather than activity.
     spo2_exercise_dip: float = 1.5
 
     # Glycogen pools (iter 76 — Move D first concrete step). Liver and muscle
@@ -1230,7 +1216,8 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     p.act_hr_gain = vary(p.act_hr_gain, 0.15)
     p.meal_hr_gain = vary(p.meal_hr_gain, 0.25)
     p.act_insulin_sens = float(np.clip(vary(p.act_insulin_sens, 0.3, fit=0.35), 0.1, 0.6))
-    p.rr_lactate_gain = vary(p.rr_lactate_gain, 0.2)
+    # The lactate draw is gone with the lactate drive on RR. Everything from
+    # RR0 down the stream takes the normal that draw used to consume.
     p.RR0 = vary(p.RR0, 0.15, fit=-0.20)
     p.SpO2_0 = min(100, max(94, p.SpO2_0 + rng.normal(0, 1)))
     # Glycogen pool sizes vary across patients (training/diet history); the
@@ -1352,6 +1339,8 @@ def glucose_fluxes(
     G: float, I: float, X: float, Gn: float, Cort: float, FFA: float,
     LGly: float, MGly: float, Hep: float, Ra_carb: float, act: float,
     epi: float = EPI_B,
+    debt: float = 0.0,
+    sglt2: float = 0.0,
 ) -> dict[str, float]:
     """Every glucose-carbon flux at one instant, in ONE set of units.
 
@@ -1361,6 +1350,7 @@ def glucose_fluxes(
     iter-97 tests re-evaluate it along a trajectory to check that carbon closes.
 
     Glucose ledger:   dG  = ra - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex
+                      - urinary, and urinary is zero below 190 mg/dL
     Liver ledger:     dLGly = syn_L + gng_divert - glycogenolysis
     Muscle ledger:    dMGly = syn_M - brk_M   (brk_M is oxidized in situ, no G6Pase)
     Hepatic output:   Hep -> glycogenolysis_target + gng_released_target (lagged);
@@ -1389,8 +1379,10 @@ def glucose_fluxes(
     syn_M = syn_M_g * mg                                                        # mg/dL/min
 
     # --- hepatic output target (mg/kg/min) ---
-    g_ins_glyco = _glyc_ins_gate(I, Ib, params.glyc_ins_K, params.glyc_ins_n)
-    g_ins_gng = _glyc_ins_gate(I, Ib, params.gng_ins_K, params.gng_ins_n)
+    g_ins_glyco = retain_basal(
+        _glyc_ins_gate(I, Ib, params.glyc_ins_K, params.glyc_ins_n), debt, HEPATIC_K)
+    g_ins_gng = retain_basal(
+        _glyc_ins_gate(I, Ib, params.gng_ins_K, params.gng_ins_n), debt, HEPATIC_K)
     g_gn = _hill_centred(Gn, params.Gnb, params.hgo_gn_n)
     g_cort = 1.0 + params.gng_cort_amp * np.tanh(np.log(max(Cort, 0.05) / params.Cort_b))
     g_ffa = (max(FFA, 1e-3) / params.FFA_b) ** params.gng_ffa_exp
@@ -1416,7 +1408,8 @@ def glucose_fluxes(
     brk_M_g = params.k_glyc_brk_M * act_ex * (MGly / (MGly + params.glyc_K_M))  # g/min
     syn_M_id = params.id_store_frac * max(x_eff, 0.0) * G / mg * fill_M
 
-    dG = Ra_carb - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex
+    urinary = urinary_rate(G, mg, sglt2)
+    dG = Ra_carb - syn_L - syn_M + egp - uptake_ii - uptake_id - uptake_ex - urinary
     dLGly = (syn_L / mg
              + gng_divert * mass / 1000.0
              - glyco_flux * mass / 1000.0)
@@ -1425,6 +1418,7 @@ def glucose_fluxes(
         "dG": dG, "dLGly": dLGly, "dMGly": dMGly, "hep_target": hep_target,
         "ra": Ra_carb, "syn_L": syn_L, "syn_M": syn_M, "egp": egp,
         "uptake_ii": uptake_ii, "uptake_id": uptake_id, "uptake_ex": uptake_ex,
+        "urinary": urinary,
         "glyco_flux": glyco_flux, "gng_rel_flux": gng_rel_flux, "gng_divert": gng_divert,
         "brk_M_g": brk_M_g, "ins_drive": ins_drive, "x_eff": x_eff,
         "syn_M_id": syn_M_id, "mg_dl_per_g": mg,
@@ -1619,6 +1613,7 @@ def simulate_full_body(
     start_hour: float = 6.0,
     noise_scale: float = 0.003,
     rng: np.random.Generator | None = None,
+    sglt2: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Simulate full marker state jointly with cross-system coupling.
 
@@ -1638,6 +1633,8 @@ def simulate_full_body(
     # caller; the dataclass defaults are also set to their derived values so a raw
     # default and a resolved default are the same patient.
     params = resolve_derived_params(params)
+    if sglt2 is None:
+        sglt2 = np.zeros(duration_min)
 
     trajectory = np.zeros((duration_min, STATE_DIM))
     absorption_profile = np.zeros((duration_min, 4))
@@ -1646,6 +1643,7 @@ def simulate_full_body(
     FFA, BHB, Lac = params.FFA_b, params.BHB_b, params.Lac_b
     Hep = params.Hep_b
     Ghr, Lep, GLP1 = params.Ghr_b, params.Lep_b, params.GLP1_b
+    GIP = GIP_B
     Cort, ACTH = params.Cort_b, params.ACTH_b
     HR, HRV = params.HR0, params.HRV0
     SBP, DBP = params.SBP0, params.DBP0
@@ -1670,11 +1668,14 @@ def simulate_full_body(
     ghr_base_prod = params.Ghr_b * params.k_ghr
     glp1_base_prod = params.GLP1_b * params.k_glp1
     g_carb = g_protein = g_fat = 0.0
+    offset = 0.0
+    debt = 0.0
     pending_meals = sorted(meals, key=lambda m: m[0])
     meal_i = 0
 
     for t in range(duration_min):
         t_abs = (start_hour * 60 + t) % 1440
+        t_bio = t_abs - offset * 60.0
         sw = float(sleep_wake[t])
         act = float(activity[t])
         sleep_depth = 1.0 - sw
@@ -1691,25 +1692,28 @@ def simulate_full_body(
         g_protein -= d_protein
         g_fat -= d_fat
         Ra_carb = d_carb * params.mg_dl_per_g()
-        Ra_fat = d_fat * 3.0
+        Ra_fat = d_fat * 3.0 * fat_bile_factor(INT)
         Ra_protein = d_protein * 3.0
         nutrient_flag = 1.0 if (Ra_carb + Ra_fat + Ra_protein) > 0.01 else 0.0
         absorption_profile[t] = [Ra_carb, Ra_fat, Ra_protein, nutrient_flag]
         Ra = Ra_carb
 
         # --- Metabolic: one carbon budget (iter 97; see glucose_fluxes) ---
-        si_effective = params.Si * (1.0 + params.act_insulin_sens * act)
+        si_effective = params.Si * (1.0 + params.act_insulin_sens * act) * peripheral_factor(debt)
         p3 = si_effective * params.p2
         # Incretin effect on GLP-1 ABOVE basal (item 3.8).
         glp1_excess = max(GLP1 - params.GLP1_b, 0.0)
-        incretin_factor = 1.0 + params.incretin_gain * glp1_excess / (glp1_excess + params.K_incretin)
+        gip_excess = max(GIP - GIP_B, 0.0)
+        inc = incretin_factor(glp1_excess, gip_excess)
 
         # Ketogenesis gate: how much of the liver pool can still be mobilized.
         phi_L = LGly / (LGly + params.glyc_K_L)
         phi_L0 = params.LGly_b / (params.LGly_b + params.glyc_K_L)
         glyco_avail = min(phi_L / phi_L0, 1.0)
 
-        fl = glucose_fluxes(params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act, Epi)
+        fl = glucose_fluxes(
+            params, G, I, X, Gn, Cort, FFA, LGly, MGly, Hep, Ra, act, Epi, debt,
+            sglt2=float(sglt2[t]))
         dG = fl["dG"]
         dLGly = fl["dLGly"]
         dMGly = fl["dMGly"]
@@ -1731,7 +1735,8 @@ def simulate_full_body(
         # restoring term is untouched, so fasting insulin stays put.
         alpha2 = 1.0 / (1.0 + INS_EPI_GAIN * _epi_drive(Epi))
         dI = (-params.n * (I - effective_Ib)
-              + params.gamma * ((1.0 - w2) * g_above + w2 * Pot) * incretin_factor * alpha2)
+              + params.gamma * ((1.0 - w2) * g_above + w2 * Pot) * inc * alpha2
+              + amino_insulin_rate(d_protein))
 
         glucagon_stim = params.alpha_gn * max(params.Gb - G, 0) / max(params.Gb, 1)
         # Iter 91: suppression responds to insulin ABOVE BASAL, not absolute insulin. With
@@ -1750,12 +1755,15 @@ def simulate_full_body(
         # produce (the teacher rose 0.25/h, from the glucose signal alone).
         glucagon_supp = 0.4 * (I - params.Ib) / (params.Ib + 10.0)
         dGn = (-params.k_gn * (Gn - params.Gnb - GN_EPI_SPAN * _epi_drive(Epi))
-               + glucagon_stim - glucagon_supp + 0.02 * Ra_protein)
+               + glucagon_stim - glucagon_supp
+               + glucagon_from_protein(d_protein)
+               - glp1_glucagon_rate(glp1_excess, params.k_gn))
         # Glucagon reaches glucose through hepatic output (g_gn in glucose_fluxes),
         # not through a separate additive term.
         ra_norm = Ra / (Ra + params.K_ra_norm)
 
         lipolysis = (params.lip_max / (1 + I / params.IC50_lip)
+                     * lipolysis_scale(I, params.Ib, params.IC50_lip, debt)
                      * (1.0 + LIP_EPI_GAIN * _epi_drive(Epi)))
         dFFA = lipolysis - params.k_ffa * FFA + 0.01 * Ra_fat
 
@@ -1851,19 +1859,20 @@ def simulate_full_body(
         # nutrient signal alone) so the registered insulin->ghrelin -1 coupling prior
         # continues to be supported by the trajectory signal.
         meal_supp_ghr = 1.0 - (1.0 - insulin_supp_ghr) * (1.0 - Ra_norm)
-        antic = _anticipation_drive(t_abs, params.habitual_meal_hours,
+        antic = _anticipation_drive(t_bio, params.habitual_meal_hours,
                                     params.ghr_antic_ramp_h, params.ghr_antic_decay_h)
         ghr_prod = (ghr_base_prod * (1.0 + params.ghr_antic_amp * antic)
                     * (1.0 - params.ghr_supp_max * meal_supp_ghr))
         dGhr = ghr_prod - params.k_ghr * Ghr
 
-        circ_lep = _circadian(t_abs, params.lep_circ_amp, peak_hour=2.0)
+        circ_lep = _circadian(t_bio, params.lep_circ_amp, peak_hour=2.0)
         dIns_slow = -params.k_ins_slow * (Ins_slow - I)
         lep_ins = params.lep_ins_gain * (Ins_slow / params.Ib - 1.0)
         dLep = -params.k_lep * (Lep - params.Lep_b * (Fat / params.Fat_b) - circ_lep - lep_ins)
 
         glp1_prod = glp1_base_prod + params.glp1_meal_gain * Ra
         dGLP1 = glp1_prod - params.k_glp1 * GLP1
+        dGIP = gip_rate(GIP, d_carb, d_fat)
 
         # --- Stress / HPA (ACTH → cortisol + feedback) ---
         #
@@ -1894,7 +1903,7 @@ def simulate_full_body(
         # which nothing read; it is deleted.)
         # Iter 97 (item 3.9): asymmetric drive, quiescent evening, steep pre-dawn rise
         # peaking at awakening; sleep suppression applied ONCE, to CRH.
-        drive = _hpa_drive(t_abs, params.hpa_rise_start_h, params.hpa_peak_h, params.hpa_fall_tau_h)
+        drive = _hpa_drive(t_bio, params.hpa_rise_start_h, params.hpa_peak_h, params.hpa_fall_tau_h)
         crh_target = max(params.CRH_b + params.crh_circ_amp * (2.0 * drive - 1.0), 20.0)
         sleep_suppression = 1.0 - params.hpa_sleep_supp * sleep_depth
         fb = np.tanh(np.log(max(Cort, 0.05) / params.Cort_b))
@@ -1948,7 +1957,7 @@ def simulate_full_body(
         # Consequence for the student: the sbp->hr NEGATIVE coupling prior is likewise NOT
         # registered (see coupling_priors/cardiovascular.py) -- it would contradict a
         # trajectory signal whose realized HR-SBP correlation is +0.96.
-        circ_hr = _circadian(t_abs, params.hr_circ_amp, peak_hour=14.0)
+        circ_hr = _circadian(t_bio, params.hr_circ_amp, peak_hour=14.0)
         sleep_hr_shift = -params.sleep_hr_frac * params.HR0 * sleep_depth
         # Settled tone tracks activity, so the gain is the old act_hr_gain.
         # Tone below rest (sleep) does not subtract: sleep bradycardia is
@@ -1971,38 +1980,29 @@ def simulate_full_body(
                 + params.cort_bp * cort_dev * 0.5 + params.act_dbp_gain * sns_ex)
 
         # --- Thermoregulation ---
-        circ_temp = _circadian(t_abs, params.temp_circ_amp, peak_hour=16.0)
-        # Diet-induced thermogenesis from absorbed ENERGY (iter 97): kernels -> g/min
-        # (carb kernel integrates to grams x MG_DL_PER_G; fat/protein to 3 x grams),
-        # x kcal/g x thermic fraction (protein 25%, carbohydrate 8%, fat 3%).
-        dit_kcal = (0.08 * 4.0 * Ra_carb / params.mg_dl_per_g()
-                    + 0.03 * 9.0 * Ra_fat / 3.0
-                    + 0.25 * 4.0 * Ra_protein / 3.0)
-        dit = params.temp_dit_gain * dit_kcal
+        circ_temp = _circadian(t_bio, params.temp_circ_amp, peak_hour=16.0)
+        carb_g = Ra_carb / params.mg_dl_per_g()
+        fat_g = Ra_fat / 3.0
+        prot_g = Ra_protein / 3.0
+        gas = gas_exchange(params.body_mass_kg, act, carb_g, fat_g, prot_g)
+        dit = params.temp_dit_gain * dit_kcal(carb_g, fat_g, prot_g)
         sleep_temp_shift = -params.sleep_temp_drop * sleep_depth
         exercise_temp_target = params.temp_exercise_gain * sns_ex
         dT = (-params.k_temp * (T - params.T0 - circ_temp - sleep_temp_shift - exercise_temp_target)
               + dit)
 
         # --- Respiratory ---
+        # Frequency follows CO₂. The Hill is the same saturating form as E2;
+        # its input is VCO₂, and at 800 kg-m/min that input is activity 0.7.
         sleep_rr_shift = -params.sleep_rr_drop * sleep_depth
-        lac_excess = max(Lac - params.Lac_b, 0)
-        # E2 (2026-10-04): both drives are equilibrium OFFSETS in /min, inside the
-        # relaxation -- see act_rr_gain for the measured table and why the linear
-        # `+ act * 5.0` outside it put RR at 63 /min at act 0.9.
-        lactate_rise = params.rr_lactate_gain * lac_excess / (lac_excess + 2.0)
-        act_rise = params.act_rr_gain * act * act / (act * act + params.rr_act_K ** 2)
-        dRR = -params.k_rr * (RR - params.RR0 - sleep_rr_shift - act_rise - lactate_rise)
+        rr_rise = frequency_offset(gas.vco2_ml_per_min, params.body_mass_kg)
+        dRR = -params.k_rr * (RR - params.RR0 - sleep_rr_shift - rr_rise)
         spo2_exercise_effect = params.spo2_exercise_dip * max(act - 0.5, 0)
         dSpO2 = -params.k_spo2 * (SpO2 - params.SpO2_0) - spo2_exercise_effect
 
-        carb_g = Ra_carb / params.mg_dl_per_g()
-        fat_g = Ra_fat / 3.0
-        prot_g = Ra_protein / 3.0
-        kcal_in = 4.0 * carb_g + 9.0 * fat_g + 4.0 * prot_g
-        kcal_out = (params.bmr_kcal_per_min * (params.body_mass_kg / BODY_MASS_KG)
-                    + params.act_kcal_per_min * act)
-        dFat = (kcal_in - kcal_out) / params.kcal_per_kg_fat
+        kcal_in = KCAL_CARB * carb_g + KCAL_FAT * fat_g + KCAL_PROT * prot_g
+        dFat = (kcal_in - gas.kcal_per_min
+                - KCAL_PER_G_GLYCOGEN * (dLGly + dMGly)) / KCAL_PER_KG_FAT
         dMito = (-params.k_mito * (Mito - params.mito_0)
                  + params.mito_train_gain * max(act - 0.2, 0.0))
 
@@ -2020,6 +2020,7 @@ def simulate_full_body(
         Ghr = max(Ghr + dGhr + rng.normal(0, ns * 2), 5)
         Lep = max(Lep + dLep + rng.normal(0, ns * 0.1), 0.5)
         GLP1 = max(GLP1 + dGLP1 + rng.normal(0, ns * 0.5), 1)
+        GIP = max(GIP + dGIP + rng.normal(0, ns * 0.5), 1)
         ACTH = max(ACTH + dACTH + rng.normal(0, ns * 0.8), 5.0)
         Cort = max(Cort + dCort + rng.normal(0, ns * 0.3), 0.5)
         HR = max(HR + dHR + rng.normal(0, ns * 1), 30)
@@ -2041,6 +2042,7 @@ def simulate_full_body(
         Epi = max(Epi + dEpi, 1.0)
         Mito = max(Mito + dMito, 0.2)
         Fat = max(Fat + dFat, 4.0)
+        offset, debt = step_clock(offset, debt, t_abs / 60.0, sleep_depth)
 
         trajectory[t] = [
             G, I, Gn, FFA, BHB, Lac, Hep,
@@ -2067,6 +2069,9 @@ def simulate_full_body(
             g_carb,
             g_protein,
             g_fat,
+            offset,
+            debt,
+            GIP,
         ]
 
     return trajectory, absorption_profile

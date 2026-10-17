@@ -80,7 +80,7 @@ class TestStudentArm(unittest.TestCase):
         met = MetabolicModule(EMBEDDING_DIM)
         state = torch.zeros(1, met.n_species)
         coupling = torch.zeros(1, met.n_coupling)
-        external = torch.zeros(1, 2)
+        external = torch.zeros(1, len(met.external_inputs))
         emb = torch.zeros(1, EMBEDDING_DIM)
         tf = compute_time_features(torch.tensor([10.0 * 60.0]))
         high = coupling.clone()
@@ -94,7 +94,7 @@ class TestStudentArm(unittest.TestCase):
     def test_the_hepatic_gain_receives_a_gradient_only_above_basal(self) -> None:
         met = MetabolicModule(EMBEDDING_DIM)
         state = torch.zeros(1, met.n_species)
-        external = torch.zeros(1, 2)
+        external = torch.zeros(1, len(met.external_inputs))
         emb = torch.zeros(1, EMBEDDING_DIM)
         tf = compute_time_features(torch.tensor([10.0 * 60.0]))
         rest_c = torch.zeros(1, met.n_coupling)

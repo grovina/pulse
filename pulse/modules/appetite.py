@@ -17,6 +17,7 @@ import math
 import torch
 
 from .base import BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule
+from ..incretin import gip_rate_t
 from ..types import (
     MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
 )
@@ -27,12 +28,14 @@ _N_EXTERNAL = 1
 _TYPICALS = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["appetite"]]
 _NORM_SCALES = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["appetite"]]
 # Ghrelin τ ~ 50 min; leptin plasma k = 0.025 (~30 min); GLP-1 fast; insulin_slow 4 h.
-_CONS_SCALES = [0.02, 0.025, 0.2, 1.0 / 240.0]
+_CONS_SCALES = [0.02, 0.025, 0.2, 1.0 / 240.0, 0.2]
 
 _GHRELIN_IDX = 0
 _LEPTIN_IDX = 1
 _GLP1_IDX = 2
 _INSULIN_SLOW_IDX = 3
+_GIP_IDX = 4
+_N_SPECIES = len(_TYPICALS)
 
 # Coupling: insulin, duodenal.fat, duodenal.protein, duodenal.carb, fat_mass, gut.glucose
 _INS_COUPLING = 0
@@ -47,6 +50,11 @@ _INSULIN_SCALE = NORM_SCALE[MARKER_INDEX["insulin"]]
 _FAT_CENTER = NORM_CENTER[MARKER_INDEX["fat_mass"]]
 _FAT_SCALE = NORM_SCALE[MARKER_INDEX["fat_mass"]]
 _GLP1_CENTER = NORM_CENTER[MARKER_INDEX["glp1"]]
+_GIP_CENTER = NORM_CENTER[MARKER_INDEX["gip"]]
+_GIP_SCALE = NORM_SCALE[MARKER_INDEX["gip"]]
+_PHASE_COUPLING = 6
+_PHASE_CENTER = NORM_CENTER[MARKER_INDEX["circ_phase_offset"]]
+_PHASE_SCALE = NORM_SCALE[MARKER_INDEX["circ_phase_offset"]]
 
 _K_MEAL_GHR = 0.9
 _GHR_INS_N = 1.0
@@ -90,7 +98,7 @@ class AppetiteModule(MassActionModule):
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__(
-            n_species=4,
+            n_species=_N_SPECIES,
             n_coupling=_N_COUPLING,
             n_external=_N_EXTERNAL,
             embedding_dim=embedding_dim,
@@ -102,9 +110,10 @@ class AppetiteModule(MassActionModule):
                 _LEPTIN_IDX: lambda inp, hd: ConstantFluxHead(),
                 _INSULIN_SLOW_IDX: lambda inp, hd: ConstantFluxHead(),
                 _GLP1_IDX: lambda inp, hd: BasalPlusGatedPeakHead(
-                    inp, hd, stimulus_idx=4 + _GUT_GLUCOSE, gate_dir=1,
+                    inp, hd, stimulus_idx=_N_SPECIES + _GUT_GLUCOSE, gate_dir=1,
                     init_thresh=0.1, init_log_temp=-1.6,
                 ),
+                _GIP_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
@@ -138,13 +147,9 @@ class AppetiteModule(MassActionModule):
         duo = (
             coupling[..., _DUO_FAT] + coupling[..., _DUO_PROT] + coupling[..., _DUO_CARB]
         ).clamp(min=0.0)
-        hour = _hour_from_time_features(time_features)
-        antic = _anticipation_drive(hour)
         return {
             "ra_norm": duo / (duo + _K_MEAL_GHR),
-            # Ghrelin production before the meal suppression multiplies it.
-            "ghr_drive": _TYPICALS[_GHRELIN_IDX] * _K_GHR * (1.0 + _GHR_ANTIC_AMP * antic),
-            "lep_circ": _LEP_CIRC_AMP * torch.cos(2.0 * math.pi * (hour - 2.0) / 24.0),
+            "hour": _hour_from_time_features(time_features),
             "glp1_duo": _GLP1_DUO_GAIN * (coupling[..., _DUO_FAT] + coupling[..., _DUO_PROT]),
         }
 
@@ -157,19 +162,25 @@ class AppetiteModule(MassActionModule):
         raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
         raw_s = self.raw_state(state)
-        ghr, lep, glp1, ins_slow = (
+        ghr, lep, glp1, ins_slow, gip = (
             raw_s[..., _GHRELIN_IDX], raw_s[..., _LEPTIN_IDX],
             raw_s[..., _GLP1_IDX], raw_s[..., _INSULIN_SLOW_IDX],
+            raw_s[..., _GIP_IDX],
         )
         ins = (_INSULIN_CENTER + _INSULIN_SCALE * coupling[..., _INS_COUPLING]).clamp(min=1e-3)
         ib = const["ib"]
         fat = (_FAT_CENTER + _FAT_SCALE * coupling[..., _FAT_MASS_COUPLING]).clamp(min=1.0)
+        offset = _PHASE_CENTER + _PHASE_SCALE * coupling[..., _PHASE_COUPLING]
+        hour = torch.remainder(drv["hour"] - offset, 24.0)
+        antic = _anticipation_drive(hour)
+        lep_circ = _LEP_CIRC_AMP * torch.cos(2.0 * math.pi * (hour - 2.0) / 24.0)
 
         # --- ghrelin: duodenal nutrient ∪ signed insulin, plus anticipatory rise ---
         ins_ratio_n = (ins / ib) ** _GHR_INS_N
         insulin_supp = (ins_ratio_n - 1.0) / (ins_ratio_n + 1.0)
         meal_supp = 1.0 - (1.0 - insulin_supp) * (1.0 - drv["ra_norm"])
-        ghr_prod = drv["ghr_drive"] * (1.0 - _GHR_SUPP_MAX * meal_supp)
+        ghr_drive = _TYPICALS[_GHRELIN_IDX] * _K_GHR * (1.0 + _GHR_ANTIC_AMP * antic)
+        ghr_prod = ghr_drive * (1.0 - _GHR_SUPP_MAX * meal_supp)
         d_ghr = ghr_prod - _K_GHR * ghr
 
         # --- insulin_slow: 4 h lag of plasma insulin ---
@@ -179,7 +190,7 @@ class AppetiteModule(MassActionModule):
         lep_ins = _LEP_INS_GAIN * (ins_slow / ib - 1.0)
         lep_target = (
             _TYPICALS[_LEPTIN_IDX] * (fat / _FAT_CENTER) ** _LEP_FAT_GAIN
-            + drv["lep_circ"] + lep_ins
+            + lep_circ + lep_ins
         )
         d_lep = -_K_LEP * (lep - lep_target)
 
@@ -190,4 +201,6 @@ class AppetiteModule(MassActionModule):
             prod * const["glp1_prod_scale"] - cons * const["glp1_cons_scale"] * glp1
             + drv["glp1_duo"]
         )
-        return torch.stack([d_ghr, d_lep, d_glp1, d_slow], dim=-1)
+        d_gip = gip_rate_t(
+            gip, coupling[..., _DUO_CARB], coupling[..., _DUO_FAT])
+        return torch.stack([d_ghr, d_lep, d_glp1, d_slow, d_gip], dim=-1)

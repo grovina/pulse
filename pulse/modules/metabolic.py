@@ -6,10 +6,9 @@ hepatic glucose output, the two glycogen pools, mitochondrial capacity and the
 remote-insulin latent. Mass-action kinetics where the state IS a species in
 equilibrium; explicit structural forms where it is not (glucose, the pools,
 hepatic output, insulin, insulin action — the PRD's "relaxation (c)"). Receives nutrient
-appearance from Gut, cortisol and epinephrine from Stress, and GLP-1 from Appetite.
-Lipid appearance is an FFA source and amino appearance a glucagon source
-(the teacher's ``0.01 * Ra_fat`` / ``0.02 * Ra_protein``), not just calories
-into fat mass.
+appearance from Gut, cortisol, epinephrine and sleep debt from the other
+modules, and GLP-1 and GIP from Appetite. Lipid appearance is an FFA
+source. Duodenal protein is an insulin source and a glucagon source.
 
 ITER 97 — Gb IS A DERIVED FIXED POINT, AND THE CARBON BUDGET CLOSES IN ONE UNIT
 (review 2026-09-04, items 2.2, 2.6, 3.3, 3.4, 3.10, 3.11; mirrors the teacher's
@@ -259,9 +258,22 @@ import torch.nn as nn
 from .base import (
     ConstantFluxHead, MassActionModule, SpeciesHead,
 )
+from ..bile import fat_bile_factor_t
+from ..circadian import (
+    HEPATIC_K, lipolysis_scale_t, peripheral_factor_t, retain_basal_t,
+)
+from ..incretin import (
+    amino_insulin_rate_t, glp1_glucagon_rate_t, glucagon_from_protein_t,
+    incretin_factor_t,
+)
 from ..sympathoadrenal import (
     EPI_B, EPI_DRIVE_K, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
     INS_EPI_GAIN, LIP_EPI_GAIN,
+)
+from ..renal import urinary_rate_t
+from ..expenditure import (
+    KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT,
+    gas_exchange_t,
 )
 from ..types import (
     BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
@@ -288,6 +300,7 @@ _N_COUPLING = len(MODULE_COUPLING_CHANNELS["metabolic"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
+_PROTOCOL_INPUTS = ("activity", "sleep_wake", "sglt2")
 
 # Species order matches MODULE_MARKER_INDICES["metabolic"]:
 # 0: glucose, 1: insulin, 2: glucagon, 3: ffa, 4: bhb, 5: lactate,
@@ -327,10 +340,21 @@ _GUT_GLUCOSE_COUPLING_IDX = 0
 _CORTISOL_COUPLING_IDX = GUT_OUTPUT_DIM
 _GLP1_COUPLING_IDX = GUT_OUTPUT_DIM + 1
 _EPI_COUPLING_IDX = GUT_OUTPUT_DIM + 2
+_DEBT_COUPLING_IDX = GUT_OUTPUT_DIM + 3
+_GIP_COUPLING_IDX = GUT_OUTPUT_DIM + 4
+_DUO_PROT_COUPLING_IDX = GUT_OUTPUT_DIM + 5
+_INT_BILE_COUPLING_IDX = GUT_OUTPUT_DIM + 6
+_DEBT_CENTER = NORM_CENTER[MARKER_INDEX["sleep_debt"]]
+_DEBT_SCALE = NORM_SCALE[MARKER_INDEX["sleep_debt"]]
+_GIP_CENTER = NORM_CENTER[MARKER_INDEX["gip"]]
+_GIP_SCALE = NORM_SCALE[MARKER_INDEX["gip"]]
+_INT_BILE_CENTER = NORM_CENTER[MARKER_INDEX["intestinal_bile"]]
+_INT_BILE_SCALE = NORM_SCALE[MARKER_INDEX["intestinal_bile"]]
 _LIPID_COUPLING_IDX = 1
 _AMINO_COUPLING_IDX = 2
 _ACTIVITY_EXTERNAL_IDX = 0
 _SLEEP_EXTERNAL_IDX = 1
+_SGLT2_EXTERNAL_IDX = 2
 
 # Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 = 0.02,
 # τ = 50 min). Floored so the state can't freeze; capped so it can't collapse to the
@@ -427,19 +451,12 @@ _HEP_AUTOREG_M = 0.6                          # (Gb/G)^m suppression above Gb, o
 # Withdrawable share of obligatory uptake at sub-basal insulin (teacher 0.05; Landau
 # 1996). Floors signed X so remote insulin cannot reverse obligatory (brain) uptake.
 _INS_DEP_BASAL_FRAC = 0.05
-_INCRETIN_GAIN = 4.0
-_K_INCRETIN = 10.0
 _ID_STORE_FRAC = 0.25
 _LAC_GLYCO_GAIN = 0.02
-_KCAL_PER_KG_FAT = 7700.0
-_BMR_KCAL_PER_MIN = 1.15
-_ACT_KCAL_PER_MIN = 4.0
 _LIPID_UNITS_PER_G = 3.0
-# Teacher full_body.py: dFFA += 0.01 * Ra_fat, dGn += 0.02 * Ra_protein.
-# Lipid/amino appearance already arrive on the coupling vector; without these
-# terms they only entered the fat-mass calorie residual.
+# Teacher full_body.py: dFFA += 0.01 * Ra_fat. Protein reaches glucagon and
+# insulin through duodenal grams (pulse.incretin), not through this appearance.
 _FFA_FROM_LIPID = 0.01
-_GN_FROM_AMINO = 0.02
 _K_MITO = 1.0 / (14.0 * 1440.0)
 _MITO_TRAIN_GAIN = 2.0e-5
 _MITO_LOG_MAX = 0.4
@@ -736,6 +753,11 @@ class MetabolicModule(MassActionModule):
                 _POT_IDX: lambda inp, hd: ConstantFluxHead(),
             },
         )
+        # The drug is stacked with the other protocol inputs so drives() can
+        # read it. The heads stay on activity and sleep: a learned weight on
+        # the dose would be a second drug effect, and the urinary law is the
+        # whole of this one.
+        self.external_inputs = _PROTOCOL_INPUTS
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
@@ -946,6 +968,19 @@ class MetabolicModule(MassActionModule):
             "hep_cons_scale": self.cons_scale[_HEPATIC_IDX],
         }
 
+    def head_input(
+        self, state, coupling, external, embedding, time_features,
+    ):
+        cols = [i for i, name in enumerate(self.external_inputs) if name != "sglt2"]
+        return super().head_input(
+            state, coupling, external[..., cols], embedding, time_features)
+
+    def head_input_sources(self):
+        return [
+            source for source in super().head_input_sources()
+            if source != ("external", _SGLT2_EXTERNAL_IDX)
+        ]
+
     def drives(
         self,
         external: torch.Tensor,
@@ -966,8 +1001,9 @@ class MetabolicModule(MassActionModule):
         amino_app = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0)
         lipid_g = lipid_app / _LIPID_UNITS_PER_G
         amino_g = amino_app / _LIPID_UNITS_PER_G
-        kcal_in = 4.0 * app_g + 9.0 * lipid_g + 4.0 * amino_g
-        kcal_out = _BMR_KCAL_PER_MIN * (const["body_mass_kg"] / BODY_MASS_KG) + _ACT_KCAL_PER_MIN * act
+        kcal_in = KCAL_CARB * app_g + KCAL_FAT * lipid_g + KCAL_PROT * amino_g
+        kcal_out, _vo2, _vco2, _rq = gas_exchange_t(
+            const["body_mass_kg"], act, app_g, lipid_g, amino_g)
         return {
             "app_g": app_g,
             "app_eff": app_g * const["mg_dl_per_g"],
@@ -980,9 +1016,15 @@ class MetabolicModule(MassActionModule):
             # negative activity would otherwise be able to INVERT insulin action,
             # which is the catastrophe wall `x_eff`'s floor exists to keep away from.
             "ins_sens_act_gain": 1.0 + const["act_ins_sens"] * relu(act),
-            "fat_rate": (kcal_in - kcal_out) / _KCAL_PER_KG_FAT,
+            "act": act,
+            "sglt2": external[..., _SGLT2_EXTERNAL_IDX],
+            "kcal_in": kcal_in,
+            "kcal_out": kcal_out,
             "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
-            "glucagon_from_amino": _GN_FROM_AMINO * amino_app,
+            "glucagon_from_protein": glucagon_from_protein_t(
+                coupling[..., _DUO_PROT_COUPLING_IDX]),
+            "amino_insulin": amino_insulin_rate_t(
+                coupling[..., _DUO_PROT_COUPLING_IDX]),
             "mito_training": _MITO_TRAIN_GAIN * relu(act - 0.2),
         }
 
@@ -1001,6 +1043,7 @@ class MetabolicModule(MassActionModule):
             self.raw_state(state).unbind(-1))
         cort = (_CORT_CENTER + _CORT_NORM_SCALE * coupling[..., _CORTISOL_COUPLING_IDX]).clamp(min=0.05)
         glp1 = (_GLP1_CENTER + _GLP1_SCALE * coupling[..., _GLP1_COUPLING_IDX]).clamp(min=0.1)
+        gip = (_GIP_CENTER + _GIP_SCALE * coupling[..., _GIP_COUPLING_IDX]).clamp(min=0.1)
         gb, ib, mg = c["gb"], c["ib"], c["mg_dl_per_g"]
         k_ii = c["k_ii"]
         app_g = d["app_g"]
@@ -1028,8 +1071,12 @@ class MetabolicModule(MassActionModule):
         syn_muscle_oral = f_muscle * app_g
         appearance_plasma = d["app_eff"] * f_plasma
 
-        g_ins_glyco = _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N)
-        g_ins_gng = _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N)
+        debt = _DEBT_CENTER + _DEBT_SCALE * coupling[..., _DEBT_COUPLING_IDX]
+        periph = peripheral_factor_t(debt)
+        g_ins_glyco = retain_basal_t(
+            _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N), debt, HEPATIC_K)
+        g_ins_gng = retain_basal_t(
+            _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N), debt, HEPATIC_K)
         g_gn = _hill_centred(gn, c["gn_b"], _HGO_GN_N)
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
         g_ffa = (ffa.clamp(min=1e-3) / c["ffa_b"]) ** _GNG_FFA_EXP
@@ -1056,7 +1103,8 @@ class MetabolicModule(MassActionModule):
         syn_muscle = syn_muscle_oral + syn_muscle_id
 
         glp1_excess = relu(glp1 - _GLP1_CENTER)
-        incretin = 1.0 + _INCRETIN_GAIN * glp1_excess / (glp1_excess + _K_INCRETIN)
+        gip_excess = relu(gip - _GIP_CENTER)
+        incretin = incretin_factor_t(glp1_excess, gip_excess)
         glucose_ratio = torch.minimum(g / gb.clamp(min=1.0), torch.ones_like(g))
         effective_ib = ib * torch.clamp(glucose_ratio ** _FAST_INS_EXP, min=_FAST_INS_FLOOR)
         g_above = relu(g - gb)
@@ -1065,7 +1113,7 @@ class MetabolicModule(MassActionModule):
         ins_gsir = (c["gamma"] * gsir_mod * phase2_stim * incretin
                     / (1.0 + INS_EPI_GAIN * epi_drive))
         ins_restoring = -c["k_ins"] * (ins - effective_ib)
-        ins_rate = ins_restoring + ins_gsir
+        ins_rate = ins_restoring + ins_gsir + d["amino_insulin"]
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
         # which is the teacher's `dX = −p2·X + p3·(I − Ib)` with `p3 = Si_eff·p2`
         # exactly (divide both by Si: the student's `xa` is Si-free by construction).
@@ -1073,7 +1121,7 @@ class MetabolicModule(MassActionModule):
         # `insulin_action` column the same quantity the teacher writes on its tape
         # (`X/(Si·10)`), and gives the sensitisation the teacher's τ = 1/p2 ramp
         # instead of switching it on the minute a bout starts.
-        xa_rate = c["p2"] * (insulin_dev * d["ins_sens_act_gain"] - xa)
+        xa_rate = c["p2"] * (insulin_dev * d["ins_sens_act_gain"] * periph - xa)
 
         # A11: hepatic_output is RELEASE INTO PLASMA, so the gluconeogenic carbon
         # routed into glycogen (`gng_divert`) is not part of it. The marker's own
@@ -1100,18 +1148,36 @@ class MetabolicModule(MassActionModule):
         glucagon_stim = c["alpha_gn"] * relu(gb - g) / gb.clamp(min=1.0)
         glucagon_supp = c["gn_ins"] * (ins - ib) / (ib + _GN_INS_OFFSET)
         glucagon_restoring = -c["k_gn"] * (gn - (c["gn_b"] + GN_EPI_SPAN * epi_drive))
-        gn_rate = glucagon_restoring + glucagon_stim - glucagon_supp + d["glucagon_from_amino"]
+        gn_rate = (glucagon_restoring + glucagon_stim - glucagon_supp
+                   + d["glucagon_from_protein"]
+                   - glp1_glucagon_rate_t(glp1_excess, c["k_gn"]))
         lipolysis = (c["lip_max"] / (1.0 + ins / c["ic50_lip"])
+                     * lipolysis_scale_t(ins, ib, c["ic50_lip"], debt)
                      * (1.0 + c["lip_epi"] * epi_drive))
-        ffa_rate = lipolysis - c["k_ffa"] * ffa + d["ffa_from_lipid"]
+        # Intestinal bile is an ODE marker, so the fraction is applied here and
+        # not in drives. At the resting content and above it is 1, and the
+        # unscaled ledger drives() just computed is the absorbed one.
+        int_bile = (
+            _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _INT_BILE_COUPLING_IDX]
+        ).clamp(min=0.0)
+        bile = fat_bile_factor_t(int_bile)
+        lipid_g = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        amino_g = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
+        absorbed_g = lipid_g * bile
+        ffa_from_lipid = _FFA_FROM_LIPID * absorbed_g * _LIPID_UNITS_PER_G
+        kcal_in = KCAL_CARB * d["app_g"] + KCAL_FAT * absorbed_g + KCAL_PROT * amino_g
+        kcal_out, _vo2, _vco2, _rq = gas_exchange_t(
+            c["body_mass_kg"], d["act"], d["app_g"], absorbed_g, amino_g)
+        ffa_rate = lipolysis - c["k_ffa"] * ffa + ffa_from_lipid
 
         mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]
         lactate_from_glyco = _LAC_GLYCO_GAIN * brk_muscle
         lac_rate = (lac_prod * c["lac_prod_scale"]
                     - lac_cons * c["lac_cons_scale"] * mito * lac
                     + lactate_from_glyco)
+        urinary = urinary_rate_t(g, c["mg_dl_per_g"], d["sglt2"])
         glucose_rate = (appearance_plasma + glycogenolysis_plasma + gng_released
-                        - uptake_ii - uptake_id - exercise_uptake)
+                        - uptake_ii - uptake_id - exercise_uptake - urinary)
         liver_rate = syn_liver + gng_divert / mg - brk_liver
         muscle_rate = syn_muscle - brk_muscle
 
@@ -1139,9 +1205,15 @@ class MetabolicModule(MassActionModule):
             "lactate_from_glyco": lactate_from_glyco, "lactate_rate": lac_rate,
             "glucagon_stim": glucagon_stim, "glucagon_supp": glucagon_supp,
             "glucagon_restoring": glucagon_restoring, "gn_rate": gn_rate,
-            "lipolysis": lipolysis, "ffa_rate": ffa_rate,
+            "lipolysis": lipolysis, "ffa_from_lipid": ffa_from_lipid, "ffa_rate": ffa_rate,
+            "kcal_in": kcal_in, "kcal_out": kcal_out,
+            "urinary": urinary,
             "glucose_rate": glucose_rate, "liver_glycogen_rate": liver_rate,
             "muscle_glycogen_rate": muscle_rate,
+            # A gram that entered glycogen is not also adipose. Breakdown
+            # covers part of the expenditure, so fat is spared by the same term.
+            "fat_rate": (kcal_in - kcal_out
+                         - KCAL_PER_G_GLYCOGEN * (liver_rate + muscle_rate)) / KCAL_PER_KG_FAT,
         }
 
     def step(
@@ -1156,7 +1228,7 @@ class MetabolicModule(MassActionModule):
         return torch.stack([
             f["glucose_rate"], f["ins_rate"], f["gn_rate"], f["ffa_rate"], f["bhb_rate"],
             f["lactate_rate"], f["hep_rate"], f["liver_glycogen_rate"],
-            f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], drv["fat_rate"],
+            f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], f["fat_rate"],
             f["pot_rate"],
         ], dim=-1)
 

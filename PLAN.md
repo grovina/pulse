@@ -80,11 +80,20 @@ papers of that shape use it.
 
 ## 4. Where this stands (2026-10-09)
 
-The simulator is nine modules and 36 states: metabolic, appetite,
+The simulator is ten modules and 39 states: metabolic, appetite,
 stress, cardiovascular, thermoregulation, respiratory, gut,
-hepatobiliary, gastric. Carbon closes. Glucose's basal is a fixed point.
+hepatobiliary, gastric, circadian. Carbon closes. Glucose's basal is a fixed point.
 A meal leaves the stomach at one calorie rate, and appearance is that
-outflow times the bioavailable fraction. The embedding is
+outflow times the bioavailable fraction. GIP and GLP-1 split the
+incretin effect, and protein raises insulin while glucose stays put.
+Intestinal bile sets the share of leaving fat that is absorbed, and the
+hepatobiliary heads do not read the person. Glucose above 190 mg/dL
+leaves in the urine. Empagliflozin 25 mg/day, when a protocol turns it
+on, moves that threshold to 34 mg/dL and the clearance to 126 mL/min.
+A fed day of this model then loses about 104 g, against the free-living
+collection of 42 ± 5 g. The line is the clamp regression and is not
+retuned to the collection.
+The embedding is
 32-dimensional; zero is the median person; the table mean is pinned
 to zero. Twelve per-person setpoints are supervised. Muscle insulin
 sensitivity is a different quantity from hepatic insulin sensitivity,
@@ -407,120 +416,197 @@ queued. Do not put the two kernels back to recover the CCK peak.
 ### M2.3 Clock and sleep debt
 
 Depends on M1's split between muscle and hepatic insulin sensitivity,
-which has landed. The sleep effect in the literature is peripheral.
+which has landed.
 
-**States.** `circ_phase_offset`, in hours, bounded, so there is no angle
-to wrap. `sleep_debt`, in hours, at least 0.
+**States.** `circ_phase_offset`, in hours, bounded to ±6, so there is
+no angle to wrap. `sleep_debt`, in hours. During the biological night
+the debt state counts hours slept (a negative number). At 09:00 that
+count becomes the shortfall against an 8 h night, and it holds until
+the next night opens at 21:00. A morning with no bedtime behind it is
+not charged.
 
-**Mechanism.** Sleep midpoint moves the phase offset. Debt acts on
-insulin sensitivity, cortisol, ghrelin, leptin, heart rate, and blood
-pressure. Modules read `hour − offset`. This replaces three imposed
-waveforms: the HPA drive, ghrelin's anticipation at 09:00/13:00/20:00,
-and leptin's 02:00 cosine. The deleted per-person HPA phase head
-belongs here, as a state driven by the person's sleep, not as free
-authority on the embedding.
+**Mechanism.** The modules that had an imposed clock — the HPA drive, ghrelin's
+anticipation, leptin's cosine, and the teacher's heart-rate and
+temperature cosines — read `hour − offset`. The student's heart and
+heat modules still see the wall clock, because their daily wave is in
+the learned heads. The offset is pulled
+by sleep toward a night centered at 03:00. One night centered 4 h late
+moves it by 0.71 h; the Donga nights, which share that center, move it
+by less than a tenth of an hour. Debt scales three insulin actions,
+each of them 1 at no debt and at basal insulin: peripheral disposal,
+the hepatic insulin gates, and the insulin suppression of lipolysis.
+Cortisol, glucagon, ghrelin, leptin, heart rate and blood pressure have
+no debt gain. The table measured cortisol and glucagon and they did
+not change.
 
-**Evidence.** Donga et al. 2010, hyperinsulinaemic euglycaemic clamp,
-n = 9: insulin sensitivity −19 to −25% after one 4-hour night. The
-companion 4 h-vs-8 h clamp: whole-body −25%, peripheral −29%, hepatic
-essentially unchanged, gluconeogenic fraction up. The existing
-`sleep_restriction_next_day_glucose` cohort (+6 mg/dL) has no mechanism:
-five nights of 4 h against 8 h changes next-day glucose by less than
-0.05% in the current teacher. The cohort target moves from a glucose
-delta to a peripheral-sensitivity delta. Hepatic sensitivity is
-constrained to stay put.
+**Evidence.** Donga et al., J Clin Endocrinol Metab 2010;95:2963-2968,
+Table 1, n = 9. Sleep allowed 23:00–07:30 or 01:00–05:00, both centered
+at about 03:00. Basal glucose, insulin, NEFA, endogenous production,
+glucagon and cortisol the next morning were unchanged. At the clamp
+(insulin 22 mU/L against a basal of 3.1): disposal 32.5 ± 3.6 versus
+40.7 ± 5.1 µmol/kg LBM/min, endogenous production 4.4 ± 0.3 versus
+3.6 ± 0.2, NEFA 68 ± 5 versus 57 ± 4 µmol/L, glucose infusion
+27.8 ± 3.7 versus 36.9 ± 5.1. The rollout has no clamp, so the cohort
+is the basal glucose row (`donga_2010_basal_glucose`, target 0, sigma
+the unpaired SE of the two ±0.18 mmol/L arms). The three clamp ratios
+are the debt factors, checked at 22/3.1 times basal insulin.
 
-**A known teacher defect this hub inherits.** The habitual anticipation
-hours (9/13/20) sit after the generated meals (7–9, 12–14, 18–20), so
-most "anticipatory" ghrelin arrives post-meal. The clock replaces that
-schedule rather than shifting the constants.
+**Measured, noise-free, the table's protocol.** The 4 h night commits
+4.0 h of debt in the 11:00–12:00 window and the 8.5 h night commits 0.
+Basal glucose is 84.6 versus 84.8 mg/dL. Basal hepatic output is 1.666
+versus 1.668 mg/kg/min. Phase differs by 0.08 h.
+
+**Still open.** The anticipation hours are still 09:00, 13:00 and 20:00
+on the biological clock. They sit after the generated meals, so on the
+reference schedule most of that ghrelin still arrives after the meal.
+A shifted sleeper shifts the three hours together; the schedule itself
+is not derived from the person's meals.
 
 ### M2.4 Energy expenditure
 
-**No new stored species.** A flux node: VO₂, VCO₂, respiratory quotient,
-exported as coupling. BMR + activity + diet-induced thermogenesis +
-thermogenesis → heat, CO₂, O₂ demand, substrate oxidation.
+No new stored species. VO₂, VCO₂ and the respiratory quotient are a flux,
+computed from the same function in the teacher and the student.
 
-**Evidence.** Respiratory rate tracks CO₂ production, not lactate and
-temperature. A meal raises expenditure (diet-induced thermogenesis) with
-a published time course. An exercise bout raises VO₂ with intensity.
-Fat mass stops counting carbon that went to glycogen, because the energy
-ledger and the carbon ledger name the same grams.
+**The table.** Wahren et al., J Clin Invest 1971;50:2715, Table I.
+Pulmonary oxygen uptake 256 ± 19 ml/min at rest and 1811 ± 69 ml/min
+after 40 min at 800 kg-m/min. Respiratory quotient 0.77 ± 0.01 and
+0.82 ± 0.01. Activity 0.7 is that load, the map the splanchnic cohort
+already uses. Weir's protein-free equation turns the pair into kcal/min.
+At the reference mass the resting flux is 1.227 kcal/min and the load is
+8.780 kcal/min, VO₂ 1811 ml/min, RQ 0.820.
 
-**Acceptance.** At rest, RR equals the person's RR₀. The activity term
-remains the saturated Hill form already installed (equilibrium at
-activity 0.9 went from 63.1 to 35.0 /min; minutes above the marker max
-of 40 across six 14-day episodes went from 926 to 0). Expenditure during
-a bout is within the cohort sigma of the cited VO₂.
+**What the flux drives.** Diet-induced thermogenesis is the existing
+thermic fractions (protein 25%, carbohydrate 8%, fat 3%) added to that
+expenditure, and it is the heat term temperature already had. Fat mass
+is the energy that remains after that expenditure and after the glycogen
+step: a gram that entered liver or muscle glycogen is not also adipose,
+and glycogen breakdown covers part of the expenditure. Respiratory
+frequency keeps the saturated Hill. Its input is CO₂ production, scaled
+so the 800 kg-m/min point sits where activity 0.7 sat. Lactate and
+temperature do not move it. At rest, with no meal, the offset is zero
+and the rate equilibrates at RR₀.
+
+**Measured, noise-free, the default patient, eight hours.** RR at
+activity 0 / 0.3 / 0.5 / 0.7 / 0.9 / 1.0 is 15.00 / 20.03 / 24.83 /
+28.24 / 30.41 / 31.16 per minute. The 0.7 point is RR₀ plus the old
+Hill at 0.7. The earlier 35 /min at activity 0.9 included the lactate
+term this hub removed.
+
+**Still open.** The student's heart and heat modules do not read the
+flux. Temperature's exercise term is still the sympathetic drive, not
+the kcal. A heavier student's breathing uses the reference mass; the
+teacher uses the person's mass, and with no meal the two agree because
+the ratio cancels.
 
 ### M2.5 Incretin and the islet
 
-**State.** `gip`.
+**State.** `gip`, appended. Thirty-nine states.
 
-**Mechanism.** GIP is the larger incretin. Amino acids stimulate insulin.
-GLP-1 suppresses glucagon. Protein raises insulin today only indirectly,
-because secretion is gated by `relu(G − Gb)`. Glucagon has no GLP-1 term.
+**The split.** Vilsbøll, Krarup, Madsbad and Holst, Diabetologia
+2003;46:183: at ordinary glucose the two incretins contribute about
+equally, and GLP-1, not GIP, suppresses glucagon. The factor that used
+to sit entirely on GLP-1 is now half on each. When the two excesses are
+equal it is the old factor, so the incretin effect is not copied. On the
+standard meal the share of glucose-stimulated secretion carried by the
+factor is 0.62, still inside Nauck's 0.5–0.7. Glucose rise 60 mg/dL,
+insulin peak 55 µU/mL.
 
-**Evidence.** A protein meal raises insulin with little glucose rise
-(existing meal machinery, a new arm). GIP and GLP-1 peaks have published
-levels and timings on a mixed meal; GLP-1 already has
-`large_meal_glp1_peak` and `meal_glp1_rise`. A GLP-1 elevation lowers
-glucagon during a meal, which `ogtt_glucagon_suppression` currently
-attributes to glucose and insulin alone.
+**GIP.** Vollmer et al., Diabetes 2008;57:678. Integrated GIP over 240 min
+was 186 ± 17% higher after an 820 kcal breakfast (360 kcal carbohydrate,
+353 fat, 107 protein) than after 75 g of glucose. One compartment is
+still emptying the breakfast at 240 min, so the fat weight is solved on
+what has left by then. The simulated ratio is 2.86. While that breakfast
+is emptying, GIP's excess equals GLP-1's (both 6.2 pmol/L above 10). K
+cells read duodenal carbohydrate and fat. The paper's concentrations are
+in the figures, so there is no pmol/L cohort; the ratio is the test.
 
-**Depends on.** M2.2 if the incretin stimulus is duodenal delivery. The
-GLP-1 state already exists, so the glucagon term can land against the
-current nutrient flag and be re-pointed at the duodenum when the stomach
-lands.
+**Amino acids.** Westphal, Gannon and Nuttall, Am J Clin Nutr
+1990;52:267, n = 7. Fifty grams of protein alone did not change serum
+glucose. Fasting glucose was 4.8 ± 0.1 mmol/L, and the difference was
+not published, so the cohort sigma is that SEM as an unpaired SE
+(2.55 mg/dL). Secretion from protein is a term of its own, zero when no
+protein is leaving, so it fires while glucose is at basal. Glucagon
+from the same grams is what keeps the glucose from falling, and it is
+what puts the mixed meal's glucagon suppression back on its published
+−10 pg/mL once GLP-1 is holding glucagon down. Measured, noise-free:
+glucose delta −1.9 mg/dL over the 4 h, insulin +1.3 µU/mL while the
+protein is emptying, mixed-meal glucagon delta −9.3.
+
+**GLP-1 on glucagon.** Salehi, Vahl and D'Alessio, J Clin Endocrinol
+Metab 2008;93:4909, Table. Glucose clamped near 8.9 mmol/L, 75 g oral
+glucose, n = 10. Incremental glucagon area 95–270 min: saline 221 ± 353,
+exendin-(9-39) 1657 ± 699 pg/mL·min. The difference over those 175 min
+is 8.2 pg/mL. The term is zero at basal GLP-1, and at the excess a 75 g
+load produces while it is emptying the glucagon equilibrium is 8.2 pg/mL
+lower. There is no clamp in a rollout. The free OGTT's glucagon delta
+is −31 pg/mL, inside −25 ± 12.
+
+**Still open.** A GIP peak in pmol/L, once a table is in hand. The
+exendin arm itself. GLP-1 still does not brake the stomach inside the
+minute.
 
 ### M2.6 Hepatobiliary links out
 
-**No new state.** Intestinal bile modulates fat absorption. Bile acids
-stimulate GLP-1 (TGR5). Four states — cck, gallbladder bile, intestinal
-bile, serum bile acids — currently contribute nothing to the coupling
-graph. Their cohort statistics (`cck_fasting_basal`,
-`cck_postprandial_peak`, `cck_time_to_peak`, `bile_acids_fasting`,
-`bile_acids_time_to_peak`, `bile_acids_postprandial_peak`) supervise a
-loop nothing else reads.
+**No new state.** Borgström, Barrowman and Lindström, New Comprehensive
+Biochemistry 1985, chapter 14: in the absence of bile, 60–70% of a
+normal fat load is still absorbed. The floor is the midpoint, 0.65. The
+resting intestinal content (1 mmol) is bile present, and at that content
+and above the fat that leaves the stomach is absorbed in full. Below it
+the fraction falls in a straight line to the floor. Carbohydrate is not
+touched. The same fraction multiplies the teacher's fat appearance, the
+student's free-fatty-acid source and calorie ledger, the heat from the
+meal, and the CO₂ that sets respiratory rate.
+
+On a 40 g fat meal the intestine stays at or above its resting content,
+so the absorbed fat is the swallowed fat. The floor is the empty
+intestine, which a rollout does not reach: canalicular secretion is not
+an arm input.
 
 **The open A5 item closes here.** `randomize_params` draws no
-hepatobiliary parameter, but the cck and gallbladder species heads still
-read the embedding, so a person's resting CCK is free against a pinned
-reference. Once bile has an outgoing effect, those heads are either
-supervised by a drawn parameter or they stop reading the embedding.
-Until this hub, they are not deleted: deleting the only reader of a
-state that is about to gain a reader is the wrong order.
+hepatobiliary parameter. The cck and gallbladder heads were the free
+person, and they are gone. Resting CCK is the typical for every person.
+Gallbladder ejection is the structural 0.030 per minute, the teacher's
+rate. Synthesis is the population constant.
+
+**Still open.** Wu et al., JCEM 2013;98:E718: jejunal taurocholate does
+not move fasting GLP-1, and with glucose it does. The abstract gives no
+pmol/L, so the term is not sized. Serum bile acids still have no reader
+outside the loop that fills the intestine.
 
 ### M2.7 Renal glucose and the Cori cycle
 
-**No new stored species.** Glycosuria above the published threshold, near
-180 mg/dL. Lactate returns as gluconeogenic substrate.
+**No new state.** Diabetes 2017;66:1999–2006, people without diabetes,
+n = 15. Glucose appears in the urine at 190 ± 2 mg/dL. Creatinine
+clearance is 139 ± 7 mL/min, and above the threshold the excretion is
+that clearance times the concentration above 190. At 200 mg/dL that is
+13.9 mg/min. Below the threshold the term is zero, so fasting glucose
+and every meal this model actually reaches are unchanged. The lost
+grams leave the carbon ledger.
 
-**Evidence.** Urinary glucose appearance above the threshold on a
-hyperglycaemic clamp or a large OGTT, with a sigma. Below the threshold
-the flux is zero by construction. Lactate infused or produced by
-exercise reappears as glucose (Cori), which is what lets an exercise
-arm's carbon close.
-
-**What this makes writable.** An SGLT2-inhibitor counterfactual, which
-lowers the threshold.
+**Still open.** Lactate returning as glucose. Basal gluconeogenesis
+already contains the resting Cori flux, and the extra share from a
+raised lactate has no published fraction in hand.
 
 ### M2.8 Inputs the schema already promises
 
-**No new state.** A user-reported stress input to the stress module. A
-pharmacology channel whose first ligands are a GLP-1 receptor agonist, a
-biguanide, and an SGLT2 inhibitor.
+**No new state.** Empagliflozin 25 mg/day is an input on the metabolic
+module. Zero is the untreated kidney. One is the day-13 kidney in
+Diabetes 2017;66:1999–2006, people without diabetes, n = 15: the
+regression of urinary glucose on plasma glucose crosses zero at 34
+mg/dL, and creatinine clearance is 126 mL/min. The same line as M2.7,
+with those two numbers. A value between them mixes the two measured
+kidneys. It is not a dose titration, and the paper has no intermediate
+dose. A missing log is no drug.
 
-**Order.** The channel arrives when its target exists: GLP-1 agonism
-after M2.2 and M2.5, SGLT2 after M2.7, metformin against hepatic insulin
-sensitivity (already a per-person quantity). The reported-stress input
-drives the arm M2.1 landed; the input itself is not in the schema yet.
-Until then, a reported stress and a drug can only be represented by
-changing the person.
+**The collection.** That paper's day-13 urine is 42 ± 5 g/day, from
+people eating their own food. A fed day here (50, 65 and 75 g of
+carbohydrate, asleep from 23:00) loses about 104 g. Glucose stays near
+90 mg/dL, and the clamp line is steep there. The threshold and the
+clearance stay at the measured numbers.
 
-**Evidence.** Each ligand is a published protocol: dose, timing, and the
-statistic it is known to move (emptying, hepatic glucose output, urinary
-glucose), with the cited sigma.
+**Still open.** A reported stress, a GLP-1 receptor agonist, and
+metformin. Each one waits for a protocol with a sigma. A drug that
+accumulates is a state, and that state is M2.10.
 
 ### M2.9 Slow adaptation
 

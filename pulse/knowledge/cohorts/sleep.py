@@ -65,38 +65,59 @@ _MEALS_48H = (
 _short_sleep_48 = sleep_first_night_restricted_second_adequate(2880, _SLEEP_START_HOUR)
 _adequate_sleep_48 = sleep_two_nights_adequate(2880, _SLEEP_START_HOUR)
 
-# Spiegel et al. (1999, 2009); Donga et al. (2010): one night of partial
-# sleep restriction increases morning glucose / impairs insulin sensitivity
-# such that next-day mean glucose runs ~5–10 mg/dL higher in a pre-lunch
-# window. Use Δ = +6 mg/dL ± 4.
-SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE = CohortStatisticSpec(
-    name="sleep_restriction_next_day_glucose",
-    source="Spiegel et al. (1999, 2009); Donga et al. (2010) — sleep loss and glycemia",
-    description="One night of restricted sleep → +6 mg/dL mean glucose next morning (pre-lunch window)",
+def _allowed_sleep(
+    duration_min: int, start_hour: float, bed_h: float, wake_h: float,
+) -> tuple[float, ...]:
+    """Binary sleep on [bed, wake), hours from the start day's midnight."""
+    sw = np.ones(duration_min, dtype=np.float32)
+    lo = max(0, int(round((bed_h - start_hour) * 60)))
+    hi = min(duration_min, int(round((wake_h - start_hour) * 60)))
+    if lo < hi:
+        sw[lo:hi] = 0.0
+    return tuple(float(x) for x in sw)
+
+
+# Donga et al. JCEM 2010;95:2963, Table 1. One night, n = 9. Sleep allowed
+# 23:00–07:30 or 01:00–05:00, both centered at 03:00. Fasted from 22:00.
+# Basal glucose the next late morning is 4.8 ± 0.18 mmol/L on both occasions
+# (P = 0.32). The table does not publish the paired difference, so sigma is
+# the unpaired SE of two arms that each report SEM 0.18 mmol/L.
+_DONGA_START_HOUR = 7.0
+_DONGA_DURATION_MIN = 1860
+_DONGA_DINNER = ((600.0, 40.0, 10.0, 15.0),)
+_DONGA_BASAL_SEM_MGDL = 0.18 * 18.0 * float(np.sqrt(2.0))
+_normal_night = _allowed_sleep(_DONGA_DURATION_MIN, _DONGA_START_HOUR, 23.0, 31.5)
+_restricted_night = _allowed_sleep(_DONGA_DURATION_MIN, _DONGA_START_HOUR, 25.0, 29.0)
+
+DONGA_2010_BASAL_GLUCOSE = CohortStatisticSpec(
+    name="donga_2010_basal_glucose",
+    source="Donga et al. (2010) J Clin Endocrinol Metab 95:2963, Table 1",
+    description=(
+        "One night of 4 h versus 8.5 h sleep, same midpoint: basal glucose "
+        "the next morning is unchanged"
+    ),
     arms=(
         CohortArmSpec(
-            label="adequate_sleep",
-            duration_min=2880, start_hour=_SLEEP_START_HOUR,
-            meals=_MEALS_48H, sleep_wake=_adequate_sleep_48,
+            label="normal_sleep",
+            duration_min=_DONGA_DURATION_MIN, start_hour=_DONGA_START_HOUR,
+            meals=_DONGA_DINNER, sleep_wake=_normal_night,
         ),
         CohortArmSpec(
-            label="short_first_night",
-            duration_min=2880, start_hour=_SLEEP_START_HOUR,
-            meals=_MEALS_48H, sleep_wake=_short_sleep_48,
+            label="restricted_sleep",
+            duration_min=_DONGA_DURATION_MIN, start_hour=_DONGA_START_HOUR,
+            meals=_DONGA_DINNER, sleep_wake=_restricted_night,
         ),
     ),
     marker_id="glucose",
     kind=StatisticKind.DELTA_MEANS,
-    window=StatisticWindow(start_min=1500, end_min=1740),
-    target=6.0,
-    sigma=4.0,
-    # Spiegel 1999 / Donga 2010 report the group effect +/- SEM (n = 9-11); the
-    # individual sd of a next-day glucose mean is ~10 -- pin n_arm = 1.
+    window=StatisticWindow(start_min=1680, end_min=1740),
+    target=0.0,
+    sigma=_DONGA_BASAL_SEM_MGDL,
     n_arm=1,
 )
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
-    SLEEP_RESTRICTION_NEXT_DAY_GLUCOSE,
+    DONGA_2010_BASAL_GLUCOSE,
 ]
 
 # Benchmark / reproducibility: same protocol as the adequate-sleep arm.

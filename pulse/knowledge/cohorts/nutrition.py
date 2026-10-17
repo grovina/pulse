@@ -450,6 +450,29 @@ MEAL_GHRELIN_SUPPRESSION = CohortStatisticSpec(
     sigma=15.0,
 )
 
+# Westphal, Gannon and Nuttall, Am J Clin Nutr 1990;52:267. Seven subjects.
+# 50 g protein alone did not change serum glucose. Fasting glucose was
+# 4.8 ± 0.1 mmol/L; the paper does not publish the difference's SE, so
+# sigma is the unpaired SE of two arms that each carry that SEM.
+_WESTPHAL_PROTEIN = ((60.0, 0.0, 0.0, 50.0),)
+_WESTPHAL_WATER: tuple[tuple[float, float, float, float], ...] = ()
+_WESTPHAL_SIGMA = 0.1 * 18.0 * (2.0 ** 0.5)
+WESTPHAL_1990_PROTEIN_GLUCOSE = CohortStatisticSpec(
+    name="westphal_1990_protein_glucose",
+    source="Westphal, Gannon and Nuttall (1990) Am J Clin Nutr 52:267",
+    description="50 g protein alone does not change serum glucose over the next 4 h",
+    arms=(
+        CohortArmSpec(label="water", duration_min=300, start_hour=8.0, meals=_WESTPHAL_WATER),
+        CohortArmSpec(label="protein_50g", duration_min=300, start_hour=8.0, meals=_WESTPHAL_PROTEIN),
+    ),
+    marker_id="glucose",
+    kind=StatisticKind.DELTA_MEANS,
+    window=StatisticWindow(start_min=60, end_min=300),
+    target=0.0,
+    sigma=_WESTPHAL_SIGMA,
+    n_arm=1,
+)
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     FASTING_BREAKFAST_GLUCOSE,
     EXTENDED_FAST_BHB,
@@ -463,5 +486,6 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     MEAL_GHRELIN_SUPPRESSION,
     OGTT_GLUCAGON_SUPPRESSION,
     MIXED_MEAL_GLUCAGON_SUPPRESSION,
+    WESTPHAL_1990_PROTEIN_GLUCOSE,
     MEAL_FFA_SUPPRESSION,
 ]

@@ -12,6 +12,7 @@ import unittest
 
 import torch
 
+from pulse.expenditure import frequency_offset, gas_exchange
 from pulse.model import (
     ModularPhysiologyNetwork, euler_step, integrate, precompute_duodenal_outputs, precompute_gut_outputs,
 )
@@ -299,7 +300,14 @@ class TestConstruction(unittest.TestCase):
             -R._SPO2_EXERCISE_DIP * (1.0 - R._SPO2_ACT_THRESH),
             places=5,
         )
-        torch.testing.assert_close(r_hard[0, 0], r_rest[0, 0], atol=1e-6, rtol=0)
+        # Frequency is the CO₂ Hill, inside the relaxation. At rest the
+        # offset is 0, so a state sitting on RR₀ does not move. At activity
+        # 1 the rate is k times the offset.
+        self.assertAlmostEqual(float(r_rest[0, 0]), 0.0, places=5)
+        gas = gas_exchange(70.0, 1.0, 0.0, 0.0, 0.0)
+        rise = frequency_offset(gas.vco2_ml_per_min, 70.0)
+        k = float(rsp.constants(emb)["k"][0].detach())
+        self.assertAlmostEqual(float(r_hard[0, 0]), k * rise, places=4)
 
 
 if __name__ == "__main__":

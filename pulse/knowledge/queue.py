@@ -37,6 +37,7 @@ HUBS: frozenset[str] = frozenset({
     "m2.1",  # sympathoadrenal
     "m2.2",  # stomach
     "m2.3",  # clock and sleep debt
+    "m2.4",  # energy expenditure
     "m2.5",  # incretin and islet
     "m2.6",  # bile links out
     "m2.7",  # renal glucose
@@ -107,20 +108,24 @@ QUEUE: tuple[QueueItem, ...] = (
     ),
     QueueItem(
         id="donga-2010-sleep-clamp",
-        citation="Donga et al. (2010) J Clin Endocrinol Metab — one night of 4 h sleep",
-        status=Status.BLOCKED,
+        citation="Donga et al. (2010) J Clin Endocrinol Metab 95:2963, Table 1",
+        status=Status.INTEGRATED,
         surface="cohort",
         claim=(
-            "One night of 4 h versus 8 h sleep: peripheral insulin sensitivity "
-            "−19 to −25% (clamp). Hepatic sensitivity essentially unchanged."
+            "One night, sleep allowed 01:00–05:00 versus 23:00–07:30, both "
+            "centered at 03:00, n = 9. Basal glucose the next morning is "
+            "4.8 ± 0.18 mmol/L on both occasions. At the clamp, glucose "
+            "disposal is 32.5 ± 3.6 versus 40.7 ± 5.1 µmol/kg LBM/min, "
+            "endogenous production 4.4 ± 0.3 versus 3.6 ± 0.2, and NEFA "
+            "68 ± 5 versus 57 ± 4 µmol/L. Basal endogenous production is unchanged."
         ),
         marker_id="glucose",
-        blocked_on="m2.3",
+        spec_name="donga_2010_basal_glucose",
         note=(
-            "sleep_restriction_next_day_glucose already targets +6 mg/dL and "
-            "the current teacher moves glucose by <0.05%. The finding is a "
-            "peripheral-sensitivity change, which needs sleep debt and the "
-            "muscle-versus-liver split to act."
+            "The cohort is the basal glucose row, which is the comparison a "
+            "rollout can score. Disposal, clamp production and clamp NEFA are "
+            "the debt factors in circadian.py, checked against the table at "
+            "22/3.1 times basal insulin. There is no insulin clamp in a rollout."
         ),
     ),
     QueueItem(
@@ -193,32 +198,58 @@ QUEUE: tuple[QueueItem, ...] = (
     ),
     QueueItem(
         id="nuttall-protein-insulin",
-        citation="Nuttall & Gannon — protein meals and insulin",
-        status=Status.BLOCKED,
+        citation="Westphal, Gannon and Nuttall (1990) Am J Clin Nutr 52:267",
+        status=Status.INTEGRATED,
         surface="cohort",
-        claim="A protein meal raises insulin with little rise in glucose.",
-        marker_id="insulin",
-        blocked_on="m2.5",
-        note="Secretion is gated by relu(G − Gb), so amino acids have no direct path to insulin.",
+        claim=(
+            "50 g of protein alone does not change serum glucose. Insulin "
+            "and glucagon both rise."
+        ),
+        marker_id="glucose",
+        spec_name="westphal_1990_protein_glucose",
+        note=(
+            "The cohort is the glucose row. Fasting glucose was 4.8 ± 0.1 "
+            "mmol/L and the difference was not published, so sigma is that "
+            "SEM carried as an unpaired SE. The insulin rise is the amino-acid "
+            "term in incretin.py; the figure's µU/mL was not a table."
+        ),
     ),
     QueueItem(
         id="gip-mixed-meal",
-        citation="Mixed-meal GIP peak",
+        citation="Vollmer et al. (2008) Diabetes 57:678",
         status=Status.BLOCKED,
         surface="cohort",
-        claim="GIP rises after a mixed meal with a published peak and timing.",
-        marker_id=None,
+        claim=(
+            "Integrated GIP after an 820 kcal breakfast is 186 ± 17% higher "
+            "than after 75 g of glucose."
+        ),
+        marker_id="gip",
         blocked_on="m2.5",
-        note="No GIP state. Pick the paper's peak when the state is added.",
+        note=(
+            "The gip state is in. The ratio is pinned in tests/test_incretin.py. "
+            "A cohort needs a pmol/L peak, and the paper's concentrations are "
+            "in the figures."
+        ),
     ),
     QueueItem(
         id="glp1-suppresses-glucagon",
-        citation="GLP-1 suppresses glucagon during a meal",
+        citation="Salehi, Vahl and D'Alessio (2008) J Clin Endocrinol Metab 93:4909",
         status=Status.BLOCKED,
         surface="cohort",
-        claim="A GLP-1 elevation lowers meal-time glucagon beyond what glucose and insulin do.",
+        claim=(
+            "With glucose clamped, exendin-(9-39) raises the incremental "
+            "glucagon area after 75 g of oral glucose from 221 ± 353 to "
+            "1657 ± 699 pg/mL·min."
+        ),
         marker_id="glucagon",
         blocked_on="m2.5",
+        note=(
+            "The hold is in incretin.py: at the GLP-1 excess of a 75 g load "
+            "while it is emptying, equilibrium glucagon is 8.2 pg/mL lower "
+            "than with GLP-1 at basal, and the term is zero at basal. The "
+            "protocol is a glucose clamp, which a rollout cannot run. "
+            "ogtt_glucagon_suppression still scores the free load."
+        ),
     ),
     QueueItem(
         id="bile-modulates-fat-absorption",
@@ -228,7 +259,13 @@ QUEUE: tuple[QueueItem, ...] = (
         claim="Intestinal bile changes how fast meal fat is absorbed.",
         marker_id="intestinal_bile",
         blocked_on="m2.6",
-        note="Four hepatobiliary states are supervised and nothing reads them.",
+        note=(
+            "The floor is in bile.py: an empty intestine absorbs 65% of the "
+            "fat that leaves the stomach, and the resting content absorbs "
+            "all of it. A fistula arm is not a rollout. Wu 2013 shows "
+            "jejunal taurocholate raises GLP-1 only while glucose is "
+            "absorbed, and the abstract gives no concentration."
+        ),
     ),
     QueueItem(
         id="glycosuria-threshold",
@@ -238,6 +275,29 @@ QUEUE: tuple[QueueItem, ...] = (
         claim="Urinary glucose appears above the renal threshold and is absent below it.",
         marker_id="glucose",
         blocked_on="m2.7",
+        note=(
+            "The threshold and the clearance are in renal.py: nothing "
+            "leaves at or below 190 mg/dL, and ten above it leaves at "
+            "13.9 mg/min. A rollout does not cross the threshold, and "
+            "there is no clamp arm. Lactate returning as glucose is still "
+            "unspecified: the share has no number yet."
+        ),
+    ),
+    QueueItem(
+        id="empagliflozin-24h-uge",
+        citation="Diabetes 2017;66:1999–2006, day-13 urine, people without diabetes",
+        status=Status.BLOCKED,
+        surface="cohort",
+        claim="Empagliflozin 25 mg/day raises a day's urinary glucose to 42 ± 5 g.",
+        marker_id="glucose",
+        blocked_on="m2.8",
+        note=(
+            "The day-14 regression intercept (34 mg/dL) and the day-13 "
+            "clearance (126 mL/min) are the input in renal.py. A fed day "
+            "of this model loses about 104 g, and the line is not retuned "
+            "to the free-living collection. Urine is not a marker, so the "
+            "collection has no cohort row."
+        ),
     ),
     QueueItem(
         id="training-block-sensitivity",

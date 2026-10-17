@@ -22,11 +22,13 @@ already exists.
 WHICH STATES GET WHICH SHAPE. The iter-95 lesson (see `modules/base.py`) is that the
 shape must match what the state physically IS:
 
-  cck               a secreted, fast-cleared hormone — TRUE mass action (learned basal
-                    production, learned clearance × concentration) plus a STRUCTURAL
-                    meal-driven secretion term.
+  cck               a secreted, fast-cleared hormone — mass action at the population
+                    rate (basal production and clearance are the same constant, so
+                    the resting level is the typical for every person) plus a
+                    structural meal-driven secretion term.
   gallbladder_bile  a POOL. Explicit flux balance with a headroom bracket, filled by
-                    HEPATIC EXPORT (portal return + synthesis), emptied by a CCK gate.
+                    HEPATIC EXPORT (portal return + synthesis), emptied by a CCK gate
+                    at the structural ejection rate.
   intestinal_bile   a transit compartment. Receives what the gallbladder ejects plus
                     the export that bypasses a full/contracting gallbladder; drains at
                     the ileal-uptake rate. ConstantFluxHead — pure transport.
@@ -78,7 +80,7 @@ import math
 import torch
 import torch.nn as nn
 
-from .base import ConstantFluxHead, MassActionModule, SpeciesHead
+from .base import ConstantFluxHead, MassActionModule
 from ..gastric import EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals
 from ..types import DUODENAL_DIM, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE
 
@@ -179,14 +181,11 @@ class DuodenalDeliveryKernel(nn.Module):
 
 
 class HepatobiliaryModule(MassActionModule):
-    """The enterohepatic loop. Rates are structural; heads supply learned gains.
+    """The enterohepatic loop. Every rate is structural.
 
-    Head roles (the ``(prod, cons)`` protocol of ``MassActionModule``):
-
-      cck               prod = basal secretion, cons = clearance         (mass action)
-      gallbladder_bile  prod = ejection gain,   cons = hepatic synthesis gain
-      intestinal_bile   no head (ConstantFluxHead) — pure transport
-      bile_acids        no head (ConstantFluxHead) — spillover minus clearance
+    The four heads carry no parameters. Resting CCK is the typical, gallbladder
+    ejection is ``k_eject``, and synthesis is the population constant. The
+    embedding does not move them: nothing drawn identifies a person's bile.
     """
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
@@ -199,8 +198,8 @@ class HepatobiliaryModule(MassActionModule):
             typicals=_TYPICALS,
             norm_scales=_NORM_SCALES,
             head_factories={
-                _CCK_IDX: SpeciesHead,
-                _GB_IDX: SpeciesHead,
+                _CCK_IDX: lambda inp, hd: ConstantFluxHead(),
+                _GB_IDX: lambda inp, hd: ConstantFluxHead(),
                 _INT_IDX: lambda inp, hd: ConstantFluxHead(),
                 _BA_IDX: lambda inp, hd: ConstantFluxHead(),
             },
@@ -277,21 +276,19 @@ class HepatobiliaryModule(MassActionModule):
     ) -> dict[str, torch.Tensor]:
         """Every state-dependent flux of the loop (mmol/min unless noted)."""
         relu = nn.functional.relu
-        cck_prod, cck_cons = self.heads[_CCK_IDX].post(raw_heads[_CCK_IDX])
-        gb_eject_gain, gb_synth_gain = self.heads[_GB_IDX].post(raw_heads[_GB_IDX])
         raw = self.raw_state(state)
         cck_raw = raw[..., _CCK_IDX]
         gb_raw = raw[..., _GB_IDX]
         int_raw = raw[..., _INT_IDX]
         ba_raw = raw[..., _BA_IDX]
 
-        cck_basal = cck_prod * c["cck_prod_scale"]
-        cck_clearance = cck_cons * c["cck_cons_scale"] * cck_raw
+        cck_basal = c["cck_prod_scale"]
+        cck_clearance = c["cck_cons_scale"] * cck_raw
 
         cck_excess = relu(cck_raw - c["cck_b"])
         contraction = cck_excess / (cck_excess + _K_CCK_GB)
         gb_empty = (
-            c["k_eject"] * contraction * gb_raw * gb_eject_gain
+            c["k_eject"] * contraction * gb_raw
             + d["gb_basal_empty"] * gb_raw
         )
 
@@ -307,7 +304,7 @@ class HepatobiliaryModule(MassActionModule):
         ba_clearance = c["k_ba"] * ba_raw
         serum_return = ba_clearance / spill_gain
         ba_spill = spill_gain * spillover
-        synthesis = _SYNTH_SCALE * gb_synth_gain
+        synthesis = _SYNTH_SCALE
         export = extracted + serum_return + synthesis
         capacity = _GB_CAPACITY_FRAC * _TYPICALS[_GB_IDX]
         headroom = relu(1.0 - gb_raw / capacity)

@@ -82,6 +82,9 @@ _CRH_B = float(_TYPICALS[_CRH_IDX])
 
 _GLUCOSE_CENTER = NORM_CENTER[MARKER_INDEX["glucose"]]
 _GLUCOSE_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
+_PHASE_COUPLING = 2
+_PHASE_CENTER = NORM_CENTER[MARKER_INDEX["circ_phase_offset"]]
+_PHASE_SCALE = NORM_SCALE[MARKER_INDEX["circ_phase_offset"]]
 
 _K_CORT = 0.02
 _K_ACTH = 0.04
@@ -97,6 +100,14 @@ _FB_AMP = 0.35
 _CORT_LOG_MAX = 0.5
 _HYPO_GAIN = 0.025 * _K_CRH / (_K_ACTH * _ACTH_PER_CRH)
 _ACT_GAIN = 0.35 * _K_CRH / (_K_ACTH * _ACTH_PER_CRH)
+
+
+def _open_loop(hour: torch.Tensor, sleep_depth: torch.Tensor) -> torch.Tensor:
+    """Circadian CRH target under sleep suppression, before cortisol feedback."""
+    drive = _hpa_drive(hour)
+    sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
+    crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
+    return crh_target * sleep_suppression
 
 
 def _hpa_drive(hour: torch.Tensor) -> torch.Tensor:
@@ -195,11 +206,11 @@ class StressModule(MassActionModule):
         act = external[..., 1]
         sleep_depth = 1.0 - sw
         hour = _hour_from_time_features(time_features)
-        drive = _hpa_drive(hour)
-        sleep_suppression = 1.0 - _HPA_SLEEP_SUPP * sleep_depth
-        crh_target = (_CRH_B + _CRH_CIRC_AMP * (2.0 * drive - 1.0)).clamp(min=20.0)
         return {
-            "crh_target_open_loop": crh_target * sleep_suppression,
+            # Wall-clock drive. The step reads the phase state and recomputes
+            # this on hour − offset; at offset 0 the two are the same function.
+            "crh_target_open_loop": _open_loop(hour, sleep_depth),
+            "hour": hour,
             "act_drive": const["act_gain"] * act,
             "activity": act,
             "sleep_depth": sleep_depth,
@@ -220,10 +231,12 @@ class StressModule(MassActionModule):
         sns = raw_s[..., _SNS_IDX]
         epi = raw_s[..., _EPI_IDX]
         g = (_GLUCOSE_CENTER + _GLUCOSE_SCALE * coupling[..., 0]).clamp(min=1.0)
+        offset = _PHASE_CENTER + _PHASE_SCALE * coupling[..., _PHASE_COUPLING]
+        hour = torch.remainder(drv["hour"] - offset, 24.0)
 
         fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / const["cort_b"]))
         fb = torch.relu(fb)
-        crh_target = drv["crh_target_open_loop"] * (1.0 - const["fb_amp"] * fb)
+        crh_target = _open_loop(hour, drv["sleep_depth"]) * (1.0 - const["fb_amp"] * fb)
         hypo = const["hypo_gain"] * torch.relu(HYPO_CORT_MGDL - g)
 
         d_crh = -const["k_crh"] * (crh - crh_target) + hypo + drv["act_drive"]

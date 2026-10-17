@@ -259,7 +259,7 @@ def _fasted_reference(m: ModularPhysiologyNetwork, gb: float):
     state[0, M._FFA_IDX] = (ffa_b - 0.5) / 0.2
     state[0, M._GLUCAGON_IDX] = (gn_b - 70.0) / 20.0
     coupling = torch.zeros(1, M._N_COUPLING)
-    external = torch.tensor([[0.0, 1.0]])
+    external = torch.tensor([[0.0, 1.0, 0.0]])
     tf = compute_time_features(torch.tensor([600.0]))
     return state, coupling, external, emb, tf
 

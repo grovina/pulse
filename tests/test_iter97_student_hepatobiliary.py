@@ -33,7 +33,7 @@ def _inputs(m, batch=32, seed=0):
     state = 0.7 * torch.randn(batch, 4, generator=g)
     coupling = torch.rand(batch, 2, generator=g) * 0.3
     external = torch.stack([torch.rand(batch, generator=g), torch.ones(batch)], -1)
-    emb = m.embedding_projections["hepatobiliary"](torch.randn(batch, EMBEDDING_DIM, generator=g))
+    emb = torch.zeros(batch, m.hepatobiliary.embedding_dim)
     tf = compute_time_features(torch.rand(batch, generator=g) * 1440.0)
     return state, coupling, external, emb, tf
 
@@ -62,8 +62,9 @@ class TestLoopConservation(unittest.TestCase):
 
     def test_intestinal_bile_owns_no_parameters(self) -> None:
         m = _model(2)
-        self.assertEqual(sum(p.numel() for p in m.hepatobiliary.heads[H._INT_IDX].parameters()), 0)
-        self.assertEqual(sum(p.numel() for p in m.hepatobiliary.heads[H._BA_IDX].parameters()), 0)
+        for idx in (H._CCK_IDX, H._GB_IDX, H._INT_IDX, H._BA_IDX):
+            self.assertEqual(sum(p.numel() for p in m.hepatobiliary.heads[idx].parameters()), 0)
+        self.assertEqual(m.hepatobiliary.embedding_dim, 0)
 
     def test_lowering_canalicular_export_raises_serum_spillover(self) -> None:
         m = _model(0, perturb=0.0)
@@ -94,29 +95,28 @@ class TestBelowTypicalIsRepresentable(unittest.TestCase):
             return integrate(m, torch.tensor(NORM_CENTER), torch.zeros(EMBEDDING_DIM), n,
                              start_time_minutes=360, meals=[], sleep_wake=torch.ones(n), activity=torch.zeros(n))
 
-    def test_cck_and_bile_acids_can_rest_below_typical(self) -> None:
-        """Through iter 96 both had `min == typical` exactly in every run."""
+    def test_cck_rests_at_the_typical_while_bile_acids_can_sit_below(self) -> None:
+        """CCK's resting level is the population typical. Serum bile acids still
+        move with their clearance."""
         m = _model(3, perturb=0.0)
-        hb = m.hepatobiliary
         with torch.no_grad():
-            hb.heads[H._CCK_IDX].network[-1].bias[0] = -3.0   # low basal production
-            hb.log_k_ba.fill_(math.log(0.12))               # faster serum clearance
+            m.hepatobiliary.log_k_ba.fill_(math.log(0.12))
         tr = self._rollout(m)
-        self.assertLess(float(tr[-1, MI["cck"]]), 0.9 * NORM_CENTER[MI["cck"]])
+        self.assertAlmostEqual(float(tr[-1, MI["cck"]]), NORM_CENTER[MI["cck"]], places=2)
         self.assertLess(float(tr[-1, MI["bile_acids"]]), 0.9 * NORM_CENTER[MI["bile_acids"]])
 
-    def test_cck_and_bile_acids_can_rest_above_typical(self) -> None:
+    def test_cck_rests_at_the_typical_while_bile_acids_can_sit_above(self) -> None:
         m = _model(4, perturb=0.0)
-        hb = m.hepatobiliary
         with torch.no_grad():
-            hb.heads[H._CCK_IDX].network[-1].bias[0] = 2.0
-            hb.log_k_ba.fill_(math.log(0.008))
+            m.hepatobiliary.log_k_ba.fill_(math.log(0.008))
         tr = self._rollout(m)
-        self.assertGreater(float(tr[-1, MI["cck"]]), 1.1 * NORM_CENTER[MI["cck"]])
+        self.assertAlmostEqual(float(tr[-1, MI["cck"]]), NORM_CENTER[MI["cck"]], places=2)
         self.assertGreater(float(tr[-1, MI["bile_acids"]]), 1.1 * NORM_CENTER[MI["bile_acids"]])
 
     def test_every_hepatobiliary_parameter_receives_gradient(self) -> None:
-        m = _model(5)
+        # At the population rates, not a draw. A large canalicular rate sits on
+        # the extraction ceiling, and the clamp there has no gradient.
+        m = _model(5, perturb=0.0)
         m.train()
         hb = m.hepatobiliary
         state, coupling, external, emb, tf = _inputs(m)

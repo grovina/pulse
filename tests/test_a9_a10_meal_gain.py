@@ -90,7 +90,7 @@ class TestTheRaGainIsGone(unittest.TestCase):
         emb = m.embedding_projections["metabolic"](0.5 * torch.randn(8, EMBEDDING_DIM))
         coupling = torch.zeros(8, M._N_COUPLING)
         coupling[:, 0] = torch.linspace(0.0, 3.0, 8)
-        external = torch.zeros(8, 2)
+        external = torch.zeros(8, len(M._PROTOCOL_INPUTS))
         external[:, 1] = 1.0
         tf = compute_time_features(torch.full((8,), 600.0))
         with torch.no_grad():
@@ -109,7 +109,7 @@ class TestTheRaGainIsGone(unittest.TestCase):
         emb = m.embedding_projections["metabolic"](torch.zeros(1, EMBEDDING_DIM))
         coupling = torch.zeros(1, M._N_COUPLING)
         coupling[:, 0] = 2.0
-        external = torch.tensor([[0.0, 1.0]])
+        external = torch.tensor([[0.0, 1.0, 0.0]])
         tf = compute_time_features(torch.tensor([600.0]))
         with torch.no_grad():
             c0 = met.constants(emb)

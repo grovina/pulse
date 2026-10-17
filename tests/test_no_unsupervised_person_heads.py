@@ -192,7 +192,7 @@ class TestHepatobiliaryCckBasalIsTheTypical(unittest.TestCase):
         m = _model()
         hb = m.hepatobiliary
         typical = NORM_CENTER[MI["cck"]]
-        emb = m.embedding_projections["hepatobiliary"](_embeddings())
+        emb = torch.zeros(8, hb.embedding_dim)
         with torch.no_grad():
             direct = hb.cck_setpoint_raw(emb)
             const = hb.constants(emb)["cck_b"]
@@ -205,7 +205,7 @@ class TestHepatobiliaryCckBasalIsTheTypical(unittest.TestCase):
         calls it with [B, E] and with [B*T, E]."""
         m = _model()
         hb = m.hepatobiliary
-        width = m.embedding_projections["hepatobiliary"].out_features
+        width = hb.embedding_dim
         for lead in ((), (5,), (3, 4)):
             got = hb.cck_setpoint_raw(torch.zeros(*lead, width))
             self.assertEqual(got.shape, torch.Size(lead))
