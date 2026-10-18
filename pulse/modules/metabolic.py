@@ -260,7 +260,8 @@ from .base import (
 )
 from ..bile import fat_bile_factor_t
 from ..circadian import (
-    HEPATIC_K, lipolysis_scale_t, peripheral_factor_t, retain_basal_t,
+    HEPATIC_K, LIPOLYSIS_K, PERIPHERAL_K,
+    lipolysis_scale_t, peripheral_factor_t, retain_basal_t,
 )
 from ..incretin import (
     amino_insulin_rate_t, glp1_glucagon_rate_t, glucagon_from_protein_t,
@@ -273,7 +274,7 @@ from ..sympathoadrenal import (
 from ..renal import urinary_rate_t
 from ..expenditure import (
     KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT,
-    gas_exchange_t,
+    frequency_offset_t, gas_exchange_t,
 )
 from ..types import (
     BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
@@ -300,7 +301,20 @@ _N_COUPLING = len(MODULE_COUPLING_CHANNELS["metabolic"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
-_PROTOCOL_INPUTS = ("activity", "sleep_wake", "sglt2")
+_PROTOCOL_INPUTS = ("activity", "sleep_wake", "sglt2", "glucose_infusion", "glucose_clamp")
+# Inputs that reach the rate through ``drives`` only; the learned heads never see them.
+_DRIVE_ONLY_INPUTS = ("sglt2", "glucose_infusion", "glucose_clamp")
+
+# Closed-loop glucose clamp: infusion = relu(Kp · (target − G)), in mg/dL/min of this
+# patient's glucose space. Kp is 1/min, so one Euler minute closes the whole gap
+# the other fluxes leave and the held glucose sits at the target to within the net
+# uptake it must offset divided by Kp. Euler-stable for dt·Kp < 2.
+GLUCOSE_CLAMP_KP: float = 1.0
+
+
+def clamp_infusion_t(glucose: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Proportional clamp infusion (mg/dL/min). A target of 0 or below is no clamp."""
+    return torch.relu(GLUCOSE_CLAMP_KP * (target - glucose)) * (target > 0.0).to(glucose.dtype)
 
 # Species order matches MODULE_MARKER_INDICES["metabolic"]:
 # 0: glucose, 1: insulin, 2: glucagon, 3: ffa, 4: bhb, 5: lactate,
@@ -355,6 +369,8 @@ _AMINO_COUPLING_IDX = 2
 _ACTIVITY_EXTERNAL_IDX = 0
 _SLEEP_EXTERNAL_IDX = 1
 _SGLT2_EXTERNAL_IDX = 2
+_GLU_INF_EXTERNAL_IDX = 3
+_GLU_CLAMP_EXTERNAL_IDX = 4
 
 # Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 = 0.02,
 # τ = 50 min). Floored so the state can't freeze; capped so it can't collapse to the
@@ -790,6 +806,13 @@ class MetabolicModule(MassActionModule):
         # Gnb is already the fed fixed point of the restoring term.
         self.log_k_gn = nn.Parameter(torch.tensor(_inverse_softplus(_K_GN_INIT)))
         self.log_gn_ins = nn.Parameter(torch.tensor(_inverse_softplus(_GN_INS_INIT)))
+        # Sleep-debt sensitivities (Donga 2010): how hepatic retention, lipolysis and
+        # insulin-dependent disposal respond per hour of debt. The debt STATE arrives by
+        # coupling from the circadian module; how strongly metabolism answers it is this
+        # module's own rate, learned in log space from the constant, with no prior.
+        self.log_hepatic_k = nn.Parameter(torch.tensor(math.log(HEPATIC_K)))
+        self.log_lipolysis_k = nn.Parameter(torch.tensor(math.log(LIPOLYSIS_K)))
+        self.log_peripheral_k = nn.Parameter(torch.tensor(math.log(PERIPHERAL_K)))
 
         # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95 and Ib = 10 for
         # every embedding at cold start; authority grows in training. A10 deleted the
@@ -971,14 +994,18 @@ class MetabolicModule(MassActionModule):
     def head_input(
         self, state, coupling, external, embedding, time_features,
     ):
-        cols = [i for i, name in enumerate(self.external_inputs) if name != "sglt2"]
+        cols = [i for i, name in enumerate(self.external_inputs) if name not in _DRIVE_ONLY_INPUTS]
         return super().head_input(
             state, coupling, external[..., cols], embedding, time_features)
 
     def head_input_sources(self):
         return [
             source for source in super().head_input_sources()
-            if source != ("external", _SGLT2_EXTERNAL_IDX)
+            if source not in (
+                ("external", _SGLT2_EXTERNAL_IDX),
+                ("external", _GLU_INF_EXTERNAL_IDX),
+                ("external", _GLU_CLAMP_EXTERNAL_IDX),
+            )
         ]
 
     def drives(
@@ -1018,6 +1045,8 @@ class MetabolicModule(MassActionModule):
             "ins_sens_act_gain": 1.0 + const["act_ins_sens"] * relu(act),
             "act": act,
             "sglt2": external[..., _SGLT2_EXTERNAL_IDX],
+            "glucose_infusion": external[..., _GLU_INF_EXTERNAL_IDX],
+            "glucose_clamp": external[..., _GLU_CLAMP_EXTERNAL_IDX],
             "kcal_in": kcal_in,
             "kcal_out": kcal_out,
             "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
@@ -1072,11 +1101,12 @@ class MetabolicModule(MassActionModule):
         appearance_plasma = d["app_eff"] * f_plasma
 
         debt = _DEBT_CENTER + _DEBT_SCALE * coupling[..., _DEBT_COUPLING_IDX]
-        periph = peripheral_factor_t(debt)
+        hepatic_k = self.log_hepatic_k.exp()
+        periph = peripheral_factor_t(debt, self.log_peripheral_k.exp())
         g_ins_glyco = retain_basal_t(
-            _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N), debt, HEPATIC_K)
+            _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N), debt, hepatic_k)
         g_ins_gng = retain_basal_t(
-            _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N), debt, HEPATIC_K)
+            _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N), debt, hepatic_k)
         g_gn = _hill_centred(gn, c["gn_b"], _HGO_GN_N)
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
         g_ffa = (ffa.clamp(min=1e-3) / c["ffa_b"]) ** _GNG_FFA_EXP
@@ -1152,7 +1182,7 @@ class MetabolicModule(MassActionModule):
                    + d["glucagon_from_protein"]
                    - glp1_glucagon_rate_t(glp1_excess, c["k_gn"]))
         lipolysis = (c["lip_max"] / (1.0 + ins / c["ic50_lip"])
-                     * lipolysis_scale_t(ins, ib, c["ic50_lip"], debt)
+                     * lipolysis_scale_t(ins, ib, c["ic50_lip"], debt, self.log_lipolysis_k.exp())
                      * (1.0 + c["lip_epi"] * epi_drive))
         # Intestinal bile is an ODE marker, so the fraction is applied here and
         # not in drives. At the resting content and above it is 1, and the
@@ -1166,8 +1196,11 @@ class MetabolicModule(MassActionModule):
         absorbed_g = lipid_g * bile
         ffa_from_lipid = _FFA_FROM_LIPID * absorbed_g * _LIPID_UNITS_PER_G
         kcal_in = KCAL_CARB * d["app_g"] + KCAL_FAT * absorbed_g + KCAL_PROT * amino_g
-        kcal_out, _vo2, _vco2, _rq = gas_exchange_t(
+        kcal_out, _vo2, vco2, _rq = gas_exchange_t(
             c["body_mass_kg"], d["act"], d["app_g"], absorbed_g, amino_g)
+        # Breaths/min above RR₀ from this same CO₂. Mass stays in this
+        # compartment: the lung adds the rise and does not see the kilograms.
+        rr_rise = frequency_offset_t(vco2, c["body_mass_kg"])
         ffa_rate = lipolysis - c["k_ffa"] * ffa + ffa_from_lipid
 
         mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]
@@ -1176,8 +1209,11 @@ class MetabolicModule(MassActionModule):
                     - lac_cons * c["lac_cons_scale"] * mito * lac
                     + lactate_from_glyco)
         urinary = urinary_rate_t(g, c["mg_dl_per_g"], d["sglt2"])
+        # Exogenous IV glucose: the open-loop rate plus the clamp's proportional
+        # infusion, both straight into plasma in mg/dL/min of this patient's space.
+        infusion = d["glucose_infusion"] + clamp_infusion_t(g, d["glucose_clamp"])
         glucose_rate = (appearance_plasma + glycogenolysis_plasma + gng_released
-                        - uptake_ii - uptake_id - exercise_uptake - urinary)
+                        - uptake_ii - uptake_id - exercise_uptake - urinary + infusion)
         liver_rate = syn_liver + gng_divert / mg - brk_liver
         muscle_rate = syn_muscle - brk_muscle
 
@@ -1206,7 +1242,7 @@ class MetabolicModule(MassActionModule):
             "glucagon_stim": glucagon_stim, "glucagon_supp": glucagon_supp,
             "glucagon_restoring": glucagon_restoring, "gn_rate": gn_rate,
             "lipolysis": lipolysis, "ffa_from_lipid": ffa_from_lipid, "ffa_rate": ffa_rate,
-            "kcal_in": kcal_in, "kcal_out": kcal_out,
+            "kcal_in": kcal_in, "kcal_out": kcal_out, "rr_rise": rr_rise,
             "urinary": urinary,
             "glucose_rate": glucose_rate, "liver_glycogen_rate": liver_rate,
             "muscle_glycogen_rate": muscle_rate,
@@ -1216,6 +1252,23 @@ class MetabolicModule(MassActionModule):
                          - KCAL_PER_G_GLYCOGEN * (liver_rate + muscle_rate)) / KCAL_PER_KG_FAT,
         }
 
+    def step_published(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        f = self.state_fluxes(state, coupling, const, drv, raw)
+        rate = torch.stack([
+            f["glucose_rate"], f["ins_rate"], f["gn_rate"], f["ffa_rate"], f["bhb_rate"],
+            f["lactate_rate"], f["hep_rate"], f["liver_glycogen_rate"],
+            f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], f["fat_rate"],
+            f["pot_rate"],
+        ], dim=-1)
+        return rate, {"rr_rise": f["rr_rise"]}
+
     def step(
         self,
         state: torch.Tensor,
@@ -1224,13 +1277,8 @@ class MetabolicModule(MassActionModule):
         drv: dict[str, torch.Tensor],
         raw: dict[object, torch.Tensor],
     ) -> torch.Tensor:
-        f = self.state_fluxes(state, coupling, const, drv, raw)
-        return torch.stack([
-            f["glucose_rate"], f["ins_rate"], f["gn_rate"], f["ffa_rate"], f["bhb_rate"],
-            f["lactate_rate"], f["hep_rate"], f["liver_glycogen_rate"],
-            f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], f["fat_rate"],
-            f["pot_rate"],
-        ], dim=-1)
+        rate, _published = self.step_published(state, coupling, const, drv, raw)
+        return rate
 
     def fluxes(
         self,

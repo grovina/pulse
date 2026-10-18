@@ -51,7 +51,6 @@ from ..model import ModularPhysiologyNetwork
 from ..modules.base import compute_time_features
 from ..types import (
     DUODENAL_DIM,
-    EXTERNAL_INPUT_DIM,
     GUT_OUTPUT_DIM,
     MARKER_INDEX,
     MODULE_MARKER_INDICES,
@@ -428,10 +427,11 @@ class InsulinSweepSignal(TrainingSignal):
         # No-meal gut output and no-activity / awake external inputs are
         # constant across the sweep; build them once.
         zero_gut = torch.zeros(B, GUT_OUTPUT_DIM, dtype=torch.float32, device=device)
-        zero_external = torch.zeros(B, EXTERNAL_INPUT_DIM, dtype=torch.float32, device=device)
-        # Resting / awake: external = [activity=0, sleep_wake=1] in the
-        # order ``ModularPhysiologyNetwork.forward`` uses for metabolic.
-        zero_external[:, 1] = 1.0
+        # Resting and awake, with no drug and no IV glucose: every protocol input
+        # is zero except sleep_wake = 1, in the module's own input order.
+        ext_names = net.metabolic.external_inputs
+        zero_external = torch.zeros(B, len(ext_names), dtype=torch.float32, device=device)
+        zero_external[:, ext_names.index("sleep_wake")] = 1.0
 
         # Time features at the sweep-fixed time of day.
         t_minutes = torch.tensor(

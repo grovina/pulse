@@ -128,7 +128,11 @@ def _span_ml(mass_kg: float) -> tuple[float, float]:
 
 
 def frequency_offset(vco2_ml: float, mass_kg: float) -> float:
-    """Breaths/min above RR₀. Zero when CO₂ is the resting output."""
+    """Breaths/min above RR₀. Zero when CO₂ is the resting output.
+
+    The span scales with mass, so the call sits with the gas exchange.
+    The lung receives this number and does not see the kilograms.
+    """
     rest, span = _span_ml(mass_kg)
     act = ACTIVITY_800 * max(vco2_ml - rest, 0.0) / span
     return ACT_RR_GAIN * act * act / (act * act + RR_ACT_K * RR_ACT_K)

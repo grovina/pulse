@@ -165,7 +165,9 @@ class TestWindowStateIsNotThePerson(unittest.TestCase):
     def test_shifted_initial_glucose_stays_on_the_window(self) -> None:
         shifted = self.nominal.clone()
         shifted[self.gi] = self.nominal[self.gi] + 40.0
-        times = [0, 15, 30, 45, 60]
+        # The shift relaxes within ~45 min, so the hold-out (the last time) must
+        # still see it or no calibration can be confirmed.
+        times = [0, 5, 10, 15, 20]
         obs = _glucose_obs(self.model, shifted, self.person, [], times, self.t0)
         res = self._fit(obs, [], 90)
         window_g = float(res.window_initial_state[self.gi])

@@ -198,12 +198,21 @@ class TestHarnessIsNotBroken(unittest.TestCase):
     """Calibrate on a marker, score that same marker: it must beat the prior mean on a
     patient the model itself generated. Real ``calibrate_embedding``, no stubs."""
 
+    # A fasting window: the person-difference the embedding carries (Gb and the
+    # insulin-sensitivity family) is a PERSISTENT level, so the embedding is the
+    # only lever that can fit it. A meal window is transient-dominated — the
+    # window disturbance absorbs the excursion and leaves the embedding nothing
+    # to prove, which is the right behaviour (test_unlogged_meal_stays_on_the_
+    # disturbance) but makes it useless as an embedding control.
+    CONTROL_PROTO = amp.Protocol(
+        duration_min=180, cal_end_min=120, obs_every_min=15, score_every_min=15, meal_at_min=-1,
+    )
+
     @classmethod
     def setUpClass(cls) -> None:
-        # Seed 0's draw regressed the fitted points past the acceptance cap once the
-        # metabolic heads widened. The control is that a live model is recoverable.
-        cls.model = _model(seed=3)
-        cls.patient = _patient(cls.model, scale=0.5, seed=3)
+        cls.model = _model(seed=0)
+        e = amp.draw_embeddings(cls.model, 1, seed=0, emb_sd=0.5)[0]
+        cls.patient, _ = amp.make_patient(cls.model, 0, e, cls.CONTROL_PROTO, "person")
         cls.settings = CalibrationSettings(max_steps=25, lr=0.05, patience=8)
         # The probe records the plasma state as the glucose observation. A meter
         # reads the interstitial lag of that state; scoring stays on the plasma
@@ -221,7 +230,7 @@ class TestHarnessIsNotBroken(unittest.TestCase):
 
         with mock.patch.object(amp, "calibrate_embedding", _meter):
             cls.unit = _score_patient(
-                cls.model, cls.patient, PROTO, ("glucose",), ("insulin", "ghrelin"),
+                cls.model, cls.patient, cls.CONTROL_PROTO, ("glucose",), ("insulin", "ghrelin"),
                 e_prior=amp.prior_embedding(cls.model), settings=cls.settings)
 
     def test_calibration_accepts_and_moves_the_embedding(self) -> None:
@@ -632,7 +641,9 @@ class TestRealEpisodes(unittest.TestCase):
         ep = self._episode()
         u = amp.score_episode(m, ep, ("glucose",), ["hr"], e_prior=amp.prior_embedding(m),
                               settings=CalibrationSettings(max_steps=2, patience=0))
-        self.assertIn(u.reason, {"accepted", "no_improvement"})
+        # Any of calibration's terminal verdicts is sane here; the test is that the
+        # shared function runs and returns one without diverging.
+        self.assertIn(u.reason, {"accepted", "no_improvement", "train_regressed"})
         self.assertFalse(u.diverged)
 
 

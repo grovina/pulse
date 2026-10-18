@@ -66,13 +66,13 @@ def _owed(debt: float) -> float:
     return debt if debt > 0.0 else 0.0
 
 
-def peripheral_factor(debt: float) -> float:
+def peripheral_factor(debt: float, k: float = PERIPHERAL_K) -> float:
     """Insulin-dependent disposal, 1 at no debt. 32.5/40.7 at 4 h."""
-    return math.exp(-PERIPHERAL_K * _owed(debt))
+    return math.exp(-k * _owed(debt))
 
 
-def peripheral_factor_t(debt: torch.Tensor) -> torch.Tensor:
-    return torch.exp(-PERIPHERAL_K * torch.relu(debt))
+def peripheral_factor_t(debt: torch.Tensor, k: float | torch.Tensor = PERIPHERAL_K) -> torch.Tensor:
+    return torch.exp(-k * torch.relu(debt))
 
 
 def retain_basal(value: float, debt: float, k: float) -> float:
@@ -81,15 +81,19 @@ def retain_basal(value: float, debt: float, k: float) -> float:
     return f * value + (1.0 - f)
 
 
-def retain_basal_t(value: torch.Tensor, debt: torch.Tensor, k: float) -> torch.Tensor:
+def retain_basal_t(
+    value: torch.Tensor, debt: torch.Tensor, k: float | torch.Tensor,
+) -> torch.Tensor:
     f = torch.exp(-k * torch.relu(debt))
     return f * value + (1.0 - f)
 
 
-def lipolysis_scale(insulin: float, basal_insulin: float, ic50: float, debt: float) -> float:
+def lipolysis_scale(
+    insulin: float, basal_insulin: float, ic50: float, debt: float, k: float = LIPOLYSIS_K,
+) -> float:
     """Multiplier on the basal-normalised lipolysis rate. 1 at basal insulin."""
     s = (1.0 + basal_insulin / ic50) / (1.0 + insulin / ic50)
-    return retain_basal(s, debt, LIPOLYSIS_K) / s
+    return retain_basal(s, debt, k) / s
 
 
 def lipolysis_scale_t(
@@ -97,9 +101,10 @@ def lipolysis_scale_t(
     basal_insulin: torch.Tensor,
     ic50: torch.Tensor,
     debt: torch.Tensor,
+    k: float | torch.Tensor = LIPOLYSIS_K,
 ) -> torch.Tensor:
     s = (1.0 + basal_insulin / ic50) / (1.0 + insulin / ic50)
-    return retain_basal_t(s, debt, LIPOLYSIS_K) / s
+    return retain_basal_t(s, debt, k) / s
 
 
 def _wrap24(hour: float) -> float:
@@ -118,7 +123,10 @@ def _in_night(bio: float) -> bool:
     return bio >= NIGHT_OPEN_H or bio < NIGHT_COMMIT_H
 
 
-def step_clock(offset: float, debt: float, hour: float, asleep: float) -> tuple[float, float]:
+def step_clock(
+    offset: float, debt: float, hour: float, asleep: float,
+    phase_pull_per_h: float = PHASE_PULL_PER_H,
+) -> tuple[float, float]:
     """One minute. ``hour`` is the wall clock in [0, 24). ``asleep`` is in [0, 1].
 
     During the biological night the debt state counts hours slept, as a
@@ -132,7 +140,7 @@ def step_clock(offset: float, debt: float, hour: float, asleep: float) -> tuple[
     bio = _wrap24(hour - offset)
     dev = _wrap24(bio - PHASE_REF_H + 12.0) - 12.0
     pull = math.sin(2.0 * math.pi * dev / 24.0)
-    new_offset = offset + asleep * (PHASE_PULL_PER_H / 60.0) * pull
+    new_offset = offset + asleep * (phase_pull_per_h / 60.0) * pull
     new_offset = min(max(new_offset, -PHASE_BOUND_H), PHASE_BOUND_H)
 
     new_debt = debt
@@ -157,6 +165,7 @@ def step_clock_t(
     debt: torch.Tensor,
     hour: torch.Tensor,
     asleep: torch.Tensor,
+    phase_pull_per_h: float | torch.Tensor = PHASE_PULL_PER_H,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Tensor form of ``step_clock``. Same branches, same constants."""
     hour = torch.remainder(hour, 24.0)
@@ -164,7 +173,7 @@ def step_clock_t(
     bio = torch.remainder(hour - offset, 24.0)
     dev = torch.remainder(bio - PHASE_REF_H + 12.0, 24.0) - 12.0
     pull = torch.sin(2.0 * math.pi * dev / 24.0)
-    new_offset = (offset + asleep * (PHASE_PULL_PER_H / 60.0) * pull).clamp(
+    new_offset = (offset + asleep * (phase_pull_per_h / 60.0) * pull).clamp(
         -PHASE_BOUND_H, PHASE_BOUND_H)
 
     opened = _on_mark_t(bio, NIGHT_OPEN_H)

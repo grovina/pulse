@@ -212,6 +212,15 @@ class BasalPlusGatedPeakHead(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, 3),
         )
+        # Zero-init final layer ⇒ raw = [0, 0, 0] for every input, so basal = cons =
+        # softplus(0) = log 2 and the gate-off equilibrium is exactly the species'
+        # typical (prod == cons); the peak is softplus(0) gated to ~0 when the
+        # stimulus is below threshold. The head is embedding-, state- and
+        # coupling-flat at cold start — the median person, with authority growing in
+        # training — the same contract as the module's zero-init setpoint heads.
+        with torch.no_grad():
+            self.network[-1].weight.zero_()
+            self.network[-1].bias.zero_()
         # Gate position + temperature, per-head learnable.
         self.g_thresh = nn.Parameter(torch.tensor(float(init_thresh)))
         self.log_g_temp = nn.Parameter(torch.tensor(float(init_log_temp)))
@@ -355,6 +364,37 @@ class PhysiologyModule(nn.Module):
     ) -> torch.Tensor:
         raise NotImplementedError
 
+    def step_published(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        const: dict[str, torch.Tensor],
+        drv: dict[str, torch.Tensor],
+        raw: dict[object, torch.Tensor],
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        """``(rate, published)``. ``published`` is empty unless this step computed
+        a quantity another module reads in the same minute. The gas ledger
+        publishes the ventilatory rise; the planned drives cannot, because the
+        rise depends on intestinal bile and bile is an ODE marker."""
+        return self.step(state, coupling, const, drv, raw), {}
+
+    def forward_published(
+        self,
+        state: torch.Tensor,
+        coupling: torch.Tensor,
+        external: torch.Tensor,
+        embedding: torch.Tensor,
+        time_features: torch.Tensor,
+        person: dict[str, torch.Tensor] | None = None,
+        extra_drives: dict[str, torch.Tensor] | None = None,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        const = self.bind_person(self.constants(embedding), person)
+        drv = self.drives(external, coupling, time_features, const)
+        if extra_drives:
+            drv = {**drv, **extra_drives}
+        raw = self.head_outputs(state, coupling, external, embedding, time_features)
+        return self.step_published(state, coupling, const, drv, raw)
+
     def forward(
         self,
         state: torch.Tensor,
@@ -364,10 +404,9 @@ class PhysiologyModule(nn.Module):
         time_features: torch.Tensor,
         person: dict[str, torch.Tensor] | None = None,
     ) -> torch.Tensor:
-        const = self.bind_person(self.constants(embedding), person)
-        drv = self.drives(external, coupling, time_features, const)
-        raw = self.head_outputs(state, coupling, external, embedding, time_features)
-        return self.step(state, coupling, const, drv, raw)
+        rate, _published = self.forward_published(
+            state, coupling, external, embedding, time_features, person)
+        return rate
 
 
 class MassActionModule(PhysiologyModule):

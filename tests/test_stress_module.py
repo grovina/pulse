@@ -12,13 +12,14 @@ from pulse.modules.stress import (
     _SNS_IDX, _ACTH_PER_CRH,
 )
 from pulse.types import (
-    EMBEDDING_DIM, MARKER_INDEX, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
-    TIME_FEATURES_DIM,
+    EMBEDDING_DIM, MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER,
+    NORM_SCALE, TIME_FEATURES_DIM,
 )
 
 _STRESS = MODULE_MARKER_INDICES["stress"]
 _CENTER = torch.tensor([NORM_CENTER[i] for i in _STRESS])
 _SCALE = torch.tensor([NORM_SCALE[i] for i in _STRESS])
+_N_COUPLING = len(MODULE_COUPLING_CHANNELS["stress"])
 
 
 def _norm(cortisol: float, acth: float, crh: float = 100.0,
@@ -48,7 +49,7 @@ class TestStressModuleStructure(unittest.TestCase):
     def test_module_accepts_normalized_state_and_4_time_features(self) -> None:
         module = StressModule(embedding_dim=EMBEDDING_DIM)
         self.assertEqual(_BALANCED.shape[-1], TIME_FEATURES_DIM)
-        rate = module(_norm(12.0, 30.0), torch.zeros(1, 2), torch.zeros(1, 2),
+        rate = module(_norm(12.0, 30.0), torch.zeros(1, _N_COUPLING), torch.zeros(1, 2),
                       torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         self.assertEqual(rate.shape, (1, 5))
 
@@ -65,7 +66,7 @@ class TestCascadeMechanism(unittest.TestCase):
 
     def test_higher_crh_raises_acth_rate(self) -> None:
         module = self._module()
-        args = (torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
+        args = (torch.zeros(1, _N_COUPLING), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         with torch.no_grad():
             r_hi = module(_norm(12.0, 30.0, 150.0), *args)
             r_lo = module(_norm(12.0, 30.0, 50.0), *args)
@@ -73,7 +74,7 @@ class TestCascadeMechanism(unittest.TestCase):
 
     def test_acth_raises_cortisol_rate_proportionally(self) -> None:
         module = self._module()
-        args = (torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
+        args = (torch.zeros(1, _N_COUPLING), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         with torch.no_grad():
             r30 = module(_norm(12.0, 30.0, 100.0), *args)
             r48 = module(_norm(12.0, 48.0, 100.0), *args)
@@ -84,7 +85,7 @@ class TestCascadeMechanism(unittest.TestCase):
         (the nadir is sleep's); a rectifier at typical would leave the
         whole overnight range inert, and two-sided feedback would fight sleep."""
         module = self._module()
-        args = (torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
+        args = (torch.zeros(1, _N_COUPLING), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         with torch.no_grad():
             r18 = module(_norm(18.0, 30.0, 100.0), *args)
             r12 = module(_norm(12.0, 30.0, 100.0), *args)
@@ -94,7 +95,7 @@ class TestCascadeMechanism(unittest.TestCase):
 
     def test_feedback_gain_receives_gradient(self) -> None:
         module = self._module()
-        rate = module(_norm(20.0, 30.0, 100.0), torch.zeros(1, 2), torch.zeros(1, 2),
+        rate = module(_norm(20.0, 30.0, 100.0), torch.zeros(1, _N_COUPLING), torch.zeros(1, 2),
                       torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         rate[0, _CRH_IDX].backward()
         self.assertIsNotNone(module._fb_raw.grad)
@@ -103,7 +104,7 @@ class TestCascadeMechanism(unittest.TestCase):
     def test_diurnal_drive_enters_crh_not_cortisol(self) -> None:
         module = self._module()
         state = _norm(12.0, 30.0, 100.0)
-        args = (state, torch.zeros(1, 2), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM))
+        args = (state, torch.zeros(1, _N_COUPLING), torch.zeros(1, 2), torch.zeros(1, EMBEDDING_DIM))
         with torch.no_grad():
             morning = module(*args, _time(6.5))
             evening = module(*args, _time(20.0))
@@ -115,7 +116,7 @@ class TestCascadeMechanism(unittest.TestCase):
         module = self._module()
         awake_rest = torch.tensor([[1.0, 0.0]])
         rate = module(
-            _norm(12.0, 30.0, 100.0), torch.zeros(1, 2), awake_rest,
+            _norm(12.0, 30.0, 100.0), torch.zeros(1, _N_COUPLING), awake_rest,
             torch.zeros(1, EMBEDDING_DIM), _BALANCED,
         )
         self.assertAlmostEqual(float(rate[0, _SNS_IDX]), 0.0, places=4)
@@ -128,7 +129,7 @@ class TestCascadeMechanism(unittest.TestCase):
         state = _norm(12.0, 30.0, 100.0)
 
         def at(mgdl: float) -> torch.Tensor:
-            coupling = torch.tensor([[(mgdl - 95.0) / 30.0, 0.0]])
+            coupling = torch.tensor([[(mgdl - 95.0) / 30.0, 0.0, 0.0]])
             return module(state, coupling, awake_rest, emb, _BALANCED)
 
         with torch.no_grad():
@@ -141,8 +142,8 @@ class TestCascadeMechanism(unittest.TestCase):
 
     def test_hypoglycaemia_raises_crh(self) -> None:
         module = self._module()
-        g_lo = torch.tensor([[(55.0 - 95.0) / 30.0, 0.0]])
-        g_hi = torch.tensor([[(95.0 - 95.0) / 30.0, 0.0]])
+        g_lo = torch.tensor([[(55.0 - 95.0) / 30.0, 0.0, 0.0]])
+        g_hi = torch.tensor([[(95.0 - 95.0) / 30.0, 0.0, 0.0]])
         ext = torch.zeros(1, 2)
         emb = torch.zeros(1, EMBEDDING_DIM)
         state = _norm(12.0, 30.0, 100.0)
@@ -155,13 +156,13 @@ class TestCascadeMechanism(unittest.TestCase):
         module = self._module()
         crh = 80.0
         acth = _ACTH_PER_CRH * crh
-        rate = module(_norm(12.0, acth, crh), torch.zeros(1, 2), torch.zeros(1, 2),
+        rate = module(_norm(12.0, acth, crh), torch.zeros(1, _N_COUPLING), torch.zeros(1, 2),
                       torch.zeros(1, EMBEDDING_DIM), _BALANCED)
         self.assertAlmostEqual(float(rate[0, _ACTH_IDX]), 0.0, places=4)
 
     def test_mechanism_is_continuous_across_midnight(self) -> None:
         module = self._module()
-        args = (_norm(12.0, 30.0, 100.0), torch.zeros(1, 2), torch.zeros(1, 2),
+        args = (_norm(12.0, 30.0, 100.0), torch.zeros(1, _N_COUPLING), torch.zeros(1, 2),
                 torch.zeros(1, EMBEDDING_DIM))
         with torch.no_grad():
             before = module(*args, compute_time_features(torch.tensor([1439.99])))

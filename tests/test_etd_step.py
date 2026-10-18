@@ -518,7 +518,7 @@ def test_gradcheck_through_the_whole_step() -> None:
     state, rates = _pair(3, 5, torch.float64)
     ladder = [1e-9, 1e-4, 0.01, 0.05, 0.09, 0.11, 0.15, 0.3, 0.8, 2.0, 7.0, 40.0]
     decay = torch.zeros_like(rates)
-    decay[1] = torch.tensor((ladder * 3)[:STATE_DIM], dtype=torch.float64)
+    decay[1] = torch.tensor((ladder * -(-STATE_DIM // len(ladder)))[:STATE_DIM], dtype=torch.float64)
     decay[2] = 0.3
     for t in (state, rates, decay):
         t.requires_grad_()

@@ -289,10 +289,20 @@ class TestConstruction(unittest.TestCase):
         rest = torch.tensor([[0.0, 1.0]])
         easy = torch.tensor([[0.4, 1.0]])
         hard = torch.tensor([[1.0, 1.0]])
+        gas = gas_exchange(70.0, 1.0, 0.0, 0.0, 0.0)
+        rise = frequency_offset(gas.vco2_ml_per_min, 70.0)
+
+        def _at(external: torch.Tensor, breaths: float) -> torch.Tensor:
+            rate, _pubs = rsp.forward_published(
+                state, coupling, external, emb, tf,
+                extra_drives={"rr_rise": torch.tensor([breaths])},
+            )
+            return rate
+
         with torch.no_grad():
-            r_rest = rsp(state, coupling, rest, emb, tf)
-            r_easy = rsp(state, coupling, easy, emb, tf)
-            r_hard = rsp(state, coupling, hard, emb, tf)
+            r_rest = _at(rest, 0.0)
+            r_easy = _at(easy, 0.0)
+            r_hard = _at(hard, rise)
         self.assertAlmostEqual(float(r_rest[0, 1]), 0.0, places=5)
         self.assertAlmostEqual(float(r_easy[0, 1]), 0.0, places=5)
         self.assertAlmostEqual(
@@ -300,12 +310,11 @@ class TestConstruction(unittest.TestCase):
             -R._SPO2_EXERCISE_DIP * (1.0 - R._SPO2_ACT_THRESH),
             places=5,
         )
-        # Frequency is the CO₂ Hill, inside the relaxation. At rest the
-        # offset is 0, so a state sitting on RR₀ does not move. At activity
-        # 1 the rate is k times the offset.
+        # Frequency is the rise the ledger handed in, inside the relaxation.
+        # Activity does not add a second copy: easy effort with a zero rise
+        # holds RR, and the hard step moves by k times the rise it was given.
         self.assertAlmostEqual(float(r_rest[0, 0]), 0.0, places=5)
-        gas = gas_exchange(70.0, 1.0, 0.0, 0.0, 0.0)
-        rise = frequency_offset(gas.vco2_ml_per_min, 70.0)
+        self.assertAlmostEqual(float(r_easy[0, 0]), 0.0, places=5)
         k = float(rsp.constants(emb)["k"][0].detach())
         self.assertAlmostEqual(float(r_hard[0, 0]), k * rise, places=4)
 

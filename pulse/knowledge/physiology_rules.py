@@ -138,6 +138,10 @@ class PhysiologyRule:
     # NOT flagged, so a contradiction cannot enter the registry unnoticed.
     teacher_correction: bool = False
     teacher_correction_note: str = ""
+    # Held-out: a sealed rule never enters the training registry; it is reachable
+    # only through the scoring path (PLAN Phase 0). Sealing is at random within a
+    # family at filing time.
+    sealed: bool = False
 
     def __post_init__(self) -> None:
         if self.scale <= 0:
@@ -2046,7 +2050,7 @@ MUSCLE_GLYCOGEN_STABLE_AT_REST = PhysiologyRule(
 # Registry
 # ---------------------------------------------------------------------------
 
-PHYSIOLOGY_RULES: list[PhysiologyRule] = [
+_ALL_PHYSIOLOGY_RULES: list[PhysiologyRule] = [
     # iter 42–52: original five
     GLUCAGON_FALLS_POSTPRANDIAL,
     FFA_INVERSE_TO_INSULIN_POSTPRANDIAL,
@@ -2124,3 +2128,9 @@ PHYSIOLOGY_RULES: list[PhysiologyRule] = [
     LIVER_GLYCOGEN_REPLENISHES_POSTPRANDIAL,
     MUSCLE_GLYCOGEN_STABLE_AT_REST,
 ]
+
+# PLAN Phase 0 — the training registry excludes sealed rules; the scoreboard
+# reads them from SEALED_PHYSIOLOGY_RULES. Nothing is sealed today, so
+# PHYSIOLOGY_RULES is unchanged; the split is the mechanism, not a change.
+PHYSIOLOGY_RULES: list[PhysiologyRule] = [r for r in _ALL_PHYSIOLOGY_RULES if not r.sealed]
+SEALED_PHYSIOLOGY_RULES: list[PhysiologyRule] = [r for r in _ALL_PHYSIOLOGY_RULES if r.sealed]

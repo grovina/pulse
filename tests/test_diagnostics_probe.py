@@ -49,11 +49,13 @@ class TestColdTargets(unittest.TestCase):
         for prev, nxt in zip(aucs, aucs[1:]):
             self.assertGreater(nxt, prev, "cold targets must be strictly monotone in dose")
 
-    def test_target_peak_within_window(self) -> None:
+    def test_target_peaks_at_the_swallow_and_rises_with_dose(self) -> None:
+        """Calorie-limited emptying is fastest when the stomach is fullest."""
         rows = cold_gut_sweep_targets()
         for r in rows[1:]:
-            self.assertGreater(r.tpeak_min, 0)
-            self.assertLess(r.tpeak_min, 240, "cold target should peak inside the window, not at the edge")
+            self.assertEqual(r.tpeak_min, 0)
+        for prev, nxt in zip(rows[1:], rows[2:]):
+            self.assertGreater(nxt.peak, prev.peak)
 
 
 class TestProbeShape(unittest.TestCase):

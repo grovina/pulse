@@ -321,7 +321,8 @@ def test_head_bank_matches_every_head_network() -> None:
     norm = (state - model.norm_center) / model.norm_scale
     t = 2
     fused = bank(norm, bank.exo_steps[t])
-    ext = {"sleep_wake": sw[:, t], "activity": act[:, t], "sglt2": torch.zeros(B)}
+    ext = {"sleep_wake": sw[:, t], "activity": act[:, t], "sglt2": torch.zeros(B),
+           "glucose_infusion": torch.zeros(B), "glucose_clamp": torch.zeros(B)}
     for name, slots in bank.slots.items():
         mod = model._modules_by_name[name]
         x = mod.head_input(

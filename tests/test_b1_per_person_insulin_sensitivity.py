@@ -337,7 +337,7 @@ class TestMuscleIsNotLiver(unittest.TestCase):
         state[0, M._GLUCOSE_IDX] = 1.0          # 125 mg/dL
         state[0, M._INSULIN_ACTION_IDX] = 2.0
         coupling = torch.zeros(1, M._N_COUPLING)
-        external = torch.tensor([[act, 1.0, 0.0]])
+        external = torch.tensor([[act, 1.0, 0.0, 0.0, 0.0]])
         emb = m.embedding_projections["metabolic"](torch.zeros(1, EMBEDDING_DIM))
         with torch.no_grad():
             return met.fluxes(state, coupling, external, emb,
@@ -432,14 +432,14 @@ class TestActivitySensitisesInsulinAction(unittest.TestCase):
         with torch.no_grad():
             const = met.constants(emb)
             for act in (0.0, 0.35, 1.0):
-                external = torch.tensor([[act, 1.0, 0.0]]).expand(3, 3)
+                external = torch.tensor([[act, 1.0, 0.0, 0.0, 0.0]]).expand(3, 5)
                 d = met.drives(external, torch.zeros(3, M._N_COUPLING),
                                compute_time_features(torch.full((3,), 600.0)), const)
                 torch.testing.assert_close(
                     d["ins_sens_act_gain"], 1.0 + const["act_ins_sens"] * act,
                     atol=1e-7, rtol=1e-7)
             # a malformed negative activity cannot invert insulin action
-            d = met.drives(torch.tensor([[-2.0, 1.0, 0.0]]).expand(3, 3),
+            d = met.drives(torch.tensor([[-2.0, 1.0, 0.0, 0.0, 0.0]]).expand(3, 5),
                            torch.zeros(3, M._N_COUPLING),
                            compute_time_features(torch.full((3,), 600.0)), const)
             self.assertTrue(bool((d["ins_sens_act_gain"] == 1.0).all()))
@@ -458,8 +458,8 @@ class TestActivitySensitisesInsulinAction(unittest.TestCase):
         emb = m.embedding_projections["metabolic"](torch.zeros(1, EMBEDDING_DIM))
         tf = compute_time_features(torch.tensor([600.0]))
         with torch.no_grad():
-            rest = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0]]), emb, tf)
-            bout = met.fluxes(state, coupling, torch.tensor([[1.0, 1.0]]), emb, tf)
+            rest = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
+            bout = met.fluxes(state, coupling, torch.tensor([[1.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
         # the DRIVE on remote insulin carries the gain exactly
         self.assertGreater(float(bout["xa_rate"]), float(rest["xa_rate"]))
         gain = 1.0 + float(rest["act_ins_sens"])
@@ -469,8 +469,8 @@ class TestActivitySensitisesInsulinAction(unittest.TestCase):
         # bit-identical with and without the bout, which is where the teacher puts it.
         state[0, M._INSULIN_ACTION_IDX] = 2.0
         with torch.no_grad():
-            rest = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0]]), emb, tf)
-            bout = met.fluxes(state, coupling, torch.tensor([[1.0, 1.0]]), emb, tf)
+            rest = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
+            bout = met.fluxes(state, coupling, torch.tensor([[1.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
         self.assertGreater(float(rest["uptake_id"]), 0.0)
         self.assertEqual(float(bout["uptake_id"]), float(rest["uptake_id"]))
 
@@ -717,7 +717,9 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
         sensitivity's population scalar. 21009 was the count after the
         potentiator and the four priors. Epinephrine as a coupling input
         widens the four learned heads' first layers by the hidden width
-        (+192). The hepatic and lipolysis gains are one scalar each (+2).
+        (+192). The three sleep-debt gains (hepatic retention, lipolysis and
+        peripheral disposal) are one learnable scalar each (+3), living with
+        their consumer rather than in the circadian module.
         Sleep debt widens those same four first layers once more (+192).
         Intestinal bile widens them once more (+192). The SGLT2 input
         is not a head column.
@@ -730,7 +732,7 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21971)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21974)
         self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 

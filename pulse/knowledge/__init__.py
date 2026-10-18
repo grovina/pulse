@@ -8,20 +8,23 @@ they are not training contributions.
 """
 
 from .base import Episode, KnowledgeContribution, CouplingPrior
-from .cohort_statistics import ALL_COHORT_STATISTICS
+from .cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
 from .cohort_types import (
     CohortArmSpec,
     CohortStatisticSpec,
+    CurvePoint,
     StatisticKind,
     StatisticWindow,
 )
 from .evidence import (
     ALL_EVIDENCE,
+    SEALED_EVIDENCE,
     Authority,
     EvidenceItem,
     TEACHER_DISTILL_LONG_ONLY,
     TEACHER_DISTILL_MARKERS,
     TEACHER_TAPE_MARKERS,
+    sealed_evidence,
 )
 from .full_body import FullBody
 
@@ -38,12 +41,16 @@ __all__ = [
     "CouplingPrior",
     "CohortArmSpec",
     "CohortStatisticSpec",
+    "CurvePoint",
     "StatisticKind",
     "StatisticWindow",
     "FullBody",
     "ALL_CONTRIBUTIONS",
     "ALL_COHORT_STATISTICS",
+    "SEALED_COHORT_STATISTICS",
     "ALL_EVIDENCE",
+    "SEALED_EVIDENCE",
+    "sealed_evidence",
     "Authority",
     "EvidenceItem",
     "TEACHER_TAPE_MARKERS",

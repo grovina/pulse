@@ -66,8 +66,9 @@ if sorted(_MODULE_ORDER_INDEX) != list(range(STATE_DIM)):
 
 # The PROTOCOL vector a rollout knows in advance, per member and minute (the head
 # bank's exogenous first-layer input): [gut appearance (4) | duodenal delivery (3) |
-# sleep_wake | activity | time features (4)]. The SGLT2 input is not in this vector.
-# It reaches the urinary law through the external dict, and the heads do not read it.
+# sleep_wake | activity | time features (4)]. The SGLT2, glucose-infusion and glucose-clamp
+# inputs are not in this vector. They reach the metabolic law through the external dict,
+# and the heads do not read them.
 _Z_GUT = 0
 _Z_DUO = GUT_OUTPUT_DIM
 _Z_EXTERNAL = {"sleep_wake": _Z_DUO + DUODENAL_DIM, "activity": _Z_DUO + DUODENAL_DIM + 1}
@@ -197,6 +198,24 @@ def _etd_step_size(k: torch.Tensor, dt: float) -> torch.Tensor:
     series = 1.0 + zs * (-0.5 + zs * (1.0 / 6.0 + zs * (-1.0 / 24.0 + zs * (1.0 / 120.0))))
     closed = torch.expm1(-zc) / -zc
     return dt * torch.where(small, series, closed)
+
+
+def _ventilatory_drive(
+    name: str, rr_rise: Optional[torch.Tensor],
+) -> Optional[dict[str, torch.Tensor]]:
+    """The breaths/min the gas ledger published this minute, for the lung only.
+
+    Intestinal bile is an ODE marker, so the rise cannot be a protocol drive
+    frozen over the window. The ledger recomputes it inside its step, and the
+    lung adds it in the same minute.
+    """
+    if name != "respiratory":
+        return None
+    if rr_rise is None:
+        raise RuntimeError(
+            "the gas ledger publishes the ventilatory rise before the lung steps"
+        )
+    return {"rr_rise": rr_rise}
 
 
 def _reports_decay(mod: nn.Module) -> bool:
@@ -541,6 +560,9 @@ class ModularPhysiologyNetwork(nn.Module):
 
         ``embedding`` is the person code ``[B, E]``, not a module's private
         projection. Appetite reads ``ib`` from here; it does not decode its own.
+        Body mass is the metabolic compartment's size. The gas ledger uses it
+        for the glucose volume and for CO₂, and publishes the ventilatory rise.
+        No other organ binds the kilograms.
         """
         if embedding.dim() != 2:
             raise ValueError(
@@ -552,6 +574,14 @@ class ModularPhysiologyNetwork(nn.Module):
             "body_mass_kg": self.metabolic.body_mass_kg(met),
         }
 
+    @staticmethod
+    def _exogenous_input(x: Optional[torch.Tensor], state: torch.Tensor, batch: int) -> torch.Tensor:
+        """A drug-like protocol input as ``[batch]``: missing (or NaN) is zero."""
+        out = torch.zeros(batch, dtype=state.dtype, device=state.device) if x is None else x
+        if out.dim() == 0:
+            out = out.expand(batch)
+        return torch.nan_to_num(out, nan=0.0)
+
     def forward(
         self,
         state: torch.Tensor,
@@ -561,6 +591,8 @@ class ModularPhysiologyNetwork(nn.Module):
         sleep_wake: Optional[torch.Tensor] = None,
         activity: Optional[torch.Tensor] = None,
         sglt2: Optional[torch.Tensor] = None,
+        glucose_infusion: Optional[torch.Tensor] = None,
+        glucose_clamp: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
@@ -576,6 +608,10 @@ class ModularPhysiologyNetwork(nn.Module):
         sleep_wake: [batch] or None — 0=asleep, 1=awake
         activity: [batch] or None — 0=rest, 1=vigorous
         sglt2: [batch] or None — 0 is no drug, 1 is empagliflozin 25 mg/day
+        glucose_infusion: [batch] or None — IV glucose appearance, mg/dL/min of the
+            patient's glucose space; None is no infusion
+        glucose_clamp: [batch] or None — closed-loop glucose target, mg/dL; 0 or None is
+            no clamp
         duodenal_override: [batch, DUODENAL_DIM] duodenal (fat, protein, carb) delivery
             for this step, computed by ``integrate`` on the WINDOW-OFFSET clock. Same
             frame contract as ``gut_override``. When absent, delivery is zero rather
@@ -625,6 +661,8 @@ class ModularPhysiologyNetwork(nn.Module):
         if drug.dim() == 0:
             drug = drug.expand(batch)
         drug = torch.nan_to_num(drug, nan=0.0)
+        glu_inf = self._exogenous_input(glucose_infusion, state, batch)
+        glu_clamp = self._exogenous_input(glucose_clamp, state, batch)
 
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
@@ -718,6 +756,8 @@ class ModularPhysiologyNetwork(nn.Module):
             "sleep_wake": sw,
             "activity": act,
             "sglt2": drug,
+            "glucose_infusion": glu_inf,
+            "glucose_clamp": glu_clamp,
             "swallow_carb": swallow[:, 0],
             "swallow_protein": swallow[:, 1],
             "swallow_fat": swallow[:, 2],
@@ -725,18 +765,25 @@ class ModularPhysiologyNetwork(nn.Module):
         person = self.person_quantities(embedding)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
+        rr_rise: Optional[torch.Tensor] = None
         for name in _MODULE_ORDER:
             mod = self._modules_by_name[name]
             own = norm_state[:, MODULE_MARKER_INDICES[name]]
             coupling = self.coupling_for(name, norm_state, gut_out_batch, duo)
             ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
-            rate = mod(own, coupling, ext, emb[name], time_feats, person)
+            extra = _ventilatory_drive(name, rr_rise)
+            rate, pubs = mod.forward_published(
+                own, coupling, ext, emb[name], time_feats, person, extra_drives=extra)
+            if "rr_rise" in pubs:
+                rr_rise = pubs["rr_rise"]
             parts.append(rate)
             if return_decay and _reports_decay(mod):
                 # The same composition as ``PhysiologyModule.forward``, so the decay is a
                 # function of exactly the constants, drives and head outputs the rate saw.
                 const = mod.bind_person(mod.constants(emb[name]), person)
                 drv = mod.drives(ext, coupling, time_feats, const)
+                if extra:
+                    drv = {**drv, **extra}
                 raw = mod.head_outputs(own, coupling, ext, emb[name], time_feats)
                 decays.append(_as_rate_shape(
                     mod.decay_rates(own, coupling, const, drv, raw), rate, name))
@@ -985,6 +1032,8 @@ class _RolloutPlan:
         sleep_wake: Optional[torch.Tensor],
         activity: Optional[torch.Tensor],
         sglt2: Optional[torch.Tensor],
+        glucose_infusion: Optional[torch.Tensor],
+        glucose_clamp: Optional[torch.Tensor],
     ) -> None:
         B = int(embedding.shape[0])
         T = int(n_steps)
@@ -1001,6 +1050,14 @@ class _RolloutPlan:
         time_feats = compute_time_features(t_abs)                       # [B, T, 4]
         sw, act = model.resolve_external_inputs(embedding, time_feats, sleep_wake, activity)
         drug = sw.new_zeros(sw.shape) if sglt2 is None else torch.nan_to_num(sglt2.expand(sw.shape), nan=0.0)
+        glu_inf = (
+            sw.new_zeros(sw.shape) if glucose_infusion is None
+            else torch.nan_to_num(glucose_infusion.expand(sw.shape), nan=0.0)
+        )
+        glu_clamp = (
+            sw.new_zeros(sw.shape) if glucose_clamp is None
+            else torch.nan_to_num(glucose_clamp.expand(sw.shape), nan=0.0)
+        )
         emb = {name: proj(embedding) for name, proj in model.embedding_projections.items()}
         for name in _MODULE_ORDER:
             emb.setdefault(name, embedding.new_zeros(B, 0))
@@ -1018,6 +1075,8 @@ class _RolloutPlan:
             "sleep_wake": sw,
             "activity": act,
             "sglt2": drug,
+            "glucose_infusion": glu_inf,
+            "glucose_clamp": glu_clamp,
             "swallow_carb": swallow[..., 0],
             "swallow_protein": swallow[..., 1],
             "swallow_fat": swallow[..., 2],
@@ -1071,6 +1130,7 @@ class _RolloutPlan:
         heads = self.bank(norm, exo_t)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
+        rr_rise: Optional[torch.Tensor] = None
         for m in self.modules:
             drv = dict(m.fixed)
             for k in m.per_step:
@@ -1078,7 +1138,12 @@ class _RolloutPlan:
             own = norm.index_select(-1, m.state_idx)
             coupling = xin.index_select(-1, m.coupling_idx)
             raw = {key: heads[i] for key, i in m.head_slots}
-            rate = m.module.step(own, coupling, m.const, drv, raw)
+            extra = _ventilatory_drive(m.name, rr_rise)
+            if extra:
+                drv.update(extra)
+            rate, pubs = m.module.step_published(own, coupling, m.const, drv, raw)
+            if "rr_rise" in pubs:
+                rr_rise = pubs["rr_rise"]
             parts.append(rate)
             if with_decay and m.reports_decay:
                 decays.append(_as_rate_shape(
@@ -1220,6 +1285,8 @@ def integrate(
     sleep_wake: Optional[torch.Tensor] = None,
     activity: Optional[torch.Tensor] = None,
     sglt2: Optional[torch.Tensor] = None,
+    glucose_infusion: Optional[torch.Tensor] = None,
+    glucose_clamp: Optional[torch.Tensor] = None,
     gut_outputs: Optional[torch.Tensor] = None,
     checkpoint_segments: int = 0,
     duodenal_outputs: Optional[torch.Tensor] = None,
@@ -1245,6 +1312,14 @@ def integrate(
       — the model substitutes its learned default (``resolve_external_inputs``).
     - ``sglt2``: ``[T]`` or ``[B, T]``. ``None`` is no drug. ``1`` is empagliflozin
       25 mg/day. A missing entry is no drug, not a learned default.
+    - ``glucose_infusion``: ``[T]`` or ``[B, T]`` IV glucose appearance in mg/dL/min of
+      the patient's glucose space, added to plasma glucose. ``None`` or a missing entry
+      is no infusion, not a learned default.
+    - ``glucose_clamp``: ``[T]`` or ``[B, T]`` target glucose in mg/dL. Where it is
+      positive the step infuses ``relu(Kp · (target − G))`` on top of ``glucose_infusion``
+      (``metabolic.GLUCOSE_CLAMP_KP``); the realized infusion is
+      ``metabolic.clamp_infusion_t`` of the returned glucose and the target, i.e. the
+      GIR of a hyperinsulinemic-euglycemic clamp. ``None`` or ``0`` is no clamp.
     - ``gut_outputs``: ``[T, GUT_OUTPUT_DIM]`` or ``[B, T, GUT_OUTPUT_DIM]``, or None to
       compute it from ``meals`` on the window-offset clock (``precompute_gut_outputs``).
     - ``duodenal_outputs``: ``[T, 3]`` or ``[B, T, 3]`` duodenal (fat, protein, carb)
@@ -1326,6 +1401,7 @@ def integrate(
         plan = _RolloutPlan(
             model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
             _series(sleep_wake), _series(activity), _series(sglt2),
+            _series(glucose_infusion), _series(glucose_clamp),
         )
         held: list[Optional[torch.Tensor]] = [None] * n_steps
         if member_steps is not None:
@@ -1385,6 +1461,8 @@ def integrate(
             sw_step = sleep_wake[step].expand(batch) if sleep_wake is not None else None
             act_step = activity[step].expand(batch) if activity is not None else None
             drug_step = sglt2[step].expand(batch) if sglt2 is not None else None
+            inf_step = glucose_infusion[step].expand(batch) if glucose_infusion is not None else None
+            clamp_step = glucose_clamp[step].expand(batch) if glucose_clamp is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
             swallow_kw = {}
@@ -1393,6 +1471,7 @@ def integrate(
             out = model(
                 state, embedding, t, meals,
                 sleep_wake=sw_step, activity=act_step, sglt2=drug_step,
+                glucose_infusion=inf_step, glucose_clamp=clamp_step,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
                 **swallow_kw,

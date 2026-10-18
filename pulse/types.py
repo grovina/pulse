@@ -390,7 +390,6 @@ BODY_MASS_KG = 70.0
 VG_DL_PER_KG = 1.85
 VG_DL = BODY_MASS_KG * VG_DL_PER_KG          # 129.5 dL
 MG_DL_PER_G = 1000.0 / VG_DL                 # 7.72 mg/dL per gram
-EXTERNAL_INPUT_DIM = 2  # sleep_wake, activity
 
 # Gut module outputs (not part of the ODE state)
 GUT_OUTPUT_DIM = 4  # glucose_appearance, lipid_appearance, amino_appearance, nutrient_flag
@@ -545,10 +544,9 @@ MODULE_COUPLING_CHANNELS: dict[str, tuple[str, ...]] = {
         "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance", "cortisol",
         "intestinal_bile",
     ),
-    "respiratory": (
-        "gut.glucose_appearance", "gut.lipid_appearance", "gut.amino_appearance",
-        "intestinal_bile",
-    ),
+    # The breaths/min above RR₀ are the gas ledger's rise. The lung adds
+    # that number; a meal channel here would be a second copy of it.
+    "respiratory": (),
     "hepatobiliary": ("duodenal.fat", "duodenal.protein"),
     "gastric": (),
     "circadian": (),

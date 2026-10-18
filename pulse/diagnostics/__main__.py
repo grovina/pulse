@@ -1,6 +1,6 @@
 """CLI for pulse diagnostics.
 
-Four subcommands:
+Subcommands:
 
 - ``probe`` runs the physiological probe against a single checkpoint.
 - ``compare`` diffs two runs (checkpoints + benchmark reports).
@@ -12,6 +12,9 @@ Four subcommands:
   per-spec z-residual + per-module grad norm. Catches dead literature
   specs and reveals which physiology pillar each spec actually pulls
   on.
+- ``identifiability`` takes the Gauss-Newton Fisher spectrum of the cohort
+  residuals over the scalar population parameters — which the literature
+  constrains and which directions are flat.
 
 All subcommands write structured JSON to ``--out`` if requested and
 always print a human-readable rendering to stdout. To compare two runs,
@@ -36,6 +39,10 @@ from .cold_calibration import (
     render as render_cold_calibration,
 )
 from .compare import compare_reports, compare_runs, render
+from .identifiability import (
+    identifiability_for_checkpoint,
+    render as render_identifiability,
+)
 from .physiology_rules import (
     physiology_rules_for_checkpoint,
     render as render_physiology_rules,
@@ -179,6 +186,22 @@ def _cmd_physiology_rules(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_identifiability(args: argparse.Namespace) -> int:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        ckpt = _localize(args.checkpoint, tmp)
+        report = identifiability_for_checkpoint(ckpt, "cpu")
+        print(render_identifiability(report))
+        if args.out:
+            local_out = (
+                tmp / "identifiability.json"
+                if args.out.startswith("gs://") else Path(args.out)
+            )
+            local_out.write_text(json.dumps(report, indent=2))
+            _upload_if_gs(str(local_out), args.out)
+    return 0
+
+
 def _cmd_signal_balance(args: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -255,6 +278,14 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("--seed", type=int, default=0)
     pr.add_argument("--out", default=None, help="Optional path to write JSON")
     pr.set_defaults(func=_cmd_physiology_rules)
+
+    idn = sub.add_parser(
+        "identifiability",
+        help="Fisher spectrum of cohort residuals over the scalar population parameters",
+    )
+    idn.add_argument("--checkpoint", required=True)
+    idn.add_argument("--out", default=None, help="Optional path to write JSON")
+    idn.set_defaults(func=_cmd_identifiability)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

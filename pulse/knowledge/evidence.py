@@ -17,7 +17,7 @@ from enum import Enum
 import numpy as np
 
 from ..types import MARKER_INDEX, STATE_DIM
-from .cohort_statistics import ALL_COHORT_STATISTICS
+from .cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
 from .cohort_types import (
     CohortArmSpec,
     CohortStatisticSpec,
@@ -26,7 +26,11 @@ from .cohort_types import (
     StatisticWindow,
     TargetShape,
 )
-from .physiology_rules import PHYSIOLOGY_RULES, PhysiologyRule
+from .physiology_rules import (
+    PHYSIOLOGY_RULES,
+    SEALED_PHYSIOLOGY_RULES,
+    PhysiologyRule,
+)
 
 
 class Authority(str, Enum):
@@ -291,4 +295,18 @@ def all_evidence() -> tuple[EvidenceItem, ...]:
     )
 
 
+def sealed_evidence() -> tuple[EvidenceItem, ...]:
+    """The held-out set (PLAN Phase 0): literature items absent from training.
+
+    Only literature cohorts and rules are sealable — the teacher tape, the
+    distill fill and the dose canon are not literature items and are never in
+    the sealed set. The scoreboard scores these the way ``cgm_real`` is scored.
+    """
+    return (
+        *(from_cohort(spec) for spec in SEALED_COHORT_STATISTICS),
+        *(from_rule(rule) for rule in SEALED_PHYSIOLOGY_RULES),
+    )
+
+
 ALL_EVIDENCE: tuple[EvidenceItem, ...] = all_evidence()
+SEALED_EVIDENCE: tuple[EvidenceItem, ...] = sealed_evidence()

@@ -108,6 +108,19 @@ def _validate_window(spec_name: str, w: StatisticWindow, duration_min: int) -> N
         )
 
 
+def _glucose_inputs(
+    arm: CohortArmSpec, n_steps: int, device: torch.device,
+) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+    """An arm's IV glucose series: open-loop infusion and clamp target (``None`` = absent)."""
+    infusion = _optional_series_tensor(
+        f"{arm.label}.glucose_infusion", arm.glucose_infusion, n_steps, device,
+    )
+    clamp = None
+    if arm.glucose_clamp_mg_dl is not None:
+        clamp = torch.full((n_steps,), float(arm.glucose_clamp_mg_dl), dtype=torch.float32, device=device)
+    return infusion, clamp
+
+
 def _rollout_arm_states(
     model: ModularPhysiologyNetwork,
     embeddings: torch.Tensor,
@@ -140,6 +153,7 @@ def _rollout_arm_states(
     act = _optional_series_tensor(
         f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
     )
+    glu_inf, glu_clamp = _glucose_inputs(arm, n_steps, device)
     # Iter 97 (review 4.9): phase-3 input dropout — with probability
     # ``input_dropout`` each series is withheld and the model runs on its learned
     # default, so "no sleep log / no activity log" is a trained condition for the
@@ -162,8 +176,17 @@ def _rollout_arm_states(
         model, state_batch, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
         sleep_wake=sw, activity=act,
+        glucose_infusion=glu_inf, glucose_clamp=glu_clamp,
         gut_outputs=gut,
     )
+
+
+def _padded_zero(series: torch.Tensor | None, T: int, device: torch.device) -> torch.Tensor:
+    """``series`` padded to ``T`` minutes with 0 (no infusion / no clamp); ``None`` is all 0."""
+    out = torch.zeros((T,), dtype=torch.float32, device=device)
+    if series is not None:
+        out[: series.shape[0]] = series
+    return out
 
 
 def rollout_arms(
@@ -190,6 +213,7 @@ def rollout_arms(
     device = arm_rows[0][2].device
     T = max(int(arm.duration_min) for arm, _, _ in arm_rows)
     embs, states, starts, horizons, meals, sws, acts, guts, duos = [], [], [], [], [], [], [], [], []
+    infusions, clamps = [], []
     nan = torch.full((T,), float("nan"), dtype=torch.float32, device=device)
 
     def padded(series: torch.Tensor | None, fill: float) -> torch.Tensor:
@@ -214,6 +238,7 @@ def rollout_arms(
                 sw = None
             if rng.random() < input_dropout:
                 act = None
+        glu_inf, glu_clamp = _glucose_inputs(arm, dur, device)
         embs.append(emb_i)
         states.append(state_i)
         starts.append(torch.full((n_i,), float(arm.start_hour * 60.0), dtype=torch.float64, device=device))
@@ -221,12 +246,16 @@ def rollout_arms(
         meals.extend([arm_meals] * n_i)
         sws.append(padded(sw, ARM_DEFAULT_SLEEP_WAKE).expand(n_i, T))
         acts.append(padded(act, ARM_DEFAULT_ACTIVITY).expand(n_i, T))
+        infusions.append(_padded_zero(glu_inf, T, device).expand(n_i, T))
+        clamps.append(_padded_zero(glu_clamp, T, device).expand(n_i, T))
         guts.append(precompute_gut_outputs(model, emb_i, T, dt=1.0, meals=arm_meals))
         duos.append(precompute_duodenal_outputs(model, T, meals=arm_meals).expand(n_i, T, -1))
     traj = integrate(
         model, torch.cat(states), torch.cat(embs), T,
         dt=1.0, start_time_minutes=torch.cat(starts), meals=meals,
         sleep_wake=torch.cat(sws), activity=torch.cat(acts),
+        glucose_infusion=torch.cat(infusions) if any(a.glucose_infusion is not None for a, _, _ in arm_rows) else None,
+        glucose_clamp=torch.cat(clamps) if any(a.glucose_clamp_mg_dl is not None for a, _, _ in arm_rows) else None,
         gut_outputs=torch.cat(guts), duodenal_outputs=torch.cat(duos),
         member_steps=torch.cat(horizons),
     )

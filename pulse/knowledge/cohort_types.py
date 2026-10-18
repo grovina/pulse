@@ -30,6 +30,28 @@ class StatisticKind(str, Enum):
     DELTA_PEAKS = "delta_peaks"
     # Soft argmax over window (minutes from window start), single arm.
     TIME_TO_PEAK = "time_to_peak"
+    # A whole published trajectory: the marker value at each ``CurvePoint`` of
+    # ``curve``, single arm. The replacement for the teacher's dense tape — a
+    # digitized mean +/- SEM at timepoints. A CURVE spec is never scored
+    # directly; ``expand_curve_spec`` compiles it into one MEAN_IN_WINDOW spec
+    # per point (see cohort_statistics.py), so the whole battle-tested batched
+    # scorer handles it unchanged.
+    CURVE = "curve"
+
+
+@dataclass(frozen=True)
+class CurvePoint:
+    """One (time, mean, sigma) sample of a published trajectory.
+
+    ``t_min`` is minutes from arm start. ``target`` / ``sigma`` are in the
+    marker's native units; ``sigma`` is the paper's reported standard error at
+    that timepoint (not yet corrected for the correlation between neighbouring
+    points — ``expand_curve_spec`` applies that down-weight).
+    """
+
+    t_min: int
+    target: float
+    sigma: float
 
 
 @dataclass(frozen=True)
@@ -40,6 +62,13 @@ class CohortArmSpec:
     activity 0 = rest). When ``None`` the rollout uses the explicit frame
     constants in ``pulse.cohort_loss`` (awake, rest) — the same frame the
     teacher audits run in.
+
+    ``glucose_infusion`` is a per-minute IV glucose appearance rate in mg/dL/min of
+    the patient's glucose space (the unit of the metabolic glucose rate), ``None``
+    for no infusion. ``glucose_clamp_mg_dl`` is a closed-loop target: while set, a
+    proportional controller infuses ``relu(Kp · (target − G))`` every minute
+    (``pulse.modules.metabolic.GLUCOSE_CLAMP_KP``) on top of any open-loop
+    ``glucose_infusion``, and the realized infusion is the clamp's GIR.
 
     ``prefast_hours`` (iter 97, review 4.5): how long the subject has been
     fasting when the arm STARTS. The cold initial state is then the teacher's
@@ -54,6 +83,8 @@ class CohortArmSpec:
     meals: tuple[tuple[float, float, float, float], ...]
     sleep_wake: tuple[float, ...] | None = None
     activity: tuple[float, ...] | None = None
+    glucose_infusion: tuple[float, ...] | None = None  # mg/dL/min of the patient's glucose space
+    glucose_clamp_mg_dl: float | None = None  # closed-loop glucose target, mg/dL
     prefast_hours: float = 0.0
 
 
@@ -140,10 +171,34 @@ class CohortStatisticSpec:
     # ``sigma`` is already a standard error of the published mean can pin
     # ``n_arm=1`` so it is not tightened further.
     n_arm: int | None = None
+    # A whole-trajectory finding (``kind=CURVE``): the marker's value at each
+    # of these timepoints, in one arm. Compiled to per-point specs before
+    # scoring. ``None`` for every scalar statistic.
+    curve: tuple[CurvePoint, ...] | None = field(default=None)
+    # Held-out: a sealed item never enters a training registry; it is reachable
+    # only through the scoring path. Sealing is done at random within a protocol
+    # family at filing time (PLAN Phase 0), so training and the scoreboard never
+    # share an item.
+    sealed: bool = False
 
     def __post_init__(self) -> None:
         if not self.arms:
             raise ValueError(f"{self.name}: at least one arm required")
+        if self.kind is StatisticKind.CURVE:
+            if not self.curve:
+                raise ValueError(f"{self.name}: kind=curve needs a non-empty curve")
+            if len(self.arms) != 1:
+                raise ValueError(f"{self.name}: kind=curve is a single-arm trajectory")
+            dur = self.arms[0].duration_min
+            for cp in self.curve:
+                if cp.t_min < 0 or cp.t_min >= dur:
+                    raise ValueError(
+                        f"{self.name}: curve point t={cp.t_min} outside [0, {dur})",
+                    )
+                if cp.sigma <= 0:
+                    raise ValueError(f"{self.name}: curve point sigma must be positive")
+        elif self.curve is not None:
+            raise ValueError(f"{self.name}: curve is only for kind=curve")
         if self.sigma <= 0:
             raise ValueError(f"{self.name}: sigma must be positive (got {self.sigma})")
         if self.band_halfwidth < 0:

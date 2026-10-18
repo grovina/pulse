@@ -97,7 +97,10 @@ class TestGlucoseAppearanceTerm(unittest.TestCase):
             ns = (traj - m.norm_center) / m.norm_scale
             met_idx = MODULE_MARKER_INDICES["metabolic"]
             coupling = m.coupling_for("metabolic", ns, torch.zeros(180, 4), torch.zeros(180, 3))
-            ext = torch.tensor([[0.01, 0.5]]).expand(180, -1)
+            names = m.metabolic.external_inputs
+            ext = torch.zeros(180, len(names))
+            ext[:, names.index("activity")] = 0.01
+            ext[:, names.index("sleep_wake")] = 0.5
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(180, -1)
             tf = compute_time_features(torch.arange(180.0) + 360.0)
             f = m.metabolic.fluxes(ns[:, met_idx], coupling, ext, e_met, tf)

@@ -52,9 +52,29 @@ def _fresh() -> ModularPhysiologyNetwork:
     return model
 
 
+def _silence_other_paths(model: ModularPhysiologyNetwork) -> None:
+    """Every embedding path into the rollout except the Si and Gb heads reads nothing."""
+    metabolic = model.metabolic
+    with torch.no_grad():
+        columns = [
+            i for i, (kind, _) in enumerate(metabolic.head_input_sources())
+            if kind == "embedding"
+        ]
+        for network in metabolic.mlp_heads().values():
+            network[0].weight[:, columns] = 0.0
+        for name, layer in model.embedding_projections.items():
+            if name != "metabolic":
+                layer.weight.zero_()
+        # The population meal is the kernel bias (a zero embedding ignores the
+        # kernel weights). Zeroing the weights keeps that meal for every person.
+        model.gut.kernel.kernel[-1].weight.zero_()
+        model.default_inputs_net[0].weight[:, : model.embedding_dim] = 0.0
+
+
 def _open_si_and_gb(model: ModularPhysiologyNetwork) -> None:
     """Gb reads embedding axis 0, Si reads axis 1. Nothing else reads either."""
     metabolic = model.metabolic
+    _silence_other_paths(model)
     with torch.no_grad():
         projection = model.embedding_projections["metabolic"]
         projection.weight.zero_()
@@ -71,19 +91,6 @@ def _open_si_and_gb(model: ModularPhysiologyNetwork) -> None:
             head[-1].weight.zero_()
             head[-1].bias.zero_()
             head[-1].weight[0, 0] = 1.0
-        columns = [
-            i for i, (kind, _) in enumerate(metabolic.head_input_sources())
-            if kind == "embedding"
-        ]
-        for network in metabolic.mlp_heads().values():
-            network[0].weight[:, columns] = 0.0
-        for name, layer in model.embedding_projections.items():
-            if name != "metabolic":
-                layer.weight.zero_()
-        # The population meal is the kernel bias (a zero embedding ignores the
-        # kernel weights). Zeroing the weights keeps that meal for every person.
-        model.gut.kernel.kernel[-1].weight.zero_()
-        model.default_inputs_net[0].weight[:, : model.embedding_dim] = 0.0
 
 
 def _person(gb: float, si: float) -> torch.Tensor:
@@ -156,10 +163,13 @@ def _off_axis(grad: torch.Tensor) -> float:
 def measure() -> dict[str, float]:
     """Trajectory gaps and the fasting-vs-meal embedding gradients.
 
-    ``cold_*`` is the network as constructed (Si and Gb heads still closed).
+    ``cold_*`` is the network as constructed (Si and Gb heads still closed),
+    with the other embedding paths silenced as in the opened model: a fresh
+    GLP-1 head reads the embedding and reaches fasting glucose through glucagon.
     The other fields are the same laws with the two heads given orthogonal reads.
     """
     cold = _fresh()
+    _silence_other_paths(cold)
     for param in (
         *cold.metabolic.insulin_sens_net.parameters(),
         *cold.metabolic.glucose_baseline_net.parameters(),
