@@ -125,8 +125,10 @@ def student_initial_states(
     ``codes`` is ``[B, EMBEDDING_DIM]``. The spin-up starts at the marker
     typicals, runs a standard fed day (three meals, asleep 23:00–07:00), then
     ``arm.prefast_hours`` of meal-free rest, awake. The clock at the end is
-    the arm's ``start_hour``. The returned state is ``[B, STATE_DIM]`` and
-    stays in the graph, so the run-in is the same body as the protocol.
+    the arm's ``start_hour``. The returned state is ``[B, STATE_DIM]`` and is
+    detached: the protocol that follows is in the graph, the day that prepared
+    it is not. A day of activations held for every item is what exhausted the
+    trainer.
 
     ``fed_day_minutes`` is the length of that day. The training path uses
     ``FED_DAY_MINUTES``.
@@ -155,12 +157,13 @@ def student_initial_states(
         clock = (start_hour + minute / 60.0) % 24.0
         sleep[minute] = 0.0 if _asleep(clock) else 1.0
     activity = torch.full((total,), ARM_DEFAULT_ACTIVITY, dtype=torch.float32, device=device)
-    traj = integrate(
-        model, state, codes, total,
-        dt=1.0, start_time_minutes=start_hour * 60.0, meals=meals,
-        sleep_wake=sleep, activity=activity,
-    )
-    return traj[:, -1, :STATE_DIM]
+    with torch.no_grad():
+        traj = integrate(
+            model, state, codes, total,
+            dt=1.0, start_time_minutes=start_hour * 60.0, meals=meals,
+            sleep_wake=sleep, activity=activity,
+        )
+    return traj[:, -1, :STATE_DIM].detach()
 
 
 def item_initial_state(init_mode: InitMode, arm: CohortArmSpec, seed: int) -> np.ndarray:

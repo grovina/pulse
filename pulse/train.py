@@ -126,7 +126,7 @@ from .training import (
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
 from .correction import shrinkage_of
-from .training.evidence_step import evidence_batch_nll, rule_nll, sample_evidence
+from .training.evidence_step import item_nll, rule_nll, sample_evidence
 from .training.factors import reference_prior_stats, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
@@ -778,45 +778,51 @@ def train(
             }
 
             for _step in range(n_steps_default):
-                loss = _CORRECTION_SHRINKAGE * shrinkage_of(model)
+                # One rollout's graph at a time. Summing a batch of day-long
+                # arms before backward is what hit the memory limit.
+                accumulate_grad(
+                    _CORRECTION_SHRINKAGE * shrinkage_of(model), ctx, signal="evidence",
+                )
                 if w_cohort > 0.0 and evidence_pool and evidence_batch_size > 0:
                     t0 = time.time()
                     items = sample_evidence(evidence_pool, evidence_batch_size, rng)
-                    nll = evidence_batch_nll(
-                        model, items, n_draws=cohort_sample_patients, rng=rng, device=device,
-                    )
-                    loss = loss + w_cohort * nll
-                    evidence_sum += float(nll.detach())
-                    n_items += len(items)
+                    for spec in items:
+                        nll = item_nll(
+                            model, spec, n_draws=cohort_sample_patients, rng=rng, device=device,
+                        )
+                        accumulate_grad(
+                            w_cohort * float(spec.weight) * nll, ctx, signal="evidence",
+                        )
+                        evidence_sum += float(nll.detach())
+                        n_items += 1
                     signal_times["evidence"] += time.time() - t0
                 if w_rules > 0.0 and PHYSIOLOGY_RULES:
                     t0 = time.time()
                     rules = sample_evidence(PHYSIOLOGY_RULES, 1, rng)
-                    hinge = torch.zeros((), device=device)
                     for rule in rules:
-                        hinge = hinge + float(rule.weight) * rule_nll(
+                        hinge = rule_nll(
                             model, rule, n_draws=physiology_rules_sample_patients,
                             rng=rng, device=device,
                         )
-                    loss = loss + w_rules * hinge
-                    rules_sum += float(hinge.detach())
-                    n_rules += len(rules)
+                        accumulate_grad(
+                            w_rules * float(rule.weight) * hinge, ctx, signal="evidence",
+                        )
+                        rules_sum += float(hinge.detach())
+                        n_rules += 1
                     signal_times["rules"] += time.time() - t0
                 if w_tape > 0.0 and trajectory_signal is not None:
                     t0 = time.time()
                     tape_loss = trajectory_signal.tape_window_loss(model, ctx)
-                    loss = loss + w_tape * tape_loss
+                    accumulate_grad(w_tape * tape_loss, ctx, signal="evidence")
                     tape_sum += float(tape_loss.detach())
                     n_tape += 1
                     signal_times["teacher_tape"] += time.time() - t0
                 if w_prior > 0.0:
                     t0 = time.time()
                     prior_nll = population_prior_nll(model.metabolic)
-                    loss = loss + w_prior * prior_nll
+                    accumulate_grad(w_prior * prior_nll, ctx, signal="evidence")
                     prior_sum += float(prior_nll.detach())
                     signal_times["population_prior"] += time.time() - t0
-                if loss.requires_grad:
-                    accumulate_grad(loss, ctx, signal="evidence")
                 if w_dose > 0.0:
                     t0 = time.time()
                     dose_res = dose_response_signal.compute(model, None, ctx)  # type: ignore[arg-type]
