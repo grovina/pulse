@@ -283,6 +283,16 @@ class PhysiologyModule(nn.Module):
     #: Names of the external channels this module reads, in input order.
     external_inputs: tuple[str, ...] = ("activity", "sleep_wake")
 
+    #: ``types.OBSERVABLES`` this module's law computes, returned by ``step_published``
+    #: under their own ids. A quantity a paper measures that the body does not
+    #: integrate: the clamp's infusion rate, the urine, the gas at the mouthpiece.
+    observables: tuple[str, ...] = ()
+
+    #: For a learnable population parameter of this module (local name), the study
+    #: whose protocol would identify it. The identifiability report names an open
+    #: direction with it, so the map of holes is also the reading list.
+    identified_by: dict[str, str] = {}
+
     n_state: int
     n_coupling: int
     embedding_dim: int
@@ -290,12 +300,13 @@ class PhysiologyModule(nn.Module):
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {}
 
-    def bind_person(
+    def bind_body(
         self,
         const: dict[str, torch.Tensor],
-        person: dict[str, torch.Tensor] | None,
+        body: dict[str, torch.Tensor] | None,
     ) -> dict[str, torch.Tensor]:
-        """Quantities decoded once for the whole body, merged into this module's constants.
+        """Quantities held once for the whole body, merged into this module's constants:
+        the person's mass and the numbers of a law that more than one organ reads.
 
         A module that reads one overrides this. The default has nothing to merge.
         """
@@ -372,10 +383,11 @@ class PhysiologyModule(nn.Module):
         drv: dict[str, torch.Tensor],
         raw: dict[object, torch.Tensor],
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-        """``(rate, published)``. ``published`` is empty unless this step computed
-        a quantity another module reads in the same minute. The gas ledger
-        publishes the ventilatory rise; the planned drives cannot, because the
-        rise depends on intestinal bile and bile is an ODE marker."""
+        """``(rate, published)``. ``published`` holds what this step computed for
+        someone else: a quantity another module reads in the same minute (the gas
+        ledger's ventilatory rise, which the planned drives cannot carry because it
+        depends on intestinal bile, an ODE marker), and this module's
+        ``observables``."""
         return self.step(state, coupling, const, drv, raw), {}
 
     def forward_published(
@@ -385,10 +397,10 @@ class PhysiologyModule(nn.Module):
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-        person: dict[str, torch.Tensor] | None = None,
+        body: dict[str, torch.Tensor] | None = None,
         extra_drives: dict[str, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-        const = self.bind_person(self.constants(embedding), person)
+        const = self.bind_body(self.constants(embedding), body)
         drv = self.drives(external, coupling, time_features, const)
         if extra_drives:
             drv = {**drv, **extra_drives}
@@ -402,10 +414,10 @@ class PhysiologyModule(nn.Module):
         external: torch.Tensor,
         embedding: torch.Tensor,
         time_features: torch.Tensor,
-        person: dict[str, torch.Tensor] | None = None,
+        body: dict[str, torch.Tensor] | None = None,
     ) -> torch.Tensor:
         rate, _published = self.forward_published(
-            state, coupling, external, embedding, time_features, person)
+            state, coupling, external, embedding, time_features, body)
         return rate
 
 

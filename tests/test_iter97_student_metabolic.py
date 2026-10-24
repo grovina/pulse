@@ -2,7 +2,9 @@
 items 2.2, 2.6, 3.4, 3.10, 3.11 and the dead-parameter finding).
 
 Every test here pins something that holds BY CONSTRUCTION — a random
-perturbation of every parameter must not break it.
+perturbation of every network parameter must not break it. The published
+numbers stay at their values: moving the renal threshold below a fasting
+glucose is a different kidney, not a broken construction.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from pulse.model import (
 from pulse.modules import metabolic as M
 from pulse.modules.base import compute_time_features
 from pulse.modules.gut import MealEvent
+from pulse.published import PublishedNumbers, initial_values
 from pulse.types import (
     BODY_MASS_KG, EMBEDDING_DIM, MARKER_INDEX as MI, MG_DL_PER_G, MODULE_MARKER_INDICES,
     NORM_CENTER, NORM_SCALE, PHYSIOLOGICAL_MIN, VG_DL, VG_DL_PER_KG,
@@ -36,9 +39,12 @@ def _model(seed: int = 0, hidden: int = 16, perturb: float = 0.3) -> ModularPhys
         metabolic_hidden=hidden, appetite_hidden=16, stress_hidden=16, cardiovascular_hidden=16,
         thermoreg_hidden=16, respiratory_hidden=16, gut_hidden=16, hepatobiliary_hidden=16)
     if perturb > 0:
+        published = {id(p) for mod in m.metabolic.modules() if isinstance(mod, PublishedNumbers)
+                     for p in mod.parameters()}
         with torch.no_grad():
             for p in m.metabolic.parameters():
-                p.add_(perturb * torch.randn_like(p))
+                if id(p) not in published:
+                    p.add_(perturb * torch.randn_like(p))
     m.eval()
     return m
 
@@ -102,7 +108,7 @@ class TestCarbonBudget(unittest.TestCase):
                 duo[:, 1:2],
                 ns[:, MI["intestinal_bile"]:MI["intestinal_bile"] + 1],
             ], -1)
-            external = torch.stack([act, sw] + [torch.zeros_like(act)] * 3, -1)
+            external = torch.stack([act, sw] + [torch.zeros_like(act)] * 4, -1)
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(n, -1)
             tf = compute_time_features(torch.tensor([(360 + s) % 1440.0 for s in range(n)]))
             f = met.fluxes(ns[:, _MET], coupling, external, e_met, tf)
@@ -257,7 +263,7 @@ class TestPerPatientGates(unittest.TestCase):
         state[0, M._GLUCAGON_IDX] = (gn_b - 70.0) / 20.0
         state[0, M._LIVER_GLYCOGEN_IDX] = (lgly - 100.0) / 60.0
         coupling = torch.zeros(1, M._N_COUPLING)
-        external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0]])
+        external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
         tf = compute_time_features(torch.tensor([600.0]))
         return state, coupling, external, emb, tf
 
@@ -782,9 +788,22 @@ class TestNoDeadHeads(unittest.TestCase):
         # The three sleep-debt gains are identities at zero debt (and at basal
         # insulin, which the random state already clears), so carry a night's debt.
         coupling[:, M._DEBT_COUPLING_IDX] = (4.0 - M._DEBT_CENTER) / M._DEBT_SCALE
+        # Each published number's law has a gate that is shut at rest: the kidney
+        # below its threshold and off the drug, the incretins and the protein
+        # path at basal, fat absorption with bile present. Open every one.
+        state = state.clone()
+        state[::2, M._GLUCOSE_IDX] = (250.0 - 95.0) / 30.0
+        external = external.clone()
+        external[:, M._PROTOCOL_INPUTS.index("sglt2")] = 0.5
+        coupling[:, M._GLP1_COUPLING_IDX] = 1.0
+        coupling[:, M._GIP_COUPLING_IDX] = 1.0
+        coupling[:, M._LIPID_COUPLING_IDX] = 0.4
+        coupling[:, M._AMINO_COUPLING_IDX] = 0.3
+        coupling[:, M._DUO_PROT_COUPLING_IDX] = 0.2
+        coupling[:, M._INT_BILE_COUPLING_IDX] = -M._INT_BILE_CENTER / M._INT_BILE_SCALE
         emb = emb.detach().requires_grad_(True)
-        rates = met(state, coupling, external, emb, tf)
-        rates.abs().sum().backward()
+        rates, published = met.forward_published(state, coupling, external, emb, tf)
+        (rates.abs().sum() + sum(v.abs().sum() for v in published.values())).backward()
         dead = [n for n, p in met.named_parameters() if p.grad is None or float(p.grad.abs().max()) == 0.0]
         self.assertEqual(dead, [])
 
@@ -1007,10 +1026,11 @@ class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
             rate = met(state, coupling, external, emb, tf)
+        islet = initial_values(inc.ISLET)
         torch.testing.assert_close(f["ffa_from_lipid"], M._FFA_FROM_LIPID * coupling[:, M._LIPID_COUPLING_IDX])
         torch.testing.assert_close(
             f["glucagon_from_protein"],
-            inc.glucagon_from_protein_t(coupling[:, M._DUO_PROT_COUPLING_IDX]),
+            inc.glucagon_from_protein_t(coupling[:, M._DUO_PROT_COUPLING_IDX], islet),
         )
         torch.testing.assert_close(rate[:, M._FFA_IDX], f["ffa_rate"], atol=1e-6, rtol=1e-5)
         torch.testing.assert_close(rate[:, M._GLUCAGON_IDX], f["gn_rate"], atol=1e-6, rtol=1e-5)
@@ -1020,7 +1040,7 @@ class TestDietaryMacrosOnCouplingChannels(unittest.TestCase):
             f_bare = met.fluxes(state, bare, external, emb, tf)
         torch.testing.assert_close(
             f["gn_rate"] - f_bare["gn_rate"],
-            inc.glucagon_from_protein_t(coupling[:, M._DUO_PROT_COUPLING_IDX]),
+            inc.glucagon_from_protein_t(coupling[:, M._DUO_PROT_COUPLING_IDX], islet),
             atol=1e-6, rtol=1e-5,
         )
 

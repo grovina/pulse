@@ -18,6 +18,7 @@ from .cohort_types import (
 )
 from .evidence import (
     ALL_EVIDENCE,
+    REAL_EVIDENCE,
     SEALED_EVIDENCE,
     Authority,
     EvidenceItem,
@@ -49,6 +50,7 @@ __all__ = [
     "ALL_COHORT_STATISTICS",
     "SEALED_COHORT_STATISTICS",
     "ALL_EVIDENCE",
+    "REAL_EVIDENCE",
     "SEALED_EVIDENCE",
     "sealed_evidence",
     "Authority",

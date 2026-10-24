@@ -1,8 +1,8 @@
 """
 Physiology rules — per-trajectory inequality / relational supervision.
 
-SKETCH for iter 42. Not yet wired into ``train.py``; this file exists
-to pressure-test the schema before committing to the full wiring.
+A training step samples these alongside the cohort items. The hinge is
+summed over arms and people, and it is zero once the predicate is met.
 
 Operationalizes the PRD's *Calibrated supervision* principle: encode
 every plausibility constraint the literature supports, hinge-shaped so

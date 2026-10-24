@@ -43,10 +43,13 @@ import numpy as np
 
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
+    MEAN_KINDS,
     CohortArmSpec,
     CohortStatisticSpec,
     StatisticKind,
     StatisticWindow,
+    combine_arms,
+    is_on,
 )
 from ..knowledge.full_body import PatientParams
 from ..knowledge.textbook_scenarios.base import cold_model_trajectory
@@ -95,13 +98,17 @@ def _extract_statistic(
     kind: StatisticKind,
 ) -> float:
     series = traj[window.start_min:window.end_min, marker_idx]
-    if kind in (StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS):
+    if kind in MEAN_KINDS:
         return float(series.mean())
     if kind in (StatisticKind.PEAK_VALUE, StatisticKind.DELTA_PEAKS):
         return float(series.max())
     if kind == StatisticKind.TIME_TO_PEAK:
         return float(int(series.argmax()))
     raise ValueError(f"Unknown statistic kind: {kind}")
+
+
+def _runs_an_input(arm: CohortArmSpec) -> bool:
+    return any(is_on(s) for s in (arm.glucose_infusion, arm.glucose_clamp, arm.insulin_clamp, arm.sglt2))
 
 
 def _run_arm(
@@ -132,16 +139,17 @@ def cold_calibration(
 
     rows: list[ColdCalibrationRow] = []
     for i, spec in enumerate(spec_iter):
+        if spec.marker_id not in MARKER_INDEX:
+            continue  # an observable: the cold model integrates states only
+        if any(_runs_an_input(arm) for arm in spec.arms):
+            continue  # the cold model takes meals only, not a drug or an IV line
         marker_idx = MARKER_INDEX[spec.marker_id]
         per_arm: list[float] = []
         for arm_idx, arm in enumerate(spec.arms):
             traj = _run_arm(arm, p, seed=seed + i * 100 + arm_idx)
             win = _arm_window(spec, arm_idx)
             per_arm.append(_extract_statistic(traj, marker_idx, win, spec.kind))
-        if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
-            pred = per_arm[1] - per_arm[0]
-        else:
-            pred = per_arm[0]
+        pred = combine_arms(spec.kind, per_arm)
         z = (pred - float(spec.target)) / float(spec.sigma)
         rows.append(ColdCalibrationRow(
             name=spec.name,

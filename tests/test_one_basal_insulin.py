@@ -43,18 +43,18 @@ class TestOneBasalInsulin(unittest.TestCase):
             last.weight.zero_()
             last.bias.fill_(bias)
         emb = torch.randn(4, EMBEDDING_DIM)
-        person = model.person_quantities(emb)
+        body = model.body_quantities(emb)
         met = model.embedding_projections["metabolic"](emb)
         met_ib = model.metabolic.insulin_setpoint_raw(met).clamp(min=1e-3)
-        torch.testing.assert_close(person["ib"], met_ib)
-        torch.testing.assert_close(person["ib"], torch.full_like(person["ib"], patient.Ib))
+        torch.testing.assert_close(body["ib"], met_ib)
+        torch.testing.assert_close(body["ib"], torch.full_like(body["ib"], patient.Ib))
         const = model.metabolic.constants(met)
-        torch.testing.assert_close(const["ib"], person["ib"])
-        torch.testing.assert_close(person["body_mass_kg"], model.metabolic.body_mass_kg(met))
+        torch.testing.assert_close(const["ib"], body["ib"])
+        torch.testing.assert_close(body["body_mass_kg"], model.metabolic.body_mass_kg(met))
 
         app = model.embedding_projections["appetite"](emb)
-        bound = model.appetite.bind_person(model.appetite.constants(app), person)
-        torch.testing.assert_close(bound["ib"], person["ib"])
+        bound = model.appetite.bind_body(model.appetite.constants(app), body)
+        torch.testing.assert_close(bound["ib"], body["ib"])
 
     def test_ghrelin_feels_the_metabolic_basal(self) -> None:
         model = _model()
@@ -86,4 +86,4 @@ class TestOneBasalInsulin(unittest.TestCase):
     def test_appetite_without_the_shared_basal_fails_loudly(self) -> None:
         model = _model()
         with self.assertRaises(RuntimeError):
-            model.appetite.bind_person(model.appetite.constants(torch.zeros(1, 16)), None)
+            model.appetite.bind_body(model.appetite.constants(torch.zeros(1, 16)), None)

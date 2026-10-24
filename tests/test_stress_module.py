@@ -8,9 +8,9 @@ import torch
 
 from pulse.modules.base import compute_time_features
 from pulse.modules.stress import (
-    EPI_B, SNS_B, StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX, _EPI_IDX,
-    _SNS_IDX, _ACTH_PER_CRH,
+    StressModule, _ACTH_IDX, _CORTISOL_IDX, _CRH_IDX, _EPI_IDX, _SNS_IDX, _ACTH_PER_CRH,
 )
+from pulse.sympathoadrenal import EPI_B, SNS_B
 from pulse.types import (
     EMBEDDING_DIM, MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER,
     NORM_SCALE, TIME_FEATURES_DIM,

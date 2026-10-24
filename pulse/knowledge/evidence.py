@@ -53,6 +53,7 @@ class OperatorKind(str, Enum):
     TIME_TO_PEAK = "time_to_peak"
     DELTA_MEANS = "delta_means"
     DELTA_PEAKS = "delta_peaks"
+    RATIO_MEANS = "ratio_means"
     HINGE = "hinge"
     TAPED_VITAL = "taped_vital"
     RATE = "rate"
@@ -60,14 +61,20 @@ class OperatorKind(str, Enum):
     DOSE_SLOPE = "dose_slope"
     DOSE_PEAK = "dose_peak"
     DOSE_RANK = "dose_rank"
+    CALIBRATED_SERIES = "calibrated_series"
+    SPREAD = "spread"
+    CORRELATION = "correlation"
 
 
-_KIND_FROM_STATISTIC: dict[StatisticKind, OperatorKind] = {
+OPERATOR_OF_STATISTIC: dict[StatisticKind, OperatorKind] = {
     StatisticKind.MEAN_IN_WINDOW: OperatorKind.WINDOW_MEAN,
     StatisticKind.PEAK_VALUE: OperatorKind.PEAK,
     StatisticKind.TIME_TO_PEAK: OperatorKind.TIME_TO_PEAK,
     StatisticKind.DELTA_MEANS: OperatorKind.DELTA_MEANS,
     StatisticKind.DELTA_PEAKS: OperatorKind.DELTA_PEAKS,
+    StatisticKind.RATIO_MEANS: OperatorKind.RATIO_MEANS,
+    StatisticKind.SPREAD: OperatorKind.SPREAD,
+    StatisticKind.CORRELATION: OperatorKind.CORRELATION,
 }
 
 
@@ -154,7 +161,7 @@ def from_cohort(spec: CohortStatisticSpec) -> EvidenceItem:
         observations=(
             Observation(
                 marker_id=spec.marker_id,
-                kind=_KIND_FROM_STATISTIC[spec.kind],
+                kind=OPERATOR_OF_STATISTIC[spec.kind],
                 window=spec.window,
                 target=spec.target,
                 sigma=spec.sigma,
@@ -308,5 +315,37 @@ def sealed_evidence() -> tuple[EvidenceItem, ...]:
     )
 
 
+def real_evidence() -> tuple[EvidenceItem, ...]:
+    """The individual-level rulers (PLAN Phase 0): measured people, each one
+    calibrated on sparse early readings and predicted later under another
+    protocol. The item name is the benchmark episode ``source``; the benchmark
+    scores them against the population-median person and the person's own
+    running mean. None is training evidence.
+    """
+    def ruler(name: str, source: str, description: str) -> EvidenceItem:
+        return EvidenceItem(
+            name=name, source=source, description=description,
+            authority=Authority.REAL, arms=(),
+            observations=tuple(
+                Observation(marker_id=m, kind=OperatorKind.CALIBRATED_SERIES)
+                for m in ("glucose", "hr")
+            ),
+        )
+
+    return (
+        ruler(
+            "cgm_real",
+            "One subject: FreeStyle Libre 3 CGM with Oura heart rate and sleep (2024-2025)",
+            "Overnight windows: calibrate on the evening, predict the night",
+        ),
+        ruler(
+            "cgmacros",
+            "Gutierrez-Osuna, Kerr, Mortazavi, Das. CGMacros. PhysioNet 2025",
+            "45 adults, healthy to type 2: calibrate across breakfast, predict the lunch response",
+        ),
+    )
+
+
 ALL_EVIDENCE: tuple[EvidenceItem, ...] = all_evidence()
 SEALED_EVIDENCE: tuple[EvidenceItem, ...] = sealed_evidence()
+REAL_EVIDENCE: tuple[EvidenceItem, ...] = real_evidence()

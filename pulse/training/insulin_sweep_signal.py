@@ -57,7 +57,7 @@ from ..types import (
     NORM_CENTER,
     NORM_SCALE,
 )
-from .embedding_sampler import select_supervised_rows
+from .embedding_sampler import teacher_table_rows
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
@@ -528,7 +528,7 @@ class InsulinSweepSignal(TrainingSignal):
         if w <= 0:
             return SignalResult()
 
-        rows = select_supervised_rows(
+        rows = teacher_table_rows(
             embeddings=embeddings,
             n_patients=self.n_patients,
             sample_patients=self.sample_patients,

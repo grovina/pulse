@@ -18,14 +18,20 @@ production, scaled so that the 800 kg-m/min point is the same place on
 the Hill that activity 0.7 used to be. Lactate and temperature do not
 move it. At rest, with no meal, the offset is 0, so the rate equilibrates
 at the person's RR₀.
+
+The student learns the measured numbers — Table I's uptake and quotients, the
+ventilatory Hill (``GAS``) and the thermic fractions (``THERMIC``) — from these
+values. Weir, Atwater and the fuels' quotients are chemistry and stay fixed.
+The teacher keeps every value.
 """
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import Mapping, NamedTuple
 
 import torch
 
+from .published import Published
 from .types import BODY_MASS_KG
 
 # Table I. The rest SE is the same column alignment as the explicit
@@ -36,6 +42,7 @@ VO2_800_ML = 1811.0
 VO2_800_SE_ML = 69.0
 RQ_REST = 0.77
 RQ_800 = 0.82
+RQ_SE = 0.01
 ACTIVITY_800 = 0.7
 
 # Weir 1949, neglecting urinary nitrogen. kcal per liter.
@@ -66,6 +73,21 @@ RQ_PROT = 0.801
 # that one equilibrated at 63 /min when activity was 0.9.
 ACT_RR_GAIN = 20.0
 RR_ACT_K = 0.5
+
+_WAHREN = "Wahren 1971 Table I, upright bicycle"
+GAS: dict[str, Published] = {
+    "vo2_rest": Published(VO2_REST_ML, f"{_WAHREN}: O₂ uptake at rest"),
+    "vo2_800": Published(VO2_800_ML, f"{_WAHREN}: O₂ uptake after 40 min at 800 kg-m/min"),
+    "rq_rest": Published(RQ_REST, f"{_WAHREN}: respiratory quotient at rest"),
+    "rq_800": Published(RQ_800, f"{_WAHREN}: respiratory quotient after 40 min at 800 kg-m/min"),
+    "act_rr_gain": Published(ACT_RR_GAIN, "Respiratory frequency across graded exercise: its ceiling"),
+    "rr_act_k": Published(RR_ACT_K, "Respiratory frequency across graded exercise: the work at half its rise"),
+}
+THERMIC: dict[str, Published] = {
+    "dit_carb": Published(DIT_CARB, "Westerterp 2004: the thermic effect of carbohydrate", fraction=True),
+    "dit_fat": Published(DIT_FAT, "Westerterp 2004: the thermic effect of fat", fraction=True),
+    "dit_prot": Published(DIT_PROT, "Westerterp 2004: the thermic effect of protein", fraction=True),
+}
 
 
 class Gas(NamedTuple):
@@ -138,25 +160,39 @@ def frequency_offset(vco2_ml: float, mass_kg: float) -> float:
     return ACT_RR_GAIN * act * act / (act * act + RR_ACT_K * RR_ACT_K)
 
 
-def work_vo2_ml_t(mass_kg: torch.Tensor, activity: torch.Tensor) -> torch.Tensor:
+def work_vo2_ml_t(
+    mass_kg: torch.Tensor, activity: torch.Tensor, gas: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
     act = torch.relu(activity)
     scale = mass_kg / BODY_MASS_KG
-    slope = (VO2_800_ML - VO2_REST_ML) / ACTIVITY_800
-    return (VO2_REST_ML + slope * act) * scale
+    slope = (gas["vo2_800"] - gas["vo2_rest"]) / ACTIVITY_800
+    return (gas["vo2_rest"] + slope * act) * scale
 
 
-def work_rq_t(activity: torch.Tensor) -> torch.Tensor:
+def work_rq_t(activity: torch.Tensor, gas: Mapping[str, torch.Tensor]) -> torch.Tensor:
     act = torch.relu(activity)
-    rq = RQ_REST + (RQ_800 - RQ_REST) * (act / ACTIVITY_800)
+    rq = gas["rq_rest"] + (gas["rq_800"] - gas["rq_rest"]) * (act / ACTIVITY_800)
     return rq.clamp(0.70, 1.0)
+
+
+def _thermic_parts_t(
+    carb_g: torch.Tensor, fat_g: torch.Tensor, prot_g: torch.Tensor,
+    thermic: Mapping[str, torch.Tensor],
+) -> tuple[tuple[torch.Tensor, float], ...]:
+    """Each fuel's heat (kcal/min) with the quotient it is oxidized at."""
+    return (
+        (thermic["dit_carb"] * KCAL_CARB * carb_g, RQ_CARB),
+        (thermic["dit_fat"] * KCAL_FAT * fat_g, RQ_FAT),
+        (thermic["dit_prot"] * KCAL_PROT * prot_g, RQ_PROT),
+    )
 
 
 def dit_kcal_t(
     carb_g: torch.Tensor, fat_g: torch.Tensor, prot_g: torch.Tensor,
+    thermic: Mapping[str, torch.Tensor],
 ) -> torch.Tensor:
-    return (DIT_CARB * KCAL_CARB * carb_g
-            + DIT_FAT * KCAL_FAT * fat_g
-            + DIT_PROT * KCAL_PROT * prot_g)
+    carb, fat, prot = (kcal for kcal, _rq in _thermic_parts_t(carb_g, fat_g, prot_g, thermic))
+    return carb + fat + prot
 
 
 def _vo2_ml_of_t(kcal: torch.Tensor, rq: float) -> torch.Tensor:
@@ -169,17 +205,13 @@ def gas_exchange_t(
     carb_g: torch.Tensor,
     fat_g: torch.Tensor,
     prot_g: torch.Tensor,
+    numbers: Mapping[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """``(kcal/min, VO₂ ml/min, VCO₂ ml/min, RQ)``."""
-    vo2 = work_vo2_ml_t(mass_kg, activity)
-    rq = work_rq_t(activity)
+    """``(kcal/min, VO₂ ml/min, VCO₂ ml/min, RQ)``. ``numbers`` holds ``GAS`` and ``THERMIC``."""
+    vo2 = work_vo2_ml_t(mass_kg, activity, numbers)
+    rq = work_rq_t(activity, numbers)
     vco2 = rq * vo2
-    parts = (
-        (DIT_CARB * KCAL_CARB * carb_g, RQ_CARB),
-        (DIT_FAT * KCAL_FAT * fat_g, RQ_FAT),
-        (DIT_PROT * KCAL_PROT * prot_g, RQ_PROT),
-    )
-    for kcal, fuel_rq in parts:
+    for kcal, fuel_rq in _thermic_parts_t(carb_g, fat_g, prot_g, numbers):
         d_vo2 = _vo2_ml_of_t(kcal, fuel_rq)
         vo2 = vo2 + d_vo2
         vco2 = vco2 + fuel_rq * d_vo2
@@ -187,10 +219,14 @@ def gas_exchange_t(
     return kcal_min, vo2, vco2, vco2 / vo2
 
 
-def frequency_offset_t(vco2_ml: torch.Tensor, mass_kg: torch.Tensor) -> torch.Tensor:
-    rest = work_rq_t(vco2_ml.new_zeros(())) * work_vo2_ml_t(mass_kg, vco2_ml.new_zeros(()))
+def frequency_offset_t(
+    vco2_ml: torch.Tensor, mass_kg: torch.Tensor, gas: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    rest_act = vco2_ml.new_zeros(())
+    rest = work_rq_t(rest_act, gas) * work_vo2_ml_t(mass_kg, rest_act, gas)
     anchor_act = vco2_ml.new_tensor(ACTIVITY_800)
-    anchor = work_rq_t(anchor_act) * work_vo2_ml_t(mass_kg, anchor_act)
+    anchor = work_rq_t(anchor_act, gas) * work_vo2_ml_t(mass_kg, anchor_act, gas)
     span = anchor - rest
     act = ACTIVITY_800 * torch.relu(vco2_ml - rest) / span
-    return ACT_RR_GAIN * act * act / (act * act + RR_ACT_K * RR_ACT_K)
+    k = gas["rr_act_k"]
+    return gas["act_rr_gain"] * act * act / (act * act + k * k)

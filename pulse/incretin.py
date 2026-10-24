@@ -10,13 +10,20 @@ clamped, exendin-(9-39) raised the incremental glucagon area from 221 ± 353
 to 1657 ± 699 pg/mL·min over the 175 min after 75 g of oral glucose.
 Westphal, Gannon and Nuttall, Am J Clin Nutr 1990;52:267: 50 g of protein
 alone did not change the serum glucose.
+
+The student learns every number below from these values — GIP's kinetics on
+the appetite module that holds GIP (``GIP_KINETICS``), the islet gains on the
+metabolic module (``ISLET``). The teacher keeps them.
 """
 
 from __future__ import annotations
 
+from typing import Mapping
+
 import torch
 
 from .gastric import EMPTY_KCAL_PER_MIN
+from .published import Published
 from .types import MG_DL_PER_G
 
 GIP_B = 10.0
@@ -78,13 +85,33 @@ _SAT_REF = SALEHI_GLP1_EXCESS / (SALEHI_GLP1_EXCESS + K_INCRETIN)
 AMINO_INS_GAIN = 1.0
 PROTEIN_GN_GAIN = 3.5
 
+GIP_KINETICS: dict[str, Published] = {
+    "gip_b": Published(GIP_B, "Fasting plasma GIP in healthy adults"),
+    "k_gip": Published(K_GIP, "Plasma GIP decay after an intravenous bolus"),
+    "gip_gain": Published(
+        GIP_GAIN, "Vilsbøll 2003: GIP beside GLP-1 after a meal at ordinary glucose"),
+    "gip_fat_weight": Published(
+        GIP_FAT_WEIGHT, "Vollmer 2008: integrated GIP after an 820 kcal breakfast against 75 g glucose"),
+}
+ISLET: dict[str, Published] = {
+    "k_incretin": Published(
+        K_INCRETIN, "Vilsbøll 2003: the insulin response to each incretin as its level rises"),
+    "incretin_half": Published(
+        INCRETIN_HALF, "Vilsbøll 2003: the incretins' share of the meal insulin response"),
+    "glp1_gn_pg": Published(
+        GLP1_GN_PG, "Salehi 2008: glucagon area with exendin-(9-39) after 75 g, glucose clamped"),
+    "amino_ins_gain": Published(AMINO_INS_GAIN, "Westphal 1990: insulin after 50 g of protein alone"),
+    "protein_gn_gain": Published(
+        PROTEIN_GN_GAIN, "Westphal 1990: glucagon after 50 g of protein alone, glucose unchanged"),
+}
+
 
 def glucagon_from_protein(protein_g: float) -> float:
     return PROTEIN_GN_GAIN * max(protein_g, 0.0)
 
 
-def glucagon_from_protein_t(protein_g: torch.Tensor) -> torch.Tensor:
-    return PROTEIN_GN_GAIN * torch.clamp(protein_g, min=0.0)
+def glucagon_from_protein_t(protein_g: torch.Tensor, islet: Mapping[str, torch.Tensor]) -> torch.Tensor:
+    return islet["protein_gn_gain"] * torch.clamp(protein_g, min=0.0)
 
 
 def _sat(excess: float) -> float:
@@ -117,24 +144,35 @@ def amino_insulin_rate(protein_g: float) -> float:
     return AMINO_INS_GAIN * max(protein_g, 0.0)
 
 
-def _sat_t(excess: torch.Tensor) -> torch.Tensor:
+def _sat_t(excess: torch.Tensor, k: torch.Tensor) -> torch.Tensor:
     e = torch.clamp(excess, min=0.0)
-    return e / (e + K_INCRETIN)
+    return e / (e + k)
 
 
-def incretin_factor_t(glp1_excess: torch.Tensor, gip_excess: torch.Tensor) -> torch.Tensor:
-    return 1.0 + INCRETIN_HALF * (_sat_t(glp1_excess) + _sat_t(gip_excess))
+def incretin_factor_t(
+    glp1_excess: torch.Tensor, gip_excess: torch.Tensor, islet: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    k = islet["k_incretin"]
+    return 1.0 + islet["incretin_half"] * (_sat_t(glp1_excess, k) + _sat_t(gip_excess, k))
 
 
-def gip_rate_t(gip: torch.Tensor, carb_g: torch.Tensor, fat_g: torch.Tensor) -> torch.Tensor:
-    stim = torch.clamp(carb_g, min=0.0) + GIP_FAT_WEIGHT * torch.clamp(fat_g, min=0.0)
-    return -K_GIP * (gip - GIP_B) + GIP_GAIN * stim
+def gip_rate_t(
+    gip: torch.Tensor, carb_g: torch.Tensor, fat_g: torch.Tensor,
+    kinetics: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    stim = torch.clamp(carb_g, min=0.0) + kinetics["gip_fat_weight"] * torch.clamp(fat_g, min=0.0)
+    return -kinetics["k_gip"] * (gip - kinetics["gip_b"]) + kinetics["gip_gain"] * stim
 
 
-def glp1_glucagon_rate_t(glp1_excess: torch.Tensor, k_gn: torch.Tensor) -> torch.Tensor:
-    drop = GLP1_GN_PG * _sat_t(glp1_excess) / _SAT_REF
+def glp1_glucagon_rate_t(
+    glp1_excess: torch.Tensor, k_gn: torch.Tensor, islet: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    """At ``SALEHI_GLP1_EXCESS`` the drop is ``glp1_gn_pg``, whatever the saturation."""
+    k = islet["k_incretin"]
+    salehi = glp1_excess.new_tensor(SALEHI_GLP1_EXCESS)
+    drop = islet["glp1_gn_pg"] * _sat_t(glp1_excess, k) / _sat_t(salehi, k)
     return drop * k_gn
 
 
-def amino_insulin_rate_t(protein_g: torch.Tensor) -> torch.Tensor:
-    return AMINO_INS_GAIN * torch.clamp(protein_g, min=0.0)
+def amino_insulin_rate_t(protein_g: torch.Tensor, islet: Mapping[str, torch.Tensor]) -> torch.Tensor:
+    return islet["amino_ins_gain"] * torch.clamp(protein_g, min=0.0)

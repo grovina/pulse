@@ -476,7 +476,7 @@ class TrajectoryRolloutSignal(TrainingSignal):
         patient_idx: int,
         patient_data: dict,
         window_idx: int,
-        embeddings: nn.Embedding,
+        embeddings: nn.Embedding | None,
         rng: np.random.Generator,
         device: torch.device,
     ) -> "_Window":
@@ -506,6 +506,8 @@ class TrajectoryRolloutSignal(TrainingSignal):
             embedding = torch.zeros(EMBEDDING_DIM, device=device)
             patient_id = -1  # default-patient sentinel
         else:
+            if embeddings is None:
+                raise ValueError("a non-default tape window needs the patient table it was paired with")
             patient_id = int(patient_data["patient_id"])
             embedding = embeddings(torch.tensor(patient_id, device=device))
 
@@ -613,6 +615,26 @@ class TrajectoryRolloutSignal(TrainingSignal):
         return [
             (pred[k, : w.steps], guts[k], duos[k]) for k, w in enumerate(windows)
         ]
+
+    def tape_window_loss(self, model: nn.Module, ctx: SignalContext) -> torch.Tensor:
+        """One teacher-tape window, as a loss tensor. Does not step the optimizer.
+
+        The student is the median person (the zero code). The window is taken
+        from a default-patient episode when the dataset has one, otherwise
+        from any episode. The tape is a scaffold on the median body's vitals;
+        it does not pull factor draws toward individual teacher patients.
+        """
+        if not self._dataset:
+            return torch.zeros((), device=ctx.device)
+        defaults = [i for i, ep in enumerate(self._dataset) if ep.get("is_default")]
+        pool = defaults or list(range(len(self._dataset)))
+        idx = int(pool[int(ctx.rng.integers(0, len(pool)))])
+        data = dict(self._dataset[idx])
+        data["is_default"] = True
+        window = self._draw_window(idx, data, 0, None, ctx.rng, ctx.device)
+        pred, gut, duo = self._rollout(model, [window])[0]
+        loss, _comp = self._window_loss(model, window, pred, gut, duo, ctx)
+        return loss
 
     def iter_windows(
         self,

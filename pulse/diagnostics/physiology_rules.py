@@ -46,7 +46,7 @@ from ..knowledge.physiology_rules import PHYSIOLOGY_RULES, PhysiologyRule
 from ..knowledge.textbook_scenarios.base import cold_model_trajectory
 from ..physiology_rules_loss import physiology_rule_loss_one_rule
 from ..training.embedding_sampler import select_supervised_embeddings
-from ..types import EMBEDDING_DIM, NORM_CENTER
+from ..types import NORM_CENTER
 from .probe import load_model_from_checkpoint
 
 
@@ -140,16 +140,12 @@ def physiology_rules_diagnostic(
 ) -> tuple[PhysiologyRuleRow, ...]:
     """Per-rule violation + per-module grad-norm at the checkpoint."""
     model.train()
-    embeddings = nn.Embedding(n_patients, EMBEDDING_DIM)
-    nn.init.zeros_(embeddings.weight)
     rng = np.random.default_rng(seed)
     device = torch.device("cpu")
     emb_list = [
         e.detach().clone().requires_grad_(False)
         for e in select_supervised_embeddings(
-            embeddings=embeddings,
-            n_patients=n_patients,
-            sample_patients=sample_patients,
+            n=sample_patients if n_patients > 0 else 0,
             rng=rng,
             device=device,
             include_default=True,

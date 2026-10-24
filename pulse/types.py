@@ -413,6 +413,48 @@ DUODENAL_CHANNEL_INDEX = {ch: i for i, ch in enumerate(DUODENAL_CHANNEL_IDS)}
 MARKER_IDS = [m.id for m in MARKERS]
 MARKER_INDEX = {m.id: i for i, m in enumerate(MARKERS)}
 
+
+@dataclass(frozen=True)
+class ObservableDef:
+    """A quantity a paper measures that is not a state of the ODE.
+
+    The clamp's glucose infusion rate, the urine, the gas a mouthpiece collects.
+    Each is computed by the law of the module named here, from the state and the
+    protocol of one minute; nothing integrates it. An evidence item reads it the
+    way it reads a marker: column ``SERIES_INDEX[id]`` of an observed trajectory,
+    which is the state with every observable appended.
+    """
+
+    id: str
+    name: str
+    unit: str
+    module: str
+
+
+OBSERVABLES: tuple[ObservableDef, ...] = (
+    # Open-loop IV glucose plus the clamp's proportional infusion.
+    ObservableDef("glucose_infusion_rate", "Glucose infusion rate", "mg/kg/min", "metabolic"),
+    # Tracer Rd: obligatory, insulin-dependent and exercise uptake. Urine is its own line.
+    ObservableDef("glucose_disposal", "Glucose disposal", "mg/kg/min", "metabolic"),
+    ObservableDef("urinary_glucose", "Urinary glucose", "mg/min", "metabolic"),
+    ObservableDef("vo2", "Oxygen uptake", "mL/min", "metabolic"),
+    ObservableDef("vco2", "Carbon dioxide output", "mL/min", "metabolic"),
+    ObservableDef("rq", "Respiratory quotient", "ratio", "metabolic"),
+    ObservableDef("energy_expenditure", "Energy expenditure", "kcal/min", "metabolic"),
+    ObservableDef("lipolysis", "Lipolysis", "mmol/L/min", "metabolic"),
+)
+OBSERVABLE_IDS: tuple[str, ...] = tuple(o.id for o in OBSERVABLES)
+OBSERVABLE_DIM = len(OBSERVABLES)
+# Every series an evidence item can read: the markers, then the observables.
+SERIES_INDEX: dict[str, int] = {
+    **MARKER_INDEX,
+    **{o.id: STATE_DIM + i for i, o in enumerate(OBSERVABLES)},
+}
+
+
+def is_observable(series_id: str) -> bool:
+    return series_id in SERIES_INDEX and series_id not in MARKER_INDEX
+
 NORM_CENTER = [m.typical for m in MARKERS]
 
 NORM_SCALE = [

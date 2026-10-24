@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from pulse.expenditure import (
-    ACTIVITY_800, ACT_RR_GAIN, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, RR_ACT_K,
+    ACTIVITY_800, ACT_RR_GAIN, GAS, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, RR_ACT_K, THERMIC,
     VO2_800_ML, VO2_800_SE_ML, VO2_REST_ML, frequency_offset, frequency_offset_t,
     gas_exchange, gas_exchange_t, work_rq,
 )
@@ -20,6 +20,7 @@ from pulse.knowledge.full_body import (
 )
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.modules.base import PhysiologyModule
+from pulse.published import initial_values
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX as MI, MG_DL_PER_G, NORM_CENTER, STATE_DIM
 
 
@@ -58,8 +59,9 @@ class TestTheTable(unittest.TestCase):
         carb = torch.tensor([0.0, 0.3])
         fat = torch.tensor([0.0, 0.1])
         prot = torch.tensor([0.0, 0.2])
-        kcal, vo2, vco2, rq = gas_exchange_t(mass, act, carb, fat, prot)
-        rise = frequency_offset_t(vco2, mass)
+        numbers = initial_values({**GAS, **THERMIC})
+        kcal, vo2, vco2, rq = gas_exchange_t(mass, act, carb, fat, prot, numbers)
+        rise = frequency_offset_t(vco2, mass, numbers)
         for i in range(2):
             gas = gas_exchange(float(mass[i]), float(act[i]), float(carb[i]), float(fat[i]), float(prot[i]))
             self.assertAlmostEqual(float(kcal[i]), gas.kcal_per_min, places=4)
@@ -145,13 +147,19 @@ class TestTheLedgerPublishesTheRise(unittest.TestCase):
             )
         return rates[0, MI["rr"]]
 
-    def test_only_appetite_binds_a_person_quantity(self) -> None:
+    def test_no_organ_but_the_ledger_binds_the_kilograms(self) -> None:
         model = self._model()
-        overrides = [
+        overrides = sorted(
             name for name, mod in model._modules_by_name.items()
-            if type(mod).bind_person is not PhysiologyModule.bind_person
-        ]
-        self.assertEqual(overrides, ["appetite"])
+            if type(mod).bind_body is not PhysiologyModule.bind_body
+        )
+        self.assertEqual(overrides, ["appetite", "thermoreg"])
+        body = model.body_quantities(torch.zeros(2, EMBEDDING_DIM))
+        for name, mod in model._modules_by_name.items():
+            if name == "metabolic":
+                continue
+            const = mod.bind_body(mod.constants(torch.zeros(2, mod.embedding_dim)), body)
+            self.assertNotIn("body_mass_kg", const, name)
         const = model.respiratory.constants(torch.zeros(1, model.respiratory.embedding_dim))
         self.assertNotIn("body_mass_kg", const)
 
@@ -167,7 +175,7 @@ class TestTheLedgerPublishesTheRise(unittest.TestCase):
     def test_without_a_meal_mass_cancels_and_with_one_it_does_not(self) -> None:
         ref = self._model()
         heavy_m = self._model(3.0)
-        heavy = float(heavy_m.person_quantities(torch.zeros(1, EMBEDDING_DIM))["body_mass_kg"].detach())
+        heavy = float(heavy_m.body_quantities(torch.zeros(1, EMBEDDING_DIM))["body_mass_kg"].detach())
         self.assertGreater(heavy, 100.0)
         k = float(ref.respiratory.constants(torch.zeros(1, ref.respiratory.embedding_dim))["k"][0].detach())
 

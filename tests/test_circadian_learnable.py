@@ -1,6 +1,7 @@
-"""The clock's phase rate and the sleep-debt gains are learnable population parameters.
+"""The clock's numbers and the sleep-debt gains are learnable population parameters.
 
-The phase pull is the circadian module's own rate and lives there. The three sleep-debt
+The phase pull, the sleep need and the reference hour are the circadian module's own
+numbers and live there. The three sleep-debt
 gains (hepatic retention, lipolysis, peripheral disposal; Donga 2010) only ever scale how
 the metabolic module answers the debt it receives by coupling, so they live with that
 consumer. Each is log-space, initialised at its constant in ``pulse.circadian`` with no
@@ -18,13 +19,14 @@ import torch
 from torch import nn
 
 from pulse.circadian import (
-    DEBT_OF_RESTRICTED_NIGHT_H, HEPATIC_K, LIPOLYSIS_K, PERIPHERAL_K, PHASE_PULL_PER_H,
+    CLOCK, DEBT_OF_RESTRICTED_NIGHT_H, HEPATIC_K, LIPOLYSIS_K, PERIPHERAL_K, PHASE_PULL_PER_H,
     step_clock_t,
 )
 from pulse.model import ModularPhysiologyNetwork
 from pulse.modules import metabolic as M
 from pulse.modules.base import compute_time_features
 from pulse.modules.circadian import CircadianModule
+from pulse.published import PublishedNumbers, initial_values
 from pulse.types import EMBEDDING_DIM, MODULE_MARKER_INDICES
 
 _GAIN_NAMES = ("log_hepatic_k", "log_lipolysis_k", "log_peripheral_k")
@@ -40,9 +42,12 @@ def _step_inputs():
 
 
 class TestLearnableCircadianPhase(unittest.TestCase):
-    def test_phase_pull_is_the_only_parameter(self) -> None:
+    def test_the_clock_numbers_are_the_only_parameters(self) -> None:
         m = CircadianModule(0)
-        self.assertEqual(set(dict(m.named_parameters())), {"log_phase_pull"})
+        self.assertEqual(
+            set(dict(m.named_parameters())),
+            {"log_phase_pull", "clock.log_need_h", "clock.log_phase_ref_h"},
+        )
         self.assertIsInstance(m.log_phase_pull, nn.Parameter)
 
     def test_it_decodes_to_the_constant_at_init(self) -> None:
@@ -52,19 +57,21 @@ class TestLearnableCircadianPhase(unittest.TestCase):
     def test_init_step_matches_the_fixed_constant(self) -> None:
         m = CircadianModule(0)
         state, drv = _step_inputs()
-        got = m.step(state, torch.zeros(3, 0), {}, drv, {})
+        got = m.step(state, torch.zeros(3, 0), m.constants(torch.zeros(3, 0)), drv, {})
         offset = m._center[0] + m._scale[0] * state[..., 0]
         debt = m._center[1] + m._scale[1] * state[..., 1]
-        new_offset, new_debt = step_clock_t(offset, debt, drv["hour"], drv["asleep"])
+        clock = {**initial_values(CLOCK), "phase_pull": torch.tensor(PHASE_PULL_PER_H)}
+        new_offset, new_debt = step_clock_t(offset, debt, drv["hour"], drv["asleep"], clock)
         want = torch.stack((new_offset - offset, new_debt - debt), dim=-1)
-        torch.testing.assert_close(got, want, atol=0.0, rtol=1e-6)
+        torch.testing.assert_close(got, want, atol=1e-6, rtol=1e-5)
 
     def test_gradient_reaches_the_phase_pull(self) -> None:
         m = CircadianModule(0)
         state, drv = _step_inputs()
-        m.step(state, torch.zeros(3, 0), {}, drv, {})[..., 0].sum().backward()
+        m.step(state, torch.zeros(3, 0), m.constants(torch.zeros(3, 0)), drv, {})[..., 0].sum().backward()
         self.assertIsNotNone(m.log_phase_pull.grad)
         self.assertNotEqual(float(m.log_phase_pull.grad), 0.0)
+        self.assertNotEqual(float(m.clock.log_phase_ref_h.grad), 0.0)
 
     def test_state_dict_round_trips(self) -> None:
         src = CircadianModule(0)
@@ -91,7 +98,7 @@ def _metabolic_inputs(m: ModularPhysiologyNetwork, debt_h: float):
     state[0, M._INSULIN_IDX] = 3.0  # supra-basal insulin, the clamp condition
     coupling = torch.zeros(1, M._N_COUPLING)
     coupling[0, M._DEBT_COUPLING_IDX] = (debt_h - M._DEBT_CENTER) / M._DEBT_SCALE
-    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0]])  # awake, no drug/infusion/clamp
+    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])  # awake, no drug/infusion/clamps
     tf = compute_time_features(torch.tensor([600.0]))
     return state, coupling, external, emb, tf
 
@@ -104,10 +111,16 @@ class TestLearnableDebtGains(unittest.TestCase):
             self.assertIsInstance(named[name], nn.Parameter)
             self.assertAlmostEqual(float(named[name].detach().exp()) / constant, 1.0, delta=1e-6)
 
-    def test_the_model_param_count_is_unchanged_by_relocation(self) -> None:
-        # One phase rate in circadian plus three gains in metabolic: four learnable
-        # scalars over the pre-unfreeze 37235.
-        self.assertEqual(sum(p.numel() for p in ModularPhysiologyNetwork().parameters()), 37239)
+    def test_the_model_param_count_is_the_network_plus_the_published_numbers(self) -> None:
+        # One phase rate in circadian and three gains in metabolic over the network's
+        # 37235, then one scalar for every number a hub publishes.
+        model = ModularPhysiologyNetwork()
+        published = sum(
+            p.numel() for mod in model.modules() if isinstance(mod, PublishedNumbers)
+            for p in mod.parameters()
+        )
+        self.assertEqual(published, 43)
+        self.assertEqual(sum(p.numel() for p in model.parameters()), 37239 + published)
 
     def test_gradient_reaches_every_gain_under_sleep_debt(self) -> None:
         m = ModularPhysiologyNetwork()

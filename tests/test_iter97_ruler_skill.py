@@ -145,7 +145,7 @@ class TestRulerArithmetic(unittest.TestCase):
         for key, value in bm._FALLBACK_THRESHOLDS.items():
             self.assertEqual(loaded.get(key), value, key)
         self.assertEqual(bm._FALLBACK_THRESHOLDS["textbook_mean_pass_rate_min"], 0.75)
-        self.assertEqual(loaded["headline_sources"], ["cgm_real", "teacher_dynamic", "teacher"])
+        self.assertEqual(loaded["headline_sources"], [*bm.REAL_DATA_SOURCES, "teacher_dynamic", "teacher"])
 
     def test_no_check_in_fallback_is_the_prior_mean(self) -> None:
         # An episode with no calibration check-ins must integrate the population

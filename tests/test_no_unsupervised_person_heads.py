@@ -32,6 +32,7 @@ from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.modules import hepatobiliary as H
 from pulse.modules import stress as S
 from pulse.modules.base import compute_time_features
+from pulse.published import PublishedNumbers
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX as MI, NORM_CENTER, NORM_SCALE
 
 # The hard clamp on a calibrated embedding: CalibrationSettings.max_norm.
@@ -40,18 +41,22 @@ _N_EMBEDDINGS = 100
 
 
 def _model(seed: int = 0, perturb: float = 1.0) -> ModularPhysiologyNetwork:
-    """Small widths, every parameter of both modules and their embedding projections
-    moved far from init. A surviving per-person head has a zero-init output layer, so
-    at init it would be a no-op and these tests would pass for the wrong reason."""
+    """Small widths, every network parameter of both modules and their embedding
+    projections moved far from init. A surviving per-person head has a zero-init output
+    layer, so at init it would be a no-op and these tests would pass for the wrong
+    reason. The published numbers stay at their values: they are not heads."""
     torch.manual_seed(seed)
     m = ModularPhysiologyNetwork(
         metabolic_hidden=12, appetite_hidden=8, stress_hidden=8, cardiovascular_hidden=12,
         thermoreg_hidden=8, respiratory_hidden=8, gut_hidden=8, hepatobiliary_hidden=8)
+    published = {id(p) for mod in m.modules() if isinstance(mod, PublishedNumbers)
+                 for p in mod.parameters()}
     g = torch.Generator().manual_seed(seed + 1)
     with torch.no_grad():
         for mod in (m.stress, m.hepatobiliary, m.embedding_projections):
             for p in mod.parameters():
-                p.add_(perturb * torch.randn(p.shape, generator=g))
+                if id(p) not in published:
+                    p.add_(perturb * torch.randn(p.shape, generator=g))
     m.eval()
     return m
 
@@ -221,7 +226,8 @@ class TestHpaCascadeStillTrains(unittest.TestCase):
 
     def _rollout_grads(self, m: ModularPhysiologyNetwork) -> None:
         """Every gate live: cortisol above its basal (feedback), glucose under 58
-        (hypoglycaemia drive), activity on. The loss reads the cascade's own states."""
+        (hypoglycaemia drive), activity on, a little sleep depth. The loss reads the
+        module's own states."""
         m.zero_grad()
         s0 = torch.tensor(NORM_CENTER).clone()
         s0[MI["cortisol"]] = 20.0
@@ -229,8 +235,8 @@ class TestHpaCascadeStillTrains(unittest.TestCase):
         n = 120
         traj = integrate(
             m, s0, torch.zeros(EMBEDDING_DIM), n, start_time_minutes=360.0, meals=[],
-            sleep_wake=torch.ones(n), activity=torch.full((n,), 0.5))
-        cols = [MI["cortisol"], MI["acth"], MI["crh"]]
+            sleep_wake=torch.full((n,), 0.8), activity=torch.full((n,), 0.5))
+        cols = [MI["cortisol"], MI["acth"], MI["crh"], MI["sns_tone"], MI["epinephrine"]]
         scale = torch.tensor(NORM_SCALE)[cols]
         (traj[..., cols] / scale).pow(2).sum().backward()
 

@@ -35,6 +35,7 @@ from .calibration import (
     active_meals,
     calibrate_embedding as _shared_calibrate_embedding,
 )
+from .knowledge.evidence import REAL_EVIDENCE
 from .modules.gut import MealEvent
 from .model import ModularPhysiologyNetwork, integrate, population_prior_embedding
 from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
@@ -1038,18 +1039,24 @@ def _evaluate_one_episode(
         # to differ from the server's (see `population_prior_embedding`).
         initial_embedding = population_prior_embedding(model)
 
-    with torch.no_grad():
-        predicted = integrate(
-            model=model,
-            initial_state=initial_state_t,
-            embedding=initial_embedding,
-            n_steps=episode.duration_min,
-            dt=1.0,
-            start_time_minutes=t0,
-            meals=episode.meals,
-            sleep_wake=sw,
-            activity=act,
-        ).numpy()
+    def rollout(embedding: torch.Tensor) -> np.ndarray:
+        with torch.no_grad():
+            return integrate(
+                model=model,
+                initial_state=initial_state_t,
+                embedding=embedding,
+                n_steps=episode.duration_min,
+                dt=1.0,
+                start_time_minutes=t0,
+                meals=episode.meals,
+                sleep_wake=sw,
+                activity=act,
+            ).numpy()
+
+    predicted = rollout(initial_embedding)
+    # PLAN section 4's first baseline: the same protocol for the population-median
+    # person, i.e. what the model predicts before it has seen this one.
+    at_median = predicted if not cal_obs else rollout(population_prior_embedding(model))
 
     verifier_report = evaluate_weak_checks(
         predicted, meals=episode.meals, start_hour=start_hour,
@@ -1064,8 +1071,12 @@ def _evaluate_one_episode(
     # episodes the scored window moves only ~3 mg/dL glucose / ~3 bpm hr, so a
     # near-zero MAPE is mostly "landed the baseline", not "predicted dynamics".
     last_cal: dict[str, float] = {}
+    readings: dict[str, list[float]] = {}
     for obs in sorted(cal_obs, key=lambda o: o.time):
         last_cal[obs.marker_id] = obs.value
+        readings.setdefault(obs.marker_id, []).append(float(obs.value))
+    # PLAN section 4's second baseline: the person's own mean over what we saw.
+    running_mean = {m: float(np.mean(v)) for m, v in readings.items()}
 
     marker_errors: list[tuple[str, float]] = []
     persistence_errors: list[tuple[str, float]] = []
@@ -1084,6 +1095,8 @@ def _evaluate_one_episode(
         eval_points.append({
             "marker_id": point.marker_id, "time": int(point.time),
             "truth": float(point.value), "pred": pred, "baseline": float(baseline),
+            "median_person": float(at_median[point.time, idx]),
+            "running_mean": running_mean.get(point.marker_id, float(episode.initial_state[idx])),
         })
 
     cat_scores_raw = verifier_report.get("category_scores") or {}
@@ -1151,7 +1164,51 @@ def _episode_marker_stats(points: list[dict[str, Any]]) -> dict[str, dict[str, f
             "persistence_mae": float(np.mean(np.abs(base - truth))),
             "truth_sd": float(truth.std()) if len(pts) > 1 else 0.0,
         }
+        for key in ("median_person", "running_mean"):
+            if all(key in p for p in pts):
+                ref = np.array([p[key] for p in pts], dtype=np.float64)
+                out[marker_id][f"{key}_mae"] = float(np.mean(np.abs(ref - truth)))
     return out
+
+
+# Measured people, as opposed to generated ones: the sources the individual-skill
+# line of the scoreboard is read on (PLAN section 4).
+REAL_DATA_SOURCES: tuple[str, ...] = tuple(item.name for item in REAL_EVIDENCE)
+
+
+def individual_skill(results: dict[str, Any]) -> dict[str, Any]:
+    """The scoreboard's second line: skill on measured people against the
+    population-median person and against the person's own running mean.
+
+    Episode-first and floored at device noise like the ruler's skill:
+    ``1 - MAE / max(baseline MAE, sigma_obs)``. Positive means the calibrated
+    person predicts better than the baseline; zero, as well.
+    """
+    by_source: dict[str, dict[str, dict[str, float]]] = {}
+    for ep in results.get("per_episode", []):
+        src = str(ep.get("source"))
+        if src not in REAL_DATA_SOURCES:
+            continue
+        for marker, st in (ep.get("markers") or {}).items():
+            if "median_person_mae" not in st:
+                continue
+            by_source.setdefault(src, {}).setdefault(marker, []).append(st)
+    out: dict[str, dict[str, dict[str, float]]] = {}
+    for src, by_marker in sorted(by_source.items()):
+        for marker, stats in sorted(by_marker.items()):
+            sigma = sigma_obs_for(marker)
+            mae = float(np.mean([s["mae"] for s in stats]))
+            median_mae = float(np.mean([s["median_person_mae"] for s in stats]))
+            running_mae = float(np.mean([s["running_mean_mae"] for s in stats]))
+            out.setdefault(src, {})[marker] = {
+                "n_episodes": len(stats),
+                "mae": mae,
+                "median_person_mae": median_mae,
+                "running_mean_mae": running_mae,
+                "vs_median_person": 1.0 - mae / max(median_mae, sigma),
+                "vs_running_mean": 1.0 - mae / max(running_mae, sigma),
+            }
+    return {"by_source": out}
 
 
 def _worker_eval_one(episode: BenchmarkEpisode) -> dict[str, Any]:

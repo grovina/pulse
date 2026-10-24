@@ -11,8 +11,9 @@ import unittest
 import numpy as np
 import torch
 
-from pulse.bile import BILE_FAT_FLOOR, INT_PRESENT_MMOL, fat_bile_factor, fat_bile_factor_t
+from pulse.bile import ABSORPTION, BILE_FAT_FLOOR, INT_PRESENT_MMOL, fat_bile_factor, fat_bile_factor_t
 from pulse.knowledge.full_body import PatientParams, simulate_full_body
+from pulse.published import initial_values
 from pulse.types import MARKER_INDEX as MI
 
 
@@ -27,7 +28,7 @@ class TestTheFloor(unittest.TestCase):
 
     def test_the_tensor_is_the_scalar(self) -> None:
         x = torch.tensor([0.0, 0.4, 1.0, 2.3])
-        got = fat_bile_factor_t(x)
+        got = fat_bile_factor_t(x, initial_values(ABSORPTION))
         exp = torch.tensor([fat_bile_factor(float(v)) for v in x])
         torch.testing.assert_close(got, exp)
 

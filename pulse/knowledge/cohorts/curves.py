@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import numpy as np
 
+from ...expenditure import (
+    RQ_800, RQ_REST, RQ_SE, VO2_800_ML, VO2_800_SE_ML, VO2_REST_ML, VO2_REST_SE_ML,
+)
 from ..cohort_types import (
     CohortArmSpec,
     CohortStatisticSpec,
@@ -24,6 +27,8 @@ from ..cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
+from ..sealing import sealed_at_random
+from .glucose_handling import WAHREN_EXERCISE_HGO
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +139,54 @@ OGTT_GLUCOSE_CURVE = CohortStatisticSpec(
 )
 
 
+# ---------------------------------------------------------------------------
+# Pulmonary gas exchange, rest and 40 min at 800 kg-m/min
+# ---------------------------------------------------------------------------
+# Wahren, Felig, Ahlborg and Jorfeldt, J Clin Invest 1971;50:2715, Table I.
+# Healthy postabsorptive men, upright bicycle, mean ± SE: O₂ uptake 256 ± 19
+# ml/min at rest and 1811 ± 69 after 40 min; respiratory quotient 0.77 ± 0.01
+# and 0.82 ± 0.01. Transcribed table entries, not digitized. The arm is the
+# splanchnic spec's bout: 20 min seated, then activity 0.7, so 40 min of work
+# is minute 60. These identify the four Table I numbers of
+# ``pulse.expenditure.GAS``, read through the ``vo2`` and ``rq`` observables.
+_WAHREN_ARM = WAHREN_EXERCISE_HGO.arms[1]
+_WAHREN_REST_MIN = 10
+_WAHREN_40_MIN = 60
+
+
+def _wahren_curve(name: str, marker: str, what: str, rest: tuple[float, float],
+                  work: tuple[float, float]) -> CohortStatisticSpec:
+    return CohortStatisticSpec(
+        name=name,
+        source="Wahren et al. (1971) J Clin Invest 50:2715, Table I",
+        description=f"{what} at rest and after 40 min at 800 kg-m/min on an upright bicycle",
+        arms=(_WAHREN_ARM,),
+        marker_id=marker,
+        kind=StatisticKind.CURVE,
+        window=StatisticWindow(0, _WAHREN_ARM.duration_min),
+        target=0.0,
+        sigma=1.0,
+        curve=(
+            CurvePoint(_WAHREN_REST_MIN, *rest),
+            CurvePoint(_WAHREN_40_MIN, *work),
+        ),
+        sealed=sealed_at_random(name),
+    )
+
+
+WAHREN_VO2_CURVE = _wahren_curve(
+    "wahren_1971_vo2_curve", "vo2", "Pulmonary O₂ uptake",
+    (VO2_REST_ML, VO2_REST_SE_ML), (VO2_800_ML, VO2_800_SE_ML),
+)
+WAHREN_RQ_CURVE = _wahren_curve(
+    "wahren_1971_rq_curve", "rq", "Respiratory quotient",
+    (RQ_REST, RQ_SE), (RQ_800, RQ_SE),
+)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     CORTISOL_CIRCADIAN_CURVE,
     OGTT_GLUCOSE_CURVE,
+    WAHREN_VO2_CURVE,
+    WAHREN_RQ_CURVE,
 ]

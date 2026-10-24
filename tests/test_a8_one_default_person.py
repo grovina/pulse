@@ -25,13 +25,14 @@ import torch.nn as nn
 from pulse import server
 from pulse import train as train_mod
 from pulse.model import ModularPhysiologyNetwork, population_prior_embedding
+from pulse.knowledge.cohort_types import FACTORS
 from pulse.train import (
-    _embedding_prior_stats,
     _last_good_checkpoint,
     _warm_start_patient_table,
     load_compatible_state_dict,
     train,
 )
+from pulse.training.factors import reference_prior_stats
 from pulse.types import EMBEDDING_DIM, MARKER_IDS
 
 
@@ -186,46 +187,39 @@ def _table(n: int = 5, offset: float = 0.3, seed: int = 1) -> nn.Embedding:
     return emb
 
 
-def test_prior_stats_are_the_tables_mean_and_population_std() -> None:
-    emb = _table()
-    mean, std = _embedding_prior_stats(emb)
-    w = emb.weight.detach().numpy()
+def test_the_calibration_prior_is_the_factor_prior() -> None:
+    mean, std = reference_prior_stats()
     assert len(mean) == len(std) == EMBEDDING_DIM
-    np.testing.assert_allclose(mean, w.mean(axis=0), atol=1e-6)
-    np.testing.assert_allclose(std, w.std(axis=0, ddof=0), atol=1e-6)
+    assert mean == [0.0] * EMBEDDING_DIM
+    for i, s in enumerate(std):
+        assert s == (1.0 if i < len(FACTORS) else 0.0)
 
 
 def test_last_good_round_trips_with_a_usable_prior(tmp_path: Path) -> None:
-    model, emb = _tiny_model(), _table()
+    model = _tiny_model()
     ck = _last_good_checkpoint(
-        model, emb, hidden_dim=8, epoch=3, phase=2, metrics={"epoch": 3.0}, seed=42,
+        model, hidden_dim=8, epoch=3, phase=2, metrics={"epoch": 3.0}, seed=42,
     )
     path = tmp_path / "pulse-model.pt.last-good.pt"
     torch.save(ck, path)
     loaded = torch.load(path, map_location="cpu", weights_only=False)
 
     rebuilt = ModularPhysiologyNetwork.from_checkpoint(loaded)
-    assert getattr(rebuilt, "_embedding_prior_mean", None) is not None
-    assert getattr(rebuilt, "_embedding_prior_std", None) is not None
-    w = emb.weight.detach()
-    assert torch.allclose(rebuilt._embedding_prior_mean, w.mean(dim=0), atol=1e-6)
-    assert torch.allclose(rebuilt._embedding_prior_std, w.std(dim=0, unbiased=False), atol=1e-6)
-    # ...and it is still a --resume-from checkpoint: table, epoch, phase, metrics untouched.
-    assert torch.equal(loaded["embeddings_state"]["weight"], w)
+    mean, std = reference_prior_stats()
+    assert rebuilt._embedding_prior_mean.tolist() == mean
+    assert rebuilt._embedding_prior_std.tolist() == std
+    assert "embeddings_state" not in loaded
     assert (loaded["epoch"], loaded["phase"], loaded["metrics"]) == (3, 2, {"epoch": 3.0})
-    assert loaded["seed"] == 42                         # which people the rows are, for --init-from
+    assert loaded["seed"] == 42
     assert loaded["embedding_dim"] == EMBEDDING_DIM and loaded["hidden_dim"] == 8
 
 
-def test_prior_in_last_good_is_the_current_table_not_a_stale_one() -> None:
-    model, emb = _tiny_model(), _table()
-    first = _last_good_checkpoint(model, emb, hidden_dim=8, epoch=0, phase=1, metrics={}, seed=42)
-    with torch.no_grad():
-        emb.weight.add_(1.0)
-    second = _last_good_checkpoint(model, emb, hidden_dim=8, epoch=1, phase=1, metrics={}, seed=42)
-    delta = np.array(second["embedding_prior_mean"]) - np.array(first["embedding_prior_mean"])
-    np.testing.assert_allclose(delta, 1.0, atol=1e-6)
-    np.testing.assert_allclose(second["embedding_prior_std"], first["embedding_prior_std"], atol=1e-6)
+def test_the_recorded_prior_does_not_follow_a_table() -> None:
+    model = _tiny_model()
+    first = _last_good_checkpoint(model, hidden_dim=8, epoch=0, phase=1, metrics={}, seed=42)
+    second = _last_good_checkpoint(model, hidden_dim=8, epoch=1, phase=1, metrics={}, seed=42)
+    assert first["embedding_prior_mean"] == second["embedding_prior_mean"] == reference_prior_stats()[0]
+    assert first["embedding_prior_std"] == second["embedding_prior_std"] == reference_prior_stats()[1]
 
 
 # --- 3. --init-from restores the patient table ------------------------------------------------
@@ -305,13 +299,13 @@ def _tiny_train(out: Path, **kw) -> int:
             n_patients=2, n_epochs=1, hidden_dim=8, windows_per_patient=1, n_days=1, seed=42,
             coupling_prior_weight=0.0, verifier_loss_weight=0.0, cohort_statistic_weight=0.0,
             setpoint_supervision_weight=0.5, embedding_prior_weight=0.001,
-            contribution_weights={"full_body": 1.0}, output_path=str(out), **kw,
+            contribution_weights={"full_body": 1.0}, output_path=str(out), scoreboard=False, **kw,
         )
     finally:
         torch.set_num_threads(prev_threads)
 
 
-def test_train_writes_the_prior_in_last_good_and_warm_starts_from_the_artifact(
+def test_train_writes_the_factor_prior_and_does_not_restore_a_patient_table(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # The epoch watchdog arms faulthandler on sys.stderr, which capsys replaces with a stream that
@@ -320,30 +314,27 @@ def test_train_writes_the_prior_in_last_good_and_warm_starts_from_the_artifact(
     run1 = tmp_path / "run1.pt"
     assert _tiny_train(run1) == 0
     out1 = capsys.readouterr().out
-    assert "[EMBPRIOR]" in out1 and "center_weight=1.0" in out1     # the pin is visible in the log
+    assert "[EVIDENCE]" in out1 and "teacher_weight=0.0000" in out1
+    assert "[SKIP]" in out1 and "setpoint=0.5" in out1
     last_good = torch.load(f"{run1}.last-good.pt", map_location="cpu", weights_only=False)
     final = torch.load(run1, map_location="cpu", weights_only=False)
 
-    # The rolling checkpoint re-scores on its own prior: stats of ITS table, same as the artifact's.
-    table = last_good["embeddings_state"]["weight"].numpy()
-    np.testing.assert_allclose(last_good["embedding_prior_mean"], table.mean(axis=0), atol=1e-6)
-    np.testing.assert_allclose(last_good["embedding_prior_std"], table.std(axis=0), atol=1e-6)
+    mean, std = reference_prior_stats()
+    assert last_good["embedding_prior_mean"] == final["embedding_prior_mean"] == mean
+    assert last_good["embedding_prior_std"] == final["embedding_prior_std"] == std
+    assert "embeddings_state" not in last_good and "embeddings_state" not in final
     assert last_good["seed"] == final["seed"] == 42
-    assert last_good["embedding_prior_mean"] == final["embedding_prior_mean"]
-    assert last_good["embedding_prior_std"] == final["embedding_prior_std"]
     rebuilt = ModularPhysiologyNetwork.from_checkpoint(last_good)
     assert rebuilt._embedding_prior_mean.shape == (EMBEDDING_DIM,)
 
-    # The final artifact carries the table too, or --init-from has nothing to read.
-    assert torch.equal(final["embeddings_state"]["weight"], last_good["embeddings_state"]["weight"])
-    assert final["embedding_prior_center_weight"] == 1.0
-
-    # --init-from: plant a table a fresh N(0, 0.1) draw could not be mistaken for, and check it comes back.
+    # --init-from loads the model. A planted patient table is not the population.
     planted = torch.randn(2, EMBEDDING_DIM, generator=torch.Generator().manual_seed(9)) * 0.4
     final["embeddings_state"] = {"weight": planted}
     init = tmp_path / "init.pt"
     torch.save(final, init)
     assert _tiny_train(tmp_path / "run2.pt", init_from=str(init), lr=1e-6) == 0
-    assert "patient table restored" in capsys.readouterr().out
+    out2 = capsys.readouterr().out
+    assert "embeddings_state ignored" in out2
+    assert "patient table restored" not in out2
     run2 = torch.load(tmp_path / "run2.pt", map_location="cpu", weights_only=False)
-    assert torch.allclose(run2["embeddings_state"]["weight"], planted, atol=1e-3)
+    assert "embeddings_state" not in run2

@@ -15,6 +15,7 @@ because they need a differentiable soft-peak and a focused weight.
 
 from __future__ import annotations
 
+import math
 from typing import Callable, Sequence
 
 import numpy as np
@@ -23,17 +24,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .knowledge.cohort_types import (
+    FACTORS,
+    MEAN_KINDS,
     CohortArmSpec,
     CohortStatisticSpec,
     StatisticKind,
     StatisticWindow,
     TargetShape,
+    combine_arms,
+    factor_index,
 )
 from .model import (
     ModularPhysiologyNetwork, integrate, precompute_duodenal_outputs, precompute_gut_outputs,
 )
 from .modules.gut import MealEvent
-from .types import MARKER_INDEX, NORM_CENTER
+from .training_verifier_loss import _safe_corr_torch
+from .types import NORM_CENTER, SERIES_INDEX, is_observable
 
 __all__ = [
     "ARM_DEFAULT_ACTIVITY",
@@ -44,7 +50,13 @@ __all__ = [
     "cohort_statistic_loss_one_spec",
     "norm_center_initial_state",
     "rollout_arms",
+    "gaussian_nll",
+    "statistic_nll",
+    "population_correlation",
+    "population_spread",
     "score_batch_statistic",
+    "score_correlation",
+    "score_spread",
     "shaped_residual",
 ]
 
@@ -108,17 +120,15 @@ def _validate_window(spec_name: str, w: StatisticWindow, duration_min: int) -> N
         )
 
 
-def _glucose_inputs(
+def _exogenous_inputs(
     arm: CohortArmSpec, n_steps: int, device: torch.device,
-) -> tuple[torch.Tensor | None, torch.Tensor | None]:
-    """An arm's IV glucose series: open-loop infusion and clamp target (``None`` = absent)."""
-    infusion = _optional_series_tensor(
-        f"{arm.label}.glucose_infusion", arm.glucose_infusion, n_steps, device,
+) -> tuple[torch.Tensor | None, ...]:
+    """An arm's drug and IV series: open-loop glucose infusion, glucose clamp target,
+    insulin clamp plateau and SGLT2 exposure (``None`` = absent)."""
+    return tuple(
+        _optional_series_tensor(f"{arm.label}.{name}", getattr(arm, name), n_steps, device)
+        for name in ("glucose_infusion", "glucose_clamp", "insulin_clamp", "sglt2")
     )
-    clamp = None
-    if arm.glucose_clamp_mg_dl is not None:
-        clamp = torch.full((n_steps,), float(arm.glucose_clamp_mg_dl), dtype=torch.float32, device=device)
-    return infusion, clamp
 
 
 def _rollout_arm_states(
@@ -129,6 +139,7 @@ def _rollout_arm_states(
     *,
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
+    observe: bool = False,
 ) -> torch.Tensor:
     """Roll one arm forward for ``N`` (embedding, initial-state) pairs.
 
@@ -136,7 +147,8 @@ def _rollout_arm_states(
     — one starting state per batch row (unlike ``_rollout_arm_batched``,
     which broadcasts a single state across all rows). The arm's protocol
     (meals, sleep/wake, activity, duration) is shared across the batch, as
-    ``integrate`` requires. Returns ``[N, T, STATE_DIM]``.
+    ``integrate`` requires. Returns ``[N, T, STATE_DIM]``, or with ``observe`` the
+    observed trajectory ``[N, T, STATE_DIM + OBSERVABLE_DIM]`` (``integrate``).
 
     This is the primitive behind cross-spec batching (iter 79): several
     cohort specs sharing one arm protocol but each with its own cold-init
@@ -153,7 +165,7 @@ def _rollout_arm_states(
     act = _optional_series_tensor(
         f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
     )
-    glu_inf, glu_clamp = _glucose_inputs(arm, n_steps, device)
+    glu_inf, glu_clamp, ins_clamp, drug = _exogenous_inputs(arm, n_steps, device)
     # Iter 97 (review 4.9): phase-3 input dropout — with probability
     # ``input_dropout`` each series is withheld and the model runs on its learned
     # default, so "no sleep log / no activity log" is a trained condition for the
@@ -175,9 +187,9 @@ def _rollout_arm_states(
     return integrate(
         model, state_batch, embeddings, n_steps,
         dt=1.0, start_time_minutes=t0, meals=meals,
-        sleep_wake=sw, activity=act,
-        glucose_infusion=glu_inf, glucose_clamp=glu_clamp,
-        gut_outputs=gut,
+        sleep_wake=sw, activity=act, sglt2=drug,
+        glucose_infusion=glu_inf, glucose_clamp=glu_clamp, insulin_clamp=ins_clamp,
+        gut_outputs=gut, observe=observe,
     )
 
 
@@ -195,8 +207,9 @@ def rollout_arms(
     *,
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
+    observe: bool = False,
 ) -> list[torch.Tensor]:
-    """Roll several arms as ONE batched rollout.
+    """Roll several arms as ONE batched rollout (``observe`` as ``_rollout_arm_states``).
 
     ``arm_rows`` holds ``(arm, embeddings[N_i, EMB], states[N_i, STATE_DIM])`` per arm.
     Every row carries its own arm's protocol (meals, start hour, sleep / activity), and
@@ -213,7 +226,7 @@ def rollout_arms(
     device = arm_rows[0][2].device
     T = max(int(arm.duration_min) for arm, _, _ in arm_rows)
     embs, states, starts, horizons, meals, sws, acts, guts, duos = [], [], [], [], [], [], [], [], []
-    infusions, clamps = [], []
+    infusions, clamps, ins_clamps, drugs = [], [], [], []
     nan = torch.full((T,), float("nan"), dtype=torch.float32, device=device)
 
     def padded(series: torch.Tensor | None, fill: float) -> torch.Tensor:
@@ -238,7 +251,7 @@ def rollout_arms(
                 sw = None
             if rng.random() < input_dropout:
                 act = None
-        glu_inf, glu_clamp = _glucose_inputs(arm, dur, device)
+        glu_inf, glu_clamp, ins_clamp, drug = _exogenous_inputs(arm, dur, device)
         embs.append(emb_i)
         states.append(state_i)
         starts.append(torch.full((n_i,), float(arm.start_hour * 60.0), dtype=torch.float64, device=device))
@@ -248,16 +261,24 @@ def rollout_arms(
         acts.append(padded(act, ARM_DEFAULT_ACTIVITY).expand(n_i, T))
         infusions.append(_padded_zero(glu_inf, T, device).expand(n_i, T))
         clamps.append(_padded_zero(glu_clamp, T, device).expand(n_i, T))
+        ins_clamps.append(_padded_zero(ins_clamp, T, device).expand(n_i, T))
+        drugs.append(_padded_zero(drug, T, device).expand(n_i, T))
         guts.append(precompute_gut_outputs(model, emb_i, T, dt=1.0, meals=arm_meals))
         duos.append(precompute_duodenal_outputs(model, T, meals=arm_meals).expand(n_i, T, -1))
+
+    def any_arm(field: str) -> bool:
+        return any(getattr(a, field) is not None for a, _, _ in arm_rows)
+
     traj = integrate(
         model, torch.cat(states), torch.cat(embs), T,
         dt=1.0, start_time_minutes=torch.cat(starts), meals=meals,
         sleep_wake=torch.cat(sws), activity=torch.cat(acts),
-        glucose_infusion=torch.cat(infusions) if any(a.glucose_infusion is not None for a, _, _ in arm_rows) else None,
-        glucose_clamp=torch.cat(clamps) if any(a.glucose_clamp_mg_dl is not None for a, _, _ in arm_rows) else None,
+        sglt2=torch.cat(drugs) if any_arm("sglt2") else None,
+        glucose_infusion=torch.cat(infusions) if any_arm("glucose_infusion") else None,
+        glucose_clamp=torch.cat(clamps) if any_arm("glucose_clamp") else None,
+        insulin_clamp=torch.cat(ins_clamps) if any_arm("insulin_clamp") else None,
         gut_outputs=torch.cat(guts), duodenal_outputs=torch.cat(duos),
-        member_steps=torch.cat(horizons),
+        member_steps=torch.cat(horizons), observe=observe,
     )
     out: list[torch.Tensor] = []
     row = 0
@@ -276,15 +297,19 @@ def _rollout_arm_batched(
     *,
     input_dropout: float = 0.0,
     rng: np.random.Generator | None = None,
+    observe: bool = False,
 ) -> torch.Tensor:
     """Roll one arm forward for ``B`` embeddings sharing one initial state.
 
     ``embeddings`` is ``[B, EMB]``; the same protocol AND initial state are
-    applied to every batch member. Returns ``[B, T, STATE_DIM]``. Thin
-    wrapper over ``_rollout_arm_states`` that broadcasts the single state.
+    applied to every batch member. Returns ``[B, T, STATE_DIM]`` (wider with
+    ``observe``). Thin wrapper over ``_rollout_arm_states`` that broadcasts the
+    single state.
     """
     state_b = initial_state.unsqueeze(0).expand(int(embeddings.shape[0]), -1)
-    return _rollout_arm_states(model, embeddings, arm, state_b, input_dropout=input_dropout, rng=rng)
+    return _rollout_arm_states(
+        model, embeddings, arm, state_b, input_dropout=input_dropout, rng=rng, observe=observe,
+    )
 
 
 def _arm_window(spec: CohortStatisticSpec, arm_idx: int) -> StatisticWindow:
@@ -302,7 +327,7 @@ def _arm_statistic_batched(
 ) -> torch.Tensor:
     """Extract one scalar per batch member: ``[B]``."""
     series = traj[:, window.start_min:window.end_min, marker_idx]  # [B, W]
-    if kind in (StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS):
+    if kind in MEAN_KINDS:
         return series.mean(dim=1)
     if kind in (StatisticKind.PEAK_VALUE, StatisticKind.DELTA_PEAKS):
         return series.max(dim=1).values
@@ -312,6 +337,83 @@ def _arm_statistic_batched(
         idx = torch.arange(n, device=series.device, dtype=series.dtype)
         return (weights * idx).sum(dim=1)
     raise ValueError(f"Unknown statistic kind: {kind}")
+
+
+def _window_mean(traj: torch.Tensor, marker_idx: int, window: StatisticWindow) -> torch.Tensor:
+    """Per-person mean of one marker over the window: ``[B]``."""
+    return traj[:, window.start_min:window.end_min, marker_idx].mean(dim=1)
+
+
+def population_spread(values: torch.Tensor) -> torch.Tensor:
+    """Unbiased sample standard deviation across people.
+
+    A published SD is a sample SD. Fewer than two people cannot separate a
+    spread from a point, and the statistic is then 0 with no gradient.
+    """
+    if int(values.shape[0]) < 2:
+        return values.new_zeros(())
+    return values.std(unbiased=True)
+
+
+def population_correlation(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Pearson correlation across people. Zero variance on either side is 0,
+    and the gradient stays finite (see ``_safe_corr_torch``)."""
+    return _safe_corr_torch(x, y)
+
+
+def statistic_nll(z2: torch.Tensor, sigma: float) -> torch.Tensor:
+    """Gaussian negative log-likelihood whose quadratic term is ``z2``.
+
+    Mean statistics pass the debiased ``score_batch_statistic`` loss and the
+    SEM of the mean. Spread and correlation pass their own squared residual
+    and the published standard error. The log term is constant in the model.
+    """
+    var = float(sigma) * float(sigma)
+    return 0.5 * z2 + 0.5 * math.log(2.0 * math.pi * var)
+
+
+def gaussian_nll(pred: torch.Tensor, target: float, sigma: float) -> torch.Tensor:
+    """Negative log density of ``target`` under ``N(pred, sigma^2)``.
+
+    ``sigma`` is fixed by the paper, so the log term does not move the model.
+    It is part of the likelihood a step sums.
+    """
+    var = float(sigma) * float(sigma)
+    return 0.5 * math.log(2.0 * math.pi * var) + 0.5 * ((pred - float(target)) / float(sigma)).pow(2)
+
+
+def _scalar_z2(stat: torch.Tensor, spec: CohortStatisticSpec) -> tuple[torch.Tensor, float, float]:
+    """Squared shaped residual of one population statistic, over ``spec.sigma``.
+
+    Spread and correlation are already population summaries. ``sigma`` is the
+    standard error of that published number, and it is not divided by
+    ``sqrt(n)`` again.
+    """
+    resid = shaped_residual(stat, spec)
+    loss = resid.pow(2) / (float(spec.sigma) ** 2)
+    pred = float(stat.detach().item()) if stat.ndim == 0 else float(stat.detach().reshape(()).item())
+    z = float(resid.detach().reshape(()).item()) / float(spec.sigma)
+    return loss, pred, z
+
+
+def score_spread(
+    values: torch.Tensor, spec: CohortStatisticSpec,
+) -> tuple[torch.Tensor, float, float]:
+    """``(loss, spread, z)`` for the across-person SD of ``values[B]``."""
+    stat = population_spread(values)
+    if int(values.shape[0]) < 2:
+        return stat, 0.0, 0.0
+    return _scalar_z2(stat, spec)
+
+
+def score_correlation(
+    x: torch.Tensor, y: torch.Tensor, spec: CohortStatisticSpec,
+) -> tuple[torch.Tensor, float, float]:
+    """``(loss, r, z)`` for the Pearson correlation of two per-person series."""
+    stat = population_correlation(x, y)
+    if int(x.shape[0]) < 2:
+        return x.new_zeros(()), 0.0, 0.0
+    return _scalar_z2(stat, spec)
 
 
 def shaped_residual(pred_mean: torch.Tensor, spec: CohortStatisticSpec) -> torch.Tensor:
@@ -452,6 +554,41 @@ def score_batch_statistic(
     return loss, pred_mean, z
 
 
+def _score_arm_trajs(
+    spec: CohortStatisticSpec,
+    arm_trajs: Sequence[torch.Tensor],
+    embeddings: torch.Tensor,
+    n_population: int | None,
+) -> tuple[torch.Tensor, float, float]:
+    """Score one spec from its rolled arms.
+
+    ``embeddings`` is ``[B, EMB]`` aligned with each trajectory's batch.
+    Spread is the unbiased SD of the marker's window-mean. Correlation is
+    the Pearson r of that mean with ``spec.partner`` — another marker's
+    window-mean, or the named factor read out of the person code.
+    """
+    if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
+        n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))
+        window = _arm_window(spec, 0)
+        x = _window_mean(arm_trajs[0], SERIES_INDEX[spec.marker_id], window)[:n]
+        if spec.kind is StatisticKind.SPREAD:
+            return score_spread(x, spec)
+        assert spec.partner is not None
+        if spec.partner in FACTORS:
+            y = embeddings[:n, factor_index(spec.partner)]
+        else:
+            y = _window_mean(arm_trajs[0], SERIES_INDEX[spec.partner], window)[:n]
+        return score_correlation(x, y, spec)
+    per_arm: list[torch.Tensor] = []
+    for arm_idx, traj in enumerate(arm_trajs):
+        window = _arm_window(spec, arm_idx)
+        _validate_window(spec.name, window, int(traj.shape[1]))
+        per_arm.append(
+            _arm_statistic_batched(traj, SERIES_INDEX[spec.marker_id], window, spec.kind, spec.softargmax_beta),
+        )
+    return score_batch_statistic(combine_arms(spec.kind, per_arm), spec, n_population)
+
+
 def cohort_statistic_loss_one_spec(
     model: nn.Module,
     embeddings_to_supervise: list[torch.Tensor],
@@ -476,29 +613,12 @@ def cohort_statistic_loss_one_spec(
     _check_n_population(n_population, len(embeddings_to_supervise))  # before any rollout
 
     embs = torch.stack(embeddings_to_supervise, dim=0)  # [B, EMB]
-    mi = MARKER_INDEX[spec.marker_id]
-
-    per_arm: list[torch.Tensor] = []
-    for arm_idx, arm in enumerate(spec.arms):
-        win = _arm_window(spec, arm_idx)
-        _validate_window(spec.name, win, arm.duration_min)
-        traj = _rollout_arm_batched(model, embs, arm, initial_state)  # [B, T, STATE]
-        per_arm.append(
-            _arm_statistic_batched(traj, mi, win, spec.kind, spec.softargmax_beta),
-        )  # [B]
-
-    if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
-        pred = per_arm[1] - per_arm[0]  # [B]
-    elif spec.kind in (
-        StatisticKind.MEAN_IN_WINDOW,
-        StatisticKind.PEAK_VALUE,
-        StatisticKind.TIME_TO_PEAK,
-    ):
-        pred = per_arm[0]  # [B]
-    else:
-        raise ValueError(f"Unknown statistic kind: {spec.kind}")
-
-    return score_batch_statistic(pred, spec, n_population)
+    observe = is_observable(spec.marker_id)
+    arm_trajs = [
+        _rollout_arm_batched(model, embs, arm, initial_state, observe=observe)
+        for arm in spec.arms
+    ]
+    return _score_arm_trajs(spec, arm_trajs, embs, n_population)
 
 
 def cohort_statistic_loss_groups(
@@ -554,28 +674,16 @@ def cohort_statistic_loss_groups(
         layout.append((specs, arms, len(arm_rows)))
         arm_rows.extend((arm, emb_batch, state_batch) for arm in arms)
 
-    trajs = rollout_arms(model, arm_rows, input_dropout=input_dropout, rng=rng)
+    observe = any(is_observable(s.marker_id) for specs, _, _ in groups for s in specs)
+    trajs = rollout_arms(model, arm_rows, input_dropout=input_dropout, rng=rng, observe=observe)
 
     out: dict[str, tuple[torch.Tensor, float, float]] = {}
     for specs, arms, first in layout:
         arm_trajs = trajs[first:first + len(arms)]
         for s_idx, spec in enumerate(specs):
-            mi = MARKER_INDEX[spec.marker_id]
             rows = slice(s_idx * B, (s_idx + 1) * B)
-            per_arm: list[torch.Tensor] = []
-            for arm_idx, arm in enumerate(arms):
-                win = _arm_window(spec, arm_idx)
-                _validate_window(spec.name, win, arm.duration_min)
-                per_arm.append(
-                    _arm_statistic_batched(
-                        arm_trajs[arm_idx][rows], mi, win, spec.kind, spec.softargmax_beta,
-                    ),
-                )  # [B]
-            if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
-                pred = per_arm[1] - per_arm[0]
-            else:
-                pred = per_arm[0]
-            out[spec.name] = score_batch_statistic(pred, spec, n_population)
+            sliced = [traj[rows] for traj in arm_trajs]
+            out[spec.name] = _score_arm_trajs(spec, sliced, embs, n_population)
     return out
 
 

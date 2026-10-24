@@ -99,10 +99,9 @@ QUEUE: tuple[QueueItem, ...] = (
         marker_id="glucose",
         blocked_on="m2.1",
         note=(
-            "Both models now have sns_tone and epinephrine. Epinephrine's "
-            "drive starts at 69 mg/dL and cortisol's hypoglycaemic drive at "
-            "58. The ranked hinge still cannot train: an arm has no insulin "
-            "clamp, and a day without food stays near 83 mg/dL. Growth "
+            "Epinephrine's drive starts at 69 mg/dL and cortisol's "
+            "hypoglycaemic drive at 58, and an insulin clamp can hold "
+            "glucose there. The ranked hinge still cannot train: growth "
             "hormone has no state."
         ),
     ),
@@ -122,10 +121,9 @@ QUEUE: tuple[QueueItem, ...] = (
         marker_id="glucose",
         spec_name="donga_2010_basal_glucose",
         note=(
-            "The cohort is the basal glucose row, which is the comparison a "
-            "rollout can score. Disposal, clamp production and clamp NEFA are "
-            "the debt factors in circadian.py, checked against the table at "
-            "22/3.1 times basal insulin. There is no insulin clamp in a rollout."
+            "Basal glucose is donga_2010_basal_glucose. The clamp ratios, "
+            "short night over normal, are donga_2010_clamp_glucose_disposal, "
+            "donga_2010_clamp_endogenous_production and donga_2010_clamp_nefa."
         ),
     ),
     QueueItem(
@@ -226,9 +224,31 @@ QUEUE: tuple[QueueItem, ...] = (
         marker_id="gip",
         blocked_on="m2.5",
         note=(
-            "The gip state is in. The ratio is pinned in tests/test_incretin.py. "
-            "A cohort needs a pmol/L peak, and the paper's concentrations are "
-            "in the figures."
+            "The published comparison is the baseline-subtracted area: "
+            "integrated incremental GIP is 186 ± 17% higher over 240 min. "
+            "GIP is a marker and both protocols are meals. A window mean "
+            "keeps the fasting level, so the ratio of the two means is not "
+            "that comparison."
+        ),
+    ),
+    QueueItem(
+        id="vilsboll-2003-equal-incretins",
+        citation="Vilsbøll, Krarup, Madsbad and Holst (2003) Regul Pept 114:115",
+        status=Status.BLOCKED,
+        surface="cohort",
+        claim=(
+            "At ordinary glucose the two incretins contribute about equally "
+            "to the insulin response."
+        ),
+        marker_id="insulin",
+        blocked_on="m2.5",
+        note=(
+            "Glucose can be clamped. The split was measured by infusing GIP "
+            "against infusing GLP-1, and neither infusion exists. Insulin "
+            "at the end of those infusions is published (53 ± 5 versus "
+            "47 ± 7 pmol/L at fasting glucose, 79 ± 8 versus 95 ± 10 at "
+            "6 mmol/L). The conclusion that the contributions are equal is "
+            "not itself a mean with a standard error."
         ),
     ),
     QueueItem(
@@ -246,57 +266,59 @@ QUEUE: tuple[QueueItem, ...] = (
         note=(
             "The hold is in incretin.py: at the GLP-1 excess of a 75 g load "
             "while it is emptying, equilibrium glucagon is 8.2 pg/mL lower "
-            "than with GLP-1 at basal, and the term is zero at basal. The "
-            "protocol is a glucose clamp, which a rollout cannot run. "
+            "than with GLP-1 at basal, and the term is zero at basal. "
+            "Glucose can be clamped. The missing piece is the "
+            "exendin-(9-39) arm: there is no antagonist input. "
             "ogtt_glucagon_suppression still scores the free load."
         ),
     ),
     QueueItem(
         id="bile-modulates-fat-absorption",
-        citation="Intestinal bile acids and fat absorption",
+        citation="Borgström, Barrowman and Lindström (1985) New Comprehensive Biochemistry, ch. 14",
         status=Status.BLOCKED,
         surface="prior",
-        claim="Intestinal bile changes how fast meal fat is absorbed.",
+        claim=(
+            "With no bile in the intestine, 60–70% of a normal fat load is still absorbed."
+        ),
         marker_id="intestinal_bile",
         blocked_on="m2.6",
         note=(
-            "The floor is in bile.py: an empty intestine absorbs 65% of the "
-            "fat that leaves the stomach, and the resting content absorbs "
-            "all of it. A fistula arm is not a rollout. Wu 2013 shows "
-            "jejunal taurocholate raises GLP-1 only while glucose is "
-            "absorbed, and the abstract gives no concentration."
+            "60–70% is a range with no standard error, so it is not a cohort "
+            "target. The floor in bile.py is the midpoint of that range. "
+            "No arm drains intestinal bile, and the absorbed share is not a "
+            "series a spec can read."
         ),
     ),
     QueueItem(
         id="glycosuria-threshold",
-        citation="Renal glucose threshold, about 180 mg/dL",
-        status=Status.BLOCKED,
+        citation="Diabetes 2017;66:1999–2006 — urinary glucose regressed on plasma glucose",
+        status=Status.INTEGRATED,
         surface="cohort",
-        claim="Urinary glucose appears above the renal threshold and is absent below it.",
-        marker_id="glucose",
-        blocked_on="m2.7",
+        claim=(
+            "In people without diabetes the line crosses zero at 190 ± 2 mg/dL, "
+            "and above it the slope is the creatinine clearance, 139 ± 7 mL/min."
+        ),
+        marker_id="urinary_glucose",
+        spec_name="renal_glucose_at_190",
         note=(
-            "The threshold and the clearance are in renal.py: nothing "
-            "leaves at or below 190 mg/dL, and ten above it leaves at "
-            "13.9 mg/min. A rollout does not cross the threshold, and "
-            "there is no clamp arm. Lactate returning as glucose is still "
-            "unspecified: the share has no number yet."
+            "The threshold is renal_glucose_at_190, a glucose clamp at "
+            "190 mg/dL, where the line says nothing leaves. The slope is "
+            "renal_glucose_at_250 and renal_glucose_at_300."
         ),
     ),
     QueueItem(
         id="empagliflozin-24h-uge",
         citation="Diabetes 2017;66:1999–2006, day-13 urine, people without diabetes",
-        status=Status.BLOCKED,
+        status=Status.INTEGRATED,
         surface="cohort",
         claim="Empagliflozin 25 mg/day raises a day's urinary glucose to 42 ± 5 g.",
-        marker_id="glucose",
-        blocked_on="m2.8",
+        marker_id="urinary_glucose",
+        spec_name="empagliflozin_24h_urinary_glucose",
         note=(
-            "The day-14 regression intercept (34 mg/dL) and the day-13 "
-            "clearance (126 mL/min) are the input in renal.py. A fed day "
-            "of this model loses about 104 g, and the line is not retuned "
-            "to the free-living collection. Urine is not a marker, so the "
-            "collection has no cohort row."
+            "The collection is empagliflozin_24h_urinary_glucose. The same "
+            "dose's regression is renal_glucose_at_84_empagliflozin and "
+            "renal_glucose_at_200_empagliflozin. The line stays steep at the "
+            "glucose a fed day holds, so the collection and the line conflict."
         ),
     ),
     QueueItem(

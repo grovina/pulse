@@ -9,7 +9,17 @@ a second one.
 
 Epinephrine clears in about two minutes. The neural tone that releases
 it is faster. Resting plasma epinephrine is about 30 pg/mL.
+
+The student learns the measured numbers from these values: the adrenal
+side on the stress module (``ADRENAL``), epinephrine's metabolic action on
+the metabolic module (``EPINEPHRINE_ACTION``). The level where that action
+starts is its own number there, not the resting level: graded infusions
+measure the two separately. The tone's resting value and its activity gain
+are the units of a latent no study observes, and stay fixed. The teacher
+keeps every value.
 """
+
+from .published import Published
 
 SNS_B = 0.20
 EPI_B = 30.0
@@ -38,3 +48,23 @@ EXERCISE_UPTAKE_K = 0.015
 LIP_EPI_GAIN = 0.5
 INS_EPI_GAIN = 0.5        # α2 inhibition of glucose-stimulated secretion
 GN_EPI_SPAN = 20.0        # pg/mL added to glucagon's relaxation target
+
+_CRYER = "Cryer 1987 stepped hypoglycaemic clamp"
+ADRENAL: dict[str, Published] = {
+    "epi_b": Published(EPI_B, "Plasma epinephrine at rest"),
+    "epi_span": Published(EPI_SPAN, "Plasma epinephrine across graded exercise"),
+    "k_sns": Published(K_SNS, "Plasma epinephrine's rise at the onset of exercise"),
+    "k_epi": Published(K_EPI, "Plasma epinephrine's decay after an infusion stops"),
+    "sns_hypo": Published(SNS_HYPO, f"{_CRYER}: epinephrine's rise below its threshold"),
+    "sns_sleep": Published(SNS_SLEEP, "Plasma epinephrine asleep against awake, at rest"),
+    "hypo_epi": Published(HYPO_EPI_MGDL, f"{_CRYER}: the glucose where epinephrine rises"),
+    "hypo_cort": Published(HYPO_CORT_MGDL, f"{_CRYER}: the glucose where cortisol rises"),
+}
+_CLUTTER = "Clutter 1980 graded epinephrine infusions"
+EPINEPHRINE_ACTION: dict[str, Published] = {
+    "epi_threshold": Published(EPI_B, f"{_CLUTTER}: the level where glucose and glycerol rise"),
+    "epi_drive_k": Published(EPI_DRIVE_K, f"{_CLUTTER}: the level at half the metabolic response"),
+    "gn_epi_span": Published(GN_EPI_SPAN, "Plasma glucagon during an epinephrine infusion"),
+    "ins_epi_gain": Published(
+        INS_EPI_GAIN, "Insulin secretion during an epinephrine infusion, glucose clamped"),
+}

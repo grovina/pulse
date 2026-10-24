@@ -258,27 +258,28 @@ import torch.nn as nn
 from .base import (
     ConstantFluxHead, MassActionModule, SpeciesHead,
 )
-from ..bile import fat_bile_factor_t
+from ..bile import ABSORPTION, fat_bile_factor_t
 from ..circadian import (
     HEPATIC_K, LIPOLYSIS_K, PERIPHERAL_K,
     lipolysis_scale_t, peripheral_factor_t, retain_basal_t,
 )
+from ..correction import Correction, apply_correction, corrected_mass_action
 from ..incretin import (
-    amino_insulin_rate_t, glp1_glucagon_rate_t, glucagon_from_protein_t,
+    ISLET, amino_insulin_rate_t, glp1_glucagon_rate_t, glucagon_from_protein_t,
     incretin_factor_t,
 )
+from ..published import PublishedNumbers
 from ..sympathoadrenal import (
-    EPI_B, EPI_DRIVE_K, EXERCISE_UPTAKE_K, GN_EPI_SPAN, HEP_EPI_GAIN,
-    INS_EPI_GAIN, LIP_EPI_GAIN,
+    EPINEPHRINE_ACTION, EXERCISE_UPTAKE_K, HEP_EPI_GAIN, LIP_EPI_GAIN,
 )
-from ..renal import urinary_rate_t
+from ..renal import KIDNEY, urinary_mg_per_min_t, urinary_rate_t
 from ..expenditure import (
-    KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT,
+    GAS, KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT, THERMIC,
     frequency_offset_t, gas_exchange_t,
 )
 from ..types import (
     BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
-    MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE, VG_DL_PER_KG,
+    MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE, OBSERVABLES, VG_DL_PER_KG,
 )
 
 _GLUCOSE_NORM_SCALE = NORM_SCALE[MARKER_INDEX["glucose"]]
@@ -301,9 +302,11 @@ _N_COUPLING = len(MODULE_COUPLING_CHANNELS["metabolic"])
 
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
-_PROTOCOL_INPUTS = ("activity", "sleep_wake", "sglt2", "glucose_infusion", "glucose_clamp")
+_PROTOCOL_INPUTS = (
+    "activity", "sleep_wake", "sglt2", "glucose_infusion", "glucose_clamp", "insulin_clamp",
+)
 # Inputs that reach the rate through ``drives`` only; the learned heads never see them.
-_DRIVE_ONLY_INPUTS = ("sglt2", "glucose_infusion", "glucose_clamp")
+_DRIVE_ONLY_INPUTS = ("sglt2", "glucose_infusion", "glucose_clamp", "insulin_clamp")
 
 # Closed-loop glucose clamp: infusion = relu(Kp · (target − G)), in mg/dL/min of this
 # patient's glucose space. Kp is 1/min, so one Euler minute closes the whole gap
@@ -315,6 +318,21 @@ GLUCOSE_CLAMP_KP: float = 1.0
 def clamp_infusion_t(glucose: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """Proportional clamp infusion (mg/dL/min). A target of 0 or below is no clamp."""
     return torch.relu(GLUCOSE_CLAMP_KP * (target - glucose)) * (target > 0.0).to(glucose.dtype)
+
+
+def insulin_clamp_infusion_t(
+    target: torch.Tensor, basal: torch.Tensor, k_ins: torch.Tensor,
+) -> torch.Tensor:
+    """The insulin arm of a clamp (µU/mL/min). A target of 0 or below is no clamp.
+
+    A hyperinsulinaemic clamp runs insulin at a CONSTANT rate, so this is a constant
+    and not a second proportional controller: ``k_ins·(target − Ib)`` is exactly the
+    rate whose fixed point against the person's own clearance is     ``target`` (``basal`` is the setpoint the clearance restores toward). The paper
+    reports the plateau it reached, and the plateau is what the protocol declares.
+    Glucose-stimulated release adds to it, and is zero at or below the person's Gb —
+    which is where a euglycaemic clamp holds glucose.
+    """
+    return k_ins * torch.relu(target - basal) * (target > 0.0).to(target.dtype)
 
 # Species order matches MODULE_MARKER_INDICES["metabolic"]:
 # 0: glucose, 1: insulin, 2: glucagon, 3: ffa, 4: bhb, 5: lactate,
@@ -371,6 +389,7 @@ _SLEEP_EXTERNAL_IDX = 1
 _SGLT2_EXTERNAL_IDX = 2
 _GLU_INF_EXTERNAL_IDX = 3
 _GLU_CLAMP_EXTERNAL_IDX = 4
+_INS_CLAMP_EXTERNAL_IDX = 5
 
 # Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 = 0.02,
 # τ = 50 min). Floored so the state can't freeze; capped so it can't collapse to the
@@ -630,10 +649,11 @@ def _inverse_softplus(y: float) -> float:
     return math.log(math.expm1(y))
 
 
-def _epi_drive(epi: torch.Tensor) -> torch.Tensor:
-    """Saturating excess of epinephrine above its basal. Zero at rest."""
-    excess = torch.relu(epi / EPI_B - 1.0)
-    return excess / (excess + EPI_DRIVE_K)
+def _epi_drive(epi: torch.Tensor, c: dict[str, torch.Tensor]) -> torch.Tensor:
+    """Saturating excess of epinephrine above the level where its metabolic action
+    starts. Zero below it; that level starts at the resting one."""
+    excess = torch.relu(epi / c["epi_threshold"] - 1.0)
+    return excess / (excess + c["epi_drive_k"])
 
 
 def _ins_gate(i: torch.Tensor, ib: torch.Tensor, k: torch.Tensor, n: float) -> torch.Tensor:
@@ -642,9 +662,21 @@ def _ins_gate(i: torch.Tensor, ib: torch.Tensor, k: torch.Tensor, n: float) -> t
     return (1.0 + (ib / k) ** n) / (1.0 + (i / k) ** n)
 
 
-def _hill_centred(x: torch.Tensor, x_b: float, n: float) -> torch.Tensor:
-    """2/(1 + (x_b/x)^n): 1 at basal, → 2 above, → 0 below. Teacher `_hill_centred`."""
-    return 2.0 / (1.0 + (x_b / x.clamp(min=1e-6)) ** n)
+def _hill_centred(
+    x: torch.Tensor, x_b: float, n: float, correction: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """2/(1 + (x_b/x)^n): 1 at basal, → 2 above, → 0 below. Teacher `_hill_centred`.
+
+    ``correction`` replaces the exponent ``n`` with ``n·(1 + correction)``.
+    Zero leaves the teacher's curve. At ``x = x_b`` the value is 1 for every
+    correction, which is where basal hepatic output is defined.
+    """
+    ratio = x_b / x.clamp(min=1e-6)
+    powered = ratio ** n
+    if correction is not None:
+        feature = n * torch.log(ratio.clamp(min=1e-12))
+        powered = apply_correction(powered, correction, feature)
+    return 2.0 / (1.0 + powered)
 
 
 class GlucoseStimulatedInsulinHead(nn.Module):
@@ -729,6 +761,18 @@ def _without_mito(head_cls):
 
 
 class MetabolicModule(MassActionModule):
+    observables = tuple(o.id for o in OBSERVABLES if o.module == "metabolic")
+    identified_by = {
+        "logit_f_gng": "Landau 1996 deuterated water: gluconeogenesis' share of fasting production",
+        "log_k_ii": "Landau 1996 deuterated water: fasting glucose production across the fast",
+        "log_k_ffa": "Eaton 1969: plasma FFA clearance",
+        "_hep_epi_raw": "Wahren 1971: splanchnic glucose output after 40 min at 800 kg-m/min",
+        "log_k_ex": "Wahren 1971: leg glucose uptake during exercise",
+        "log_hepatic_k": "Donga 2010 clamp after one 4 h night: endogenous glucose production",
+        "log_lipolysis_k": "Donga 2010 clamp after one 4 h night: NEFA",
+        "log_peripheral_k": "Donga 2010 clamp after one 4 h night: glucose disposal",
+    }
+
     def __init__(self, embedding_dim: int, hidden_dim: int = 48):
         super().__init__(
             n_species=_N_SPECIES,
@@ -813,6 +857,15 @@ class MetabolicModule(MassActionModule):
         self.log_hepatic_k = nn.Parameter(torch.tensor(math.log(HEPATIC_K)))
         self.log_lipolysis_k = nn.Parameter(torch.tensor(math.log(LIPOLYSIS_K)))
         self.log_peripheral_k = nn.Parameter(torch.tensor(math.log(PERIPHERAL_K)))
+        # The hubs' measured numbers, each learned from its published value.
+        # Absorption and the thermic fractions are also read by thermoreg
+        # (`body_numbers`); this module is the one that holds them.
+        self.kidney = PublishedNumbers(KIDNEY)
+        self.islet = PublishedNumbers(ISLET)
+        self.epinephrine_action = PublishedNumbers(EPINEPHRINE_ACTION)
+        self.gas = PublishedNumbers(GAS)
+        self.thermic = PublishedNumbers(THERMIC)
+        self.absorption = PublishedNumbers(ABSORPTION)
 
         # Per-patient setpoint heads. Final layers zero-init ⇒ Gb = 95 and Ib = 10 for
         # every embedding at cold start; authority grows in training. A10 deleted the
@@ -840,6 +893,10 @@ class MetabolicModule(MassActionModule):
         self.beta_cell_gain_net = _zero_head()       # γ
         self.insulin_clearance_net = _zero_head()    # k_ins
         self.act_insulin_sens_net = _zero_head()     # act_insulin_sens
+        # Shape, not a rate. Zero, so the Hill and the first-order uptake stay
+        # the published laws.
+        self.hill_correction = Correction()
+        self.uptake_correction = Correction()
 
     # ---- per-patient setpoints -------------------------------------------------------
 
@@ -926,6 +983,10 @@ class MetabolicModule(MassActionModule):
                 * self._person_factor(self.act_insulin_sens_net, _ACT_INS_SENS_LOG_MAX, embedding)),
         }
 
+    def body_numbers(self) -> dict[str, torch.Tensor]:
+        """The numbers of this module's laws that another organ also reads."""
+        return {**self.absorption(), **self.thermic()}
+
     def k_ii(self) -> torch.Tensor:
         return self.log_k_ii.exp()
 
@@ -989,6 +1050,8 @@ class MetabolicModule(MassActionModule):
             "lac_prod_scale": self.prod_scale[_LACTATE_IDX],
             "lac_cons_scale": self.cons_scale[_LACTATE_IDX],
             "hep_cons_scale": self.cons_scale[_HEPATIC_IDX],
+            **self.kidney(), **self.islet(), **self.epinephrine_action(),
+            **self.gas(), **self.body_numbers(),
         }
 
     def head_input(
@@ -999,14 +1062,11 @@ class MetabolicModule(MassActionModule):
             state, coupling, external[..., cols], embedding, time_features)
 
     def head_input_sources(self):
-        return [
-            source for source in super().head_input_sources()
-            if source not in (
-                ("external", _SGLT2_EXTERNAL_IDX),
-                ("external", _GLU_INF_EXTERNAL_IDX),
-                ("external", _GLU_CLAMP_EXTERNAL_IDX),
-            )
-        ]
+        hidden = {
+            ("external", i) for i, name in enumerate(self.external_inputs)
+            if name in _DRIVE_ONLY_INPUTS
+        }
+        return [source for source in super().head_input_sources() if source not in hidden]
 
     def drives(
         self,
@@ -1030,7 +1090,7 @@ class MetabolicModule(MassActionModule):
         amino_g = amino_app / _LIPID_UNITS_PER_G
         kcal_in = KCAL_CARB * app_g + KCAL_FAT * lipid_g + KCAL_PROT * amino_g
         kcal_out, _vo2, _vco2, _rq = gas_exchange_t(
-            const["body_mass_kg"], act, app_g, lipid_g, amino_g)
+            const["body_mass_kg"], act, app_g, lipid_g, amino_g, const)
         return {
             "app_g": app_g,
             "app_eff": app_g * const["mg_dl_per_g"],
@@ -1047,13 +1107,14 @@ class MetabolicModule(MassActionModule):
             "sglt2": external[..., _SGLT2_EXTERNAL_IDX],
             "glucose_infusion": external[..., _GLU_INF_EXTERNAL_IDX],
             "glucose_clamp": external[..., _GLU_CLAMP_EXTERNAL_IDX],
+            "insulin_clamp": external[..., _INS_CLAMP_EXTERNAL_IDX],
             "kcal_in": kcal_in,
             "kcal_out": kcal_out,
             "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
             "glucagon_from_protein": glucagon_from_protein_t(
-                coupling[..., _DUO_PROT_COUPLING_IDX]),
+                coupling[..., _DUO_PROT_COUPLING_IDX], const),
             "amino_insulin": amino_insulin_rate_t(
-                coupling[..., _DUO_PROT_COUPLING_IDX]),
+                coupling[..., _DUO_PROT_COUPLING_IDX], const),
             "mito_training": _MITO_TRAIN_GAIN * relu(act - 0.2),
         }
 
@@ -1107,14 +1168,14 @@ class MetabolicModule(MassActionModule):
             _ins_gate(ins, ib, c["glyc_k"], _GLYC_INS_N), debt, hepatic_k)
         g_ins_gng = retain_basal_t(
             _ins_gate(ins, ib, c["gng_k"], _GNG_INS_N), debt, hepatic_k)
-        g_gn = _hill_centred(gn, c["gn_b"], _HGO_GN_N)
+        g_gn = _hill_centred(gn, c["gn_b"], _HGO_GN_N, self.hill_correction())
         g_cort = 1.0 + _GNG_CORT_AMP * torch.tanh(torch.log(cort / _CORT_CENTER))
         g_ffa = (ffa.clamp(min=1e-3) / c["ffa_b"]) ** _GNG_FFA_EXP
         g_g = (gb / torch.maximum(g, gb)) ** _HEP_AUTOREG_M
         glycogenolysis_plasma = (c["glyco_b"] * (lgly / _LIVER_GLY_CENTER)
                                  * g_ins_glyco * g_gn * g_g)
         epi = (_EPI_CENTER + _EPI_SCALE * coupling[..., _EPI_COUPLING_IDX]).clamp(min=1.0)
-        epi_drive = _epi_drive(epi)
+        epi_drive = _epi_drive(epi, c)
         glycogenolysis_plasma = glycogenolysis_plasma * (1.0 + c["hep_epi"] * epi_drive)
         gng_plasma = c["gng_b"] * g_cort * torch.sqrt(g_gn) * g_ffa * g_ins_gng * g_g
         gng_divert = gng_plasma * ins_drive / (
@@ -1125,7 +1186,7 @@ class MetabolicModule(MassActionModule):
         avail_m = mgly / (mgly + _MUSCLE_GLY_K)
         brk_muscle = _MUSCLE_GLY_FLUX * muscle_break * d["act_above_rest"] * avail_m
 
-        uptake_ii = k_ii * g
+        uptake_ii = corrected_mass_action(k_ii, g, gb, self.uptake_correction())
         x_eff = torch.maximum(c["si"] * xa, -_INS_DEP_BASAL_FRAC * k_ii)
         uptake_id = x_eff * g
         exercise_uptake = d["exercise_gain"] * relu(g)
@@ -1134,16 +1195,17 @@ class MetabolicModule(MassActionModule):
 
         glp1_excess = relu(glp1 - _GLP1_CENTER)
         gip_excess = relu(gip - _GIP_CENTER)
-        incretin = incretin_factor_t(glp1_excess, gip_excess)
+        incretin = incretin_factor_t(glp1_excess, gip_excess, c)
         glucose_ratio = torch.minimum(g / gb.clamp(min=1.0), torch.ones_like(g))
         effective_ib = ib * torch.clamp(glucose_ratio ** _FAST_INS_EXP, min=_FAST_INS_FLOOR)
         g_above = relu(g - gb)
         pot_rate = -_K_POT * (pot - g_above)
         phase2_stim = (1.0 - _PHASE2_FRAC) * g_above + _PHASE2_FRAC * pot
         ins_gsir = (c["gamma"] * gsir_mod * phase2_stim * incretin
-                    / (1.0 + INS_EPI_GAIN * epi_drive))
+                    / (1.0 + c["ins_epi_gain"] * epi_drive))
         ins_restoring = -c["k_ins"] * (ins - effective_ib)
-        ins_rate = ins_restoring + ins_gsir + d["amino_insulin"]
+        ins_clamp = insulin_clamp_infusion_t(d["insulin_clamp"], effective_ib, c["k_ins"])
+        ins_rate = ins_restoring + ins_gsir + d["amino_insulin"] + ins_clamp
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
         # which is the teacher's `dX = −p2·X + p3·(I − Ib)` with `p3 = Si_eff·p2`
         # exactly (divide both by Si: the student's `xa` is Si-free by construction).
@@ -1177,10 +1239,10 @@ class MetabolicModule(MassActionModule):
 
         glucagon_stim = c["alpha_gn"] * relu(gb - g) / gb.clamp(min=1.0)
         glucagon_supp = c["gn_ins"] * (ins - ib) / (ib + _GN_INS_OFFSET)
-        glucagon_restoring = -c["k_gn"] * (gn - (c["gn_b"] + GN_EPI_SPAN * epi_drive))
+        glucagon_restoring = -c["k_gn"] * (gn - (c["gn_b"] + c["gn_epi_span"] * epi_drive))
         gn_rate = (glucagon_restoring + glucagon_stim - glucagon_supp
                    + d["glucagon_from_protein"]
-                   - glp1_glucagon_rate_t(glp1_excess, c["k_gn"]))
+                   - glp1_glucagon_rate_t(glp1_excess, c["k_gn"], c))
         lipolysis = (c["lip_max"] / (1.0 + ins / c["ic50_lip"])
                      * lipolysis_scale_t(ins, ib, c["ic50_lip"], debt, self.log_lipolysis_k.exp())
                      * (1.0 + c["lip_epi"] * epi_drive))
@@ -1190,17 +1252,17 @@ class MetabolicModule(MassActionModule):
         int_bile = (
             _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _INT_BILE_COUPLING_IDX]
         ).clamp(min=0.0)
-        bile = fat_bile_factor_t(int_bile)
+        bile = fat_bile_factor_t(int_bile, c)
         lipid_g = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
         amino_g = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
         absorbed_g = lipid_g * bile
         ffa_from_lipid = _FFA_FROM_LIPID * absorbed_g * _LIPID_UNITS_PER_G
         kcal_in = KCAL_CARB * d["app_g"] + KCAL_FAT * absorbed_g + KCAL_PROT * amino_g
-        kcal_out, _vo2, vco2, _rq = gas_exchange_t(
-            c["body_mass_kg"], d["act"], d["app_g"], absorbed_g, amino_g)
+        kcal_out, vo2, vco2, rq = gas_exchange_t(
+            c["body_mass_kg"], d["act"], d["app_g"], absorbed_g, amino_g, c)
         # Breaths/min above RR₀ from this same CO₂. Mass stays in this
         # compartment: the lung adds the rise and does not see the kilograms.
-        rr_rise = frequency_offset_t(vco2, c["body_mass_kg"])
+        rr_rise = frequency_offset_t(vco2, c["body_mass_kg"], c)
         ffa_rate = lipolysis - c["k_ffa"] * ffa + ffa_from_lipid
 
         mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]
@@ -1208,7 +1270,7 @@ class MetabolicModule(MassActionModule):
         lac_rate = (lac_prod * c["lac_prod_scale"]
                     - lac_cons * c["lac_cons_scale"] * mito * lac
                     + lactate_from_glyco)
-        urinary = urinary_rate_t(g, c["mg_dl_per_g"], d["sglt2"])
+        urinary = urinary_rate_t(g, c["mg_dl_per_g"], d["sglt2"], c)
         # Exogenous IV glucose: the open-loop rate plus the clamp's proportional
         # infusion, both straight into plasma in mg/dL/min of this patient's space.
         infusion = d["glucose_infusion"] + clamp_infusion_t(g, d["glucose_clamp"])
@@ -1244,6 +1306,13 @@ class MetabolicModule(MassActionModule):
             "lipolysis": lipolysis, "ffa_from_lipid": ffa_from_lipid, "ffa_rate": ffa_rate,
             "kcal_in": kcal_in, "kcal_out": kcal_out, "rr_rise": rr_rise,
             "urinary": urinary,
+            # What a study measures that the body does not integrate (types.OBSERVABLES).
+            # Whole-body rates are per kg, the unit the tracer literature reports;
+            # the urine is the mg a collection weighs, per minute.
+            "glucose_infusion_rate": infusion * VG_DL_PER_KG,
+            "glucose_disposal": (uptake_ii + uptake_id + exercise_uptake) * VG_DL_PER_KG,
+            "urinary_glucose": urinary_mg_per_min_t(g, d["sglt2"], c),
+            "vo2": vo2, "vco2": vco2, "rq": rq, "energy_expenditure": kcal_out,
             "glucose_rate": glucose_rate, "liver_glycogen_rate": liver_rate,
             "muscle_glycogen_rate": muscle_rate,
             # A gram that entered glycogen is not also adipose. Breakdown
@@ -1267,7 +1336,7 @@ class MetabolicModule(MassActionModule):
             f["muscle_glycogen_rate"], f["mito_rate"], f["xa_rate"], f["fat_rate"],
             f["pot_rate"],
         ], dim=-1)
-        return rate, {"rr_rise": f["rr_rise"]}
+        return rate, {"rr_rise": f["rr_rise"], **{k: f[k] for k in self.observables}}
 
     def step(
         self,

@@ -12,9 +12,12 @@ Subcommands:
   per-spec z-residual + per-module grad norm. Catches dead literature
   specs and reveals which physiology pillar each spec actually pulls
   on.
-- ``identifiability`` takes the Gauss-Newton Fisher spectrum of the cohort
-  residuals over the scalar population parameters — which the literature
-  constrains and which directions are flat.
+- ``identifiability`` takes the Gauss-Newton Fisher spectrum of the literature
+  residuals over the scalar population parameters and the person code — which
+  directions the literature constrains, which are open and what would close them.
+- ``scoreboard`` scores a checkpoint on the PLAN section 4 board: held-out
+  literature fit by protocol family, open directions, per-item residuals,
+  conflicts, and the breaks against an earlier board.
 
 All subcommands write structured JSON to ``--out`` if requested and
 always print a human-readable rendering to stdout. To compare two runs,
@@ -202,6 +205,25 @@ def _cmd_identifiability(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_scoreboard(args: argparse.Namespace) -> int:
+    from ..scoreboard import render as render_scoreboard, scoreboard_for_checkpoint
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        ckpt = _localize(args.checkpoint, tmp)
+        previous = _localize(args.previous, tmp)
+        board = scoreboard_for_checkpoint(
+            ckpt, previous, n_draws=args.n_draws, seed=args.seed,
+            identifiability=args.identifiability,
+        )
+        print(render_scoreboard(board))
+        if args.out:
+            local_out = tmp / "scoreboard.json" if args.out.startswith("gs://") else Path(args.out)
+            local_out.write_text(json.dumps(board, indent=2))
+            _upload_if_gs(str(local_out), args.out)
+    return 0
+
+
 def _cmd_signal_balance(args: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -281,11 +303,20 @@ def main(argv: list[str] | None = None) -> int:
 
     idn = sub.add_parser(
         "identifiability",
-        help="Fisher spectrum of cohort residuals over the scalar population parameters",
+        help="Fisher spectrum of the literature residuals: open directions and conflicts",
     )
     idn.add_argument("--checkpoint", required=True)
     idn.add_argument("--out", default=None, help="Optional path to write JSON")
     idn.set_defaults(func=_cmd_identifiability)
+
+    sb = sub.add_parser("scoreboard", help="Score one checkpoint on the PLAN section 4 board")
+    sb.add_argument("--checkpoint", required=True)
+    sb.add_argument("--previous", default=None, help="An earlier board, for breaks")
+    sb.add_argument("--n-draws", type=int, default=4, help="Population draws per item")
+    sb.add_argument("--seed", type=int, default=0)
+    sb.add_argument("--identifiability", action=argparse.BooleanOptionalAction, default=True)
+    sb.add_argument("--out", default=None, help="Optional path to write JSON")
+    sb.set_defaults(func=_cmd_scoreboard)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

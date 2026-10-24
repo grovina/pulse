@@ -16,7 +16,13 @@ import torch
 from pulse.cohort_loss import (
     _arm_statistic_batched,
     _debiased_sq_residual,
+    _score_arm_trajs,
+    population_correlation,
+    population_spread,
     score_batch_statistic,
+    score_correlation,
+    score_spread,
+    statistic_nll,
 )
 from pulse.knowledge.cohort_types import (
     CohortArmSpec,
@@ -426,6 +432,108 @@ class TestPopulationMembers(unittest.TestCase):
         self.assertAlmostEqual(old, (bias + d / 3) ** 2 + 2 * v / 9, places=10)
         s2 = _expect_over_batches(2, lambda x: x.var(correction=1), fixed=(fixed,))
         self.assertAlmostEqual(s2 / 3, (2 * v + d * d) / 9, places=10)
+
+
+def _people_traj(values: list[float], marker_id: str = "glucose", n_steps: int = 10) -> torch.Tensor:
+    state_dim = len(MARKER_INDEX)
+    traj = torch.zeros(len(values), n_steps, state_dim)
+    traj[:, :, MARKER_INDEX[marker_id]] = torch.tensor(values).unsqueeze(1)
+    return traj
+
+
+class TestSpreadAndCorrelation(unittest.TestCase):
+    def test_spread_is_the_unbiased_sample_standard_deviation(self) -> None:
+        values = torch.tensor([80.0, 100.0])
+        self.assertAlmostEqual(float(population_spread(values)), (200.0) ** 0.5, places=5)
+        spec = CohortStatisticSpec(
+            name="g_sd", source="t", description="",
+            arms=(CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=()),),
+            marker_id="glucose", kind=StatisticKind.SPREAD,
+            window=StatisticWindow(0, 10), target=(200.0) ** 0.5, sigma=2.0,
+        )
+        loss, pred, z = score_spread(values, spec)
+        self.assertAlmostEqual(float(loss), 0.0, places=5)
+        self.assertAlmostEqual(pred, (200.0) ** 0.5, places=5)
+        self.assertAlmostEqual(z, 0.0, places=5)
+        # One person cannot separate a spread. No charge, no gradient.
+        one = torch.tensor([80.0], requires_grad=True)
+        loss1, _, _ = score_spread(one, spec)
+        self.assertEqual(float(loss1), 0.0)
+        self.assertFalse(loss1.requires_grad)
+
+    def test_spread_sigma_is_not_divided_by_sqrt_n(self) -> None:
+        values = torch.tensor([80.0, 100.0])
+        spec = CohortStatisticSpec(
+            name="g_sd", source="t", description="",
+            arms=(CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=()),),
+            marker_id="glucose", kind=StatisticKind.SPREAD,
+            window=StatisticWindow(0, 10), target=0.0, sigma=2.0,
+        )
+        loss, _, _ = score_spread(values, spec)
+        # ((sd - 0) / sigma)^2, sigma stays 2, not 2/sqrt(2).
+        self.assertAlmostEqual(float(loss), 200.0 / 4.0, places=4)
+
+    def test_correlation_is_pearson_across_people(self) -> None:
+        x = torch.tensor([1.0, 2.0, 3.0])
+        y = torch.tensor([2.0, 4.0, 6.0])
+        self.assertAlmostEqual(float(population_correlation(x, y)), 1.0, places=5)
+        spec = CohortStatisticSpec(
+            name="g_r", source="t", description="",
+            arms=(CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=()),),
+            marker_id="glucose", kind=StatisticKind.CORRELATION, partner="insulin",
+            window=StatisticWindow(0, 10), target=1.0, sigma=0.1,
+        )
+        loss, pred, _z = score_correlation(x, y, spec)
+        self.assertAlmostEqual(pred, 1.0, places=5)
+        self.assertAlmostEqual(float(loss), 0.0, places=5)
+
+    def test_a_factor_partner_is_read_from_the_code(self) -> None:
+        from pulse.knowledge.cohort_types import factor_index
+        from pulse.types import EMBEDDING_DIM
+
+        glucose = [90.0, 110.0, 130.0]
+        traj = _people_traj(glucose)
+        codes = torch.zeros(3, EMBEDDING_DIM)
+        codes[:, factor_index("insulin_resistance")] = torch.tensor(glucose)
+        spec = CohortStatisticSpec(
+            name="g_ir", source="t", description="",
+            arms=(CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=()),),
+            marker_id="glucose", kind=StatisticKind.CORRELATION, partner="insulin_resistance",
+            window=StatisticWindow(0, 10), target=1.0, sigma=0.2,
+        )
+        loss, pred, _z = _score_arm_trajs(spec, [traj], codes, n_population=3)
+        self.assertAlmostEqual(pred, 1.0, places=5)
+        self.assertAlmostEqual(float(loss), 0.0, places=4)
+        # A trailing median person is not part of the correlation.
+        codes4 = torch.zeros(4, EMBEDDING_DIM)
+        codes4[:3] = codes
+        traj4 = torch.cat([traj, _people_traj([0.0])], dim=0)
+        _loss4, pred4, _ = _score_arm_trajs(spec, [traj4], codes4, n_population=3)
+        self.assertAlmostEqual(pred4, 1.0, places=5)
+
+    def test_the_training_term_is_a_gaussian_nll_of_the_scored_residual(self) -> None:
+        z2 = torch.tensor(4.0)
+        nll = statistic_nll(z2, sigma=2.0)
+        # 0.5 * (resid/sigma)^2 + 0.5 * log(2 pi sigma^2), and z2 is already that square.
+        import math
+        self.assertAlmostEqual(float(nll), 0.5 * 4.0 + 0.5 * math.log(2.0 * math.pi * 4.0), places=5)
+
+    def test_spread_and_correlation_are_single_arm(self) -> None:
+        arms = (
+            CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=()),
+            CohortArmSpec(label="b", duration_min=10, start_hour=8.0, meals=()),
+        )
+        with self.assertRaises(ValueError):
+            CohortStatisticSpec(
+                name="bad", source="t", description="", arms=arms, marker_id="glucose",
+                kind=StatisticKind.SPREAD, window=StatisticWindow(0, 10), target=1.0, sigma=1.0,
+            )
+        with self.assertRaises(ValueError):
+            CohortStatisticSpec(
+                name="bad", source="t", description="", arms=arms[:1], marker_id="glucose",
+                kind=StatisticKind.CORRELATION, window=StatisticWindow(0, 10),
+                target=0.0, sigma=1.0,
+            )
 
 
 if __name__ == "__main__":

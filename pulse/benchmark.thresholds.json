@@ -12,6 +12,7 @@
   "_comment_headline": "Iter 97 (review 5.5): the headline is 'headline.normalized_mae' = mean over these sources (equal weight) of the mean over gate markers of episode-first MAE / sigma_obs. overall_weighted_mape was 57-61% legacy_static (24 copies of one synthetic protocol) and read 'best ever' for iter 96 while both dynamic sources got worse; it is kept as a continuity line only. legacy_static is deliberately not a headline source. No threshold on the headline yet: the first honest value is the iter-96 re-score.",
   "headline_sources": [
     "cgm_real",
+    "cgmacros",
     "teacher_dynamic",
     "teacher"
   ],

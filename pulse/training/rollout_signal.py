@@ -378,26 +378,15 @@ class RolloutEvidenceSignal(TrainingSignal):
         if w <= 0 or not self.specs:
             return SignalResult()
 
-        # Iter 68 r6: sample embedding IDs once per epoch (stable across specs),
-        # but redo the lookup fresh inside the per-spec loop. r5's single
-        # ``select_supervised_embeddings`` call produced non-leaf tensors from
-        # ``embeddings(pid_t)`` that were shared across all 31 specs' forward
-        # passes; the first spec's ``weighted.backward()`` freed that lookup
-        # op's saved tensors, and the second spec's backward then tried to
-        # traverse the same op a second time and crashed with
-        # "Trying to backward through the graph a second time". Per-spec
-        # re-lookup gives each spec its own autograd subgraph.
-        sample_emb_list = select_supervised_embeddings(
-            embeddings=embeddings,
-            n_patients=self.n_patients,
-            sample_patients=self.sample_patients,
-            rng=ctx.rng,
-            device=ctx.device,
-            include_default=self.include_default_embedding,
-        )
-        if not sample_emb_list:
+        # Sample patient ids once (stable across specs) and look each one up
+        # again per spec. A shared lookup's saved tensors are freed by the
+        # first backward, and the next spec then crashes trying to traverse
+        # that op a second time.
+        if (
+            (self.n_patients <= 0 or self.sample_patients <= 0)
+            and not self.include_default_embedding
+        ):
             return SignalResult()
-        del sample_emb_list  # only used to early-out; re-sampled per spec below
 
         sampled_pids: np.ndarray | None = None
         if self.n_patients > 0 and self.sample_patients > 0:
@@ -597,17 +586,11 @@ class RolloutEvidenceSignal(TrainingSignal):
         if w <= 0 or not self.rules:
             return SignalResult()
 
-        sample_emb_list = select_supervised_embeddings(
-            embeddings=embeddings,
-            n_patients=self.n_patients,
-            sample_patients=self.sample_patients,
-            rng=ctx.rng,
-            device=ctx.device,
-            include_default=self.include_default_embedding,
-        )
-        if not sample_emb_list:
+        if (
+            (self.n_patients <= 0 or self.sample_patients <= 0)
+            and not self.include_default_embedding
+        ):
             return SignalResult()
-        del sample_emb_list
 
         sampled_pids: np.ndarray | None = None
         if self.n_patients > 0 and self.sample_patients > 0:
@@ -740,9 +723,7 @@ class RolloutEvidenceSignal(TrainingSignal):
             return SignalResult()
 
         emb_list = select_supervised_embeddings(
-            embeddings=embeddings,
-            n_patients=self.n_patients,
-            sample_patients=self.sample_patients,
+            n=self.sample_patients if self.n_patients > 0 else 0,
             rng=ctx.rng,
             device=ctx.device,
             include_default=self.include_default_embedding,

@@ -27,7 +27,7 @@ from .types import (
     STATE_DIM, EMBEDDING_DIM, GUT_OUTPUT_DIM, TIME_FEATURES_DIM, DUODENAL_DIM,
     MARKERS, MARKER_INDEX, MODULE_MARKER_INDICES, MODULE_COUPLING_CHANNELS,
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
-    NORM_CENTER, NORM_SCALE,
+    NORM_CENTER, NORM_SCALE, OBSERVABLE_IDS,
 )
 from .gastric import EMPTY_KCAL_PER_MIN, swallow_from_meals
 from .modules import (
@@ -555,8 +555,11 @@ class ModularPhysiologyNetwork(nn.Module):
             self._index_cache[key] = cached
         return cached
 
-    def person_quantities(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
-        """Basal insulin and body mass, decoded once from the metabolic projection.
+    def body_quantities(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
+        """What more than one organ reads, held once: basal insulin and body mass
+        decoded from the metabolic projection, and the metabolic module's numbers
+        that thermoreg also reads (fat absorption, the thermic fractions). Each is
+        ``[B]``.
 
         ``embedding`` is the person code ``[B, E]``, not a module's private
         projection. Appetite reads ``ib`` from here; it does not decode its own.
@@ -566,12 +569,14 @@ class ModularPhysiologyNetwork(nn.Module):
         """
         if embedding.dim() != 2:
             raise ValueError(
-                f"person_quantities expects the person code [B, E], got {tuple(embedding.shape)}"
+                f"body_quantities expects the person code [B, E], got {tuple(embedding.shape)}"
             )
         met = self.embedding_projections["metabolic"](embedding)
+        batch = embedding.shape[0]
         return {
             "ib": self.metabolic.insulin_setpoint_raw(met).clamp(min=1e-3),
             "body_mass_kg": self.metabolic.body_mass_kg(met),
+            **{k: v.expand(batch) for k, v in self.metabolic.body_numbers().items()},
         }
 
     @staticmethod
@@ -593,6 +598,7 @@ class ModularPhysiologyNetwork(nn.Module):
         sglt2: Optional[torch.Tensor] = None,
         glucose_infusion: Optional[torch.Tensor] = None,
         glucose_clamp: Optional[torch.Tensor] = None,
+        insulin_clamp: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
@@ -612,6 +618,8 @@ class ModularPhysiologyNetwork(nn.Module):
             patient's glucose space; None is no infusion
         glucose_clamp: [batch] or None — closed-loop glucose target, mg/dL; 0 or None is
             no clamp
+        insulin_clamp: [batch] or None — closed-loop plasma insulin target, µU/mL; 0 or
+            None is no clamp
         duodenal_override: [batch, DUODENAL_DIM] duodenal (fat, protein, carb) delivery
             for this step, computed by ``integrate`` on the WINDOW-OFFSET clock. Same
             frame contract as ``gut_override``. When absent, delivery is zero rather
@@ -663,6 +671,7 @@ class ModularPhysiologyNetwork(nn.Module):
         drug = torch.nan_to_num(drug, nan=0.0)
         glu_inf = self._exogenous_input(glucose_infusion, state, batch)
         glu_clamp = self._exogenous_input(glucose_clamp, state, batch)
+        ins_clamp = self._exogenous_input(insulin_clamp, state, batch)
 
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
@@ -758,11 +767,12 @@ class ModularPhysiologyNetwork(nn.Module):
             "sglt2": drug,
             "glucose_infusion": glu_inf,
             "glucose_clamp": glu_clamp,
+            "insulin_clamp": ins_clamp,
             "swallow_carb": swallow[:, 0],
             "swallow_protein": swallow[:, 1],
             "swallow_fat": swallow[:, 2],
         }
-        person = self.person_quantities(embedding)
+        body = self.body_quantities(embedding)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
         rr_rise: Optional[torch.Tensor] = None
@@ -773,14 +783,14 @@ class ModularPhysiologyNetwork(nn.Module):
             ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
             extra = _ventilatory_drive(name, rr_rise)
             rate, pubs = mod.forward_published(
-                own, coupling, ext, emb[name], time_feats, person, extra_drives=extra)
+                own, coupling, ext, emb[name], time_feats, body, extra_drives=extra)
             if "rr_rise" in pubs:
                 rr_rise = pubs["rr_rise"]
             parts.append(rate)
             if return_decay and _reports_decay(mod):
                 # The same composition as ``PhysiologyModule.forward``, so the decay is a
                 # function of exactly the constants, drives and head outputs the rate saw.
-                const = mod.bind_person(mod.constants(emb[name]), person)
+                const = mod.bind_body(mod.constants(emb[name]), body)
                 drv = mod.drives(ext, coupling, time_feats, const)
                 if extra:
                     drv = {**drv, **extra}
@@ -1034,6 +1044,7 @@ class _RolloutPlan:
         sglt2: Optional[torch.Tensor],
         glucose_infusion: Optional[torch.Tensor],
         glucose_clamp: Optional[torch.Tensor],
+        insulin_clamp: Optional[torch.Tensor],
     ) -> None:
         B = int(embedding.shape[0])
         T = int(n_steps)
@@ -1041,6 +1052,7 @@ class _RolloutPlan:
         self.center = model.norm_center
         self.scale = model.norm_scale
         self.marker_order = model._marker_from_module_order
+        self.observables = OBSERVABLE_IDS
 
         # Absolute clock, per member: computed in float64 exactly like the historical
         # per-step ``(start + step·dt) % 1440`` Python float, then cast.
@@ -1049,15 +1061,11 @@ class _RolloutPlan:
         t_abs = torch.remainder(start + clock, 1440.0).to(torch.float32).expand(B, T)
         time_feats = compute_time_features(t_abs)                       # [B, T, 4]
         sw, act = model.resolve_external_inputs(embedding, time_feats, sleep_wake, activity)
-        drug = sw.new_zeros(sw.shape) if sglt2 is None else torch.nan_to_num(sglt2.expand(sw.shape), nan=0.0)
-        glu_inf = (
-            sw.new_zeros(sw.shape) if glucose_infusion is None
-            else torch.nan_to_num(glucose_infusion.expand(sw.shape), nan=0.0)
-        )
-        glu_clamp = (
-            sw.new_zeros(sw.shape) if glucose_clamp is None
-            else torch.nan_to_num(glucose_clamp.expand(sw.shape), nan=0.0)
-        )
+
+        def exogenous(x: Optional[torch.Tensor]) -> torch.Tensor:
+            """A drug-like series over the window: missing (or NaN) is zero, not a default."""
+            return sw.new_zeros(sw.shape) if x is None else torch.nan_to_num(x.expand(sw.shape), nan=0.0)
+
         emb = {name: proj(embedding) for name, proj in model.embedding_projections.items()}
         for name in _MODULE_ORDER:
             emb.setdefault(name, embedding.new_zeros(B, 0))
@@ -1074,23 +1082,24 @@ class _RolloutPlan:
         external = {
             "sleep_wake": sw,
             "activity": act,
-            "sglt2": drug,
-            "glucose_infusion": glu_inf,
-            "glucose_clamp": glu_clamp,
+            "sglt2": exogenous(sglt2),
+            "glucose_infusion": exogenous(glucose_infusion),
+            "glucose_clamp": exogenous(glucose_clamp),
+            "insulin_clamp": exogenous(insulin_clamp),
             "swallow_carb": swallow[..., 0],
             "swallow_protein": swallow[..., 1],
             "swallow_fat": swallow[..., 2],
         }
-        person = model.person_quantities(embedding)
-        person_window = {k: v.repeat_interleave(T, dim=0) for k, v in person.items()}
+        body = model.body_quantities(embedding)
+        body_window = {k: v.repeat_interleave(T, dim=0) for k, v in body.items()}
         tf_flat = time_feats.reshape(B * T, -1)
         self.modules: list[_ModulePlan] = []
         for name in _MODULE_ORDER:
             mod = model._modules_by_name[name]
             state_idx, coupling_idx = model._step_gather_indices(name, device)
             ext = torch.stack([external[n] for n in mod.external_inputs], dim=-1)
-            const_window = mod.bind_person(
-                mod.constants(emb[name].repeat_interleave(T, dim=0)), person_window,
+            const_window = mod.bind_body(
+                mod.constants(emb[name].repeat_interleave(T, dim=0)), body_window,
             )
             drives = mod.drives(
                 ext.reshape(B * T, -1),
@@ -1099,7 +1108,7 @@ class _RolloutPlan:
                 const_window,
             )
             self.modules.append(_ModulePlan(
-                name, mod, mod.bind_person(mod.constants(emb[name]), person), drives, B, T,
+                name, mod, mod.bind_body(mod.constants(emb[name]), body), drives, B, T,
                 state_idx, coupling_idx, self.bank.slots.get(name, []),
             ))
 
@@ -1118,11 +1127,21 @@ class _RolloutPlan:
         self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...],
     ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
         """``(rates, decay)`` for ``euler_step``; ``decay`` is ``None`` if no module reports one."""
-        return self._evaluate(state, step_inputs, with_decay=True)
+        rates, decay, _published = self._evaluate(state, step_inputs, with_decay=True)
+        return rates, decay
+
+    def observed_step(
+        self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], dt: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(next state, observables[B, OBSERVABLE_DIM])`` — the observables are this
+        minute's, read from the same evaluation that produced the rates."""
+        rates, decay, published = self._evaluate(state, step_inputs, with_decay=True)
+        obs = torch.stack([published[k].expand(state.shape[:-1]) for k in self.observables], dim=-1)
+        return euler_step(state, rates, dt, decay), obs
 
     def _evaluate(
         self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], with_decay: bool,
-    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor], dict[str, torch.Tensor]]:
         exo_t, gut_t, duo_t = step_inputs[:3]
         drives_t = iter(step_inputs[3:])
         norm = (state - self.center) / self.scale
@@ -1130,6 +1149,7 @@ class _RolloutPlan:
         heads = self.bank(norm, exo_t)
         parts = []
         decays: list[Optional[torch.Tensor]] = []
+        published: dict[str, torch.Tensor] = {}
         rr_rise: Optional[torch.Tensor] = None
         for m in self.modules:
             drv = dict(m.fixed)
@@ -1144,6 +1164,7 @@ class _RolloutPlan:
             rate, pubs = m.module.step_published(own, coupling, m.const, drv, raw)
             if "rr_rise" in pubs:
                 rr_rise = pubs["rr_rise"]
+            published.update(pubs)
             parts.append(rate)
             if with_decay and m.reports_decay:
                 decays.append(_as_rate_shape(
@@ -1151,7 +1172,7 @@ class _RolloutPlan:
             else:
                 decays.append(None)
         rates = torch.cat(parts, dim=-1).index_select(-1, self.marker_order)
-        return rates, _assemble_decay(parts, decays, self.marker_order)
+        return rates, _assemble_decay(parts, decays, self.marker_order), published
 
 
 def _planned_euler_step(
@@ -1292,6 +1313,8 @@ def integrate(
     duodenal_outputs: Optional[torch.Tensor] = None,
     member_steps: Optional[torch.Tensor] = None,
     *,
+    insulin_clamp: Optional[torch.Tensor] = None,
+    observe: bool = False,
     planned: bool = True,
 ) -> torch.Tensor:
     """Integrate the modular ODE forward in time.
@@ -1320,6 +1343,13 @@ def integrate(
       (``metabolic.GLUCOSE_CLAMP_KP``); the realized infusion is
       ``metabolic.clamp_infusion_t`` of the returned glucose and the target, i.e. the
       GIR of a hyperinsulinemic-euglycemic clamp. ``None`` or ``0`` is no clamp.
+    - ``insulin_clamp``: ``[T]`` or ``[B, T]`` plasma insulin plateau in µU/mL, the
+      insulin arm of a clamp: a constant infusion sized against the person's own clearance
+      (``metabolic.insulin_clamp_infusion_t``). ``None`` or ``0`` is no clamp.
+    - ``observe``: also return ``types.OBSERVABLES`` for every minute, appended after the
+      state, so the result is ``[..., T, STATE_DIM + OBSERVABLE_DIM]`` and column
+      ``types.SERIES_INDEX[id]`` is that series. Row ``t``'s observables are minute ``t``'s,
+      from the evaluation that stepped row ``t`` forward. Planned rollouts only.
     - ``gut_outputs``: ``[T, GUT_OUTPUT_DIM]`` or ``[B, T, GUT_OUTPUT_DIM]``, or None to
       compute it from ``meals`` on the window-offset clock (``precompute_gut_outputs``).
     - ``duodenal_outputs``: ``[T, 3]`` or ``[B, T, 3]`` duodenal (fat, protein, carb)
@@ -1401,7 +1431,7 @@ def integrate(
         plan = _RolloutPlan(
             model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
             _series(sleep_wake), _series(activity), _series(sglt2),
-            _series(glucose_infusion), _series(glucose_clamp),
+            _series(glucose_infusion), _series(glucose_clamp), _series(insulin_clamp),
         )
         held: list[Optional[torch.Tensor]] = [None] * n_steps
         if member_steps is not None:
@@ -1414,17 +1444,25 @@ def integrate(
             ]
 
         kernel = _step_kernel()
+        observed: list[torch.Tensor] = []
 
         def step_fn(state: torch.Tensor, step: int) -> torch.Tensor:
-            # The compiled kernel (if on) is specialised on whether its inputs carry
-            # grad; the initial state usually does not, so step 0 runs eagerly and
-            # one compiled variant serves every later step.
-            run = _planned_euler_step if step == 0 else kernel
-            new_state = run(plan, state, plan.inputs(step), dt)
+            if observe:
+                # Eager: the observables come out of the same evaluation as the rates.
+                new_state, obs = plan.observed_step(state, plan.inputs(step), dt)
+                observed.append(obs)
+            else:
+                # The compiled kernel (if on) is specialised on whether its inputs carry
+                # grad; the initial state usually does not, so step 0 runs eagerly and
+                # one compiled variant serves every later step.
+                run = _planned_euler_step if step == 0 else kernel
+                new_state = run(plan, state, plan.inputs(step), dt)
             if held[step] is not None:
                 new_state = torch.where(held[step], state, new_state)
             return new_state
     else:
+        if observe:
+            raise ValueError("observables come from a planned ModularPhysiologyNetwork rollout")
         if member_meals is not None or torch.is_tensor(start_time_minutes) or member_steps is not None:
             raise ValueError("per-member protocols need a ModularPhysiologyNetwork")
         # Precompute the whole gut window so meal absorption runs on the window-offset
@@ -1463,15 +1501,18 @@ def integrate(
             drug_step = sglt2[step].expand(batch) if sglt2 is not None else None
             inf_step = glucose_infusion[step].expand(batch) if glucose_infusion is not None else None
             clamp_step = glucose_clamp[step].expand(batch) if glucose_clamp is not None else None
+            ins_clamp_step = insulin_clamp[step].expand(batch) if insulin_clamp is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
             swallow_kw = {}
             if swallow is not None:
                 swallow_kw["swallow_override"] = swallow[step]
+            ins_kw = {} if ins_clamp_step is None else {"insulin_clamp": ins_clamp_step}
             out = model(
                 state, embedding, t, meals,
                 sleep_wake=sw_step, activity=act_step, sglt2=drug_step,
                 glucose_infusion=inf_step, glucose_clamp=clamp_step,
+                **ins_kw,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
                 **swallow_kw,
@@ -1486,6 +1527,9 @@ def integrate(
         and (initial_state.requires_grad or embedding.requires_grad)
     )
 
+    if observe and use_checkpointing:
+        raise ValueError("observe needs every minute's evaluation; checkpointing recomputes them")
+
     if not use_checkpointing:
         states: list[torch.Tensor] = []
         state = initial_state
@@ -1493,6 +1537,8 @@ def integrate(
             states.append(state)
             state = step_fn(state, step)
         out = torch.stack(states, dim=1)  # [B, T, STATE_DIM]
+        if observe:
+            out = torch.cat([out, torch.stack(observed, dim=1)], dim=-1)
         return out.squeeze(0) if unbatched else out
 
     # Checkpointed path: split into K chunks, each chunk recomputes its

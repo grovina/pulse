@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 
 from .base import PhysiologyModule
+from ..correction import Correction
 from ..gastric import EMPTY_KCAL_PER_MIN, outflow_grams
 from ..types import MARKER_INDEX, MODULE_MARKER_IDS, NORM_CENTER, NORM_SCALE
 
@@ -27,7 +28,12 @@ def _inverse_softplus(y: float) -> float:
 
 
 class GastricModule(PhysiologyModule):
-    """Three pools. A minute's swallow is external; what leaves is the shared rate."""
+    """Three pools. A minute's swallow is external; what leaves is the shared rate.
+
+    The split across carbohydrate, protein and fat is the default shape.
+    ``split_correction`` starts at zero and can move that split. The calorie
+    rate stays ``empty_kcal``.
+    """
 
     external_inputs = ("swallow_carb", "swallow_protein", "swallow_fat")
     n_state = 3
@@ -40,6 +46,7 @@ class GastricModule(PhysiologyModule):
             torch.tensor(_inverse_softplus(EMPTY_KCAL_PER_MIN)))
         self.register_buffer("_center", _CENTER.clone())
         self.register_buffer("_scale", _SCALE.clone())
+        self.split_correction = Correction(3)
 
     def empty_kcal(self) -> torch.Tensor:
         return nn.functional.softplus(self.log_empty_kcal)
@@ -67,5 +74,5 @@ class GastricModule(PhysiologyModule):
         grams = (self._center + self._scale * state).clamp(min=0.0)
         swallow = drv["swallow"]
         filled = grams + swallow
-        left = outflow_grams(filled, const["empty_kcal"])
+        left = outflow_grams(filled, const["empty_kcal"], self.split_correction())
         return swallow - left

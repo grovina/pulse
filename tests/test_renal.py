@@ -13,9 +13,10 @@ from pulse.knowledge.full_body import (
 )
 from pulse.modules.base import compute_time_features
 from pulse.modules.metabolic import MetabolicModule
+from pulse.published import initial_values
 from pulse.renal import (
     EMPA_GFR_ML_PER_MIN, EMPA_RTG_MG_DL, EMPA_UGE_G_PER_DAY, EMPA_UGE_SE_G_PER_DAY,
-    GFR_ML_PER_MIN, RTG_MG_DL, urinary_mg_per_min, urinary_mg_per_min_t, urinary_rate,
+    GFR_ML_PER_MIN, KIDNEY, RTG_MG_DL, urinary_mg_per_min, urinary_mg_per_min_t, urinary_rate,
 )
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX
 
@@ -32,7 +33,7 @@ class TestTheThreshold(unittest.TestCase):
 
     def test_the_tensor_is_the_scalar(self) -> None:
         g = torch.tensor([80.0, 190.0, 250.0])
-        got = urinary_mg_per_min_t(g)
+        got = urinary_mg_per_min_t(g, torch.zeros_like(g), initial_values(KIDNEY))
         exp = torch.tensor([urinary_mg_per_min(float(v)) for v in g])
         torch.testing.assert_close(got, exp)
 
@@ -67,7 +68,7 @@ class TestEmpagliflozin(unittest.TestCase):
     def test_the_tensor_is_the_scalar(self) -> None:
         g = torch.tensor([84.0, 34.0, 120.0])
         exposure = torch.tensor([1.0, 1.0, 0.5])
-        got = urinary_mg_per_min_t(g, exposure)
+        got = urinary_mg_per_min_t(g, exposure, initial_values(KIDNEY))
         exp = torch.tensor([
             urinary_mg_per_min(float(a), float(b)) for a, b in zip(g, exposure)
         ])
@@ -83,8 +84,8 @@ class TestEmpagliflozin(unittest.TestCase):
         emb = torch.zeros(1, EMBEDDING_DIM)
         tf = compute_time_features(torch.tensor([8.0 * 60.0]))
         with torch.no_grad():
-            off = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
-            on = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 1.0, 0.0, 0.0]]), emb, tf)
+            off = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]]), emb, tf)
+            on = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
             mg = float(met.constants(emb)["mg_dl_per_g"])
         self.assertEqual(float(off["urinary"]), 0.0)
         self.assertAlmostEqual(float(on["urinary"]), urinary_rate(84.0, mg, 1.0), places=5)

@@ -39,7 +39,7 @@ from ..model import ModularPhysiologyNetwork
 from ..modules.base import GutModuleBase
 from ..modules.gut import GUT_OUTPUT_SCALE, MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from ..types import GUT_OUTPUT_DIM
-from .embedding_sampler import select_supervised_rows
+from .embedding_sampler import teacher_table_rows
 from .safe_step import accumulate_grad
 from .signals import SignalContext, SignalResult, TrainingSignal, WeightSchedule
 
@@ -310,7 +310,7 @@ class GutDoseSweepSignal(TrainingSignal):
         if w <= 0:
             return SignalResult()
 
-        rows = select_supervised_rows(
+        rows = teacher_table_rows(
             embeddings=embeddings,
             n_patients=self.n_patients,
             sample_patients=self.sample_patients,

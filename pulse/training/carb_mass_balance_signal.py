@@ -118,9 +118,7 @@ class CarbMassBalanceSignal(TrainingSignal):
             return SignalResult()
 
         emb_list = select_supervised_embeddings(
-            embeddings=embeddings,
-            n_patients=self.n_patients,
-            sample_patients=self.sample_patients,
+            n=self.sample_patients if self.n_patients > 0 else 0,
             rng=ctx.rng,
             device=ctx.device,
             include_default=self.include_default_embedding,

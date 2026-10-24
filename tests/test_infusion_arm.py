@@ -1,22 +1,30 @@
-"""IV glucose infusion and the glucose clamp are exogenous inputs, like ``sglt2``.
+"""IV glucose infusion and the clamps are exogenous inputs, like ``sglt2``.
 
 ``glucose_infusion`` is a per-minute appearance rate in mg/dL/min of the patient's
 glucose space, added to the metabolic glucose rate. ``glucose_clamp`` is a target
-glucose: the step infuses ``relu(Kp · (target − G))``. Neither reaches the learned heads,
-and with both absent every trajectory is the one the model always produced.
+glucose: the step infuses ``relu(Kp · (target − G))``. ``insulin_clamp`` is an insulin
+plateau held by a constant infusion. None reaches the learned heads, and with all
+absent every trajectory is the one the model always produced. What a clamp measures,
+the infusion rate, is an observable the metabolic law publishes in the same minute.
 """
 
 from __future__ import annotations
 
 import torch
 
-from pulse.cohort_loss import _rollout_arm_states, rollout_arms
-from pulse.knowledge.cohort_types import CohortArmSpec
+from pulse.cohort_loss import _rollout_arm_states, cohort_statistic_loss_one_spec, rollout_arms
+from pulse.knowledge.cohort_types import (
+    CohortArmSpec, CohortStatisticSpec, StatisticKind, StatisticWindow,
+)
 from pulse.model import ModularPhysiologyNetwork, integrate
-from pulse.modules.metabolic import GLUCOSE_CLAMP_KP, clamp_infusion_t
-from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, STATE_DIM
+from pulse.modules.metabolic import GLUCOSE_CLAMP_KP, VG_DL_PER_KG, clamp_infusion_t
+from pulse.types import (
+    EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, OBSERVABLE_DIM, SERIES_INDEX, STATE_DIM,
+)
 
 _G = MARKER_INDEX["glucose"]
+_I = MARKER_INDEX["insulin"]
+_GIR = SERIES_INDEX["glucose_infusion_rate"]
 _T = 60
 _INFUSION = 2.0  # mg/dL/min
 
@@ -144,3 +152,51 @@ def test_clamp_arm_through_cohort_loss() -> None:
         batched = rollout_arms(model, [(_arm(glucose_clamp_mg_dl=target), _emb(), _state())])
     assert float((traj[0, 20:, _G] - target).abs().max()) < 3.0
     assert torch.allclose(batched[0], traj, atol=1e-4)
+
+
+def test_insulin_clamp_holds_the_plateau() -> None:
+    model = _model()
+    plateau = 60.0
+    series = torch.full((_T,), plateau)
+    with torch.no_grad():
+        base = _roll(model)
+        for planned in (True, False):
+            held = _roll(model, planned=planned, insulin_clamp=series, glucose_clamp=torch.full((_T,), 90.0))
+            assert float((held[0, 40:, _I] - plateau).abs().max()) < 0.5
+        no_clamp = _roll(model, insulin_clamp=torch.zeros(_T))
+    assert torch.equal(base, no_clamp)
+    assert float(base[0, -1, _I]) < plateau - 20.0
+
+
+def test_observing_changes_no_state() -> None:
+    model = _model()
+    kw = {"glucose_clamp": torch.full((_T,), 120.0), "insulin_clamp": torch.full((_T,), 60.0)}
+    with torch.no_grad():
+        plain = _roll(model, **kw)
+        observed = _roll(model, observe=True, **kw)
+    assert observed.shape == (1, _T, STATE_DIM + OBSERVABLE_DIM)
+    assert torch.equal(observed[..., :STATE_DIM], plain)
+
+
+def test_the_gir_observable_is_the_clamp_infusion_of_its_own_minute() -> None:
+    model = _model()
+    target = torch.full((_T,), 120.0)
+    with torch.no_grad():
+        traj = _roll(model, observe=True, glucose_clamp=target)
+    expected = clamp_infusion_t(traj[0, :, _G], target) * VG_DL_PER_KG
+    torch.testing.assert_close(traj[0, :, _GIR], expected)
+
+
+def test_a_clamp_gir_spec_scores_and_trains() -> None:
+    model = _model()
+    arm = _arm(glucose_clamp_mg_dl=90.0, insulin_clamp_uU_ml=60.0)
+    spec = CohortStatisticSpec(
+        name="clamp_gir", source="test", description="steady-state GIR",
+        arms=(arm,), marker_id="glucose_infusion_rate", kind=StatisticKind.MEAN_IN_WINDOW,
+        window=StatisticWindow(40, _T), target=8.0, sigma=1.0,
+    )
+    loss, pred, _z = cohort_statistic_loss_one_spec(model, [_emb()[0]], spec, _state()[0])
+    assert pred > 0.0
+    model.zero_grad()
+    loss.backward()
+    assert any(p.grad is not None and float(p.grad.abs().max()) > 0.0 for p in model.parameters())

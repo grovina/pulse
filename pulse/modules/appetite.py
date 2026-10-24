@@ -17,7 +17,8 @@ import math
 import torch
 
 from .base import BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule
-from ..incretin import gip_rate_t
+from ..incretin import GIP_KINETICS, gip_rate_t
+from ..published import PublishedNumbers
 from ..types import (
     MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICES, NORM_CENTER, NORM_SCALE,
 )
@@ -119,21 +120,23 @@ class AppetiteModule(MassActionModule):
         prod_scales = [c * t for c, t in zip(_CONS_SCALES, _TYPICALS)]
         self.prod_scale.copy_(torch.tensor(prod_scales, dtype=torch.float32))
         self.cons_scale.copy_(torch.tensor(_CONS_SCALES, dtype=torch.float32))
+        self.gip_kinetics = PublishedNumbers(GIP_KINETICS)
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         return {
             "glp1_prod_scale": self.prod_scale[_GLP1_IDX],
             "glp1_cons_scale": self.cons_scale[_GLP1_IDX],
+            **self.gip_kinetics(),
         }
 
-    def bind_person(self, const, person):
+    def bind_body(self, const, body):
         """Basal insulin is the metabolic module's decode. This module has no second one."""
-        if person is None or "ib" not in person:
+        if body is None or "ib" not in body:
             raise RuntimeError(
                 "appetite reads the metabolic basal insulin and has no decode of its own"
             )
         bound = dict(const)
-        bound["ib"] = person["ib"]
+        bound["ib"] = body["ib"]
         return bound
 
     def drives(
@@ -202,5 +205,5 @@ class AppetiteModule(MassActionModule):
             + drv["glp1_duo"]
         )
         d_gip = gip_rate_t(
-            gip, coupling[..., _DUO_CARB], coupling[..., _DUO_FAT])
+            gip, coupling[..., _DUO_CARB], coupling[..., _DUO_FAT], const)
         return torch.stack([d_ghr, d_lep, d_glp1, d_slow, d_gip], dim=-1)

@@ -14,29 +14,57 @@ import math
 
 import torch
 
+from .correction import correction_weights
+
 EMPTY_KCAL_PER_MIN = 2.13
 KCAL_PER_G = (4.0, 4.0, 9.0)  # carbohydrate, protein, fat
 FLAG_GATE_SCALE_G = 10.0
 
 
-def _kcal(pool: torch.Tensor) -> torch.Tensor:
-    return (
-        KCAL_PER_G[0] * pool[..., 0]
-        + KCAL_PER_G[1] * pool[..., 1]
-        + KCAL_PER_G[2] * pool[..., 2]
-    )
+def _allocate_kcal(
+    available: torch.Tensor, budget: torch.Tensor, weight: torch.Tensor,
+) -> torch.Tensor:
+    """Calories from each macro, proportional to ``available * weight``, capped by the pool.
+
+    A pool has one part per macro, so this many passes always finish: each pass
+    locks any part the share would empty, and the next pass gives the leftover
+    calories to what remains. Equal weights are the calorie proportion, and
+    there the cap does not bind.
+    """
+    remaining = available
+    left = budget
+    taken = torch.zeros_like(available)
+    for _ in range(available.shape[-1]):
+        weighted = remaining * weight
+        total = weighted.sum(dim=-1, keepdim=True)
+        proposal = left.unsqueeze(-1) * weighted / total.clamp(min=1e-12)
+        proposal = torch.where(total > 0, proposal, torch.zeros_like(proposal))
+        take = torch.minimum(proposal, remaining)
+        taken = taken + take
+        remaining = remaining - take
+        left = left - take.sum(dim=-1)
+    return taken
 
 
-def outflow_grams(pool: torch.Tensor, kcal_per_min: torch.Tensor | float) -> torch.Tensor:
-    """Grams leaving this minute, same layout as ``pool`` (carb, protein, fat)."""
-    kcal = _kcal(pool)
+def outflow_grams(
+    pool: torch.Tensor,
+    kcal_per_min: torch.Tensor | float,
+    correction: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Grams leaving this minute, same layout as ``pool`` (carb, protein, fat).
+
+    The calorie rate is shared in proportion to the calories still in the pool.
+    ``correction`` is a per-macro shift of that proportion. The teacher omits
+    it. Zero leaves the proportion, and the calories that leave are still the
+    rate, capped by what each macro has.
+    """
+    kcal_g = pool.new_tensor(KCAL_PER_G)
+    available = (pool * kcal_g).clamp(min=0)
+    kcal = available.sum(-1)
     rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
-    frac = torch.where(
-        kcal > 0,
-        torch.minimum(rate.expand_as(kcal), kcal) / kcal.clamp(min=1e-12),
-        torch.zeros_like(kcal),
-    )
-    return pool * frac.unsqueeze(-1)
+    budget = torch.minimum(rate.expand_as(kcal), kcal)
+    weight = correction_weights(correction, n=pool.shape[-1], like=pool)
+    return _allocate_kcal(available, budget, weight) / kcal_g
 
 
 def simulate(

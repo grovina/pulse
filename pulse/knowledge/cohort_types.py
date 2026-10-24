@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ..types import SERIES_INDEX
+
 
 class StatisticKind(str, Enum):
     # mean(arm[window]) per arm; per-arm target (single arm).
@@ -28,6 +30,10 @@ class StatisticKind(str, Enum):
     PEAK_VALUE = "peak_value"
     # max(arm[1].window) - max(arm[0].window); requires exactly 2 arms.
     DELTA_PEAKS = "delta_peaks"
+    # mean(arm[1].window) / mean(arm[0].window); requires exactly 2 arms. A
+    # finding reported in a unit the model does not share (per kg of lean mass,
+    # another assay's frame) is scale-free only as the ratio of its two arms.
+    RATIO_MEANS = "ratio_means"
     # Soft argmax over window (minutes from window start), single arm.
     TIME_TO_PEAK = "time_to_peak"
     # A whole published trajectory: the marker value at each ``CurvePoint`` of
@@ -37,6 +43,83 @@ class StatisticKind(str, Enum):
     # per point (see cohort_statistics.py), so the whole battle-tested batched
     # scorer handles it unchanged.
     CURVE = "curve"
+    # Unbiased sample standard deviation, across people, of each person's mean
+    # of the marker over the window. The published spread. Single arm.
+    SPREAD = "spread"
+    # Pearson correlation, across people, of the marker's window-mean with
+    # ``partner`` (another marker's window-mean, or a named factor). Single arm.
+    CORRELATION = "correlation"
+
+
+# Named axes of the person code. A draw writes factor ``i`` into coordinate
+# ``i`` of the 32-wide code; every other coordinate stays 0, which is the
+# median person. Published cohorts restrict these axes (``Population``).
+FACTORS: tuple[str, ...] = (
+    "insulin_resistance",
+    "beta_cell",
+    "adiposity",
+    "fitness",
+    "chronotype",
+    "hpa_reactivity",
+    "gastric_emptying",
+    "sex",
+    "age",
+)
+
+
+def factor_index(name: str) -> int:
+    """Coordinate of a named factor in the person code."""
+    try:
+        return FACTORS.index(name)
+    except ValueError:
+        raise ValueError(f"{name!r} is not a person factor") from None
+
+
+# Kinds whose statistic is built from two arms, and kinds that read an arm as
+# the mean over its window (the rest read the peak, or the soft argmax).
+TWO_ARM_KINDS = frozenset({
+    StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.RATIO_MEANS,
+})
+MEAN_KINDS = frozenset({
+    StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS, StatisticKind.RATIO_MEANS,
+})
+
+
+def combine_arms(kind: StatisticKind, per_arm):
+    """The statistic from its per-arm values (floats or tensors alike)."""
+    if kind is StatisticKind.RATIO_MEANS:
+        return per_arm[1] / per_arm[0]
+    if kind in TWO_ARM_KINDS:
+        return per_arm[1] - per_arm[0]
+    return per_arm[0]
+
+
+@dataclass(frozen=True)
+class Population:
+    """The people an arm was measured in.
+
+    Unset fields draw from the reference prior: each continuous factor is a
+    standard normal in its code slot, sex is a fair coin, age is centred at
+    40 years and adiposity at BMI 25. ``sex`` is ``"female"`` or ``"male"``.
+    ``age`` and ``bmi`` are inclusive ranges (years, kg/m²) drawn uniformly.
+    ``healthy`` puts insulin resistance on the sensitive side of the median
+    and beta-cell function on the competent side.
+    """
+
+    name: str = "reference"
+    sex: str | None = None
+    age: tuple[float, float] | None = None
+    bmi: tuple[float, float] | None = None
+    healthy: bool = False
+
+    def __post_init__(self) -> None:
+        if self.sex not in (None, "female", "male"):
+            raise ValueError(f"{self.name}: sex must be 'female', 'male', or unset")
+        for label, span in (("age", self.age), ("bmi", self.bmi)):
+            if span is None:
+                continue
+            if len(span) != 2 or float(span[0]) > float(span[1]):
+                raise ValueError(f"{self.name}: {label} range {span} is not lo <= hi")
 
 
 @dataclass(frozen=True)
@@ -63,18 +146,24 @@ class CohortArmSpec:
     constants in ``pulse.cohort_loss`` (awake, rest) — the same frame the
     teacher audits run in.
 
-    ``glucose_infusion`` is a per-minute IV glucose appearance rate in mg/dL/min of
-    the patient's glucose space (the unit of the metabolic glucose rate), ``None``
-    for no infusion. ``glucose_clamp_mg_dl`` is a closed-loop target: while set, a
+    The drug and IV inputs are per-minute series too, ``None`` for absent, and 0
+    in a minute is absent in that minute, so a protocol can switch one on after a
+    night or a meal (``held``). ``glucose_infusion`` is an IV glucose appearance
+    rate in mg/dL/min of the patient's glucose space (the unit of the metabolic
+    glucose rate). ``glucose_clamp`` is a closed-loop target in mg/dL: a
     proportional controller infuses ``relu(Kp · (target − G))`` every minute
     (``pulse.modules.metabolic.GLUCOSE_CLAMP_KP``) on top of any open-loop
-    ``glucose_infusion``, and the realized infusion is the clamp's GIR.
+    ``glucose_infusion``, and the realized infusion is the clamp's GIR — the
+    ``glucose_infusion_rate`` observable. ``insulin_clamp`` is the plasma insulin
+    plateau in µU/mL of the clamp's insulin arm, held by a constant infusion
+    (``pulse.modules.metabolic.insulin_clamp_infusion_t``). ``sglt2`` is the
+    empagliflozin exposure (``pulse.renal``: 1 is the steady 25 mg/day dose).
 
-    ``prefast_hours`` (iter 97, review 4.5): how long the subject has been
-    fasting when the arm STARTS. The cold initial state is then the teacher's
-    row after that many hours of meal-free rest, not its fed row 0 — so an arm
-    labelled "24 h -> 48 h fasted" really begins at 24 h fasted (liver glycogen
-    ~55 g, not 100 g). 0 keeps the legacy row-0 start.
+    ``prefast_hours``: how long the subject has already been fasting when the
+    arm starts. Cohort rollouts reach that state by spinning the student
+    through a fed day and then this fast, not by copying a teacher row.
+
+    ``population`` names who was measured. Unset is the reference prior.
     """
 
     label: str
@@ -84,8 +173,24 @@ class CohortArmSpec:
     sleep_wake: tuple[float, ...] | None = None
     activity: tuple[float, ...] | None = None
     glucose_infusion: tuple[float, ...] | None = None  # mg/dL/min of the patient's glucose space
-    glucose_clamp_mg_dl: float | None = None  # closed-loop glucose target, mg/dL
+    glucose_clamp: tuple[float, ...] | None = None  # closed-loop glucose target, mg/dL
+    insulin_clamp: tuple[float, ...] | None = None  # plasma insulin plateau, µU/mL
+    sglt2: tuple[float, ...] | None = None  # empagliflozin exposure, 1 = 25 mg/day at steady state
     prefast_hours: float = 0.0
+    population: Population | None = None
+
+
+def held(level: float, duration_min: int, start_min: int = 0) -> tuple[float, ...]:
+    """An input the protocol switches on at ``start_min`` and holds to the end of
+    the arm: 0 before, ``level`` after."""
+    if not 0 <= start_min <= duration_min:
+        raise ValueError(f"start_min {start_min} outside [0, {duration_min}]")
+    return (0.0,) * start_min + (float(level),) * (duration_min - start_min)
+
+
+def is_on(series: tuple[float, ...] | None) -> bool:
+    """Does this input act in any minute of the arm?"""
+    return series is not None and any(x > 0.0 for x in series)
 
 
 @dataclass(frozen=True)
@@ -117,11 +222,9 @@ class TargetShape(str, Enum):
 class InitMode(str, Enum):
     """How to seed the integration starting state for one spec.
 
-    * ``cold`` — derive the starting state from
-      ``cold_model_trajectory(PatientParams(), arm[0].meals, ...)``.
-      Use when the trial protocol begins from the cold model's fasting
-      assumption (typical OGTT / breakfast / sleep-restriction
-      designs that overnight fasted subjects).
+    * ``cold`` — the student spins through a fed day and then the arm's
+      pre-fast, and the protocol starts from that state. Typical OGTT /
+      breakfast / sleep-restriction designs that overnight-fasted subjects.
     * ``norm_center`` — start from the marker typicals
       (``NORM_CENTER``). Use when the trial design is poorly captured
       by the cold model's fasting trajectory and anchoring there
@@ -139,7 +242,8 @@ class CohortStatisticSpec:
     """One quantitative literature finding as a differentiable target.
 
     ``target`` and ``sigma`` are in the marker's native units (e.g. mg/dL
-    for glucose).
+    for glucose). ``marker_id`` is any series of the observed trajectory: a state
+    marker, or one of ``types.OBSERVABLES``.
     """
 
     name: str
@@ -175,6 +279,10 @@ class CohortStatisticSpec:
     # of these timepoints, in one arm. Compiled to per-point specs before
     # scoring. ``None`` for every scalar statistic.
     curve: tuple[CurvePoint, ...] | None = field(default=None)
+    # CORRELATION only: the second series. A marker id correlates the two
+    # window-means; a factor name correlates the marker's window-mean with
+    # that factor's code.
+    partner: str | None = None
     # Held-out: a sealed item never enters a training registry; it is reachable
     # only through the scoring path. Sealing is done at random within a protocol
     # family at filing time (PLAN Phase 0), so training and the scoreboard never
@@ -184,6 +292,8 @@ class CohortStatisticSpec:
     def __post_init__(self) -> None:
         if not self.arms:
             raise ValueError(f"{self.name}: at least one arm required")
+        if self.marker_id not in SERIES_INDEX:
+            raise ValueError(f"{self.name}: {self.marker_id!r} is not an observed series")
         if self.kind is StatisticKind.CURVE:
             if not self.curve:
                 raise ValueError(f"{self.name}: kind=curve needs a non-empty curve")
@@ -207,13 +317,21 @@ class CohortStatisticSpec:
             raise ValueError(f"{self.name}: shape=band needs band_halfwidth > 0")
         if self.n_arm is not None and self.n_arm < 1:
             raise ValueError(f"{self.name}: n_arm must be >= 1")
-        per_arm = (
-            self.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS)
-        )
-        if per_arm and len(self.arms) != 2:
+        if self.kind in TWO_ARM_KINDS and len(self.arms) != 2:
             raise ValueError(
                 f"{self.name}: kind={self.kind.value} requires exactly 2 arms",
             )
+        if self.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION) and len(self.arms) != 1:
+            raise ValueError(f"{self.name}: kind={self.kind.value} is a single-arm population statistic")
+        if self.kind is StatisticKind.CORRELATION:
+            if self.partner is None:
+                raise ValueError(f"{self.name}: kind=correlation needs a partner")
+            if self.partner not in SERIES_INDEX and self.partner not in FACTORS:
+                raise ValueError(
+                    f"{self.name}: partner {self.partner!r} is not a marker or a factor",
+                )
+        elif self.partner is not None:
+            raise ValueError(f"{self.name}: partner is only for kind=correlation")
         if self.per_arm_windows is not None and len(self.per_arm_windows) != len(self.arms):
             raise ValueError(
                 f"{self.name}: per_arm_windows length must equal arms length",

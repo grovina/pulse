@@ -15,13 +15,16 @@ import torch
 
 from pulse.circadian import (
     CLAMP_INSULIN_FOLD,
+    CLOCK,
     DEBT_OF_RESTRICTED_NIGHT_H,
+    PHASE_PULL_PER_H,
     RD_NORMAL,
     RD_SHORT,
     peripheral_factor,
     step_clock,
     step_clock_t,
 )
+from pulse.published import initial_values
 from pulse.knowledge.cohorts.sleep import DONGA_2010_BASAL_GLUCOSE
 from pulse.knowledge.full_body import PatientParams, glucose_fluxes, simulate_full_body
 from pulse.model import ModularPhysiologyNetwork, integrate
@@ -63,13 +66,14 @@ class TestTheNight(unittest.TestCase):
         offset = debt = 0.0
         off_t = torch.zeros(())
         debt_t = torch.zeros(())
+        numbers = {**initial_values(CLOCK), "phase_pull": torch.tensor(PHASE_PULL_PER_H)}
         for t in range(36 * 60):
             hour = (7.0 + t / 60.0) % 24.0
             clock = 7.0 + t / 60.0
             asleep = 1.0 if 25.0 <= clock < 29.0 else 0.0
             offset, debt = step_clock(offset, debt, hour, asleep)
             off_t, debt_t = step_clock_t(
-                off_t, debt_t, torch.tensor(hour), torch.tensor(asleep))
+                off_t, debt_t, torch.tensor(hour), torch.tensor(asleep), numbers)
         self.assertAlmostEqual(float(off_t), offset, places=4)
         self.assertAlmostEqual(float(debt_t), debt, places=4)
 

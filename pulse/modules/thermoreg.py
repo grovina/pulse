@@ -37,8 +37,8 @@ import torch
 import torch.nn as nn
 
 from .base import LearnedDynamicsModule
-from ..bile import fat_bile_factor_t
-from ..expenditure import dit_kcal_t
+from ..bile import ABSORPTION, fat_bile_factor_t
+from ..expenditure import THERMIC, dit_kcal_t
 from ..types import MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS, NORM_CENTER, NORM_SCALE
 
 # Coupling: gut glucose/lipid/amino appearance, cortisol, then intestinal bile.
@@ -69,6 +69,7 @@ _TEMP_LOG_K_INIT = math.log(
 )
 _TEMP_DIT_GAIN = 0.017
 _LIPID_UNITS_PER_G = 3.0
+_METABOLIC_NUMBERS = (*ABSORPTION, *THERMIC)
 
 
 class ThermoregModule(LearnedDynamicsModule):
@@ -99,6 +100,15 @@ class ThermoregModule(LearnedDynamicsModule):
             "k": _TEMP_K_MIN + _TEMP_K_RANGE * torch.sigmoid(self.log_k),
         }
 
+    def bind_body(self, const, body):
+        """Fat absorption and the thermic fractions are the metabolic module's numbers."""
+        if body is None or any(k not in body for k in _METABOLIC_NUMBERS):
+            raise RuntimeError(
+                "thermoreg reads the metabolic module's absorption and thermic numbers "
+                "and holds no copy of its own"
+            )
+        return {**const, **{k: body[k].unsqueeze(-1) for k in _METABOLIC_NUMBERS}}
+
     def drives(
         self,
         external: torch.Tensor,
@@ -110,7 +120,7 @@ class ThermoregModule(LearnedDynamicsModule):
         carb_g = coupling[..., 0:1].clamp(min=0.0) / MG_DL_PER_G
         fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
         prot_g = coupling[..., 2:3].clamp(min=0.0) / _LIPID_UNITS_PER_G
-        return {"dit": _TEMP_DIT_GAIN * dit_kcal_t(carb_g, fat_g, prot_g)}
+        return {"dit": _TEMP_DIT_GAIN * dit_kcal_t(carb_g, fat_g, prot_g, const)}
 
     def step(
         self,
@@ -127,8 +137,9 @@ class ThermoregModule(LearnedDynamicsModule):
         int_bile = (
             _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _BILE_COUPLING_IDX:_BILE_COUPLING_IDX + 1]
         ).clamp(min=0.0)
-        bile = fat_bile_factor_t(int_bile)
+        bile = fat_bile_factor_t(int_bile, const)
         fat_g = coupling[..., 1:2].clamp(min=0.0) / _LIPID_UNITS_PER_G
-        fat_dit = _TEMP_DIT_GAIN * dit_kcal_t(torch.zeros_like(fat_g), fat_g, torch.zeros_like(fat_g))
+        fat_dit = _TEMP_DIT_GAIN * dit_kcal_t(
+            torch.zeros_like(fat_g), fat_g, torch.zeros_like(fat_g), const)
         dit = drv["dit"] + fat_dit * (bile - 1.0)
         return raw["driver"] - const["k"] * (state - const["setpoint"]) * _TEMP_NORM_SCALE + dit

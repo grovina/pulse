@@ -21,10 +21,15 @@ row. Both signals and both audit scripts call these.
 from __future__ import annotations
 
 import numpy as np
+import torch
 
 from ..cohort_loss import ARM_DEFAULT_ACTIVITY, ARM_DEFAULT_SLEEP_WAKE
-from ..knowledge.cohort_types import CohortArmSpec
+from ..knowledge.cohort_types import CohortArmSpec, InitMode
 from ..knowledge.full_body import PatientParams, simulate_full_body
+from ..model import integrate
+from ..modules.gut import MealEvent
+from ..types import NORM_CENTER, STATE_DIM
+from .factors import FED_DAY_MEALS, FED_DAY_MINUTES, SLEEP_END_HOUR, SLEEP_START_HOUR
 
 # The cold-init rollout keeps the tiny noise the textbook scenarios use (so the
 # initial rows are the same the benchmark seeds from); the audit passes 0.
@@ -104,4 +109,71 @@ def cold_initial_state_for_arm(
     return teacher_arm_trajectory(arm, params, rng=rng, noise_scale=_COLD_INIT_NOISE)[0].copy()
 
 
-__all__ = ["arm_input_series", "cold_initial_state_for_arm", "teacher_arm_trajectory"]
+def _asleep(clock_hour: float) -> bool:
+    return clock_hour >= SLEEP_START_HOUR or clock_hour < SLEEP_END_HOUR
+
+
+def student_initial_states(
+    model: torch.nn.Module,
+    codes: torch.Tensor,
+    arm: CohortArmSpec,
+    *,
+    fed_day_minutes: int = FED_DAY_MINUTES,
+) -> torch.Tensor:
+    """Where a cohort arm starts: the student's own fed day, then the pre-fast.
+
+    ``codes`` is ``[B, EMBEDDING_DIM]``. The spin-up starts at the marker
+    typicals, runs a standard fed day (three meals, asleep 23:00–07:00), then
+    ``arm.prefast_hours`` of meal-free rest, awake. The clock at the end is
+    the arm's ``start_hour``. The returned state is ``[B, STATE_DIM]`` and
+    stays in the graph, so the run-in is the same body as the protocol.
+
+    ``fed_day_minutes`` is the length of that day. The training path uses
+    ``FED_DAY_MINUTES``.
+    """
+    b = int(codes.shape[0])
+    device = codes.device
+    basal = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
+    state = basal.unsqueeze(0).expand(b, -1).contiguous()
+    pre = int(round(float(arm.prefast_hours) * 60.0))
+    fed = max(int(fed_day_minutes), 0)
+    total = fed + pre
+    if total <= 0 or b == 0:
+        return state
+    # The arm begins at start_hour, so the spin-up begins that long earlier.
+    start_hour = (float(arm.start_hour) - total / 60.0) % 24.0
+    meals: list[MealEvent] = []
+    for hour, carbs, fats, proteins in FED_DAY_MEALS:
+        minute = (hour * 60.0 - start_hour * 60.0) % (24.0 * 60.0)
+        if minute < fed:
+            meals.append(MealEvent(time=float(minute), carbs=carbs, fats=fats, proteins=proteins))
+    sleep = torch.empty(total, dtype=torch.float32, device=device)
+    for minute in range(total):
+        if minute >= fed:
+            sleep[minute] = ARM_DEFAULT_SLEEP_WAKE
+            continue
+        clock = (start_hour + minute / 60.0) % 24.0
+        sleep[minute] = 0.0 if _asleep(clock) else 1.0
+    activity = torch.full((total,), ARM_DEFAULT_ACTIVITY, dtype=torch.float32, device=device)
+    traj = integrate(
+        model, state, codes, total,
+        dt=1.0, start_time_minutes=start_hour * 60.0, meals=meals,
+        sleep_wake=sleep, activity=activity,
+    )
+    return traj[:, -1, :STATE_DIM]
+
+
+def item_initial_state(init_mode: InitMode, arm: CohortArmSpec, seed: int) -> np.ndarray:
+    """The row an evidence item's arm starts from, as training starts it."""
+    if init_mode is InitMode.NORM_CENTER:
+        return np.array(NORM_CENTER, dtype=np.float32)
+    return cold_initial_state_for_arm(arm, PatientParams(), rng=np.random.default_rng(seed))
+
+
+__all__ = [
+    "arm_input_series",
+    "cold_initial_state_for_arm",
+    "item_initial_state",
+    "student_initial_states",
+    "teacher_arm_trajectory",
+]

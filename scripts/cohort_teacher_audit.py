@@ -29,7 +29,7 @@ assert pulse.__file__.startswith(str(_ROOT)), pulse.__file__
 
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-from pulse.knowledge.cohort_types import StatisticKind, TargetShape
+from pulse.knowledge.cohort_types import MEAN_KINDS, StatisticKind, TargetShape, combine_arms, is_on
 from pulse.training.arm_init import teacher_arm_trajectory
 from pulse.types import MARKER_INDEX
 
@@ -62,7 +62,7 @@ def arm_stat(spec, arm_idx, arm, params, seed):
     w = (spec.per_arm_windows[arm_idx] if spec.per_arm_windows else spec.window)
     s = series(arm, params, spec.marker_id, seed)
     seg = s[w.start_min:w.end_min]
-    if spec.kind in (StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS):
+    if spec.kind in MEAN_KINDS:
         return float(seg.mean())
     if spec.kind in (StatisticKind.PEAK_VALUE, StatisticKind.DELTA_PEAKS):
         return float(seg.max())
@@ -71,8 +71,18 @@ def arm_stat(spec, arm_idx, arm, params, seed):
     raise ValueError(spec.kind)
 
 
+def teacher_runs(spec) -> bool:
+    """The teacher integrates states under meals, sleep and activity only."""
+    return spec.marker_id in MARKER_INDEX and not any(
+        is_on(s) for a in spec.arms
+        for s in (a.glucose_infusion, a.glucose_clamp, a.insulin_clamp, a.sglt2)
+    )
+
+
 rows = []
 for spec in ALL_COHORT_STATISTICS:
+    if not teacher_runs(spec):
+        continue
     vals = []
     rng = np.random.default_rng(17)
     for k in range(N):
@@ -83,10 +93,7 @@ for spec in ALL_COHORT_STATISTICS:
             vals = []
             print(f"{spec.name}: ERROR {e}")
             break
-        if spec.kind in (StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS):
-            vals.append(per_arm[1] - per_arm[0])
-        else:
-            vals.append(per_arm[0])
+        vals.append(combine_arms(spec.kind, per_arm))
     if not vals:
         continue
     m, sd = float(np.mean(vals)), float(np.std(vals))

@@ -177,13 +177,13 @@ class TestRolloutEvidenceSignalGating(unittest.TestCase):
         result = sig.compute(model, emb, ctx)
         self.assertEqual(result.n_units, 0)
 
-    def test_positive_weight_changes_embedding(self) -> None:
+    def test_positive_weight_changes_the_model(self) -> None:
         device = torch.device("cpu")
         torch.manual_seed(2)
         model = _tiny_model()
         emb = nn.Embedding(2, EMBEDDING_DIM)
         nn.init.normal_(emb.weight, std=0.1)
-        params = list(model.parameters()) + list(emb.parameters())
+        params = list(model.parameters())
         opt = torch.optim.Adam(params, lr=1e-2)
         sig = RolloutEvidenceSignal(
             n_patients=2, sample_patients=2, weight=WeightSchedule(0.5),
@@ -192,14 +192,15 @@ class TestRolloutEvidenceSignalGating(unittest.TestCase):
             epoch=0, total_epochs=1, rng=np.random.default_rng(0),
             device=device, optimizer=opt, params=params, grad_clip=10.0,
         )
-        before = emb.weight.detach().clone()
+        before_table = emb.weight.detach().clone()
+        before = [p.detach().clone() for p in model.parameters()]
         result = sig.compute(model, emb, ctx)
-        # iter 78: aux signals accumulate; the trainer applies the joint step.
         joint_aux_step(ctx)
-        after = emb.weight.detach().clone()
+        moved = sum(float((a - b).abs().sum()) for a, b in zip(before, model.parameters()))
 
         self.assertEqual(result.n_units, 1)
-        self.assertGreater(float((after - before).abs().sum()), 0.0)
+        self.assertGreater(moved, 0.0)
+        self.assertTrue(torch.equal(emb.weight, before_table))
         self.assertIn("predicted_slope", result.sub_metrics)
         self.assertIn("glucose_loss", result.sub_metrics)
 

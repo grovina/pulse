@@ -24,13 +24,11 @@ from pulse.train import (  # noqa: E402
     _load_spec_train_args,
     _memory_stats,
     _merge_results,
-    _parse_aux_cadence,
     build_arg_parser,
     resolved_train_config,
     spec_config_divergence,
 )
 from pulse.training import (  # noqa: E402
-    EmbeddingPriorSignal,
     SignalContext,
     SignalResult,
     TrajectoryRolloutSignal,
@@ -105,13 +103,7 @@ def test_aux_steps_accumulate_across_epochs_through_a_shared_dict() -> None:
 
 # --- 4.1: cadence helpers ------------------------------------------------------------
 
-def test_parse_aux_cadence_and_merge_results() -> None:
-    assert _parse_aux_cadence("cold_model_distillation:3;carb_mass_balance:4") == {
-        "cold_model_distillation": 3, "carb_mass_balance": 4,
-    }
-    assert _parse_aux_cadence("") == {}
-    with pytest.raises(ValueError):
-        _parse_aux_cadence("x:0")
+def test_merge_results_averages_sub_metrics() -> None:
     merged = _merge_results([
         SignalResult(loss_sum=1.0, n_units=1, sub_metrics={"a": 1.0}),
         SignalResult(loss_sum=3.0, n_units=1, sub_metrics={"a": 3.0, "b": 2.0}),
@@ -120,39 +112,109 @@ def test_parse_aux_cadence_and_merge_results() -> None:
     assert merged.sub_metrics == {"a": 2.0, "b": 2.0}
 
 
-def test_interleaved_loop_runs_more_aux_steps_than_once_per_epoch() -> None:
-    """Drive the generator the way train() does: k=2 over 4 windows -> 2 aux steps."""
-    traj = TrajectoryRolloutSignal(
+def test_teacher_tape_weight_reaches_zero_on_the_last_epoch() -> None:
+    from pulse.training.factors import teacher_tape_weight
+    assert teacher_tape_weight(0, 5, 1.0) == 1.0
+    assert teacher_tape_weight(2, 5, 1.0) == pytest.approx(0.5)
+    assert teacher_tape_weight(4, 5, 1.0) == 0.0
+    assert teacher_tape_weight(0, 1, 1.0) == 0.0
+    assert teacher_tape_weight(3, 10, 0.0) == 0.0
+
+
+def test_an_evidence_step_sums_item_likelihoods() -> None:
+    from pulse.knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, StatisticWindow
+    from pulse.training.evidence_step import evidence_batch_nll, item_nll
+
+    model = _tiny_model()
+    model.eval()
+    arm = CohortArmSpec(label="a", duration_min=4, start_hour=8.0, meals=())
+    spec = CohortStatisticSpec(
+        name="g", source="t", description="", arms=(arm,), marker_id="glucose",
+        kind=StatisticKind.MEAN_IN_WINDOW, window=StatisticWindow(0, 4),
+        target=400.0, sigma=5.0, weight=2.0, init_mode=InitMode.NORM_CENTER,
+    )
+    device = torch.device("cpu")
+    rng = np.random.default_rng(0)
+    first = item_nll(model, spec, n_draws=2, rng=rng, device=device, fed_day_minutes=0)
+    second = item_nll(model, spec, n_draws=2, rng=rng, device=device, fed_day_minutes=0)
+    total = evidence_batch_nll(
+        model, [spec, spec], n_draws=2, rng=np.random.default_rng(0),
+        device=device, fed_day_minutes=0,
+    )
+    # Each item is multiplied by its own weight, and the two are added.
+    assert float(total.detach()) == pytest.approx(2.0 * (float(first.detach()) + float(second.detach())))
+    assert float(total.detach()) != pytest.approx(float(first.detach()))
+    total.backward()
+    assert any(p.grad is not None and float(p.grad.abs().sum()) > 0 for p in model.parameters())
+
+
+def test_a_rule_sums_its_hinges_over_arms_and_people() -> None:
+    from pulse.knowledge.cohort_types import CohortArmSpec, InitMode
+    from pulse.knowledge.physiology_rules import PhysiologyRule
+    from pulse.training.evidence_step import rule_nll
+
+    model = _tiny_model()
+    arm = CohortArmSpec(label="a", duration_min=3, start_hour=8.0, meals=())
+    rule = PhysiologyRule(
+        name="flat", source="t", description="", arms=(arm, arm),
+        predicate=lambda _traj, _ctx: torch.tensor(2.0), scale=1.0,
+        init_mode=InitMode.NORM_CENTER,
+    )
+    total = rule_nll(
+        model, rule, n_draws=2, rng=np.random.default_rng(0),
+        device=torch.device("cpu"), fed_day_minutes=0,
+    )
+    # Two arms, two people, each hinge (2 / 1)^2, added rather than averaged.
+    assert float(total.detach()) == pytest.approx(16.0)
+
+
+def test_one_tape_window_is_the_median_person() -> None:
+    sig = TrajectoryRolloutSignal(
         n_patients=1, n_days=1, seed=0, contribution_weights={"full_body": 1.0},
-        windows_per_patient=2, meal_window_bias=0.0, input_dropout=0.0, huber_delta=1.0,
+        windows_per_patient=1, meal_window_bias=0.0, input_dropout=0.0, huber_delta=1.0,
         gut_loss_weight=0.0, coupling_weight=WeightSchedule(0.0), verifier_weight=WeightSchedule(0.0),
         n_default_patients=1,
     )
-    aux = [
-        EmbeddingPriorSignal(name="prior_a", weight=WeightSchedule(0.1)),
-        EmbeddingPriorSignal(name="prior_b", weight=WeightSchedule(0.1)),
-    ]
-    torch.manual_seed(0)
     model = _tiny_model()
-    emb = nn.Embedding(1, EMBEDDING_DIM)
-    params = list(model.parameters()) + list(emb.parameters())
-    shared: dict[str, int] = {}
-    ctx = _ctx(params, aux_steps_by_signal=shared)
-    k = 2
-    n_aux = 0
-    for n_win in traj.iter_windows(model, emb, ctx):
-        if n_win % k == 0:
-            for sig in aux:
-                sig.compute(model, emb, ctx)
-            if ctx.aux_accumulated:
-                joint_aux_step(ctx)
-                n_aux += 1
-    assert n_aux == 2
-    assert shared["prior_a"] == 2 and shared["prior_b"] == 2
-    assert len(ctx.aux_grad_norms["prior_a"]) == 2
+    params = list(model.parameters())
+    ctx = _ctx(params)
+    loss = sig.tape_window_loss(model, ctx)
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert any(p.grad is not None and float(p.grad.abs().sum()) > 0 for p in model.parameters())
 
 
 # --- 4.9: arm rollouts can drop sleep/activity (capability, not phase-3 policy) ------
+
+def test_cohort_spinup_is_the_students_fed_day_then_the_prefast(monkeypatch) -> None:
+    from pulse.knowledge.cohort_types import CohortArmSpec
+    from pulse.training.arm_init import student_initial_states
+    from pulse.types import NORM_CENTER
+
+    seen: dict = {}
+
+    def fake_integrate(model, state, emb, n_steps, **kw):
+        seen["n"] = n_steps
+        seen["start"] = kw["start_time_minutes"]
+        seen["meals"] = [(m.time, m.carbs) for m in kw["meals"]]
+        return state.unsqueeze(1).expand(-1, n_steps, -1).contiguous()
+
+    monkeypatch.setattr("pulse.training.arm_init.integrate", fake_integrate)
+    model = _tiny_model()
+    codes = torch.zeros(2, EMBEDDING_DIM)
+    arm = CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=(), prefast_hours=0.0)
+    out = student_initial_states(model, codes, arm, fed_day_minutes=0)
+    assert seen == {}
+    assert torch.equal(out, torch.tensor(NORM_CENTER).unsqueeze(0).expand(2, -1))
+
+    arm = CohortArmSpec(label="a", duration_min=10, start_hour=8.0, meals=(), prefast_hours=12.0)
+    student_initial_states(model, codes, arm)
+    assert seen["n"] == 1440 + 12 * 60
+    # The spin-up ends at 08:00.
+    assert seen["start"] / 60.0 == pytest.approx((8.0 - (1440 + 12 * 60) / 60.0) % 24.0)
+    meal_clocks = sorted((seen["start"] / 60.0 + minute / 60.0) % 24.0 for minute, _c in seen["meals"])
+    assert meal_clocks == pytest.approx([8.0, 13.0, 19.0])
+
 
 def test_arm_rollout_drops_series_under_input_dropout(monkeypatch) -> None:
     from pulse import cohort_loss
@@ -204,15 +266,18 @@ def test_spec_pins_every_load_bearing_flag_and_parses_without_divergence() -> No
     assert "gcs_bucket" not in cfg and cfg["grad_clip"] == 10.0 and cfg["seed"] == 42
     json.dumps(cfg, default=str)  # must be recordable in the checkpoint
     # The iter-97 recipe's own numbers (review 4.1 / 4.9 / 4.12).
-    assert spec_only.aux_every_k_windows > 0 and spec_only.phase2_lr_floor >= 1e-3
+    assert spec_only.teacher_tape_weight == 1.0 and spec_only.evidence_batch_size == 4
+    assert spec_only.phase2_lr_floor >= 1e-3
+    assert not any("aux-every" in a or "aux-cadence" in a for a in spec_args)
     assert spec_only.phase3_epochs > 0 and spec_only.phase3_input_dropout > 0.3
-    assert "insulin" not in spec_only.cold_distill_markers.split(":")
-    assert "glucagon" not in spec_only.cold_distill_markers.split(":")
-    for marker in ("crh", "insulin_action", "fat_mass", "insulin_slow"):
-        assert marker in spec_only.cold_distill_markers.split(":")
-    assert spec_only.cold_distill_anchor_long_only.split(":") == [
-        "mitochondrial_capacity", "fat_mass",
-    ]
+    assert spec_only.physiology_rules_weight > 0.0
+    # Teacher roles the evidence step does not run stay at the unset default.
+    assert spec_only.cold_distill_weight == 0.0
+    assert spec_only.setpoint_supervision_weight == 0.0
+    assert spec_only.gut_dose_sweep_weight == 0.0
+    assert spec_only.insulin_sweep_weight == 0.0
+    assert spec_only.meal_response_weight == 0.0
+    assert spec_only.embedding_prior_weight == 0.0
     assert spec_only.perturb_protocols and spec_only.trajectory_band_per_marker
     assert not any(
         any(s in a for s in ("landmark", "fasting-stability", "default-baseline", "postprandial-recovery"))

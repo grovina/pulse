@@ -26,7 +26,7 @@ from .cohort_types import (
 )
 from .cohorts import (
     breadth_floor, cardiovascular, curves, glucose_handling, hepatobiliary, ivgtt,
-    nutrition, sleep,
+    nutrition, renal, sleep,
 )
 
 
@@ -76,6 +76,7 @@ _AUTHORED: list[CohortStatisticSpec] = [
     *hepatobiliary.COHORT_STATISTICS,
     *ivgtt.COHORT_STATISTICS,
     *curves.COHORT_STATISTICS,
+    *renal.COHORT_STATISTICS,
 ]
 
 # Curves become point specs first, then the sealed items are held back. A curve

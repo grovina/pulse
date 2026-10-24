@@ -1,10 +1,9 @@
 """
 Training pipeline for the modular physiology network.
 
-Iterates a list of ``TrainingSignal`` instances each epoch. The trajectory
-signal owns the cold-model dataset and per-window inner loop; cohort and
-future signals add their own gradient sources on top. The trainer's only
-job is to set up the model, optimizer, LR schedule, and dispatch signals.
+A step samples evidence items, rolls each arm out on people drawn from the
+factor prior, and sums the Gaussian likelihoods. The teacher tape is one
+extra term, and its weight decays to zero across the run.
 """
 
 import argparse
@@ -13,6 +12,7 @@ import gc
 import json
 import os
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -113,34 +113,34 @@ from .knowledge.physiology_rules import PHYSIOLOGY_RULES
 from .model import ModularPhysiologyNetwork, enable_compiled_steps
 from .dose_response import DoseResponseProtocol, MarkerDoseTarget
 from .training import (
-    ColdModelDistillationSignal,
     CarbMassBalanceSignal,
-    SetpointSupervisionSignal,
-    EmbeddingPriorSignal,
     GutDoseSweepProtocol,
-    GutDoseSweepSignal,
     InsulinSweepProtocol,
-    InsulinSweepSignal,
     NaNTrainingAbort,
     RolloutEvidenceSignal,
     SignalContext,
     joint_aux_step,
     SignalResult,
-    TrainingSignal,
     TrajectoryRolloutSignal,
     WeightSchedule,
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
-from .training.population_prior_signal import PopulationPriorSignal
-from .training.step_share import step_share
-from .training.insulin_sweep_signal import patient_from_record
+from .correction import shrinkage_of
+from .training.evidence_step import evidence_batch_nll, rule_nll, sample_evidence
+from .training.factors import reference_prior_stats, teacher_tape_weight as tape_weight_at
+from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
+from .training.safe_step import accumulate_grad
 from .training.trajectory_signal import (
     DEFAULT_CONTRIBUTION_WEIGHTS,
     TRAIN_WINDOW,
     normalize_contribution_weights,
     parse_band_per_marker,
 )
+from .scoreboard import attach_individual_skill, render as render_scoreboard, scoreboard, scoreboard_path
 from .types import EMBEDDING_DIM, MARKERS, MODULE_COUPLING_CHANNELS
+
+# Tie-break among shapes the evidence allows. Pulls on correction terms only.
+_CORRECTION_SHRINKAGE = 0.01
 
 # Re-export for backwards-compatible test imports.
 from .training.trajectory_signal import sample_window_start as _sample_window_start  # noqa: F401
@@ -210,28 +210,6 @@ def _split_markers(raw: str) -> tuple[str, ...]:
     backward compat (where ``,`` happens not to be present)."""
     pieces = raw.replace(",", ":").split(":")
     return tuple(p.strip() for p in pieces if p.strip())
-
-
-def _parse_aux_cadence(raw: str | None) -> dict[str, int]:
-    """``"cold_model_distillation:3;carb_mass_balance:4"`` -> {name: every_n_aux_steps}.
-
-    Iter 97 (review 4.1): with one joint aux step every k trajectory windows,
-    an expensive signal can run on every n-th aux step instead of every one so
-    the epoch's wall-clock stays flat while the cheap signals get every step.
-    """
-    out: dict[str, int] = {}
-    if not raw or not raw.strip():
-        return out
-    for item in raw.split(";"):
-        item = item.strip()
-        if not item:
-            continue
-        name, _, val = item.partition(":")
-        n = int(val)
-        if n < 1:
-            raise ValueError(f"aux cadence for {name!r} must be >= 1")
-        out[name.strip()] = n
-    return out
 
 
 def _merge_results(parts: list[SignalResult]) -> SignalResult:
@@ -317,18 +295,8 @@ def _set_runtime(seed: int, *, deterministic: bool, torch_threads: int = 1) -> N
     )
 
 
-def _embedding_prior_stats(embeddings: nn.Embedding) -> tuple[list[float], list[float]]:
-    """Per-dimension mean and population std of the patient table: the calibration prior's
-    N(mean, std^2). One function for both save sites -- the final artifact and the rolling
-    ``last_good.pt`` -- so the two cannot drift apart."""
-    with torch.no_grad():
-        table = embeddings.weight.detach().cpu()
-        return table.mean(dim=0).tolist(), table.std(dim=0, unbiased=False).tolist()
-
-
 def _last_good_checkpoint(
     model: nn.Module,
-    embeddings: nn.Embedding,
     *,
     hidden_dim: int,
     epoch: int,
@@ -336,23 +304,17 @@ def _last_good_checkpoint(
     metrics: dict[str, float],
     seed: int,
 ) -> dict[str, Any]:
-    """The rolling per-epoch checkpoint: enough for ``--resume-from`` (model, table, epoch) and for
-    ``ModularPhysiologyNetwork.from_checkpoint`` to rebuild a model that carries its own prior.
-
-    Plan A8. It used to hold the table but not the prior stats, which only the final artifact got, so
-    ``scripts/rescore_artifact.py`` / ``pulse.benchmark`` re-scored a mid-run checkpoint on the
-    isotropic-L2 fallback -- a different ruler from the trained-prior one the final artifact is
-    judged on (``benchmark.py`` falls back only when the model has no ``_embedding_prior_mean``).
-    ``seed`` names which simulated people the table's rows are, for ``--init-from`` to check.
+    """The rolling per-epoch checkpoint: enough for ``--resume-from`` and for
+    ``ModularPhysiologyNetwork.from_checkpoint`` to rebuild a model that carries
+    the factor prior.
     """
-    prior_mean, prior_std = _embedding_prior_stats(embeddings)
+    prior_mean, prior_std = reference_prior_stats()
     return {
         "model_state": model.state_dict(),
         "model_config": getattr(model, "constructor_kwargs", None),
         "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
         "hidden_dim": hidden_dim,
         "embedding_dim": EMBEDDING_DIM,
-        "embeddings_state": embeddings.state_dict(),
         "embedding_prior_mean": prior_mean,
         "embedding_prior_std": prior_std,
         "epoch": epoch,
@@ -482,11 +444,13 @@ def train(
     phase3_lr: float | None = None,
     phase3_input_dropout: float | None = None,
     phase3_meal_dropout: float = 0.0,
-    # Iter 97 (review 4.1): one joint aux step every k trajectory windows
-    # (0 = once per epoch, the pre-97 cadence); per-signal cadence in aux steps.
-    aux_every_k_windows: int = 0,
-    aux_cadence: dict[str, int] | None = None,
-    # Trajectory windows per optimizer step (1 = per-window SGD).
+    # A step samples this many evidence items. 0 samples none.
+    evidence_batch_size: int = 4,
+    # Optimizer steps per epoch. 0 means one step per ``n_patients``.
+    steps_per_epoch: int = 0,
+    # Teacher-tape term at epoch 0. It decays to 0 on the last epoch.
+    teacher_tape_weight: float = 1.0,
+    # Kept on the signal classes. The epoch does not walk windows.
     trajectory_windows_per_step: int = 1,
     # Iter 97 (review 4.11): per-signal contribution clip before the joint clip.
     aux_signal_clip: float = 0.0,
@@ -509,6 +473,8 @@ def train(
     benchmark_dataset_uri: str | None = None,
     benchmark_thresholds_uri: str | None = None,
     benchmark_report_path: str | None = None,
+    scoreboard: bool = True,
+    scoreboard_identifiability: bool = True,
     deterministic: bool = False,
     torch_threads: int = 1,
     compile_steps: bool = False,
@@ -518,7 +484,8 @@ def train(
 
     cnames, cprobs = normalize_contribution_weights(contribution_weights)
     print(
-        f"Generating {n_patients} virtual patients; contribution mix: "
+        f"People are drawn from the factor prior ({n_patients} step(s)/epoch unless overridden); "
+        "teacher-tape contribution mix: "
         + ", ".join(f"{n}:{p:.2f}" for n, p in zip(cnames, cprobs)),
     )
 
@@ -539,41 +506,42 @@ def train(
     p3_start = total_epochs
     total_epochs += p3_epochs
     p2_floor = float(phase2_lr_floor) if phase2_lr_floor is not None else p2_lr * 0.05
-    aux_cadence = dict(aux_cadence or {})
 
     enable_at = phase_boundary if phased else 0
+    tape_base = float(teacher_tape_weight)
+    tape_needed = any(
+        tape_weight_at(e, total_epochs, tape_base) > 0.0 for e in range(total_epochs)
+    )
 
-    trajectory_signal = TrajectoryRolloutSignal(
-        n_patients=n_patients,
-        n_days=n_days,
-        seed=seed,
-        contribution_weights=contribution_weights,
-        windows_per_patient=windows_per_patient,
-        meal_window_bias=meal_window_bias,
-        input_dropout=input_dropout,
-        huber_delta=huber_delta,
-        gut_loss_weight=gut_loss_weight,
-        coupling_weight=WeightSchedule(coupling_prior_weight, enable_at_epoch=enable_at),
-        verifier_weight=WeightSchedule(verifier_loss_weight, enable_at_epoch=enable_at),
-        coupling_prior_samples=coupling_prior_samples,
-        trajectory_band=trajectory_band,
-        trajectory_band_default=trajectory_band_default,
-        n_default_patients=n_default_patients,
-        trajectory_band_per_marker=trajectory_band_per_marker,
-        shape_markers=tuple(trajectory_shape_markers),
-        windows_per_step=trajectory_windows_per_step,
-    )
-    cohort_signal = RolloutEvidenceSignal(
-        family="cohort",
-        specs=list(ALL_COHORT_STATISTICS),
-        n_patients=n_patients,
-        sample_patients=cohort_sample_patients,
-        weight=WeightSchedule(cohort_statistic_weight, enable_at_epoch=enable_at),
-        use_cold_initial_state=cohort_use_cold_init,
-        adaptive=cohort_statistic_adaptive,
-        perturb_protocols=perturb_protocols,
-        groups_per_step=cohort_groups_per_step,
-    )
+    trajectory_signal: TrajectoryRolloutSignal | None = None
+    if tape_needed:
+        trajectory_signal = TrajectoryRolloutSignal(
+            n_patients=n_patients,
+            n_days=n_days,
+            seed=seed,
+            contribution_weights=contribution_weights,
+            windows_per_patient=windows_per_patient,
+            meal_window_bias=meal_window_bias,
+            input_dropout=input_dropout,
+            huber_delta=huber_delta,
+            gut_loss_weight=gut_loss_weight,
+            coupling_weight=WeightSchedule(coupling_prior_weight, enable_at_epoch=enable_at),
+            verifier_weight=WeightSchedule(verifier_loss_weight, enable_at_epoch=enable_at),
+            coupling_prior_samples=coupling_prior_samples,
+            trajectory_band=trajectory_band,
+            trajectory_band_default=trajectory_band_default,
+            n_default_patients=n_default_patients,
+            trajectory_band_per_marker=trajectory_band_per_marker,
+            shape_markers=tuple(trajectory_shape_markers),
+            windows_per_step=trajectory_windows_per_step,
+        )
+    else:
+        print(
+            "[TAPE] teacher-tape weight is 0 on every epoch; the teacher dataset is not built",
+            flush=True,
+        )
+    cohort_weight = WeightSchedule(cohort_statistic_weight, enable_at_epoch=enable_at)
+    rules_weight = WeightSchedule(physiology_rules_weight, enable_at_epoch=enable_at)
     dose_response_protocol = DoseResponseProtocol(
         marker_targets=tuple(dose_response_markers),
     )
@@ -585,138 +553,17 @@ def train(
         protocol=dose_response_protocol,
         perturb_protocols=perturb_protocols,
     )
-    # Iter 90: supervise the embedding->physiology map against the teacher's KNOWN
-    # per-patient setpoints. The recovery test showed the map is not invertible --
-    # calibration recovers a person's fasting glucose worse than predicting the
-    # population mean (skill -24.7). Targets come from full_body episodes, which carry
-    # the exact PatientParams they were simulated from. Cheap (no rollout), so it runs
-    # from epoch 0.
-    _setpoint_targets = {
-        int(rec["patient_id"]): rec["setpoints"]
-        for rec in trajectory_signal.dataset
-        if not rec.get("is_default") and rec.get("setpoints")
-    }
-    # B1/A4 (PLAN.md): the same argument for the quantities that are not markers --
-    # body mass and the insulin-sensitivity family (peripheral Si, hepatic gate IC50,
-    # beta-cell gain, insulin clearance, exercise sensitisation). B1 gave all five a
-    # per-person head; without this dict they would be five FREE per-person heads,
-    # which is the failure iter 109 measured (a basal head walked the prior person
-    # 70 -> 98 pg/mL while nothing downstream moved). The teacher samples every one of
-    # them and `Episode.patient_params` now carries them through the dataset.
-    # B4 reads the same dict: each sampled sweep row is scored against the teacher
-    # patient those fields name. The zero embedding is not in this map; it stays
-    # PatientParams().
-    _param_targets = {
-        int(rec["patient_id"]): rec["patient_params"]
-        for rec in trajectory_signal.dataset
-        if not rec.get("is_default") and rec.get("patient_params")
-    }
-    _sweep_patients = {
-        pid: patient_from_record(raw) for pid, raw in _param_targets.items()
-    }
-    gut_dose_sweep_protocol = GutDoseSweepProtocol()
-    gut_dose_sweep_signal = GutDoseSweepSignal(
-        n_patients=n_patients,
-        sample_patients=gut_dose_sweep_sample_patients,
-        patient_params=_sweep_patients,
-        weight=WeightSchedule(gut_dose_sweep_weight, enable_at_epoch=0),
-        protocol=gut_dose_sweep_protocol,
-        auc_weight=gut_dose_sweep_auc_weight,
-    )
-    insulin_sweep_protocol = InsulinSweepProtocol()
-    insulin_sweep_signal = InsulinSweepSignal(
-        n_patients=n_patients,
-        sample_patients=insulin_sweep_sample_patients,
-        patient_params=_sweep_patients,
-        weight=WeightSchedule(insulin_sweep_weight, enable_at_epoch=0),
-        protocol=insulin_sweep_protocol,
-        auc_weight=insulin_sweep_auc_weight,
-        ranking_weight=insulin_sweep_ranking_weight,
-    )
-    setpoint_supervision_signal = SetpointSupervisionSignal(
-        weight=WeightSchedule(setpoint_supervision_weight, enable_at_epoch=0),
-        targets=_setpoint_targets,
-        param_targets=_param_targets,
-    )
-    # Iter 91: unfreeze Ra. iter-90 measured the per-patient meal gain FROZEN (std 0.01), so
-    # calibration inflated Gb to fit meal peaks -- which broke person-recovery AND the glucose
-    # gate. Supervise each patient's realized meal response against the teacher's own. Rollout-
-    # based, so gated to phase 2 like the other amplitude signals.
-    _meal_targets = {
-        int(rec["patient_id"]): rec["meal_response"]
-        for rec in trajectory_signal.dataset
-        if not rec.get("is_default") and rec.get("meal_response")
-    }
-    # Iter 91: shape the patient codes so the calibration prior is well-specified (see
-    # training/embedding_prior_signal.py). Cheap, on from epoch 0. Plan A2: the per-row scale weight
-    # stays weak; the table's mean has its own, strong one (a gauge direction nothing else holds).
-    embedding_prior_signal = EmbeddingPriorSignal(
-        weight=WeightSchedule(embedding_prior_weight, enable_at_epoch=0),
-        center_weight=WeightSchedule(embedding_prior_center_weight, enable_at_epoch=0),
-    )
     population_prior_signal = PopulationPriorSignal(
         weight=WeightSchedule(population_prior_weight, enable_at_epoch=0),
     )
-    meal_response_signal = RolloutEvidenceSignal(
-        family="meal",
-        weight=WeightSchedule(meal_response_weight, enable_at_epoch=enable_at),
-        n_patients=n_patients,
-        sample_patients=meal_response_sample_patients,
-        targets=_meal_targets,
-    )
-    # Iter 74: cross-module carb→glycogen mass-balance conservation. Pairs with
-    # the phase-2 constraint suite (cohort / rules) — gate it at the phase
-    # boundary so glycogen has a settled metabolic context before the
-    # inequalities can bind. Off unless --carb-mass-balance-weight is set.
     carb_mass_balance_signal = CarbMassBalanceSignal(
         weight=WeightSchedule(carb_mass_balance_weight, enable_at_epoch=enable_at),
         n_patients=n_patients,
         sample_patients=carb_mass_balance_sample_patients,
     )
-    # Cold-model distillation runs at a per-protocol *calibrated* embedding
-    # (mirroring the bench's calibrated eval), so it only makes sense once the
-    # observed-marker fit — and hence a meaningful embedding — exists: enable
-    # it with the rest of the additive losses at the phase boundary.
-    cold_distill_signal = ColdModelDistillationSignal(
-        weight=WeightSchedule(cold_distill_weight, enable_at_epoch=enable_at),
-        markers=tuple(cold_distill_markers),
-        protocols_per_epoch=cold_distill_protocols_per_epoch,
-        pool=cold_distill_pool,
-        mode=cold_distill_mode,
-        anchor_window=cold_distill_anchor_window,
-        anchor_samples=cold_distill_anchor_samples,
-        anchor_local_scale_floor=cold_distill_anchor_local_scale_floor,
-        anchor_long_window=cold_distill_anchor_long_window,
-        anchor_long_samples=cold_distill_anchor_long_samples,
-        anchor_long_only_markers=tuple(cold_distill_anchor_long_only),
-        anchor_level_band=cold_distill_level_band,
-    )
-    physiology_rules_signal = RolloutEvidenceSignal(
-        family="hinge",
-        rules=list(PHYSIOLOGY_RULES),
-        n_patients=n_patients,
-        sample_patients=physiology_rules_sample_patients,
-        weight=WeightSchedule(physiology_rules_weight, enable_at_epoch=enable_at),
-        adaptive=physiology_rules_adaptive,
-        arms_per_step=rules_arms_per_step,
-    )
-    signals: list[TrainingSignal] = [
-        trajectory_signal,
-        cohort_signal,
-        dose_response_signal,
-        gut_dose_sweep_signal,
-        insulin_sweep_signal,
-        setpoint_supervision_signal,
-        meal_response_signal,
-        embedding_prior_signal,
-        population_prior_signal,
-        carb_mass_balance_signal,
-        cold_distill_signal,
-        physiology_rules_signal,
-    ]
-
+    n_priors = len(trajectory_signal.priors) if trajectory_signal is not None else 0
     print(
-        f"Coupling priors: {len(trajectory_signal.priors)} edges, "
+        f"Coupling priors: {n_priors} edges, "
         f"weight={coupling_prior_weight}; verifier surrogate weight={verifier_loss_weight}; "
         f"meal window bias={meal_window_bias}",
     )
@@ -738,60 +585,23 @@ def train(
         f"sample_patients={dose_response_sample_patients}",
     )
     print(
-        f"Gut dose sweep: weight={gut_dose_sweep_weight}, "
-        f"auc_weight={gut_dose_sweep_auc_weight}, "
-        f"doses={gut_dose_sweep_protocol.carb_doses_g} g, "
-        f"sample_patients={gut_dose_sweep_sample_patients}, "
-        f"patient_targets={len(_sweep_patients)}, "
-        f"post_window={gut_dose_sweep_protocol.post_window_min}min",
+        "[SKIP] teacher roles with no literature replacement in this step: "
+        f"setpoint={setpoint_supervision_weight} "
+        f"gut_sweep={gut_dose_sweep_weight} insulin_sweep={insulin_sweep_weight} "
+        f"meal={meal_response_weight} embedding_prior={embedding_prior_weight} "
+        f"cold_distill={cold_distill_weight}",
+        flush=True,
     )
+    n_steps_default = steps_per_epoch if steps_per_epoch > 0 else max(int(n_patients), 1)
     print(
-        f"Insulin sweep: weight={insulin_sweep_weight}, "
-        f"auc_weight={insulin_sweep_auc_weight}, "
-        f"ranking_weight={insulin_sweep_ranking_weight}, "
-        f"glucose_grid={insulin_sweep_protocol.glucose_sweep_mg_dL} mg/dL, "
-        f"insulin_grid={insulin_sweep_protocol.insulin_sweep_uU_mL} μU/mL, "
-        f"sample_patients={insulin_sweep_sample_patients}, "
-        f"patient_targets={len(_sweep_patients)}",
-    )
-    # Iter 94: print the anchor settings that decide WHAT this signal can see, not
-    # just the short window. The local-scale floor and the long windows are the
-    # whole point of the iter-94 change and were previously unverifiable from the
-    # logs — the only other record is the checkpoint, which does not exist until
-    # the run is over.
-    anchor_desc = (
-        f"(W={cold_distill_anchor_window}x{cold_distill_anchor_samples}"
-        f" long={cold_distill_anchor_long_window}x{cold_distill_anchor_long_samples}"
-        f" long_only={tuple(cold_distill_anchor_long_only)}"
-        f" local_scale_floor={cold_distill_anchor_local_scale_floor})"
-        if cold_distill_mode == "anchored" else ""
-    )
-    print(
-        f"Cold-model distillation: weight={cold_distill_weight} pool={cold_distill_pool} mode={cold_distill_mode}"
-        f"{anchor_desc} "
-        f"markers={tuple(cold_distill_markers)} "
-        f"protocols/epoch={cold_distill_protocols_per_epoch}/{len(cold_distill_signal._protocols)} "
-        f"(rate + long-level on teacher internals; 0=disabled)",
-    )
-    print(
-        f"Physiology rules: weight={physiology_rules_weight} "
-        f"n_rules={len(PHYSIOLOGY_RULES)} sample_patients={physiology_rules_sample_patients} "
-        f"adaptive={physiology_rules_adaptive} "
-        f"(per-trajectory hinge supervision; 0=disabled)",
-    )
-    print(
-        f"Default-patient distillation: {n_default_patients} extra cold-model episode(s) "
-        f"supervised at zero embedding; cohort cold initial state: {cohort_use_cold_init}",
-    )
-    print(
-        f"Aux cadence (iter 97): one joint aux step every {aux_every_k_windows} trajectory "
-        f"window(s) (0 = once per epoch); per-signal cadence={aux_cadence or '{}'}; "
-        f"per-signal clip={aux_signal_clip}; cohort groups/step={cohort_groups_per_step}; "
-        f"rule arm groups/step={rules_arms_per_step}",
+        f"Evidence step: batch={evidence_batch_size} item(s), "
+        f"{cohort_sample_patients} draw(s) each, {n_steps_default} step(s)/epoch, "
+        f"teacher-tape base={tape_base}",
+        flush=True,
     )
     print(
         f"Trajectory bands per marker: {trajectory_band_per_marker or 'scalar'}; "
-        f"shape markers={tuple(trajectory_shape_markers)}; distill level band={cold_distill_level_band}; "
+        f"shape markers={tuple(trajectory_shape_markers)}; "
         f"perturb protocols={perturb_protocols}",
     )
 
@@ -804,11 +614,7 @@ def train(
         respiratory_hidden=max(16, hidden_dim // 3),
     ).to(device)
 
-    embeddings = nn.Embedding(n_patients, EMBEDDING_DIM).to(device)
-    nn.init.normal_(embeddings.weight, std=0.1)
     if compile_steps:
-        # Opt-in torch.compile of the planned minute step; warmed up and
-        # checked against the eager step here, off (with the reason) on any failure.
         enable_compiled_steps(model)
 
     start_epoch = 0
@@ -816,9 +622,10 @@ def train(
         resumed = _load_checkpoint_uri(resume_from)
         model.load_state_dict(resumed["model_state"], strict=True)
         if "embeddings_state" in resumed:
-            embeddings.load_state_dict(resumed["embeddings_state"])
-        else:
-            print("[RESUME] checkpoint has no embeddings_state; patient table stays at its fresh init")
+            print(
+                "[RESUME] checkpoint embeddings_state ignored; people are drawn from the factor prior",
+                flush=True,
+            )
         start_epoch = resume_start_epoch(resumed)
         print(f"[RESUME] {resume_from} -> epoch {start_epoch} (Adam moments reset)")
     elif init_from:
@@ -830,18 +637,13 @@ def train(
             f"shape_mismatch={mismatched}",
             flush=True,
         )
-        _warm_start_patient_table(embeddings, seeded, init_from, seed=seed)
+        if "embeddings_state" in seeded:
+            print(
+                "[INIT] checkpoint embeddings_state ignored; people are drawn from the factor prior",
+                flush=True,
+            )
 
-    # NOTE: torch.compile was tried for iter 14 (5-epoch local A/B). On a
-    # single fixed protocol it gave 2.9x steady-state speedup, but in the
-    # real training loop the model.forward graph is hit with too many
-    # (batch_size × requires_grad × dispatch-shape) variants — Phase 2
-    # epoch ended up the same wall-clock or slightly worse vs eager, and
-    # dynamo started warning about hitting the recompile limit. The
-    # batched-embedding refactor (Tiers 1+2) already delivered the
-    # ~3-4x Phase-2 speedup we needed; not worth introducing the
-    # compile moving piece on top.
-    params = list(model.parameters()) + list(embeddings.parameters())
+    params = list(model.parameters())
     rng = np.random.default_rng(seed)
 
     scheduler_T = phase_boundary if phased else total_epochs
@@ -875,7 +677,7 @@ def train(
         )
         for _ in range(done):
             scheduler.step()
-        if phase == 3:
+        if phase == 3 and trajectory_signal is not None:
             if phase3_input_dropout is not None:
                 trajectory_signal.input_dropout = float(phase3_input_dropout)
             trajectory_signal.meal_macro_dropout = float(phase3_meal_dropout)
@@ -887,36 +689,33 @@ def train(
             )
 
     total_params = sum(p.numel() for p in model.parameters())
-    emb_params = n_patients * EMBEDDING_DIM
     print(f"Model: {total_params:,} parameters")
-    print(f"Embeddings: {n_patients} x {EMBEDDING_DIM} = {emb_params:,}")
+    print(
+        f"People: fresh draws from the factor prior into a {EMBEDDING_DIM}-wide code; "
+        f"no patient table",
+    )
     if phased:
         print(
-            f"Phased training: Phase 1 = {p1_epochs} epochs (distillation), "
-            f"Phase 2 = {phase2_epochs} epochs (full, lr {p2_lr} -> floor {p2_floor})"
-            + (f", Phase 3 = {p3_epochs} epochs (trajectory input dropout {phase3_input_dropout}, "
+            f"Phased training: Phase 1 = {p1_epochs} epochs (tape + population prior), "
+            f"Phase 2 = {phase2_epochs} epochs (evidence on, lr {p2_lr} -> floor {p2_floor})"
+            + (f", Phase 3 = {p3_epochs} epochs (tape input dropout {phase3_input_dropout}, "
                f"meal-macro dropout {phase3_meal_dropout}, literature arms on-protocol, "
                f"lr {p3_lr})" if p3_epochs else ""),
         )
-    print(f"Training: {total_epochs} epochs, {windows_per_patient} windows/patient, window={TRAIN_WINDOW} min")
     print(
-        f"Input dropout: {input_dropout}, gut loss weight: {gut_loss_weight}, "
-        f"cohort statistics: {len(ALL_COHORT_STATISTICS)} spec(s), weight={cohort_statistic_weight}\n",
+        f"Training: {total_epochs} epochs, {n_steps_default} evidence step(s)/epoch, "
+        f"window={TRAIN_WINDOW} min\n",
     )
 
-    # Rolling last-good checkpoint. Written at the end of every epoch and
-    # uploaded to GCS as ``last_good.pt`` next to the final object, so a
-    # timeout can resume. A NaN abort uploads the same object.
     last_good_path = output_path + ".last-good.pt"
-    recent_metrics: list[dict[str, float]] = []  # rolling, last 5 epochs
+    recent_metrics: list[dict[str, float]] = []
 
     cur_phase = 1
     epoch = 0
     if start_epoch < total_epochs:
         _arm_phase(start_epoch, announce=start_epoch > 0)
-    # Iter 97 (review 4.1): cumulative aux steps per signal for the whole run.
     aux_steps_by_signal: dict[str, int] = {}
-    aux_signals = [sig for sig in signals if sig is not trajectory_signal]
+    evidence_pool = list(ALL_COHORT_STATISTICS)
     try:
         for epoch in range(start_epoch, total_epochs):
             entering = epoch != start_epoch and (
@@ -928,9 +727,13 @@ def train(
                 if cur_phase == 2:
                     print(f"\n--- Phase 2: {phase2_epochs} epochs, lr={p2_lr} (floor {p2_floor}) ---\n")
                 elif cur_phase == 3:
+                    drop = (
+                        trajectory_signal.input_dropout
+                        if trajectory_signal is not None else float(phase3_input_dropout or 0.0)
+                    )
                     print(
                         f"\n--- Phase 3: {p3_epochs} epochs, lr={p3_lr}, input dropout "
-                        f"{trajectory_signal.input_dropout} on trajectory sleep/activity "
+                        f"{drop} on the teacher tape "
                         f"(literature arms stay on-protocol), "
                         f"meal-macro dropout {phase3_meal_dropout} ---\n",
                     )
@@ -951,172 +754,141 @@ def train(
                 aux_steps_by_signal=aux_steps_by_signal,
                 input_dropout=0.0,
             )
-
-            # Iter 25: time each signal explicitly. The iter-24 NaN-skip
-            # symptom appeared as Phase-2 step time dropping 510s → 205s
-            # because the inline guards were silently skipping backward+step
-            # on every epoch — surfacing per-signal time would have caught
-            # that immediately. Per-signal times also flow into the abort
-            # diagnostic dump so iter 26 sees if any signal was already
-            # collapsing before the explicit NaN.
-            # Memprof saga: phase-2 ep 5 (first phase-2 epoch) OOM'd 9 times
-            # at 26-59 min mid-epoch, never reaching end-of-epoch memprof.
-            # Print intra-epoch memory between signals so we see WHICH signal
-            # exhausts memory before the container is killed. Phase 1 (signals
-            # gated by enable_at_epoch) won't trigger this for most signals,
-            # so the noise is acceptable; gated by PULSE_INTRA_EPOCH_MEMPROF
-            # so we can disable when not debugging.
-            results: dict[str, SignalResult] = {}
-            parts: dict[str, list[SignalResult]] = {sig.name: [] for sig in signals}
-            signal_times: dict[str, float] = {sig.name: 0.0 for sig in signals}
-            intra_memprof = os.environ.get("PULSE_INTRA_EPOCH_MEMPROF", "1") != "0"
+            w_cohort = cohort_weight.at(epoch)
+            w_rules = rules_weight.at(epoch)
+            w_tape = tape_weight_at(epoch, total_epochs, tape_base)
+            w_prior = population_prior_signal.weight_at(epoch)
+            w_dose = dose_response_signal.weight_at(epoch)
+            w_carb = carb_mass_balance_signal.weight_at(epoch)
+            evidence_sum = 0.0
+            rules_sum = 0.0
+            n_rules = 0
+            tape_sum = 0.0
+            prior_sum = 0.0
+            dose_sum = 0.0
+            carb_sum = 0.0
+            n_items = 0
+            n_tape = 0
+            n_dose = 0
+            n_carb = 0
             joint_norms: list[float] = []
-            aux_step_idx = 0
+            signal_times = {
+                "evidence": 0.0, "rules": 0.0, "teacher_tape": 0.0, "population_prior": 0.0,
+                "dose_response": 0.0, "carb_mass_balance": 0.0,
+            }
 
-            def _run_aux_step() -> None:
-                """Iter 97 (review 4.1): one joint auxiliary step — every aux
-                signal whose cadence is due accumulates its weighted gradient
-                (per-signal clipped), then ONE joint clip + optimizer step. The
-                trajectory signal steps per window on its own; this used to run
-                once per epoch after all windows."""
-                nonlocal aux_step_idx
-                for sig in aux_signals:
-                    every = aux_cadence.get(sig.name, 1)
-                    if aux_step_idx % every != 0:
-                        continue
+            for _step in range(n_steps_default):
+                loss = _CORRECTION_SHRINKAGE * shrinkage_of(model)
+                if w_cohort > 0.0 and evidence_pool and evidence_batch_size > 0:
                     t0 = time.time()
-                    parts[sig.name].append(sig.compute(model, embeddings, ctx))
-                    signal_times[sig.name] += time.time() - t0
-                    if intra_memprof and aux_step_idx == 0:
-                        m = _memory_stats()
-                        print(
-                            f"[MEMPROF-SIG] epoch={epoch:3d} phase={cur_phase} sig={sig.name} "
-                            f"dt={time.time() - t0:.1f}s rss_mb={m['rss_mb']:.1f} "
-                            f"tensors={m['n_tensors']} grad_tensors={m['n_grad_tensors']} "
-                            f"elems_m={m['total_elems_m']:.2f} grad_elems_m={m['grad_elems_m']:.2f}",
-                            flush=True,
+                    items = sample_evidence(evidence_pool, evidence_batch_size, rng)
+                    nll = evidence_batch_nll(
+                        model, items, n_draws=cohort_sample_patients, rng=rng, device=device,
+                    )
+                    loss = loss + w_cohort * nll
+                    evidence_sum += float(nll.detach())
+                    n_items += len(items)
+                    signal_times["evidence"] += time.time() - t0
+                if w_rules > 0.0 and PHYSIOLOGY_RULES:
+                    t0 = time.time()
+                    rules = sample_evidence(PHYSIOLOGY_RULES, 1, rng)
+                    hinge = torch.zeros((), device=device)
+                    for rule in rules:
+                        hinge = hinge + float(rule.weight) * rule_nll(
+                            model, rule, n_draws=physiology_rules_sample_patients,
+                            rng=rng, device=device,
                         )
-                # iter 78: one joint clip+step over the auxiliary signals'
-                # accumulated gradient, so their weights compose instead of each
-                # taking a solo clipped step that erased its weight.
+                    loss = loss + w_rules * hinge
+                    rules_sum += float(hinge.detach())
+                    n_rules += len(rules)
+                    signal_times["rules"] += time.time() - t0
+                if w_tape > 0.0 and trajectory_signal is not None:
+                    t0 = time.time()
+                    tape_loss = trajectory_signal.tape_window_loss(model, ctx)
+                    loss = loss + w_tape * tape_loss
+                    tape_sum += float(tape_loss.detach())
+                    n_tape += 1
+                    signal_times["teacher_tape"] += time.time() - t0
+                if w_prior > 0.0:
+                    t0 = time.time()
+                    prior_nll = population_prior_nll(model.metabolic)
+                    loss = loss + w_prior * prior_nll
+                    prior_sum += float(prior_nll.detach())
+                    signal_times["population_prior"] += time.time() - t0
+                if loss.requires_grad:
+                    accumulate_grad(loss, ctx, signal="evidence")
+                if w_dose > 0.0:
+                    t0 = time.time()
+                    dose_res = dose_response_signal.compute(model, None, ctx)  # type: ignore[arg-type]
+                    dose_sum += float(dose_res.loss_sum)
+                    n_dose += int(dose_res.n_units)
+                    signal_times["dose_response"] += time.time() - t0
+                if w_carb > 0.0:
+                    t0 = time.time()
+                    carb_res = carb_mass_balance_signal.compute(model, None, ctx)  # type: ignore[arg-type]
+                    carb_sum += float(carb_res.loss_sum)
+                    n_carb += int(carb_res.n_units)
+                    signal_times["carb_mass_balance"] += time.time() - t0
                 if ctx.aux_accumulated:
-                    st = joint_aux_step(ctx)
-                    joint_norms.append(float(st.get("joint_grad_norm_pre_clip", 0.0)))
-                aux_step_idx += 1
-
-            t_traj = time.time()
-            n_win = 0
-            aux_blocks = 0
-            for n_win in trajectory_signal.iter_windows(model, embeddings, ctx):
-                # One aux step each time the window count crosses a multiple of k
-                # (a trajectory step may consume several windows).
-                if aux_every_k_windows > 0 and n_win // aux_every_k_windows > aux_blocks:
-                    aux_blocks = n_win // aux_every_k_windows
-                    t_pause = time.time()
-                    _run_aux_step()
-                    t_traj += time.time() - t_pause  # aux time is booked to the aux signals
-            signal_times[trajectory_signal.name] = time.time() - t_traj
-            results[trajectory_signal.name] = trajectory_signal.last_result
-            if aux_step_idx == 0:
-                # Legacy cadence (k = 0), or fewer windows than k: once per epoch.
-                _run_aux_step()
-            for sig in aux_signals:
-                results[sig.name] = _merge_results(parts[sig.name])
+                    stats = joint_aux_step(ctx)
+                    joint_norms.append(float(stats.get("joint_grad_norm_pre_clip", 0.0)))
+                else:
+                    optimizer.zero_grad()
 
             scheduler.step()
-
-            # Iter 97 (review 4.11): the gradient balance, visible every epoch.
+            elapsed = time.time() - epoch_start
+            mem = _memory_stats()
+            evidence_mean = evidence_sum / n_items if n_items else 0.0
+            rules_mean = rules_sum / n_rules if n_rules else 0.0
+            tape_mean = tape_sum / n_tape if n_tape else 0.0
+            prior_mean = prior_sum / n_steps_default if w_prior > 0.0 else 0.0
+            print(
+                f"[EVIDENCE] epoch={epoch:3d} phase={cur_phase} steps={n_steps_default} "
+                f"items={n_items} nll={evidence_mean:.6f} rules={rules_mean:.6f} "
+                f"teacher_weight={w_tape:.4f} tape={tape_mean:.6f} "
+                f"prior={prior_mean:.6f} dose={dose_sum:.6f} carb={carb_sum:.6f}",
+                flush=True,
+            )
             _tn = np.asarray(ctx.traj_grad_norms, dtype=np.float64)
             _aux_desc = " ".join(
                 f"{nm}={np.mean(v):.3f}x{len(v)}"
                 for nm, v in sorted(ctx.aux_grad_norms.items())
             )
-            _share = step_share(
-                aux_grad_norms=ctx.aux_grad_norms,
-                traj_grad_norms=ctx.traj_grad_norms,
-            )
-            print(
-                "[LITSHARE] epoch={:3d} ".format(epoch)
-                + " ".join(
-                    f"{fam}={_share[fam]['steps']:.0f}/{_share[fam]['norm_share']:.2f}"
-                    for fam in ("literature", "tape", "distill", "other")
-                ),
-                flush=True,
-            )
             print(
                 f"[GRADNORM] epoch={epoch:3d} phase={cur_phase} "
-                f"traj_mean={_tn.mean() if _tn.size else 0.0:.3f} traj_max={_tn.max() if _tn.size else 0.0:.3f} "
-                f"traj_frac_clipped={(float((_tn > grad_clip).mean()) if _tn.size else 0.0):.2f} "
                 f"joint_pre_clip_mean={np.mean(joint_norms) if joint_norms else 0.0:.3f} "
-                f"aux_steps={aux_step_idx} | {_aux_desc}",
+                f"| {_aux_desc}",
                 flush=True,
             )
-            print(
-                "[AUXSTEPS] cumulative: "
-                + " ".join(f"{k}={v}" for k, v in sorted(aux_steps_by_signal.items())),
-                flush=True,
-            )
-            # Plan A2: the signal's own report was never printed, so "watch the centre go to 0"
-            # had nobody watching. centre_norm falling with spread holding is the pin working;
-            # both falling is the weight flattening patients.
-            _emb = results[embedding_prior_signal.name].sub_metrics
-            if _emb:
-                print(
-                    f"[EMBPRIOR] epoch={epoch:3d} centre_norm={_emb['emb_centre_norm']:.4f} "
-                    f"spread={_emb['emb_spread']:.4f} norm_mean={_emb['emb_norm_mean']:.4f} "
-                    f"norm_max={_emb['emb_norm_max']:.4f} std_ratio={_emb['emb_std_ratio']:.2f} "
-                    f"weight={embedding_prior_weight} center_weight={embedding_prior_center_weight}",
-                    flush=True,
-                )
-
-            elapsed = time.time() - epoch_start
-            mem = _memory_stats()
-
-            traj = results["trajectory_rollout"]
-            cohort = results["cohort_statistic"]
-            dose = results["dose_response"]
-            gut_sweep = results["gut_dose_sweep"]
-            ins_sweep = results["insulin_sweep"]
 
             metrics_summary: dict[str, float] = {
                 "epoch": float(epoch),
                 "phase": float(cur_phase),
                 "lr": float(scheduler.get_last_lr()[0]),
                 "elapsed_s": float(elapsed),
-                "aux_steps_epoch": float(aux_step_idx),
-                "lit_steps": float(_share["literature"]["steps"]),
-                "tape_steps": float(_share["tape"]["steps"]),
-                "distill_steps": float(_share["distill"]["steps"]),
-                "lit_norm_share": float(_share["literature"]["norm_share"]),
-                "tape_norm_share": float(_share["tape"]["norm_share"]),
-                "distill_norm_share": float(_share["distill"]["norm_share"]),
+                "evidence_items": float(n_items),
+                "evidence_nll": float(evidence_mean),
+                "rules_nll": float(rules_mean),
+                "teacher_tape_weight": float(w_tape),
+                "teacher_tape_loss": float(tape_mean),
+                "population_prior_nll": float(prior_mean),
+                "dose_loss": float(dose_sum) if n_dose else 0.0,
+                "carb_loss": float(carb_sum) if n_carb else 0.0,
                 "traj_grad_norm_mean": float(_tn.mean()) if _tn.size else 0.0,
-                "trajectory_avg_loss": float(traj.avg_loss),
-                "trajectory_n_windows": float(traj.n_units),
-                "cohort_loss": float(cohort.loss_sum) if cohort.n_units > 0 else 0.0,
-                "dose_loss": float(dose.loss_sum) if dose.n_units > 0 else 0.0,
-                "gut_sweep_loss": float(gut_sweep.loss_sum) if gut_sweep.n_units > 0 else 0.0,
-                "ins_sweep_loss": float(ins_sweep.loss_sum) if ins_sweep.n_units > 0 else 0.0,
             }
             for sig_name, t in signal_times.items():
                 metrics_summary[f"time_{sig_name}_s"] = float(t)
             for sig_name, v in ctx.aux_grad_norms.items():
                 metrics_summary[f"gradnorm_{sig_name}"] = float(np.mean(v))
-            for k in ("emb_centre_norm", "emb_spread"):
-                if k in _emb:
-                    metrics_summary[k] = float(_emb[k])
             for k, v in mem.items():
                 metrics_summary[f"mem_{k}"] = float(v)
             recent_metrics.append(metrics_summary)
             if len(recent_metrics) > 5:
                 recent_metrics.pop(0)
 
-            # End-of-epoch: persist last-good rolling checkpoint. Cheap (~50MB
-            # write), runs every epoch, never re-uploaded to GCS unless an
-            # abort fires.
             torch.save(
                 _last_good_checkpoint(
-                    model, embeddings, hidden_dim=hidden_dim, epoch=epoch,
+                    model, hidden_dim=hidden_dim, epoch=epoch,
                     phase=cur_phase, metrics=metrics_summary, seed=seed,
                 ),
                 last_good_path,
@@ -1129,10 +901,6 @@ def train(
                 except Exception as err:
                     print(f"[LAST-GOOD] upload failed: {err}", flush=True)
 
-            # Memory profile is printed every epoch (not gated to the every-5
-            # epoch summary) — the OOM-saga curve is what we're paying for,
-            # and a per-epoch series is needed to distinguish slow leaks
-            # from sudden allocations.
             print(
                 f"[MEMPROF] epoch={epoch:3d} phase={cur_phase} "
                 f"rss_mb={mem['rss_mb']:.1f} peak_mb={mem['peak_mb']:.1f} "
@@ -1146,45 +914,19 @@ def train(
                 label = f"Phase {cur_phase} " if phased else ""
                 parts = [
                     f"{label}Epoch {epoch:3d}/{total_epochs}",
-                    f"loss={traj.avg_loss:.6f}",
-                    f"gut={traj.sub_metrics.get('gut', 0.0):.6f}",
+                    f"nll={evidence_mean:.6f}",
+                    f"tape_w={w_tape:.3f}",
+                    f"tape={tape_mean:.6f}",
+                    f"prior={prior_mean:.6f}",
                 ]
-                if "coupling" in traj.sub_metrics:
-                    parts.append(f"cpl={traj.sub_metrics['coupling']:.6f}")
-                if "verifier_surrogate" in traj.sub_metrics:
-                    parts.append(f"v_sur={traj.sub_metrics['verifier_surrogate']:.6f}")
-                if cohort.n_units > 0:
-                    parts.append(f"cohort={cohort.loss_sum:.6f}")
-                if dose.n_units > 0:
-                    parts.append(
-                        f"dose={dose.loss_sum:.4f}"
-                        f"(slope={dose.sub_metrics.get('predicted_slope', 0.0):.3f})",
-                    )
-                if gut_sweep.n_units > 0:
-                    parts.append(f"gut_sweep={gut_sweep.loss_sum:.4f}")
-                if ins_sweep.n_units > 0:
-                    parts.append(
-                        f"ins_sweep={ins_sweep.loss_sum:.4f}"
-                        f"(auc={ins_sweep.sub_metrics.get('auc', 0.0):.4f})",
-                    )
+                if n_dose:
+                    parts.append(f"dose={dose_sum:.4f}")
+                if n_carb:
+                    parts.append(f"carb={carb_sum:.4f}")
                 parts.append(f"lr={scheduler.get_last_lr()[0]:.5f}")
                 parts.append(f"({elapsed:.1f}s)")
-                # Per-signal time breakdown — short names so it fits one line.
-                _short = {
-                    "trajectory_rollout": "traj",
-                    "cohort_statistic": "coh",
-                    "dose_response": "dose",
-                    "gut_dose_sweep": "gsw",
-                    "insulin_sweep": "isw",
-                    "physiology_rules": "rules",
-                    "meal_response": "meal",
-                }
-                breakdown = " ".join(
-                    f"{_short.get(nm, nm)}={signal_times[nm]:.0f}s"
-                    for nm in (s.name for s in signals)
-                )
-                parts.append(f"[{breakdown}]")
                 print("  ".join(parts))
+
         if _WATCHDOG_TIMEOUT_S > 0:
             faulthandler.cancel_dump_traceback_later()
     except NaNTrainingAbort as abort:
@@ -1239,26 +981,11 @@ def train(
                 print("[ABORT] no last-good checkpoint to upload (aborted before any epoch completed)", flush=True)
         return 42
 
-    # Iter 61: capture per-dimension mean/std of the trained patient
-    # embedding table. The eval-time MAP-fit (benchmark.py) uses these
-    # to build a diagonal Gaussian prior matched to the actual learned
-    # distribution, instead of the legacy isotropic L2 prior whose
-    # weight (0.001) was ~1800x looser than the training-init scale
-    # (σ=0.1, see nn.init.normal_ above). After iter 60 doubled
-    # EMBEDDING_DIM to 64, that mismatch flipped the eval calibration
-    # from "wide enough" to "memorization-shortcut friendly" — textbook
-    # mean pass rate dropped 0.813 → 0.717 while observed-marker mape
-    # improved. A prior matched to the trained per-dim std lets each
-    # dim be free in proportion to how much the model actually used it
-    # during training; dims the model left near init get strong prior
-    # (no eval drift), dims the model heavily used get weak prior
-    # (still expressive for legitimate per-patient variation).
-    _emb_prior_mean, _emb_prior_std = _embedding_prior_stats(embeddings)
-
+    _emb_prior_mean, _emb_prior_std = reference_prior_stats()
+    gut_dose_sweep_protocol = GutDoseSweepProtocol()
+    insulin_sweep_protocol = InsulinSweepProtocol()
     checkpoint = {
         "model_state": model.state_dict(),
-        # Iter 97 (student hand-off): every constructor argument, so the exact
-        # module layout can be rebuilt without re-deriving widths from hidden_dim.
         "model_config": getattr(model, "constructor_kwargs", None),
         "coupling_channels": {k: list(v) for k, v in MODULE_COUPLING_CHANNELS.items()},
         "hidden_dim": hidden_dim,
@@ -1267,17 +994,13 @@ def train(
         "embedding_dim": EMBEDDING_DIM,
         "embedding_prior_mean": _emb_prior_mean,
         "embedding_prior_std": _emb_prior_std,
-        # Plan A8: the table itself (5 KB), for --init-from to read back. Only last_good.pt carried
-        # it, so a warm start from the final artifact got the decoders without the codes they were
-        # trained against.
-        "embeddings_state": embeddings.state_dict(),
         "n_patients": n_patients,
         "knowledge_sources": [c.name for c in ALL_CONTRIBUTIONS],
         "contribution_weights": contribution_weights
         if contribution_weights is not None
         else dict(DEFAULT_CONTRIBUTION_WEIGHTS),
         "coupling_prior_weight": coupling_prior_weight,
-        "n_coupling_priors": len(trajectory_signal.priors),
+        "n_coupling_priors": len(trajectory_signal.priors) if trajectory_signal is not None else 0,
         "verifier_loss_weight": verifier_loss_weight,
         "huber_delta": huber_delta,
         "cohort_statistic_weight": cohort_statistic_weight,
@@ -1345,10 +1068,10 @@ def train(
             "phase3_arm_input_dropout": 0.0,
         },
         "meal_window_bias": meal_window_bias,
-        # Iter 97 (review 4.1 / 4.11 / 1.5).
-        "aux_every_k_windows": aux_every_k_windows,
+        "evidence_batch_size": evidence_batch_size,
+        "steps_per_epoch": n_steps_default,
+        "teacher_tape_weight": tape_base,
         "trajectory_windows_per_step": trajectory_windows_per_step,
-        "aux_cadence": dict(aux_cadence),
         "aux_signal_clip": aux_signal_clip,
         "aux_steps_by_signal": dict(aux_steps_by_signal),
         "cohort_groups_per_step": cohort_groups_per_step,
@@ -1370,18 +1093,70 @@ def train(
     if gcs_bucket and gcs_object:
         _upload_to_gcs(output_path, gcs_bucket, gcs_object)
 
+    board = None
+    if scoreboard:
+        board = score_on_board(
+            model,
+            previous=_previous_board(init_from or resume_from),
+            identifiability=scoreboard_identifiability,
+        )
+
+    exit_code = 0
     if benchmark_dataset_uri:
-        # Iter 61: attach the trained-table prior stats to the model
-        # so the in-process benchmark's calibrate_embedding can use a
-        # diagonal Gaussian prior matched to actual training usage.
         model._embedding_prior_mean = torch.tensor(_emb_prior_mean, dtype=torch.float32)
         model._embedding_prior_std = torch.tensor(_emb_prior_std, dtype=torch.float32)
-        return _run_benchmark(
+        exit_code, report = _run_benchmark(
             model, output_path,
             benchmark_dataset_uri, benchmark_thresholds_uri,
             benchmark_report_path, gcs_bucket,
         )
-    return 0
+        if board is not None and report is not None:
+            board = attach_individual_skill(board, report["individual_skill"])
+    if board is not None:
+        _write_board(board, output_path, gcs_bucket, gcs_object)
+    return exit_code
+
+
+def score_on_board(
+    model: ModularPhysiologyNetwork,
+    *,
+    previous: dict | None,
+    identifiability: bool,
+) -> dict:
+    """The checkpoint on the PLAN section 4 board (``pulse.scoreboard``)."""
+    print("\nScoring on the board (sealed literature, training literature"
+          + (", identifiability" if identifiability else "") + ")...", flush=True)
+    board = scoreboard(
+        model, previous=previous, identifiability=identifiability,
+    )
+    print(render_scoreboard(board), flush=True)
+    return board
+
+
+def _previous_board(checkpoint_uri: str | None) -> dict | None:
+    """The board beside the checkpoint this run started from, if it has one."""
+    if not checkpoint_uri:
+        return None
+    if checkpoint_uri.startswith("gs://"):
+        bucket, blob = _parse_gs_uri(checkpoint_uri)
+        local = tempfile.mktemp(suffix=".json")
+        try:
+            _download_gs_uri_to_file(
+                f"gs://{bucket}/{_gcs_sibling(blob, scoreboard_path(blob).name)}", local,
+            )
+        except Exception:
+            return None
+        return json.loads(Path(local).read_text())
+    path = scoreboard_path(checkpoint_uri)
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def _write_board(board: dict, output_path: str, gcs_bucket: str | None, gcs_object: str | None) -> None:
+    path = scoreboard_path(output_path)
+    path.write_text(json.dumps(board, indent=2))
+    print(f"Scoreboard saved to {path}")
+    if gcs_bucket and gcs_object:
+        _upload_to_gcs(str(path), gcs_bucket, _gcs_sibling(gcs_object, path.name))
 
 
 def resume_start_epoch(checkpoint: dict) -> int:
@@ -1494,12 +1269,13 @@ def _run_benchmark(
     thresholds_uri: str | None,
     report_path: str | None,
     gcs_bucket: str | None,
-) -> int:
+) -> tuple[int, dict | None]:
     from .benchmark import (
         describe_benchmark_dataset_load_failure,
         load_benchmark_dataset,
         evaluate_model_against_benchmark,
         default_thresholds,
+        individual_skill,
     )
     import tempfile
 
@@ -1512,7 +1288,7 @@ def _run_benchmark(
             _download_gs_uri_to_file(dataset_uri, dataset_local)
         except Exception as e:
             print(f"Benchmark dataset download failed: {e}")
-            return 1
+            return 1, None
 
     thresholds = default_thresholds()
     if thresholds_uri and thresholds_uri.startswith("gs://"):
@@ -1521,7 +1297,7 @@ def _run_benchmark(
             _download_gs_uri_to_file(thresholds_uri, thresh_local)
         except Exception as e:
             print(f"Benchmark thresholds download failed: {e}")
-            return 1
+            return 1, None
         thresholds = json.loads(Path(thresh_local).read_text())
 
     episodes = load_benchmark_dataset(dataset_local)
@@ -1530,7 +1306,7 @@ def _run_benchmark(
         print(f"No benchmark episodes loaded — {detail}")
         print("  (Migrate the dataset to the current STATE_DIM with "
               "scripts/migrate_benchmark_initial_state.py, then sync to GCS.)")
-        return 0
+        return 0, None
 
     from .knowledge.benchmark_extras import all_cohort_benchmark_episodes
 
@@ -1661,6 +1437,7 @@ def _run_benchmark(
         "emergence_chain": emergence,
         "two_basal_fasts": two_basal,
         "second_meal": meal,
+        "individual_skill": individual_skill(results),
         "gate": {
             "passed": gate_passed,
             "failures": failures,
@@ -1719,7 +1496,7 @@ def _run_benchmark(
                 _upload_file_to_gs_uri(report_local, report_path)
             except Exception as err:
                 print(f"  Benchmark report GCS upload failed: {err}")
-                return 1
+                return 1, report
             print(f"  Report uploaded to {report_path}")
         else:
             Path(report_path).write_text(report_json)
@@ -1730,7 +1507,7 @@ def _run_benchmark(
             "Benchmark gate did not pass — see report for details. "
             "(Trainer still exits 0; gate enforcement is the orchestrator's job.)",
         )
-    return 0
+    return 0, report
 
 
 # Run plumbing: flags that say WHERE a run reads/writes or whether it
@@ -1739,7 +1516,7 @@ _RUN_PLUMBING_KEYS = frozenset({
     "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
     "frozen_ruler", "deterministic", "allow_spec_override", "torch_threads", "compile_steps",
-    "init_from", "resume_from",
+    "init_from", "resume_from", "scoreboard", "scoreboard_identifiability",
 })
 
 
@@ -1991,9 +1768,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "person) and makes the fitted embedding_prior_mean ~0 by construction. Strong by "
             "design (default 1.0, three orders above the per-row weight): the gradient is "
             "identical on every row, so it moves the cloud rigidly and cannot flatten per-patient "
-            "differences. 1.0 is a constraint when the pin lands on every optimizer step; it lands "
-            "only at aux steps, so how many that is per epoch (--aux-every-k-windows) decides "
-            "what the recipe needs -- see training/embedding_prior_signal.py. 0 disables."
+            "differences. The evidence step does not apply this weight; the factor prior "
+            "carries between-person spread. 0 disables the signal where a caller still runs it."
         ),
     )
     parser.add_argument(
@@ -2300,22 +2076,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "(replaced by the population-typical meal): 'logged, quantity unknown'.",
     )
     parser.add_argument(
-        "--aux-every-k-windows", type=int, default=0,
-        help="Iter 97 (review 4.1): one joint auxiliary step every k trajectory windows "
-             "(0 = once per epoch, the pre-97 cadence: 25 literature steps per run).",
+        "--evidence-batch-size", type=int, default=4,
+        help="Evidence items sampled per step. Their Gaussian likelihoods are summed.",
     )
     parser.add_argument(
-        "--aux-cadence", type=str, default="",
-        help="Per-signal cadence in aux steps, 'name:n;name:n' — an expensive signal runs "
-             "on every n-th aux step so the epoch's wall-clock stays flat.",
+        "--steps-per-epoch", type=int, default=0,
+        help="Optimizer steps per epoch. 0 means one step per --n-patients.",
+    )
+    parser.add_argument(
+        "--teacher-tape-weight", type=float, default=1.0,
+        help="Teacher-tape term at epoch 0. It decays linearly to 0 on the last epoch.",
     )
     parser.add_argument(
         "--trajectory-windows-per-step", type=int, default=1,
-        help="Trajectory windows per optimizer step. 1 = one SGD step per window "
-             "(the historical schedule). k > 1 rolls k windows as one batched integrate and "
-             "averages their losses: ~k x the windows per second (a step costs about the same "
-             "at batch 1 and 16) for k x fewer imitation steps. --aux-every-k-windows still "
-             "counts windows.",
+        help="Recorded on the tape signal. The epoch does not walk windows.",
     )
     parser.add_argument(
         "--aux-signal-clip", type=float, default=0.0,
@@ -2362,6 +2136,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--benchmark-thresholds-uri", type=str, default=None)
     parser.add_argument("--benchmark-report-path", type=str, default=None)
     parser.add_argument(
+        "--scoreboard", action=argparse.BooleanOptionalAction, default=True,
+        help="Score the checkpoint on the PLAN section 4 board and write it beside the checkpoint.",
+    )
+    parser.add_argument(
+        "--scoreboard-identifiability", action=argparse.BooleanOptionalAction, default=True,
+        help="Include the open-direction line (one backward per literature item).",
+    )
+    parser.add_argument(
         "--frozen-ruler", type=str, default=None,
         help=(
             "Iter 97 (review 5.2): path to a frozen-ruler file; sets "
@@ -2392,9 +2174,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--init-from", type=str, default=None,
         help="Warm-start model weights from this checkpoint (local path or gs://). "
              "Missing keys stay at init; unexpected keys are dropped. Epochs start at 0. "
-             "Also restores the patient table (embeddings_state) when the checkpoint has one of "
-             "this run's (n_patients, EMBEDDING_DIM) shape and seed; otherwise the table starts "
-             "fresh and the [INIT] log line says why.",
+             "A patient table in the checkpoint is ignored: people are drawn from the factor prior.",
     )
     parser.add_argument(
         "--resume-from", type=str, default=None,
@@ -2448,16 +2228,23 @@ def main():
         if not args.benchmark_dataset_uri:
             parser.error("--benchmark-only requires --benchmark-dataset-uri")
         from .diagnostics.probe import load_model_from_checkpoint
-        import tempfile as _tempfile
-        ckpt_local = _tempfile.mktemp(suffix=".pt")
+        ckpt_local = tempfile.mktemp(suffix=".pt")
         print(f"Downloading checkpoint gs://{args.gcs_bucket}/{args.gcs_object} ...")
         _download_gs_uri_to_file(f"gs://{args.gcs_bucket}/{args.gcs_object}", ckpt_local)
-        model, _ = load_model_from_checkpoint(ckpt_local)
-        sys.exit(_run_benchmark(
+        model, ckpt = load_model_from_checkpoint(ckpt_local)
+        code, report = _run_benchmark(
             model, ckpt_local,
             args.benchmark_dataset_uri, args.benchmark_thresholds_uri,
             args.benchmark_report_path, args.gcs_bucket,
-        ))
+        )
+        if args.scoreboard:
+            board = score_on_board(
+                model, previous=None, identifiability=args.scoreboard_identifiability,
+            )
+            if report is not None:
+                board = attach_individual_skill(board, report["individual_skill"])
+            _write_board(board, ckpt_local, args.gcs_bucket, args.gcs_object)
+        sys.exit(code)
 
     cw = _load_contribution_weights_json(args.contribution_weights_json)
     if args.equal_contribution_weights:
@@ -2534,8 +2321,9 @@ def main():
         phase3_lr=args.phase3_lr,
         phase3_input_dropout=args.phase3_input_dropout,
         phase3_meal_dropout=args.phase3_meal_dropout,
-        aux_every_k_windows=args.aux_every_k_windows,
-        aux_cadence=_parse_aux_cadence(args.aux_cadence),
+        evidence_batch_size=args.evidence_batch_size,
+        steps_per_epoch=args.steps_per_epoch,
+        teacher_tape_weight=args.teacher_tape_weight,
         trajectory_windows_per_step=args.trajectory_windows_per_step,
         aux_signal_clip=args.aux_signal_clip,
         cohort_groups_per_step=args.cohort_groups_per_step,
@@ -2553,6 +2341,8 @@ def main():
         benchmark_dataset_uri=args.benchmark_dataset_uri,
         benchmark_thresholds_uri=args.benchmark_thresholds_uri,
         benchmark_report_path=args.benchmark_report_path,
+        scoreboard=args.scoreboard,
+        scoreboard_identifiability=args.scoreboard_identifiability,
         deterministic=args.deterministic,
         torch_threads=args.torch_threads,
         compile_steps=args.compile_steps,

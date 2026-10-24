@@ -16,10 +16,11 @@ import numpy as np
 import torch
 
 from pulse.incretin import (
-    GIP_B, GLP1_GN_PG, K_INCRETIN, SALEHI_GLP1_EXCESS, VOLLMER_RATIO, VOLLMER_RATIO_SE,
-    amino_insulin_rate, amino_insulin_rate_t, gip_rate, gip_rate_t,
-    glp1_glucagon_rate, incretin_factor, incretin_factor_t,
+    GIP_B, GIP_KINETICS, GLP1_GN_PG, ISLET, K_INCRETIN, SALEHI_GLP1_EXCESS, VOLLMER_RATIO,
+    VOLLMER_RATIO_SE, amino_insulin_rate, amino_insulin_rate_t, gip_rate, gip_rate_t,
+    glp1_glucagon_rate, glp1_glucagon_rate_t, incretin_factor, incretin_factor_t,
 )
+from pulse.published import initial_values
 from pulse.knowledge.cohorts.nutrition import _WESTPHAL_SIGMA
 from pulse.knowledge.full_body import PatientParams, simulate_full_body
 from pulse.model import ModularPhysiologyNetwork, integrate
@@ -40,7 +41,8 @@ class TestTheFactor(unittest.TestCase):
         excess = 16.0
         sat = excess / (excess + K_INCRETIN)
         self.assertAlmostEqual(incretin_factor(excess, excess), 1.0 + 4.0 * sat, places=6)
-        got = incretin_factor_t(torch.tensor([0.0, excess]), torch.tensor([0.0, excess]))
+        got = incretin_factor_t(
+            torch.tensor([0.0, excess]), torch.tensor([0.0, excess]), initial_values(ISLET))
         torch.testing.assert_close(
             got, torch.tensor([1.0, 1.0 + 4.0 * sat]), rtol=0, atol=1e-6,
         )
@@ -51,13 +53,20 @@ class TestTheFactor(unittest.TestCase):
         self.assertAlmostEqual(
             glp1_glucagon_rate(SALEHI_GLP1_EXCESS, k) / k, GLP1_GN_PG, places=5,
         )
+        torch.testing.assert_close(
+            glp1_glucagon_rate_t(torch.tensor(SALEHI_GLP1_EXCESS), torch.tensor(k),
+                                 initial_values(ISLET)),
+            torch.tensor(glp1_glucagon_rate(SALEHI_GLP1_EXCESS, k)),
+        )
 
     def test_no_protein_adds_nothing(self) -> None:
         self.assertEqual(amino_insulin_rate(0.0), 0.0)
-        self.assertEqual(float(amino_insulin_rate_t(torch.tensor(0.0))), 0.0)
+        self.assertEqual(
+            float(amino_insulin_rate_t(torch.tensor(0.0), initial_values(ISLET))), 0.0)
         self.assertAlmostEqual(gip_rate(GIP_B, 0.0, 0.0), 0.0, places=6)
         torch.testing.assert_close(
-            gip_rate_t(torch.tensor(GIP_B), torch.tensor(0.2), torch.tensor(0.1)),
+            gip_rate_t(torch.tensor(GIP_B), torch.tensor(0.2), torch.tensor(0.1),
+                       initial_values(GIP_KINETICS)),
             torch.tensor(gip_rate(GIP_B, 0.2, 0.1)),
         )
 

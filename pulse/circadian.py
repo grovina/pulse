@@ -21,13 +21,20 @@ cortisol means are 349 ± 59 and 395 ± 59 nmol/L (P = 0.31).
 The phase state is hours, not an angle. A night centered on 03:00 leaves it
 alone. A later night pulls it later, and the modules that read the hour
 read hour minus that offset.
+
+The student learns the need and the reference hour (``CLOCK``) from these
+values, beside the phase pull. The night's marks are the bookkeeping of one
+night, not physiology. The teacher keeps every value.
 """
 
 from __future__ import annotations
 
 import math
+from typing import Mapping
 
 import torch
+
+from .published import Published
 
 # An 8 h night against this need commits no debt. The restricted arm of the
 # table is 4 h of allowed sleep, so the debt that carries the clamp ratios
@@ -46,6 +53,11 @@ NIGHT_OPEN_DEBT = -1e-6
 # Not a published rate. One night centered 2 h late moves the offset about
 # half an hour; a night centered at 03:00 does not.
 PHASE_PULL_PER_H = 0.125
+
+CLOCK: dict[str, Published] = {
+    "need_h": Published(NEED_H, "The night length after which next-day insulin sensitivity is unchanged"),
+    "phase_ref_h": Published(PHASE_REF_H, "The mid-sleep hour of habitual nights"),
+}
 
 # Table 1, the hyperinsulinaemic steady state.
 RD_NORMAL = 40.7
@@ -165,22 +177,23 @@ def step_clock_t(
     debt: torch.Tensor,
     hour: torch.Tensor,
     asleep: torch.Tensor,
-    phase_pull_per_h: float | torch.Tensor = PHASE_PULL_PER_H,
+    clock: Mapping[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Tensor form of ``step_clock``. Same branches, same constants."""
+    """Tensor form of ``step_clock``. Same branches; ``clock`` holds ``CLOCK``
+    and ``phase_pull`` (hours of phase per hour asleep)."""
     hour = torch.remainder(hour, 24.0)
     asleep = asleep.clamp(0.0, 1.0)
     bio = torch.remainder(hour - offset, 24.0)
-    dev = torch.remainder(bio - PHASE_REF_H + 12.0, 24.0) - 12.0
+    dev = torch.remainder(bio - clock["phase_ref_h"] + 12.0, 24.0) - 12.0
     pull = torch.sin(2.0 * math.pi * dev / 24.0)
-    new_offset = (offset + asleep * (phase_pull_per_h / 60.0) * pull).clamp(
+    new_offset = (offset + asleep * (clock["phase_pull"] / 60.0) * pull).clamp(
         -PHASE_BOUND_H, PHASE_BOUND_H)
 
     opened = _on_mark_t(bio, NIGHT_OPEN_H)
     commit = _on_mark_t(bio, NIGHT_COMMIT_H)
     counting = (bio >= NIGHT_OPEN_H) | (bio < NIGHT_COMMIT_H)
     counted = debt - asleep / 60.0
-    committed = torch.clamp(NEED_H + debt, min=0.0)
+    committed = torch.clamp(clock["need_h"] + debt, min=0.0)
     new_debt = torch.where(counting & (debt < 0.0), counted, debt)
     new_debt = torch.where(commit & (debt < 0.0), committed, new_debt)
     new_debt = torch.where(opened, torch.full_like(debt, NIGHT_OPEN_DEBT), new_debt)
