@@ -15,10 +15,8 @@ from dataclasses import dataclass, field
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from ..modules.metabolic import (
-    _F_GNG_BETA_CONC,
     _GN_CENTER,
     _GN_LOG_SIGMA,
     _K_FFA,
@@ -35,30 +33,26 @@ def _lognormal_nll(log_x: torch.Tensor, log_median: float, log_sigma: float) -> 
 
 
 def population_prior_nll(met: nn.Module) -> torch.Tensor:
-    """Negative log density of ``k_ii``, ``f_gng``, ``k_ffa`` and glucagon basal.
+    """Negative log density of ``k_ii``, ``k_ffa`` and glucagon basal.
 
-    The Beta normaliser is included, so the value is a density, not only a
-    penalty. It does not affect the gradient.
+    ``f_gng`` is not here. Landau's fasting trajectory is the slice that
+    holds it, and a prior on top of that slice would pull the fraction back
+    off the measurement.
     """
     k_term = _lognormal_nll(met.log_k_ii, math.log(_K_II), _K_II_LOG_SIGMA)
     ffa_term = _lognormal_nll(met.log_k_ffa, math.log(_K_FFA), _K_FFA_LOG_SIGMA)
     gn_term = _lognormal_nll(met.log_gn_b, math.log(_GN_CENTER), _GN_LOG_SIGMA)
-    conc = _F_GNG_BETA_CONC
-    log_f = F.logsigmoid(met.logit_f_gng)
-    log_one_minus = F.logsigmoid(-met.logit_f_gng)
-    log_beta = 2.0 * math.lgamma(conc) - math.lgamma(2.0 * conc)
-    f_term = -(conc - 1.0) * (log_f + log_one_minus) + log_beta
-    return k_term + ffa_term + gn_term + f_term
+    return k_term + ffa_term + gn_term
 
 
 @dataclass
 class PopulationPriorSignal(TrainingSignal):
-    """Holds the four population constants at the citation mode unless evidence moves them."""
+    """Holds the population constants that still have no slice at their citation mode."""
 
     weight: WeightSchedule = field(default_factory=lambda: WeightSchedule(1.0))
 
     name: str = "population_prior"
-    source: str = "M1.5: priors replace the pins on k_ii, f_gng, k_ffa and glucagon basal"
+    source: str = "M1.5: priors on k_ii, k_ffa and glucagon basal until their slices exist"
     category: str = "mechanism"
 
     def weight_at(self, epoch: int) -> float:

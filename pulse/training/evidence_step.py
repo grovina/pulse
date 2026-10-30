@@ -38,7 +38,9 @@ def sample_evidence(pool: Sequence, batch_size: int, rng: np.random.Generator) -
 
 
 def _sigma(spec: CohortStatisticSpec, n_people: int) -> float:
-    if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
+    if spec.kind in (
+        StatisticKind.SPREAD, StatisticKind.CORRELATION, StatisticKind.RATIO_INCREMENTS,
+    ):
         return float(spec.sigma)
     n = int(spec.n_arm) if spec.n_arm is not None else max(n_people, 1)
     return float(spec.sigma) / (float(n) ** 0.5)

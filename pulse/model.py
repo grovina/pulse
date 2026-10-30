@@ -599,6 +599,7 @@ class ModularPhysiologyNetwork(nn.Module):
         glucose_infusion: Optional[torch.Tensor] = None,
         glucose_clamp: Optional[torch.Tensor] = None,
         insulin_clamp: Optional[torch.Tensor] = None,
+        bile_fistula: Optional[torch.Tensor] = None,
         gut_override: Optional[torch.Tensor] = None,
         gut_clock_exempt: bool = False,
         duodenal_override: Optional[torch.Tensor] = None,
@@ -672,6 +673,7 @@ class ModularPhysiologyNetwork(nn.Module):
         glu_inf = self._exogenous_input(glucose_infusion, state, batch)
         glu_clamp = self._exogenous_input(glucose_clamp, state, batch)
         ins_clamp = self._exogenous_input(insulin_clamp, state, batch)
+        fistula = self._exogenous_input(bile_fistula, state, batch)
 
         # Normalize state for module inputs
         norm_state = (state - self.norm_center) / self.norm_scale
@@ -768,6 +770,7 @@ class ModularPhysiologyNetwork(nn.Module):
             "glucose_infusion": glu_inf,
             "glucose_clamp": glu_clamp,
             "insulin_clamp": ins_clamp,
+            "bile_fistula": fistula,
             "swallow_carb": swallow[:, 0],
             "swallow_protein": swallow[:, 1],
             "swallow_fat": swallow[:, 2],
@@ -1045,6 +1048,7 @@ class _RolloutPlan:
         glucose_infusion: Optional[torch.Tensor],
         glucose_clamp: Optional[torch.Tensor],
         insulin_clamp: Optional[torch.Tensor],
+        bile_fistula: Optional[torch.Tensor],
     ) -> None:
         B = int(embedding.shape[0])
         T = int(n_steps)
@@ -1086,6 +1090,7 @@ class _RolloutPlan:
             "glucose_infusion": exogenous(glucose_infusion),
             "glucose_clamp": exogenous(glucose_clamp),
             "insulin_clamp": exogenous(insulin_clamp),
+            "bile_fistula": exogenous(bile_fistula),
             "swallow_carb": swallow[..., 0],
             "swallow_protein": swallow[..., 1],
             "swallow_fat": swallow[..., 2],
@@ -1314,6 +1319,7 @@ def integrate(
     member_steps: Optional[torch.Tensor] = None,
     *,
     insulin_clamp: Optional[torch.Tensor] = None,
+    bile_fistula: Optional[torch.Tensor] = None,
     observe: bool = False,
     planned: bool = True,
 ) -> torch.Tensor:
@@ -1432,6 +1438,7 @@ def integrate(
             model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
             _series(sleep_wake), _series(activity), _series(sglt2),
             _series(glucose_infusion), _series(glucose_clamp), _series(insulin_clamp),
+            _series(bile_fistula),
         )
         held: list[Optional[torch.Tensor]] = [None] * n_steps
         if member_steps is not None:
@@ -1502,17 +1509,19 @@ def integrate(
             inf_step = glucose_infusion[step].expand(batch) if glucose_infusion is not None else None
             clamp_step = glucose_clamp[step].expand(batch) if glucose_clamp is not None else None
             ins_clamp_step = insulin_clamp[step].expand(batch) if insulin_clamp is not None else None
+            fistula_step = bile_fistula[step].expand(batch) if bile_fistula is not None else None
             gut_step = gut_outputs[:, step] if gut_outputs is not None else None
             duo_step = duo_outputs[step] if duo_outputs is not None else None
             swallow_kw = {}
             if swallow is not None:
                 swallow_kw["swallow_override"] = swallow[step]
             ins_kw = {} if ins_clamp_step is None else {"insulin_clamp": ins_clamp_step}
+            fistula_kw = {} if fistula_step is None else {"bile_fistula": fistula_step}
             out = model(
                 state, embedding, t, meals,
                 sleep_wake=sw_step, activity=act_step, sglt2=drug_step,
                 glucose_infusion=inf_step, glucose_clamp=clamp_step,
-                **ins_kw,
+                **ins_kw, **fistula_kw,
                 gut_override=gut_step,
                 duodenal_override=duo_step,
                 **swallow_kw,

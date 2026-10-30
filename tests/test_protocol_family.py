@@ -34,6 +34,7 @@ def _awake_nights(hours_asleep: float, nights: int = 1) -> tuple[float, ...]:
     (_arm(insulin_clamp=held(60.0, 120), meals=((0.0, 75.0, 0.0, 0.0),)), ProtocolFamily.CLAMP),
     (_arm(glucose_clamp=held(150.0, 120), sglt2=held(1.0, 120)), ProtocolFamily.DRUG),
     (_arm(glucose_clamp=held(150.0, 120), sglt2=held(0.0, 120)), ProtocolFamily.CLAMP),
+    (_arm(meals=((0.0, 0.0, 30.0, 0.0),), bile_fistula=held(1.0, 120)), ProtocolFamily.MIXED_MEAL),
 ])
 def test_the_strongest_intervention_names_the_family(arm, family):
     assert protocol_family((arm,)) is family

@@ -34,6 +34,11 @@ class StatisticKind(str, Enum):
     # finding reported in a unit the model does not share (per kg of lean mass,
     # another assay's frame) is scale-free only as the ratio of its two arms.
     RATIO_MEANS = "ratio_means"
+    # Area of (value − the arm's own baseline) on arm 1, over the same area on
+    # arm 0. The baseline window is the run-in and is not part of the area.
+    # This is a baseline-subtracted integral, which a ratio of window means is
+    # not: the fasting level stays in a mean and cancels in an increment.
+    RATIO_INCREMENTS = "ratio_increments"
     # Soft argmax over window (minutes from window start), single arm.
     TIME_TO_PEAK = "time_to_peak"
     # A whole published trajectory: the marker value at each ``CurvePoint`` of
@@ -79,7 +84,9 @@ def factor_index(name: str) -> int:
 # the mean over its window (the rest read the peak, or the soft argmax).
 TWO_ARM_KINDS = frozenset({
     StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.RATIO_MEANS,
+    StatisticKind.RATIO_INCREMENTS,
 })
+_RATIO_KINDS = frozenset({StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS})
 MEAN_KINDS = frozenset({
     StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS, StatisticKind.RATIO_MEANS,
 })
@@ -87,7 +94,7 @@ MEAN_KINDS = frozenset({
 
 def combine_arms(kind: StatisticKind, per_arm):
     """The statistic from its per-arm values (floats or tensors alike)."""
-    if kind is StatisticKind.RATIO_MEANS:
+    if kind in _RATIO_KINDS:
         return per_arm[1] / per_arm[0]
     if kind in TWO_ARM_KINDS:
         return per_arm[1] - per_arm[0]
@@ -158,6 +165,7 @@ class CohortArmSpec:
     plateau in µU/mL of the clamp's insulin arm, held by a constant infusion
     (``pulse.modules.metabolic.insulin_clamp_infusion_t``). ``sglt2`` is the
     empagliflozin exposure (``pulse.renal``: 1 is the steady 25 mg/day dose).
+    ``bile_fistula`` drains bile before it meets the fat: 1 is an empty intestine.
 
     ``prefast_hours``: how long the subject has already been fasting when the
     arm starts. Cohort rollouts reach that state by spinning the student
@@ -176,6 +184,7 @@ class CohortArmSpec:
     glucose_clamp: tuple[float, ...] | None = None  # closed-loop glucose target, mg/dL
     insulin_clamp: tuple[float, ...] | None = None  # plasma insulin plateau, µU/mL
     sglt2: tuple[float, ...] | None = None  # empagliflozin exposure, 1 = 25 mg/day at steady state
+    bile_fistula: tuple[float, ...] | None = None  # 1 drains the intestine of bile
     prefast_hours: float = 0.0
     population: Population | None = None
 
@@ -283,6 +292,9 @@ class CohortStatisticSpec:
     # window-means; a factor name correlates the marker's window-mean with
     # that factor's code.
     partner: str | None = None
+    # RATIO_INCREMENTS only: each arm's run-in. The area is the measured window
+    # minus this window's mean, and the baseline ends where the window starts.
+    baseline: StatisticWindow | None = None
     # Held-out: a sealed item never enters a training registry; it is reachable
     # only through the scoring path. Sealing is done at random within a protocol
     # family at filing time (PLAN Phase 0), so training and the scoreboard never
@@ -321,6 +333,21 @@ class CohortStatisticSpec:
             raise ValueError(
                 f"{self.name}: kind={self.kind.value} requires exactly 2 arms",
             )
+        if self.kind is StatisticKind.RATIO_INCREMENTS:
+            if self.baseline is None:
+                raise ValueError(f"{self.name}: kind=ratio_increments needs a baseline window")
+            if self.baseline.end_min <= self.baseline.start_min:
+                raise ValueError(f"{self.name}: baseline window is empty")
+            windows = self.per_arm_windows if self.per_arm_windows is not None else (self.window,) * len(self.arms)
+            for arm, window in zip(self.arms, windows):
+                if self.baseline.end_min > window.start_min:
+                    raise ValueError(
+                        f"{self.name}: the baseline has to end before the measured window",
+                    )
+                if window.end_min > arm.duration_min or self.baseline.end_min > arm.duration_min:
+                    raise ValueError(f"{self.name}: a window runs past the arm")
+        elif self.baseline is not None:
+            raise ValueError(f"{self.name}: baseline is only for kind=ratio_increments")
         if self.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION) and len(self.arms) != 1:
             raise ValueError(f"{self.name}: kind={self.kind.value} is a single-arm population statistic")
         if self.kind is StatisticKind.CORRELATION:

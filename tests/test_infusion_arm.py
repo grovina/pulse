@@ -14,7 +14,7 @@ import torch
 
 from pulse.cohort_loss import _rollout_arm_states, cohort_statistic_loss_one_spec, rollout_arms
 from pulse.knowledge.cohort_types import (
-    CohortArmSpec, CohortStatisticSpec, StatisticKind, StatisticWindow,
+    CohortArmSpec, CohortStatisticSpec, StatisticKind, StatisticWindow, held,
 )
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.modules.metabolic import GLUCOSE_CLAMP_KP, VG_DL_PER_KG, clamp_infusion_t
@@ -148,8 +148,8 @@ def test_clamp_arm_through_cohort_loss() -> None:
     model = _model()
     target = 130.0
     with torch.no_grad():
-        traj = _rollout_arm_states(model, _emb(), _arm(glucose_clamp_mg_dl=target), _state())
-        batched = rollout_arms(model, [(_arm(glucose_clamp_mg_dl=target), _emb(), _state())])
+        traj = _rollout_arm_states(model, _emb(), _arm(glucose_clamp=held(target, _T)), _state())
+        batched = rollout_arms(model, [(_arm(glucose_clamp=held(target, _T)), _emb(), _state())])
     assert float((traj[0, 20:, _G] - target).abs().max()) < 3.0
     assert torch.allclose(batched[0], traj, atol=1e-4)
 
@@ -189,7 +189,7 @@ def test_the_gir_observable_is_the_clamp_infusion_of_its_own_minute() -> None:
 
 def test_a_clamp_gir_spec_scores_and_trains() -> None:
     model = _model()
-    arm = _arm(glucose_clamp_mg_dl=90.0, insulin_clamp_uU_ml=60.0)
+    arm = _arm(glucose_clamp=held(90.0, _T), insulin_clamp=held(60.0, _T))
     spec = CohortStatisticSpec(
         name="clamp_gir", source="test", description="steady-state GIR",
         arms=(arm,), marker_id="glucose_infusion_rate", kind=StatisticKind.MEAN_IN_WINDOW,

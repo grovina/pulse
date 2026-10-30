@@ -442,6 +442,12 @@ OBSERVABLES: tuple[ObservableDef, ...] = (
     ObservableDef("rq", "Respiratory quotient", "ratio", "metabolic"),
     ObservableDef("energy_expenditure", "Energy expenditure", "kcal/min", "metabolic"),
     ObservableDef("lipolysis", "Lipolysis", "mmol/L/min", "metabolic"),
+    # Gluconeogenesis' share of glucose released into plasma. Landau 1996
+    # measures this fraction; hepatic_output is only the sum.
+    ObservableDef("gng_fraction", "Gluconeogenic fraction of glucose production", "fraction", "metabolic"),
+    # Share of the fat that left the stomach which is absorbed. 1 at the
+    # resting bile content; Borgström's floor when a fistula drains it.
+    ObservableDef("fat_absorption", "Fat absorption", "fraction", "metabolic"),
 )
 OBSERVABLE_IDS: tuple[str, ...] = tuple(o.id for o in OBSERVABLES)
 OBSERVABLE_DIM = len(OBSERVABLES)

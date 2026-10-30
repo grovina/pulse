@@ -304,9 +304,12 @@ _N_COUPLING = len(MODULE_COUPLING_CHANNELS["metabolic"])
 _N_EXTERNAL = 2
 _PROTOCOL_INPUTS = (
     "activity", "sleep_wake", "sglt2", "glucose_infusion", "glucose_clamp", "insulin_clamp",
+    "bile_fistula",
 )
 # Inputs that reach the rate through ``drives`` only; the learned heads never see them.
-_DRIVE_ONLY_INPUTS = ("sglt2", "glucose_infusion", "glucose_clamp", "insulin_clamp")
+_DRIVE_ONLY_INPUTS = (
+    "sglt2", "glucose_infusion", "glucose_clamp", "insulin_clamp", "bile_fistula",
+)
 
 # Closed-loop glucose clamp: infusion = relu(Kp · (target − G)), in mg/dL/min of this
 # patient's glucose space. Kp is 1/min, so one Euler minute closes the whole gap
@@ -390,6 +393,7 @@ _SGLT2_EXTERNAL_IDX = 2
 _GLU_INF_EXTERNAL_IDX = 3
 _GLU_CLAMP_EXTERNAL_IDX = 4
 _INS_CLAMP_EXTERNAL_IDX = 5
+_BILE_FISTULA_EXTERNAL_IDX = 6
 
 # Lag rate p2 = 1/τ for insulin action, bounded so τ ∈ [4, 100] min (teacher p2 = 0.02,
 # τ = 50 min). Floored so the state can't freeze; capped so it can't collapse to the
@@ -444,16 +448,10 @@ _SI_INIT = 0.004  # = 10 × teacher Si (insulin normalization)
 # Exercise uptake, mg/dL/min per unit activity per mg/dL. The teacher's
 # coefficient. The range reaches four times that.
 _KEX_MIN, _KEX_RANGE, _KEX_INIT = 0.0, 0.06, EXERCISE_UPTAKE_K
-# Gluconeogenic fraction of the POPULATION-TYPICAL EGP (teacher f_gng; Landau
-# 1996: 47 % at 14 h). At Gb 95 that is half of the person's own output. The
-# mode of a Beta prior. A free copy walked 0.50 → 0.37 to buy back the grams
-# of glycogenolysis the shrunken uptake had lost, and that walk is what drops
-# a long fast through 60. The concentration matches the absolute spread of
-# the teacher's ``vary(f_gng, 0.10)``.
+# Gluconeogenic fraction of the population-typical EGP. Landau 1996: about
+# half after an overnight fast. The fasting trajectory is what holds it;
+# there is no prior pulling it back to this init.
 _F_GNG = 0.5
-_F_GNG_LOG_SIGMA = 0.10
-_F_GNG_ABS_SD = _F_GNG * math.sqrt(math.exp(_F_GNG_LOG_SIGMA ** 2) - 1.0)
-_F_GNG_BETA_CONC = (1.0 / (4.0 * _F_GNG_ABS_SD ** 2) - 1.0) / 2.0
 # Teacher ``_F_GNG_MAX``: glycogenolysis keeps a basal outflow, so the pool
 # stays first-order in its own level. Binds only below the student's reachable
 # Gb (the log decode floors near 61 mg/dL; the cap binds near 56 at f_gng 0.5).
@@ -612,7 +610,7 @@ _GN_INS_OFFSET = 10.0
 _GN_LOG_SIGMA = 0.30
 
 # Names a queue item can point at. The prior is the surface these citations land on.
-POPULATION_PRIOR_NAMES = ("k_ii", "f_gng", "k_ffa", "gn_b")
+POPULATION_PRIOR_NAMES = ("k_ii", "k_ffa", "gn_b")
 
 
 # B1/A4 — the student's MEDIAN PERSON for every quantity `person_params` decodes, i.e.
@@ -1108,6 +1106,7 @@ class MetabolicModule(MassActionModule):
             "glucose_infusion": external[..., _GLU_INF_EXTERNAL_IDX],
             "glucose_clamp": external[..., _GLU_CLAMP_EXTERNAL_IDX],
             "insulin_clamp": external[..., _INS_CLAMP_EXTERNAL_IDX],
+            "bile_fistula": external[..., _BILE_FISTULA_EXTERNAL_IDX],
             "kcal_in": kcal_in,
             "kcal_out": kcal_out,
             "ffa_from_lipid": _FFA_FROM_LIPID * lipid_app,
@@ -1252,6 +1251,10 @@ class MetabolicModule(MassActionModule):
         int_bile = (
             _INT_BILE_CENTER + _INT_BILE_SCALE * coupling[..., _INT_BILE_COUPLING_IDX]
         ).clamp(min=0.0)
+        # A fistula drains the intestine. The bile state is unchanged; the fat
+        # never meets it. 1 is fully drained.
+        drained = d["bile_fistula"].clamp(0.0, 1.0)
+        int_bile = int_bile * (1.0 - drained)
         bile = fat_bile_factor_t(int_bile, c)
         lipid_g = coupling[..., _LIPID_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
         amino_g = coupling[..., _AMINO_COUPLING_IDX].clamp(min=0.0) / _LIPID_UNITS_PER_G
@@ -1311,7 +1314,9 @@ class MetabolicModule(MassActionModule):
             # the urine is the mg a collection weighs, per minute.
             "glucose_infusion_rate": infusion * VG_DL_PER_KG,
             "glucose_disposal": (uptake_ii + uptake_id + exercise_uptake) * VG_DL_PER_KG,
+            "gng_fraction": gng_released / (glycogenolysis_plasma + gng_released).clamp(min=1e-8),
             "urinary_glucose": urinary_mg_per_min_t(g, d["sglt2"], c),
+            "fat_absorption": bile,
             "vo2": vo2, "vco2": vco2, "rq": rq, "energy_expenditure": kcal_out,
             "glucose_rate": glucose_rate, "liver_glycogen_rate": liver_rate,
             "muscle_glycogen_rate": muscle_rate,

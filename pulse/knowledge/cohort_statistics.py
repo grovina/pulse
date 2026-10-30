@@ -25,8 +25,9 @@ from .cohort_types import (
     StatisticWindow,
 )
 from .cohorts import (
-    breadth_floor, cardiovascular, curves, glucose_handling, hepatobiliary, ivgtt,
-    nutrition, renal, sleep,
+    breadth_floor, cardiovascular, counterregulation, curves, glucose_handling, hepatobiliary,
+    incretins,
+    ivgtt, nutrition, renal, sleep,
 )
 
 
@@ -74,6 +75,8 @@ _AUTHORED: list[CohortStatisticSpec] = [
     *cardiovascular.COHORT_STATISTICS,
     *breadth_floor.COHORT_STATISTICS,
     *hepatobiliary.COHORT_STATISTICS,
+    *incretins.COHORT_STATISTICS,
+    *counterregulation.COHORT_STATISTICS,
     *ivgtt.COHORT_STATISTICS,
     *curves.COHORT_STATISTICS,
     *renal.COHORT_STATISTICS,

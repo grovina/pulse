@@ -99,11 +99,39 @@ QUEUE: tuple[QueueItem, ...] = (
         marker_id="glucose",
         blocked_on="m2.1",
         note=(
-            "Epinephrine's drive starts at 69 mg/dL and cortisol's "
-            "hypoglycaemic drive at 58, and an insulin clamp can hold "
-            "glucose there. The ranked hinge still cannot train: growth "
-            "hormone has no state."
+            "The ranked hinge still cannot train: growth hormone has no "
+            "state. The same paper's postabsorptive glucose, its SD, and "
+            "the baseline epinephrine are cryer_1987_fasting_glucose, "
+            "cryer_1987_fasting_glucose_spread and "
+            "cryer_1987_epinephrine_baseline. The epinephrine rise while "
+            "glucose was still near 80 is above the initialized threshold, "
+            "where the drive is zero and has no gradient, so it is not a target."
         ),
+    ),
+    QueueItem(
+        id="cryer-1987-fasting-glucose",
+        citation="Schwartz, Clutter, Shah and Cryer (1987) J Clin Invest 79:777",
+        status=Status.INTEGRATED,
+        surface="cohort",
+        claim=(
+            "Postabsorptive arterialized glucose, before the insulin infusion, "
+            "was 91 ± 7 mg/dL. That ± is the standard deviation, n = 10."
+        ),
+        marker_id="glucose",
+        spec_name="cryer_1987_fasting_glucose",
+        note=(
+            "The mean is cryer_1987_fasting_glucose and the SD is "
+            "cryer_1987_fasting_glucose_spread. Ages 23–34, healthy."
+        ),
+    ),
+    QueueItem(
+        id="cryer-1987-epinephrine-baseline",
+        citation="Schwartz, Clutter, Shah and Cryer (1987) J Clin Invest 79:777",
+        status=Status.INTEGRATED,
+        surface="cohort",
+        claim="Baseline plasma epinephrine, the level the first glucose step doubled from, was 34 ± 7 pg/mL.",
+        marker_id="epinephrine",
+        spec_name="cryer_1987_epinephrine_baseline",
     ),
     QueueItem(
         id="donga-2010-sleep-clamp",
@@ -144,8 +172,10 @@ QUEUE: tuple[QueueItem, ...] = (
         spec_name="wahren_800_splanchnic_glucose",
         note=(
             "The 800 kg-m/min load, on activity 0.7, as a rise in "
-            "hepatic_output. The 400 and 1200 loads are not separate specs. "
-            "Arterial glucose on the same bout is wahren_800_arterial_glucose."
+            "hepatic_output. The rest value that rise is measured from is "
+            "wahren_1971_resting_splanchnic_glucose. The 400 and 1200 loads "
+            "are not separate specs. Arterial glucose on the same bout is "
+            "wahren_800_arterial_glucose."
         ),
     ),
     QueueItem(
@@ -215,20 +245,18 @@ QUEUE: tuple[QueueItem, ...] = (
     QueueItem(
         id="gip-mixed-meal",
         citation="Vollmer et al. (2008) Diabetes 57:678",
-        status=Status.BLOCKED,
+        status=Status.INTEGRATED,
         surface="cohort",
         claim=(
             "Integrated GIP after an 820 kcal breakfast is 186 ± 17% higher "
             "than after 75 g of glucose."
         ),
         marker_id="gip",
-        blocked_on="m2.5",
+        spec_name="vollmer_2008_gip_increment_ratio",
         note=(
-            "The published comparison is the baseline-subtracted area: "
-            "integrated incremental GIP is 186 ± 17% higher over 240 min. "
-            "GIP is a marker and both protocols are meals. A window mean "
-            "keeps the fasting level, so the ratio of the two means is not "
-            "that comparison."
+            "The comparison is the ratio of the two baseline-subtracted areas "
+            "over 240 min. A ratio of the window means would have kept the "
+            "fasting level in both arms."
         ),
     ),
     QueueItem(
@@ -275,18 +303,15 @@ QUEUE: tuple[QueueItem, ...] = (
     QueueItem(
         id="bile-modulates-fat-absorption",
         citation="Borgström, Barrowman and Lindström (1985) New Comprehensive Biochemistry, ch. 14",
-        status=Status.BLOCKED,
-        surface="prior",
-        claim=(
-            "With no bile in the intestine, 60–70% of a normal fat load is still absorbed."
-        ),
-        marker_id="intestinal_bile",
-        blocked_on="m2.6",
+        status=Status.INTEGRATED,
+        surface="cohort",
+        claim="With no bile in the intestine, 60–70% of a normal fat load is still absorbed.",
+        marker_id="fat_absorption",
+        spec_name="borgstrom_1985_fat_without_bile",
         note=(
-            "60–70% is a range with no standard error, so it is not a cohort "
-            "target. The floor in bile.py is the midpoint of that range. "
-            "No arm drains intestinal bile, and the absorbed share is not a "
-            "series a spec can read."
+            "A range with no standard error, scored as a band on fat_absorption "
+            "while a fistula drains the intestine. The floor is initialized at "
+            "the midpoint and the band is what holds it."
         ),
     ),
     QueueItem(
@@ -350,19 +375,19 @@ QUEUE: tuple[QueueItem, ...] = (
     ),
     QueueItem(
         id="landau-gng-share",
-        citation="Landau et al. (1996) — gluconeogenic contribution to glucose production",
-        status=Status.BLOCKED,
+        citation="Landau et al. (1996) J Clin Invest 98:378",
+        status=Status.INTEGRATED,
         surface="cohort",
         claim=(
-            "Post-absorptive gluconeogenesis is about half of endogenous "
-            "glucose production. The prolonged-fast floor is gluconeogenesis alone."
+            "Gluconeogenesis is 47 ± 4% of glucose production at 14 h of fasting, "
+            "67 ± 4% at 22 h and 93 ± 2% at 42 h."
         ),
-        marker_id="hepatic_output",
-        blocked_on="m1.5",
+        marker_id="gng_fraction",
+        spec_name="landau_1996_gng_fraction_14h",
         note=(
-            "f_gng is a population parameter under a Beta prior centred at one half. "
-            "Landau's 47% / 67% / 93% at 14 h / 22 h / 42 h is a trajectory of the "
-            "split, and hepatic_output is only the sum, so a spec still cannot see it."
+            "The three points are landau_1996_gng_fraction_14h, _22h and _42h, "
+            "read on gng_fraction. The prior on f_gng is gone; k_ii still has "
+            "none of Landau's production rates, so its prior stays."
         ),
     ),
     QueueItem(

@@ -58,7 +58,10 @@ from ..cohort_types import (
     InitMode,
     StatisticKind,
     StatisticWindow,
+    TargetShape,
+    held,
 )
+from ..sealing import sealed_at_random
 
 # A single mixed meal at t=60, after an hour of fasting run-in so the gallbladder has
 # partially refilled — matching the design of the studies these targets come from
@@ -171,6 +174,38 @@ BILE_ACIDS_POSTPRANDIAL_PEAK = CohortStatisticSpec(
     init_mode=InitMode.NORM_CENTER,
 )
 
+# Borgström 1985: with no bile in the intestine, 60–70% of a normal fat load
+# is still absorbed. That is a range with no standard error, so the loss is
+# zero inside it and the sigma only scales how far outside counts. The fistula
+# drains the intestine; the meal is fat alone so the share is the whole finding.
+_FISTULA_MIN = 60
+_FISTULA_NAME = "borgstrom_1985_fat_without_bile"
+BORGSTROM_FAT_WITHOUT_BILE = CohortStatisticSpec(
+    name=_FISTULA_NAME,
+    source="Borgström, Barrowman and Lindström (1985) New Comprehensive Biochemistry, ch. 14",
+    description="With no bile in the intestine, 60–70% of a fat load is still absorbed",
+    arms=(
+        CohortArmSpec(
+            label="bile_fistula_fat_meal",
+            duration_min=_FISTULA_MIN,
+            start_hour=8.0,
+            meals=((0.0, 0.0, 30.0, 0.0),),
+            bile_fistula=held(1.0, _FISTULA_MIN),
+        ),
+    ),
+    marker_id="fat_absorption",
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    window=StatisticWindow(10, 40),
+    target=0.65,
+    sigma=0.05,
+    shape=TargetShape.BAND,
+    band_halfwidth=0.05,
+    n_arm=1,
+    init_mode=InitMode.NORM_CENTER,
+    sealed=sealed_at_random(_FISTULA_NAME),
+)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     CCK_FASTING,
     CCK_POSTPRANDIAL_PEAK,
@@ -178,4 +213,5 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     BILE_ACIDS_FASTING,
     BILE_ACIDS_TIME_TO_PEAK,
     BILE_ACIDS_POSTPRANDIAL_PEAK,
+    BORGSTROM_FAT_WITHOUT_BILE,
 ]

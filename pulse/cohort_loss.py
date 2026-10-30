@@ -127,7 +127,7 @@ def _exogenous_inputs(
     insulin clamp plateau and SGLT2 exposure (``None`` = absent)."""
     return tuple(
         _optional_series_tensor(f"{arm.label}.{name}", getattr(arm, name), n_steps, device)
-        for name in ("glucose_infusion", "glucose_clamp", "insulin_clamp", "sglt2")
+        for name in ("glucose_infusion", "glucose_clamp", "insulin_clamp", "sglt2", "bile_fistula")
     )
 
 
@@ -165,7 +165,7 @@ def _rollout_arm_states(
     act = _optional_series_tensor(
         f"{arm.label}.activity", arm.activity, n_steps, device, fill=ARM_DEFAULT_ACTIVITY,
     )
-    glu_inf, glu_clamp, ins_clamp, drug = _exogenous_inputs(arm, n_steps, device)
+    glu_inf, glu_clamp, ins_clamp, drug, fistula = _exogenous_inputs(arm, n_steps, device)
     # Iter 97 (review 4.9): phase-3 input dropout — with probability
     # ``input_dropout`` each series is withheld and the model runs on its learned
     # default, so "no sleep log / no activity log" is a trained condition for the
@@ -189,6 +189,7 @@ def _rollout_arm_states(
         dt=1.0, start_time_minutes=t0, meals=meals,
         sleep_wake=sw, activity=act, sglt2=drug,
         glucose_infusion=glu_inf, glucose_clamp=glu_clamp, insulin_clamp=ins_clamp,
+        bile_fistula=fistula,
         gut_outputs=gut, observe=observe,
     )
 
@@ -226,7 +227,7 @@ def rollout_arms(
     device = arm_rows[0][2].device
     T = max(int(arm.duration_min) for arm, _, _ in arm_rows)
     embs, states, starts, horizons, meals, sws, acts, guts, duos = [], [], [], [], [], [], [], [], []
-    infusions, clamps, ins_clamps, drugs = [], [], [], []
+    infusions, clamps, ins_clamps, drugs, fistulas = [], [], [], [], []
     nan = torch.full((T,), float("nan"), dtype=torch.float32, device=device)
 
     def padded(series: torch.Tensor | None, fill: float) -> torch.Tensor:
@@ -251,7 +252,7 @@ def rollout_arms(
                 sw = None
             if rng.random() < input_dropout:
                 act = None
-        glu_inf, glu_clamp, ins_clamp, drug = _exogenous_inputs(arm, dur, device)
+        glu_inf, glu_clamp, ins_clamp, drug, fistula = _exogenous_inputs(arm, dur, device)
         embs.append(emb_i)
         states.append(state_i)
         starts.append(torch.full((n_i,), float(arm.start_hour * 60.0), dtype=torch.float64, device=device))
@@ -263,6 +264,7 @@ def rollout_arms(
         clamps.append(_padded_zero(glu_clamp, T, device).expand(n_i, T))
         ins_clamps.append(_padded_zero(ins_clamp, T, device).expand(n_i, T))
         drugs.append(_padded_zero(drug, T, device).expand(n_i, T))
+        fistulas.append(_padded_zero(fistula, T, device).expand(n_i, T))
         guts.append(precompute_gut_outputs(model, emb_i, T, dt=1.0, meals=arm_meals))
         duos.append(precompute_duodenal_outputs(model, T, meals=arm_meals).expand(n_i, T, -1))
 
@@ -277,6 +279,7 @@ def rollout_arms(
         glucose_infusion=torch.cat(infusions) if any_arm("glucose_infusion") else None,
         glucose_clamp=torch.cat(clamps) if any_arm("glucose_clamp") else None,
         insulin_clamp=torch.cat(ins_clamps) if any_arm("insulin_clamp") else None,
+        bile_fistula=torch.cat(fistulas) if any_arm("bile_fistula") else None,
         gut_outputs=torch.cat(guts), duodenal_outputs=torch.cat(duos),
         member_steps=torch.cat(horizons), observe=observe,
     )
@@ -337,6 +340,20 @@ def _arm_statistic_batched(
         idx = torch.arange(n, device=series.device, dtype=series.dtype)
         return (weights * idx).sum(dim=1)
     raise ValueError(f"Unknown statistic kind: {kind}")
+
+
+def _excess_area(
+    traj: torch.Tensor, marker_idx: int, window: StatisticWindow, baseline: StatisticWindow,
+) -> torch.Tensor:
+    """Per-person area of the marker above its own baseline mean: ``[B]``.
+
+    The area is in marker-units times minutes. A ratio of two such areas is
+    the ratio of the baseline-subtracted integrals, and it does not depend on
+    the two windows having the same length.
+    """
+    base = traj[:, baseline.start_min:baseline.end_min, marker_idx].mean(dim=1)
+    series = traj[:, window.start_min:window.end_min, marker_idx]
+    return (series - base.unsqueeze(1)).sum(dim=1)
 
 
 def _window_mean(traj: torch.Tensor, marker_idx: int, window: StatisticWindow) -> torch.Tensor:
@@ -567,6 +584,19 @@ def _score_arm_trajs(
     the Pearson r of that mean with ``spec.partner`` — another marker's
     window-mean, or the named factor read out of the person code.
     """
+    if spec.kind is StatisticKind.RATIO_INCREMENTS:
+        # The published number is one ratio of the two group areas, not the
+        # mean of each person's ratio. ``sigma`` is that number's standard
+        # error, so it is not divided by the draw size again.
+        assert spec.baseline is not None
+        n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))
+        areas = [
+            _excess_area(
+                traj, SERIES_INDEX[spec.marker_id], _arm_window(spec, i), spec.baseline,
+            )[:n]
+            for i, traj in enumerate(arm_trajs)
+        ]
+        return _scalar_z2(areas[1].mean() / areas[0].mean(), spec)
     if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
         n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))
         window = _arm_window(spec, 0)

@@ -17,14 +17,17 @@ penalizes it.
 
 from __future__ import annotations
 
+from ...types import BODY_MASS_KG
 from ..cohort_types import (
     TargetShape,
     CohortArmSpec,
     CohortStatisticSpec,
     InitMode,
+    Population,
     StatisticKind,
     StatisticWindow,
 )
+from ..sealing import sealed_at_random
 
 
 # Standard 75 g OGTT protocol — water-only run-in, glucose load at t=60min.
@@ -263,6 +266,89 @@ WAHREN_EXERCISE_GLUCOSE = CohortStatisticSpec(
 )
 
 
+# The same Table, the rest value the rise is measured from. 0.82 ± 0.10
+# mmol/min at n = 7, the SE already, so n_arm stays 1. On the 70 kg
+# reference that is 2.11 ± 0.26 mg/kg/min. The rise alone can be met by
+# moving rest and exercise together; the level is what holds the rest end.
+_WAHREN_REST_HGO = 0.82 * 180.0 / BODY_MASS_KG
+_WAHREN_REST_HGO_SE = 0.10 * 180.0 / BODY_MASS_KG
+_WAHREN_REST_NAME = "wahren_1971_resting_splanchnic_glucose"
+WAHREN_RESTING_SPLANCHNIC_GLUCOSE = CohortStatisticSpec(
+    name=_WAHREN_REST_NAME,
+    source="Wahren et al. (1971) J Clin Invest 50:2715 — splanchnic glucose output at rest",
+    description="Postabsorptive splanchnic glucose output, 0.82 ± 0.10 mmol/min, sitting before the bout",
+    arms=(WAHREN_EXERCISE_HGO.arms[0],),
+    marker_id="hepatic_output",
+    kind=StatisticKind.MEAN_IN_WINDOW,
+    window=StatisticWindow(start_min=20, end_min=_WAHREN_MIN),
+    target=_WAHREN_REST_HGO,
+    sigma=_WAHREN_REST_HGO_SE,
+    n_arm=1,
+    sealed=sealed_at_random(_WAHREN_REST_NAME),
+)
+
+
+# Landau et al., J Clin Invest 1996;98:378. Healthy subjects ate 12-14 kcal/kg
+# (48% carbohydrate, 19% protein, 33% fat) at 17:00 and then fasted. The
+# gluconeogenic share of glucose production, carbon-5 deuterium over body
+# water, was 47 ± 4% at 14 h, 67 ± 4% at 22 h and 93 ± 2% at 42 h (n = 8,
+# the abstract's standard errors). The sigmas are those standard errors, so
+# n_arm stays 1. The night is asleep; an arm without a sleep series stays awake.
+_LANDAU_HOURS = 42
+_LANDAU_DURATION_MIN = _LANDAU_HOURS * 60 + 1
+_LANDAU_KCAL = 13.0 * BODY_MASS_KG
+_LANDAU_MEAL = ((
+    0.0,
+    0.48 * _LANDAU_KCAL / 4.0,
+    0.19 * _LANDAU_KCAL / 4.0,
+    0.33 * _LANDAU_KCAL / 9.0,
+),)
+
+
+def _asleep_at_night(duration_min: int, start_hour: float) -> tuple[float, ...]:
+    """1 awake, 0 asleep 23:00-07:00, on an arm whose minute 0 is ``start_hour``."""
+    return tuple(
+        0.0 if (hour := (start_hour + minute / 60.0) % 24.0) >= 23.0 or hour < 7.0 else 1.0
+        for minute in range(duration_min)
+    )
+
+
+_LANDAU_ARM = CohortArmSpec(
+    label="landau_42h_fast",
+    duration_min=_LANDAU_DURATION_MIN,
+    start_hour=17.0,
+    meals=_LANDAU_MEAL,
+    sleep_wake=_asleep_at_night(_LANDAU_DURATION_MIN, 17.0),
+    population=Population(name="landau_1996_healthy", healthy=True),
+)
+
+
+def _landau_point(hours: int, share: float, se: float) -> CohortStatisticSpec:
+    name = f"landau_1996_gng_fraction_{hours}h"
+    return CohortStatisticSpec(
+        name=name,
+        source="Landau et al. (1996) J Clin Invest 98:378, deuterium at carbon 5",
+        description=(
+            f"After {hours} h of fasting, gluconeogenesis is {share:.0%} of "
+            "glucose production"
+        ),
+        arms=(_LANDAU_ARM,),
+        marker_id="gng_fraction",
+        kind=StatisticKind.MEAN_IN_WINDOW,
+        window=StatisticWindow(hours * 60, hours * 60 + 1),
+        target=share,
+        sigma=se,
+        n_arm=1,
+        init_mode=InitMode.COLD,
+        sealed=sealed_at_random(name),
+    )
+
+
+LANDAU_GNG_14H = _landau_point(14, 0.47, 0.04)
+LANDAU_GNG_22H = _landau_point(22, 0.67, 0.04)
+LANDAU_GNG_42H = _landau_point(42, 0.93, 0.02)
+
+
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     OGTT_GLUCOSE_PEAK,
     OGTT_GLUCOSE_LATE,
@@ -273,4 +359,8 @@ COHORT_STATISTICS: list[CohortStatisticSpec] = [
     SMALL_CARB_GLUCOSE_PEAK,
     WAHREN_EXERCISE_HGO,
     WAHREN_EXERCISE_GLUCOSE,
+    WAHREN_RESTING_SPLANCHNIC_GLUCOSE,
+    LANDAU_GNG_14H,
+    LANDAU_GNG_22H,
+    LANDAU_GNG_42H,
 ]
