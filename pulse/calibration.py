@@ -58,6 +58,7 @@ from typing import Any, Sequence
 import torch
 
 from .measurement import INTERSTITIAL_LAG_MIN, interstitial_glucose
+from .training.factors import calibration_prior_nll, project_point_mass
 from .model import ModularPhysiologyNetwork, integrate, precompute_gut_outputs
 from .modules.gut import MEAL_ACTIVE_WINDOW_MIN, MealEvent
 from .types import EMBEDDING_DIM, MARKER_INDEX, NORM_SCALE
@@ -469,6 +470,7 @@ def calibrate_embedding(
     if use_prior:
         prior_mean_t = prior_mean.detach().float()
         prior_std_t = prior_std.detach().float()
+        project_point_mass(e0, prior_mean_t, prior_std_t)
 
     obs = _valid_observations(list(observations), duration_min)
     soft = _valid_soft(list(soft_evidence), duration_min)
@@ -527,7 +529,7 @@ def calibrate_embedding(
 
     def regularizers(e: torch.Tensor, dev: torch.Tensor, amps: torch.Tensor) -> torch.Tensor:
         if use_prior:
-            reg = st.prior_weight * ((e - prior_mean_t) / (prior_std_t + 1e-6)).pow(2).mean()
+            reg = calibration_prior_nll(e, prior_mean_t, prior_std_t, st.prior_weight)
         else:
             reg = st.l2_weight * (e - e0).pow(2).mean()
         if st.soft_norm_weight > 0.0:
@@ -630,6 +632,8 @@ def calibrate_embedding(
                     emb.mul_(st.max_norm / norm)
             delta.clamp_(-_STATE_DEVIATION_MAX, _STATE_DEVIATION_MAX)
             amplitudes.clamp_(-_DISTURBANCE_AMPLITUDE_MAX, _DISTURBANCE_AMPLITUDE_MAX)
+            if use_prior:
+                project_point_mass(emb, prior_mean_t, prior_std_t)
 
     if n_val == 0:
         # Legacy / MAP mode: no hold-out, the final embedding is the answer.

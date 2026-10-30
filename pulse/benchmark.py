@@ -38,6 +38,7 @@ from .calibration import (
 from .knowledge.evidence import REAL_EVIDENCE
 from .modules.gut import MealEvent
 from .model import ModularPhysiologyNetwork, integrate, population_prior_embedding
+from .training.factors import calibration_prior_nll
 from .types import EMBEDDING_DIM, MARKER_IDS, MARKER_INDEX, NORM_CENTER, NORM_SCALE, STATE_DIM
 from .verifier import evaluate_weak_checks
 
@@ -530,9 +531,7 @@ def _calibration_loss(
         # Diagonal Gaussian prior matched to the trained-table per-dim
         # std. `mean()` keeps dim-invariance and gives a per-dim scale
         # for the prior_weight hyperparameter regardless of EMBEDDING_DIM.
-        prior_term = prior_weight * (
-            ((embedding - prior_mean) / (prior_std + 1e-6)).pow(2).mean()
-        )
+        prior_term = calibration_prior_nll(embedding, prior_mean, prior_std, prior_weight)
     else:
         prior_term = l2_weight * embedding.pow(2).mean()
     loss = total_loss / n_obs + prior_term

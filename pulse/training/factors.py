@@ -61,6 +61,29 @@ def reference_prior_stats() -> tuple[list[float], list[float]]:
     return mean, std
 
 
+def calibration_prior_nll(
+    code: torch.Tensor, mean: torch.Tensor, std: torch.Tensor, weight: float,
+) -> torch.Tensor:
+    """Gaussian energy of the coordinates a person is actually drawn on.
+
+    A width of 0 is a point mass. Those coordinates are not in the energy —
+    dividing by the width made one stray step infinite — and the mean runs
+    over the free coordinates, so the unnamed ones do not dilute the factors.
+    ``project_point_mass`` is what keeps the point mass at its point.
+    """
+    free = std > 0
+    if not bool(free.any()):
+        return code.new_zeros(())
+    z = (code[..., free] - mean[..., free]) / std[..., free]
+    return weight * z.pow(2).mean()
+
+
+def project_point_mass(code: torch.Tensor, mean: torch.Tensor, std: torch.Tensor) -> None:
+    """Put every point-mass coordinate back on its point. In-place."""
+    fixed = std <= 0
+    code[..., fixed] = mean[..., fixed]
+
+
 def _truncnorm(
     rng: np.random.Generator, mean: float, sigma: float, lo: float, hi: float, n: int,
 ) -> np.ndarray:
