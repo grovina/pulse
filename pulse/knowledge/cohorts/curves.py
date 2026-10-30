@@ -39,7 +39,7 @@ from .glucose_handling import WAHREN_EXERCISE_HGO
 # midnight-02:00, a pre-waking rise from ~03:00, acrophase ~16 ug/dL near
 # 08:00, then a steady decline through the day. Digitized estimates, ug/dL.
 # The arm starts at midnight with a normal night (asleep 23:00-07:00) and three
-# ordinary meals; start state is the marker typicals.
+# ordinary meals, from the student's own day so the trough is the clock's.
 _CORTISOL_DURATION_MIN = 1440
 _CORTISOL_MEALS = (
     (480.0, 60.0, 15.0, 20.0),   # 08:00 breakfast
@@ -92,7 +92,7 @@ CORTISOL_CIRCADIAN_CURVE = CohortStatisticSpec(
     window=StatisticWindow(0, _CORTISOL_DURATION_MIN),
     target=0.0,
     sigma=1.0,
-    init_mode=InitMode.NORM_CENTER,
+    init_mode=InitMode.COLD,
     curve=_CORTISOL_CURVE,
 )
 
