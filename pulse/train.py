@@ -136,7 +136,10 @@ from .training.trajectory_signal import (
     normalize_contribution_weights,
     parse_band_per_marker,
 )
-from .scoreboard import attach_individual_skill, render as render_scoreboard, scoreboard, scoreboard_path
+from .scoreboard import (
+    attach_individual_skill, render as render_scoreboard, scoreboard,
+    scoreboard_object, scoreboard_path,
+)
 from .types import EMBEDDING_DIM, MARKERS, MODULE_COUPLING_CHANNELS
 
 # Tie-break among shapes the evidence allows. Pulls on correction terms only.
@@ -1106,6 +1109,9 @@ def train(
             previous=_previous_board(init_from or resume_from),
             identifiability=scoreboard_identifiability,
         )
+        # The benchmark forks this process. Writing first means a scorer that
+        # dies there still leaves the board, which is the expensive part.
+        _write_board(board, output_path, gcs_bucket, gcs_object)
 
     exit_code = 0
     if benchmark_dataset_uri:
@@ -1162,7 +1168,7 @@ def _write_board(board: dict, output_path: str, gcs_bucket: str | None, gcs_obje
     path.write_text(json.dumps(board, indent=2))
     print(f"Scoreboard saved to {path}")
     if gcs_bucket and gcs_object:
-        _upload_to_gcs(str(path), gcs_bucket, _gcs_sibling(gcs_object, path.name))
+        _upload_to_gcs(str(path), gcs_bucket, scoreboard_object(gcs_object))
 
 
 def resume_start_epoch(checkpoint: dict) -> int:

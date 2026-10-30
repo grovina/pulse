@@ -59,6 +59,7 @@ __all__ = [
     "score_rules",
     "scoreboard",
     "scoreboard_for_checkpoint",
+    "scoreboard_object",
     "scoreboard_path",
     "target_conflicts",
 ]
@@ -305,6 +306,13 @@ def scoreboard_path(checkpoint_path: str | Path) -> Path:
     """Where a checkpoint's board lives: beside it, ``<stem>.scoreboard.json``."""
     p = Path(checkpoint_path)
     return p.with_name(f"{p.stem}.scoreboard.json")
+
+
+def scoreboard_object(checkpoint_object: str) -> str:
+    """The board's object name beside a checkpoint object, whatever the local file was called."""
+    name = scoreboard_path(checkpoint_object).name
+    parent = checkpoint_object.rsplit("/", 1)[0] if "/" in checkpoint_object else ""
+    return f"{parent}/{name}" if parent else name
 
 
 def scoreboard_for_checkpoint(

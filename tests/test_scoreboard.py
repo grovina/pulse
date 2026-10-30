@@ -20,6 +20,7 @@ from pulse.scoreboard import (
     population_members,
     render,
     scoreboard,
+    scoreboard_object,
     scoreboard_path,
     target_conflicts,
 )
@@ -160,6 +161,13 @@ def test_a_second_board_finds_breaks_against_the_first(board):
     found = breaks(board["items"], rows)
     held = abs(next(i["z"] for i in board["items"] if i["name"] == "fasting_glucose")) <= 1.0
     assert [b["name"] for b in found] == (["fasting_glucose"] if held else [])
+
+
+def test_the_board_is_named_beside_the_checkpoint():
+    assert scoreboard_object("training/jobs/iter114/model.pt") == (
+        "training/jobs/iter114/model.scoreboard.json"
+    )
+    assert scoreboard_object("model.pt") == "model.scoreboard.json"
 
 
 def test_the_board_renders_every_line(board):
