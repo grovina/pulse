@@ -181,6 +181,13 @@ class DuodenalDeliveryKernel(nn.Module):
 
 
 class HepatobiliaryModule(MassActionModule):
+    """The enterohepatic loop. Every rate is structural.
+
+    The four heads carry no parameters. Resting CCK is the typical, gallbladder
+    ejection is ``k_eject``, and synthesis is the population constant. The
+    embedding does not move them: nothing drawn identifies a person's bile.
+    """
+
     identified_by = {
         "log_cck_fat_gain": (
             "Plasma CCK while duodenal fat arrives at a steady rate. "
@@ -191,13 +198,6 @@ class HepatobiliaryModule(MassActionModule):
             "Liddle 1985's spike is the early emptying this stomach does not have"
         ),
     }
-
-    """The enterohepatic loop. Every rate is structural.
-
-    The four heads carry no parameters. Resting CCK is the typical, gallbladder
-    ejection is ``k_eject``, and synthesis is the population constant. The
-    embedding does not move them: nothing drawn identifies a person's bile.
-    """
 
     def __init__(self, embedding_dim: int, hidden_dim: int = 32):
         super().__init__(
