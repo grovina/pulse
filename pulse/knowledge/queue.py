@@ -195,6 +195,26 @@ QUEUE: tuple[QueueItem, ...] = (
         ),
     ),
     QueueItem(
+        id="liddle-1985-cck-peak-time",
+        citation="Liddle et al. (1985) J Clin Invest — CCK after a mixed liquid meal",
+        status=Status.BLOCKED,
+        surface="cohort",
+        claim=(
+            "Plasma CCK peaks near 7 pmol/L within about 10 min of a mixed "
+            "liquid meal, then falls."
+        ),
+        marker_id="cck",
+        blocked_on="m2.2",
+        note=(
+            "The stomach empties at 2.13 kcal/min for as long as the meal is "
+            "in it, so CCK rises in a few minutes and stays up. A time-to-peak "
+            "over that window is the middle of the plateau. Iter 114 scored it "
+            "at 63 min against 10. The height remains cck_postprandial_peak. "
+            "The clock of the spike waits on an early emptying this compartment "
+            "does not have."
+        ),
+    ),
+    QueueItem(
         id="fat-slows-emptying",
         citation="Cunningham & Read, Br J Nutr 1989;61:285 — fat in a meal and the glucose curve",
         status=Status.BLOCKED,

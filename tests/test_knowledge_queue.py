@@ -75,6 +75,12 @@ class TestQueue(unittest.TestCase):
         names = _registry_names()
         threshold = by_id["glycosuria-threshold"]
         urine = by_id["empagliflozin-24h-uge"]
+        cck_clock = by_id["liddle-1985-cck-peak-time"]
+        self.assertIs(cck_clock.status, Status.BLOCKED)
+        self.assertEqual(cck_clock.blocked_on, "m2.2")
+        self.assertNotIn("cck_time_to_peak", names)
+        self.assertIn("cck_postprandial_peak", names)
+
         self.assertIs(threshold.status, Status.INTEGRATED)
         self.assertEqual(threshold.spec_name, "renal_glucose_at_190")
         self.assertIs(urine.status, Status.INTEGRATED)

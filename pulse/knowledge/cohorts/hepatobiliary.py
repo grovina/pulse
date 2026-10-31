@@ -20,34 +20,19 @@ Deliberately NOT encoded:
   ``scripts/iter95_biliary_validate.py``.
 * "CCK stays elevated 3-5 h." Qualitative in the sources — the model realizes +17 % over
   basal at 3 h, which is the right direction and is not evidence of anything.
+* The minute of Liddle's CCK spike. A mixed liquid meal peaks near 7 pmol/L within
+  about 10 min and then falls. This stomach empties at Brener's 2.13 kcal/min for as
+  long as the meal is in it, so CCK rises in a few minutes and stays up. The soft-argmax
+  of that plateau is the middle of the window. Iter 114 read 63 min against 10, about
+  +11σ, and the gradient fought the peak height. The height is ``cck_postprandial_peak``.
+  The clock waits until an early emptying exists. It is not scored by raising the calorie rate.
 * Anything about ALP/GGT/ALT/bilirubin. Those markers do not exist yet, and will not
   until there is a driver for them (see the anchors doc).
 
-SOFT-ARGMAX BETA IS NOT OPTIONAL HERE. ``StatisticKind.TIME_TO_PEAK`` estimates the peak
-minute as a softmax-weighted average of times, ``softmax(beta * value)``. The default
-beta = 0.05 in ``cohort_types`` was never exercised — these are the first cohort specs to
-use TIME_TO_PEAK — and it is far too soft for markers with a small absolute range.
-Measured on the iter-95 validation checkpoint:
-
-    marker        true argmax   range    beta=0.05   0.5    1.0    2.0    5.0   10.0
-    cck                    12    5.54         57.2  32.4   17.2   13.2   12.4   12.2
-    bile_acids             80    2.13        119.2 115.1  109.3   98.8   86.4   82.7
-
-At the default, the CCK spec reported a peak at 57 min for a trajectory that peaks at 12,
-and contributed z = 9.4 — 88.9 of the whole registry's 181 total z², i.e. HALF the cohort
-objective, spent driving the model against a broken measurement. The bile-acid spec
-"passed" while measuring something 39 minutes from its own peak.
-
-Rule of thumb: beta * (marker's postprandial range) should be >= ~20 for the softmax to
-concentrate on the peak rather than drift toward the window centroid. Hence beta = 5 for
-cck (range ~5.5) and 10 for bile_acids (range ~2.1), both verified above to land within
-~3 min of the true argmax.
-
-NOTE for whoever touches ``knowledge/physiology_rules.py``: ``hinge_argmax_in_band`` and
-``hinge_a_precedes_b`` (the ACTH->cortisol lead rule) carry the same 0.05 default over
-markers whose ranges are ~30 and ~10, so beta*range is 1.5 and 0.5. They are likely
-measuring closer to the window centroid than to the peak. NOT changed here — iterations
-have been tuned around that behaviour and the impact is unmeasured — but it should be.
+BILE-ACID TIME-TO-PEAK STILL NEEDS A SHARP SOFT-ARGMAX. ``StatisticKind.TIME_TO_PEAK``
+is a softmax-weighted average of times. Beta has to be large next to the marker's range
+or the average sits on the window centroid. On a trajectory that really peaks, beta = 10
+lands within a few minutes of the bile-acid argmax; the default 0.05 does not.
 """
 
 from __future__ import annotations
@@ -75,9 +60,9 @@ _ARM = CohortArmSpec(
 )
 
 # --- CCK ---------------------------------------------------------------------------
-# Fasting 0.8-1.2 pmol/L; peak 6.5-7.1 within ~10 min of a mixed liquid meal.
-# sigma is set from the spread of the reported means across studies, not invented:
-# fasting means cluster 0.8-1.2 (sigma 0.2), peaks 6.5-7.1 (sigma 0.4).
+# Fasting 0.8-1.2 pmol/L; the published peak of the means is 6.5-7.1. Sigma is
+# that spread across studies: fasting 0.2, peak 0.4. The minute of the spike is
+# not a target here. See the module docstring.
 CCK_FASTING = CohortStatisticSpec(
     name="cck_fasting_basal",
     source="Liddle et al. (JCI 1985); Rehfeld (J Intern Med 2025)",
@@ -111,21 +96,6 @@ CCK_POSTPRANDIAL_PEAK = CohortStatisticSpec(
     init_mode=InitMode.NORM_CENTER,
 )
 
-CCK_TIME_TO_PEAK = CohortStatisticSpec(
-    name="cck_time_to_peak",
-    source="Liddle et al. (JCI 1985)",
-    description="CCK peaks within ~10 min of a mixed meal — the FAST arm of the axis",
-    arms=(_ARM,),
-    marker_id="cck",
-    kind=StatisticKind.TIME_TO_PEAK,
-    # Window opens at the meal so the soft-argmax is measured from meal onset.
-    window=StatisticWindow(start_min=60, end_min=180),
-    target=10.0,
-    sigma=5.0,
-    softargmax_beta=5.0,   # see the beta note in the module docstring
-    init_mode=InitMode.NORM_CENTER,
-)
-
 # --- Serum bile acids ----------------------------------------------------------------
 # Fasting reference interval 4.4-14.1 umol/L, postprandial 4.7-20.2, peak 75-120 min.
 # Targets are interval midpoints; sigma covers the interval half-width, so this is a
@@ -143,10 +113,9 @@ BILE_ACIDS_FASTING = CohortStatisticSpec(
     init_mode=InitMode.NORM_CENTER,
 )
 
-# THE LOAD-BEARING ONE. The gap between the CCK peak (~10 min) and the serum bile-acid
-# peak (75-120 min) is gallbladder emptying, intestinal transit, ileal reabsorption and
-# hepatic first-pass extraction acting IN SERIES. Pinning both ends means the axis
-# cannot satisfy the literature by collapsing the middle into a single lag.
+# Serum bile acids peak 75-120 min after the meal: gallbladder emptying, intestinal
+# transit, ileal reabsorption and hepatic extraction in series. This is that late end.
+# The early CCK clock is not the other pin. See the module docstring.
 BILE_ACIDS_TIME_TO_PEAK = CohortStatisticSpec(
     name="bile_acids_time_to_peak",
     source="Fasting and postprandial serum bile acids in normal persons (Digestion 1978)",
@@ -157,7 +126,7 @@ BILE_ACIDS_TIME_TO_PEAK = CohortStatisticSpec(
     window=StatisticWindow(start_min=60, end_min=300),
     target=95.0,
     sigma=20.0,
-    softargmax_beta=10.0,  # see the beta note in the module docstring
+    softargmax_beta=10.0,  # see the beta note in the module docstring; a real peak, not a plateau
     init_mode=InitMode.NORM_CENTER,
 )
 
@@ -209,7 +178,6 @@ BORGSTROM_FAT_WITHOUT_BILE = CohortStatisticSpec(
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     CCK_FASTING,
     CCK_POSTPRANDIAL_PEAK,
-    CCK_TIME_TO_PEAK,
     BILE_ACIDS_FASTING,
     BILE_ACIDS_TIME_TO_PEAK,
     BILE_ACIDS_POSTPRANDIAL_PEAK,
