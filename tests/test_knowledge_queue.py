@@ -79,7 +79,8 @@ class TestQueue(unittest.TestCase):
         self.assertIs(cck_clock.status, Status.BLOCKED)
         self.assertEqual(cck_clock.blocked_on, "m2.2")
         self.assertNotIn("cck_time_to_peak", names)
-        self.assertIn("cck_postprandial_peak", names)
+        self.assertNotIn("cck_postprandial_peak", names)
+        self.assertIn("cck_fasting_basal", names)
 
         self.assertIs(threshold.status, Status.INTEGRATED)
         self.assertEqual(threshold.spec_name, "renal_glucose_at_190")

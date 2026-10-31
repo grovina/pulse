@@ -207,11 +207,12 @@ QUEUE: tuple[QueueItem, ...] = (
         blocked_on="m2.2",
         note=(
             "The stomach empties at 2.13 kcal/min for as long as the meal is "
-            "in it, so CCK rises in a few minutes and stays up. A time-to-peak "
-            "over that window is the middle of the plateau. Iter 114 scored it "
-            "at 63 min against 10. The height remains cck_postprandial_peak. "
-            "The clock of the spike waits on an early emptying this compartment "
-            "does not have."
+            "in it, so CCK rises in a few minutes and stays at the level that "
+            "delivery supports. Iter 114 read the middle of that plateau, "
+            "63 min against 10, and the highest value in the window against "
+            "6.8. Both were the spike. Fasting remains cck_fasting_basal. "
+            "The level at 30 min is about 3.5 with no standard error. The "
+            "spike waits on an early emptying this compartment does not have."
         ),
     ),
     QueueItem(

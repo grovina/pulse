@@ -181,6 +181,17 @@ class DuodenalDeliveryKernel(nn.Module):
 
 
 class HepatobiliaryModule(MassActionModule):
+    identified_by = {
+        "log_cck_fat_gain": (
+            "Plasma CCK while duodenal fat arrives at a steady rate. "
+            "Liddle 1985's spike is the early emptying this stomach does not have"
+        ),
+        "log_cck_prot_gain": (
+            "Plasma CCK while duodenal protein arrives at a steady rate. "
+            "Liddle 1985's spike is the early emptying this stomach does not have"
+        ),
+    }
+
     """The enterohepatic loop. Every rate is structural.
 
     The four heads carry no parameters. Resting CCK is the typical, gallbladder

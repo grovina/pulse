@@ -182,7 +182,7 @@ class TestCohortReencodings(unittest.TestCase):
     def test_sem_sigmas_are_pinned(self):
         from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
         pinned = {s.name for s in ALL_COHORT_STATISTICS if s.n_arm == 1}
-        for name in ("cck_fasting_basal", "cck_postprandial_peak", "postprandial_hr_rise",
+        for name in ("cck_fasting_basal", "postprandial_hr_rise",
                      "leptin_fed_vs_fasted", "extended_fast_liver_glycogen_overnight",
                      "fasting_breakfast_glucose_morning", "donga_2010_basal_glucose"):
             self.assertIn(name, pinned)

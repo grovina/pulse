@@ -20,12 +20,14 @@ Deliberately NOT encoded:
   ``scripts/iter95_biliary_validate.py``.
 * "CCK stays elevated 3-5 h." Qualitative in the sources — the model realizes +17 % over
   basal at 3 h, which is the right direction and is not evidence of anything.
-* The minute of Liddle's CCK spike. A mixed liquid meal peaks near 7 pmol/L within
-  about 10 min and then falls. This stomach empties at Brener's 2.13 kcal/min for as
-  long as the meal is in it, so CCK rises in a few minutes and stays up. The soft-argmax
-  of that plateau is the middle of the window. Iter 114 read 63 min against 10, about
-  +11σ, and the gradient fought the peak height. The height is ``cck_postprandial_peak``.
-  The clock waits until an early emptying exists. It is not scored by raising the calorie rate.
+* Liddle's CCK spike, both its minute and its height. A mixed liquid meal peaks near
+  7 pmol/L within about 10 min and then falls. This stomach empties at Brener's
+  2.13 kcal/min for as long as the meal is in it, so CCK rises in a few minutes and
+  stays at whatever level that delivery supports. The soft-argmax of that plateau is
+  the middle of the window (iter 114 read 63 min against 10). The highest value in
+  the same window is the plateau itself, and scoring it at 6.8 would hold that level
+  for the whole emptying. The level at 30 min is written as about 3.5, with no
+  standard error. Fasting CCK remains. The spike waits on an early emptying.
 * Anything about ALP/GGT/ALT/bilirubin. Those markers do not exist yet, and will not
   until there is a driver for them (see the anchors doc).
 
@@ -60,9 +62,8 @@ _ARM = CohortArmSpec(
 )
 
 # --- CCK ---------------------------------------------------------------------------
-# Fasting 0.8-1.2 pmol/L; the published peak of the means is 6.5-7.1. Sigma is
-# that spread across studies: fasting 0.2, peak 0.4. The minute of the spike is
-# not a target here. See the module docstring.
+# Fasting means cluster 0.8-1.2 pmol/L, so the target is 1.0 and sigma is 0.2.
+# The postprandial spike is not a target. See the module docstring.
 CCK_FASTING = CohortStatisticSpec(
     name="cck_fasting_basal",
     source="Liddle et al. (JCI 1985); Rehfeld (J Intern Med 2025)",
@@ -75,23 +76,6 @@ CCK_FASTING = CohortStatisticSpec(
     sigma=0.2,
     # Liddle 1985 reports fasting CCK as mean +/- SEM over ~10 subjects; the
     # individual sd (~0.5) is 2-3x this -- pin n_arm = 1 (review 4.12).
-    n_arm=1,
-    init_mode=InitMode.NORM_CENTER,
-)
-
-CCK_POSTPRANDIAL_PEAK = CohortStatisticSpec(
-    name="cck_postprandial_peak",
-    source="Liddle et al. (JCI 1985); Rehfeld (J Intern Med 2025)",
-    description="Peak plasma CCK after a mixed meal",
-    arms=(_ARM,),
-    marker_id="cck",
-    kind=StatisticKind.PEAK_VALUE,
-    window=StatisticWindow(start_min=60, end_min=180),
-    target=6.8,
-    sigma=0.4,
-    # Liddle 1985 peak 6.5-7.1 is a range of study MEANS (+/- SEM); the individual
-    # sd of a CCK peak is ~2 pmol/L -- pin n_arm = 1 (review 4.12: "6.8 +/- 0.4 per
-    # individual" was the smell).
     n_arm=1,
     init_mode=InitMode.NORM_CENTER,
 )
@@ -177,7 +161,6 @@ BORGSTROM_FAT_WITHOUT_BILE = CohortStatisticSpec(
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     CCK_FASTING,
-    CCK_POSTPRANDIAL_PEAK,
     BILE_ACIDS_FASTING,
     BILE_ACIDS_TIME_TO_PEAK,
     BILE_ACIDS_POSTPRANDIAL_PEAK,
