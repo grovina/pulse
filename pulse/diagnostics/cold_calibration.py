@@ -108,7 +108,17 @@ def _extract_statistic(
 
 
 def _runs_an_input(arm: CohortArmSpec) -> bool:
-    return any(is_on(s) for s in (arm.glucose_infusion, arm.glucose_clamp, arm.insulin_clamp, arm.sglt2))
+    return any(is_on(s) for s in (
+        arm.glucose_infusion, arm.glucose_clamp, arm.insulin_clamp, arm.sglt2, arm.bile_fistula,
+    ))
+
+
+def _excess_area(
+    traj: np.ndarray, marker_idx: int, window: StatisticWindow, baseline: StatisticWindow,
+) -> float:
+    base = float(traj[baseline.start_min:baseline.end_min, marker_idx].mean())
+    series = traj[window.start_min:window.end_min, marker_idx]
+    return float((series - base).sum())
 
 
 def _run_arm(
@@ -141,6 +151,8 @@ def cold_calibration(
     for i, spec in enumerate(spec_iter):
         if spec.marker_id not in MARKER_INDEX:
             continue  # an observable: the cold model integrates states only
+        if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
+            continue  # a spread is across people; one cold trajectory has none
         if any(_runs_an_input(arm) for arm in spec.arms):
             continue  # the cold model takes meals only, not a drug or an IV line
         marker_idx = MARKER_INDEX[spec.marker_id]
@@ -148,7 +160,11 @@ def cold_calibration(
         for arm_idx, arm in enumerate(spec.arms):
             traj = _run_arm(arm, p, seed=seed + i * 100 + arm_idx)
             win = _arm_window(spec, arm_idx)
-            per_arm.append(_extract_statistic(traj, marker_idx, win, spec.kind))
+            if spec.kind is StatisticKind.RATIO_INCREMENTS:
+                assert spec.baseline is not None
+                per_arm.append(_excess_area(traj, marker_idx, win, spec.baseline))
+            else:
+                per_arm.append(_extract_statistic(traj, marker_idx, win, spec.kind))
         pred = combine_arms(spec.kind, per_arm)
         z = (pred - float(spec.target)) / float(spec.sigma)
         rows.append(ColdCalibrationRow(

@@ -261,7 +261,7 @@ def _fasted_reference(m: ModularPhysiologyNetwork, gb: float):
     coupling = torch.zeros(1, M._N_COUPLING)
     # activity, sleep_wake, sglt2, glucose_infusion, glucose_clamp — no drug, no IV
     # glucose and no clamp, so the only glucose flux is the EGP/uptake balance.
-    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
+    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
     tf = compute_time_features(torch.tensor([600.0]))
     return state, coupling, external, emb, tf
 

@@ -84,8 +84,8 @@ class TestEmpagliflozin(unittest.TestCase):
         emb = torch.zeros(1, EMBEDDING_DIM)
         tf = compute_time_features(torch.tensor([8.0 * 60.0]))
         with torch.no_grad():
-            off = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]]), emb, tf)
-            on = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 1.0, 0.0, 0.0, 0.0]]), emb, tf)
+            off = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]]), emb, tf)
+            on = met.fluxes(state, coupling, torch.tensor([[0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]]), emb, tf)
             mg = float(met.constants(emb)["mg_dl_per_g"])
         self.assertEqual(float(off["urinary"]), 0.0)
         self.assertAlmostEqual(float(on["urinary"]), urinary_rate(84.0, mg, 1.0), places=5)

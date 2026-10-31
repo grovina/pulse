@@ -41,7 +41,7 @@ from typing import Any, Callable, Sequence
 import torch
 
 from ..cohort_loss import (
-    _arm_statistic_batched, _arm_window, _rollout_arm_batched, shaped_residual,
+    _arm_statistic_batched, _arm_window, _excess_area, _rollout_arm_batched, shaped_residual,
 )
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
@@ -127,13 +127,24 @@ def _cohort_residual(
     residual after the spec's shape (detached)."""
     series = SERIES_INDEX[spec.marker_id]
     observe = is_observable(spec.marker_id)
-    per_arm: list[torch.Tensor] = []
-    for arm_idx, arm in enumerate(spec.arms):
-        traj = _rollout_arm_batched(model, embedding, arm, initial_state, observe=observe)
-        per_arm.append(_arm_statistic_batched(
-            traj, series, _arm_window(spec, arm_idx), spec.kind, spec.softargmax_beta,
-        ))
-    pred = combine_arms(spec.kind, per_arm)
+    if spec.kind is StatisticKind.RATIO_INCREMENTS:
+        # One person: the ratio of the two areas is the ratio of the means.
+        assert spec.baseline is not None
+        areas = []
+        for arm_idx, arm in enumerate(spec.arms):
+            traj = _rollout_arm_batched(model, embedding, arm, initial_state, observe=observe)
+            areas.append(_excess_area(
+                traj, series, _arm_window(spec, arm_idx), spec.baseline,
+            ))
+        pred = combine_arms(spec.kind, areas)
+    else:
+        per_arm: list[torch.Tensor] = []
+        for arm_idx, arm in enumerate(spec.arms):
+            traj = _rollout_arm_batched(model, embedding, arm, initial_state, observe=observe)
+            per_arm.append(_arm_statistic_batched(
+                traj, series, _arm_window(spec, arm_idx), spec.kind, spec.softargmax_beta,
+            ))
+        pred = combine_arms(spec.kind, per_arm)
     raw = ((pred[0] - float(spec.target)) / float(spec.sigma)).reshape(1)
     shaped = (shaped_residual(pred[0].detach(), spec) / float(spec.sigma)).reshape(1)
     return raw, shaped

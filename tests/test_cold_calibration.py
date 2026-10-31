@@ -5,15 +5,26 @@ from __future__ import annotations
 import unittest
 
 from pulse.diagnostics import cold_calibration
-from pulse.diagnostics.cold_calibration import render
+from pulse.diagnostics.cold_calibration import _runs_an_input, render
 from pulse.knowledge import ALL_COHORT_STATISTICS
+from pulse.knowledge.cohort_types import StatisticKind
+from pulse.types import MARKER_INDEX
+
+
+def _the_cold_model_can_score(spec) -> bool:
+    if spec.marker_id not in MARKER_INDEX:
+        return False
+    if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
+        return False
+    return not any(_runs_an_input(arm) for arm in spec.arms)
 
 
 class TestColdCalibration(unittest.TestCase):
     def test_one_row_per_spec(self) -> None:
         report = cold_calibration()
-        self.assertEqual(report.n_specs, len(ALL_COHORT_STATISTICS))
-        self.assertEqual(len(report.rows), len(ALL_COHORT_STATISTICS))
+        expected = {s.name for s in ALL_COHORT_STATISTICS if _the_cold_model_can_score(s)}
+        self.assertEqual({r.name for r in report.rows}, expected)
+        self.assertEqual(report.n_specs, len(report.rows))
 
     def test_finite_predictions(self) -> None:
         for r in cold_calibration().rows:
@@ -32,9 +43,10 @@ class TestColdCalibration(unittest.TestCase):
         self.assertEqual({r.name for r in report.rows}, {s.name for s in subset})
 
     def test_render_is_nonempty_table(self) -> None:
-        text = render(cold_calibration())
+        report = cold_calibration()
+        text = render(report)
         self.assertIn("cold-calibration:", text)
-        self.assertGreater(len(text.splitlines()), len(ALL_COHORT_STATISTICS))
+        self.assertGreater(len(text.splitlines()), report.n_specs)
 
 
 if __name__ == "__main__":

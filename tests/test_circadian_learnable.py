@@ -98,7 +98,7 @@ def _metabolic_inputs(m: ModularPhysiologyNetwork, debt_h: float):
     state[0, M._INSULIN_IDX] = 3.0  # supra-basal insulin, the clamp condition
     coupling = torch.zeros(1, M._N_COUPLING)
     coupling[0, M._DEBT_COUPLING_IDX] = (debt_h - M._DEBT_CENTER) / M._DEBT_SCALE
-    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])  # awake, no drug/infusion/clamps
+    external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])  # awake, no drug, infusion, clamp, or fistula
     tf = compute_time_features(torch.tensor([600.0]))
     return state, coupling, external, emb, tf
 
@@ -112,15 +112,14 @@ class TestLearnableDebtGains(unittest.TestCase):
             self.assertAlmostEqual(float(named[name].detach().exp()) / constant, 1.0, delta=1e-6)
 
     def test_the_model_param_count_is_the_network_plus_the_published_numbers(self) -> None:
-        # One phase rate in circadian and three gains in metabolic over the network's
-        # 37235, then one scalar for every number a hub publishes.
+        # The network, then one scalar for every number a hub publishes.
         model = ModularPhysiologyNetwork()
         published = sum(
             p.numel() for mod in model.modules() if isinstance(mod, PublishedNumbers)
             for p in mod.parameters()
         )
         self.assertEqual(published, 43)
-        self.assertEqual(sum(p.numel() for p in model.parameters()), 37239 + published)
+        self.assertEqual(sum(p.numel() for p in model.parameters()), 37244 + published)
 
     def test_gradient_reaches_every_gain_under_sleep_debt(self) -> None:
         m = ModularPhysiologyNetwork()

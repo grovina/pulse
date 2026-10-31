@@ -108,7 +108,9 @@ class TestCarbonBudget(unittest.TestCase):
                 duo[:, 1:2],
                 ns[:, MI["intestinal_bile"]:MI["intestinal_bile"] + 1],
             ], -1)
-            external = torch.stack([act, sw] + [torch.zeros_like(act)] * 4, -1)
+            external = torch.stack(
+                [act, sw] + [torch.zeros_like(act)] * (len(M._PROTOCOL_INPUTS) - 2), -1,
+            )
             e_met = m.embedding_projections["metabolic"](emb).unsqueeze(0).expand(n, -1)
             tf = compute_time_features(torch.tensor([(360 + s) % 1440.0 for s in range(n)]))
             f = met.fluxes(ns[:, _MET], coupling, external, e_met, tf)
@@ -263,7 +265,7 @@ class TestPerPatientGates(unittest.TestCase):
         state[0, M._GLUCAGON_IDX] = (gn_b - 70.0) / 20.0
         state[0, M._LIVER_GLYCOGEN_IDX] = (lgly - 100.0) / 60.0
         coupling = torch.zeros(1, M._N_COUPLING)
-        external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
+        external = torch.tensor([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
         tf = compute_time_features(torch.tensor([600.0]))
         return state, coupling, external, emb, tf
 

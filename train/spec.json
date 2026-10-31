@@ -1,9 +1,9 @@
 {
   "schemaVersion": "v1",
   "app": "pulse",
-  "iter": 114,
-  "hypothesis": "Iter 114 is the first run of the landed loop. Each step draws people from the named-factor prior, samples cohort items and one physiology rule, and sums their likelihoods. The teacher tape decays from full weight to zero across the run. Setpoint supervision, the sweeps, meal response, the embedding-table prior, and cold distillation are not in the step. Warm-start the laws from iter 113; parameters added since that checkpoint stay at their published init.",
-  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter113/model.pt. The scoreboard is the acceptance record: sealed literature fit and individual-prediction skill do not fall, and the open-direction count is reported. Teacher-tape loss is logged and is not acceptance.",
+  "iter": 115,
+  "hypothesis": "Iter 115 is the iter 114 loop trained on the corpus this stomach can express. Liddle's CCK spike is not a target: emptying at 2.13 kcal/min holds a plateau, and iter 114 spent the loss on that spike's minute against its height. The corpus adds Landau's gluconeogenesis shares, Wahren's resting splanchnic output, Borgström's fat absorption without bile, Vollmer's GIP increment ratio, and Cryer's fasting glucose, its spread, and baseline epinephrine. The f_gng prior is gone. The cortisol day starts from the student's own spin-up. Warm-start the laws from iter 113, the checkpoint whose sealed fit held; parameters added since stay at their published init.",
+  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter113/model.pt. The scoreboard is the acceptance record: sealed literature fit and individual-prediction skill do not fall relative to iter 113, and the open-direction count is reported. Teacher-tape loss is logged and is not acceptance.",
   "sourceRef": "HEAD",
   "params": {
     "trainArgs": [

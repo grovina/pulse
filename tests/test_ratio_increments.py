@@ -41,6 +41,23 @@ def test_each_arm_subtracts_its_own_baseline() -> None:
     assert float(loss.detach()) < 1e-6
 
 
+def test_the_board_scores_the_ratio_as_one_residual() -> None:
+    from pulse.diagnostics.identifiability import _cohort_residual
+    from pulse.model import ModularPhysiologyNetwork
+    from pulse.types import NORM_CENTER
+
+    torch.manual_seed(0)
+    model = ModularPhysiologyNetwork()
+    emb = torch.zeros(1, EMBEDDING_DIM, requires_grad=True)
+    raw, _shaped = _cohort_residual(
+        model, VOLLMER_2008_GIP, emb, torch.tensor(NORM_CENTER),
+    )
+    assert torch.isfinite(raw).all()
+    raw.sum().backward()
+    fat = model.appetite.gip_kinetics.log_gip_fat_weight
+    assert fat.grad is not None and float(fat.grad) != 0.0
+
+
 def test_the_breakfast_reaches_the_fat_weight() -> None:
     from pulse.cohort_loss import cohort_statistic_loss_one_spec
     from pulse.model import ModularPhysiologyNetwork
