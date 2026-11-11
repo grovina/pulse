@@ -1,0 +1,242 @@
+{
+  "paper": "mcdougal-2018",
+  "citation": {
+    "authors": "McDougal DH, Darpolor MM, DuVall MA, et al.",
+    "title": "Glial acetate metabolism is increased following a 72-h fast in metabolically healthy men and correlates with susceptibility to hypoglycemia",
+    "journal": "Acta Diabetologica",
+    "year": 2018,
+    "doi": "10.1007/s00592-018-1180-5",
+    "pmid": "29931424",
+    "pmcid": "PMC6153507"
+  },
+  "population": {
+    "n": 6,
+    "sex": "male",
+    "age_years": {
+      "mean": 28.7,
+      "sd": 2.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.5,
+      "sd": 2.7,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Six metabolically healthy men (3 Black, 3 White), enrolled at age 18-40 y and BMI 20.0-27.9 (enrolment criteria, not observed ranges). Table 1 gives age 28.7 +/- 1.0 and BMI 23.5 +/- 1.1 as mean +/- SE; the sds here are SE x sqrt(6)."
+  },
+  "protocols": [
+    {
+      "name": "day0_12h_fast",
+      "description": "Day 0 morning blood draw after a 12-h fast",
+      "duration_min": 60,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12.0
+    },
+    {
+      "name": "fast_72h",
+      "description": "Sample at 72 h of a water-only fast (last food at the start of the fast); modelled as 72 h already fasted, since the meal before the fast is not reported",
+      "duration_min": 60,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 72.0
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_12h",
+      "description": "glucose after 12-h fast (mean, SE)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day0_12h_fast"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 85.1,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.8,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose, mg/dL'",
+        "quote": "Glucose, mg/dL | 85.1 ± 2.8"
+      }
+    },
+    {
+      "id": "glucose_72h",
+      "description": "glucose after 72-h fast (mean, SE)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_72h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 71,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose, mg/dL'",
+        "quote": "Glucose, mg/dL | 71 ± 2.0"
+      }
+    },
+    {
+      "id": "ffa_12h",
+      "description": "ffa after 12-h fast (mean, SE)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day0_12h_fast"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 0.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Free fatty acid, mmol/L'",
+        "quote": "Free fatty acid, mmol/L | 0.6 ± 0.1"
+      }
+    },
+    {
+      "id": "ffa_72h",
+      "description": "ffa after 72-h fast (mean, SE)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_72h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 1.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Free fatty acid, mmol/L'",
+        "quote": "Free fatty acid, mmol/L | 1.1 ± 0.2"
+      }
+    },
+    {
+      "id": "bhb_72h",
+      "description": "bhb after 72-h fast (mean, SE)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_72h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 2.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Serum β-hydroxybutyrate, mmol/L'",
+        "quote": "Serum β-hydroxybutyrate, mmol/L | 2.3 ± 0.5"
+      }
+    },
+    {
+      "id": "glucagon_12h",
+      "description": "glucagon after 12-h fast (mean, SE)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day0_12h_fast"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 56,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.2,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon, pg/mL'",
+        "quote": "Glucagon, pg/mL | 56 ± 5.2"
+      }
+    },
+    {
+      "id": "glucagon_72h",
+      "description": "glucagon after 72-h fast (mean, SE)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_72h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 88,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon, pg/mL'",
+        "quote": "Glucagon, pg/mL | 88 ± 7.0"
+      }
+    },
+    {
+      "id": "insulin_12h",
+      "description": "insulin after 12-h fast (mean, SE). The assay's detection limit is 2.0 µU/mL; the paper does not say whether any day-0 value was below it",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day0_12h_fast"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 3.1,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin, µU/mL'",
+        "quote": "Insulin, µU/mL | 3.1 ± 1.0"
+      }
+    }
+  ]
+}
