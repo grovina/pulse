@@ -4,8 +4,10 @@ The scoreboard (PLAN section 4): the continuous board every checkpoint is scored
 There is no gate. A run that regresses on one line tells us something; it is not
 rejected. Three lines:
 
-* **Fit to held-out literature** — scored the way training scores an item,
-  reported as the median miss in units of each item's own sigma and the shares
+* **Fit to held-out literature** — scored the way training scores an item
+  (people drawn from each arm's own population, each started from their own fed
+  day and pre-fast; ``score_cohorts``), reported as the median miss in units of
+  each item's own sigma and the shares
   within one and two sigma, overall and by protocol family. Two held-out lines
   are kept apart: ``sealed`` is the items of sealed *papers*, which no part of
   the model has seen; ``held_out_items`` is the items held out from papers that
@@ -43,24 +45,27 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .cohort_loss import cohort_statistic_loss_group
+from .cohort_loss import _score_arm_trajs, rollout_arms
 from .diagnostics.identifiability import (
     InitialState, identifiability_report, training_initial_states,
 )
 from .knowledge.cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
-from .knowledge.cohort_types import CohortStatisticSpec, TargetShape
+from .knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode, TargetShape
 from .knowledge.evidence import OPERATOR_OF_STATISTIC, OperatorKind
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES, SEALED_PHYSIOLOGY_RULES, PhysiologyRule
 from .knowledge.protocol_family import protocol_family
 from .knowledge.sealing import HELD_OUT_ITEMS, SHARES_WITH_TRAINING, paper_is_sealed
 from .model import ModularPhysiologyNetwork
 from .physiology_rules_loss import physiology_rule_loss_one_rule
-from .types import EMBEDDING_DIM
+from .training.arm_init import student_initial_states_for_rows
+from .training.embedding_sampler import draw_people
+from .types import EMBEDDING_DIM, NORM_CENTER
 
 __all__ = [
     "ItemResidual",
     "attach_individual_skill",
     "breaks",
+    "cohort_people",
     "fit_summary",
     "population_members",
     "render",
@@ -105,7 +110,7 @@ class ItemResidual:
 def population_members(
     n_draws: int, seed: int, *, device: torch.device | str = "cpu",
 ) -> tuple[list[torch.Tensor], int]:
-    """The people a population item is scored on, laid out as training lays them.
+    """The people a rule is scored on (a cohort item's are ``cohort_people``).
 
     ``n_draws`` fresh codes from the factor prior, then the median person —
     the zero code — last. Returns the members and how many lead rows are
@@ -121,24 +126,114 @@ def population_members(
     return members, len(members) - 1
 
 
+# Rows x minutes rolled at once. A board has hundreds of arms, some of them days long;
+# rolled together they would be padded to the longest. 400,000 is about 100 MB.
+_ROW_MINUTES = 400_000
+_SPINUPS_AT_ONCE = 32
+
+
+def cohort_people(n_draws: int, seed: int, device: torch.device | str = "cpu"):
+    """``people(population)``: the ``[n, EMB]`` codes an arm of that population is scored on.
+
+    ``n_draws`` people drawn from the population's own prior, the same people for every
+    arm that names it, so the two arms of a difference are the same people. Every
+    population is drawn from the same seed: two populations differ by their priors, not
+    by the luck of the draw. With no draws it is the median person alone.
+    """
+    drawn: dict[Any, torch.Tensor] = {}
+
+    def people(population: Any) -> torch.Tensor:
+        if n_draws <= 0:
+            return torch.zeros(1, EMBEDDING_DIM, device=device)
+        if population not in drawn:
+            drawn[population] = draw_people(int(n_draws), np.random.default_rng(seed), device, population)
+        return drawn[population]
+
+    return people
+
+
+def _start_states(
+    model: nn.Module, keys: Sequence[tuple[CohortArmSpec, InitMode]], people, device: torch.device | str,
+) -> dict[tuple[CohortArmSpec, InitMode], torch.Tensor]:
+    """Where each ``(arm, init_mode)`` starts, per person. A cold arm starts from each
+    person's own fed day and pre-fast, which depends only on who they are and on the
+    arm's clock: one spin-up serves every arm of a population at one hour and fast."""
+    basal = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
+    spun: dict[tuple, torch.Tensor] = {}
+    wanted: dict[tuple, CohortArmSpec] = {}
+    for arm, init_mode in keys:
+        if init_mode is InitMode.COLD:
+            wanted.setdefault((arm.population, float(arm.prefast_hours), float(arm.start_hour)), arm)
+    todo = list(wanted.items())
+    for i in range(0, len(todo), _SPINUPS_AT_ONCE):
+        chunk = todo[i:i + _SPINUPS_AT_ONCE]
+        states = student_initial_states_for_rows(model, [(people(arm.population), arm) for _key, arm in chunk])
+        spun.update({key: state for (key, _arm), state in zip(chunk, states)})
+    out = {}
+    for arm, init_mode in keys:
+        if init_mode is InitMode.COLD:
+            out[(arm, init_mode)] = spun[(arm.population, float(arm.prefast_hours), float(arm.start_hour))]
+        else:
+            n = int(people(arm.population).shape[0])
+            out[(arm, init_mode)] = basal.unsqueeze(0).expand(n, -1).contiguous()
+    return out
+
+
 def score_cohorts(
     model: nn.Module,
     specs: Sequence[CohortStatisticSpec],
-    members: list[torch.Tensor],
-    n_population: int,
-    initial_state: InitialState,
+    n_draws: int,
+    seed: int = 0,
+    *,
+    device: torch.device | str = "cpu",
 ) -> list[ItemResidual]:
-    """Every spec on ``members``, one rollout per shared arm protocol."""
-    index = {spec.name: i for i, spec in enumerate(specs)}
+    """Every spec, on the people and from the start a training step gives it
+    (``training/evidence_step.py``): ``n_draws`` people of each arm's own population,
+    each from their own fed day and pre-fast.
+
+    Until 2026-11-11 the board scored every item on one set of people drawn from the
+    whole prior and started them all from the median person's state, so a finding
+    about women, the obese or the elderly was scored on people who were none of those.
+
+    Each distinct arm is rolled once, however many items read it, in batches of
+    similar length.
+    """
+    people = cohort_people(n_draws, seed, device)
+    n_population = max(int(n_draws), 0)
     groups: dict[tuple, list[CohortStatisticSpec]] = {}
     for spec in specs:
-        groups.setdefault(spec.arms, []).append(spec)
+        groups.setdefault((spec.arms, spec.init_mode), []).append(spec)
+    ordered = sorted(groups.items(), key=lambda g: max(int(a.duration_min) for a in g[0][0]))
+    keys = list(dict.fromkeys((arm, init_mode) for (arms, init_mode), _ in ordered for arm in arms))
     scored: dict[str, tuple[float, float]] = {}
     with torch.no_grad():
-        for group in groups.values():
-            states = [initial_state(s.init_mode, s.arms[0], index[s.name]) for s in group]
-            out = cohort_statistic_loss_group(model, members, group, states, n_population=n_population)
-            scored.update({name: (pred, z) for name, (_loss, pred, z) in out.items()})
+        starts = _start_states(model, keys, people, device)
+        batch: list[tuple[tuple, list[CohortStatisticSpec]]] = []
+
+        def roll_and_score() -> None:
+            batch_keys = list(dict.fromkeys((arm, init_mode) for (arms, init_mode), _ in batch for arm in arms))
+            trajs = dict(zip(batch_keys, rollout_arms(
+                model, [(arm, people(arm.population), starts[(arm, mode)]) for arm, mode in batch_keys],
+                observe=True,
+            )))
+            for (arms, init_mode), members in batch:
+                arm_trajs = [trajs[(arm, init_mode)] for arm in arms]
+                for spec in members:
+                    _loss, pred, z = _score_arm_trajs(spec, arm_trajs, people(arms[0].population), n_population)
+                    scored[spec.name] = (float(pred), float(z))
+            batch.clear()
+
+        rows = 0
+        for (arms, init_mode), members in ordered:
+            longest = max(int(a.duration_min) for a in arms)
+            mine = sum(int(people(a.population).shape[0]) for a in arms)
+            if batch and (rows + mine) * longest > _ROW_MINUTES:
+                roll_and_score()
+                rows = 0
+            batch.append(((arms, init_mode), members))
+            rows += mine
+        if batch:
+            roll_and_score()
     return [
         ItemResidual(
             name=spec.name, source=spec.source, paper=spec.paper,
@@ -333,12 +428,14 @@ def _score_all(
     model: nn.Module,
     specs: Sequence[CohortStatisticSpec],
     rules: Sequence[PhysiologyRule],
-    members: list[torch.Tensor],
-    n_population: int,
-    init: InitialState,
+    n_draws: int,
+    seed: int,
+    device: torch.device | str,
 ) -> list[ItemResidual]:
+    members, _n = population_members(n_draws, seed, device=device)
+    init = training_initial_states(model, device, seed)
     return [
-        *score_cohorts(model, specs, members, n_population, init),
+        *score_cohorts(model, specs, n_draws, seed, device=device),
         *score_rules(model, rules, members, init, first_index=len(specs)),
     ]
 
@@ -366,18 +463,15 @@ def scoreboard(
     was_training = model.training
     model.eval()
     init = training_initial_states(model, device, seed)
-    members, n_population = population_members(n_draws, seed, device=device)
 
     specs = [*sealed_specs, *training_specs]
     rules = [*sealed_rules, *training_rules]
-    rows = _score_all(model, specs, rules, members, n_population, init)
+    rows = _score_all(model, specs, rules, n_draws, seed, device)
 
     reference = None
     if baseline:
         start = _reference_model(model, seed).to(device).eval()
-        start_rows = _score_all(
-            start, specs, rules, members, n_population, training_initial_states(start, device, seed),
-        )
+        start_rows = _score_all(start, specs, rules, n_draws, seed, device)
         reference = {
             "literature_fit": _lines(start_rows),
             "items": [{"name": r.name, "z": r.z} for r in start_rows],
@@ -405,7 +499,7 @@ def scoreboard(
             "sealed": _fingerprint(sealed_specs, sealed_rules),
             "training": _fingerprint(training_specs, training_rules),
         },
-        "n_population": n_population,
+        "n_population": max(int(n_draws), 0),
         "literature_fit": _lines(rows),
         "held_out_items": _held_out_detail(rows),
         "baseline": reference,

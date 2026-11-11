@@ -80,7 +80,7 @@ CPU seconds):
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
 | `trainer-rgg6f` | 115 | 2026-10-31 | timed out at 72 h in epoch 49 of 58; left `last_good.pt` and no board |
-| `trainer-bgdhx` | 114 | 2026-10-28 | finished in 3 h 11 min; the last scored checkpoint |
+| `trainer-bgdhx` | 114 | 2026-10-28 | finished in 3 h 11 min; the last checkpoint with a board |
 | `trainer-kd75r` | 114 | 2026-10-28 | out of memory after 10 h |
 | `trainer-sfb64` | 114 | 2026-10-24 | timed out at 72 h |
 | `trainer-krqfh` | 114 | 2026-10-24 | out of memory after 4.6 h |
@@ -88,23 +88,48 @@ CPU seconds):
 
 ## The board
 
-Iter 114 is the last checkpoint with a board. It was scored on 2026-10-29,
-before sealing went by paper:
+The board reports sealed papers and held-out items as separate lines, each
+with its paper count and a 90% interval from resampling papers, and can score
+the untrained student beside them (`pulse/scoreboard.py`). It scores an item
+as a training step does: on people drawn from each arm's own population, each
+started from their own fed day and pre-fast.
 
-- Held out: median |z| 1.21 on 9 points, 7 of one glucose curve and 2 of one
-  oxygen-uptake curve. Training: 0.09 on 131 items. Both curves come from
-  papers that also train, and the oxygen-uptake targets equal the constants
-  the student starts from.
+Iter 114 is the last checkpoint. It was scored on this commit on 2026-11-11,
+with the untrained student on the same items and people (`python -m
+pulse.diagnostics scoreboard --no-identifiability --baseline`, 4 people per
+population, 8 minutes on 2 CPUs). |z| is the miss of the predicted mean in
+between-person standard deviations. Iter 114 trained on the Python registries
+only, so every paper read from a file is new to it, sealed or not:
+
+| Points | n | Papers | Iter 114, median \|z\| | Untrained |
+|---|---|---|---|---|
+| Registry points it trained on | 73 | 38 | 0.21 | 0.65 |
+| Sealed papers | 117 | 8 | 1.32 (90%: 1.15 to 1.68) | 1.19 (1.10 to 1.35) |
+| File papers that will train | 202 | 18 | 1.16 | 0.85 |
+| Held-out items of registry papers | 12 | 4 | 1.09 | 0.48 |
+
+- Iter 114 fits what it trained on and is no nearer than the untrained
+  student to anything else. On the 319 points from the 26 papers read into
+  files it is further than the untrained student on 186 and nearer on 131.
+- By marker, over every cohort point: it is further on glucose (1.17 against
+  0.69 on 110 points), fatty acids (1.39 against 0.43) and lactate (2.61
+  against 0.67), and nearer on heart rate (0.74 against 2.00) and cortisol
+  (0.31 against 0.55).
+- The corrected pre-fast is not the cause. From the old start states, on the
+  same 319 points, iter 114 scores 1.23 and the untrained student 1.07 (0.98
+  from the new ones).
+- Fasting GLP-1 is 52 pmol/L in iter 114 against a measured 4
+  (`zilstorff-2024`), the largest single miss.
+- The four rows are the board's items split by whether the paper is a file in
+  `corpus/findings/`; the board does not know what a checkpoint trained on.
+
+Not rescored, from the board of 2026-10-29:
+
 - People (CGMacros, 44 episodes): glucose error 28.17 mg/dL calibrated against
   28.06 for the median person. Of 36 accepted calibrations 18 left the median
   person unchanged, and 11 of the 26 that changed improved. Heart-rate skill
   is +0.14.
 - 46 of 101 scalar directions are open.
-
-The board now reports sealed papers and held-out items as separate lines,
-each with its paper count and a 90% interval from resampling papers, and can
-score the untrained student beside them (`pulse/scoreboard.py`). No
-checkpoint has been scored by it yet.
 
 ## The corpus
 

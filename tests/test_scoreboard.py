@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 import torch
 
 from pulse.knowledge.cohort_types import (
-    CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, StatisticWindow, TargetShape,
+    CohortArmSpec, CohortStatisticSpec, InitMode, Population, StatisticKind, StatisticWindow,
+    TargetShape,
 )
 from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
 from pulse.knowledge.sealing import paper_is_sealed
@@ -17,15 +19,17 @@ from pulse.scoreboard import (
     ItemResidual,
     attach_individual_skill,
     breaks,
+    cohort_people,
     fit_summary,
     population_members,
     render,
+    score_cohorts,
     scoreboard,
     scoreboard_object,
     scoreboard_path,
     target_conflicts,
 )
-from pulse.types import EMBEDDING_DIM
+from pulse.types import EMBEDDING_DIM, NORM_CENTER, STATE_DIM
 
 _ARM = CohortArmSpec(label="rest", duration_min=60, start_hour=8.0, meals=())
 _MEAL = CohortArmSpec(label="meal", duration_min=90, start_hour=8.0, meals=((0.0, 50.0, 0.0, 0.0),))
@@ -54,6 +58,81 @@ def _row(
         name=name, source="", paper=paper or name, family=family, operator="window_mean", marker_id="glucose",
         sealed=sealed, predicted=0.0, target=0.0, sigma=1.0, z=z,
     )
+
+
+_WOMEN = Population(name="women", sex="female", age=(18.0, 28.0), bmi=(18.0, 25.0), healthy=True)
+_OBESE = Population(name="obese", bmi=(32.0, 45.0))
+
+
+def test_an_arm_is_scored_on_people_of_its_own_population():
+    people = cohort_people(4, seed=0)
+    reference, women, obese = people(None), people(_WOMEN), people(_OBESE)
+    assert reference.shape == women.shape == obese.shape == (4, EMBEDDING_DIM)
+    assert not torch.equal(reference, women) and not torch.equal(women, obese)
+    assert people(_WOMEN) is women                  # the same people for every arm that names them
+    assert torch.equal(cohort_people(4, seed=0)(_OBESE), obese)
+    assert not torch.equal(cohort_people(4, seed=1)(_OBESE), obese)
+    # No draws: the median person alone, whatever the population.
+    assert torch.equal(cohort_people(0, seed=0)(_OBESE), torch.zeros(1, EMBEDDING_DIM))
+
+
+def test_the_board_gives_an_item_its_own_people_each_from_their_own_fed_day(monkeypatch):
+    import pulse.scoreboard as board_module
+
+    torch.manual_seed(0)
+    model = ModularPhysiologyNetwork()
+    women = replace(_ARM, label="women", population=_WOMEN, prefast_hours=10.0)
+    obese = replace(_ARM, label="obese", population=_OBESE, prefast_hours=10.0)
+    specs = [
+        replace(_spec("women_glucose", arm=women), init_mode=InitMode.COLD),
+        replace(_spec("women_insulin", arm=women, marker_id="insulin"), init_mode=InitMode.COLD),
+        replace(_spec("obese_glucose", arm=obese), init_mode=InitMode.COLD),
+        _spec("anyone_from_typical_values"),
+    ]
+    spun, rolled = [], []
+    real_spin, real_roll = board_module.student_initial_states_for_rows, board_module.rollout_arms
+
+    def spin(model, rows, **kw):
+        spun.extend(rows)
+        return real_spin(model, rows, **kw)
+
+    def roll(model, arm_rows, **kw):
+        rolled.extend(arm_rows)
+        return real_roll(model, arm_rows, **kw)
+
+    monkeypatch.setattr(board_module, "student_initial_states_for_rows", spin)
+    monkeypatch.setattr(board_module, "rollout_arms", roll)
+    rows = score_cohorts(model, specs, 3, seed=0)
+
+    assert [r.name for r in rows] == [s.name for s in specs]
+    people = cohort_people(3, seed=0)
+    # One spin-up per population, hour and fast, for its three people; none for the typical start.
+    assert sorted(arm.label for _codes, arm in spun) == ["obese", "women"]
+    assert all(torch.equal(codes, people(arm.population)) for codes, arm in spun)
+    # Each arm is rolled once, however many items read it, on its own people.
+    assert sorted(arm.label for arm, _codes, _state in rolled) == ["obese", "rest", "women"]
+    typical = torch.tensor(NORM_CENTER, dtype=torch.float32)
+    for arm, codes, state in rolled:
+        assert torch.equal(codes, people(arm.population)) and state.shape == (3, STATE_DIM)
+        if arm.label == "rest":
+            assert all(torch.equal(row, typical) for row in state)
+        else:  # each person starts where their own day left them
+            assert not torch.equal(state[0], state[1]) and not torch.equal(state[0], typical)
+
+
+def test_with_no_draws_an_item_is_the_median_person_from_the_typical_state():
+    from pulse.cohort_loss import cohort_statistic_loss_group
+
+    torch.manual_seed(0)
+    model = ModularPhysiologyNetwork().eval()
+    spec = _spec("fasting_glucose")
+    [row] = score_cohorts(model, [spec], 0)
+    with torch.no_grad():
+        _loss, predicted, z = cohort_statistic_loss_group(
+            model, [torch.zeros(EMBEDDING_DIM)], [spec],
+            [torch.tensor(NORM_CENTER, dtype=torch.float32)], n_population=0,
+        )[spec.name]
+    assert row.predicted == pytest.approx(predicted) and row.z == pytest.approx(z)
 
 
 def test_the_population_is_the_draws_then_the_median_person():

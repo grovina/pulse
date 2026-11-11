@@ -95,11 +95,13 @@ def studies_by_parameter(model: torch.nn.Module) -> dict[str, str]:
 def training_initial_states(
     model: torch.nn.Module, device: torch.device | str = "cpu", seed: int = 0,
 ) -> InitialState:
-    """The start rows training uses: marker typicals, or the student's own spin-up.
+    """The median person's start rows: marker typicals, or that person's own spin-up.
 
     The spin-up is the median person (the zero code), run once per
     ``(prefast_hours, start_hour)`` and reused. ``seed`` is unused: the median
-    person is not a draw.
+    person is not a draw. It serves where one person stands for all: this report,
+    and the rules on the board. A cohort item, in training and on the board, starts
+    each of its people from their own spin-up (``scoreboard.score_cohorts``).
     """
     del seed
     cache: dict[tuple[float, float], torch.Tensor] = {}
