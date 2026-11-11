@@ -397,6 +397,73 @@ def test_integrate_steps_whole_minutes_only() -> None:
         integrate(model, _states(1, 1), torch.zeros(1, EMBEDDING_DIM), 5, dt=0.5)
 
 
+# Recorded from the planned integrator before the per-minute step dropped the terms nothing
+# read and moved person- and protocol-constant terms into ``constants`` / ``drives``: a
+# 240-minute rollout of ``_live_model(21)`` with three members (two meals, none, one meal),
+# sleep, activity, an SGLT2 arm and per-member clocks. States are z-scores of the markers
+# below at the last minute; the gradient is ``|d loss / d embedding|`` per member.
+_GOLDEN_MARKERS = (
+    "glucose", "insulin", "cortisol", "hr", "temp", "gastric_carb", "intestinal_bile", "bile_acids")
+_GOLDEN_FINAL = [
+    [0.264008, 0.768351, 0.476284, 0.563051, -14.7389, 1.31717, 1.43054, 2.72093],
+    [-0.10647, -0.233391, -0.585703, -0.112075, -20.8669, 0.0, 0.553161, 1.19113],
+    [0.0491768, 0.125701, -0.830219, 0.541172, -17.9501, 0.939248, 1.37881, 2.59091],
+]
+_GOLDEN_EMBEDDING_GRAD = [625.632, 261.89, 716.891]
+_GOLDEN_OBSERVABLES_T89 = [
+    [0.0, 2.72325, 0.0, 310.035, 237.348, 0.765552, 1.48435, 0.0615583, 0.130303, 1.0],
+    [0.0, 1.8566, 0.0, 276.365, 208.278, 0.753632, 1.31951, 0.113586, 0.485541, 1.0],
+    [0.0, 1.97396, 85.7782, 303.006, 231.933, 0.765442, 1.45066, 0.0844609, 0.227545, 1.0],
+]
+
+
+def test_a_rollout_keeps_the_trajectories_and_gradients_it_always_had() -> None:
+    model = _live_model(21)
+    steps = 240
+    emb = (0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(2))).requires_grad_(True)
+    state = _states(3, 4)
+    meals = [
+        [MealEvent(time=10.0, carbs=50.0, fats=15.0, proteins=20.0),
+         MealEvent(time=150.0, carbs=30.0, fats=10.0, proteins=12.0)],
+        [],
+        [MealEvent(time=40.0, carbs=80.0, fats=25.0, proteins=10.0)],
+    ]
+    sleep = torch.ones(3, steps)
+    sleep[:, :50] = 0.0
+    activity = torch.zeros(3, steps)
+    activity[1, 90:130] = 0.5
+    sglt2 = torch.zeros(3, steps)
+    sglt2[2] = 1.0
+    kw = dict(meals=meals, sleep_wake=sleep, activity=activity, sglt2=sglt2,
+              start_time_minutes=torch.tensor([300.0, 900.0, 1300.0], dtype=torch.float64))
+    traj = integrate(model, state, emb, steps, **kw)
+    scale = torch.tensor(NORM_SCALE)
+    (traj * torch.linspace(0.5, 1.5, steps).view(1, steps, 1) / scale).sum().backward()
+
+    cols = [MARKER_INDEX[m] for m in _GOLDEN_MARKERS]
+    z = (traj[:, -1, cols].detach() - torch.tensor(NORM_CENTER)[cols]) / scale[cols]
+    torch.testing.assert_close(z, torch.tensor(_GOLDEN_FINAL), rtol=2e-4, atol=1e-5)
+    torch.testing.assert_close(
+        emb.grad.norm(dim=-1), torch.tensor(_GOLDEN_EMBEDDING_GRAD), rtol=2e-4, atol=0.0)
+
+    with torch.no_grad():
+        observed = integrate(model, state, emb.detach(), 90, **{**kw, "sleep_wake": sleep[:, :90],
+                             "activity": activity[:, :90], "sglt2": sglt2[:, :90]}, observe=True)
+        plain = integrate(model, state, emb.detach(), 90, **{**kw, "sleep_wake": sleep[:, :90],
+                          "activity": activity[:, :90], "sglt2": sglt2[:, :90]})
+    # Observing computes the study quantities; it does not change what is integrated.
+    assert torch.equal(observed[..., :STATE_DIM], plain)
+    torch.testing.assert_close(
+        observed[:, -1, STATE_DIM:], torch.tensor(_GOLDEN_OBSERVABLES_T89), rtol=2e-4, atol=1e-5)
+
+
+def test_the_checkpoint_layout_is_untouched() -> None:
+    """Moving terms into ``constants`` and ``drives`` adds no parameter or buffer."""
+    model = _live_model(21)
+    assert sum(p.numel() for p in model.parameters()) == 11079
+    assert len(model.state_dict()) == 252
+
+
 def test_member_steps_hold_a_finished_member() -> None:
     model = _live_model(2)
     emb = torch.zeros(2, EMBEDDING_DIM)

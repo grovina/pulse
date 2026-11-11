@@ -199,6 +199,32 @@ def _vo2_ml_of_t(kcal: torch.Tensor, rq: float) -> torch.Tensor:
     return kcal / (WEIR_VO2 + WEIR_VCO2 * rq) * 1000.0
 
 
+def work_gas_t(
+    mass_kg: torch.Tensor, activity: torch.Tensor, gas: Mapping[str, torch.Tensor],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """``(VO₂, VCO₂)`` in ml/min of the body's work before a meal: mass and activity only."""
+    vo2 = work_vo2_ml_t(mass_kg, activity, gas)
+    return vo2, work_rq_t(activity, gas) * vo2
+
+
+def meal_gas_t(
+    work_vo2: torch.Tensor,
+    work_vco2: torch.Tensor,
+    carb_g: torch.Tensor,
+    fat_g: torch.Tensor,
+    prot_g: torch.Tensor,
+    numbers: Mapping[str, torch.Tensor],
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """``(kcal/min, VO₂, VCO₂, RQ)`` with the heat of the fuel oxidized added to the work's gas."""
+    vo2, vco2 = work_vo2, work_vco2
+    for kcal, fuel_rq in _thermic_parts_t(carb_g, fat_g, prot_g, numbers):
+        d_vo2 = _vo2_ml_of_t(kcal, fuel_rq)
+        vo2 = vo2 + d_vo2
+        vco2 = vco2 + fuel_rq * d_vo2
+    kcal_min = (WEIR_VO2 * vo2 + WEIR_VCO2 * vco2) / 1000.0
+    return kcal_min, vo2, vco2, vco2 / vo2
+
+
 def gas_exchange_t(
     mass_kg: torch.Tensor,
     activity: torch.Tensor,
@@ -208,25 +234,33 @@ def gas_exchange_t(
     numbers: Mapping[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """``(kcal/min, VO₂ ml/min, VCO₂ ml/min, RQ)``. ``numbers`` holds ``GAS`` and ``THERMIC``."""
-    vo2 = work_vo2_ml_t(mass_kg, activity, numbers)
-    rq = work_rq_t(activity, numbers)
-    vco2 = rq * vo2
-    for kcal, fuel_rq in _thermic_parts_t(carb_g, fat_g, prot_g, numbers):
-        d_vo2 = _vo2_ml_of_t(kcal, fuel_rq)
-        vo2 = vo2 + d_vo2
-        vco2 = vco2 + fuel_rq * d_vo2
-    kcal_min = (WEIR_VO2 * vo2 + WEIR_VCO2 * vco2) / 1000.0
-    return kcal_min, vo2, vco2, vco2 / vo2
+    work_vo2, work_vco2 = work_gas_t(mass_kg, activity, numbers)
+    return meal_gas_t(work_vo2, work_vco2, carb_g, fat_g, prot_g, numbers)
+
+
+def frequency_span_t(
+    mass_kg: torch.Tensor, gas: Mapping[str, torch.Tensor],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """``(rest, span)``: the resting CO₂ output and the rise from it to the ACTIVITY_800
+    load, in ml/min. They depend on the person's mass and the gas numbers alone."""
+    rest_act = mass_kg.new_zeros(())
+    rest = work_rq_t(rest_act, gas) * work_vo2_ml_t(mass_kg, rest_act, gas)
+    anchor_act = mass_kg.new_tensor(ACTIVITY_800)
+    anchor = work_rq_t(anchor_act, gas) * work_vo2_ml_t(mass_kg, anchor_act, gas)
+    return rest, anchor - rest
+
+
+def frequency_rise_t(
+    vco2_ml: torch.Tensor, rest: torch.Tensor, span: torch.Tensor, gas: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    """Breaths/min above RR₀ from this CO₂ output, given ``frequency_span_t``."""
+    act = ACTIVITY_800 * torch.relu(vco2_ml - rest) / span
+    k = gas["rr_act_k"]
+    return gas["act_rr_gain"] * act * act / (act * act + k * k)
 
 
 def frequency_offset_t(
     vco2_ml: torch.Tensor, mass_kg: torch.Tensor, gas: Mapping[str, torch.Tensor],
 ) -> torch.Tensor:
-    rest_act = vco2_ml.new_zeros(())
-    rest = work_rq_t(rest_act, gas) * work_vo2_ml_t(mass_kg, rest_act, gas)
-    anchor_act = vco2_ml.new_tensor(ACTIVITY_800)
-    anchor = work_rq_t(anchor_act, gas) * work_vo2_ml_t(mass_kg, anchor_act, gas)
-    span = anchor - rest
-    act = ACTIVITY_800 * torch.relu(vco2_ml - rest) / span
-    k = gas["rr_act_k"]
-    return gas["act_rr_gain"] * act * act / (act * act + k * k)
+    rest, span = frequency_span_t(mass_kg, gas)
+    return frequency_rise_t(vco2_ml, rest, span, gas)

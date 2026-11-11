@@ -382,12 +382,13 @@ class PhysiologyModule(nn.Module):
         const: dict[str, torch.Tensor],
         drv: dict[str, torch.Tensor],
         raw: dict[object, torch.Tensor],
+        observe: bool = False,
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """``(rate, published)``. ``published`` holds what this step computed for
         someone else: a quantity another module reads in the same minute (the gas
         ledger's ventilatory rise, which the planned drives cannot carry because it
-        depends on intestinal bile, an ODE marker), and this module's
-        ``observables``."""
+        depends on intestinal bile, an ODE marker), and, with ``observe``, this
+        module's ``observables`` — computed only then, since nothing else reads them."""
         return self.step(state, coupling, const, drv, raw), {}
 
     def forward_published(

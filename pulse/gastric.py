@@ -33,14 +33,14 @@ def _allocate_kcal(
     """
     remaining = available
     left = budget
-    taken = torch.zeros_like(available)
+    taken = None
     for _ in range(available.shape[-1]):
         weighted = remaining if weight is None else remaining * weight
         total = weighted.sum(dim=-1, keepdim=True)
         proposal = left.unsqueeze(-1) * weighted / total.clamp(min=1e-12)
-        proposal = torch.where(total > 0, proposal, torch.zeros_like(proposal))
+        proposal = torch.where(total > 0, proposal, 0.0)
         take = torch.minimum(proposal, remaining)
-        taken = taken + take
+        taken = take if taken is None else taken + take
         remaining = remaining - take
         left = left - take.sum(dim=-1)
     return taken
@@ -62,13 +62,15 @@ def outflow_grams(
     rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
     weight = None if correction is None else correction_weights(
         correction, n=pool.shape[-1], like=pool)
-    return _leaving(pool, kcal_g, rate, weight)
+    return leaving_grams(pool, kcal_g, rate, weight)
 
 
-def _leaving(
+def leaving_grams(
     pool: torch.Tensor, kcal_g: torch.Tensor, rate: torch.Tensor, weight: torch.Tensor | None,
 ) -> torch.Tensor:
-    """``outflow_grams`` with its per-call tensors (kcal per gram, rate, weights) given."""
+    """``outflow_grams`` with its tensors given: kcal per gram, the calorie rate and the
+    weights (``correction_weights``, or ``None`` for the calorie proportion). A step that
+    runs every minute builds them once."""
     available = (pool * kcal_g).clamp(min=0)
     kcal = available.sum(-1)
     budget = torch.minimum(rate.expand_as(kcal), kcal)
@@ -98,7 +100,7 @@ def simulate(
     for t in range(steps):
         pool = pool + swallow[:, t]
         filled.append(pool)
-        left = _leaving(pool, kcal_g, rate, None)
+        left = leaving_grams(pool, kcal_g, rate, None)
         outs.append(left)
         pool = pool - left
     out = torch.stack(outs, dim=1)

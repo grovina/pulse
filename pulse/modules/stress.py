@@ -113,10 +113,12 @@ HPA_RHYTHM: dict[str, Published] = {
 }
 
 
-def _open_loop(hour: torch.Tensor, sleep_depth: torch.Tensor, c: dict[str, torch.Tensor]) -> torch.Tensor:
-    """Circadian CRH target under sleep suppression, before cortisol feedback."""
+def _open_loop(
+    hour: torch.Tensor, sleep_suppression: torch.Tensor, c: dict[str, torch.Tensor],
+) -> torch.Tensor:
+    """Circadian CRH target under sleep suppression (``1 − hpa_sleep_supp·sleep_depth``),
+    before cortisol feedback."""
     drive = _hpa_drive(hour, c)
-    sleep_suppression = 1.0 - c["hpa_sleep_supp"] * sleep_depth
     crh_target = (_CRH_B + c["crh_circ_amp"] * (2.0 * drive - 1.0)).clamp(min=20.0)
     return crh_target * sleep_suppression
 
@@ -124,28 +126,27 @@ def _open_loop(hour: torch.Tensor, sleep_depth: torch.Tensor, c: dict[str, torch
 def _hpa_drive(hour: torch.Tensor, c: dict[str, torch.Tensor]) -> torch.Tensor:
     """Asymmetric 24 h HPA drive in [0, 1] (Weitzman 1971), matching the teacher."""
     start, tau = c["hpa_rise_start_h"], c["hpa_fall_tau_h"]
-    rise = torch.remainder(c["hpa_peak_h"] - start, 24.0)
-    fall = 24.0 - rise
+    rise, e_end = c["hpa_rise_len_h"], c["hpa_fall_end"]
     since_start = torch.remainder(hour - start, 24.0)
     rising = since_start < rise
     rise_val = 0.5 * (1.0 - torch.cos(math.pi * since_start / rise))
     x = since_start - rise
-    e_end = torch.exp(-fall / tau)
-    fall_val = (torch.exp(-x / tau) - e_end) / (1.0 - e_end)
+    fall_val = (torch.exp(-x / tau) - e_end) / c["hpa_fall_span"]
     return torch.where(rising, rise_val, fall_val)
 
 
 def _sns_target(
-    act: torch.Tensor, sleep_depth: torch.Tensor, g: torch.Tensor, c: dict[str, torch.Tensor],
+    protocol_drive: torch.Tensor, g: torch.Tensor, c: dict[str, torch.Tensor],
 ) -> torch.Tensor:
-    raw = (SNS_B + SNS_ACT * act - c["sns_sleep"] * sleep_depth
-           + c["sns_hypo"] * torch.relu(c["hypo_epi"] - g))
+    """Sympathetic tone target: the protocol's ``SNS_B + SNS_ACT·act − sns_sleep·sleep_depth``
+    plus the hypoglycaemic push."""
+    raw = protocol_drive + c["sns_hypo"] * torch.relu(c["hypo_epi"] - g)
     return raw.clamp(min=0.0, max=1.0)
 
 
 def _epi_target(sns: torch.Tensor, c: dict[str, torch.Tensor]) -> torch.Tensor:
     raw = c["epi_b"] + c["epi_span"] * (sns - SNS_B) / SNS_ACT
-    return torch.maximum(raw, 0.5 * c["epi_b"])
+    return torch.maximum(raw, c["epi_floor"])
 
 
 def _hour_from_time_features(time_features: torch.Tensor) -> torch.Tensor:
@@ -200,7 +201,7 @@ class StressModule(MassActionModule):
             _CORT_LOG_MAX * torch.tanh(self.cort_baseline_net(embedding).squeeze(-1)))
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
-        return {
+        consts = {
             "cort_b": self.cort_setpoint_raw(embedding),
             "fb_amp": nn.functional.softplus(self._fb_raw),
             "k_crh": torch.exp(self.log_k_crh),
@@ -211,6 +212,13 @@ class StressModule(MassActionModule):
             **self.adrenal(),
             **self.hpa_rhythm(),
         }
+        # The asymmetric HPA drive's rise length and the end of its decline.
+        rise = torch.remainder(consts["hpa_peak_h"] - consts["hpa_rise_start_h"], 24.0)
+        e_end = torch.exp(-(24.0 - rise) / consts["hpa_fall_tau_h"])
+        consts["hpa_rise_len_h"], consts["hpa_fall_end"] = rise, e_end
+        consts["hpa_fall_span"] = 1.0 - e_end
+        consts["epi_floor"] = 0.5 * consts["epi_b"]
+        return consts
 
     def drives(
         self,
@@ -219,19 +227,21 @@ class StressModule(MassActionModule):
         time_features: torch.Tensor,
         const: dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
-        """The circadian CRH target under sleep suppression, and the activity drive."""
+        """The circadian CRH target under sleep suppression, the sleep suppression itself,
+        the activity drive and the protocol's share of sympathetic tone."""
         sw = external[..., 0]
         act = external[..., 1]
         sleep_depth = 1.0 - sw
+        sleep_suppression = 1.0 - const["hpa_sleep_supp"] * sleep_depth
         hour = _hour_from_time_features(time_features)
         return {
             # Wall-clock drive. The step reads the phase state and recomputes
             # this on hour − offset; at offset 0 the two are the same function.
-            "crh_target_open_loop": _open_loop(hour, sleep_depth, const),
+            "crh_target_open_loop": _open_loop(hour, sleep_suppression, const),
             "hour": hour,
             "act_drive": const["act_gain"] * act,
-            "activity": act,
-            "sleep_depth": sleep_depth,
+            "sleep_suppression": sleep_suppression,
+            "sns_drive": SNS_B + SNS_ACT * act - const["sns_sleep"] * sleep_depth,
         }
 
     def step(
@@ -254,14 +264,14 @@ class StressModule(MassActionModule):
 
         fb = torch.tanh(torch.log((cort.clamp(min=0.05)) / const["cort_b"]))
         fb = torch.relu(fb)
-        crh_target = _open_loop(hour, drv["sleep_depth"], const) * (1.0 - const["fb_amp"] * fb)
+        crh_target = _open_loop(hour, drv["sleep_suppression"], const) * (1.0 - const["fb_amp"] * fb)
         hypo = const["hypo_gain"] * torch.relu(const["hypo_cort"] - g)
 
-        d_crh = -const["k_crh"] * (crh - crh_target) + hypo + drv["act_drive"]
-        d_acth = -const["k_acth"] * (acth - _ACTH_PER_CRH * crh)
+        d_crh = const["k_crh"] * (crh_target - crh) + hypo + drv["act_drive"]
+        d_acth = const["k_acth"] * (_ACTH_PER_CRH * crh - acth)
         cort_target = (const["cort_per_acth"] * acth.clamp(min=0.0)).clamp(min=0.5)
-        d_cort = -const["k_cort"] * (cort - cort_target)
-        sns_target = _sns_target(drv["activity"], drv["sleep_depth"], g, const)
-        d_sns = -const["k_sns"] * (sns - sns_target)
-        d_epi = -const["k_epi"] * (epi - _epi_target(sns, const))
+        d_cort = const["k_cort"] * (cort_target - cort)
+        sns_target = _sns_target(drv["sns_drive"], g, const)
+        d_sns = const["k_sns"] * (sns_target - sns)
+        d_epi = const["k_epi"] * (_epi_target(sns, const) - epi)
         return torch.stack([d_cort, d_acth, d_crh, d_sns, d_epi], dim=-1)

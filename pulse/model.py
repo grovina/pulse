@@ -1126,13 +1126,13 @@ class _RolloutPlan:
         )
 
     def rates(self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...]) -> torch.Tensor:
-        return self._evaluate(state, step_inputs, with_decay=False)[0]
+        return self._evaluate(state, step_inputs, with_decay=False, observe=False)[0]
 
     def rates_and_decay(
         self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...],
     ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
         """``(rates, decay)`` for ``euler_step``; ``decay`` is ``None`` if no module reports one."""
-        rates, decay, _published = self._evaluate(state, step_inputs, with_decay=True)
+        rates, decay, _published = self._evaluate(state, step_inputs, with_decay=True, observe=False)
         return rates, decay
 
     def observed_step(
@@ -1140,12 +1140,12 @@ class _RolloutPlan:
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """``(next state, observables[B, OBSERVABLE_DIM])`` — the observables are this
         minute's, read from the same evaluation that produced the rates."""
-        rates, decay, published = self._evaluate(state, step_inputs, with_decay=True)
+        rates, decay, published = self._evaluate(state, step_inputs, with_decay=True, observe=True)
         obs = torch.stack([published[k].expand(state.shape[:-1]) for k in self.observables], dim=-1)
         return euler_step(state, rates, dt, decay), obs
 
     def _evaluate(
-        self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], with_decay: bool,
+        self, state: torch.Tensor, step_inputs: tuple[torch.Tensor, ...], with_decay: bool, observe: bool,
     ) -> tuple[torch.Tensor, Optional[torch.Tensor], dict[str, torch.Tensor]]:
         exo_t, gut_t, duo_t = step_inputs[:3]
         drives_t = iter(step_inputs[3:])
@@ -1166,7 +1166,7 @@ class _RolloutPlan:
             extra = _ventilatory_drive(m.name, rr_rise)
             if extra:
                 drv.update(extra)
-            rate, pubs = m.module.step_published(own, coupling, m.const, drv, raw)
+            rate, pubs = m.module.step_published(own, coupling, m.const, drv, raw, observe)
             if "rr_rise" in pubs:
                 rr_rise = pubs["rr_rise"]
             published.update(pubs)

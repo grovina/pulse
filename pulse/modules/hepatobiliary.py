@@ -259,6 +259,7 @@ class HepatobiliaryModule(MassActionModule):
             "k_basal": _K_BASAL_MIN + _K_BASAL_RANGE * torch.sigmoid(self.log_k_gb_basal),
             "k_ileal": _K_ILEAL_MIN + _K_ILEAL_RANGE * torch.sigmoid(self.log_k_ileal),
             "extraction": extraction.clamp(0.0, 0.995),
+            "unextracted": 1.0 - extraction.clamp(0.0, 0.995),
             "spill_gain": torch.exp(self.log_ba_spill_gain),
             "k_ba": torch.exp(self.log_k_ba),
             "cck_prod_scale": self.prod_scale[_CCK_IDX],
@@ -313,7 +314,7 @@ class HepatobiliaryModule(MassActionModule):
         fecal_loss = ileal_uptake - portal_return
 
         extraction = c["extraction"]
-        spillover = (1.0 - extraction) * portal_return
+        spillover = c["unextracted"] * portal_return
         extracted = extraction * portal_return
 
         spill_gain = c["spill_gain"]

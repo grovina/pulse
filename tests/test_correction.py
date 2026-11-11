@@ -89,11 +89,13 @@ class TestCorrection(unittest.TestCase):
     def test_a_nonzero_correction_changes_the_output_and_takes_gradient(self) -> None:
         mod = GastricModule(0)
         swallow = torch.tensor([30.0, 12.0, 10.0])
-        const = mod.constants(torch.zeros(1))
         with torch.no_grad():
-            base = mod.step(torch.zeros(3), torch.zeros(0), const, {"swallow": swallow}, {})
+            base = mod.step(
+                torch.zeros(3), torch.zeros(0), mod.constants(torch.zeros(1)), {"swallow": swallow}, {})
             mod.split_correction.term.copy_(torch.tensor([0.6, -0.4, 0.2]))
-        moved = mod.step(torch.zeros(3), torch.zeros(0), const, {"swallow": swallow}, {})
+        # The split is a constant of the rollout: it is read when the constants are built.
+        moved = mod.step(
+            torch.zeros(3), torch.zeros(0), mod.constants(torch.zeros(1)), {"swallow": swallow}, {})
         self.assertGreater(float((moved - base).abs().sum().detach()), 1e-3)
         kcal_g = torch.tensor(KCAL_PER_G)
         left = (swallow - moved).detach()

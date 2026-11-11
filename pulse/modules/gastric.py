@@ -8,8 +8,8 @@ import torch
 import torch.nn as nn
 
 from .base import PhysiologyModule
-from ..correction import Correction
-from ..gastric import EMPTY_KCAL_PER_MIN, outflow_grams
+from ..correction import Correction, correction_weights
+from ..gastric import EMPTY_KCAL_PER_MIN, KCAL_PER_G, leaving_grams
 from ..types import MARKER_INDEX, MODULE_MARKER_IDS, NORM_CENTER, NORM_SCALE
 
 _ORDER = ("gastric_carb", "gastric_protein", "gastric_fat")
@@ -52,7 +52,12 @@ class GastricModule(PhysiologyModule):
         return nn.functional.softplus(self.log_empty_kcal)
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
-        return {"empty_kcal": self.empty_kcal()}
+        return {
+            "empty_kcal": self.empty_kcal(),
+            "kcal_per_g": self._center.new_tensor(KCAL_PER_G),
+            "split_weight": correction_weights(
+                self.split_correction(), n=self.n_state, like=self._center),
+        }
 
     def drives(
         self,
@@ -74,5 +79,6 @@ class GastricModule(PhysiologyModule):
         grams = (self._center + self._scale * state).clamp(min=0.0)
         swallow = drv["swallow"]
         filled = grams + swallow
-        left = outflow_grams(filled, const["empty_kcal"], self.split_correction())
+        left = leaving_grams(
+            filled, const["kcal_per_g"], const["empty_kcal"], const["split_weight"])
         return swallow - left

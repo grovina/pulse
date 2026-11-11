@@ -58,9 +58,11 @@ def _clearance(exposure: float) -> tuple[float, float]:
     return rtg, gfr
 
 
-def _clearance_t(
+def clearance_t(
     exposure: torch.Tensor, kidney: Mapping[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """``(threshold mg/dL, GFR ml/min)`` at this drug exposure: the protocol's and the
+    person's alone, so a rollout computes them once."""
     e = exposure.clamp(0.0, 1.0)
     rtg = kidney["rtg"] + (kidney["empa_rtg"] - kidney["rtg"]) * e
     gfr = kidney["gfr"] + (kidney["empa_gfr"] - kidney["gfr"]) * e
@@ -80,7 +82,14 @@ def urinary_mg_per_min_t(
 ) -> torch.Tensor:
     if not isinstance(exposure, torch.Tensor):
         exposure = glucose_mg_dl.new_tensor(float(exposure))
-    rtg, gfr = _clearance_t(exposure, kidney)
+    rtg, gfr = clearance_t(exposure, kidney)
+    return excretion_mg_per_min_t(glucose_mg_dl, rtg, gfr)
+
+
+def excretion_mg_per_min_t(
+    glucose_mg_dl: torch.Tensor, rtg: torch.Tensor, gfr: torch.Tensor,
+) -> torch.Tensor:
+    """Glucose in the urine (mg/min) given the clearance ``clearance_t`` returned."""
     excess = (glucose_mg_dl - rtg).clamp(min=0.0)
     return gfr * excess / 100.0
 
@@ -93,7 +102,7 @@ def urinary_rate(glucose_mg_dl: float, mg_dl_per_g: float, exposure: float = 0.0
 def urinary_rate_t(
     glucose_mg_dl: torch.Tensor,
     mg_dl_per_g: torch.Tensor,
-    exposure: torch.Tensor | float,
-    kidney: Mapping[str, torch.Tensor],
+    rtg: torch.Tensor,
+    gfr: torch.Tensor,
 ) -> torch.Tensor:
-    return urinary_mg_per_min_t(glucose_mg_dl, exposure, kidney) * mg_dl_per_g / 1000.0
+    return excretion_mg_per_min_t(glucose_mg_dl, rtg, gfr) * mg_dl_per_g / 1000.0
