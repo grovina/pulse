@@ -568,3 +568,104 @@ def test_item_names_cannot_repeat_across_the_registry():
 def test_the_registry_uses_the_real_corpus_directory():
     from pulse.knowledge.corpus import corpus_root
     assert corpus_root() == ROOT / "corpus"
+
+
+# --- the queue: the third pile ------------------------------------------------------
+
+QUEUE = FIXTURES / "queue" / "synthetic-test-2097.json"
+
+
+def _queue() -> dict:
+    return copy.deepcopy(json.loads(QUEUE.read_text(encoding="utf-8")))
+
+
+def _queue_problems(data: dict) -> list[str]:
+    from pulse.knowledge.corpus import parse_queue_item
+
+    with pytest.raises(CorpusError) as err:
+        parse_queue_item(data)
+    return err.value.reasons
+
+
+def test_a_queue_item_parses_and_carries_no_numbers_and_no_seal():
+    from pulse.knowledge.corpus import QueueItem, read_queue_item
+
+    q = read_queue_item(QUEUE)
+    assert isinstance(q, QueueItem) and q.paper == "synthetic-test-2097"
+    assert q.identifiers() == {"doi:10.0000/synthetic.2097.001", "pmcid:PMC9999997"}
+    assert [r.form for r in q.reports] == ["table", "figure"]
+    assert not hasattr(q, "sealed") and not hasattr(q, "value")
+    for key in ("sealed", "value", "findings", "target"):
+        data = _queue()
+        data[key] = 1
+        assert any(f"unknown fields ['{key}']" in p for p in _queue_problems(data))
+
+
+@pytest.mark.parametrize("mutate, fragment", [
+    (lambda d: d.pop("licence"), "licence"),
+    (lambda d: d.pop("note"), "note"),
+    (lambda d: d.update(doi=None, pmcid=None), "at least one identifier"),
+    (lambda d: d.update(doi="nope"), "DOI"),
+    (lambda d: d.update(protocol_kinds=["OGTT", "OGTT"]), "protocol_kinds"),
+    (lambda d: d.update(protocol_kinds=["spa day"]), "protocol kind"),
+    (lambda d: d.update(population_class="sick"), "population_class"),
+    (lambda d: d.update(uncertainty="se"), "uncertainty"),
+    (lambda d: d.update(reports=[]), "reports"),
+    (lambda d: d["reports"][0].update(form="slide"), "form"),
+    (lambda d: d.update(figure_only="no"), "figure_only"),
+    (lambda d: d.update(licence_url="creativecommons"), "URL"),
+    (lambda d: d.update(paper="synthetic-test-2096"), "does not contain"),
+])
+def test_a_queue_item_is_strict(mutate, fragment):
+    data = _queue()
+    mutate(data)
+    assert any(fragment in p for p in _queue_problems(data))
+
+
+def test_a_paper_is_in_exactly_one_pile(tmp_path):
+    root = _corpus(tmp_path, {"synthetic-test-2099": _data()})
+    (root / "queue").mkdir()
+    queued = _queue()
+    queued["paper"] = "synthetic-test-2099"
+    queued["citation"] = queued["citation"].replace("2097", "2099")
+    queued["doi"], queued["pmcid"] = "10.0000/other.1", None
+    (root / "queue" / "synthetic-test-2099.json").write_text(json.dumps(queued), encoding="utf-8")
+    with pytest.raises(CorpusError, match="both a finding and a queue item.*delete its queue file"):
+        load_corpus(root)
+    (root / "queue" / "synthetic-test-2099.json").unlink()
+    (root / "queue" / "synthetic-test-2097.json").write_text(json.dumps(_queue()), encoding="utf-8")
+    assert load_corpus(root).counts == {"queue": 1, "findings": 1, "refusals": 0}
+
+
+def test_an_identifier_already_anywhere_in_the_corpus_is_refused_in_the_queue(tmp_path):
+    root = _corpus(tmp_path, {"synthetic-test-2099": _data()})
+    (root / "queue").mkdir()
+    twin = _queue()
+    twin["doi"] = _data()["citation"]["doi"]
+    (root / "queue" / "synthetic-test-2097.json").write_text(json.dumps(twin), encoding="utf-8")
+    with pytest.raises(CorpusError, match="are one paper"):
+        load_corpus(root)
+
+
+def test_the_real_queue_is_valid_and_disjoint_from_every_python_registry():
+    from pulse.knowledge.cohort_statistics import _PYTHON_AUTHORED
+    from pulse.knowledge.corpus import count_piles
+
+    corpus = load_corpus()
+    python_papers = {s.paper for s in _PYTHON_AUTHORED} | {r.paper for r in _AUTHORED_RULES}
+    assert not {q.paper for q in corpus.queue} & python_papers
+    piles = [{q.paper for q in corpus.queue}, {f.paper for f in corpus.findings}, {r.paper for r in corpus.refusals}]
+    assert sum(len(p) for p in piles) == len(set().union(*piles))
+    assert count_piles() == corpus.counts
+    for q in corpus.queue:
+        assert q.licence and q.reports and q.identifiers()
+        assert (ROOT / "corpus" / "queue" / f"{q.paper}.json").is_file()
+        # the seal follows from the slug and is not stored
+        assert "sealed" not in (ROOT / "corpus" / "queue" / f"{q.paper}.json").read_text(encoding="utf-8")
+
+
+def test_no_paper_full_text_is_committed():
+    for path in (ROOT / "corpus").rglob("*"):
+        assert path.is_dir() or path.suffix in {".json", ".md", ""} or path.name == ".gitkeep", path
+        if path.suffix == ".json":
+            assert path.stat().st_size < 20_000, path

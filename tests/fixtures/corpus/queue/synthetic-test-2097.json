@@ -1,0 +1,20 @@
+{
+  "paper": "synthetic-test-2097",
+  "citation": "Fixture D, et al. A made-up queued study. Journal of Synthetic Fixtures. 2097.",
+  "doi": "10.0000/synthetic.2097.001",
+  "pmid": null,
+  "pmcid": "PMC9999997",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g OGTT after an overnight fast; samples at 0, 30, 60, 120 min",
+  "protocol_kinds": ["OGTT"],
+  "population": "n=10 invented healthy adults",
+  "population_class": "healthy",
+  "reports": [
+    {"marker": "glucose", "where": "Table 1", "form": "table"},
+    {"marker": "adiponectin", "where": "Figure 2", "form": "figure"}
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Synthetic: exists only to test the queue parser."
+}

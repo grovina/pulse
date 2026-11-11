@@ -63,26 +63,41 @@ from .corpus_units import (
 
 __all__ = [
     "CORPUS_ENV",
+    "QUEUE_FORMS",
+    "QUEUE_PROTOCOL_KINDS",
+    "QUEUE_UNCERTAINTY",
     "REFUSAL_KINDS",
     "Corpus",
     "CorpusError",
     "Finding",
     "FindingItem",
     "Problem",
+    "QueueItem",
     "Refusal",
     "corpus_root",
     "count_refusals",
     "load_corpus",
     "load_file_specs",
+    "count_piles",
     "parse_finding",
+    "parse_queue_item",
     "parse_refusal",
     "read_finding",
+    "read_queue_item",
     "read_refusal",
 ]
 
 CORPUS_ENV = "PULSE_CORPUS_DIR"
 
 REFUSAL_KINDS = ("marker", "input", "population", "timescale", "operator")
+
+# A queued paper: what a reader needs to start, and nothing the reader must derive.
+QUEUE_PROTOCOL_KINDS = (
+    "OGTT", "mixed meal", "clamp", "24 h profile", "IVGTT", "exercise", "prolonged fast", "other",
+)
+QUEUE_FORMS = ("table", "text", "figure")
+QUEUE_UNCERTAINTY = ("sd", "sem", "ci", "range", "unlabelled")
+QUEUE_POPULATIONS = ("healthy", "nonhealthy", "mixed")
 
 _SLUG = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
 _NAME = re.compile(r"[a-z][a-z0-9_]*")
@@ -295,10 +310,56 @@ class Refusal:
 
 
 @dataclass(frozen=True)
+class QueueReport:
+    marker: str  # free text: a queued paper may report what the model has no series for
+    where: str
+    form: str
+
+
+@dataclass(frozen=True)
+class QueueItem:
+    """A paper waiting to be read. Carries no numbers and no seal: the seal follows from
+    the slug (``sealing.paper_is_sealed``) and would go stale if it were written down."""
+
+    paper: str
+    citation: str
+    doi: str | None
+    pmid: str | None
+    pmcid: str | None
+    licence: str
+    licence_url: str | None
+    protocol: str
+    protocol_kinds: tuple[str, ...]
+    population: str
+    population_class: str
+    reports: tuple[QueueReport, ...]
+    uncertainty: str
+    figure_only: bool
+    note: str
+    path: Path | None = None
+
+    def identifiers(self) -> frozenset[str]:
+        out = set()
+        if self.doi:
+            out.add(f"doi:{self.doi.lower()}")
+        if self.pmid:
+            out.add(f"pmid:{self.pmid}")
+        if self.pmcid:
+            out.add(f"pmcid:{self.pmcid.upper()}")
+        return frozenset(out)
+
+
+@dataclass(frozen=True)
 class Corpus:
     findings: tuple[Finding, ...] = ()
     refusals: tuple[Refusal, ...] = ()
     specs: tuple[CohortStatisticSpec, ...] = field(default=())
+    queue: tuple[QueueItem, ...] = ()
+
+    @property
+    def counts(self) -> dict[str, int]:
+        """Papers in each of the three piles. A paper is in exactly one."""
+        return {"queue": len(self.queue), "findings": len(self.findings), "refusals": len(self.refusals)}
 
 
 # --------------------------------------------------------------------------------
@@ -1130,6 +1191,93 @@ def parse_refusal(data: Any, *, path: Path | None = None) -> Refusal:
     return Refusal(paper, citation, tuple(reported), kind, name, detail, path)
 
 
+def parse_queue_item(data: Any, *, path: Path | None = None) -> QueueItem:
+    """A queue file: a paper to be read, with where its numbers are."""
+    r = _Reader()
+    keys = {
+        "paper", "citation", "doi", "pmid", "pmcid", "licence", "licence_url", "protocol",
+        "protocol_kinds", "population", "population_class", "reports", "uncertainty",
+        "figure_only", "note",
+    }
+    d = r.obj(data, "file", keys)
+    paper = ""
+    if d is not None:
+        raw = d.get("paper")
+        if isinstance(raw, str) and _SLUG.fullmatch(raw):
+            paper = raw
+        elif "paper" in d:
+            r.add("parse", f"paper {raw!r} is not a lowercase slug like 'schulla-2003'")
+    if d is None:
+        raise CorpusError(r.problems, paper)
+    if path is not None and paper and path.stem != paper:
+        r.add("parse", f"the file is named {path.name} but its paper is {paper!r}")
+    citation = r.string(d, "citation", "queue item")
+    year = re.search(r"-(\d{4})$", paper)
+    if citation and year and year.group(1) not in citation:
+        r.add("parse", f"paper {paper!r} ends in a year that the citation does not contain")
+    ids: dict[str, str | None] = {}
+    for key, pattern in (("doi", _DOI), ("pmid", _PMID), ("pmcid", _PMCID)):
+        if key in d and d[key] is None:
+            ids[key] = None
+            continue
+        value = r.string(d, key, "queue item")
+        if value is not None and not pattern.fullmatch(value):
+            r.add("parse", f"queue item {key} {value!r} is not a {key.upper()}")
+            value = None
+        ids[key] = value
+    if "doi" in d and "pmid" in d and "pmcid" in d and not any(d.get(k) for k in ("doi", "pmid", "pmcid")):
+        r.add("parse", "a queue item needs at least one identifier: doi, pmid or pmcid")
+    licence = r.string(d, "licence", "queue item")
+    licence_url = None
+    if "licence_url" in d and d["licence_url"] is not None:
+        licence_url = r.string(d, "licence_url", "queue item")
+        if licence_url is not None and not licence_url.startswith(("http://", "https://")):
+            r.add("parse", f"queue item licence_url {licence_url!r} is not a URL")
+    protocol = r.string(d, "protocol", "queue item")
+    population = r.string(d, "population", "queue item")
+    pclass = r.choice(d, "population_class", "queue item", QUEUE_POPULATIONS)
+    unc = r.choice(d, "uncertainty", "queue item", QUEUE_UNCERTAINTY)
+    figure_only = d.get("figure_only")
+    if "figure_only" in d and not isinstance(figure_only, bool):
+        r.add("parse", "queue item figure_only is not true or false")
+    note = d.get("note")
+    if "note" in d and not isinstance(note, str):
+        r.add("parse", "queue item note is not text")
+    kinds = d.get("protocol_kinds")
+    kind_list: list[str] = []
+    if "protocol_kinds" in d:
+        if not isinstance(kinds, list) or not kinds or len(set(map(str, kinds))) != len(kinds):
+            r.add("parse", "queue item protocol_kinds is not a non-empty list without repeats")
+        else:
+            for k in kinds:
+                if k not in QUEUE_PROTOCOL_KINDS:
+                    r.add("parse", f"queue item protocol kind {k!r} is not one of {', '.join(QUEUE_PROTOCOL_KINDS)}")
+                else:
+                    kind_list.append(k)
+    reports: list[QueueReport] = []
+    raw = d.get("reports")
+    if "reports" in d and (not isinstance(raw, list) or not raw):
+        r.add("parse", "queue item reports is not a non-empty list")
+    elif isinstance(raw, list):
+        for i, item in enumerate(raw):
+            w = f"report {i + 1}"
+            rd = r.obj(item, w, {"marker", "where", "form"})
+            if rd is None:
+                continue
+            marker = r.string(rd, "marker", w)
+            where = r.string(rd, "where", w)
+            form = r.choice(rd, "form", w, QUEUE_FORMS)
+            if marker and where and form:
+                reports.append(QueueReport(marker, where, form))
+    if r.problems:
+        raise CorpusError(r.problems, paper)
+    assert citation and licence and protocol and population and pclass and unc
+    return QueueItem(
+        paper, citation, ids["doi"], ids["pmid"], ids["pmcid"], licence, licence_url, protocol,
+        tuple(kind_list), population, pclass, tuple(reports), unc, bool(figure_only), str(note), path,
+    )
+
+
 def _load_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -1145,6 +1293,10 @@ def read_refusal(path: Path) -> Refusal:
     return parse_refusal(_load_json(path), path=path)
 
 
+def read_queue_item(path: Path) -> QueueItem:
+    return parse_queue_item(_load_json(path), path=path)
+
+
 # --------------------------------------------------------------------------------
 # The corpus directory
 # --------------------------------------------------------------------------------
@@ -1156,14 +1308,17 @@ def _files(directory: Path) -> list[Path]:
 
 
 def load_corpus(root: Path | None = None) -> Corpus:
-    """Every file under ``root/findings`` and ``root/refusals``, or ``CorpusError`` with
-    every problem of every file, prefixed by the file."""
+    """Every file under ``root/findings``, ``root/refusals`` and ``root/queue``, or
+    ``CorpusError`` with every problem of every file, prefixed by the file."""
     root = root or corpus_root()
     problems: list[Problem] = []
     findings: list[Finding] = []
     refusals: list[Refusal] = []
+    queue: list[QueueItem] = []
     for directory, reader, sink in (
-        (root / "findings", read_finding, findings), (root / "refusals", read_refusal, refusals),
+        (root / "findings", read_finding, findings),
+        (root / "refusals", read_refusal, refusals),
+        (root / "queue", read_queue_item, queue),
     ):
         for path in _files(directory):
             if path.suffix != ".json":
@@ -1175,21 +1330,36 @@ def load_corpus(root: Path | None = None) -> Corpus:
                 problems.extend(
                     Problem(p.check, f"{path.parent.name}/{path.name}: {p.message}") for p in err.problems
                 )
-    problems.extend(_cross_problems(findings, refusals))
+    problems.extend(_cross_problems(findings, refusals, queue))
     if problems:
         raise CorpusError(problems)
     specs = tuple(s for f in findings for s in f.specs)
-    return Corpus(tuple(findings), tuple(refusals), specs)
+    return Corpus(tuple(findings), tuple(refusals), specs, tuple(queue))
 
 
-def _cross_problems(findings: list[Finding], refusals: list[Refusal]) -> list[Problem]:
+def count_piles(root: Path | None = None) -> dict[str, int]:
+    """``{"queue": n, "findings": n, "refusals": n}``: papers in each pile."""
+    return load_corpus(root).counts
+
+
+def _cross_problems(
+    findings: list[Finding], refusals: list[Refusal], queue: list[QueueItem] = (),  # type: ignore[assignment]
+) -> list[Problem]:
     out: list[Problem] = []
-    both = {f.paper for f in findings} & {x.paper for x in refusals}
-    for paper in sorted(both):
-        out.append(Problem("parse", f"{paper} is both a finding and a refusal"))
+    piles = {"finding": {f.paper for f in findings}, "refusal": {x.paper for x in refusals},
+             "queue item": {q.paper for q in queue}}
+    for (na, a), (nb, b) in (
+        (("finding", piles["finding"]), ("refusal", piles["refusal"])),
+        (("finding", piles["finding"]), ("queue item", piles["queue item"])),
+        (("refusal", piles["refusal"]), ("queue item", piles["queue item"])),
+    ):
+        for paper in sorted(a & b):
+            out.append(Problem("parse", f"{paper} is both a {na} and a {nb}; a paper is in one pile"
+                               + (" (delete its queue file when you file it)" if "queue item" in (na, nb) else "")))
     seen: dict[str, str] = {}
-    for item in [*findings, *refusals]:
-        for ident in sorted(item.citation.identifiers()):
+    for item in [*findings, *refusals, *queue]:
+        ids = item.citation.identifiers() if hasattr(item.citation, "identifiers") else item.identifiers()
+        for ident in sorted(ids):
             other = seen.setdefault(ident, item.paper)
             if other != item.paper:
                 out.append(Problem("parse", f"{item.paper} and {other} are one paper ({ident})"))
