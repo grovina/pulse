@@ -1,0 +1,33 @@
+{
+  "paper": "tura-2022",
+  "citation": {
+    "authors": "Tura A, Göbl C, Vardarli I, et al.",
+    "title": "Insulin clearance and incretin hormones following oral and “isoglycemic” intravenous glucose in type 2 diabetes patients under different antidiabetic treatments",
+    "journal": "Scientific Reports",
+    "year": 2022,
+    "doi": "10.1038/s41598-022-06402-5",
+    "pmid": "35169165",
+    "pmcid": "PMC8847358"
+  },
+  "reported": [
+    {
+      "what": "Table 1: basal and mean plasma glucose, insulin, C-peptide, total and intact GLP-1 and GIP in the OGTT and the isoglycemic IV glucose infusion, all 20 patients with type 2 diabetes (mean ± SE); the table is not split by treatment (Study 1 had four treatment periods: sitagliptin, metformin, both, placebo) and no healthy or non-diabetic group is reported",
+      "location": {
+        "where": "Table 1, OGTT column",
+        "quote": "Basal glucose (mmol/L) | 7.31 ± 0.16"
+      }
+    },
+    {
+      "what": "Study 2: patients with basal insulin-treated type 2 diabetes given GLP-1, GIP, both or placebo intravenously",
+      "location": {
+        "where": "Methods, Participants",
+        "quote": "The patients were 9 males and 3 females, were 61 ± 3 years old, and had a BMI of 30 ± 1 kg/m2; HbA1c was 7.3 ± 0.4%, (56 ± 4 mmol/mol) and known diabetes duration was 7 ± 2 years."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "type_2_diabetes"
+  },
+  "detail": "Every group in the paper (both studies) has type 2 diabetes on antidiabetic treatment, which the model cannot represent, and no healthy or non-diabetic group or baseline is reported."
+}
