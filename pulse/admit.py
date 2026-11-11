@@ -300,6 +300,21 @@ class _Probe:
         return best
 
 
+def _on_one_thread(fn, *args):
+    """``fn(*args)`` with torch on one intra-op thread, restored afterwards. A minute of
+    the model is many small operations, so threads have nothing to split; left at the
+    default (every core the host shows) several gates on one small machine spend their
+    time waiting on each other."""
+    import torch
+
+    threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    try:
+        return fn(*args)
+    finally:
+        torch.set_num_threads(threads)
+
+
 def _run_checks(finding: Finding, device: str, fed_day_minutes: int | None) -> tuple[Check, Check]:
     probe = _Probe(device, fed_day_minutes)
     run_problems: list[str] = []
@@ -455,7 +470,7 @@ def admit(
             kind, paper, (*base_checks, filing_check, *_skip(("runs", "gradient", "conflicts"))),
             sealed, note, len(parsed.items),
         )
-    runs, gradient = _run_checks(parsed, device, fed_day_minutes)
+    runs, gradient = _on_one_thread(_run_checks, parsed, device, fed_day_minutes)
     conflicts = _conflict_check(parsed)
     return Admission(
         kind, paper, (*base_checks, filing_check, runs, gradient, conflicts), sealed, note,
