@@ -419,6 +419,90 @@
         "where": "Table 2, insulin rows, Ketogenic (columns 0-180 min; footnote: Mean ± SE)",
         "quote": "Ketogenic | 44 ± 5 | 67 ± 11 | 86 ± 10 | 88 ± 12 | 71 ± 6 | 63 ± 8 | 55 ± 5 | 48 ± 4"
       }
+    },
+    {
+      "id": "med_glucose_rise_20min",
+      "description": "Plasma glucose at minute 20 after the mediterranean meal minus the fasting sample (the paper's incremental peak, at 20 min)",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "med"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 21
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 24.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Results 3.1, Glucose",
+        "quote": "After the Mediterranean meal, glucose concentration increased and reached an incremental peak of 24 ± 3 mg/dL at 20 min"
+      }
+    },
+    {
+      "id": "med_insulin_rise_20min",
+      "description": "Plasma insulin at minute 20 after the mediterranean meal minus the fasting sample (the paper's incremental peak, at 20 min)",
+      "marker": "insulin",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "med"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 21
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 457.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 99.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Results 3.1, Insulin",
+        "quote": "After the Mediterranean meal, insulin concentration increased and reached an incremental peak of 457 ± 99 pmol/L at 20 min"
+      }
+    },
+    {
+      "id": "keto_insulin_rise_30min",
+      "description": "Plasma insulin at minute 30 after the ketogenic meal minus the fasting sample (the paper's incremental peak, at 30 min)",
+      "marker": "insulin",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "keto"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 44.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 10.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Results 3.1, Insulin",
+        "quote": "After the ketogenic meal, insulin concentration increased significantly to reach an incremental peak of 44 ± 10 pmol/L at 30 min"
+      }
     }
   ],
   "left_out": [
@@ -437,17 +521,24 @@
       }
     },
     {
-      "what": "incremental peaks and fold changes of glucose and insulin (text, Table 3)",
+      "what": "fold changes over the basal value of insulin and C-peptide concentration, of the rate and the incremental amount of insulin secretion, and of insulin clearance (Results 3.1, 3.2, Discussion): ratios, not differences",
       "missing": {
         "kind": "operator",
-        "name": "change_from_baseline"
+        "name": "derived_index"
       }
     },
     {
-      "what": "total and incremental insulin concentration over the test, and glucose area in the first hour (Table 3, abstract)",
+      "what": "total and incremental insulin concentration over the test (Table 3): printed as pmol/L with no time unit, so the area's unit is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "glucose area in the first hour (abstract): printed only as the difference between the meals, not per meal",
       "missing": {
         "kind": "operator",
-        "name": "single_arm_auc"
+        "name": "delta_area"
       }
     },
     {
