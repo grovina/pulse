@@ -1,9 +1,9 @@
 {
   "schemaVersion": "v1",
   "app": "pulse",
-  "iter": 115,
-  "hypothesis": "Iter 115 is the iter 114 loop trained on the corpus this stomach can express. Liddle's CCK spike is not a target: emptying at 2.13 kcal/min holds a plateau, and iter 114 spent the loss on that spike's minute against its height. The corpus adds Landau's gluconeogenesis shares, Wahren's resting splanchnic output, Borgström's fat absorption without bile, Vollmer's GIP increment ratio, and Cryer's fasting glucose, its spread, and baseline epinephrine. The f_gng prior is gone. The cortisol day starts from the student's own spin-up. Warm-start the laws from iter 113, the checkpoint whose sealed fit held; parameters added since stay at their published init.",
-  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter113/model.pt. The scoreboard is the acceptance record: sealed literature fit and individual-prediction skill do not fall relative to iter 113, and the open-direction count is reported. Teacher-tape loss is logged and is not acceptance.",
+  "iter": 116,
+  "hypothesis": "Iter 116 is the iter 115 recipe, unchanged, on the loop and the corpus built since. A step spins its people up once and rolls its items in groups of similar horizon; an arm's pre-fast begins with a meal and its nights are slept; and the evidence is the registries plus the papers read into corpus/findings that are not sealed (275 training points, where iter 114 had 131). Iter 114, scored on 2026-11-11, fits the registry points it trained on (median |z| 0.21 against 0.65 untrained) and is further than the untrained student from every paper it never saw (1.32 against 1.19 on the 8 sealed papers). The question is whether training on papers read as files brings the sealed papers nearer than the untrained student stands. Warm-start the laws from iter 113, as iter 115 did; iter 115 timed out at 72 h and left no board.",
+  "expectedEffect": "Warm start from gs://grovina-pulse-data/training/jobs/iter113/model.pt. The run ends inside its deadline and leaves a board at each phase. The board is the acceptance record: median |z| on the sealed papers below the untrained student's 1.19 on the same people (iter 114: 1.32), and on the file papers that now train below iter 114's 1.16. Individual-prediction skill does not fall relative to iter 114, and the open-direction count is reported. Teacher-tape loss is logged and is not acceptance.",
   "sourceRef": "HEAD",
   "params": {
     "trainArgs": [

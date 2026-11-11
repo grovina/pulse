@@ -33,8 +33,8 @@ parameters (`--hidden-dim=48`).
 
 ## Training
 
-The recipe is `train/spec.json` (iter 115: 58 epochs, 30 on trajectories
-alone, then 28 with the literature). The job is 8 vCPU, 32 GiB, 72 h, no
+The recipe is `train/spec.json` (iter 116, the flags of iter 115: 58 epochs,
+30 on trajectories alone, then 28 with the literature). The job is 8 vCPU, 32 GiB, 72 h, no
 retries.
 
 A step now spins up all of its people in one rollout and rolls its items in
