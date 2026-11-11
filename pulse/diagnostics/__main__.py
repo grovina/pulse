@@ -12,6 +12,7 @@ Subcommands:
   per-spec z-residual + per-module grad norm. Catches dead literature
   specs and reveals which physiology pillar each spec actually pulls
   on.
+- ``step-time`` times one evidence step, serial against batched, in CPU seconds.
 - ``identifiability`` takes the Gauss-Newton Fisher spectrum of the literature
   residuals over the scalar population parameters and the person code — which
   directions the literature constrains, which are open and what would close them.
@@ -51,6 +52,7 @@ from .physiology_rules import (
     render as render_physiology_rules,
 )
 from .probe import load_model_from_checkpoint, probe_checkpoint
+from .step_time import render as render_step_time, step_time
 from .signal_balance import (
     render as render_signal_balance,
     signal_balance_for_checkpoint,
@@ -129,6 +131,27 @@ def _cmd_compare(args: argparse.Namespace) -> int:
             local_out = tmp / "delta.json" if args.out.startswith("gs://") else Path(args.out)
             local_out.write_text(json.dumps(cmp.to_dict(), indent=2))
             _upload_if_gs(str(local_out), args.out)
+    return 0
+
+
+def _cmd_step_time(args: argparse.Namespace) -> int:
+    import torch
+
+    from ..model import ModularPhysiologyNetwork
+
+    torch.manual_seed(args.seed)
+    if args.checkpoint:
+        model, _ = load_model_from_checkpoint(args.checkpoint)
+    else:
+        model = ModularPhysiologyNetwork()
+    result = step_time(
+        model, batch_size=args.evidence_batch_size, n_draws=args.draws,
+        max_arm_minutes=args.max_arm_minutes, n_steps=args.steps,
+        fed_day_minutes=args.fed_day_minutes, seed=args.seed,
+    )
+    print(render_step_time(result))
+    if args.out:
+        Path(args.out).write_text(json.dumps(result.to_dict(), indent=2))
     return 0
 
 
@@ -268,6 +291,21 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--n-patients", type=int, default=20)
     s.add_argument("--out", default=None, help="Optional path to write JSON")
     s.set_defaults(func=_cmd_signal_balance)
+
+    st = sub.add_parser(
+        "step-time",
+        help="CPU seconds per evidence step: item by item against the batched step",
+    )
+    st.add_argument("--checkpoint", default=None, help="Default: an untrained model")
+    st.add_argument("--evidence-batch-size", type=int, default=4)
+    st.add_argument("--draws", type=int, default=4, help="People per arm")
+    st.add_argument("--max-arm-minutes", type=int, default=0,
+                    help="Keep only items and rules whose arms are at most this long (0 = all)")
+    st.add_argument("--fed-day-minutes", type=int, default=1440)
+    st.add_argument("--steps", type=int, default=2)
+    st.add_argument("--seed", type=int, default=0)
+    st.add_argument("--out", default=None, help="Optional path to write JSON")
+    st.set_defaults(func=_cmd_step_time)
 
     cc = sub.add_parser(
         "cold-calibration",
