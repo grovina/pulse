@@ -40,13 +40,15 @@ retries.
 A step now spins up all of its people in one rollout and rolls its items in
 groups of similar horizon (`pulse/training/evidence_step.py`). A run writes a
 board at the end of each phase, and `--deadline-hours` stops it cleanly
-before the job's timeout. No run has used any of this yet: the recipe is
-unchanged, and the numbers below are from before.
+before the job's timeout. Iter 116 is the first run on this loop; it is
+running (Runs, below). It was launched without the open-direction pass and
+without the CGMacros ruler, so that training and its board fit in the 24 h
+the job is cut at; both are owed on its checkpoint.
 
 An arm's pre-fast now begins with a meal and its nights are slept
 (`pulse/training/arm_init.py`); before, the last meal was the fed day's 19:00
-dinner whatever the pre-fast, and the pre-fast was spent awake. No checkpoint
-has trained from these start states. Measured on iter 114's median person:
+dinner whatever the pre-fast, and the pre-fast was spent awake. Iter 116
+is the first run to train from these start states. Measured on iter 114's median person:
 at 08:00 after a 10-hour fast (food 10 h ago, not 13) insulin starts at 5.7
 µU/mL where it was 6.3 and β-hydroxybutyrate 13% higher; at 12:00 after a
 4-hour fast (food 4 h ago, not 17) glucose starts at 101 mg/dL where it was
@@ -64,21 +66,40 @@ Measured on iter 115's log (2026-10-31 to 2026-11-03):
 - 63% of the simulated minutes are the 1,440-minute fed day that starts every
   arm, redone for each arm of each item.
 
-Measured on a 2-CPU box on 2026-11-11 (`python -m pulse.diagnostics
-step-time`, untrained model, 4 items and 1 rule, arms capped at 300 minutes,
-CPU seconds):
+Measured on the training job on 2026-11-11 (`trainer-spvj8`: iter 116's
+recipe cut to one epoch per phase of 10 steps, warm start from iter 113):
+
+- A step with the literature takes 62 to 73 s, where iter 115's took 270 to
+  330 s. The evidence step (4 items and 1 rule) is 54 s of it, 24 s of that
+  the spin-up; the dose response is 4 s and the carbohydrate balance 4 s.
+- A step on trajectories alone takes 4 s, where iter 115's took 7 s.
+- A board without the open-direction pass takes 9 minutes. Peak memory is
+  5.3 GB. One core of eight is still the only one busy.
+- At those rates the 58 epochs of the recipe take about 23 h (1.4 h on
+  trajectories, then 28 epochs of about 45 minutes), not the three hours
+  PLAN's stage 1 asks for. The evidence step is four fifths of the time.
+
+Measured on the lab box on 2026-11-11 (`python -m pulse.diagnostics
+step-time`, untrained model, 4 items and 1 rule, CPU seconds):
+
+- Arms as the papers ran them, mean of three steps, with the box at 8 CPUs
+  and 16 GiB: 46.5 s item by item, 22.0 s batched (spin-up 10.6 s, rollout
+  and scoring 3.9 s, backward 7.4 s), peak memory 3.4 GB.
+
+With arms capped at 300 minutes, on the same box at 2 CPUs:
+
 
 - Item by item, as iter 115 ran: 47.5 s. Batched, on this commit: 9.9 s
   (spin-up 3.4 s, rollout and scoring 2.3 s, backward 4.2 s).
 - A simulated minute costs 979 tensor operations, down from 1,167. With a
   different meal list for every member of a batch it cost 8,009.
-- An uncapped step and a whole epoch have not been timed since the change;
-  this box cannot hold a day-long rollout with its gradient.
 
 ## Runs
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
+| `trainer-qvcvj` | 116 | 2026-11-11 | running from commit `b30be0a`; training stops itself by 23 h and the job is cut at 24 h |
+| `trainer-spvj8` | 116, cut down | 2026-11-11 | finished in 54 min: one epoch of 10 steps per phase, to time a step; its output is `training/jobs/iter116-smoke/` |
 | `trainer-rgg6f` | 115 | 2026-10-31 | timed out at 72 h in epoch 49 of 58; left `last_good.pt` and no board |
 | `trainer-bgdhx` | 114 | 2026-10-28 | finished in 3 h 11 min; the last checkpoint with a board |
 | `trainer-kd75r` | 114 | 2026-10-28 | out of memory after 10 h |
