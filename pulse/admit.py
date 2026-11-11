@@ -9,7 +9,8 @@ and says which check failed:
    the paper, no other slug carries the same DOI / PMID / PMCID, and it is not
    also a refusal;
 3. every protocol runs on the **untrained** student;
-4. a gradient from each finding reaches at least one parameter;
+4. each finding's predicted statistic moves when the parameters are nudged, the
+   protocol rolled from the same start state as training rolls it;
 5. no finding silently contradicts an item already admitted (the scoreboard's
    ``target_conflicts``, over the likelihood's own standard error); a conflict
    the file names in ``acknowledged_conflicts`` is recorded, not silent.
@@ -20,8 +21,10 @@ admitted, 1 otherwise.
 The gate uses only the untrained student, never a checkpoint, and prints nothing
 about how well any model fits a finding: not a residual, not a prediction, not a
 loss. Nobody should be able to drop a paper because it scores badly. Check 4
-differentiates the statistic against a far-away target, so the number it looks at
-is whether a gradient exists, not where the model stands.
+compares the statistic before and after a random nudge of every parameter, so
+the number it looks at is whether the statistic can move, not where the model
+stands. It runs no backward pass: the protocols of a file are rolled together
+three times, which takes seconds where a gradient per finding took minutes.
 
 ``python -m pulse.admit --refusals`` counts the refusal pile by kind and by the
 missing piece: the specification for the next change to the model.
@@ -53,7 +56,10 @@ __all__ = ["Admission", "Check", "admit", "format_admission", "main"]
 
 _PROBE_DRAWS = 4
 _PROBE_SEED = 0
-_FAR = 1.0e4  # sigmas: the probe target sits this far from the statistic
+_DIRECTIONS = 2      # random nudges tried; a finding passes if any one moves it
+_NUDGE = 1e-2        # relative size of a nudge (see corpus/README.md and test_admit for the measurement)
+_NUDGE_FLOOR = 0.1   # added to a tensor's rms so zero-initialised corrections are nudged too
+_MOVED = 1e-6        # relative move below which a prediction counts as not moving
 
 _LABELS = {
     "parse": "the file parses",
@@ -63,7 +69,7 @@ _LABELS = {
     "uncertainty": "each uncertainty is of a stated kind",
     "filing": "the paper is filed once",
     "runs": "each protocol runs on the untrained student",
-    "gradient": "a gradient from each finding reaches a parameter",
+    "gradient": "each finding moves when the parameters move",
     "conflicts": "no finding silently contradicts an admitted item",
 }
 
@@ -173,27 +179,27 @@ def _sealed(paper: str) -> tuple[bool, str]:
 # --------------------------------------------------------------------------------
 
 class _Probe:
-    """Rolls findings on the untrained student and asks only whether gradients exist."""
+    """Rolls a file's protocols on the untrained student and asks, finding by finding,
+    whether its prediction can move when a parameter moves. No backward pass."""
 
     def __init__(self, device: str, fed_day_minutes: int | None) -> None:
         import numpy as np
         import torch
 
         from .model import ModularPhysiologyNetwork
+        from .training.factors import FED_DAY_MINUTES
 
         torch.manual_seed(_PROBE_SEED)
         self.torch = torch
         self.np = np
         self.device = device
-        from .training.factors import FED_DAY_MINUTES
-
         self.fed = FED_DAY_MINUTES if fed_day_minutes is None else fed_day_minutes
-
         self.model = ModularPhysiologyNetwork().to(device).eval()
         self.params = [p for p in self.model.parameters() if p.requires_grad]
         self._people: dict = {}
-        self._starts: dict = {}
-        self._arms: dict = {}
+        self.keys: list = []
+        self.codes: dict = {}
+        self.states: dict = {}
 
     def _codes(self, population):
         """The same people for every arm of one population, as training draws them."""
@@ -204,99 +210,131 @@ class _Probe:
             self._people[population] = draw_people(_PROBE_DRAWS, rng, self.device, population)
         return self._people[population]
 
-    def _state(self, spec, arm, codes):
-        """Where an arm starts. The spin-up through a fed day depends on the clock, the
-        pre-fast and the people, not on the protocol, so arms that agree share it."""
-        from .training.arm_init import student_initial_states
+    def prepare(self, specs) -> None:
+        """The file's distinct arms, their people, and their start states from ONE batched
+        spin-up. The start states are detached and fixed, as in training: only the protocol
+        that follows depends on the weights."""
+        from .knowledge.cohort_types import InitMode
+        from .training.arm_init import student_initial_states_for_rows
         from .types import NORM_CENTER
 
-        key = (spec.init_mode.value, arm.start_hour, arm.prefast_hours, arm.population)
-        if key not in self._starts:
-            if spec.init_mode.value == "norm_center":
-                basal = self.torch.tensor(NORM_CENTER, dtype=self.torch.float32, device=self.device)
-                state = basal.unsqueeze(0).expand(int(codes.shape[0]), -1).contiguous()
-            else:
-                state = student_initial_states(self.model, codes, arm, fed_day_minutes=self.fed)
-            self._starts[key] = state
-        return self._starts[key]
+        keys: list = []
+        for spec in specs:
+            for arm in spec.arms:
+                if (arm, spec.init_mode) not in keys:
+                    keys.append((arm, spec.init_mode))
+        self.keys = keys
+        self.codes = {k: self._codes(k[0].population) for k in keys}
+        cold = [k for k in keys if k[1] is InitMode.COLD]
+        starts = student_initial_states_for_rows(
+            self.model, [(self.codes[k], k[0]) for k in cold], fed_day_minutes=self.fed,
+        )
+        self.states = dict(zip(cold, starts))
+        basal = self.torch.tensor(NORM_CENTER, dtype=self.torch.float32, device=self.device)
+        for k in keys:
+            if k not in self.states:
+                self.states[k] = basal.unsqueeze(0).expand(_PROBE_DRAWS, -1).contiguous()
 
-    def roll(self, spec):
-        """``(codes, trajs)`` of ``spec``'s arms. An arm is rolled once however many
-        findings read it; the graph is kept so each finding can be differentiated."""
-        from .cohort_loss import _rollout_arm_states
+    def roll_all(self, keys=None) -> dict:
+        """Every arm (or ``keys``) rolled together as rows of one rollout, without gradient."""
+        from .cohort_loss import rollout_arms
 
-        codes, trajs = [], []
-        for arm in spec.arms:
-            c = self._codes(arm.population)
-            key = (arm, spec.init_mode)
-            if key not in self._arms:
-                state = self._state(spec, arm, c)
-                self._arms[key] = _rollout_arm_states(self.model, c, arm, state, observe=True)
-            codes.append(c)
-            trajs.append(self._arms[key])
-        return codes, trajs
+        keys = self.keys if keys is None else keys
+        with self.torch.no_grad():
+            trajs = rollout_arms(
+                self.model, [(k[0], self.codes[k], self.states[k]) for k in keys], observe=True,
+            )
+        return dict(zip(keys, trajs))
 
-    def finite(self, trajs) -> bool:
-        return all(bool(self.torch.isfinite(t).all()) for t in trajs)
+    @staticmethod
+    def finite(trajs) -> bool:
+        import torch
 
-    def reaches_parameter(self, spec) -> tuple[int, bool]:
-        """``(parameters reached, all gradients finite)`` for ``spec``'s statistic."""
+        return all(bool(torch.isfinite(t).all()) for t in trajs)
+
+    def predictions(self, spec, rolled: dict) -> list[float]:
+        """The statistic of ``spec`` (one number, or one per curve point) on ``rolled``,
+        scored by the function training scores it with."""
         from .cohort_loss import _score_arm_trajs
         from .knowledge.cohort_statistics import expand_curve_spec
 
-        codes, trajs = self.roll(spec)
-        total = None
+        keys = [(arm, spec.init_mode) for arm in spec.arms]
+        trajs = [rolled[k] for k in keys]
+        embeddings = self.codes[keys[0]]
+        out = []
         for s in expand_curve_spec(spec):
-            far = replace(s, target=s.target + _FAR * s.sigma)
-            z2, _pred, _z = _score_arm_trajs(far, trajs, codes[0], _PROBE_DRAWS)
-            total = z2 if total is None else total + z2
-        assert total is not None
-        grads = self.torch.autograd.grad(total, self.params, retain_graph=True, allow_unused=True)
-        reached = 0
-        finite = True
-        for g in grads:
-            if g is None:
-                continue
-            if not bool(self.torch.isfinite(g).all()):
-                finite = False
-            elif bool((g != 0).any()):
-                reached += 1
-        return reached, finite
+            _loss, pred, _z = _score_arm_trajs(s, trajs, embeddings, _PROBE_DRAWS)
+            out.append(float(pred))
+        return out
+
+    def _direction(self, k: int):
+        g = self.torch.Generator().manual_seed(_PROBE_SEED + 1 + k)
+        return [
+            self.torch.randn(p.shape, generator=g) * (float(p.detach().pow(2).mean().sqrt()) + _NUDGE_FLOOR)
+            for p in self.params
+        ]
+
+    def moves(self, specs: dict, base: dict) -> dict[str, float]:
+        """``{id: largest relative move of the prediction}`` over ``_DIRECTIONS`` random
+        nudges of every parameter, the protocols rolled from the same start states.
+        Relative to the larger of the prediction and the finding's sigma."""
+        best = {i: 0.0 for i in specs}
+        base_pred = {i: self.predictions(s, base) for i, s in specs.items()}
+        for k in range(_DIRECTIONS):
+            direction = self._direction(k)
+            saved = [p.detach().clone() for p in self.params]
+            try:
+                with self.torch.no_grad():
+                    for p, d in zip(self.params, direction):
+                        p.add_(_NUDGE * d.to(p.device))
+                nudged = self.roll_all()
+                for i, s in specs.items():
+                    scale = max(abs(self.np.array(base_pred[i])).max(), float(s.sigma))
+                    now = self.predictions(s, nudged)
+                    move = max(abs(a - b) for a, b in zip(now, base_pred[i])) / scale
+                    best[i] = max(best[i], move if move == move else float("inf"))
+            finally:
+                with self.torch.no_grad():
+                    for p, v in zip(self.params, saved):
+                        p.copy_(v)
+        return best
 
 
 def _run_checks(finding: Finding, device: str, fed_day_minutes: int | None) -> tuple[Check, Check]:
     probe = _Probe(device, fed_day_minutes)
     run_problems: list[str] = []
     grad_problems: list[str] = []
-    ordered = sorted(finding.items, key=lambda i: str([a.label for a in i.spec.arms]))
-    for item in ordered:
-        spec = item.spec
-        try:
-            _codes, trajs = probe.roll(spec)
-        except Exception as err:  # a protocol the model cannot run, whatever the reason
-            labels = ", ".join(a.label for a in spec.arms)
-            run_problems.append(f"{item.id}: protocol {labels} does not run: {type(err).__name__}: {err}")
-            continue
-        if not probe.finite(trajs):
-            labels = ", ".join(a.label for a in spec.arms)
-            run_problems.append(f"{item.id}: protocol {labels} gives a non-finite trajectory")
-            continue
-        try:
-            reached, finite = probe.reaches_parameter(spec)
-        except Exception as err:
-            grad_problems.append(f"{item.id}: the statistic cannot be differentiated: {type(err).__name__}: {err}")
-            continue
-        if not finite:
-            grad_problems.append(f"{item.id}: the gradient is not finite")
-        elif reached == 0:
+    specs = {item.id: item.spec for item in finding.items}
+    try:
+        probe.prepare(list(specs.values()))
+        base = probe.roll_all()
+    except Exception:  # find which protocol the model cannot run, one arm at a time
+        base = {}
+        for k in probe.keys or []:
+            try:
+                base.update(probe.roll_all([k]))
+            except Exception as err:
+                run_problems.append(f"protocol {k[0].label} does not run: {type(err).__name__}: {err}")
+        if not probe.keys:
+            run_problems.append("the protocols could not be prepared")
+    for k, traj in base.items():
+        if not probe.finite([traj]):
+            run_problems.append(f"protocol {k[0].label} gives a non-finite trajectory")
+    if run_problems:
+        return Check("runs", False, tuple(run_problems)), Check("gradient", False, ("not run: the protocols do not run",), skipped=True)
+    try:
+        moved = probe.moves(specs, base)
+    except Exception as err:
+        return Check("runs", True), Check("gradient", False, (f"the probe failed: {type(err).__name__}: {err}",))
+    for item_id, move in moved.items():
+        if move != move or move == float("inf"):
+            grad_problems.append(f"{item_id}: the prediction is not finite when a parameter moves")
+        elif move <= _MOVED:
             grad_problems.append(
-                f"{item.id}: no gradient from this finding reaches any parameter "
-                f"(the model cannot move this number)",
+                f"{item_id}: its prediction does not move when the parameters do "
+                f"(the model cannot move this number; does it read only the start state?)",
             )
-    return (
-        Check("runs", not run_problems, tuple(run_problems)),
-        Check("gradient", not grad_problems, tuple(grad_problems)),
-    )
+    return Check("runs", True), Check("gradient", not grad_problems, tuple(grad_problems))
 
 
 # --------------------------------------------------------------------------------

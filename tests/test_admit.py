@@ -166,46 +166,81 @@ def test_readmitting_the_same_file_is_not_a_duplicate(root, stub_rollouts):
 
 
 def test_a_protocol_that_does_not_run_fails_the_runs_check(root, monkeypatch):
-    def boom(self, spec):
+    def boom(self, keys=None):
         raise RuntimeError("no such input")
 
-    monkeypatch.setattr(gate._Probe, "roll", boom)
+    monkeypatch.setattr(gate._Probe, "roll_all", boom)
     result = admit(_put(root, _small()), root=root, fed_day_minutes=0)
     failed = _failed(result)
-    assert "does not run: RuntimeError: no such input" in failed["runs"][0]
+    assert "protocol ogtt does not run: RuntimeError: no such input" in failed["runs"][0]
+    assert "protocol fasting does not run" in failed["runs"][1]
 
 
 def test_a_non_finite_trajectory_fails_the_runs_check(root, monkeypatch):
-    monkeypatch.setattr(gate._Probe, "finite", lambda self, trajs: False)
+    monkeypatch.setattr(gate._Probe, "finite", staticmethod(lambda trajs: False))
     assert "non-finite" in _failed(admit(_put(root, _small()), root=root, fed_day_minutes=0))["runs"][0]
 
 
-def test_a_finding_no_parameter_can_move_fails_the_gradient_check(root, monkeypatch):
-    monkeypatch.setattr(gate._Probe, "reaches_parameter", lambda self, spec: (0, True))
+def test_a_finding_the_parameters_cannot_move_fails_the_gradient_check(root, monkeypatch):
+    monkeypatch.setattr(gate._Probe, "moves", lambda self, specs, base: {i: 0.0 for i in specs})
     failed = _failed(admit(_put(root, _small()), root=root, fed_day_minutes=0))
     assert set(failed) == {"gradient"} and len(failed["gradient"]) == 2
-    assert "reaches any parameter" in failed["gradient"][0]
-    monkeypatch.setattr(gate._Probe, "reaches_parameter", lambda self, spec: (3, False))
+    assert "does not move when the parameters do" in failed["gradient"][0]
+    monkeypatch.setattr(gate._Probe, "moves", lambda self, specs, base: {i: float("nan") for i in specs})
     assert "not finite" in _failed(admit(_put(root, _small()), root=root, fed_day_minutes=0))["gradient"][0]
 
 
-def test_the_probe_sees_a_real_gradient_on_the_untrained_student():
-    probe = gate._Probe("cpu", 0)
-    spec = next(s for s in read_finding(FINDING).specs if s.name.endswith("ogtt_glucose_peak"))
-    reached, finite = probe.reaches_parameter(spec)
-    assert reached > 0 and finite
+def _with_windows(**windows) -> dict:
+    """The small fixture plus fasting-glucose means over the given (start, end) windows."""
+    data = _small()
+    template = next(f for f in _data()["findings"] if f["id"] == "fasting_glucose_mean")
+    for name, (lo, hi) in windows.items():
+        data["findings"].append(dict(copy.deepcopy(template), id=name, window={"start_min": lo, "end_min": hi}))
+    return data
 
 
-def test_the_far_target_is_what_keeps_the_gradient_alive():
-    # The debiased loss is floored at zero when the batch mean is nearer the target than its own
-    # spread explains; probing at the paper's number could report "no gradient" for a live path.
+@pytest.fixture(scope="module")
+def probed():
+    """The probe's measured moves for a live set, a dead finding and a weakly coupled one."""
+    from pulse.knowledge.corpus import parse_finding
+
+    finding = parse_finding(_with_windows(dead_start=(0, 1), weak_one_step=(0, 2)))
+    specs = {i.id: i.spec for i in finding.items}
     probe = gate._Probe("cpu", 0)
-    from dataclasses import replace
-    spec = next(s for s in read_finding(FINDING).specs if s.name.endswith("ogtt_glucose_peak"))
-    codes, trajs = probe.roll(spec)
-    from pulse.cohort_loss import _score_arm_trajs
-    z2, _, _ = _score_arm_trajs(replace(spec, target=spec.target + 1e4 * spec.sigma), trajs, codes[0], 4)
-    assert float(z2.detach()) > 1e6
+    probe.prepare(list(specs.values()))
+    base = probe.roll_all()
+    return probe, specs, base, probe.moves(specs, base)
+
+
+def test_a_finding_that_only_reads_the_start_state_is_dead(probed):
+    _probe, _specs, _base, moved = probed
+    assert moved["dead_start"] == 0.0           # exactly: the same ops, the same inputs
+    assert moved["dead_start"] <= gate._MOVED
+
+
+def test_a_weakly_coupled_finding_passes_and_the_live_ones_pass_easily(probed):
+    _probe, _specs, _base, moved = probed
+    assert moved["weak_one_step"] > 100 * gate._MOVED   # one minute of dynamics: ~4e-4 at the nudge
+    for i in ("ogtt_glucose_peak", "fasting_insulin_spread"):
+        assert moved[i] > moved["weak_one_step"]
+
+
+def test_the_move_is_a_signal_not_rounding_noise(probed, monkeypatch):
+    """Halving the nudge halves the move of a live finding (linear response) and leaves a dead one at 0."""
+    probe, specs, base, moved = probed
+    monkeypatch.setattr(gate, "_NUDGE", gate._NUDGE / 10)
+    smaller = probe.moves({k: specs[k] for k in ("weak_one_step", "ogtt_glucose_peak", "dead_start")}, base)
+    assert smaller["dead_start"] == 0.0
+    for i in ("weak_one_step", "ogtt_glucose_peak"):
+        assert smaller[i] == pytest.approx(moved[i] / 10, rel=0.35)
+
+
+def test_a_dead_finding_fails_the_real_gate(root):
+    result = admit(_put(root, _with_windows(dead_start=(0, 1))), root=root, fed_day_minutes=0)
+    failed = _failed(result)
+    assert set(failed) == {"gradient"} and "dead_start" in failed["gradient"][0]
+    assert "start state" in failed["gradient"][0]
+    assert admit(_put(root, _with_windows(weak_one_step=(0, 2))), root=root, fed_day_minutes=0).ok
 
 
 # --- conflicts ------------------------------------------------------------------------

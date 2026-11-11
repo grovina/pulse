@@ -383,7 +383,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `glucose` | Blood Glucose | mg/dL | 40 to 400 | mg/dl (x1), mg/100ml (x1), mmol/l (x18.016), mm (x18.016), g/l (x100), mg/l (x0.1) |
 | `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667) |
 | `glucagon` | Glucagon | pg/mL | 0 to 500 | pg/ml (x1), ng/l (x1), pmol/l (x3.4828) |
-| `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), mm (x1), meq/l (x1), umol/l (x0.001) |
+| `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), mm (x1), meq/l (x1), umol/l (x0.001), ueq/l (x0.001) |
 | `bhb` | β-Hydroxybutyrate | mmol/L | 0 to 10 | mmol/l (x1), mm (x1), umol/l (x0.001), mg/dl (x0.0960615) |
 | `lactate` | Lactate | mmol/L | 0 to 20 | mmol/l (x1), mm (x1), umol/l (x0.001), mg/dl (x0.111012) |
 | `hepatic_output` | Hepatic glucose output | mg/kg/min | 0 to 12 | mg/kg/min (x1), mg/min/kg (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
@@ -534,8 +534,13 @@ Exit 0 means admitted. The gate checks, and names the check that failed:
    Python registry holds it; no other slug carries its DOI, PMID or PMCID; it is not
    also a refusal;
 3. **each protocol runs** on the untrained student;
-4. **a gradient from each finding reaches a parameter**: otherwise the model could
-   not move the number whatever it learned;
+4. **each finding's number moves when the model's parameters move**: otherwise the
+   model could not move the number whatever it learned. The gate rolls every protocol
+   of the file once, nudges all the parameters along two random directions, rolls
+   again from the same start, and compares each finding's predicted statistic. It
+   proves that the number depends on some parameter, as training would see it. It
+   does not say which parameter, or that the dependence is strong enough to learn
+   from;
 5. **no finding silently contradicts one already admitted**: on one protocol, marker,
    statistic and window, with targets further apart than their standard errors allow.
    If the disagreement is real, name the other item in `acknowledged_conflicts` so it
@@ -561,6 +566,11 @@ used.
 * IV glucose in g/kg is a `glucose_bolus`; per minute is a `glucose_infusion`.
 * The clamp's glucose infusion rate is the marker `glucose_infusion_rate` (mg/kg/min).
 * Fasting studies: set `prefast_hours`. A "morning after an overnight fast" is about 10.
+* A number read only at minute 0 fails check 4: minute 0 is the state the protocol
+  starts from, and training does not differentiate through how it got there. Give a
+  baseline as the mean over a run-in (start the protocol 30 minutes before the load
+  and put the meal at `t_min: 30`), or keep it as the first point of a curve, where
+  the later points carry it.
 * One paper, many arms: declare each arm once, and let findings share it.
 * Do not copy numbers from the abstract of a paper you have not read; do not copy
   from a review.
