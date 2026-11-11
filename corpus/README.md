@@ -288,7 +288,10 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   calls "without diabetes". Diabetes, hypertension, pregnancy, an illness, a drug the model has no
   input for: the model has no way to say it. That is a refusal (kind `population`),
   not a finding with the wrong status. Obesity is not a condition here; it is a
-  `bmi` range with `unselected`.
+  `bmi` range with `unselected`, also where the paper calls the group healthy
+  (`healthy` would tell the model that the group's insulin sensitivity is better
+  than the median whatever its BMI), unless its glucose tolerance was screened
+  by a test.
 * A protocol can override `sex`, `age_years`, `bmi` or `status` for one arm, when
   the paper compares groups (lean against obese, young against old). `age_years`
   and `bmi` are written as at the top level, with that group's printed numbers
@@ -740,7 +743,12 @@ used.
 * If the unit as printed converts to an absurd value (adrenaline in ng/mL), the paper
   has probably misprinted it. Leave the number out; do not correct the paper.
 * When a table does not say when a baseline value was drawn, enter it on a fasted
-  morning and put `duration_min` in `assumed`.
+  morning and put `duration_min` in `assumed`. That holds for a resting blood
+  pressure or a fat mass from the participants' table as for a fasting glucose.
+  It does not hold where the paper describes several occasions on which the
+  value was measured (a meter read three times a day) and the table does not say
+  which of them it prints: leave that out (`source`, `time_not_printed`). Whether
+  the number looks like a fasting value is not a reason either way.
 * A sample drawn a few hours after food the paper does not describe (subjects who
   "abstained for at least four hours") is not a fasting sample, and the state it
   was drawn in cannot be written: leave it out (`source`, `input_not_printed`).
