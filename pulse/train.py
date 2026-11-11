@@ -478,6 +478,7 @@ def train(
     benchmark_report_path: str | None = None,
     scoreboard: bool = True,
     scoreboard_identifiability: bool = True,
+    deadline_hours: float = 0.0,
     deterministic: bool = False,
     torch_threads: int = 1,
     compile_steps: bool = False,
@@ -508,6 +509,8 @@ def train(
     p3_lr = phase3_lr if phase3_lr is not None else p2_lr
     p3_start = total_epochs
     total_epochs += p3_epochs
+    # Epoch counts at which a phase has just ended (the last one is the end of the run).
+    phase_ends = {phase_boundary, p3_start} if phased else set()
     p2_floor = float(phase2_lr_floor) if phase2_lr_floor is not None else p2_lr * 0.05
 
     enable_at = phase_boundary if phased else 0
@@ -711,6 +714,8 @@ def train(
     )
 
     last_good_path = output_path + ".last-good.pt"
+    train_start = time.time()
+    stopped_for_deadline = False
     recent_metrics: list[dict[str, float]] = []
 
     cur_phase = 1
@@ -774,13 +779,13 @@ def train(
             n_tape = 0
             n_dose = 0
             n_carb = 0
+            evidence_backwards = 0
+            evidence_clipped = 0
             joint_norms: list[float] = []
             signal_times = {
                 "evidence": 0.0, "evidence_spinup": 0.0, "teacher_tape": 0.0, "population_prior": 0.0,
                 "dose_response": 0.0, "carb_mass_balance": 0.0,
             }
-            evidence_backwards = 0
-            evidence_clipped = 0
 
             for _step in range(n_steps_default):
                 # One rollout group's graph at a time: the evidence step backwards
@@ -875,25 +880,25 @@ def train(
                 flush=True,
             )
 
-            metrics_summary: dict[str, float] = {
-                "epoch": float(epoch),
-                "phase": float(cur_phase),
-                "lr": float(scheduler.get_last_lr()[0]),
-                "elapsed_s": float(elapsed),
             print(
                 f"[CLIP] epoch={epoch:3d} phase={cur_phase} evidence_backwards={evidence_backwards} "
                 f"clipped={evidence_clipped} aux_signal_clip={float(aux_signal_clip):g}",
                 flush=True,
             )
 
+            metrics_summary: dict[str, float] = {
+                "epoch": float(epoch),
+                "phase": float(cur_phase),
+                "lr": float(scheduler.get_last_lr()[0]),
+                "elapsed_s": float(elapsed),
                 "evidence_items": float(n_items),
+                "evidence_backwards": float(evidence_backwards),
+                "evidence_clipped": float(evidence_clipped),
                 "evidence_nll": float(evidence_mean),
                 "rules_nll": float(rules_mean),
                 "teacher_tape_weight": float(w_tape),
                 "teacher_tape_loss": float(tape_mean),
                 "population_prior_nll": float(prior_mean),
-                "evidence_backwards": float(evidence_backwards),
-                "evidence_clipped": float(evidence_clipped),
                 "dose_loss": float(dose_sum) if n_dose else 0.0,
                 "carb_loss": float(carb_sum) if n_carb else 0.0,
                 "traj_grad_norm_mean": float(_tn.mean()) if _tn.size else 0.0,
@@ -930,6 +935,25 @@ def train(
                 f"elems_m={mem['total_elems_m']:.2f} grad_elems_m={mem['grad_elems_m']:.2f}",
                 flush=True,
             )
+
+            if scoreboard and phased and epoch + 1 in phase_ends and epoch + 1 < total_epochs:
+                _write_phase_board(
+                    model, cur_phase, output_path, gcs_bucket, gcs_object,
+                    previous=_previous_board(init_from or resume_from),
+                )
+
+            if (
+                deadline_hours > 0.0
+                and epoch + 1 < total_epochs
+                and time.time() + elapsed - train_start > deadline_hours * 3600.0
+            ):
+                print(
+                    f"[DEADLINE] stopping after epoch {epoch}: another epoch ({elapsed:.0f}s) "
+                    f"would end past {deadline_hours:g} h",
+                    flush=True,
+                )
+                stopped_for_deadline = True
+                break
 
             last_in_phase = (epoch == total_epochs - 1) or (phased and epoch == phase_boundary - 1)
             if epoch % 5 == 0 or last_in_phase:
@@ -1104,6 +1128,8 @@ def train(
         "perturb_protocols": perturb_protocols,
         "grad_clip": grad_clip,
         "seed": seed,
+        "stopped_for_deadline": stopped_for_deadline,
+        "deadline_hours": deadline_hours,
         "input_dropout": input_dropout,
         "train_config": dict(train_config) if train_config else None,
         "spec_path": spec_path,
@@ -1156,6 +1182,31 @@ def score_on_board(
     )
     print(render_scoreboard(board), flush=True)
     return board
+
+
+def _write_phase_board(
+    model: ModularPhysiologyNetwork,
+    phase: int,
+    output_path: str,
+    gcs_bucket: str | None,
+    gcs_object: str | None,
+    *,
+    previous: dict | None,
+) -> None:
+    """The model at the end of ``phase`` on the literature board, written beside the
+    checkpoint as ``<stem>.phase<N>.scoreboard.json`` (and uploaded), so a run that dies
+    later still leaves it. Without the identifiability pass: it is the expensive part, and
+    the individual ruler only ever runs with the benchmark at the end of the run."""
+    board = score_on_board(model, previous=previous, identifiability=False)
+    path = Path(output_path)
+    path = path.with_name(f"{path.stem}.phase{phase}.scoreboard.json")
+    path.write_text(json.dumps(board, indent=2))
+    print(f"Phase {phase} scoreboard saved to {path}", flush=True)
+    if gcs_bucket and gcs_object:
+        try:
+            _upload_to_gcs(str(path), gcs_bucket, _gcs_sibling(gcs_object, path.name))
+        except Exception as err:
+            print(f"[BOARD] phase {phase} upload failed: {err}", flush=True)
 
 
 def _previous_board(checkpoint_uri: str | None) -> dict | None:
@@ -1541,7 +1592,7 @@ _RUN_PLUMBING_KEYS = frozenset({
     "spec", "gcs_bucket", "gcs_object", "output_path", "benchmark_dataset_uri",
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
     "frozen_ruler", "deterministic", "allow_spec_override", "torch_threads", "compile_steps",
-    "init_from", "resume_from", "scoreboard", "scoreboard_identifiability",
+    "init_from", "resume_from", "scoreboard", "scoreboard_identifiability", "deadline_hours",
 })
 
 
@@ -2169,6 +2220,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Include the open-direction line (one backward per literature item).",
     )
     parser.add_argument(
+        "--deadline-hours", type=float, default=0.0,
+        help="Stop training cleanly, and go on to the end-of-run board, checkpoint and upload, "
+             "when the projected end of the next epoch (at the last epoch's duration) passes "
+             "this many hours after training began. 0 = no deadline. Set it below the task "
+             "timeout by the time the end-of-run scoring takes.",
+    )
+    parser.add_argument(
         "--frozen-ruler", type=str, default=None,
         help=(
             "Iter 97 (review 5.2): path to a frozen-ruler file; sets "
@@ -2368,6 +2426,7 @@ def main():
         benchmark_report_path=args.benchmark_report_path,
         scoreboard=args.scoreboard,
         scoreboard_identifiability=args.scoreboard_identifiability,
+        deadline_hours=args.deadline_hours,
         deterministic=args.deterministic,
         torch_threads=args.torch_threads,
         compile_steps=args.compile_steps,
