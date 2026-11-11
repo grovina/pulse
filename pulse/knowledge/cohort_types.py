@@ -177,6 +177,7 @@ class CohortArmSpec:
     label: str
     duration_min: int
     start_hour: float
+    # Each meal is (minute, carbohydrate g, fat g, protein g): fat before protein.
     meals: tuple[tuple[float, float, float, float], ...]
     sleep_wake: tuple[float, ...] | None = None
     activity: tuple[float, ...] | None = None

@@ -305,11 +305,11 @@ WAHREN_RESTING_SPLANCHNIC_GLUCOSE = CohortStatisticSpec(
 _LANDAU_HOURS = 42
 _LANDAU_DURATION_MIN = _LANDAU_HOURS * 60 + 1
 _LANDAU_KCAL = 13.0 * BODY_MASS_KG
-_LANDAU_MEAL = ((
+_LANDAU_MEAL = ((  # minute, carbohydrate g, fat g, protein g
     0.0,
     0.48 * _LANDAU_KCAL / 4.0,
-    0.19 * _LANDAU_KCAL / 4.0,
     0.33 * _LANDAU_KCAL / 9.0,
+    0.19 * _LANDAU_KCAL / 4.0,
 ),)
 
 
