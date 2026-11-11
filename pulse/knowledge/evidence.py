@@ -151,6 +151,8 @@ class EvidenceItem:
     init_mode: InitMode = InitMode.COLD
     weight: float = 1.0
     rule: PhysiologyRule | None = None
+    # The paper a literature item comes from; ``None`` for the teacher and the rulers.
+    paper: str | None = None
 
 
 def from_cohort(spec: CohortStatisticSpec) -> EvidenceItem:
@@ -173,6 +175,7 @@ def from_cohort(spec: CohortStatisticSpec) -> EvidenceItem:
         ),
         init_mode=spec.init_mode,
         weight=spec.weight,
+        paper=spec.paper,
     )
 
 
@@ -187,6 +190,7 @@ def from_rule(rule: PhysiologyRule) -> EvidenceItem:
         init_mode=rule.init_mode,
         weight=rule.weight,
         rule=rule,
+        paper=rule.paper,
     )
 
 
@@ -310,6 +314,8 @@ def sealed_evidence() -> tuple[EvidenceItem, ...]:
     Only literature cohorts and rules are sealable — the teacher tape, the
     distill fill and the dose canon are not literature items and are never in
     the sealed set. The scoreboard scores these the way ``cgm_real`` is scored.
+    An item is sealed by its paper (``sealing``) or because it is a legacy
+    held-out item.
     """
     return (
         *(from_cohort(spec) for spec in SEALED_COHORT_STATISTICS),

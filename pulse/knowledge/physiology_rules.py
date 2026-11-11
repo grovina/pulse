@@ -65,6 +65,7 @@ from dataclasses import dataclass
 import torch
 
 from .cohort_types import CohortArmSpec, InitMode
+from .sealing import apply_seal
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +139,13 @@ class PhysiologyRule:
     # NOT flagged, so a contradiction cannot enter the registry unnoticed.
     teacher_correction: bool = False
     teacher_correction_note: str = ""
+    # The paper this rule comes from: a lowercase ASCII slug, ``firstauthor-year``,
+    # read off ``source``; the first paper named where ``source`` names several.
+    # Required of every registered rule; the registry rejects an empty one.
+    paper: str = ""
     # Held-out: a sealed rule never enters the training registry; it is reachable
-    # only through the scoring path (PLAN Phase 0). Sealing is at random within a
-    # family at filing time.
+    # only through the scoring path (PLAN Phase 0). The registry sets it from
+    # ``paper``; an author never does.
     sealed: bool = False
 
     def __post_init__(self) -> None:
@@ -679,6 +684,7 @@ _SLEEP_WAKE_24H_ARM = CohortArmSpec(
 GLUCAGON_FALLS_POSTPRANDIAL = PhysiologyRule(
     name="glucagon_falls_postprandial",
     source="Unger & Orci (1981); Müller et al. (1970)",
+    paper="unger-1981",
     description=(
         "Plasma glucagon decreases by ≥ 5 pg/mL within 60 min of a "
         "carbohydrate-containing meal (alpha-cell suppression by "
@@ -699,6 +705,7 @@ GLUCAGON_FALLS_POSTPRANDIAL = PhysiologyRule(
 FFA_INVERSE_TO_INSULIN_POSTPRANDIAL = PhysiologyRule(
     name="ffa_inverse_to_insulin_postprandial",
     source="Frayn (2003) review; Boden (1996)",
+    paper="frayn-2003",
     description=(
         "Postprandial FFA is anti-correlated with insulin "
         "(antilipolysis): correlation ≤ -0.3 over the 0–180 min "
@@ -729,6 +736,7 @@ FFA_INVERSE_TO_INSULIN_POSTPRANDIAL = PhysiologyRule(
 GHRELIN_FALLS_AFTER_MEAL = PhysiologyRule(
     name="ghrelin_falls_after_meal",
     source="Cummings et al. (2001)",
+    paper="cummings-2001",
     description=(
         "Plasma ghrelin drops by ≥ 30 pg/mL within 60 min of a meal "
         "(largest single hormonal correlate of pre/post-meal hunger). "
@@ -752,6 +760,7 @@ GHRELIN_FALLS_AFTER_MEAL = PhysiologyRule(
 BHB_RISES_DURING_FAST = PhysiologyRule(
     name="bhb_rises_during_fast",
     source="Cahill (2006); Owen et al. (1969)",
+    paper="cahill-2006",
     description=(
         "β-hydroxybutyrate rises by ≥ 0.05 mmol/L over an 8h→16h "
         "fast extension (onset of ketogenesis as hepatic glycogen "
@@ -775,6 +784,7 @@ BHB_RISES_DURING_FAST = PhysiologyRule(
 CORTISOL_MORNING_PEAK = PhysiologyRule(
     name="cortisol_morning_peak",
     source="Czeisler et al. (1999); Weitzman et al. (1971)",
+    paper="czeisler-1999",
     description=(
         "Plasma cortisol peaks between 06:00 and 09:00 in normally-"
         "entrained adults (cortisol awakening response on top of the "
@@ -810,6 +820,7 @@ CORTISOL_MORNING_PEAK = PhysiologyRule(
 ACTH_PRECEDES_CORTISOL_RELATIONAL = PhysiologyRule(
     name="acth_precedes_cortisol_relational",
     source="Veldhuis et al. (1990); Weitzman et al. (1971)",
+    paper="veldhuis-1990",
     description=(
         "Soft-argmax of ACTH leads cortisol's by 5–60 minutes within "
         "the 04:00–09:00 morning window — the canonical HPA pulsatile "
@@ -842,6 +853,7 @@ ACTH_PRECEDES_CORTISOL_RELATIONAL = PhysiologyRule(
 INSULIN_RISES_POSTPRANDIAL = PhysiologyRule(
     name="insulin_rises_postprandial",
     source="Polonsky et al. (1988); standard OGTT physiology",
+    paper="polonsky-1988",
     description=(
         "Plasma insulin rises by ≥ 10 μU/mL within 60 min of a meal "
         "(first-phase secretion + sustained release). Required across "
@@ -873,6 +885,7 @@ INSULIN_RISES_POSTPRANDIAL = PhysiologyRule(
 GLP1_RETURNS_TO_BASELINE_POSTPRANDIAL = PhysiologyRule(
     name="glp1_returns_to_baseline_postprandial",
     source="Holst (2007) review; Drucker (2006)",
+    paper="holst-2007",
     description=(
         "Plasma GLP-1 is back near baseline (≤ 15 pmol/L) once the "
         "meal has left the stomach. A mixed meal of this size is still "
@@ -891,6 +904,7 @@ GLP1_RETURNS_TO_BASELINE_POSTPRANDIAL = PhysiologyRule(
 GLP1_PEAK_BOUNDED = PhysiologyRule(
     name="glp1_peak_bounded",
     source="Vilsbøll et al. (2003); standard postprandial GLP-1 kinetics",
+    paper="vilsboll-2003",
     description=(
         "Plasma GLP-1 postprandial peak stays below 60 pmol/L — the "
         "upper clinical envelope for a 75g mixed/OGTT load. Caps the "
@@ -909,6 +923,7 @@ GLP1_PEAK_BOUNDED = PhysiologyRule(
 GHRELIN_RISES_PRE_MEAL = PhysiologyRule(
     name="ghrelin_rises_pre_meal",
     source="Cummings et al. (2001, 2004)",
+    paper="cummings-2001",
     description=(
         "Plasma ghrelin rises ≥ 20 pg/mL during the pre-meal hour as "
         "anticipatory hunger builds (clock-regulated and reinforced by "
@@ -937,6 +952,7 @@ GHRELIN_RISES_PRE_MEAL = PhysiologyRule(
 GLUCOSE_POSTPRANDIAL_BOUNDED = PhysiologyRule(
     name="glucose_postprandial_bounded",
     source="ADA criteria (2024); ISO 15197",
+    paper="ada-2024",
     description=(
         "Postprandial glucose stays below 180 mg/dL in non-diabetics "
         "after a 75g mixed-carb meal (or OGTT). Directly addresses the "
@@ -956,6 +972,7 @@ GLUCOSE_POSTPRANDIAL_BOUNDED = PhysiologyRule(
 GLUCOSE_FASTING_FLOOR = PhysiologyRule(
     name="glucose_fasting_floor",
     source="ADA criteria (2024); Cahill (2006)",
+    paper="ada-2024",
     description=(
         "Plasma glucose stays ≥ 65 mg/dL across a 16h fast — the "
         "physiological floor below which counter-regulation kicks in "
@@ -974,6 +991,7 @@ GLUCOSE_FASTING_FLOOR = PhysiologyRule(
 FFA_RISES_DURING_FAST = PhysiologyRule(
     name="ffa_rises_during_fast",
     source="Frayn (2003); Coppack et al. (1992)",
+    paper="frayn-2003",
     description=(
         "Plasma FFA rises by ≥ 0.2 mmol/L over a fast extension "
         "(lipolysis kicks in as insulin falls). Complements the "
@@ -999,6 +1017,7 @@ FFA_RISES_DURING_FAST = PhysiologyRule(
 BHB_PLATEAU_CAPPED = PhysiologyRule(
     name="bhb_plateau_capped",
     source="Cahill (2006); Owen et al. (1969)",
+    paper="cahill-2006",
     description=(
         "β-hydroxybutyrate stays below 5 mmol/L during a 24h fast — "
         "the typical clinical ceiling before diabetic ketoacidosis "
@@ -1018,6 +1037,7 @@ BHB_PLATEAU_CAPPED = PhysiologyRule(
 INSULIN_GLUCAGON_ANTAGONIST_POSTPRANDIAL = PhysiologyRule(
     name="insulin_glucagon_antagonist_postprandial",
     source="Unger & Orci (1981); Cherrington (1999)",
+    paper="unger-1981",
     description=(
         "Insulin and glucagon are anti-correlated postprandially "
         "(insulin rises with glucose, glucagon falls under alpha-cell "
@@ -1038,6 +1058,7 @@ INSULIN_GLUCAGON_ANTAGONIST_POSTPRANDIAL = PhysiologyRule(
 LIVER_GLYCOGEN_DEPLETES_IN_FAST = PhysiologyRule(
     name="liver_glycogen_depletes_in_fast",
     source="Nilsson & Hultman (1973); Rothman et al. (1991)",
+    paper="nilsson-1973",
     description=(
         "Liver glycogen depletes by ≥ 30 g over a 12–24h fast (from "
         "typical ~100g, the overnight-depletable pool — Rothman MRS "
@@ -1058,6 +1079,7 @@ LIVER_GLYCOGEN_DEPLETES_IN_FAST = PhysiologyRule(
 SBP_ABOVE_DBP_ALWAYS = PhysiologyRule(
     name="sbp_above_dbp_always",
     source="Standard cardiovascular physiology (universal)",
+    paper="textbook-cardiovascular-physiology",
     description=(
         "Systolic blood pressure exceeds diastolic by ≥ 10 mmHg at "
         "all times across all protocols. A trivial physiological "
@@ -1093,6 +1115,7 @@ SBP_ABOVE_DBP_ALWAYS = PhysiologyRule(
 GLUCOSE_RISES_WITH_MEAL = PhysiologyRule(
     name="glucose_rises_with_meal",
     source="ADA criteria (2024); standard OGTT physiology",
+    paper="ada-2024",
     description=(
         "Plasma glucose rises ≥ 20 mg/dL within 60 min of a 75g "
         "carb-containing meal — the iter-66 counterpart to "
@@ -1113,6 +1136,7 @@ GLUCOSE_RISES_WITH_MEAL = PhysiologyRule(
 GLUCOSE_RETURNS_BELOW_140_POSTPRANDIAL = PhysiologyRule(
     name="glucose_returns_below_140_postprandial",
     source="ADA criteria (2024); 75g OGTT 2-hr glucose criterion",
+    paper="ada-2024",
     description=(
         "Postprandial glucose returns below 140 mg/dL by 150 min "
         "post-load in normoglycaemic adults (the 75g OGTT diagnostic "
@@ -1131,6 +1155,7 @@ GLUCOSE_RETURNS_BELOW_140_POSTPRANDIAL = PhysiologyRule(
 GLUCOSE_OVERNIGHT_STABILITY = PhysiologyRule(
     name="glucose_overnight_stability",
     source="Polonsky et al. (1988); standard CGM-derived nocturnal data",
+    paper="polonsky-1988",
     description=(
         "Overnight (fasted) glucose stays within a 25 mg/dL range "
         "across the 8-16h fast window — the dawn phenomenon and "
@@ -1150,6 +1175,7 @@ GLUCOSE_OVERNIGHT_STABILITY = PhysiologyRule(
 INSULIN_FIRST_PHASE_RISE = PhysiologyRule(
     name="insulin_first_phase_rise",
     source="Cerasi & Luft (1967); Polonsky et al. (1988)",
+    paper="cerasi-1967",
     description=(
         "First-phase insulin secretion: insulin rises ≥ 5 μU/mL "
         "within 30 minutes of a 75g carb load (the rapid β-cell "
@@ -1170,6 +1196,7 @@ INSULIN_FIRST_PHASE_RISE = PhysiologyRule(
 INSULIN_RETURNS_TO_BASAL_POSTPRANDIAL = PhysiologyRule(
     name="insulin_returns_to_basal_postprandial",
     source="Polonsky et al. (1988); Vilsbøll et al. (2003)",
+    paper="polonsky-1988",
     description=(
         "Plasma insulin is back to ≤ 15 μU/mL once the meal has left "
         "the stomach (~1.5x basal). The window is 5-6 h after a mixed "
@@ -1188,6 +1215,7 @@ INSULIN_RETURNS_TO_BASAL_POSTPRANDIAL = PhysiologyRule(
 INSULIN_FALLS_DURING_FAST = PhysiologyRule(
     name="insulin_falls_during_fast",
     source="Cahill (2006); Owen et al. (1969)",
+    paper="cahill-2006",
     description=(
         "Plasma insulin drops to ≤ 8 μU/mL by 12 h fasted "
         "(suppression as β-cells respond to falling glucose & "
@@ -1212,6 +1240,7 @@ INSULIN_FALLS_DURING_FAST = PhysiologyRule(
 GLUCAGON_RISES_DURING_FAST = PhysiologyRule(
     name="glucagon_rises_during_fast",
     source="Unger & Orci (1981); Cherrington (1999)",
+    paper="unger-1981",
     description=(
         "Plasma glucagon rises by ≥ 10 pg/mL over a 16h fast "
         "extension — counter-regulatory α-cell activation as "
@@ -1242,6 +1271,7 @@ GLUCAGON_RISES_DURING_FAST = PhysiologyRule(
 FFA_FALLS_POSTPRANDIAL = PhysiologyRule(
     name="ffa_falls_postprandial",
     source="Frayn (2003); Boden (1996) antilipolysis review",
+    paper="frayn-2003",
     description=(
         "Plasma FFA drops ≥ 0.1 mmol/L within 60 min of a "
         "carbohydrate-containing meal (insulin-driven anti-lipolysis "
@@ -1262,6 +1292,7 @@ FFA_FALLS_POSTPRANDIAL = PhysiologyRule(
 BHB_RETURNS_TO_BASELINE_POSTPRANDIAL = PhysiologyRule(
     name="bhb_returns_to_baseline_postprandial",
     source="Cahill (2006); Owen et al. (1969)",
+    paper="cahill-2006",
     description=(
         "Plasma β-hydroxybutyrate drops to ≤ 0.2 mmol/L by 240 min "
         "after a mixed meal (insulin suppression of ketogenesis). "
@@ -1280,6 +1311,7 @@ BHB_RETURNS_TO_BASELINE_POSTPRANDIAL = PhysiologyRule(
 HEPATIC_OUTPUT_INVERSE_TO_INSULIN = PhysiologyRule(
     name="hepatic_output_inverse_to_insulin",
     source="Cherrington (1999); DeFronzo et al. (1982)",
+    paper="cherrington-1999",
     description=(
         "Endogenous hepatic glucose output is anti-correlated with "
         "insulin over the postprandial window (insulin suppresses "
@@ -1301,6 +1333,7 @@ HEPATIC_OUTPUT_INVERSE_TO_INSULIN = PhysiologyRule(
 LACTATE_RISES_WITH_EXERCISE = PhysiologyRule(
     name="lactate_rises_with_exercise",
     source="Brooks (1985); Robergs et al. (2004)",
+    paper="brooks-1985",
     description=(
         "Plasma lactate rises ≥ 1 mmol/L during a 60-min "
         "moderate-intensity bout (anaerobic glycolysis component "
@@ -1321,6 +1354,7 @@ LACTATE_RISES_WITH_EXERCISE = PhysiologyRule(
 LACTATE_RETURNS_POST_EXERCISE = PhysiologyRule(
     name="lactate_returns_post_exercise",
     source="Brooks (1985); standard recovery physiology",
+    paper="brooks-1985",
     description=(
         "Plasma lactate returns toward baseline within 60 min after "
         "exercise stops (drops back below 2 mmol/L during the "
@@ -1339,6 +1373,7 @@ LACTATE_RETURNS_POST_EXERCISE = PhysiologyRule(
 FFA_RISES_WITH_EXERCISE = PhysiologyRule(
     name="ffa_rises_with_exercise",
     source="Romijn et al. (1993); Coppack et al. (1992)",
+    paper="romijn-1993",
     description=(
         "Plasma FFA rises ≥ 0.2 mmol/L during moderate exercise "
         "(catecholamine-driven lipolysis as energy demand outpaces "
@@ -1362,6 +1397,7 @@ FFA_RISES_WITH_EXERCISE = PhysiologyRule(
 MUSCLE_GLYCOGEN_FALLS_WITH_EXERCISE = PhysiologyRule(
     name="muscle_glycogen_falls_with_exercise",
     source="Coyle (1991); Hultman & Bergström (1967)",
+    paper="coyle-1991",
     description=(
         "Muscle glycogen drops ≥ 10g during a 60-min moderate bout "
         "(direct glycolytic consumption). Tests that the iter-57 "
@@ -1384,6 +1420,7 @@ MUSCLE_GLYCOGEN_FALLS_WITH_EXERCISE = PhysiologyRule(
 GHRELIN_EVENING_PEAK = PhysiologyRule(
     name="ghrelin_evening_peak",
     source="Cummings et al. (2001, 2004); Drazen et al. (2006)",
+    paper="cummings-2001",
     description=(
         "Plasma ghrelin shows a circadian peak in the evening "
         "(approx 18:00–22:00) — a learned, meal-anticipatory peak "
@@ -1414,6 +1451,7 @@ GHRELIN_EVENING_PEAK = PhysiologyRule(
 LEPTIN_EVENING_PEAK = PhysiologyRule(
     name="leptin_evening_peak",
     source="Sinha et al. (1996); Saad et al. (1998)",
+    paper="sinha-1996",
     description=(
         "Plasma leptin peaks at 22:00–02:00 local (the canonical "
         "night-time peak of the leptin diurnal rhythm). Currently "
@@ -1442,6 +1480,7 @@ LEPTIN_EVENING_PEAK = PhysiologyRule(
 LEPTIN_STABLE_OVER_MEAL = PhysiologyRule(
     name="leptin_stable_over_meal",
     source="Considine et al. (1996); standard leptin kinetics",
+    paper="considine-1996",
     description=(
         "Plasma leptin drifts by < 3 ng/mL over a single 5-h "
         "postprandial window — leptin is a slow chronic-state "
@@ -1465,6 +1504,7 @@ LEPTIN_STABLE_OVER_MEAL = PhysiologyRule(
 GLP1_RISES_EARLY_POSTPRANDIAL = PhysiologyRule(
     name="glp1_rises_early_postprandial",
     source="Holst (2007); Vilsbøll et al. (2003)",
+    paper="holst-2007",
     description=(
         "GLP-1 rises ≥ 5 pmol/L within the first 30 min after a "
         "carb-containing meal — L-cell secretion kicks in early. "
@@ -1485,6 +1525,7 @@ GLP1_RISES_EARLY_POSTPRANDIAL = PhysiologyRule(
 GLP1_INSULIN_CORRELATION_POSTPRANDIAL = PhysiologyRule(
     name="glp1_insulin_correlation_postprandial",
     source="Drucker (2006) incretin review; Nauck et al. (1986)",
+    paper="drucker-2006",
     description=(
         "Postprandial GLP-1 and insulin are positively correlated "
         "(incretin effect: ~50% of post-meal insulin is GLP-1 / "
@@ -1505,6 +1546,7 @@ GLP1_INSULIN_CORRELATION_POSTPRANDIAL = PhysiologyRule(
 CORTISOL_EVENING_TROUGH = PhysiologyRule(
     name="cortisol_evening_trough",
     source="Czeisler et al. (1999); standard cortisol diurnal data",
+    paper="czeisler-1999",
     description=(
         "Plasma cortisol soft-min over a 24h window lands at 22:00–"
         "02:00 (the canonical evening trough). Companion to "
@@ -1531,6 +1573,7 @@ CORTISOL_EVENING_TROUGH = PhysiologyRule(
 CORTISOL_CIRCADIAN_AMPLITUDE = PhysiologyRule(
     name="cortisol_circadian_amplitude",
     source="Czeisler et al. (1999); Weitzman et al. (1971)",
+    paper="czeisler-1999",
     description=(
         "Plasma cortisol shows a daily peak-to-trough amplitude of "
         "≥ 5 μg/dL (the diurnal swing is large — morning ~18 vs "
@@ -1551,6 +1594,7 @@ CORTISOL_CIRCADIAN_AMPLITUDE = PhysiologyRule(
 CORTISOL_RISES_WITH_EXERCISE = PhysiologyRule(
     name="cortisol_rises_with_exercise",
     source="Hill et al. (2008); Wahl et al. (2010)",
+    paper="hill-2008",
     description=(
         "Plasma cortisol rises ≥ 2 μg/dL during a 60-min moderate "
         "bout (acute HPA activation by physical stress)."
@@ -1573,6 +1617,7 @@ CORTISOL_RISES_WITH_EXERCISE = PhysiologyRule(
 ACTH_EVENING_TROUGH = PhysiologyRule(
     name="acth_evening_trough",
     source="Veldhuis et al. (1990); Weitzman et al. (1971)",
+    paper="veldhuis-1990",
     description=(
         "Plasma ACTH soft-min in 22:00–02:00 (the diurnal nadir, "
         "anticipating cortisol's slightly later trough by the same "
@@ -1595,6 +1640,7 @@ ACTH_EVENING_TROUGH = PhysiologyRule(
 ACTH_CIRCADIAN_AMPLITUDE = PhysiologyRule(
     name="acth_circadian_amplitude",
     source="Veldhuis et al. (1990)",
+    paper="veldhuis-1990",
     description=(
         "Plasma ACTH peak-to-trough amplitude ≥ 15 pg/mL over 24h "
         "(morning ~50–60 vs evening ~10–15 in healthy adults)."
@@ -1614,6 +1660,7 @@ ACTH_CIRCADIAN_AMPLITUDE = PhysiologyRule(
 HR_RISES_WITH_EXERCISE = PhysiologyRule(
     name="hr_rises_with_exercise",
     source="Robergs & Landwehr (2002); ACSM exercise guidelines",
+    paper="robergs-2002",
     description=(
         "Heart rate rises ≥ 30 bpm during a 60-min moderate bout "
         "(submaximal ~50–60% VO2max → HR ~110–130 from resting "
@@ -1635,6 +1682,7 @@ HR_RISES_WITH_EXERCISE = PhysiologyRule(
 HR_RECOVERY_POST_EXERCISE = PhysiologyRule(
     name="hr_recovery_post_exercise",
     source="Cole et al. (1999); Imai et al. (1994)",
+    paper="cole-1999",
     description=(
         "Heart rate drops ≥ 20 bpm within 30 min of stopping "
         "moderate exercise — the vagal-reactivation recovery "
@@ -1654,6 +1702,7 @@ HR_RECOVERY_POST_EXERCISE = PhysiologyRule(
 HR_FALLS_DURING_SLEEP = PhysiologyRule(
     name="hr_falls_during_sleep",
     source="Burgess et al. (1997); standard polysomnographic data",
+    paper="burgess-1997",
     description=(
         "Heart rate is ≥ 10 bpm lower during sleep than during the "
         "daytime wake period — parasympathetic dominance during "
@@ -1674,6 +1723,7 @@ HR_FALLS_DURING_SLEEP = PhysiologyRule(
 HRV_HIGHER_DURING_SLEEP = PhysiologyRule(
     name="hrv_higher_during_sleep",
     source="Trinder et al. (2001); standard HRV-sleep data",
+    paper="trinder-2001",
     description=(
         "Heart rate variability (RMSSD) is ≥ 10 ms higher during "
         "sleep than daytime wake (vagal-mediated HRV rises with "
@@ -1693,6 +1743,7 @@ HRV_HIGHER_DURING_SLEEP = PhysiologyRule(
 HRV_INVERSE_TO_HR = PhysiologyRule(
     name="hrv_inverse_to_hr",
     source="Task Force ESC/NASPE (1996) standards",
+    paper="task-force-1996",
     description=(
         "HRV (RMSSD) and HR are anti-correlated across diurnal "
         "fluctuation (parasympathetic-vagal autonomic balance: "
@@ -1717,6 +1768,7 @@ HRV_INVERSE_TO_HR = PhysiologyRule(
 DBP_DOES_NOT_RISE_WITH_EXERCISE = PhysiologyRule(
     name="dbp_does_not_rise_with_exercise",
     source="Lim et al. (1996); ACSM exercise testing guidelines",
+    paper="lim-1996",
     description=(
         "Diastolic BP rises by less than 10 mmHg across a moderate aerobic "
         "bout. A fall is allowed. The ceiling sits inside the 15 mmHg "
@@ -1736,6 +1788,7 @@ DBP_DOES_NOT_RISE_WITH_EXERCISE = PhysiologyRule(
 SBP_RISES_WITH_EXERCISE = PhysiologyRule(
     name="sbp_rises_with_exercise",
     source="Lim et al. (1996); ACSM exercise testing guidelines",
+    paper="lim-1996",
     description=(
         "Systolic BP rises ≥ 15 mmHg during a 60-min moderate "
         "bout (cardiac output increase against modestly increased "
@@ -1755,6 +1808,7 @@ SBP_RISES_WITH_EXERCISE = PhysiologyRule(
 SBP_MORNING_SURGE = PhysiologyRule(
     name="sbp_morning_surge",
     source="Kario et al. (2003) Circulation 107:1401 — sleep-trough morning surge",
+    paper="kario-2003",
     description=(
         "Systolic BP shows a morning surge: the mean over the two hours after "
         "waking (06:30–09:30) exceeds the lowest night hours (02:00–05:00) by "
@@ -1782,6 +1836,7 @@ SBP_MORNING_SURGE = PhysiologyRule(
 SBP_FALLS_DURING_SLEEP = PhysiologyRule(
     name="sbp_falls_during_sleep",
     source="O'Brien et al. (1988); standard ambulatory BP",
+    paper="obrien-1988",
     description=(
         "Systolic BP drops ≥ 10 mmHg during sleep vs daytime wake "
         "(the 'nocturnal dip', ~10–20% drop in normotensives)."
@@ -1802,6 +1857,7 @@ SBP_FALLS_DURING_SLEEP = PhysiologyRule(
 TEMP_CIRCADIAN_AMPLITUDE = PhysiologyRule(
     name="temp_circadian_amplitude",
     source="Czeisler et al. (1999); Refinetti & Menaker (1992)",
+    paper="czeisler-1999",
     description=(
         "Core body temperature swings 0.5–0.8 °C peak-to-trough over a day "
         "(the canonical 36.5 → 37.2 swing). Both bounds are supervised: the "
@@ -1826,6 +1882,7 @@ TEMP_CIRCADIAN_AMPLITUDE = PhysiologyRule(
 TEMP_LATE_AFTERNOON_PEAK = PhysiologyRule(
     name="temp_late_afternoon_peak",
     source="Refinetti & Menaker (1992); standard circadian temp data",
+    paper="refinetti-1992",
     description=(
         "Core body temperature peaks 16:00–19:00 (the late-"
         "afternoon temperature high before evening decline)."
@@ -1845,6 +1902,7 @@ TEMP_LATE_AFTERNOON_PEAK = PhysiologyRule(
 TEMP_PRE_DAWN_TROUGH = PhysiologyRule(
     name="temp_pre_dawn_trough",
     source="Refinetti & Menaker (1992)",
+    paper="refinetti-1992",
     description=(
         "Core body temperature reaches its diurnal trough at "
         "04:00–06:00 (the pre-dawn nadir, ~36.0–36.4 °C in "
@@ -1867,6 +1925,7 @@ TEMP_PRE_DAWN_TROUGH = PhysiologyRule(
 RR_RISES_WITH_EXERCISE = PhysiologyRule(
     name="rr_rises_with_exercise",
     source="ACSM exercise guidelines; standard exercise pulmonary data",
+    paper="acsm-guidelines",
     description=(
         "Respiratory rate rises ≥ 5 /min during a 60-min "
         "moderate-intensity bout (CO2 clearance + drive from "
@@ -1887,6 +1946,7 @@ RR_RISES_WITH_EXERCISE = PhysiologyRule(
 SPO2_STABLE_AT_REST = PhysiologyRule(
     name="spo2_stable_at_rest",
     source="standard pulse oximetry data; ATS clinical practice guidelines",
+    paper="textbook-pulse-oximetry",
     description=(
         "SpO2 drifts less than 3% across a resting / fasted "
         "protocol — pulse oximetry is a tight homeostatic signal "
@@ -1907,6 +1967,7 @@ SPO2_STABLE_AT_REST = PhysiologyRule(
 BHB_CONTINUES_RISING_24_48H = PhysiologyRule(
     name="bhb_continues_rising_24_48h",
     source="Cahill (1970); Owen et al. (1969)",
+    paper="cahill-1970",
     description=(
         "β-hydroxybutyrate continues to climb during a 24–48h "
         "prolonged fast (ketogenesis ramps as ketone-adaptation "
@@ -1927,6 +1988,7 @@ BHB_CONTINUES_RISING_24_48H = PhysiologyRule(
 FFA_SUSTAINED_PROLONGED_FAST = PhysiologyRule(
     name="ffa_sustained_prolonged_fast",
     source="Cahill (1970); Coppack et al. (1992)",
+    paper="cahill-1970",
     description=(
         "FFA stays ≥ 0.6 mmol/L throughout 24–48h of fasting "
         "(sustained lipolysis as the energy substrate). Floor on "
@@ -1945,6 +2007,7 @@ FFA_SUSTAINED_PROLONGED_FAST = PhysiologyRule(
 LIVER_GLYCOGEN_DEPLETED_PROLONGED_FAST = PhysiologyRule(
     name="liver_glycogen_depleted_prolonged_fast",
     source="Rothman et al. (1991); Nilsson & Hultman (1973)",
+    paper="rothman-1991",
     description=(
         "Hepatic glycogen is essentially exhausted (< 30g) by 36h "
         "into a fast. Caps the depletion floor — should NOT come "
@@ -1963,6 +2026,7 @@ LIVER_GLYCOGEN_DEPLETED_PROLONGED_FAST = PhysiologyRule(
 GLUCAGON_INSULIN_RATIO_HIGH_FAST = PhysiologyRule(
     name="glucagon_insulin_ratio_high_fast",
     source="Unger & Orci (1975); Cherrington (1999)",
+    paper="unger-1975",
     description=(
         "During prolonged fasting the glucagon/insulin ratio shifts "
         "strongly toward glucagon: glucagon ~60–100 pg/mL over insulin "
@@ -1986,6 +2050,7 @@ GLUCAGON_INSULIN_RATIO_HIGH_FAST = PhysiologyRule(
 INSULIN_GLUCAGON_RATIO_HIGH_FED = PhysiologyRule(
     name="insulin_glucagon_ratio_high_fed",
     source="Unger & Orci (1981); Cherrington (1999)",
+    paper="unger-1981",
     description=(
         "Iter 74: the fed-state mirror of the fast ratio. Postprandially "
         "the balance inverts — insulin surges while glucagon is "
@@ -2010,6 +2075,7 @@ INSULIN_GLUCAGON_RATIO_HIGH_FED = PhysiologyRule(
 LIVER_GLYCOGEN_REPLENISHES_POSTPRANDIAL = PhysiologyRule(
     name="liver_glycogen_replenishes_postprandial",
     source="Petersen et al. (1999); Rothman et al. (1991)",
+    paper="petersen-1999",
     description=(
         "Hepatic glycogen rises ≥ 10g over the 4-h postprandial "
         "window of a 75g carb-containing meal (gluconeogenesis "
@@ -2031,6 +2097,7 @@ LIVER_GLYCOGEN_REPLENISHES_POSTPRANDIAL = PhysiologyRule(
 MUSCLE_GLYCOGEN_STABLE_AT_REST = PhysiologyRule(
     name="muscle_glycogen_stable_at_rest",
     source="Coyle (1991); Hultman & Bergström (1967)",
+    paper="coyle-1991",
     description=(
         "Muscle glycogen drifts by < 20g over an 8h resting fast "
         "(no exercise, no breakdown gate — pool should be ~stable "
@@ -2050,7 +2117,7 @@ MUSCLE_GLYCOGEN_STABLE_AT_REST = PhysiologyRule(
 # Registry
 # ---------------------------------------------------------------------------
 
-_ALL_PHYSIOLOGY_RULES: list[PhysiologyRule] = [
+_AUTHORED_RULES: list[PhysiologyRule] = [
     # iter 42–52: original five
     GLUCAGON_FALLS_POSTPRANDIAL,
     FFA_INVERSE_TO_INSULIN_POSTPRANDIAL,
@@ -2129,8 +2196,10 @@ _ALL_PHYSIOLOGY_RULES: list[PhysiologyRule] = [
     MUSCLE_GLYCOGEN_STABLE_AT_REST,
 ]
 
-# PLAN Phase 0 — the training registry excludes sealed rules; the scoreboard
-# reads them from SEALED_PHYSIOLOGY_RULES. Nothing is sealed today, so
-# PHYSIOLOGY_RULES is unchanged; the split is the mechanism, not a change.
+# PLAN Phase 0 — the registry decides which rules are held out, by paper
+# (``sealing``); the training registry excludes them and the scoreboard reads
+# them from SEALED_PHYSIOLOGY_RULES. Every rule filed so far has a grandfathered
+# paper, so none is sealed.
+_ALL_PHYSIOLOGY_RULES: list[PhysiologyRule] = [apply_seal(r) for r in _AUTHORED_RULES]
 PHYSIOLOGY_RULES: list[PhysiologyRule] = [r for r in _ALL_PHYSIOLOGY_RULES if not r.sealed]
 SEALED_PHYSIOLOGY_RULES: list[PhysiologyRule] = [r for r in _ALL_PHYSIOLOGY_RULES if r.sealed]

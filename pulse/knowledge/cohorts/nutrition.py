@@ -64,6 +64,7 @@ _BREAKFAST_SKIP_MEALS = (
 FASTING_BREAKFAST_GLUCOSE = CohortStatisticSpec(
     name="fasting_breakfast_glucose_morning",
     source="Betts et al. (2014) — Bath Breakfast Project",
+    paper="betts-2014",
     description="Skip breakfast → lower mean glucose in the 8–11 AM window",
     arms=(
         CohortArmSpec(
@@ -110,6 +111,7 @@ _EXTENDED_FAST = (
 EXTENDED_FAST_BHB = CohortStatisticSpec(
     name="extended_fast_bhb_overnight",
     source="Cahill (2006); Owen (1969) — fuel metabolism in fasting",
+    paper="cahill-2006",
     description="Skipping dinner (≈16 h fast) → +0.2 mmol/L BHB in late-night/morning window",
     arms=(
         CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
@@ -169,6 +171,7 @@ EXTENDED_FAST_BHB = CohortStatisticSpec(
 EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
     name="extended_fast_liver_glycogen_overnight",
     source="Taylor et al. (1996) J Clin Invest 97:126-132 — 13C NMR; net hepatic glycogen storage = 19 % of meal carbohydrate",
+    paper="taylor-1996",
     description="Skipping a 60 g-carbohydrate dinner → −13 g mean liver_glycogen in the late-fast window",
     arms=(
         CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
@@ -196,6 +199,7 @@ EXTENDED_FAST_GLYCOGEN = CohortStatisticSpec(
 EXTENDED_FAST_GLYCOGEN_LEVEL = CohortStatisticSpec(
     name="extended_fast_liver_glycogen_level",
     source="Cahill (2006); Rothman et al. (1991) Science 254:573 — 13C NMR hepatic glycogenolysis",
+    paper="cahill-2006",
     description="≈16 h fast → liver_glycogen ≈ 60 g in the late-fast window (absolute hepatic depletion)",
     arms=(
         CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
@@ -216,6 +220,7 @@ EXTENDED_FAST_GLYCOGEN_LEVEL = CohortStatisticSpec(
 EXTENDED_FAST_GLUCOSE = CohortStatisticSpec(
     name="extended_fast_glucose_morning",
     source="Cahill (2006); Browning et al. (2012) — fasting glycemia",
+    paper="cahill-2006",
     description="Skipping dinner → −8 mg/dL mean glucose in overnight/morning window",
     arms=(
         CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
@@ -241,6 +246,7 @@ EXTENDED_FAST_GLUCOSE = CohortStatisticSpec(
 EXTENDED_FAST_FFA = CohortStatisticSpec(
     name="extended_fast_ffa_overnight",
     source="Cahill (2006); Coppack (1989); Frayn (2002) — fasting lipolysis",
+    paper="cahill-2006",
     description="Skipping dinner (≈16 h fast) → +0.4 mmol/L FFA in late-night/morning window",
     arms=(
         CohortArmSpec(label="normal_eating", duration_min=1440, start_hour=6.0, meals=_NORMAL_EATING,
@@ -265,6 +271,7 @@ EXTENDED_FAST_FFA = CohortStatisticSpec(
 EXTENDED_FAST_INSULIN = CohortStatisticSpec(
     name="extended_fast_insulin_basal",
     source="Polonsky et al. (1988); Tabák et al. (2009) — basal insulin physiology",
+    paper="polonsky-1988",
     description="≈16 h fast → mean insulin ≈ 7 µU/mL in late-night/morning window",
     arms=(
         CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_EXTENDED_FAST,
@@ -289,6 +296,7 @@ _OGTT_WATER: tuple[tuple[float, float, float, float], ...] = ()
 OGTT_GLUCAGON_SUPPRESSION = CohortStatisticSpec(
     name="ogtt_glucagon_suppression",
     source="Müller et al. (1970); Unger (1971) — α-cell response to oral glucose",
+    paper="muller-1970",
     description="75 g OGTT → mean glucagon ≈ 25 pg/mL lower vs water in 60–180 min post-load",
     arms=(
         CohortArmSpec(label="water_control", duration_min=300, start_hour=8.0, meals=_OGTT_WATER),
@@ -313,6 +321,7 @@ _MIXED_MEAL_NONE: tuple[tuple[float, float, float, float], ...] = ()
 MIXED_MEAL_GLUCAGON_SUPPRESSION = CohortStatisticSpec(
     name="mixed_meal_glucagon_suppression",
     source="Unger (1971); Holst (2007) — α-cell response to mixed nutrients",
+    paper="unger-1971",
     description="Mixed meal (60 g carb, protein, fat) → −10 pg/mL glucagon vs fasted in 60–180 min post-meal",
     arms=(
         CohortArmSpec(label="fasted",     duration_min=300, start_hour=8.0, meals=_MIXED_MEAL_NONE),
@@ -335,6 +344,7 @@ MIXED_MEAL_GLUCAGON_SUPPRESSION = CohortStatisticSpec(
 MEAL_FFA_SUPPRESSION = CohortStatisticSpec(
     name="meal_ffa_suppression",
     source="Coppack et al. (1989); Frayn (2002) — postprandial lipid metabolism",
+    paper="coppack-1989",
     description="Mixed meal → −0.30 mmol/L FFA vs fasted in 60–180 min post-meal (insulin antilipolysis)",
     arms=(
         CohortArmSpec(label="fasted",     duration_min=300, start_hour=8.0, meals=_MIXED_MEAL_NONE),
@@ -358,6 +368,7 @@ _SMALL_MEAL = ((120.0, 30.0, 5.0, 10.0),)
 LARGE_MEAL_GLP1 = CohortStatisticSpec(
     name="large_meal_glp1_peak",
     source="Holst (2007); Vilsbøll et al. (2003) — physiology of GLP-1",
+    paper="holst-2007",
     description="Large mixed meal → +12 pmol/L higher GLP-1 peak vs small meal (30–120 min post-meal)",
     arms=(
         CohortArmSpec(label="small_meal", duration_min=360, start_hour=6.0, meals=_SMALL_MEAL),
@@ -411,6 +422,7 @@ _GLP1_FASTED_ARM: tuple[tuple[float, float, float, float], ...] = ()
 MEAL_GLP1_RISE = CohortStatisticSpec(
     name="meal_glp1_rise",
     source="Holst (2007); Vilsbøll et al. (2003) — physiology of GLP-1",
+    paper="holst-2007",
     description="Eating → mean GLP-1 ~8 pmol/L higher than fasting in 1–3 h post-meal window",
     arms=(
         CohortArmSpec(label="fasted", duration_min=480, start_hour=6.0, meals=_GLP1_FASTED_ARM),
@@ -438,6 +450,7 @@ _FASTED_ARM: tuple[tuple[float, float, float, float], ...] = ()
 MEAL_GHRELIN_SUPPRESSION = CohortStatisticSpec(
     name="meal_ghrelin_suppression",
     source="Cummings et al. (2001) — preprandial rise in ghrelin",
+    paper="cummings-2001",
     description="Eating → mean ghrelin ~30 pg/mL lower than fasting in 1–3 h post-meal window",
     arms=(
         CohortArmSpec(label="fasted", duration_min=480, start_hour=6.0, meals=_FASTED_ARM),
@@ -460,6 +473,7 @@ _WESTPHAL_SIGMA = 0.1 * 18.0 * (2.0 ** 0.5)
 WESTPHAL_1990_PROTEIN_GLUCOSE = CohortStatisticSpec(
     name="westphal_1990_protein_glucose",
     source="Westphal, Gannon and Nuttall (1990) Am J Clin Nutr 52:267",
+    paper="westphal-1990",
     description="50 g protein alone does not change serum glucose over the next 4 h",
     arms=(
         CohortArmSpec(label="water", duration_min=300, start_hour=8.0, meals=_WESTPHAL_WATER),

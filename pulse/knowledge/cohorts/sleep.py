@@ -15,7 +15,6 @@ from ..cohort_types import (
     StatisticWindow,
     held,
 )
-from ..sealing import sealed_at_random
 
 
 def _smooth_sleep_mask(sw: np.ndarray) -> np.ndarray:
@@ -96,6 +95,7 @@ _restricted_night = _allowed_sleep(_DONGA_DURATION_MIN, _DONGA_START_HOUR, 25.0,
 DONGA_2010_BASAL_GLUCOSE = CohortStatisticSpec(
     name="donga_2010_basal_glucose",
     source="Donga et al. (2010) J Clin Endocrinol Metab 95:2963, Table 1",
+    paper="donga-2010",
     description=(
         "One night of 4 h versus 8.5 h sleep, same midpoint: basal glucose "
         "the next morning is unchanged"
@@ -174,6 +174,7 @@ def _donga_clamp_ratio(
     return CohortStatisticSpec(
         name=name,
         source="Donga et al. (2010) J Clin Endocrinol Metab 95:2963, Table 1",
+        paper="donga-2010",
         description=(
             f"One night of 4 h versus 8.5 h sleep, same midpoint: at the next "
             f"afternoon's hyperinsulinaemic clamp, {what} is "
@@ -186,7 +187,6 @@ def _donga_clamp_ratio(
         target=ratio,
         sigma=sigma,
         n_arm=1,
-        sealed=sealed_at_random(name),
     )
 
 

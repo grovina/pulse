@@ -48,7 +48,6 @@ from ..cohort_types import (
     TargetShape,
     held,
 )
-from ..sealing import sealed_at_random
 
 # A single mixed meal at t=60, after an hour of fasting run-in so the gallbladder has
 # partially refilled — matching the design of the studies these targets come from
@@ -67,6 +66,7 @@ _ARM = CohortArmSpec(
 CCK_FASTING = CohortStatisticSpec(
     name="cck_fasting_basal",
     source="Liddle et al. (JCI 1985); Rehfeld (J Intern Med 2025)",
+    paper="liddle-1985",
     description="Fasting plasma CCK in healthy adults",
     arms=(_ARM,),
     marker_id="cck",
@@ -87,6 +87,7 @@ CCK_FASTING = CohortStatisticSpec(
 BILE_ACIDS_FASTING = CohortStatisticSpec(
     name="bile_acids_fasting",
     source="Reference interval 4.4-14.1 umol/L (ICP reference-range study, 2022)",
+    paper="icp-reference-range-2022",
     description="Fasting serum total bile acids",
     arms=(_ARM,),
     marker_id="bile_acids",
@@ -103,6 +104,7 @@ BILE_ACIDS_FASTING = CohortStatisticSpec(
 BILE_ACIDS_TIME_TO_PEAK = CohortStatisticSpec(
     name="bile_acids_time_to_peak",
     source="Fasting and postprandial serum bile acids in normal persons (Digestion 1978)",
+    paper="digestion-1978",
     description="Serum total bile acids peak 75-120 min after a meal, long after CCK",
     arms=(_ARM,),
     marker_id="bile_acids",
@@ -117,6 +119,7 @@ BILE_ACIDS_TIME_TO_PEAK = CohortStatisticSpec(
 BILE_ACIDS_POSTPRANDIAL_PEAK = CohortStatisticSpec(
     name="bile_acids_postprandial_peak",
     source="Postprandial reference interval 4.7-20.2 umol/L (ICP reference-range study, 2022)",
+    paper="icp-reference-range-2022",
     description="Peak serum total bile acids after a mixed meal",
     arms=(_ARM,),
     marker_id="bile_acids",
@@ -136,6 +139,7 @@ _FISTULA_NAME = "borgstrom_1985_fat_without_bile"
 BORGSTROM_FAT_WITHOUT_BILE = CohortStatisticSpec(
     name=_FISTULA_NAME,
     source="Borgström, Barrowman and Lindström (1985) New Comprehensive Biochemistry, ch. 14",
+    paper="borgstrom-1985",
     description="With no bile in the intestine, 60–70% of a fat load is still absorbed",
     arms=(
         CohortArmSpec(
@@ -155,7 +159,6 @@ BORGSTROM_FAT_WITHOUT_BILE = CohortStatisticSpec(
     band_halfwidth=0.05,
     n_arm=1,
     init_mode=InitMode.NORM_CENTER,
-    sealed=sealed_at_random(_FISTULA_NAME),
 )
 
 

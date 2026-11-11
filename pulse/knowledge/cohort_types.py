@@ -295,10 +295,14 @@ class CohortStatisticSpec:
     # RATIO_INCREMENTS only: each arm's run-in. The area is the measured window
     # minus this window's mean, and the baseline ends where the window starts.
     baseline: StatisticWindow | None = None
+    # The paper this finding comes from: a lowercase ASCII slug, ``firstauthor-year``,
+    # read off ``source``. Sealing is decided per paper (``sealing.paper_is_sealed``),
+    # so every item of a paper is held out or trained together. Required of every
+    # registered item; the registry rejects an empty one.
+    paper: str = ""
     # Held-out: a sealed item never enters a training registry; it is reachable
-    # only through the scoring path. Sealing is done at random within a protocol
-    # family at filing time (PLAN Phase 0), so training and the scoreboard never
-    # share an item.
+    # only through the scoring path. The registry sets it from ``paper`` and
+    # ``sealing.HELD_OUT_ITEMS``; an author never does.
     sealed: bool = False
 
     def __post_init__(self) -> None:

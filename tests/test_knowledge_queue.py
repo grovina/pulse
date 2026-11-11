@@ -61,14 +61,13 @@ class TestQueue(unittest.TestCase):
             SEALED_COHORT_STATISTICS,
         )
         from pulse.knowledge.cohorts.renal import COHORT_STATISTICS
-        from pulse.knowledge.sealing import sealed_at_random
+        from pulse.knowledge.sealing import paper_is_sealed
 
         train = {s.name for s in ALL_COHORT_STATISTICS}
         held = {s.name for s in SEALED_COHORT_STATISTICS}
         self.assertEqual(train & held, set())
         for spec in COHORT_STATISTICS:
-            self.assertEqual(spec.sealed, sealed_at_random(spec.name), spec.name)
-            self.assertIn(spec.name, train if not spec.sealed else held, spec.name)
+            self.assertIn(spec.name, held if paper_is_sealed(spec.paper) else train, spec.name)
 
     def test_landed_rows_name_the_spec_and_blocked_rows_keep_the_real_gap(self) -> None:
         by_id = {item.id: item for item in QUEUE}

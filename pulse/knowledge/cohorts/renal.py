@@ -37,9 +37,9 @@ from ..cohort_types import (
     StatisticWindow,
     held,
 )
-from ..sealing import sealed_at_random
 from .nutrition import nocturnal_sleep_wake
 
+_PAPER = "diabetes-2017-66-1999"
 _SOURCE = "Diabetes 2017;66:1999–2006 — urinary glucose regressed on plasma glucose"
 _DURATION_MIN = 180
 # The clamp needs time to reach its target; the collection is the plateau.
@@ -73,6 +73,7 @@ def _regression_point(glucose_mg_dl: float, *, on_drug: bool = False) -> CohortS
     return CohortStatisticSpec(
         name=name,
         source=f"{_SOURCE}{drug}",
+        paper=_PAPER,
         description=(
             f"At a plasma glucose of {level} mg/dL{drug}, urinary glucose is "
             f"{_excretion(glucose_mg_dl, rtg, gfr):.1f} mg/min on the published line"
@@ -92,7 +93,6 @@ def _regression_point(glucose_mg_dl: float, *, on_drug: bool = False) -> CohortS
         sigma=_excretion_se(glucose_mg_dl, rtg, gfr, rtg_se, gfr_se),
         init_mode=InitMode.NORM_CENTER,
         n_arm=1,
-        sealed=sealed_at_random(name),
     )
 
 
@@ -120,6 +120,7 @@ _MG_PER_MIN_PER_G_PER_DAY = 1000.0 / 1440.0
 EMPAGLIFLOZIN_24H_URINARY_GLUCOSE = CohortStatisticSpec(
     name=_UGE_NAME,
     source=f"{_SOURCE}, day-13 24 h collection",
+    paper=_PAPER,
     description=(
         "Empagliflozin 25 mg/day in people without diabetes: a day's urinary glucose "
         "is 42 ± 5 g, eating their own food"
@@ -139,7 +140,6 @@ EMPAGLIFLOZIN_24H_URINARY_GLUCOSE = CohortStatisticSpec(
     target=EMPA_UGE_G_PER_DAY * _MG_PER_MIN_PER_G_PER_DAY,
     sigma=EMPA_UGE_SE_G_PER_DAY * _MG_PER_MIN_PER_G_PER_DAY,
     n_arm=1,
-    sealed=sealed_at_random(_UGE_NAME),
 )
 
 

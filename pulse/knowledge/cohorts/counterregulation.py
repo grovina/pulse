@@ -25,7 +25,6 @@ from ..cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
-from ..sealing import sealed_at_random
 
 _N = 10
 _GLUCOSE_SD = 7.0
@@ -49,6 +48,7 @@ _GLUCOSE_NAME = "cryer_1987_fasting_glucose"
 CRYER_1987_FASTING_GLUCOSE = CohortStatisticSpec(
     name=_GLUCOSE_NAME,
     source="Schwartz, Clutter, Shah and Cryer (1987) J Clin Invest 79:777",
+    paper="schwartz-1987",
     description="Postabsorptive arterialized glucose before the insulin infusion, 91 ± 7 mg/dL (SD, n = 10)",
     arms=(_ARM,),
     marker_id="glucose",
@@ -57,13 +57,13 @@ CRYER_1987_FASTING_GLUCOSE = CohortStatisticSpec(
     target=91.0,
     sigma=_GLUCOSE_SEM,
     n_arm=1,
-    sealed=sealed_at_random(_GLUCOSE_NAME),
 )
 
 _SPREAD_NAME = "cryer_1987_fasting_glucose_spread"
 CRYER_1987_FASTING_GLUCOSE_SPREAD = CohortStatisticSpec(
     name=_SPREAD_NAME,
     source="Schwartz, Clutter, Shah and Cryer (1987) J Clin Invest 79:777",
+    paper="schwartz-1987",
     description="Between-person SD of that postabsorptive glucose, 7 mg/dL in the same ten subjects",
     arms=(_ARM,),
     marker_id="glucose",
@@ -71,13 +71,13 @@ CRYER_1987_FASTING_GLUCOSE_SPREAD = CohortStatisticSpec(
     window=_WINDOW,
     target=_GLUCOSE_SD,
     sigma=_GLUCOSE_SD_SE,
-    sealed=sealed_at_random(_SPREAD_NAME),
 )
 
 _EPI_NAME = "cryer_1987_epinephrine_baseline"
 CRYER_1987_EPINEPHRINE_BASELINE = CohortStatisticSpec(
     name=_EPI_NAME,
     source="Schwartz, Clutter, Shah and Cryer (1987) J Clin Invest 79:777",
+    paper="schwartz-1987",
     description="Baseline plasma epinephrine before the glucose step, 34 ± 7 pg/mL",
     arms=(_ARM,),
     marker_id="epinephrine",
@@ -86,7 +86,6 @@ CRYER_1987_EPINEPHRINE_BASELINE = CohortStatisticSpec(
     target=34.0,
     sigma=7.0,
     n_arm=1,
-    sealed=sealed_at_random(_EPI_NAME),
 )
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [

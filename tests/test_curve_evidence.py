@@ -1,4 +1,4 @@
-"""Authored CURVE evidence: the cortisol circadian curve trains, the OGTT curve is sealed."""
+"""Authored CURVE evidence: the cortisol circadian curve trains, the OGTT curve is held out."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from pulse.knowledge.cohort_statistics import (
 from pulse.knowledge.cohort_types import StatisticKind
 from pulse.knowledge.cohorts.curves import CORTISOL_CIRCADIAN_CURVE, OGTT_GLUCOSE_CURVE
 from pulse.knowledge.evidence import SEALED_EVIDENCE
+from pulse.knowledge.sealing import HELD_OUT_ITEMS
 from pulse.model import ModularPhysiologyNetwork
 from pulse.types import EMBEDDING_DIM
 
@@ -31,8 +32,8 @@ def test_unsealed_cortisol_curve_expands_into_training_points():
     assert _points(SEALED_COHORT_STATISTICS, CORTISOL_CIRCADIAN_CURVE) == []
 
 
-def test_sealed_ogtt_curve_is_only_in_the_sealed_registry():
-    assert OGTT_GLUCOSE_CURVE.sealed
+def test_held_out_ogtt_curve_is_only_in_the_sealed_registry():
+    assert OGTT_GLUCOSE_CURVE.name in HELD_OUT_ITEMS
     assert not any(s.name.startswith(OGTT_GLUCOSE_CURVE.name) for s in ALL_COHORT_STATISTICS)
     held = _points(SEALED_COHORT_STATISTICS, OGTT_GLUCOSE_CURVE)
     assert len(held) == len(OGTT_GLUCOSE_CURVE.curve)

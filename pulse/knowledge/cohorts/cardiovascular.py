@@ -43,6 +43,7 @@ _HR_MEAL = ((60.0, 75.0, 15.0, 25.0),)
 POSTPRANDIAL_HR_RISE = CohortStatisticSpec(
     name="postprandial_hr_rise",
     source="Brunzell et al. (1971); Kearney et al. (1995); Marfella et al. (2000)",
+    paper="brunzell-1971",
     description="Mixed meal (75g carb) → HR peak +7 bpm vs fasted arm at 30–120 min post-meal",
     arms=(
         CohortArmSpec(label="fasted", duration_min=300, start_hour=8.0, meals=_HR_FASTED),
@@ -105,6 +106,7 @@ def _all_awake_24h() -> tuple[float, ...]:
 SLEEP_HR_DIP = CohortStatisticSpec(
     name="sleep_hr_dip",
     source="Somers et al. (1993); Burgess et al. (1997); Trinder et al. (2001)",
+    paper="somers-1993",
     description="Sleep arm mid-NREM mean HR -8 bpm vs awake-arm mid-afternoon mean",
     arms=(
         CohortArmSpec(
@@ -189,6 +191,7 @@ _dn_smoothed = [
 DAY_NIGHT_HR_CONTRAST = CohortStatisticSpec(
     name="day_night_hr_contrast",
     source="24 h Holter reference cohort, n=134 normal subjects (PMID 2424396): day 82 ± 10, night 64 ± 8 bpm",
+    paper="pmid-2424396",
     description="Mid-afternoon mean HR minus mid-NREM mean HR over one realistic 24 h day",
     arms=(
         CohortArmSpec(
@@ -210,6 +213,7 @@ DAY_NIGHT_HR_CONTRAST = CohortStatisticSpec(
 NIGHT_HR_LEVEL = CohortStatisticSpec(
     name="night_hr_level",
     source="24 h Holter reference cohort, n=134 normal subjects (PMID 2424396): night 64 ± 8 bpm",
+    paper="pmid-2424396",
     description="Mid-NREM mean HR (02:00-05:00) over the same realistic 24 h day",
     arms=DAY_NIGHT_HR_CONTRAST.arms,
     marker_id="hr",

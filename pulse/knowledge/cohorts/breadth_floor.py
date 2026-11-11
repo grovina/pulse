@@ -144,6 +144,7 @@ _EX_ARMS = (_EX_REST, _EX_BOUT)
 HRV_SLEEP_RISE = CohortStatisticSpec(
     name="hrv_sleep_rise",
     source="Task Force of ESC/NASPE (1996) — heart rate variability",
+    paper="task-force-1996",
     description="Mid-NREM HRV (RMSSD) +12 ms vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="hrv", kind=StatisticKind.DELTA_MEANS,
     window=_DIP_WINDOW, target=12.0, sigma=7.5,
@@ -166,6 +167,7 @@ HRV_SLEEP_RISE = CohortStatisticSpec(
 SBP_SLEEP_DIP = CohortStatisticSpec(
     name="sbp_sleep_dip",
     source="O'Brien et al. (1988); Staessen et al. (1997) — nocturnal BP dipping",
+    paper="obrien-1988",
     description="Mid-NREM systolic BP -15 mmHg vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="sbp", kind=StatisticKind.DELTA_MEANS,
     window=_DIP_WINDOW, target=-15.0, sigma=5.0,
@@ -178,6 +180,7 @@ SBP_SLEEP_DIP = CohortStatisticSpec(
 DBP_SLEEP_DIP = CohortStatisticSpec(
     name="dbp_sleep_dip",
     source="O'Brien et al. (1988); Staessen et al. (1997) — nocturnal BP dipping",
+    paper="obrien-1988",
     description="Mid-NREM diastolic BP -9.5 mmHg vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="dbp", kind=StatisticKind.DELTA_MEANS,
     window=_DIP_WINDOW, target=-9.5, sigma=4.0,
@@ -188,6 +191,7 @@ DBP_SLEEP_DIP = CohortStatisticSpec(
 RR_SLEEP_DIP = CohortStatisticSpec(
     name="rr_sleep_dip",
     source="Douglas et al. (1982) — respiration during sleep",
+    paper="douglas-1982",
     description="Mid-NREM respiratory rate -2.5 /min vs hypothetical-awake same window",
     arms=_DIP_ARMS, marker_id="rr", kind=StatisticKind.DELTA_MEANS,
     window=_DIP_WINDOW, target=-2.5, sigma=1.5,
@@ -203,6 +207,7 @@ RR_SLEEP_DIP = CohortStatisticSpec(
 SPO2_NORMAL_BAND = CohortStatisticSpec(
     name="spo2_normal_band",
     source="textbook resting pulse oximetry (95–100% in healthy adults)",
+    paper="textbook-pulse-oximetry",
     description="Daytime mean SpO2 ≈ 98% (normal band)",
     arms=(_SPO2_ARM,), marker_id="spo2", kind=StatisticKind.MEAN_IN_WINDOW,
     window=StatisticWindow(start_min=60, end_min=420), target=98.0, sigma=1.5,
@@ -219,6 +224,7 @@ SPO2_NORMAL_BAND = CohortStatisticSpec(
 CORTISOL_AWAKENING_RESPONSE = CohortStatisticSpec(
     name="cortisol_awakening_response",
     source="Pruessner et al. (1997) — cortisol awakening response",
+    paper="pruessner-1997",
     description="Cortisol +6 µg/dL in 0–45 min post-wake vs pre-wake baseline",
     arms=(_CAR_ARM, _CAR_ARM),
     marker_id="cortisol", kind=StatisticKind.DELTA_MEANS,
@@ -244,6 +250,7 @@ CORTISOL_AWAKENING_RESPONSE = CohortStatisticSpec(
 TEMP_CIRCADIAN = CohortStatisticSpec(
     name="temp_circadian_nadir",
     source="Krauchi & Wirz-Justice (1994) — core body temperature rhythm",
+    paper="krauchi-1994",
     description="Core temp early-morning nadir -0.4 °C vs late-afternoon acrophase",
     arms=(_TEMP_ARM, _TEMP_ARM),
     marker_id="temp", kind=StatisticKind.DELTA_MEANS,
@@ -283,6 +290,7 @@ _FASTED_DAY = (
 LEPTIN_FED_FASTED = CohortStatisticSpec(
     name="leptin_fed_vs_fasted",
     source="Boden et al. (1996); Kolaczynski et al. (1996) — leptin and fasting",
+    paper="boden-1996",
     description="Fed-state late-day mean leptin +2 ng/mL vs ≈16 h-fasted",
     arms=(
         CohortArmSpec(label="extended_fast", duration_min=1440, start_hour=6.0, meals=_FASTED_DAY,
@@ -309,6 +317,7 @@ LEPTIN_FED_FASTED = CohortStatisticSpec(
 LACTATE_EXERCISE_RISE = CohortStatisticSpec(
     name="lactate_exercise_rise",
     source="Brooks (1986) — lactate metabolism during exercise",
+    paper="brooks-1986",
     description="Blood lactate +1.5 mmol/L during a moderate bout vs rest",
     arms=_EX_ARMS, marker_id="lactate", kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=90, end_min=210),
@@ -331,6 +340,7 @@ LACTATE_EXERCISE_RISE = CohortStatisticSpec(
 MUSCLE_GLYCOGEN_EXERCISE_DEPLETION = CohortStatisticSpec(
     name="muscle_glycogen_exercise_depletion",
     source="Bergstrom & Hultman (1967) — muscle glycogen and exercise",
+    paper="bergstrom-1967",
     description="Muscle glycogen -150 g post moderate 2 h bout vs rest",
     arms=_EX_ARMS, marker_id="muscle_glycogen", kind=StatisticKind.DELTA_MEANS,
     window=StatisticWindow(start_min=150, end_min=360),

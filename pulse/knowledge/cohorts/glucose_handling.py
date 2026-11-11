@@ -27,7 +27,6 @@ from ..cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
-from ..sealing import sealed_at_random
 
 
 # Standard 75 g OGTT protocol — water-only run-in, glucose load at t=60min.
@@ -44,6 +43,7 @@ _OGTT_75G_MEALS = ((60.0, 75.0, 0.0, 0.0),)
 OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
     name="ogtt_75g_glucose_peak",
     source="DeFronzo (1979); ADA / WHO OGTT criteria",
+    paper="defronzo-1979",
     description="75 g OGTT → glucose peak ≈ 150 mg/dL at 30–60 min post-load (healthy adults)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
@@ -66,6 +66,7 @@ OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
 OGTT_GLUCOSE_LATE = CohortStatisticSpec(
     name="ogtt_75g_glucose_120min",
     source="WHO (1999); ADA OGTT criteria",
+    paper="who-1999",
     description="75 g OGTT → mean glucose < 140 mg/dL in the 90–150 min window (normal glucose tolerance)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
@@ -88,6 +89,7 @@ OGTT_GLUCOSE_LATE = CohortStatisticSpec(
 OGTT_INSULIN_PEAK = CohortStatisticSpec(
     name="ogtt_75g_insulin_peak",
     source="Polonsky et al. (1988); DeFronzo (1979) — β-cell function in vivo",
+    paper="polonsky-1988",
     description="75 g OGTT → insulin peak ≈ 60 µU/mL at 30–60 min post-load (healthy adults)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
@@ -109,6 +111,7 @@ OGTT_INSULIN_PEAK = CohortStatisticSpec(
 OGTT_INSULIN_MEAN = CohortStatisticSpec(
     name="ogtt_75g_insulin_mean_3h",
     source="Polonsky et al. (1988) — integrated post-OGTT insulin",
+    paper="polonsky-1988",
     description="75 g OGTT → mean insulin ≈ 35 µU/mL in 30–180 min window (healthy adults)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
@@ -133,6 +136,7 @@ OGTT_INSULIN_MEAN = CohortStatisticSpec(
 OGTT_INSULIN_120 = CohortStatisticSpec(
     name="ogtt_75g_insulin_120min",
     source="PMID 3525269 — 75 g OGTT, 247 healthy subjects, normal glucose tolerance",
+    paper="pmid-3525269",
     description="75 g OGTT → insulin ≈ 34.6 µU/mL at 120 min (0.24 nmol/L)",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300, start_hour=8.0, meals=_OGTT_75G_MEALS),
@@ -160,6 +164,7 @@ _HGO_MEAL = ((60.0, 75.0, 15.0, 25.0),)
 MEAL_HGO_SUPPRESSION = CohortStatisticSpec(
     name="meal_hgo_suppression",
     source="Rizza et al. (1981); Basu et al. (2000) — postprandial HGO suppression",
+    paper="rizza-1981",
     description="Mixed meal (75 g carb) → HGO ≈ -1.0 mg/kg/min lower vs fasted in 90–180 min post-meal",
     arms=(
         CohortArmSpec(label="fasted", duration_min=300, start_hour=8.0, meals=_HGO_FASTED),
@@ -186,6 +191,7 @@ _SMALL_CARB_MEAL = ((60.0, 15.0, 0.0, 0.0),)
 SMALL_CARB_GLUCOSE_PEAK = CohortStatisticSpec(
     name="small_carb_glucose_peak",
     source="Wolever (1991, 1996) — low-dose glycemic-response anchor",
+    paper="wolever-1991",
     description="15 g glucose challenge → glucose peak ≈ 110 mg/dL at 30–60 min (low-dose anchor)",
     arms=(
         CohortArmSpec(label="small_carb", duration_min=240, start_hour=8.0, meals=_SMALL_CARB_MEAL),
@@ -221,6 +227,7 @@ _WAHREN_BOUT = tuple(0.0 if t < 20 else 0.7 for t in range(_WAHREN_MIN))
 WAHREN_EXERCISE_HGO = CohortStatisticSpec(
     name="wahren_800_splanchnic_glucose",
     source="Wahren et al. (1971) J Clin Invest — splanchnic glucose output, 800 kg-m/min",
+    paper="wahren-1971",
     description=(
         "40 min of moderate cycling raises splanchnic glucose output "
         "by ≈ 3.63 mg/kg/min above rest (2.23 vs 0.82 mmol/min)"
@@ -252,6 +259,7 @@ WAHREN_EXERCISE_HGO = CohortStatisticSpec(
 WAHREN_EXERCISE_GLUCOSE = CohortStatisticSpec(
     name="wahren_800_arterial_glucose",
     source="Wahren et al. (1971) J Clin Invest — arterial glucose, 800 kg-m/min",
+    paper="wahren-1971",
     description=(
         "40 min of moderate cycling raises arterial glucose "
         "by ≈ 8.3 mg/dL (4.62 vs 4.16 mmol/L)"
@@ -276,6 +284,7 @@ _WAHREN_REST_NAME = "wahren_1971_resting_splanchnic_glucose"
 WAHREN_RESTING_SPLANCHNIC_GLUCOSE = CohortStatisticSpec(
     name=_WAHREN_REST_NAME,
     source="Wahren et al. (1971) J Clin Invest 50:2715 — splanchnic glucose output at rest",
+    paper="wahren-1971",
     description="Postabsorptive splanchnic glucose output, 0.82 ± 0.10 mmol/min, sitting before the bout",
     arms=(WAHREN_EXERCISE_HGO.arms[0],),
     marker_id="hepatic_output",
@@ -284,7 +293,6 @@ WAHREN_RESTING_SPLANCHNIC_GLUCOSE = CohortStatisticSpec(
     target=_WAHREN_REST_HGO,
     sigma=_WAHREN_REST_HGO_SE,
     n_arm=1,
-    sealed=sealed_at_random(_WAHREN_REST_NAME),
 )
 
 
@@ -328,6 +336,7 @@ def _landau_point(hours: int, share: float, se: float) -> CohortStatisticSpec:
     return CohortStatisticSpec(
         name=name,
         source="Landau et al. (1996) J Clin Invest 98:378, deuterium at carbon 5",
+        paper="landau-1996",
         description=(
             f"After {hours} h of fasting, gluconeogenesis is {share:.0%} of "
             "glucose production"
@@ -340,7 +349,6 @@ def _landau_point(hours: int, share: float, se: float) -> CohortStatisticSpec:
         sigma=se,
         n_arm=1,
         init_mode=InitMode.COLD,
-        sealed=sealed_at_random(name),
     )
 
 

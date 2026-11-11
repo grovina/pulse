@@ -16,7 +16,6 @@ from ..cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
-from ..sealing import sealed_at_random
 
 # Breakfast: 360 kcal carbohydrate, 353 fat, 107 protein. The glucose arm is
 # 75 g. Both start an hour into the arm so the run-in is the baseline the
@@ -34,6 +33,7 @@ _BREAKFAST = (
 VOLLMER_2008_GIP = CohortStatisticSpec(
     name=_NAME,
     source="Vollmer et al. (2008) Diabetes 57:678",
+    paper="vollmer-2008",
     description=(
         "Integrated incremental GIP over 240 min is 186 ± 17% higher after an "
         "820 kcal breakfast than after 75 g of glucose"
@@ -60,7 +60,6 @@ VOLLMER_2008_GIP = CohortStatisticSpec(
     sigma=0.17,
     n_arm=1,
     init_mode=InitMode.NORM_CENTER,
-    sealed=sealed_at_random(_NAME),
 )
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [VOLLMER_2008_GIP]

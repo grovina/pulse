@@ -27,7 +27,6 @@ from ..cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
-from ..sealing import sealed_at_random
 from .glucose_handling import WAHREN_EXERCISE_HGO
 
 
@@ -76,6 +75,7 @@ _CORTISOL_CURVE = (
 CORTISOL_CIRCADIAN_CURVE = CohortStatisticSpec(
     name="cortisol_24h_circadian_curve",
     source="Weitzman et al. (1971) J Clin Endocrinol Metab 33:14; standard cosinor cortisol rhythm",
+    paper="weitzman-1971",
     description=(
         "24 h plasma cortisol in healthy adults: trough ~3-4 ug/dL near midnight-02:00, "
         "acrophase ~16 ug/dL near 08:00, declining through the day"
@@ -98,13 +98,13 @@ CORTISOL_CIRCADIAN_CURVE = CohortStatisticSpec(
 
 
 # ---------------------------------------------------------------------------
-# 75 g OGTT plasma glucose curve (sealed)
+# 75 g OGTT plasma glucose curve
 # ---------------------------------------------------------------------------
 # DeFronzo et al. (1979) Am J Physiol 237:E214 and the standard 75 g OGTT
 # shape in healthy adults: fasting ~90 mg/dL, peak ~155 mg/dL at 30-60 min,
 # ~120 mg/dL by 2 h, back toward ~95 mg/dL by 4 h. Digitized estimates, mg/dL.
-# Sealed: held out of training and scored only by the scoreboard. Glucose is
-# already well covered by the training cohorts, so holding this one out is cheap.
+# It is held out of training as an item (``sealing.HELD_OUT_ITEMS``), not
+# because its paper was drawn: DeFronzo 1979 also sources training items.
 _OGTT_CURVE = (
     CurvePoint(0, 90.0, 4.0),
     CurvePoint(30, 150.0, 6.0),
@@ -118,6 +118,7 @@ _OGTT_CURVE = (
 OGTT_GLUCOSE_CURVE = CohortStatisticSpec(
     name="ogtt_75g_glucose_curve",
     source="DeFronzo et al. (1979) Am J Physiol 237:E214; standard 75 g OGTT",
+    paper="defronzo-1979",
     description=(
         "75 g OGTT plasma glucose in healthy adults: fasting ~90, peak ~155 mg/dL at "
         "30-60 min, ~120 by 2 h, back toward ~95 by 4 h"
@@ -135,7 +136,6 @@ OGTT_GLUCOSE_CURVE = CohortStatisticSpec(
     sigma=1.0,
     init_mode=InitMode.COLD,
     curve=_OGTT_CURVE,
-    sealed=True,
 )
 
 
@@ -159,6 +159,7 @@ def _wahren_curve(name: str, marker: str, what: str, rest: tuple[float, float],
     return CohortStatisticSpec(
         name=name,
         source="Wahren et al. (1971) J Clin Invest 50:2715, Table I",
+        paper="wahren-1971",
         description=f"{what} at rest and after 40 min at 800 kg-m/min on an upright bicycle",
         arms=(_WAHREN_ARM,),
         marker_id=marker,
@@ -170,7 +171,6 @@ def _wahren_curve(name: str, marker: str, what: str, rest: tuple[float, float],
             CurvePoint(_WAHREN_REST_MIN, *rest),
             CurvePoint(_WAHREN_40_MIN, *work),
         ),
-        sealed=sealed_at_random(name),
     )
 
 

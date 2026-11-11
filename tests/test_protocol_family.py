@@ -1,4 +1,4 @@
-"""A finding's protocol family is read off its arms; new items are sealed at random."""
+"""A finding's protocol family is read off its arms; papers are sealed at random."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHO
 from pulse.knowledge.cohort_types import CohortArmSpec, held
 from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
 from pulse.knowledge.protocol_family import ProtocolFamily, families_of, protocol_family
-from pulse.knowledge.sealing import SEAL_SHARE, sealed_at_random
+from pulse.knowledge.sealing import SEAL_SHARE, paper_is_sealed
 
 
 def _arm(**kw) -> CohortArmSpec:
@@ -64,11 +64,9 @@ def test_every_filed_item_has_a_family():
 
 
 def test_the_seal_draw_is_reproducible_and_near_its_share():
-    names = [f"item_{i}" for i in range(4000)]
-    draws = [sealed_at_random(n) for n in names]
-    assert draws == [sealed_at_random(n) for n in names]
+    papers = [f"paper-{i}" for i in range(4000)]
+    draws = [paper_is_sealed(p) for p in papers]
+    assert draws == [paper_is_sealed(p) for p in papers]
     assert abs(sum(draws) / len(draws) - SEAL_SHARE) < 0.02
-    assert not any(sealed_at_random(n, share=0.0) for n in names[:50])
-    assert all(sealed_at_random(n, share=1.0) for n in names[:50])
     with pytest.raises(ValueError):
-        sealed_at_random("x", share=1.5)
+        paper_is_sealed("Not A Slug")

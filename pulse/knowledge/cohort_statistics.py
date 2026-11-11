@@ -10,9 +10,10 @@ Two transforms run over the merged list before it is used:
 * ``expand_curves`` compiles every ``kind=CURVE`` spec (a whole published
   trajectory) into one ``MEAN_IN_WINDOW`` spec per timepoint, so the batched
   scorer handles a curve with no special-casing (PLAN Phase 4).
-* the sealed split holds back held-out items (PLAN Phase 0): the training
-  registry ``ALL_COHORT_STATISTICS`` is the unsealed items only, and the
-  scoreboard reads ``SEALED_COHORT_STATISTICS``.
+* the sealed split holds back held-out items (PLAN Phase 0): ``sealing`` decides
+  from each item's ``paper``, the training registry ``ALL_COHORT_STATISTICS`` is
+  the unsealed items only, and the scoreboard reads ``SEALED_COHORT_STATISTICS``.
+  Authors name the paper and never seal.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from .cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
+from .sealing import apply_seal
 from .cohorts import (
     breadth_floor, cardiovascular, counterregulation, curves, glucose_handling, hepatobiliary,
     incretins,
@@ -82,9 +84,9 @@ _AUTHORED: list[CohortStatisticSpec] = [
     *renal.COHORT_STATISTICS,
 ]
 
-# Curves become point specs first, then the sealed items are held back. A curve
-# whose parent is sealed stays sealed on every point (``replace`` preserves it).
-_ALL_COHORT_STATISTICS: list[CohortStatisticSpec] = expand_curves(_AUTHORED)
+# The seal is applied to the authored items, then curves become point specs, so a
+# sealed curve is sealed on every point (``replace`` preserves it).
+_ALL_COHORT_STATISTICS: list[CohortStatisticSpec] = expand_curves([apply_seal(s) for s in _AUTHORED])
 
 ALL_COHORT_STATISTICS: list[CohortStatisticSpec] = [
     s for s in _ALL_COHORT_STATISTICS if not s.sealed

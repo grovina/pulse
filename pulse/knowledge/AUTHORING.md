@@ -133,6 +133,7 @@ _OGTT_75G_MEALS = ((0.0, 75.0, 0.0, 0.0),)  # (t_min, carbs_g, protein_g, fat_g)
 OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
     name="ogtt_75g_glucose_peak",
     source="DeFronzo (1979); ADA / WHO OGTT criteria",
+    paper="defronzo-1979",
     description="75 g OGTT → glucose peak ≈ 150 mg/dL at 30–60 min post-load",
     arms=(
         CohortArmSpec(label="ogtt_75g", duration_min=300,
@@ -175,6 +176,30 @@ findings — one good spec beats ten low-quality ones.
 new spec lands non-zero gradient on at least one module. A dead spec
 (zero on every module) means the model has muted that knowledge —
 fix it now, not three iterations later.
+
+### Naming the paper, and sealing
+
+Every cohort spec and every physiology rule names its paper: `paper=` is
+a lowercase ASCII slug, `firstauthor-year` (`schulla-2003`), read off the
+`source` string. Where `source` names several papers, give the first; where it
+names none (a textbook, "standard" values, a reference range), give a slug that
+says so (`textbook-guyton`) and expect the item to be re-sourced. The registry
+rejects an item with no paper.
+
+You never seal an item. A fifth of papers are held out of training and scored
+only by the scoreboard, and `pulse.knowledge.sealing.paper_is_sealed(paper)`
+decides it, from a hash of the slug: every item, arm and curve point of a
+paper is held out or trained together, so a held-out finding never shares its
+cohort or table with one the model was fitted to. Do not pass `sealed=`; the
+registry refuses it. You cannot choose the draw, only name the paper truthfully.
+
+Two frozen lists in `sealing.py` override the draw, each pinned by a test:
+`GRANDFATHERED_PAPERS` (papers the warm start was fitted to or initialised from;
+never sealed) and `HELD_OUT_ITEMS` (items sealed before sealing was by paper;
+still held out, reported on the board as held-out items, with what each shares
+with training). Neither is extended to make a result look better. A paper whose
+number initialises a `Published` constant must be added to the first list when
+that constant is declared, or the board would score the student on its own start.
 
 ## Surface 3 — TextbookScenario / FlowStory
 
