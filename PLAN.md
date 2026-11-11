@@ -167,6 +167,113 @@ Stages 1 and 2 start together and everything after leans on them. Stages
 3 and 4 run side by side once they land. Each stage ends on something
 measured.
 
+### Next steps, as of 2026-11-11
+
+Written while iter 116 runs. Measurements cited here are in `STATE.md`.
+Rewrite this section when iter 116's board is read.
+
+**1. Read iter 116** (`trainer-jt2n9`, ends about 17:30 UTC on 2026-11-12)
+
+- Score `training/jobs/iter116/model.pt` beside the untrained student
+  (`python -m pulse.diagnostics scoreboard --no-identifiability --baseline`)
+  and write the board and the run's row into `STATE.md`.
+- Read the three boards in order (phase 1, phase 2, final). They separate
+  what the teacher tape does to the sealed papers from what the literature
+  does.
+- The numbers to beat, median |z| on the same people. Sealed papers (117
+  points, 8 papers): untrained 1.19, iter 113 (the warm start) 1.18, iter
+  114 1.32. File papers that train (202 points, 18 papers): untrained 0.85,
+  iter 113 1.42, iter 114 1.16.
+- Run the two passes left out of the job on its checkpoint: the
+  open-direction pass and the CGMacros ruler (`--benchmark-only`). For iter
+  114 they took 3 h 11 min; at 4 vCPU that is about $1.20. Their memory at
+  16 GiB is unmeasured, so watch the first run.
+
+**2a. If the sealed papers come in under the untrained student**
+
+Training on papers read as files generalises, and the corpus is the lever
+(stage 3).
+
+- Widen the sealed set first. Eight papers give an interval of 1.15 to
+  1.68; a difference of 0.1 cannot be judged on it. Read 20 to 30 more
+  papers, each by one reader and checked by a second.
+- Close the format gaps that keep printed numbers out, in the order
+  `python -m pulse.admit --missing` ranks them: C-peptide as a marker (10
+  papers), indices derived from a curve (13), a median with its
+  interquartile range (5), insulin clearance (4), noradrenaline (4), values
+  per lean mass or body surface (5), the condition of the day before (4),
+  an insulin infusion rate as a finding (3).
+- After each gap closes, re-read the papers that named it, as was done for
+  the three single-arm statistics.
+
+**2b. If they do not**
+
+Fitting papers is moving the model away from unseen ones, and more papers
+will not fix that.
+
+- Start where iter 114 lost most: glucose (1.17 against 0.69 untrained on
+  110 points), fatty acids (1.39 against 0.43), lactate (2.61 against
+  0.67), and fasting GLP-1 (52 pmol/L against a measured 4).
+- Split the question with runs of about $9 each: a cold start against the
+  warm start from iter 113; the literature without the teacher tape; the
+  registries alone against the registries plus files.
+- Look for findings that pull against each other on shared parameters (the
+  board's conflicts line, with the open-direction pass on), and for one
+  paper's many correlated points outweighing another's one.
+
+**3. The loop, whichever way step 2 goes** (stage 1 is not done)
+
+The recipe takes 23 h and stage 1 asks for three. The evidence step is 54 s
+of a 68 s step, and 24 s of that is the spin-up.
+
+- Try `--compile-steps` with the batched step: first an equivalence test
+  against the eager step, then a timed execution of 10 steps (about $0.30).
+- Use the job's four cores: one worker per rollout group, as
+  `docs/training-runs.md` sketches under "Across processes".
+- Cut the spin-up: people of the same population, start hour and pre-fast
+  already share one rollout within a step; measure whether a shorter fed
+  day reaches the same start state.
+- Raise `--evidence-batch-size`. Rows are nearly free up to about 75, and a
+  step of 4 items sees 1.5% of the corpus.
+
+**4. Defects that bias what a run learns** (`STATE.md`, Known wrong)
+
+- The sigma of the 35 registry points with no `n_arm` depends on a training
+  flag. State each point's n, or drop the point.
+- 693 gut-kernel parameters receive no gradient, and the stomach's split
+  correction never reaches absorption.
+- The cortisol gain on glucose production is centred on the population's
+  cortisol.
+- `peak_value` reads a dense maximum where a paper's Cmax is the largest of
+  its samples; give it `times`.
+- The open-direction report still starts everyone from the median person's
+  spin-up.
+- Three tests fail.
+
+**5. People** (stage 4)
+
+- A calibrated person predicts CGMacros glucose no better than the median
+  person (28.17 against 28.06 mg/dL). Rescore on iter 116 before changing
+  anything.
+- Calibration fits interstitial glucose while evaluation reads plasma.
+
+**6. Keeping it honest**
+
+- The test suite has no home: it does not fit the lab box (16 GiB on four
+  workers) and there is no CI. Run it as a Cloud Build step or a small Cloud
+  Run job per push; a GitHub workflow needs a credential with the
+  `workflow` scope.
+- The papers' full texts are not kept. Store the PubMed Central XML in the
+  project's bucket, outside the repository, so `admit --paper` can be rerun.
+- The `engine` service does not start.
+
+**7. With soma** (low priority; the lab repository's `NOTES.md`)
+
+- Soma has no board beside an untrained student on unseen papers.
+- Soma's files lack `assumed`, `left_out` and the quote check.
+- The first finding both can read: a human-islet incretin dose-response in
+  picomolar.
+
 ### Where the 2026-10-17 phases stand
 
 Code and tests that cite "PLAN Phase N" mean these.
