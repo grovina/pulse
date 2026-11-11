@@ -396,6 +396,146 @@
         "where": "Results, Glucose Kinetics (prior euglycemia, no alprazolam)",
         "quote": "compared with 1.2 ± 0.4 μmol/kg/min following day 1 euglycemia"
       }
+    },
+    {
+      "id": "epinephrine_exercise_change",
+      "description": "Plasma epinephrine, mean of 195 and 210 min minus mean of 110 and 120 min",
+      "marker": "epinephrine",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "baseline_window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 769,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 213,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, day 2 responses (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (Δ 769 ± 213 pmol/L)"
+      }
+    },
+    {
+      "id": "glucagon_exercise_change",
+      "description": "Plasma glucagon, mean of 195 and 210 min minus mean of 110 and 120 min",
+      "marker": "glucagon",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "baseline_window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 13,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.6,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, day 2 responses (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (Δ 13 ± 1.6 ng/L)"
+      }
+    },
+    {
+      "id": "cortisol_exercise_change",
+      "description": "Plasma cortisol, mean of 195 and 210 min minus mean of 110 and 120 min",
+      "marker": "cortisol",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "baseline_window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 195,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 48,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, day 2 responses (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (Δ 195 ± 48 nmol/L)"
+      }
+    },
+    {
+      "id": "lactate_exercise_change",
+      "description": "Blood lactate, mean of 195 and 210 min minus mean of 110 and 120 min",
+      "marker": "lactate",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "baseline_window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 0.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, day 2 responses (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (Δ 0.7 ± 0.2 mmol/L)"
+      }
+    },
+    {
+      "id": "nefa_exercise_change",
+      "description": "NEFA, mean of 195 and 210 min minus mean of 110 and 120 min",
+      "marker": "ffa",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "baseline_window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 319,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 48,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, day 2 responses (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (Δ 319 ± 48 μmol/L)"
+      }
     }
   ],
   "left_out": [
@@ -414,10 +554,31 @@
       }
     },
     {
-      "what": "changes from baseline during exercise of adrenaline, noradrenaline, pancreatic polypeptide, glucagon, growth hormone, cortisol, lactate, fatty acids and glycerol (Table 1)",
+      "what": "change from baseline during exercise of noradrenaline (Results, day 2 responses)",
       "missing": {
-        "kind": "operator",
-        "name": "change_from_baseline"
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "change from baseline during exercise of pancreatic polypeptide (Results, day 2 responses)",
+      "missing": {
+        "kind": "marker",
+        "name": "pancreatic_polypeptide"
+      }
+    },
+    {
+      "what": "change from baseline during exercise of growth hormone (Results, day 2 responses)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "change from baseline during exercise of glycerol (Results, day 2 responses)",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
       }
     },
     {
