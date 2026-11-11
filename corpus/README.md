@@ -281,7 +281,11 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   * If the paper gives age or BMI for a larger or pooled group and not for the
     group the findings are about, use it and say so in `description`.
 * `status` is `healthy` or `unselected` (no screening was reported). **Nothing
-  else.** Diabetes, hypertension, pregnancy, an illness, a drug the model has no
+  else.** `healthy` is what the paper calls healthy, or has screened as such:
+  a group classed as normal glucose tolerance by an oral glucose test is
+  screened. To the model it means insulin sensitivity and beta-cell function on
+  the good side of the median, so do not give it to a group the paper only
+  calls "without diabetes". Diabetes, hypertension, pregnancy, an illness, a drug the model has no
   input for: the model has no way to say it. That is a refusal (kind `population`),
   not a finding with the wrong status. Obesity is not a condition here; it is a
   `bmi` range with `unselected`.
@@ -725,6 +729,10 @@ used.
 * `ghrelin` in the model is a nominal level that rests near 100 pg/mL. It does not
   say active or total ghrelin, whose assays differ several-fold. Leave absolute
   ghrelin levels out.
+* `glp1` and `gip` are the total hormone. The active (intact) forms run several-fold
+  lower and are a different measurement: leave them out (`marker`, `active_glp1` or
+  `active_gip`). If the paper does not say which form its assay reads, say so in
+  the finding's description.
 * A unit the paper does not print is not to be supplied from convention (RMSSD "in
   ms"): leave the number out.
 * If the unit as printed converts to an absurd value (adrenaline in ng/mL), the paper

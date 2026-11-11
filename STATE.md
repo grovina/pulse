@@ -133,6 +133,15 @@ checkpoint has been scored by it yet.
   `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
 - There is no CI. The suite is run by hand:
   `uv run --group dev pytest tests/ -n auto`.
+- Three tests fail (run file by file on 2026-11-11, on a 2-CPU, 4 GB box):
+  `test_dg_is_zero_at_the_decoded_setpoint` in
+  `test_a1_log_glucose_setpoint.py` (glucose moves 0.28 mg/dL a minute at a
+  set point of 60.6), and `test_kernel_decays_monotonically_after_its_peak`
+  and `test_appearance_is_at_the_cap_from_the_first_minute` in
+  `test_iter97_student_gut.py`. Four files could not be run there:
+  `test_cohort_ablation.py` and `test_identifiability.py` ran out of memory,
+  `test_iter81_stability.py` and `test_training_signals.py` passed 30 minutes.
+  The other 89 files pass, in 49 minutes one after another.
 
 - 693 parameters of the gut kernel (the mixture logits of its last layer)
   receive no gradient from any loss.
