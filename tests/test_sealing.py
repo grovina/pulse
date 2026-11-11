@@ -114,9 +114,11 @@ def test_no_sealed_paper_has_an_item_in_a_training_registry():
     assert not [p for p in papers if paper_is_sealed(p) and p in trained]
 
 
-def test_every_paper_with_a_training_item_is_grandfathered():
-    trained = {s.paper for s in ALL_COHORT_STATISTICS} | {r.paper for r in PHYSIOLOGY_RULES}
-    assert trained <= set(GRANDFATHERED_PAPERS)
+def test_every_paper_of_the_python_registries_is_grandfathered():
+    """The papers filed before sealing went by paper. A paper that arrives as a file is
+    not on the list: the draw decides it."""
+    python = {s.paper for s in registry._PYTHON_AUTHORED} | {r.paper for r in _AUTHORED_RULES}
+    assert python == set(GRANDFATHERED_PAPERS)
     assert not any(paper_is_sealed(p) for p in GRANDFATHERED_PAPERS)
 
 
