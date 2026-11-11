@@ -1,0 +1,170 @@
+{
+  "paper": "hahn-2011",
+  "citation": {
+    "authors": "Hahn RG, Ljunggren S, Larsen F, et al.",
+    "title": "A simple intravenous glucose tolerance test for assessment of insulin sensitivity",
+    "journal": "Theoretical Biology & Medical Modelling",
+    "year": 2011,
+    "doi": "10.1186/1742-4682-8-12",
+    "pmid": "21535887",
+    "pmcid": "PMC3113339"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 28.0,
+      "sd": null,
+      "min": 18.0,
+      "max": 51.0
+    },
+    "bmi": {
+      "mean": 23.4,
+      "sd": 2.3,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty non-obese healthy volunteers, 8 females and 12 males, aged between 18 and 51 (mean 28) y, body weight 49-88 (mean 68) kg, BMI 23.4 (SD 2.3) kg/m2. None had a disease requiring medication; routine blood chemistry confirmed no metabolic disease. The Methods give the age span as a description of the people studied (same sentence form as the body-weight span), not as inclusion criteria, and no enrolment criteria are stated; it is entered as the observed extremes. Age SD not printed."
+  },
+  "protocols": [
+    {
+      "name": "ivgtt_prebolus_fasted",
+      "description": "Baseline plasma glucose on the IVGTT day (before the 300 mg/kg glucose bolus), after 12 h of fasting; arm ends before the bolus",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "clamp_120",
+      "description": "Hyperinsulinaemic euglycaemic clamp, 120 min (insulin 20 mU per m2 BSA per min, 20% dextrose adjusted to hold arterialized glucose at 5 mmol/L); plasma glucose and insulin entered at the printed means over 90-120 min of the clamp (Table 1: glucose 5.7 (SD 0.3) mmol/L, insulin 167 (SD 34) pmol/L), held for the whole 120 min since the paper prints no earlier clamp levels",
+      "duration_min": 120,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "glucose_clamp": {
+        "unit": "mmol L-1",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 120,
+            "level": 5.7
+          }
+        ]
+      },
+      "insulin_clamp": {
+        "unit": "pmol L-1",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 120,
+            "level": 167.0
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ivgtt_baseline_glucose",
+      "description": "Baseline plasma glucose on the IVGTT day, after 12 h fast (Table 1 does not say which sample(s); entered as the arm's fasted state)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ivgtt_prebolus_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.8,
+      "unit": "mmol L-1",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, IVGTT, column 'Mean (SD), or median(25th-75th percentiles)'",
+        "quote": "Plasma glucose, baseline | 4.8 (0.5)"
+      }
+    },
+    {
+      "id": "clamp_glucose_uptake",
+      "description": "Glucose uptake Mbw: glucose infusion rate per kg body weight, mean over the last 30 min (90-120 min) of the clamp",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_120"
+      ],
+      "window": {
+        "start_min": 90,
+        "end_min": 120
+      },
+      "value": 45.0,
+      "unit": "μmol min-1 kg-1",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, Glucose clamp, column 'Mean (SD), or median(25th-75th percentiles)', unit μmol min-1 kg-1; Methods: infusion rate during the last 30 min",
+        "quote": "Mbw = per kg body weight | 45 (15)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "IVGTT volume of distribution and clearance of glucose (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Plasma insulin at IVGTT baseline and clamp baseline, and MINMOD SI and SG (Table 1): medians with 25th-75th percentiles",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Insulin AUC (AUCins) during the IVGTT, used in Tables 2-3 (no mean is printed)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Regression equations, r2 and prediction errors of IVGTT indices against Mbw (Tables 2-3, Figures 2-3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Clamp-day baseline glucose and insulin (Table 1): fast length before the clamp is not stated (only that subjects reported at 7.30-8.00 AM)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "IVGTT glucose and insulin time courses (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
