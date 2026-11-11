@@ -157,6 +157,10 @@ checkpoint has been scored by it yet.
   its last meal, which is at 19:00 (`pulse/training/arm_init.py`). An arm at
   08:00 with a 10-hour pre-fast starts 13 hours after food. One with a 3-hour
   pre-fast also starts 13 hours after food: there is no breakfast in it.
+- The pre-fast is spent awake (same function). An arm at 08:00 after an
+  overnight fast starts from a night without sleep, and one after a 72-hour
+  fast from three. Most findings read from papers are morning values after an
+  overnight fast, so this is the state most of the corpus is scored in.
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 
