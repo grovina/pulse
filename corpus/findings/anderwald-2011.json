@@ -1,0 +1,70 @@
+{
+  "paper": "anderwald-2011",
+  "citation": {
+    "authors": "Anderwald C, Tura A, Grassi A, et al.",
+    "title": "Insulin Infusion During Normoglycemia Modulates Insulin Secretion According to Whole-Body Insulin Sensitivity",
+    "journal": "Diabetes Care",
+    "year": 2011,
+    "doi": "10.2337/dc10-1137",
+    "pmid": "21216852",
+    "pmcid": "PMC3024363"
+  },
+  "population": {
+    "n": 65,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 45.0,
+      "sd": 8.06,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.8,
+      "sd": 4.03,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The 65 insulin-sensitive (IS) non-diabetic subjects, in excellent health with no regular drug intake (nondiabetic metabolism confirmed by OGTT); 65% female (Table 1). IS is defined by the clamp M value (M > 5.0 mg/min/kg), so only fasting glucose, not M, is entered. 24 of the non-diabetic subjects (not split by group) were first-degree offspring of T2DM patients. Age 45 +/- 1 years and BMI 24.8 +/- 0.5 kg/m2 are means +/- SE; the SDs (SE x sqrt(65)) are computed by me. Insulin-resistant and T2DM subjects of the paper are left out."
+  },
+  "protocols": [
+    {
+      "name": "fasted_morning",
+      "description": "Fasting plasma glucose sample after a 10-h overnight fast, no food",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_is",
+      "description": "Fasting plasma glucose, insulin-sensitive subjects",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 65
+      },
+      "location": {
+        "where": "Table 1, row 'Plasma glucose (mmol/L)', column IS",
+        "quote": "Plasma glucose (mmol/L) | 4.9 ± 0.1"
+      }
+    }
+  ]
+}
