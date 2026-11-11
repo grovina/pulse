@@ -1,0 +1,226 @@
+{
+  "paper": "buxton-2010",
+  "citation": {
+    "authors": "Buxton OM, Pavlova M, Reid EW, Wang W, Simonson DC, Adler GK",
+    "title": "Sleep Restriction for 1 Week Reduces Insulin Sensitivity in Healthy Men",
+    "journal": "Diabetes",
+    "year": 2010,
+    "doi": "10.2337/db09-0699",
+    "pmid": "20585000",
+    "pmcid": "PMC2927933"
+  },
+  "population": {
+    "n": 20,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.8,
+      "sd": 5.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.3,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty healthy men who completed the study (11 placebo, 9 modafinil), mean +/- SD age 26.8 +/- 5.2 y and BMI 23.3 +/- 3.1 kg/m2 for all 20 (Results, Subjects); the two findings are about the 11 placebo-group men and the 9 modafinil-group men at their sleep-replete baseline (after 10 h nights, before any drug: modafinil or placebo was given only during the 7 nights of sleep restriction). Age and BMI of the two groups separately are not printed, so the pooled figures are used."
+  },
+  "protocols": [
+    {
+      "name": "clamp_morning",
+      "description": "Euglycaemic-hyperinsulinaemic clamp on the morning after the sleep-replete baseline nights (10 h in bed), after an overnight fast, alone; the night is not entered. Insulin infused as human insulin at priming doses of 80 and 60 mU/m2 per min over the first two 5-min periods, then 40 mU/m2 per min for 170 min (an infusion rate, not entered as such); insulin level held at 57.8 uU/mL (mean serum insulin during the infusions, all subjects and both sleep conditions pooled) and serum glucose held at 90 mg/dL (the stated target) from T = 0 to T = 180 min (samples every 5 min to 180, hence 181 simulated minutes). Clock time of the clamp and hours of fasting are not given and are assumed (08:00, 10 h).",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "glucose_clamp": {
+        "unit": "mg/dL",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 181,
+            "level": 90
+          }
+        ]
+      },
+      "insulin_clamp": {
+        "unit": "uU/mL",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 181,
+            "level": 57.8
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "insulin_clamp"
+      ]
+    },
+    {
+      "name": "rmr_morning",
+      "description": "Resting metabolic rate on waking in the sleep-replete condition: awake, in bed, after a 12-h fast (stated), no meal. Indirect calorimetry at about 08:20 (stated '~0820 h') for about 12-14 min (stated). Arm starts at 08:00 (assumed clock hour) so minute 20 is 08:20; it ends at minute 33, i.e. 13 min (midpoint of 12-14, assumed) of measurement; the window is that measurement. The night is not entered.",
+      "duration_min": 33,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "clamp_m_baseline_placebo",
+      "description": "Clamp glucose infusion rate M (mean over the last 60 min of the clamp, corrected for changes in plasma glucose, per kg body weight), placebo group at sleep-replete baseline (10 h nights, before any drug), n = 11",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_morning"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 180
+      },
+      "value": 7.39,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.79,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'Clamp: M', Placebo 10 h column (4th data column; footnote: data are means +/- SE)",
+        "quote": "Clamp: M (mg · kg−1 · min−1) | 6.15 ± 0.66 | 7.11 ± 0.86 | 6.95 ± 0.81 | 7.39 ± 0.79"
+      }
+    },
+    {
+      "id": "clamp_m_baseline_modafinil_group",
+      "description": "Clamp glucose infusion rate M (mean over the last 60 min of the clamp, corrected for changes in plasma glucose, per kg body weight), modafinil-group men at sleep-replete baseline (10 h nights, before any drug), n = 9",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_morning"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 180
+      },
+      "value": 7.11,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.86,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, row 'Clamp: M', Modafinil 10 h column (2nd data column; footnote: data are means +/- SE)",
+        "quote": "Clamp: M (mg · kg−1 · min−1) | 6.15 ± 0.66 | 7.11 ± 0.86 | 6.95 ± 0.81 | 7.39 ± 0.79"
+      }
+    },
+    {
+      "id": "rmr_baseline_placebo",
+      "description": "Resting metabolic rate on waking after a 12-h fast, placebo group at sleep-replete baseline (10 h nights, before any drug), n = 11; the table prints no n per column, so n is the group size from Results, Subjects (11 placebo, 9 modafinil)",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rmr_morning"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 33
+      },
+      "value": 1853.0,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 116.6,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'Resting metabolic rate (kcal)', Placebo 10 h column (4th data column); footnote: data are means ± SE; unit per day and timing from Methods, Resting metabolic rate: 'estimates RMR in kilocalories per day'",
+        "quote": "Resting metabolic rate (kcal) | 1,931.4 ± 77.4 | 1,928.6 ± 79.1 | 1,851.0 ± 86.4 | 1,853.0 ± 116.6"
+      }
+    },
+    {
+      "id": "rmr_baseline_modafinil_group",
+      "description": "Resting metabolic rate on waking after a 12-h fast, modafinil-group men at sleep-replete baseline (10 h nights, before any drug), n = 9; the table prints no n per column, so n is the group size from Results, Subjects (11 placebo, 9 modafinil)",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rmr_morning"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 33
+      },
+      "value": 1928.6,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 79.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, row 'Resting metabolic rate (kcal)', Modafinil 10 h column (2nd data column); footnote: data are means ± SE; unit per day and timing from Methods, Resting metabolic rate: 'estimates RMR in kilocalories per day'",
+        "quote": "Resting metabolic rate (kcal) | 1,931.4 ± 77.4 | 1,928.6 ± 79.1 | 1,851.0 ± 86.4 | 1,853.0 ± 116.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "every sleep-restricted (5 h in bed for 7 nights) value: clamp M, IVGTT indices, cortisol, catecholamines, RMR (Table 1, text)",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "effect of modafinil under sleep restriction: sleepiness and lapses, urinary catecholamines (Table 1, Results)",
+      "missing": {
+        "kind": "input",
+        "name": "modafinil"
+      }
+    },
+    {
+      "what": "FSIVGTT minimal-model indices SI, AIRg, disposition index, glucose tolerance, glucose effectiveness (Table 1), which need a timed IV insulin bolus too",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "IVGTT glucose and insulin time courses (Figure 4A-D)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "salivary cortisol 15:00-21:00 (Table 1, Figure 3); the day's meals are given only as nutrient percentages without energy",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "24 h urinary norepinephrine and epinephrine in ug/day (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "clamp fasting insulin 4.5 and mean insulin 57.8 uU/mL, glucose 89.9 mg/dL in the last 60 min, pooled over all subjects and both sleep conditions, n not printed (Results, clamp paragraph)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    }
+  ]
+}
