@@ -1,0 +1,397 @@
+{
+  "paper": "robertsthomson-2022",
+  "citation": {
+    "authors": "Roberts-Thomson KM, Parker L, Betik AC, et al.",
+    "title": "Oral and intravenous glucose administration elicit opposing microvascular blood flow responses in skeletal muscle of healthy people: role of incretins",
+    "journal": "The Journal of Physiology",
+    "year": 2022,
+    "doi": "10.1113/JP282428",
+    "pmid": "35045191",
+    "pmcid": "PMC9303176"
+  },
+  "population": {
+    "n": 10,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 29.0,
+      "sd": 8.0,
+      "min": 20.0,
+      "max": 47.0
+    },
+    "bmi": {
+      "mean": 23.6,
+      "sd": 3.0,
+      "min": 20.6,
+      "max": 29.4
+    },
+    "status": "healthy",
+    "description": "Ten apparently healthy, normotensive adults (4 M, 6 F), BMI 18.5-30 and age 18-50 enrolment range; age and BMI from Table 2 (mean +/- SD, range). Haemodynamic data (Table 3) are for n = 9."
+  },
+  "protocols": [
+    {
+      "name": "ogtt",
+      "description": "75 g glucose drink after 12 h overnight fast, sampled 0-120 min",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "ivgtt",
+      "description": "variable-rate 10% w/v IV glucose infusion matched to each person's OGTT glucose excursion, 120 min, after 12 h overnight fast; level = Table 1 mean rate (mL/min) x 100 mg/mL (10% w/v) / 71.0 kg (Table 2 mean body weight), e.g. 1.5 mL/min -> 1.5 x 100 / 71.0 = 2.1127 mg/kg/min; the paper does not say when each rate applied, so each is held from its sample time to the next (the 120 min rate, 0.0, is not entered); the integral so held is 30.65 g against the 29.9 g Table 1 prints as the mean total",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "glucose_infusion": {
+        "unit": "mg/kg/min",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 5,
+            "level": 2.1127
+          },
+          {
+            "from_min": 5,
+            "to_min": 10,
+            "level": 1.831
+          },
+          {
+            "from_min": 10,
+            "to_min": 15,
+            "level": 4.6479
+          },
+          {
+            "from_min": 15,
+            "to_min": 20,
+            "level": 6.1972
+          },
+          {
+            "from_min": 20,
+            "to_min": 30,
+            "level": 7.0423
+          },
+          {
+            "from_min": 30,
+            "to_min": 40,
+            "level": 6.338
+          },
+          {
+            "from_min": 40,
+            "to_min": 50,
+            "level": 4.0845
+          },
+          {
+            "from_min": 50,
+            "to_min": 60,
+            "level": 3.5211
+          },
+          {
+            "from_min": 60,
+            "to_min": 70,
+            "level": 2.3944
+          },
+          {
+            "from_min": 70,
+            "to_min": 80,
+            "level": 2.9577
+          },
+          {
+            "from_min": 80,
+            "to_min": 90,
+            "level": 3.2394
+          },
+          {
+            "from_min": 90,
+            "to_min": 100,
+            "level": 2.2535
+          },
+          {
+            "from_min": 100,
+            "to_min": 110,
+            "level": 1.831
+          },
+          {
+            "from_min": 110,
+            "to_min": 120,
+            "level": 2.1127
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "glucose_infusion"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ogtt_hr",
+      "description": "Heart rate at 0, 60 and 120 min of the OGTT (mean and SD, n = 9)",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "BPM",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 61,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 59,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 61,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column HR (BPM), OGTT rows; n = 9",
+        "quote": "0 min | 114 ± 9 | 74 ± 9 | 105 ± 9 | 75 ± 9 | 61 ± 7 | 13 ± 7 | 93 ± 9 | 5 ± 1 ; 60 min | 115 ± 12 | 71 ± 5 | 105 ± 11 | 72 ± 6 | 59 ± 9 | 18 ± 15 | 91 ± 8 | 5 ± 1 ; 120 min | 113 ± 11 | 71 ± 9 | 102 ± 9 | 72 ± 10 | 61 ± 10 | 9 ± 7 | 91 ± 9 | 5 ± 1"
+      }
+    },
+    {
+      "id": "ogtt_sbp",
+      "description": "Brachial systolic BP at 0, 60 and 120 min of the OGTT (mean and SD, n = 9)",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 114,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 115,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 113,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column bSys BP, OGTT rows; n = 9",
+        "quote": "0 min | 114 ± 9 | 74 ± 9 | 105 ± 9 | 75 ± 9 | 61 ± 7 | 13 ± 7 | 93 ± 9 | 5 ± 1 ; 60 min | 115 ± 12 | 71 ± 5 | 105 ± 11 | 72 ± 6 | 59 ± 9 | 18 ± 15 | 91 ± 8 | 5 ± 1 ; 120 min | 113 ± 11 | 71 ± 9 | 102 ± 9 | 72 ± 10 | 61 ± 10 | 9 ± 7 | 91 ± 9 | 5 ± 1"
+      }
+    },
+    {
+      "id": "ogtt_dbp",
+      "description": "Brachial diastolic BP at 0, 60 and 120 min of the OGTT (mean and SD, n = 9)",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 74,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 71,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 71,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column bDias BP, OGTT rows; n = 9",
+        "quote": "0 min | 114 ± 9 | 74 ± 9 | 105 ± 9 | 75 ± 9 | 61 ± 7 | 13 ± 7 | 93 ± 9 | 5 ± 1 ; 60 min | 115 ± 12 | 71 ± 5 | 105 ± 11 | 72 ± 6 | 59 ± 9 | 18 ± 15 | 91 ± 8 | 5 ± 1 ; 120 min | 113 ± 11 | 71 ± 9 | 102 ± 9 | 72 ± 10 | 61 ± 10 | 9 ± 7 | 91 ± 9 | 5 ± 1"
+      }
+    },
+    {
+      "id": "ivgtt_hr",
+      "description": "Heart rate at 0, 60 and 120 min of the IVGTT (mean and SD, n = 9)",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "ivgtt"
+      ],
+      "unit": "BPM",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 64,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 61,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 60,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column HR (BPM), IVGTT rows; n = 9",
+        "quote": "0 min | 119 ± 12 | 76 ± 11 | 107 ± 14 | 74 ± 10 | 64 ± 7 | 6 ± 8 | 97 ± 12 | 5 ± 1 ; 60 min | 118 ± 17 | 73 ± 11 | 105 ± 14 | 69 ± 7 | 61 ± 9 | 9 ± 12 | 94 ± 12 | 5 ± 1 ; 120 min | 113 ± 11 | 78 ± 10 | 102 ± 8 | 75 ± 8 | 60 ± 10 | 9 ± 9 | 94 ± 10 | 5 ± 1"
+      }
+    },
+    {
+      "id": "ivgtt_sbp",
+      "description": "Brachial systolic BP at 0, 60 and 120 min of the IVGTT (mean and SD, n = 9)",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "ivgtt"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 119,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 118,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 17,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 113,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column bSys BP, IVGTT rows; n = 9",
+        "quote": "0 min | 119 ± 12 | 76 ± 11 | 107 ± 14 | 74 ± 10 | 64 ± 7 | 6 ± 8 | 97 ± 12 | 5 ± 1 ; 60 min | 118 ± 17 | 73 ± 11 | 105 ± 14 | 69 ± 7 | 61 ± 9 | 9 ± 12 | 94 ± 12 | 5 ± 1 ; 120 min | 113 ± 11 | 78 ± 10 | 102 ± 8 | 75 ± 8 | 60 ± 10 | 9 ± 9 | 94 ± 10 | 5 ± 1"
+      }
+    },
+    {
+      "id": "ivgtt_dbp",
+      "description": "Brachial diastolic BP at 0, 60 and 120 min of the IVGTT (mean and SD, n = 9)",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "ivgtt"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 76,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 73,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 78,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, column bDias BP, IVGTT rows; n = 9",
+        "quote": "0 min | 119 ± 12 | 76 ± 11 | 107 ± 14 | 74 ± 10 | 64 ± 7 | 6 ± 8 | 97 ± 12 | 5 ± 1 ; 60 min | 118 ± 17 | 73 ± 11 | 105 ± 14 | 69 ± 7 | 61 ± 9 | 9 ± 12 | 94 ± 12 | 5 ± 1 ; 120 min | 113 ± 11 | 78 ± 10 | 102 ± 8 | 75 ± 8 | 60 ± 10 | 9 ± 9 | 94 ± 10 | 5 ± 1"
+      }
+    }
+  ]
+}
