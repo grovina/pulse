@@ -1,0 +1,40 @@
+{
+  "paper": "khansullivan-2026",
+  "citation": {
+    "authors": "Khan Sullivan AM, Isherwood CM, Hassanin H, et al.",
+    "title": "Diurnal Variation and Impairment of Postprandial Glucose-Insulin Responses and Lipid Rhythms in Simulated Shift Work",
+    "journal": "Nutrition Bulletin",
+    "year": 2026,
+    "doi": "10.1111/nbu.70060",
+    "pmid": "42324738",
+    "pmcid": "PMC13522867"
+  },
+  "reported": [
+    {
+      "what": "model-derived 24 h mean plasma glucose in the day-shift (mmol/L, 95% CI), n=9; the day-shift arm has four meals whose energy is individual and not printed",
+      "location": {
+        "where": "Table 1, column DS mean [95% CI]",
+        "quote": "Glucose | 5.99 [5.75–6.23]"
+      }
+    },
+    {
+      "what": "model-derived 24 h mean plasma insulin in the day-shift (uU/mL, 95% CI)",
+      "location": {
+        "where": "Table 1, column DS mean [95% CI]",
+        "quote": "Insulin | 38.35 [26.25–50.45]"
+      }
+    },
+    {
+      "what": "meals given as percentages of energy with energy set per person by an equation; no energy or gram amounts in the main text",
+      "location": {
+        "where": "Methods, Meal Timing",
+        "quote": "Meals comprised 50% carbohydrates (including 15% sugars), 35% fat (11% saturated) and 15% protein."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every meal is given only as percentages of energy, with each person's energy estimated by the Mifflin St Jeor equation; no energy, gram or body-weight figure is printed in the paper (the composition tables are in the supporting information), so the meals cannot be written and the 24 h means, postprandial iAUCs and rhythms cannot be entered."
+}
