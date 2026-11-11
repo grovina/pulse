@@ -904,6 +904,11 @@ used.
   the description, and keep the printed form in the quote. A header can mean either
   direction; if the gate's range check admits both, leave the number out
   (`source`, `table_ambiguous`).
+* When a table prints parts and their total (an early and a late area and the whole one),
+  add them up. Parts that miss the printed total by more than a unit or so in the last
+  printed digit hold a misprint, and the paper does not show which cell it is: leave the
+  parts out (`source`, `table_ambiguous`) and give the sums in the entry. One paper here
+  prints two arms' totals in each other's columns.
 * The sampling `times` are the minutes the paper drew blood, from the start of the arm:
   put the arm's load at the minute the paper's clock says, and the first sample at the
   first of `times`. An incremental area's baseline at the first sample is the start state
