@@ -132,6 +132,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     },
     "glp1": {  # GLP-1(7-36) amide, 3297.7 g/mol; pg/mL = ng/L
         "pmol/l": (1.0, 0.0), "pg/ml": (1.0 / 3.2977, 0.0), "ng/l": (1.0 / 3.2977, 0.0),
+        "nmol/l": (1000.0, 0.0),  # how a paper prints an area of it (nmol/L x min)
     },
     "cortisol": {  # 362.46 g/mol
         "ug/dl": (1.0, 0.0), "ug/l": (0.1, 0.0), "ng/ml": (0.1, 0.0),
@@ -173,6 +174,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "sleep_debt": dict(_HOURS),
     "gip": {  # GIP(1-42), 4983.5 g/mol
         "pmol/l": (1.0, 0.0), "pg/ml": (1000.0 / 4983.5, 0.0),
+        "nmol/l": (1000.0, 0.0),  # how a paper prints an area of it (nmol/L x min)
     },
     # observables
     "glucose_infusion_rate": dict(_GLUCOSE_INFUSION),

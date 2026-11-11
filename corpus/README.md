@@ -574,7 +574,10 @@ what the model and this format should learn next.
   different number. It takes no `window`. `unit` is the concentration as the paper prints
   it and `time_unit` is `min` or `h`: split "mmol/L x min" into `"unit": "mmol/L"` and
   `"time_unit": "min"`, and leave the printed form in the quote. A unit printed as one
-  product (`mg*min/dL`, `mmol*h/L`) is split the same way.
+  product (`mg*min/dL`, `mmol*h/L`) is split the same way. A paper that prints an "area
+  under the curve" and names no rule is read as the trapezoid over its samples, and one
+  that says nothing of a baseline as the total area: say either in the description. An
+  area the paper says it got another way (the integral of a fitted curve) is left out.
 * `incremental_area` is the trapezoidal area, over `times`, of the marker minus that
   person's baseline. The baseline is the person's value at the first of `times`, or, when
   the paper defines it as the mean of several samples, their mean over `baseline_window`
@@ -650,7 +653,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `hepatic_output` | Hepatic glucose output | mg/kg/min | 0 to 12 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `ghrelin` | Ghrelin | pg/mL | 20 to 300 | pg/ml (x1), ng/l (x1), ng/ml (x1000), pmol/l (x3.37) |
 | `leptin` | Leptin | ng/mL | 1 to 50 | ng/ml (x1), ug/l (x1), pg/ml (x0.001), pmol/l (x0.016) |
-| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242) |
+| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242), nmol/l (x1000) |
 | `cortisol` | Cortisol | μg/dL | 1 to 40 | ug/dl (x1), ug/l (x0.1), ng/ml (x0.1), nmol/l (x0.036246) |
 | `acth` | ACTH | pg/mL | 5 to 120 | pg/ml (x1), ng/l (x1), pmol/l (x4.541) |
 | `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), /min (x1), 1/min (x1) |
@@ -679,7 +682,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `gastric_fat` | Gastric fat | g | 0 to 150 | g (x1) |
 | `circ_phase_offset` | Circadian phase | h | -6 to 6 | h (x1), min (x0.0166667) |
 | `sleep_debt` | Sleep debt | h | -16 to 16 | h (x1), min (x0.0166667) |
-| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662) |
+| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662), nmol/l (x1000) |
 | `glucose_infusion_rate` | Glucose infusion rate | mg/kg/min | 0 to 20 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `glucose_disposal` | Glucose disposal | mg/kg/min | 0 to 30 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `urinary_glucose` | Urinary glucose | mg/min | 0 to 1000 | mg/min (x1), mg/h (x0.0166667), g/h (x16.6667), g/day (x0.694444), g/24h (x0.694444), mmol/min (x180.16), mmol/day (x0.125111), mmol/24h (x0.125111) |
