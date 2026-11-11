@@ -712,8 +712,22 @@ def test_the_real_queue_is_valid_and_disjoint_from_every_python_registry():
         assert "sealed" not in (ROOT / "corpus" / "queue" / f"{q.paper}.json").read_text(encoding="utf-8")
 
 
+def _strings(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for value in node.values():
+            yield from _strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _strings(value)
+
+
 def test_no_paper_full_text_is_committed():
+    """A file holds numbers and the sentence or table row each came from, never a paper's
+    text: no file but JSON and the guide, and no string longer than a paragraph."""
     for path in (ROOT / "corpus").rglob("*"):
         assert path.is_dir() or path.suffix in {".json", ".md", ""} or path.name == ".gitkeep", path
         if path.suffix == ".json":
-            assert path.stat().st_size < 20_000, path
+            longest = max(map(len, _strings(json.loads(path.read_text(encoding="utf-8")))), default=0)
+            assert longest < 1_500, (path, longest)
