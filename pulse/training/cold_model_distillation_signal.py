@@ -4,8 +4,9 @@ generator internals no paper reports as a time series.
 
 The wearable tape is glucose / hr / sbp / dbp / temp. Hormones and other
 published statistics are owned by cohort specs and physiology rules. This
-signal is only for the leftover internals: CRH, insulin_action, insulin_slow,
-the bile pools, and (on long windows) mitochondrial_capacity and fat_mass.
+signal is only for the leftover internals: CRH, sympathetic tone,
+insulin_action, insulin_slow, the bile pools, and (on long windows)
+mitochondrial_capacity.
 See ``knowledge.evidence.TEACHER_DISTILL_MARKERS``.
 
 Two loss modes (``mode``)
@@ -318,9 +319,9 @@ class ColdModelDistillationSignal(TrainingSignal):
          when it has gone stale (``recalib_every`` epochs). The embedding is
          **detached** — it parametrizes *where* we distil, not *what*.
       3. Run the learned model at that embedding and score ``markers``
-         (``TEACHER_DISTILL_MARKERS``: CRH, sympathetic tone, epinephrine,
+         (``TEACHER_DISTILL_MARKERS``: CRH, sympathetic tone,
          insulin_action, insulin_slow, bile pools, and on long windows
-         mitochondrial_capacity and fat_mass) against the cold reference.
+         mitochondrial_capacity) against the cold reference.
 
     The protocol pool is *broad over protocols, centred on the population-
     mean patient* (cold references from ``simulate_full_body(PatientParams())``)

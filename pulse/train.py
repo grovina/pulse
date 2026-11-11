@@ -1931,7 +1931,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help=(
             "':'-separated marker ids distilled from the cold model by "
             "--cold-distill-weight. Default None uses the teacher-internal set "
-            "(CRH, insulin_action, insulin_slow, mito, fat_mass, bile pools)."
+            "(CRH, sympathetic tone, insulin_action, insulin_slow, mito, bile pools)."
         ),
     )
     parser.add_argument(
@@ -2036,8 +2036,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "':'-separated markers scored only on long level windows (no rate "
-            "matching, no 60-minute level). Default is mitochondrial_capacity "
-            "and fat_mass. Empty string disables."
+            "matching, no 60-minute level). Default is mitochondrial_capacity. "
+            "Empty string disables."
         ),
     )
     parser.add_argument(

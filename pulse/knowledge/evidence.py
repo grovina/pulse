@@ -85,22 +85,21 @@ OPERATOR_OF_STATISTIC: dict[StatisticKind, OperatorKind] = {
 # rules, sweeps, and (for teacher-only internals) distillation own those.
 TEACHER_TAPE_MARKERS: tuple[str, ...] = ("glucose", "hr", "sbp", "dbp", "temp")
 
-# Generator-only internals: no literature time-series statistic owns them.
-# Slow pair is scored as a day-scale level, not a 60-minute slope.
+# Generator-only internals: no literature statistic owns them. A marker leaves
+# this list when a paper reports it, as adrenaline and fat mass have: the
+# teacher does not also teach what the literature does.
+# The slow one is scored as a day-scale level, not a 60-minute slope.
 TEACHER_DISTILL_MARKERS: tuple[str, ...] = (
     "crh",
     "insulin_action",
     "insulin_slow",
     "mitochondrial_capacity",
-    "fat_mass",
     "gallbladder_bile",
     "intestinal_bile",
     "sns_tone",
-    "epinephrine",
 )
 TEACHER_DISTILL_LONG_ONLY: tuple[str, ...] = (
     "mitochondrial_capacity",
-    "fat_mass",
 )
 
 
