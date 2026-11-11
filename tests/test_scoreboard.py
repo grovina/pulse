@@ -11,6 +11,7 @@ from pulse.knowledge.cohort_types import (
     CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, StatisticWindow, TargetShape,
 )
 from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
+from pulse.knowledge.sealing import paper_is_sealed
 from pulse.model import ModularPhysiologyNetwork
 from pulse.scoreboard import (
     ItemResidual,
@@ -30,17 +31,27 @@ _ARM = CohortArmSpec(label="rest", duration_min=60, start_hour=8.0, meals=())
 _MEAL = CohortArmSpec(label="meal", duration_min=90, start_hour=8.0, meals=((0.0, 50.0, 0.0, 0.0),))
 
 
-def _spec(name: str, *, target: float = 95.0, sigma: float = 10.0, arm=_ARM, sealed=False, **kw):
+# A paper the registry would seal, and one it grandfathers.
+_SEALED_PAPER = next(p for p in (f"paper-{i}" for i in range(100)) if paper_is_sealed(p))
+_TRAINED_PAPER = "wahren-1971"
+
+
+def _spec(
+    name: str, *, target: float = 95.0, sigma: float = 10.0, arm=_ARM, sealed=False,
+    paper: str = _TRAINED_PAPER, **kw,
+):
     return CohortStatisticSpec(
-        name=name, source="test", description="", arms=(arm,), marker_id=kw.pop("marker_id", "glucose"),
+        name=name, source="test", paper=paper, description="", arms=(arm,), marker_id=kw.pop("marker_id", "glucose"),
         kind=StatisticKind.MEAN_IN_WINDOW, window=StatisticWindow(30, 60), target=target,
         sigma=sigma, init_mode=InitMode.NORM_CENTER, sealed=sealed, **kw,
     )
 
 
-def _row(name: str, z: float, family: str = "resting", sealed: bool = True) -> ItemResidual:
+def _row(
+    name: str, z: float, family: str = "resting", sealed: bool = True, paper: str | None = None,
+) -> ItemResidual:
     return ItemResidual(
-        name=name, source="", family=family, operator="window_mean", marker_id="glucose",
+        name=name, source="", paper=paper or name, family=family, operator="window_mean", marker_id="glucose",
         sealed=sealed, predicted=0.0, target=0.0, sigma=1.0, z=z,
     )
 
@@ -67,6 +78,32 @@ def test_fit_summary_reads_in_units_of_each_items_sigma():
     assert set(s["by_family"]) == {"clamp", "resting"}
     assert s["by_family"]["clamp"]["n"] == 1
     assert fit_summary([])["n"] == 0
+    empty = fit_summary([])
+    assert empty["n_papers"] == 0 and empty["median_abs_z"] is None and empty["median_abs_z_90"] is None
+
+
+def test_the_interval_resamples_papers_not_points():
+    # One paper with a hundred good points and one with two bad ones: resampling
+    # points would almost never see the median move; resampling papers does.
+    rows = [_row(f"good{i}", 0.1, paper="good") for i in range(100)]
+    rows += [_row(f"bad{i}", 9.0, paper="bad") for i in range(2)]
+    s = fit_summary(rows)
+    assert s["n"] == 102 and s["n_papers"] == 2
+    lo, hi = s["median_abs_z_90"]
+    assert lo == pytest.approx(0.1) and hi == pytest.approx(9.0)
+    assert fit_summary(rows)["median_abs_z_90"] == s["median_abs_z_90"]
+
+
+def test_one_paper_has_no_interval():
+    s = fit_summary([_row("a", 1.0, paper="only"), _row("b", 2.0, paper="only")])
+    assert s["n"] == 2 and s["n_papers"] == 1 and s["median_abs_z_90"] is None
+
+
+def test_the_interval_contains_the_median_of_many_papers():
+    rows = [_row(f"r{i}", float(i % 7) - 3.0, paper=f"p{i // 3}") for i in range(60)]
+    s = fit_summary(rows)
+    lo, hi = s["median_abs_z_90"]
+    assert lo <= s["median_abs_z"] <= hi and s["n_papers"] == 20
 
 
 def test_targets_that_disagree_beyond_their_sigmas_are_a_conflict():
@@ -125,25 +162,74 @@ def board():
     return scoreboard(
         model,
         n_draws=2,
-        sealed_specs=[_spec("held_out", sealed=True)],
+        sealed_specs=[
+            _spec("from_sealed_paper", sealed=True, paper=_SEALED_PAPER),
+            _spec("wahren_1971_resting_splanchnic_glucose", sealed=True, target=100.0),
+        ],
         sealed_rules=[],
         training_specs=[_spec("fasting_glucose"), _spec("a_far_target", target=300.0)],
         training_rules=rules,
         identifiability=True,
+        baseline=True,
     )
 
 
 def test_the_board_scores_the_sealed_set_apart_from_training(board):
     assert board["n_population"] == 2
-    assert board["literature_fit"]["sealed"]["n"] == 1
-    assert board["literature_fit"]["training"]["n"] == 2 + sum(
+    fit = board["literature_fit"]
+    assert fit["sealed"]["n"] == 1 and fit["sealed"]["n_papers"] == 1
+    assert fit["held_out_items"]["n"] == 1
+    assert fit["training"]["n"] == 2 + sum(
         1 for i in board["items"] if not i["sealed"] and i["operator"] == "hinge"
     )
     items = {i["name"]: i for i in board["items"]}
-    assert items["held_out"]["sealed"] and not items["fasting_glucose"]["sealed"]
+    assert items["from_sealed_paper"]["sealed"] and not items["fasting_glucose"]["sealed"]
     assert items["a_far_target"]["z"] < -5.0
     assert board["individual_skill"] is None
     json.dumps(board)
+
+
+def test_a_held_out_item_is_reported_with_what_it_shares_with_training(board):
+    (detail,) = board["held_out_items"]
+    assert detail["item"] == "wahren_1971_resting_splanchnic_glucose"
+    assert detail["paper"] == "wahren-1971" and detail["n_points"] == 1
+    kinds = {s["kind"]: s for s in detail["shares_with_training"]}
+    assert kinds["paper"]["n_training_rows"] == 2
+    assert kinds["arm"]["with"] == ["wahren_800_splanchnic_glucose", "wahren_800_arterial_glucose"]
+
+
+def test_the_baseline_scores_every_line_on_the_same_items(board):
+    start = board["baseline"]
+    assert {i["name"] for i in start["items"]} == {i["name"] for i in board["items"]}
+    for line in ("sealed", "held_out_items", "training"):
+        assert start["literature_fit"][line]["n"] == board["literature_fit"][line]["n"]
+
+
+def test_the_baseline_is_off_by_default_and_the_board_has_no_sealed_papers_when_none_is_given():
+    torch.manual_seed(0)
+    plain = scoreboard(
+        ModularPhysiologyNetwork(), n_draws=0, identifiability=False,
+        sealed_specs=[], sealed_rules=[], training_specs=[_spec("fasting_glucose")], training_rules=[],
+    )
+    assert plain["baseline"] is None
+    assert plain["literature_fit"]["sealed"]["n"] == 0
+    assert plain["literature_fit"]["sealed"]["median_abs_z"] is None
+    assert plain["held_out_items"] == []
+    assert "literature fit (sealed): sealed papers" in render(plain)
+    assert "n=0" in render(plain)
+
+
+def test_the_fingerprint_covers_the_papers():
+    a = scoreboard(
+        ModularPhysiologyNetwork(), n_draws=0, identifiability=False,
+        sealed_specs=[], sealed_rules=[], training_specs=[_spec("x")], training_rules=[],
+    )
+    b = scoreboard(
+        ModularPhysiologyNetwork(), n_draws=0, identifiability=False,
+        sealed_specs=[], sealed_rules=[], training_specs=[_spec("x", paper="other-1999")],
+        training_rules=[],
+    )
+    assert a["evidence"]["training"] != b["evidence"]["training"]
 
 
 def test_the_board_counts_open_directions(board):
@@ -176,6 +262,10 @@ def test_the_board_renders_every_line(board):
         "vs_median_person": 0.25, "vs_running_mean": 0.1,
     }}}}
     text = render(attach_individual_skill(board, skill))
-    for line in ("literature fit (sealed)", "individual skill", "open directions", "conflicts", "breaks"):
+    for line in (
+        "literature fit (sealed)", "literature fit (held_out_items)", "literature fit (training)",
+        "untrained: median|z|=", "held out: wahren_1971_resting_splanchnic_glucose",
+        "individual skill", "open directions", "conflicts", "breaks",
+    ):
         assert line in text
     assert "cgmacros" in text

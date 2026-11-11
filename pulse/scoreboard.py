@@ -4,10 +4,18 @@ The scoreboard (PLAN section 4): the continuous board every checkpoint is scored
 There is no gate. A run that regresses on one line tells us something; it is not
 rejected. Three lines:
 
-* **Fit to held-out literature** — the sealed items, scored the way training
-  scores an item, reported as the median miss in units of each item's own sigma
-  and the shares within one and two sigma, overall and by protocol family. The
-  training corpus is scored the same way and logged beside it.
+* **Fit to held-out literature** — scored the way training scores an item,
+  reported as the median miss in units of each item's own sigma and the shares
+  within one and two sigma, overall and by protocol family. Two held-out lines
+  are kept apart: ``sealed`` is the items of sealed *papers*, which no part of
+  the model has seen; ``held_out_items`` is the items held out from papers that
+  also train (``sealing.HELD_OUT_ITEMS``), which share a paper, an arm or a
+  starting constant with training and so flatter the model. Points of one curve
+  and items of one paper are not independent, so each line reports the number
+  of papers and a 90% interval on its median from a bootstrap that resamples
+  papers. The training corpus is scored the same way and logged beside them.
+  Given ``baseline=True`` every line is also scored for the untrained student,
+  so a checkpoint is read against where it started.
 * **Individual prediction skill** — calibrate-then-predict on held-out people,
   against the population-median person and the person's own running mean
   (``benchmark.individual_skill``); attached when a ruler was run.
@@ -44,6 +52,7 @@ from .knowledge.cohort_types import CohortStatisticSpec, TargetShape
 from .knowledge.evidence import OPERATOR_OF_STATISTIC, OperatorKind
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES, SEALED_PHYSIOLOGY_RULES, PhysiologyRule
 from .knowledge.protocol_family import protocol_family
+from .knowledge.sealing import HELD_OUT_ITEMS, SHARES_WITH_TRAINING, paper_is_sealed
 from .model import ModularPhysiologyNetwork
 from .physiology_rules_loss import physiology_rule_loss_one_rule
 from .types import EMBEDDING_DIM
@@ -82,6 +91,7 @@ class ItemResidual:
 
     name: str
     source: str
+    paper: str
     family: str
     operator: str
     marker_id: str
@@ -131,7 +141,8 @@ def score_cohorts(
             scored.update({name: (pred, z) for name, (_loss, pred, z) in out.items()})
     return [
         ItemResidual(
-            name=spec.name, source=spec.source, family=protocol_family(spec.arms).value,
+            name=spec.name, source=spec.source, paper=spec.paper,
+            family=protocol_family(spec.arms).value,
             operator=OPERATOR_OF_STATISTIC[spec.kind].value, marker_id=spec.marker_id,
             sealed=spec.sealed, predicted=scored[spec.name][0], target=float(spec.target),
             sigma=float(spec.sigma), z=scored[spec.name][1],
@@ -156,7 +167,8 @@ def score_rules(
                 lambda arm, _r=rule, _i=first_index + j: initial_state(_r.init_mode, arm, _i),
             )
             out.append(ItemResidual(
-                name=rule.name, source=rule.source, family=protocol_family(rule.arms).value,
+                name=rule.name, source=rule.source, paper=rule.paper,
+                family=protocol_family(rule.arms).value,
                 operator=OperatorKind.HINGE.value, marker_id="", sealed=rule.sealed,
                 predicted=violation, target=0.0, sigma=float(rule.scale),
                 z=math.sqrt(max(float(loss), 0.0)),
@@ -164,24 +176,92 @@ def score_rules(
     return out
 
 
+_BOOTSTRAP_DRAWS = 1000
+_BOOTSTRAP_SEED = 0
+_INTERVAL_PERCENTILES = (5.0, 95.0)
+
+
+def _median_interval(by_paper: dict[str, np.ndarray]) -> list[float] | None:
+    """90% interval on the pooled median |z| from resampling whole papers.
+
+    Points of one curve and items of one paper move together, so the paper is
+    the unit that is drawn; the seed is fixed so a board reproduces. One paper
+    gives no spread to resample, so no interval.
+    """
+    if len(by_paper) < 2:
+        return None
+    papers = list(by_paper.values())
+    rng = np.random.default_rng(_BOOTSTRAP_SEED)
+    medians = np.empty(_BOOTSTRAP_DRAWS)
+    for b in range(_BOOTSTRAP_DRAWS):
+        picked = rng.integers(0, len(papers), len(papers))
+        medians[b] = np.median(np.concatenate([papers[k] for k in picked]))
+    lo, hi = np.percentile(medians, _INTERVAL_PERCENTILES)
+    return [float(lo), float(hi)]
+
+
 def _summary(rows: Sequence[ItemResidual]) -> dict[str, Any]:
     if not rows:
-        return {"n": 0, "median_abs_z": None, "within_1sigma": None, "within_2sigma": None}
+        return {
+            "n": 0, "n_papers": 0, "median_abs_z": None, "median_abs_z_90": None,
+            "within_1sigma": None, "within_2sigma": None,
+        }
     a = [abs(r.z) for r in rows]
+    by_paper: dict[str, list[float]] = {}
+    for r in rows:
+        by_paper.setdefault(r.paper, []).append(abs(r.z))
     return {
         "n": len(rows),
+        "n_papers": len(by_paper),
         "median_abs_z": float(median(a)),
+        "median_abs_z_90": _median_interval({p: np.asarray(v) for p, v in by_paper.items()}),
         "within_1sigma": sum(1 for x in a if x <= 1.0) / len(a),
         "within_2sigma": sum(1 for x in a if x <= 2.0) / len(a),
     }
 
 
 def fit_summary(rows: Sequence[ItemResidual]) -> dict[str, Any]:
-    """Median miss and the shares within 1 and 2 sigma, overall and by family."""
+    """Median miss, its paper-level interval and the shares within 1 and 2 sigma,
+    overall and by family."""
     by_family: dict[str, list[ItemResidual]] = {}
     for r in rows:
         by_family.setdefault(r.family, []).append(r)
     return {**_summary(rows), "by_family": {f: _summary(rs) for f, rs in sorted(by_family.items())}}
+
+
+def _lines(rows: Sequence[ItemResidual]) -> dict[str, dict[str, Any]]:
+    """The three literature lines. A held-out row is from a sealed paper or is
+    a held-out item of a paper that also trains."""
+    sealed = [r for r in rows if r.sealed and paper_is_sealed(r.paper)]
+    held_out = [r for r in rows if r.sealed and not paper_is_sealed(r.paper)]
+    training = [r for r in rows if not r.sealed]
+    return {
+        "sealed": fit_summary(sealed),
+        "held_out_items": fit_summary(held_out),
+        "training": fit_summary(training),
+    }
+
+
+def _held_out_detail(rows: Sequence[ItemResidual]) -> list[dict[str, Any]]:
+    """For each held-out item on the board, what it shares with training."""
+    out = []
+    for name in HELD_OUT_ITEMS:
+        points = [r for r in rows if r.name == name or r.name.startswith(f"{name}__t")]
+        if not points:
+            continue
+        shares = []
+        for overlap in SHARES_WITH_TRAINING.get(name, ()):
+            entry: dict[str, Any] = {"kind": overlap.kind, "with": list(overlap.with_)}
+            if overlap.kind == "paper":
+                entry["n_training_rows"] = sum(
+                    1 for r in rows if not r.sealed and r.paper == overlap.with_[0]
+                )
+            shares.append(entry)
+        out.append({
+            "item": name, "paper": points[0].paper, "n_points": len(points),
+            "median_abs_z": float(median(abs(r.z) for r in points)), "shares_with_training": shares,
+        })
+    return out
 
 
 def _allowed(spec: CohortStatisticSpec) -> tuple[float, float]:
@@ -230,10 +310,32 @@ def breaks(previous: Sequence[dict[str, Any]], rows: Sequence[ItemResidual]) -> 
 def _fingerprint(specs: Sequence[CohortStatisticSpec], rules: Sequence[PhysiologyRule]) -> str:
     """Which items a board scored, and against what — two boards compare only if equal."""
     lines = sorted(
-        [f"{s.name}|{s.marker_id}|{s.kind.value}|{s.target!r}|{s.sigma!r}" for s in specs]
-        + [f"{r.name}|{r.scale!r}" for r in rules]
+        [f"{s.name}|{s.paper}|{s.marker_id}|{s.kind.value}|{s.target!r}|{s.sigma!r}" for s in specs]
+        + [f"{r.name}|{r.paper}|{r.scale!r}" for r in rules]
     )
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()[:16]
+
+
+def _reference_model(model: ModularPhysiologyNetwork, seed: int) -> ModularPhysiologyNetwork:
+    """The untrained student: ``model``'s architecture, every published number at
+    its published value, fresh network weights drawn from ``seed``."""
+    with torch.random.fork_rng():
+        torch.manual_seed(seed)
+        return type(model)(**model.constructor_kwargs)
+
+
+def _score_all(
+    model: nn.Module,
+    specs: Sequence[CohortStatisticSpec],
+    rules: Sequence[PhysiologyRule],
+    members: list[torch.Tensor],
+    n_population: int,
+    init: InitialState,
+) -> list[ItemResidual]:
+    return [
+        *score_cohorts(model, specs, members, n_population, init),
+        *score_rules(model, rules, members, init, first_index=len(specs)),
+    ]
 
 
 def scoreboard(
@@ -243,13 +345,18 @@ def scoreboard(
     seed: int = 0,
     previous: dict[str, Any] | None = None,
     identifiability: bool = True,
+    baseline: bool = False,
     device: torch.device | str = "cpu",
     sealed_specs: Sequence[CohortStatisticSpec] = SEALED_COHORT_STATISTICS,
     sealed_rules: Sequence[PhysiologyRule] = SEALED_PHYSIOLOGY_RULES,
     training_specs: Sequence[CohortStatisticSpec] = ALL_COHORT_STATISTICS,
     training_rules: Sequence[PhysiologyRule] = PHYSIOLOGY_RULES,
 ) -> dict[str, Any]:
-    """Score ``model`` on the board. ``previous`` is an earlier board, for breaks."""
+    """Score ``model`` on the board. ``previous`` is an earlier board, for breaks.
+
+    ``baseline`` also scores the untrained student (``_reference_model``) on the
+    same items and people, which doubles the cost.
+    """
     model.to(device)
     was_training = model.training
     model.eval()
@@ -258,12 +365,18 @@ def scoreboard(
 
     specs = [*sealed_specs, *training_specs]
     rules = [*sealed_rules, *training_rules]
-    rows = [
-        *score_cohorts(model, specs, members, n_population, init),
-        *score_rules(model, rules, members, init, first_index=len(specs)),
-    ]
-    sealed = [r for r in rows if r.sealed]
-    training = [r for r in rows if not r.sealed]
+    rows = _score_all(model, specs, rules, members, n_population, init)
+
+    reference = None
+    if baseline:
+        start = _reference_model(model, seed).to(device).eval()
+        start_rows = _score_all(
+            start, specs, rules, members, n_population, training_initial_states(start, device, seed),
+        )
+        reference = {
+            "literature_fit": _lines(start_rows),
+            "items": [{"name": r.name, "z": r.z} for r in start_rows],
+        }
 
     openness = None
     conflicts = target_conflicts(specs)
@@ -288,7 +401,9 @@ def scoreboard(
             "training": _fingerprint(training_specs, training_rules),
         },
         "n_population": n_population,
-        "literature_fit": {"sealed": fit_summary(sealed), "training": fit_summary(training)},
+        "literature_fit": _lines(rows),
+        "held_out_items": _held_out_detail(rows),
+        "baseline": reference,
         "individual_skill": None,
         "openness": openness,
         "conflicts": conflicts,
@@ -329,24 +444,53 @@ def scoreboard_for_checkpoint(
     return board
 
 
-def _fit_line(label: str, s: dict[str, Any]) -> str:
+def _share_text(share: dict[str, Any]) -> str:
+    if share["kind"] == "paper":
+        return f"paper {share['with'][0]} with {share['n_training_rows']} training rows"
+    if share["kind"] == "arm":
+        return "an arm with " + ", ".join(share["with"])
+    return "its target with the initial " + ", ".join(share["with"])
+
+
+def _fit_line(label: str, s: dict[str, Any], start: dict[str, Any] | None = None) -> str:
     if not s["n"]:
         return f"    {label:<14} n=0"
-    return (
-        f"    {label:<14} n={s['n']:<4} median|z|={s['median_abs_z']:.2f}  "
+    interval = s["median_abs_z_90"]
+    spread = f" [{interval[0]:.2f}, {interval[1]:.2f}]" if interval else " [no interval]"
+    line = (
+        f"    {label:<14} n={s['n']:<4} papers={s['n_papers']:<3} "
+        f"median|z|={s['median_abs_z']:.2f}{spread}  "
         f"within 1σ={s['within_1sigma']:.0%}  within 2σ={s['within_2sigma']:.0%}"
     )
+    if start is not None and start["n"]:
+        line += f"   (untrained: median|z|={start['median_abs_z']:.2f})"
+    return line
+
+
+_LINE_TITLES = {
+    "sealed": "sealed papers",
+    "held_out_items": "held-out items of papers that also train",
+    "training": "training",
+}
 
 
 def render(board: dict[str, Any]) -> str:
     lines = [f"scoreboard: {board.get('checkpoint', '<model>')}"]
     lines.append(f"  evidence sealed={board['evidence']['sealed']} training={board['evidence']['training']}")
-    for split in ("sealed", "training"):
+    reference = (board.get("baseline") or {}).get("literature_fit")
+    for split, title in _LINE_TITLES.items():
         fit = board["literature_fit"][split]
-        lines.append(f"  literature fit ({split}):")
-        lines.append(_fit_line("all", fit))
+        start = reference[split] if reference else None
+        lines.append(f"  literature fit ({split}): {title}; interval is 90%, resampling papers")
+        lines.append(_fit_line("all", fit, start))
         for family, s in fit["by_family"].items():
-            lines.append(_fit_line(family, s))
+            lines.append(_fit_line(family, s, start["by_family"].get(family) if start else None))
+    for item in board.get("held_out_items", []):
+        shares = "; ".join(_share_text(s) for s in item["shares_with_training"]) or "nothing recorded"
+        lines.append(
+            f"    held out: {item['item']} ({item['paper']}, {item['n_points']} point"
+            f"{'' if item['n_points'] == 1 else 's'}, median|z|={item['median_abs_z']:.2f}) shares {shares}"
+        )
 
     skill = board.get("individual_skill")
     lines.append("  individual skill:" + ("" if skill else " (no ruler run)"))
