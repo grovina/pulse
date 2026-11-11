@@ -276,6 +276,12 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   `bmi` range with `unselected`.
 * A protocol can override `sex`, `age_years` (`[lo, hi]`), `bmi` (`[lo, hi]`) or
   `status` for one arm, when the paper compares groups (lean against obese).
+* Sex, age and BMI are all the model can be told about a group. Groups the paper
+  separates by anything else (insulin-sensitive against insulin-resistant, high
+  against low responders, trained against untrained) cannot be entered as two
+  arms: the model would be asked for two different numbers from the same
+  people. Enter the pooled group if the paper reports it, or the one group that
+  is plainly the healthy reference, and leave the other out.
 
 ### `protocols`
 
@@ -306,11 +312,34 @@ for a single sample. Then name every key you filled in that way:
 
 A key is stated when the paper gives its value in words or numbers ("a 10-hour
 fast", "at 08:00", "samples were drawn for 240 min"). Anything else is assumed,
-however reasonable. The second reader checks this list against the paper as
-closely as the numbers, and the gate prints it. Do not assume a meal, a dose or
-an intensity: if the paper does not report what the subjects ate or were given,
-the protocol cannot be written (leave those findings out, or refuse with kind
-`input`).
+however reasonable: a lower bound ("at least 12 h") is not a value. The second
+reader checks this list against the paper as closely as the numbers, and the
+gate prints it.
+
+Do not assume a meal, a dose or an intensity: if the paper does not report what
+the subjects ate or were given, the protocol cannot be written (leave those
+findings out, or refuse with kind `input`). What you may do is **derive** an
+input from numbers the paper prints, by the arithmetic below and no other. Then
+the key goes in `assumed`, and the protocol's `description` gives the arithmetic
+with the printed numbers it used, so that the second reader can redo it.
+
+* **A meal given as energy and percentages of energy**: grams are
+  `kcal x fraction / 4` for carbohydrate and protein and `/ 9` for fat.
+* **A meal or a load given per kilogram**: times the group's mean body weight, if
+  the paper prints it.
+* **Exercise.** `activity` is the model's own scale, defined by oxygen uptake:
+  `level = (VO2 - 3.7) / 31.7`, with VO2 in mL/kg/min. (Rest is 3.7; level 0.7
+  is 25.9 mL/kg/min, which is 130 W on a cycle ergometer for a 70 kg man.) Use
+  the oxygen uptake the paper reports for the bout: measured, or a stated
+  percentage of the group's measured maximum times that maximum, or METs
+  times 3.5. For a cycle ergometer work rate with no oxygen uptake,
+  `level = watts / 186`. "70% of VO2max" with no VO2max printed, a heart-rate
+  target, or a perceived exertion is not an intensity the model can be given:
+  leave the bout out.
+
+A protocol holds what its findings need and no more. For a sample drawn before
+the first meal of a study day, end the arm after the sample: do not enter the
+day's meals and sleep for a number that does not depend on them.
 
 Optional inputs, each `{"segments": [{"from_min", "to_min", "level"}, ...]}` (and
 `"unit"` where shown). Outside the segments an input is at its baseline.
@@ -418,7 +447,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | marker | name | model unit | plausible level | accepted units (multiply by) |
 |---|---|---|---|---|
 | `glucose` | Blood Glucose | mg/dL | 40 to 400 | mg/dl (x1), mg/100ml (x1), mmol/l (x18.016), mm (x18.016), g/l (x100), mg/l (x0.1) |
-| `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667) |
+| `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
 | `glucagon` | Glucagon | pg/mL | 0 to 500 | pg/ml (x1), ng/l (x1), pmol/l (x3.4828) |
 | `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), mm (x1), meq/l (x1), umol/l (x0.001), ueq/l (x0.001) |
 | `bhb` | β-Hydroxybutyrate | mmol/L | 0 to 10 | mmol/l (x1), mm (x1), umol/l (x0.001), mg/dl (x0.0960615) |
@@ -446,7 +475,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `intestinal_bile` | Intestinal bile acids | mmol | 0 to 10 | mmol (x1), umol (x0.001) |
 | `bile_acids` | Serum total bile acids | µmol/L | 0 to 100 | umol/l (x1), um (x1), nmol/ml (x1), nmol/l (x0.001), mmol/l (x1000) |
 | `fat_mass` | Fat mass | kg | 4 to 60 | kg (x1), g (x0.001), lb (x0.453592) |
-| `insulin_slow` | Insulin (slow) | μU/mL | 0 to 80 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667) |
+| `insulin_slow` | Insulin (slow) | μU/mL | 0 to 80 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
 | `insulin_potentiator` | Insulin potentiator | mg/dL | 0 to 200 | mg/dl (x1) |
 | `sns_tone` | Sympathetic tone | fraction | 0 to 1 | fraction (x1), % (x0.01) |
 | `epinephrine` | Epinephrine | pg/mL | 0 to 1500 | pg/ml (x1), ng/l (x1), ng/ml (x1000), pmol/l (x0.1832), nmol/l (x183.2) |
@@ -483,7 +512,8 @@ Do not compute a standard error yourself and do not choose a sigma.
 | `range` | `low`, `high`, `n` | the smallest and largest individual |
 | `n_only` | `n` | only for `spread` and `correlation`, when the paper gives the statistic and its n and nothing else |
 
-`n` is the number of people behind the number. If error bars are not labelled
+`n` is the number of **people** behind the number, not of tests or samples: twelve
+subjects each tested three times are 12. If error bars are not labelled
 (SD or SEM?) in text, caption or methods, do not guess: the finding cannot be
 entered; write a refusal of kind `operator` naming "unlabelled error bars", or
 leave the number out. The statistic has to lie inside its own `ci` or `range`.
@@ -615,6 +645,11 @@ used.
   has probably misprinted it. Leave the number out; do not correct the paper.
 * When a table does not say when a baseline value was drawn, enter it on a fasted
   morning and put `duration_min` in `assumed`.
+* A "fasting" or "baseline" value that the paper defines as the mean of several
+  samples (-20, -10 and 0 min) is a `mean_in_window` over the minutes those samples
+  span, in a run-in before the load.
+* A curve's `quote` joins its table rows with ` ; `, one row per time point, when
+  the table has a row for each time.
 * A number read only at minute 0 fails check 4: minute 0 is the state the protocol
   starts from, and training does not differentiate through how it got there. Give a
   baseline as the mean over a run-in (start the protocol 30 minutes before the load

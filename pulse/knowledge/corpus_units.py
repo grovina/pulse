@@ -67,6 +67,7 @@ _INSULIN: dict[str, tuple[float, float]] = {
     "miu/l": (1.0, 0.0),
     "mu/l": (1.0, 0.0),
     "pmol/l": (_INSULIN_PMOL_L, 0.0),
+    "nmol/l": (_INSULIN_PMOL_L * 1000.0, 0.0),
 }
 _GLUCOSE_INFUSION: dict[str, tuple[float, float]] = {
     "mg/kg/min": (1.0, 0.0),
