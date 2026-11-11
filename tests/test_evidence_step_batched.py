@@ -177,7 +177,7 @@ def test_a_group_never_pads_beyond_the_ratio_or_the_row_budget() -> None:
 
     units = [unit(0, 1440), unit(1, 900), unit(2, 100), unit(3, 60), unit(4, 700, observe=True)]
     groups = _group_units(units, pad_ratio=2.0, max_row_minutes=10**9)
-    assert [[u.index for u in g] for g in groups] == [[0, 1], [4], [2, 3]]
+    assert [[u.index for u in g] for g in groups] == [[0, 1], [2, 3], [4]]
     narrow = _group_units(units[:2], pad_ratio=2.0, max_row_minutes=1440 * 7)
     assert [[u.index for u in g] for g in narrow] == [[0], [1]]
 

@@ -260,12 +260,13 @@ def _unit_of(
 def _group_units(
     units: Sequence[_Unit], *, pad_ratio: float = PAD_RATIO, max_row_minutes: int = MAX_ROW_MINUTES,
 ) -> list[list[_Unit]]:
-    """Units grouped for rollout: longest first, a unit joins the open group while it
-    observes the same way, is at least ``1/pad_ratio`` as long as the group's longest,
-    and keeps the group's rows x horizon within ``max_row_minutes``."""
+    """Units grouped for rollout: non-observing before observing, longest first within
+    each. A unit joins the open group while it is at least ``1/pad_ratio`` as long as
+    the group's longest and keeps the group's rows x horizon within ``max_row_minutes``;
+    otherwise it opens a new group."""
     groups: list[list[_Unit]] = []
     rows = 0
-    for unit in sorted(units, key=lambda u: -u.horizon):
+    for unit in sorted(units, key=lambda u: (u.observe, -u.horizon)):
         open_group = groups[-1] if groups else None
         if (
             open_group is not None
