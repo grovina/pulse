@@ -1,0 +1,360 @@
+{
+  "paper": "deru-2023",
+  "citation": {
+    "authors": "Deru LS, Chamberlain CJ, Lance GR, et al.",
+    "title": "The Effects of Exercise on Appetite-Regulating Hormone Concentrations over a 36-h Fast in Healthy Young Adults: A Randomized Crossover Study",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15081911",
+    "pmid": "37111130",
+    "pmcid": "PMC10142171"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 26.2,
+      "sd": 5.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.8,
+      "sd": 3.4,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eleven men and nine women, healthy; exclusions included metabolic disease, medications altering metabolism, BMI below 18.5 or above 30 kg/m2. Age and BMI are the cumulative (n = 20) values of Table 1. Randomized crossover: all 20 completed both conditions."
+  },
+  "protocols": [
+    {
+      "name": "fast_36h_only",
+      "description": "Standardized meal at minute 0 (the fast starts with it), one meal per person sized to 25% of that person's daily energy need, so 614.8 kcal is the group mean (Results: 614.8 ± 85.2 kcal) at 60% carbohydrate, 15% protein, 25% fat (Methods 2.3.3): carbs 614.8*0.60/4 = 92.22 g, protein 614.8*0.15/4 = 23.055 g, fat 614.8*0.25/9 = 17.078 g. Then a water-only fast to 36 h (2160 min); blood at 12, 24, 36 h (the 0 h draw, taken before the meal in people who had only abstained for at least four hours, is not entered). Sleep: the paper gives no hours, so 23:00 to 07:00 on the assumed clock (minutes 900 to 1380). No exercise.",
+      "duration_min": 2161,
+      "start_hour": 8.0,
+      "prefast_hours": 4,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 92.22,
+          "fat_g": 17.078,
+          "protein_g": 23.055
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals",
+        "sleep_wake"
+      ],
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 900,
+            "to_min": 1380,
+            "level": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "fast_36h_exercise",
+      "description": "Standardized meal at minute 0 (the fast starts with it), one meal per person sized to 25% of that person's daily energy need, so 614.8 kcal is the group mean (Results: 614.8 ± 85.2 kcal) at 60% carbohydrate, 15% protein, 25% fat (Methods 2.3.3): carbs 614.8*0.60/4 = 92.22 g, protein 614.8*0.15/4 = 23.055 g, fat 614.8*0.25/9 = 17.078 g. Then a water-only fast to 36 h (2160 min); blood at 12, 24, 36 h (the 0 h draw, taken before the meal in people who had only abstained for at least four hours, is not entered). Sleep: the paper gives no hours, so 23:00 to 07:00 on the assumed clock (minutes 900 to 1380). Treadmill bout starting 30 min into the fast, after the meal (Methods 2), lasting 51.7 min (Table 1 cumulative Exercise Time), 30 to 81.7 min, entered as 30 to 82 because segments take whole minutes; intensity from the mean 9.14 MET printed in Results (whether measured or computed is not stated): VO2 = 9.14*3.5 = 31.99 mL/kg/min, level = (31.99-3.7)/31.7 = 0.892.",
+      "duration_min": 2161,
+      "start_hour": 8.0,
+      "prefast_hours": 4,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 92.22,
+          "fat_g": 17.078,
+          "protein_g": 23.055
+        }
+      ],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 30,
+            "to_min": 82,
+            "level": 0.892
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals",
+        "activity",
+        "sleep_wake"
+      ],
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 900,
+            "to_min": 1380,
+            "level": 0.0
+          }
+        ]
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "gip_fast_only_curve",
+      "description": "Plasma GIP at 0, 12, 24 and 36 h of the 36 h water-only fast, without the initiating exercise bout; mean and SD",
+      "marker": "gip",
+      "statistic": "curve",
+      "protocols": [
+        "fast_36h_only"
+      ],
+      "unit": "pg/mL",
+      "points": [
+        {
+          "t_min": 720,
+          "value": 65.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 27.6,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 1440,
+          "value": 53.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 28.6,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 2160,
+          "value": 65.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 28.4,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'GIP' (No Exercise), columns 12 h, 24 h, 36 h (mean ± SD, pg/mL)",
+        "quote": "No Exercise | 65.0 ± 27.6 ; No Exercise | 53.4 ± 28.6 ; No Exercise | 65.4 ±28.4"
+      }
+    },
+    {
+      "id": "gip_fast_exercise_curve",
+      "description": "Plasma GIP at 0, 12, 24 and 36 h of the 36 h water-only fast, with the initiating exercise bout; mean and SD",
+      "marker": "gip",
+      "statistic": "curve",
+      "protocols": [
+        "fast_36h_exercise"
+      ],
+      "unit": "pg/mL",
+      "points": [
+        {
+          "t_min": 720,
+          "value": 81.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 30.9,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 1440,
+          "value": 47.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 19.9,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 2160,
+          "value": 66.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 26.5,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'GIP' (Exercise), columns 12 h, 24 h, 36 h (mean ± SD, pg/mL)",
+        "quote": "Exercise | 81.8 ± 30.9 ; Exercise | 47.3 ± 19.9 ; Exercise | 66.0 ± 26.5"
+      }
+    },
+    {
+      "id": "leptin_fast_only_curve",
+      "description": "Plasma leptin at 0, 12, 24 and 36 h of the 36 h water-only fast, without the initiating exercise bout; mean and SD",
+      "marker": "leptin",
+      "statistic": "curve",
+      "protocols": [
+        "fast_36h_only"
+      ],
+      "unit": "pg/mL",
+      "points": [
+        {
+          "t_min": 720,
+          "value": 3542.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 3820.6,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 1440,
+          "value": 1382.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1426.8,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 2160,
+          "value": 868.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1007.6,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'Leptin' (No Exercise), columns 12 h, 24 h, 36 h (mean ± SD, pg/mL)",
+        "quote": "No Exercise | 3542.3 ± 3820.6 ; No Exercise | 1382.0 ± 1426.8 ; No Exercise | 868.9 ± 1007.6"
+      },
+      "unusual_value_ok": "the paper reports leptin in pg/mL by multiplex assay; 868.9 and 844.8 pg/mL at 36 h of a fast are below the marker's usual range but are the printed values"
+    },
+    {
+      "id": "leptin_fast_exercise_curve",
+      "description": "Plasma leptin at 0, 12, 24 and 36 h of the 36 h water-only fast, with the initiating exercise bout; mean and SD",
+      "marker": "leptin",
+      "statistic": "curve",
+      "protocols": [
+        "fast_36h_exercise"
+      ],
+      "unit": "pg/mL",
+      "points": [
+        {
+          "t_min": 720,
+          "value": 3481.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 3609.3,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 1440,
+          "value": 1307.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1562.8,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 2160,
+          "value": 844.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1011.3,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'Leptin' (Exercise), columns 12 h, 24 h, 36 h (mean ± SD, pg/mL)",
+        "quote": "Exercise | 3481.2 ± 3609.3 ; Exercise | 1307.0 ± 1562.8 ; Exercise | 844.8 ± 1011.3"
+      },
+      "unusual_value_ok": "the paper reports leptin in pg/mL by multiplex assay; 868.9 and 844.8 pg/mL at 36 h of a fast are below the marker's usual range but are the printed values"
+    },
+    {
+      "id": "exercise_bout_rq",
+      "description": "Mean respiratory quotient during the treadmill bout (entered as minutes 30 to 82 of the exercise arm; the bout's own lengths varied, mean 51.7 min); mean and SD",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_36h_exercise"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 82
+      },
+      "value": 0.95,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.14,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, first paragraph (sentence on the exercise bout); the SD label is from Methods 2.4: 'Means and standard deviations were used to describe participant data.'",
+        "quote": "The average respiratory quotient (R) during the exercise bout was 0.95 ± 0.14"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "GIP and leptin at 0 h in both conditions (Table 2), drawn before the standardized meal in people who had eaten as they pleased and abstained for at least four hours (Methods 2.3.4); insulin, GLP-1, ghrelin, PP and PYY at 0 h likewise (covered by their entries below)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "insulin at 0, 12, 24, 36 h in both conditions (Table 2), printed in pg/mL",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_in_pg_per_ml"
+      }
+    },
+    {
+      "what": "GLP-1 at 0, 12, 24, 36 h in both conditions (Table 2), pg/mL; the assay form (total or active) is not stated and the converted levels (about 137 pmol/L) exceed the marker's plausible range",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "ghrelin at 0, 12, 24, 36 h in both conditions (Table 2); absolute ghrelin, assay form (active or total) not stated",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "PP at 0, 12, 24, 36 h in both conditions (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "pancreatic_polypeptide"
+      }
+    },
+    {
+      "what": "PYY at 0, 12, 24, 36 h in both conditions (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "areas under the curve over 36 h per condition and their differences, for all hormones (Table 3, Results 'Area under the curve')",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "energy expended in the exercise bout as a total in kcal (Results, first paragraph); a total over each person's own bout length, not a rate",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    }
+  ]
+}
