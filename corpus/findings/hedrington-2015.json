@@ -1,0 +1,401 @@
+{
+  "paper": "hedrington-2015",
+  "citation": {
+    "authors": "Hedrington MS, Tate DB, Younk LM, et al.",
+    "title": "Effects of Antecedent GABA A Receptor Activation on Counterregulatory Responses to Exercise in Healthy Man",
+    "journal": "Diabetes",
+    "year": 2015,
+    "doi": "10.2337/db15-0212",
+    "pmid": "25901095",
+    "pmcid": "PMC4542446"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 28.0,
+      "sd": 5.57,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.0,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty healthy nonsmokers of Protocol 1 (prior euglycemia, no alprazolam; 'Protocol 1 ... (n = 20)'), recreationally active. The paper gives sex, age, BMI and VO2max only for the pooled 31 (16 males, 15 females) of the four day-1 conditions, used here. Age 28 +/- 1 years (data are mean +/- SE), SD computed here as SE x sqrt(31) = 5.57. BMI 23 +/- 3 kg/m2 as printed; whether SD or SE is not labelled, so no SD given. VO2max 39 +/- 2 mL/kg/min (pooled)."
+  },
+  "protocols": [
+    {
+      "name": "exercise_euglycemia",
+      "description": "Day 2, after an overnight 10 h fast: 120 min tracer equilibration then 90 min cycling at 50% of individual VO2max, with 20% dextrose infused to hold glucose at the target 5.2-5.3 mmol/L (glucose clamp 5.3) for the duration of the study; no insulin infusion is described for day 2; day 1 was euglycemic clamps without alprazolam (not simulated). Activity level = (0.5 x 39 mL/kg/min - 3.7) / 31.7 = (19.5 - 3.7) / 31.7 = 0.498, using the pooled mean VO2max 39 +/- 2 mL/kg/min",
+      "duration_min": 211,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "glucose_clamp": {
+        "unit": "mmol/L",
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 211,
+            "level": 5.3
+          }
+        ]
+      },
+      "activity": {
+        "segments": [
+          {
+            "from_min": 120,
+            "to_min": 210,
+            "level": 0.498
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_baseline",
+      "description": "Heart rate at baseline, day 2 after prior euglycemia, no alprazolam",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 63,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Baseline",
+        "quote": "Heart rate (beats/min) | 63 ± 5"
+      }
+    },
+    {
+      "id": "hr_final",
+      "description": "Heart rate in the last 15 min of 90 min exercise",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "value": 139,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Final",
+        "quote": "Heart rate (beats/min) | 139 ± 7*"
+      }
+    },
+    {
+      "id": "sbp_baseline",
+      "description": "Systolic BP at baseline",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 111,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Baseline",
+        "quote": "Systolic blood pressure (mmHg) | 111 ± 7"
+      }
+    },
+    {
+      "id": "sbp_final",
+      "description": "Systolic BP in the last 15 min of exercise",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "value": 145,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 15,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Final",
+        "quote": "Systolic blood pressure (mmHg) | 145 ± 15*"
+      }
+    },
+    {
+      "id": "dbp_baseline",
+      "description": "Diastolic BP at baseline",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 65,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Baseline",
+        "quote": "Diastolic blood pressure (mmHg) | 65 ± 7"
+      }
+    },
+    {
+      "id": "dbp_final",
+      "description": "Diastolic BP in the last 15 min of exercise",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "value": 73,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column 'Prior eugly control (no alprazolam)', Final",
+        "quote": "Diastolic blood pressure (mmHg) | 73 ± 3*"
+      }
+    },
+    {
+      "id": "epinephrine_baseline",
+      "description": "Plasma epinephrine at baseline",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 191,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 39,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "Epinephrine (pmol/L) | 191 ± 39"
+      }
+    },
+    {
+      "id": "glucagon_baseline",
+      "description": "Plasma glucagon at baseline",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 42,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "Glucagon (ng/L) | 42 ± 3"
+      }
+    },
+    {
+      "id": "cortisol_baseline",
+      "description": "Plasma cortisol at baseline",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 306,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 55,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "Cortisol (nmol/L) | 306 ± 55"
+      }
+    },
+    {
+      "id": "nefa_baseline",
+      "description": "NEFA at baseline",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 332,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 50,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "NEFA (μmol/L) | 332 ± 50"
+      }
+    },
+    {
+      "id": "lactate_baseline",
+      "description": "Blood lactate at baseline",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 1.07,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "Lactate (mmol/L) | 1.07 ± 0.1"
+      }
+    },
+    {
+      "id": "egp_baseline",
+      "description": "Endogenous glucose production at baseline",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 121
+      },
+      "value": 10.4,
+      "unit": "umol/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column 'Prior eugly control (no alprazolam)' (day 2 baseline)",
+        "quote": "EGP (μmol/kg/min) | 10.4 ± 0.5"
+      }
+    },
+    {
+      "id": "egp_final",
+      "description": "EGP in the last 15 min of exercise",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "value": 20,
+      "unit": "umol/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, Glucose Kinetics (prior euglycemia, no alprazolam)",
+        "quote": "compared with day 1 euglycemia (20 ± 1.1 μmol/kg/min)"
+      }
+    },
+    {
+      "id": "gir_final",
+      "description": "Glucose infusion rate in the last 15 min of exercise",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_euglycemia"
+      ],
+      "window": {
+        "start_min": 195,
+        "end_min": 211
+      },
+      "value": 1.2,
+      "unit": "umol/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, Glucose Kinetics (prior euglycemia, no alprazolam)",
+        "quote": "compared with 1.2 ± 0.4 μmol/kg/min following day 1 euglycemia"
+      }
+    }
+  ]
+}
