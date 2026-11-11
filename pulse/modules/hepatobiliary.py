@@ -166,8 +166,13 @@ class DuodenalDeliveryKernel(nn.Module):
         swallow = swallow_from_meals(horizon, meals, device)
         left, _filled = simulate(swallow, kcal_per_min)
         idx = times.round().to(torch.long).clamp(0, horizon - 1)
-        grams = left.index_select(0, idx)  # carb, protein, fat
-        return torch.stack([grams[:, 2], grams[:, 1], grams[:, 0]], dim=-1)
+        return self.delivery(left.index_select(0, idx))
+
+    @staticmethod
+    def delivery(grams: torch.Tensor) -> torch.Tensor:
+        """Duodenal (fat, protein, carb) delivery from the stomach's outflow
+        (carb, protein, fat) in the last dimension, whatever leads it."""
+        return torch.stack([grams[..., 2], grams[..., 1], grams[..., 0]], dim=-1)
 
     def forward(
         self,

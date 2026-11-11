@@ -27,6 +27,8 @@ from pulse.knowledge.cohort_types import CohortArmSpec
 from pulse.model import (
     ModularPhysiologyNetwork,
     _HeadBank,
+    _meal_outputs,
+    _swallow_window,
     integrate,
     precompute_duodenal_outputs,
     precompute_gut_outputs,
@@ -290,6 +292,109 @@ def test_per_member_protocols_match_separate_rollouts() -> None:
                 sleep_wake=None if b == 1 else sw[b], activity=act[b],
             )
             _close(batched[b], alone, 1e-6)
+
+
+def _member_meals(n: int) -> list[list[MealEvent]]:
+    """Different meals per member, including a member with none and one past the window."""
+    out = [
+        [MealEvent(time=5.0 + 7 * b, carbs=30.0 + 9 * b, fats=4.0 + b, proteins=10.0 + 2 * b),
+         MealEvent(time=40.4 + b, carbs=20.0, fats=8.0, proteins=12.0),
+         MealEvent(time=-30.0, carbs=15.0, fats=3.0, proteins=2.0)]
+        for b in range(n)
+    ]
+    out[1] = []
+    out[2] = [MealEvent(time=500.0, carbs=50.0, fats=5.0, proteins=5.0)]
+    return out
+
+
+def test_one_stomach_run_gives_each_members_gut_and_duodenal_windows(monkeypatch) -> None:
+    """Per-member meals cost one compartment simulation, not two per member, and each member's
+    rows are what ``precompute_gut_outputs`` / ``precompute_duodenal_outputs`` give it alone —
+    values and gradients to the embedding and to the emptying rate."""
+    import pulse.model as model_module
+
+    model = _live_model(12)
+    B, T = 5, 90
+    g = torch.Generator().manual_seed(3)
+    emb = (0.4 * torch.randn(B, EMBEDDING_DIM, generator=g)).requires_grad_(True)
+    member_meals = _member_meals(B)
+    weights = torch.rand(B, T, 4, generator=g)
+
+    runs = []
+    real = model_module.simulate
+    monkeypatch.setattr(model_module, "simulate", lambda *a, **k: runs.append(1) or real(*a, **k))
+    swallow = _swallow_window(T, member_meals, B, member_meals, torch.device("cpu"))
+    gut, duo = _meal_outputs(model, emb, swallow, has_meals=True)
+    assert len(runs) == 1
+    loss = (gut * weights).sum() + (duo * weights[..., :3]).sum()
+    model.zero_grad()
+    emb_grad, = torch.autograd.grad(loss, emb, retain_graph=True)
+    loss.backward()
+    rate_grad = model.gastric.log_empty_kcal.grad.clone()
+
+    monkeypatch.undo()
+    emb2 = emb.detach().clone().requires_grad_(True)
+    gut_ref = torch.stack([
+        precompute_gut_outputs(model, emb2[b], T, meals=member_meals[b]) for b in range(B)])
+    duo_ref = torch.stack([
+        precompute_duodenal_outputs(model, T, meals=member_meals[b]) for b in range(B)])
+    loss_ref = (gut_ref * weights).sum() + (duo_ref * weights[..., :3]).sum()
+    model.zero_grad()
+    emb2_grad, = torch.autograd.grad(loss_ref, emb2, retain_graph=True)
+    loss_ref.backward()
+
+    torch.testing.assert_close(gut, gut_ref, rtol=1e-6, atol=1e-7)
+    torch.testing.assert_close(duo, duo_ref, rtol=1e-6, atol=1e-7)
+    torch.testing.assert_close(emb_grad, emb2_grad, rtol=1e-5, atol=1e-8)
+    torch.testing.assert_close(rate_grad, model.gastric.log_empty_kcal.grad, rtol=1e-5, atol=1e-8)
+    assert float(rate_grad.abs()) > 0.0
+
+
+def test_a_shared_meal_list_is_one_stomach_run_for_every_member() -> None:
+    model = _live_model(13)
+    B, T = 3, 70
+    emb = 0.3 * torch.randn(B, EMBEDDING_DIM, generator=torch.Generator().manual_seed(4))
+    swallow = _swallow_window(T, MEALS, B, None, torch.device("cpu"))
+    gut, duo = _meal_outputs(model, emb, swallow[:1], has_meals=True)
+    assert gut.shape == (B, T, 4) and duo.shape == (1, T, 3)
+    torch.testing.assert_close(gut, precompute_gut_outputs(model, emb, T, meals=MEALS), rtol=1e-6, atol=1e-7)
+    torch.testing.assert_close(duo[0], precompute_duodenal_outputs(model, T, meals=MEALS), rtol=1e-6, atol=1e-7)
+    no_gut, no_duo = _meal_outputs(model, emb, swallow[:1], has_meals=False)
+    assert not no_gut.any() and not no_duo.any() and no_gut.shape == (B, T, 4)
+
+
+def test_swallow_scatter_matches_adding_each_meal_in_turn() -> None:
+    from pulse.gastric import swallow_from_member_meals
+
+    member_meals = _member_meals(4) + [[MEALS[0], MEALS[0], MealEvent(time=20.2, carbs=1.0, fats=2.0, proteins=3.0)]]
+    got = swallow_from_member_meals(80, member_meals, torch.device("cpu"))
+    want = torch.zeros(len(member_meals), 80, 3)
+    for b, meals in enumerate(member_meals):
+        for m in meals:
+            minute = int(np.ceil(m.time - 1e-9))
+            if 0 <= minute < 80:
+                want[b, minute] += torch.tensor([m.carbs, m.proteins, m.fats])
+    torch.testing.assert_close(got, want, rtol=0, atol=0)
+
+
+def test_per_member_meals_roll_like_each_member_alone_with_gradients() -> None:
+    model = _live_model(14)
+    B, T = 4, 80
+    emb = 0.3 * torch.randn(B, EMBEDDING_DIM, generator=torch.Generator().manual_seed(6))
+    state = _states(B, 12)
+    member_meals = _member_meals(B)
+    traj, emb_grad, _ = _roll(model, True, state=state, emb=emb, T=T, meals=member_meals)
+    for b in range(B):
+        alone, alone_grad, _ = _roll(
+            model, True, state=state[b:b + 1], emb=emb[b:b + 1], T=T, meals=member_meals[b])
+        _close(traj[b], alone[0], 1e-6)
+        _close(emb_grad[b], alone_grad[0], 1e-5)
+
+
+def test_integrate_steps_whole_minutes_only() -> None:
+    model = _live_model(15)
+    with pytest.raises(ValueError, match="whole minutes"):
+        integrate(model, _states(1, 1), torch.zeros(1, EMBEDDING_DIM), 5, dt=0.5)
 
 
 def test_member_steps_hold_a_finished_member() -> None:

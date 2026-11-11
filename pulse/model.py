@@ -29,7 +29,7 @@ from .types import (
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE, OBSERVABLE_IDS,
 )
-from .gastric import EMPTY_KCAL_PER_MIN, swallow_from_meals
+from .gastric import EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals, swallow_from_member_meals
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
     CardiovascularModule, ThermoregModule, RespiratoryModule,
@@ -1280,15 +1280,34 @@ def _swallow_window(
     batch: int,
     member_meals: Optional[list[list[MealEvent]]],
     device: torch.device,
-    dtype: torch.dtype,
 ) -> torch.Tensor:
     """Grams swallowed at each minute, ``[B, T, 3]`` carbohydrate, protein, fat."""
     if member_meals is not None:
-        return torch.stack([
-            swallow_from_meals(n_steps, member_meals[b], device) for b in range(batch)
-        ]).to(dtype)
-    one = swallow_from_meals(n_steps, meals or [], device).to(dtype)
-    return one.unsqueeze(0).expand(batch, n_steps, 3)
+        return swallow_from_member_meals(n_steps, member_meals, device)
+    return swallow_from_meals(n_steps, meals or [], device).unsqueeze(0).expand(batch, n_steps, 3)
+
+
+def _meal_outputs(
+    model: "ModularPhysiologyNetwork",
+    embedding: torch.Tensor,
+    swallow: torch.Tensor,
+    has_meals: bool,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Gut appearance ``[B, T, GUT_OUTPUT_DIM]`` and duodenal delivery ``[M, T, 3]`` from
+    one run of the stomach over ``swallow`` (``[M, T, 3]``, with ``M`` 1 for a protocol
+    shared by the batch or ``B`` for one per member). The two are different readings of
+    the same outflow, so the compartment is stepped once, for every member together.
+    """
+    if not has_meals:
+        B, T = int(embedding.shape[0]), int(swallow.shape[1])
+        return (
+            model.gut._zero_output.expand(B, T, -1).clone(),
+            torch.zeros(swallow.shape[0], T, DUODENAL_DIM, dtype=torch.float32, device=swallow.device),
+        )
+    left, filled = simulate(swallow, model.gastric.empty_kcal())
+    gut = model.gut.appearance(
+        left, filled.sum(dim=-1), model.embedding_projections["gut"](embedding))
+    return gut, model.duodenal.delivery(left)
 
 
 def _per_member_meals(meals, batch: int) -> Optional[list[list[MealEvent]]]:
@@ -1331,6 +1350,9 @@ def integrate(
       ``gut_outputs[T, OUT]``) → ``[T, STATE_DIM]``
     - Batched (``initial_state[B, STATE_DIM]``, ``embedding[B, EMB]``,
       ``gut_outputs[B, T, OUT]``) → ``[B, T, STATE_DIM]``
+
+    The rollout steps whole minutes: ``dt`` must be 1.0 (the clock, the stomach's emptying and
+    the gut window are indexed by minute), and any other value raises ``ValueError``.
 
     The protocol is shared across batch members or given per member:
 
@@ -1392,6 +1414,11 @@ def integrate(
         (EMBEDDING_DIM=64, n_species=4) — chunking is the structural fix.
         Default 0 = unchunked (back-compat with all other callers).
     """
+    if dt != 1.0:
+        raise ValueError(
+            f"integrate steps whole minutes (dt={dt}): the clock, the stomach's per-minute "
+            "emptying and the gut and duodenal windows are indexed by minute"
+        )
     if meals is None:
         meals = []
 
@@ -1408,34 +1435,24 @@ def integrate(
     member_meals = _per_member_meals(meals, batch)
 
     if planned and isinstance(model, ModularPhysiologyNetwork):
-        if gut_outputs is None:
-            # The whole gut window up front, on the window-offset clock (see
-            # precompute_gut_outputs) — never the per-step absolute-clock path.
-            if member_meals is not None:
-                gut_outputs = torch.stack([
-                    precompute_gut_outputs(model, embedding[b], n_steps, dt=dt, meals=member_meals[b])
-                    for b in range(batch)
-                ])
-            else:
-                gut_outputs = precompute_gut_outputs(model, embedding, n_steps, dt=dt, meals=meals)
+        swallow = _swallow_window(n_steps, meals, batch, member_meals, device)
+        if gut_outputs is None or duodenal_outputs is None:
+            # The whole gut and duodenal window up front, on the window-offset clock
+            # (see precompute_gut_outputs) — never the per-step absolute-clock path.
+            gut_window, duo_window = _meal_outputs(
+                model, embedding, swallow if member_meals is not None else swallow[:1],
+                has_meals=any(member_meals) if member_meals is not None else bool(meals),
+            )
+            gut_outputs = gut_window if gut_outputs is None else gut_outputs
+            duodenal_outputs = duo_window if duodenal_outputs is None else duodenal_outputs
         gut = gut_outputs[..., :n_steps, :].expand(batch, n_steps, GUT_OUTPUT_DIM)
-        duo = duodenal_outputs
-        if duo is None:
-            if member_meals is not None:
-                duo = torch.stack([
-                    precompute_duodenal_outputs(model, n_steps, dt=dt, meals=member_meals[b])
-                    for b in range(batch)
-                ])
-            else:
-                duo = precompute_duodenal_outputs(model, n_steps, dt=dt, meals=meals)
-        duo = duo[..., :n_steps, :].to(gut.dtype).expand(batch, n_steps, DUODENAL_DIM)
-        swallow = _swallow_window(n_steps, meals, batch, member_meals, device, gut.dtype)
+        duo = duodenal_outputs[..., :n_steps, :].to(gut.dtype).expand(batch, n_steps, DUODENAL_DIM)
 
         def _series(x: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
             return None if x is None else x[..., :n_steps].to(device=device, dtype=gut.dtype)
 
         plan = _RolloutPlan(
-            model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow,
+            model, embedding, n_steps, dt, start_time_minutes, gut, duo, swallow.to(gut.dtype),
             _series(sleep_wake), _series(activity), _series(sglt2),
             _series(glucose_infusion), _series(glucose_clamp), _series(insulin_clamp),
             _series(bile_fistula),

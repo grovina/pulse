@@ -22,20 +22,20 @@ FLAG_GATE_SCALE_G = 10.0
 
 
 def _allocate_kcal(
-    available: torch.Tensor, budget: torch.Tensor, weight: torch.Tensor,
+    available: torch.Tensor, budget: torch.Tensor, weight: torch.Tensor | None,
 ) -> torch.Tensor:
     """Calories from each macro, proportional to ``available * weight``, capped by the pool.
 
     A pool has one part per macro, so this many passes always finish: each pass
     locks any part the share would empty, and the next pass gives the leftover
-    calories to what remains. Equal weights are the calorie proportion, and
-    there the cap does not bind.
+    calories to what remains. Equal weights (``None``) are the calorie proportion,
+    and there the cap does not bind.
     """
     remaining = available
     left = budget
     taken = torch.zeros_like(available)
     for _ in range(available.shape[-1]):
-        weighted = remaining * weight
+        weighted = remaining if weight is None else remaining * weight
         total = weighted.sum(dim=-1, keepdim=True)
         proposal = left.unsqueeze(-1) * weighted / total.clamp(min=1e-12)
         proposal = torch.where(total > 0, proposal, torch.zeros_like(proposal))
@@ -59,11 +59,19 @@ def outflow_grams(
     rate, capped by what each macro has.
     """
     kcal_g = pool.new_tensor(KCAL_PER_G)
+    rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
+    weight = None if correction is None else correction_weights(
+        correction, n=pool.shape[-1], like=pool)
+    return _leaving(pool, kcal_g, rate, weight)
+
+
+def _leaving(
+    pool: torch.Tensor, kcal_g: torch.Tensor, rate: torch.Tensor, weight: torch.Tensor | None,
+) -> torch.Tensor:
+    """``outflow_grams`` with its per-call tensors (kcal per gram, rate, weights) given."""
     available = (pool * kcal_g).clamp(min=0)
     kcal = available.sum(-1)
-    rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
     budget = torch.minimum(rate.expand_as(kcal), kcal)
-    weight = correction_weights(correction, n=pool.shape[-1], like=pool)
     return _allocate_kcal(available, budget, weight) / kcal_g
 
 
@@ -83,12 +91,14 @@ def simulate(
         swallow = swallow.unsqueeze(0)
     steps = int(swallow.shape[1])
     pool = swallow.new_zeros(swallow.shape[0], 3)
+    kcal_g = pool.new_tensor(KCAL_PER_G)
+    rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
     outs = []
     filled = []
     for t in range(steps):
         pool = pool + swallow[:, t]
         filled.append(pool)
-        left = outflow_grams(pool, kcal_per_min)
+        left = _leaving(pool, kcal_g, rate, None)
         outs.append(left)
         pool = pool - left
     out = torch.stack(outs, dim=1)
@@ -99,18 +109,31 @@ def simulate(
     return out, full
 
 
+def swallow_from_member_meals(
+    n_steps: int, member_meals: list[list], device: torch.device,
+) -> torch.Tensor:
+    """Grams swallowed at each window-offset minute for each member: ``[B, T, 3]``
+    carbohydrate, protein, fat. One scatter, however many members and meals."""
+    where: list[tuple[int, int]] = []
+    grams: list[tuple[float, float, float]] = []
+    for member, meals in enumerate(member_meals):
+        for meal in meals:
+            # The first whole minute at or after the meal, matching the teacher's
+            # integer clock (a meal at 60.2 is absent at minute 60).
+            minute = int(math.ceil(float(meal.time) - 1e-9))
+            if 0 <= minute < n_steps:
+                where.append((member, minute))
+                grams.append((float(meal.carbs), float(meal.proteins), float(meal.fats)))
+    out = torch.zeros(len(member_meals), n_steps, 3, dtype=torch.float32)
+    if where:
+        at = torch.tensor(where, dtype=torch.long)
+        out.index_put_((at[:, 0], at[:, 1]), torch.tensor(grams, dtype=torch.float32), accumulate=True)
+    return out.to(device)
+
+
 def swallow_from_meals(n_steps: int, meals: list, device: torch.device) -> torch.Tensor:
     """Grams swallowed at each window-offset minute: carbohydrate, protein, fat."""
-    out = torch.zeros(n_steps, 3, dtype=torch.float32, device=device)
-    for meal in meals:
-        # The first whole minute at or after the meal, matching the teacher's
-        # integer clock (a meal at 60.2 is absent at minute 60).
-        minute = int(math.ceil(float(meal.time) - 1e-9))
-        if 0 <= minute < n_steps:
-            out[minute, 0] = out[minute, 0] + float(meal.carbs)
-            out[minute, 1] = out[minute, 1] + float(meal.proteins)
-            out[minute, 2] = out[minute, 2] + float(meal.fats)
-    return out
+    return swallow_from_member_meals(n_steps, [meals], device)[0]
 
 
 def step_grams(

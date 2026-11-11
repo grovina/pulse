@@ -125,10 +125,29 @@ class GutModule(nn.Module):
         idx = times.round().to(torch.long).clamp(0, horizon - 1)
         grams = left.index_select(0, idx)                              # [T, 3] carb, protein, fat
         present = filled.index_select(0, idx).sum(dim=-1)              # [T]
+        return self.appearance(
+            grams.unsqueeze(0), present.unsqueeze(0), embedding, squeeze=unbatched)
+
+    def appearance(
+        self,
+        grams: torch.Tensor,
+        present: torch.Tensor,
+        embedding: torch.Tensor,
+        squeeze: bool = False,
+    ) -> torch.Tensor:
+        """Appearance from what the stomach emptied: the stomach's side of ``forward_window``.
+
+        ``grams`` is ``[M, T, 3]`` (carbohydrate, protein, fat leaving each minute) and
+        ``present`` ``[M, T]`` (grams in the stomach after that minute's swallow), with
+        ``M`` 1 for one protocol shared by the batch or ``B`` for one per member;
+        ``embedding`` is ``[B, EMB]``. Returns ``[B, T, GUT_OUTPUT_DIM]``, or ``[T, ...]``
+        with ``squeeze``.
+        """
+        B, T = int(embedding.shape[0]), int(grams.shape[1])
         _, f_bio = self.kernel.mixture(embedding)                       # [B, 3] appearance units per gram
         # Channel order is glucose, lipid, amino — carbohydrate, fat, protein.
-        ordered = torch.stack([grams[:, 0], grams[:, 2], grams[:, 1]], dim=-1)
-        appearance = ordered.unsqueeze(0) * f_bio.unsqueeze(1)
+        ordered = torch.stack([grams[..., 0], grams[..., 2], grams[..., 1]], dim=-1)
+        appearance = ordered * f_bio.unsqueeze(1)
         flag = 1.0 - torch.exp(-present / FLAG_GATE_SCALE_G)
-        out = torch.cat([appearance, flag.view(1, T, 1).expand(B, T, 1)], dim=-1)
-        return out.squeeze(0) if unbatched else out
+        out = torch.cat([appearance, flag.unsqueeze(-1).expand(B, T, 1)], dim=-1)
+        return out.squeeze(0) if squeeze else out
