@@ -34,16 +34,16 @@ parameters (`--hidden-dim=48`).
 ## Training
 
 The recipe is `train/spec.json` (iter 116, the flags of iter 115: 58 epochs,
-30 on trajectories alone, then 28 with the literature). The job is 8 vCPU, 32 GiB, 72 h, no
-retries.
+30 on trajectories alone, then 28 with the literature). The job is 4 vCPU, 16 GiB, 72 h, no
+retries (8 vCPU and 32 GiB until 2026-11-11).
 
 A step now spins up all of its people in one rollout and rolls its items in
 groups of similar horizon (`pulse/training/evidence_step.py`). A run writes a
 board at the end of each phase, and `--deadline-hours` stops it cleanly
 before the job's timeout. Iter 116 is the first run on this loop; it is
 running (Runs, below). It was launched without the open-direction pass and
-without the CGMacros ruler, so that training and its board fit in the 24 h
-the job is cut at; both are owed on its checkpoint.
+without the CGMacros ruler, whose memory on the smaller job has not been
+measured; both are owed on its checkpoint.
 
 An arm's pre-fast now begins with a meal and its nights are slept
 (`pulse/training/arm_init.py`); before, the last meal was the fed day's 19:00
@@ -74,7 +74,10 @@ recipe cut to one epoch per phase of 10 steps, warm start from iter 113):
   the spin-up; the dose response is 4 s and the carbohydrate balance 4 s.
 - A step on trajectories alone takes 4 s, where iter 115's took 7 s.
 - A board without the open-direction pass takes 9 minutes. Peak memory is
-  5.3 GB. One core of eight is still the only one busy.
+  5.3 GB.
+- An epoch on trajectories takes 162 s at 8 vCPU, 159 s at 4 and 269 s at 2
+  (`trainer-qvcvj`, `trainer-ppqff`, `trainer-rkxxs`). The run is not held to
+  one core, and 4 vCPU is the smallest size at full speed, at half the price.
 - At those rates the 58 epochs of the recipe take about 23 h (1.4 h on
   trajectories, then 28 epochs of about 45 minutes), not the three hours
   PLAN's stage 1 asks for. The evidence step is four fifths of the time.
@@ -98,7 +101,10 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
-| `trainer-qvcvj` | 116 | 2026-11-11 | running from commit `b30be0a`; training stops itself by 23 h and the job is cut at 24 h |
+| `trainer-jt2n9` | 116 | 2026-11-11 | running from commit `b30be0a` at 4 vCPU / 16 GiB; training stops itself by 26 h and the execution is cut at 28 h |
+| `trainer-ppqff` | 116, cut down | 2026-11-11 | cancelled after 10 min: two epochs at 4 vCPU, to time them |
+| `trainer-rkxxs` | 116 | 2026-11-11 | cancelled in epoch 5: at 2 vCPU / 8 GiB an epoch took 1.7 times as long |
+| `trainer-qvcvj` | 116 | 2026-11-11 | cancelled in epoch 27 of 58: 8 vCPU / 32 GiB, twice the price for the same speed |
 | `trainer-spvj8` | 116, cut down | 2026-11-11 | finished in 54 min: one epoch of 10 steps per phase, to time a step; its output is `training/jobs/iter116-smoke/` |
 | `trainer-rgg6f` | 115 | 2026-10-31 | timed out at 72 h in epoch 49 of 58; left `last_good.pt` and no board |
 | `trainer-bgdhx` | 114 | 2026-10-28 | finished in 3 h 11 min; the last checkpoint with a board |

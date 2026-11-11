@@ -20,9 +20,12 @@ local.
 
 1. **Deploy** (idempotent) — build the images and create/update the `trainer`
    job: `bash deploy/deploy.sh`. Config via env (`PROJECT` / `REGION` /
-   `BUCKET`); see the script header. The job is 8 vCPU / 32 Gi / 44 h, which
-   is what the current `train/spec.json` recipe needs (iter 98 ran 34 h on
-   that size; the previous 4 CPU / 16 Gi / 24 h defaults killed it).
+   `BUCKET`); see the script header. The job is 4 vCPU / 16 Gi / 72 h
+   (`TRAINER_CPU`, `TRAINER_MEMORY`, `TASK_TIMEOUT`). An epoch is as fast at
+   4 vCPU as at 8 and 1.7 times slower at 2, and a run peaks near 5.3 GB
+   (iter 116's recipe, 2026-11-11), so this is the smallest size at full
+   speed. Cap a run's cost at launch with `--task-timeout` on the execution
+   and `--deadline-hours` in its arguments.
 2. **Run** — execute with per-run flag overrides:
    ```bash
    gcloud run jobs execute trainer --region europe-west1 \

@@ -20,6 +20,12 @@
 #                 Iter 103 died at epoch 55/58 on the 44h limit with nothing
 #                 uploaded. 72h covers a 58-epoch warm start plus the bench;
 #                 last_good.pt is uploaded every epoch either way.
+#   TRAINER_CPU / TRAINER_MEMORY  the trainer's size (default: 4 / 16Gi).
+#                 Cloud Run bills what is allocated. Measured on iter 116's
+#                 recipe, 2026-11-11: an epoch on trajectories takes 162 s at
+#                 8 vCPU, 159 s at 4 and 269 s at 2, and a run peaks near
+#                 5.3 GB. So 4 vCPU is the smallest size at full speed, at
+#                 half the price of the 8 vCPU / 32 GiB the job had.
 #   DEPLOY_ENGINE 1 to deploy the engine service, 0 to skip (default: 1)
 set -euo pipefail
 
@@ -28,6 +34,8 @@ REGION="${REGION:-europe-west1}"
 BUCKET="${BUCKET:-grovina-pulse-data}"
 REPO="${REPO:-pulse}"
 TASK_TIMEOUT="${TASK_TIMEOUT:-259200}"
+TRAINER_CPU="${TRAINER_CPU:-4}"
+TRAINER_MEMORY="${TRAINER_MEMORY:-16Gi}"
 DEPLOY_ENGINE="${DEPLOY_ENGINE:-1}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -67,10 +75,10 @@ gcloud run jobs "$verb" trainer \
   --project "$PROJECT" --region "$REGION" \
   --image "${AR}/trainer:${TAG}" \
   --service-account "trainer@${PROJECT}.iam.gserviceaccount.com" \
-  --cpu 8 --memory 32Gi \
+  --cpu "$TRAINER_CPU" --memory "$TRAINER_MEMORY" \
   --max-retries 0 --task-timeout "${TASK_TIMEOUT}s" \
   --quiet
-echo "    trainer pinned to :${TAG}, task-timeout ${TASK_TIMEOUT}s"
+echo "    trainer pinned to :${TAG}, ${TRAINER_CPU} vCPU / ${TRAINER_MEMORY}, task-timeout ${TASK_TIMEOUT}s"
 
 # Engine LAST and best-effort: a failed engine deploy (it currently does not
 # start on PORT=8080) must not undo or block the trainer update above. Disable
