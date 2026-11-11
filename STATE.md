@@ -117,7 +117,10 @@ checkpoint has been scored by it yet.
   uncertainty and its n; the loader derives the sigma.
 - A paper is read by one agent and checked against the paper, number by
   number, by a second that sees only the file and the paper. Only then is it
-  committed. The table counts the files.
+  committed. The table counts the files. Given the paper's full text
+  (`admit --paper`), the gate checks that each quote is in it; the full texts
+  are not in the repository. Run over the 35 files on 2026-11-11: 267 quotes,
+  none missing.
 - The 68 papers filed before that are still Python registries. Each has a
   training item, so none of them is sealed (`pulse/knowledge/sealing.py`). A
   paper read from a file is held out when the draw on its slug says so, a
@@ -141,7 +144,9 @@ checkpoint has been scored by it yet.
   still out lacks its sampling minutes, its time unit or a writable arm in the
   paper itself.
 - One item is a spread across people and none is a correlation. Every
-  population is healthy adults.
+  population is healthy adults, except the groups three papers read from
+  files enter as `unselected` (`meyergerspach-2016`'s obese group,
+  `skurvydas-2025`, `welch-2023`). No patient group is in.
 - About 50 items cite several papers; the first is taken as the paper.
 
 ## Known wrong
@@ -149,7 +154,8 @@ checkpoint has been scored by it yet.
 - A cohort item with no `n_arm` has its sigma divided by the square root of
   the number of people drawn (`pulse/cohort_loss.py`,
   `pulse/training/evidence_step.py`), so how tightly it binds depends on a
-  training flag. That is 35 of the 85 scored points.
+  training flag. That is 35 of the 275 training points, all from the Python
+  registries; a file always states its n.
 - `pytest` from the repository root fails while collecting
   `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
 - There is no CI. The suite is run by hand:
