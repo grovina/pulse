@@ -29,7 +29,7 @@ assert pulse.__file__.startswith(str(_ROOT)), pulse.__file__
 
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-from pulse.knowledge.cohort_types import MEAN_KINDS, StatisticKind, TargetShape, combine_arms, is_on
+from pulse.knowledge.cohort_types import MEAN_KINDS, PER_PERSON_KINDS, StatisticKind, TargetShape, combine_arms, is_on
 from pulse.training.arm_init import teacher_arm_trajectory
 from pulse.types import MARKER_INDEX
 
@@ -61,6 +61,10 @@ def shaped_z(mean: float, spec) -> float:
 def arm_stat(spec, arm_idx, arm, params, seed):
     w = (spec.per_arm_windows[arm_idx] if spec.per_arm_windows else spec.window)
     s = series(arm, params, spec.marker_id, seed)
+    if spec.kind in PER_PERSON_KINDS:
+        import torch
+        from pulse.cohort_loss import per_person_statistic
+        return float(per_person_statistic(torch.as_tensor(s, dtype=torch.float64).unsqueeze(0), spec)[0])
     seg = s[w.start_min:w.end_min]
     if spec.kind in MEAN_KINDS:
         return float(seg.mean())

@@ -26,6 +26,8 @@ import torch.nn.functional as F
 from .knowledge.cohort_types import (
     FACTORS,
     MEAN_KINDS,
+    PER_PERSON_KINDS,
+    BelowBaseline,
     CohortArmSpec,
     CohortStatisticSpec,
     StatisticKind,
@@ -53,6 +55,7 @@ __all__ = [
     "gaussian_nll",
     "statistic_nll",
     "population_correlation",
+    "per_person_statistic",
     "population_spread",
     "score_batch_statistic",
     "score_correlation",
@@ -356,6 +359,62 @@ def _excess_area(
     return (series - base.unsqueeze(1)).sum(dim=1)
 
 
+def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> torch.Tensor:
+    """One scalar per person for a single-arm per-person kind: ``[B]``.
+
+    ``series`` is one marker's trajectories, ``[B, T]``. The result is in the
+    marker's unit, which is how the spec carries it:
+
+    * ``change_from_baseline``: mean over ``window`` minus mean over ``baseline``.
+    * ``area_under_curve``: the trapezoid over ``spec.sample_times`` (the minutes
+      the paper drew its samples), divided by the span of those times. The model is
+      read at those minutes and no others; a dense integral is a different number.
+    * ``incremental_area``: the same trapezoid of ``series`` minus the person's
+      baseline (the mean over ``baseline`` if the spec has one, else the value at
+      the first sample time). ``subtracted`` counts what is under baseline
+      negative. ``ignored`` counts only what is above it; a segment that crosses
+      the baseline is cut where the straight line between its samples does.
+    """
+    T = int(series.shape[1])
+    if spec.kind is StatisticKind.CHANGE_FROM_BASELINE:
+        assert spec.baseline is not None
+        _validate_window(spec.name, spec.window, T)
+        _validate_window(spec.name, spec.baseline, T)
+        w, b = spec.window, spec.baseline
+        return series[:, w.start_min:w.end_min].mean(dim=1) - series[:, b.start_min:b.end_min].mean(dim=1)
+    times = spec.sample_times
+    assert times is not None
+    if times[-1] >= T:
+        raise ValueError(f"{spec.name}: sample time {times[-1]} is past the arm's last minute {T - 1}")
+    idx = torch.as_tensor(times, dtype=torch.long, device=series.device)
+    y = series[:, idx]  # [B, K]
+    dt = (idx[1:] - idx[:-1]).to(series.dtype)
+    span = float(times[-1] - times[0])
+    if spec.kind is StatisticKind.AREA_UNDER_CURVE:
+        return (0.5 * (y[:, :-1] + y[:, 1:]) * dt).sum(dim=1) / span
+    assert spec.kind is StatisticKind.INCREMENTAL_AREA
+    if spec.baseline is not None:
+        _validate_window(spec.name, spec.baseline, T)
+        base = series[:, spec.baseline.start_min:spec.baseline.end_min].mean(dim=1)
+    else:
+        base = y[:, 0]
+    d = y - base.unsqueeze(1)
+    d0, d1 = d[:, :-1], d[:, 1:]
+    if spec.below_baseline is BelowBaseline.SUBTRACTED:
+        seg = 0.5 * (d0 + d1)
+    else:
+        zero = torch.zeros_like(d0)
+        above = (d0 >= 0) & (d1 >= 0)
+        crosses = d0 * d1 < 0
+        # A crossing segment keeps the triangle on its positive side: height p, and
+        # a share p / (p + |n|) of the segment. ``den`` is 1 elsewhere so the
+        # unselected branch has a finite gradient.
+        den = torch.where(crosses, (d1 - d0).abs(), torch.ones_like(d0))
+        p = torch.where(d0 > 0, d0, d1)
+        seg = torch.where(above, 0.5 * (d0 + d1), zero) + torch.where(crosses, p * p / (2.0 * den), zero)
+    return (seg * dt).sum(dim=1) / span
+
+
 def _window_mean(traj: torch.Tensor, marker_idx: int, window: StatisticWindow) -> torch.Tensor:
     """Per-person mean of one marker over the window: ``[B]``."""
     return traj[:, window.start_min:window.end_min, marker_idx].mean(dim=1)
@@ -597,6 +656,10 @@ def _score_arm_trajs(
             for i, traj in enumerate(arm_trajs)
         ]
         return _scalar_z2(areas[1].mean() / areas[0].mean(), spec)
+    if spec.kind in PER_PERSON_KINDS:
+        # A mean over people of a per-person number: scored like a window mean.
+        series = arm_trajs[0][:, :, SERIES_INDEX[spec.marker_id]]
+        return score_batch_statistic(per_person_statistic(series, spec), spec, n_population)
     if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
         n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))
         window = _arm_window(spec, 0)

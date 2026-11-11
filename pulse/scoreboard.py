@@ -280,7 +280,12 @@ def target_conflicts(specs: Sequence[CohortStatisticSpec]) -> list[dict[str, Any
     beyond their sigmas (PLAN section 3). Recorded, never averaged."""
     groups: dict[tuple, list[CohortStatisticSpec]] = {}
     for spec in specs:
-        key = (spec.arms, spec.marker_id, spec.kind, spec.window, spec.per_arm_windows)
+        # Two areas over different sample times, or from different baselines, or one that
+        # counts what is under baseline and one that does not, are different numbers.
+        key = (
+            spec.arms, spec.marker_id, spec.kind, spec.window, spec.per_arm_windows,
+            spec.baseline, spec.sample_times, spec.below_baseline,
+        )
         groups.setdefault(key, []).append(spec)
     out: list[dict[str, Any]] = []
     for group in groups.values():

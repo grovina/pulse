@@ -55,6 +55,9 @@ class OperatorKind(str, Enum):
     DELTA_PEAKS = "delta_peaks"
     RATIO_MEANS = "ratio_means"
     RATIO_INCREMENTS = "ratio_increments"
+    CHANGE_FROM_BASELINE = "change_from_baseline"
+    AREA_UNDER_CURVE = "area_under_curve"
+    INCREMENTAL_AREA = "incremental_area"
     HINGE = "hinge"
     TAPED_VITAL = "taped_vital"
     RATE = "rate"
@@ -77,6 +80,9 @@ OPERATOR_OF_STATISTIC: dict[StatisticKind, OperatorKind] = {
     StatisticKind.RATIO_INCREMENTS: OperatorKind.RATIO_INCREMENTS,
     StatisticKind.SPREAD: OperatorKind.SPREAD,
     StatisticKind.CORRELATION: OperatorKind.CORRELATION,
+    StatisticKind.CHANGE_FROM_BASELINE: OperatorKind.CHANGE_FROM_BASELINE,
+    StatisticKind.AREA_UNDER_CURVE: OperatorKind.AREA_UNDER_CURVE,
+    StatisticKind.INCREMENTAL_AREA: OperatorKind.INCREMENTAL_AREA,
 }
 
 

@@ -54,6 +54,31 @@ class StatisticKind(str, Enum):
     # Pearson correlation, across people, of the marker's window-mean with
     # ``partner`` (another marker's window-mean, or a named factor). Single arm.
     CORRELATION = "correlation"
+    # mean(arm[window]) - mean(arm[baseline]) in one arm: the change of the
+    # marker from the same person's own run-in. Single arm.
+    CHANGE_FROM_BASELINE = "change_from_baseline"
+    # Trapezoidal area of the marker over the paper's own ``sample_times``,
+    # divided by the span of those times: the time-weighted mean, in the
+    # marker's unit. Per person. Single arm.
+    AREA_UNDER_CURVE = "area_under_curve"
+    # Trapezoidal area, over ``sample_times``, of the marker minus that person's
+    # baseline (the value at the first sample, or the mean over ``baseline``),
+    # divided by the span. ``below_baseline`` says whether stretches under the
+    # baseline count negative or not at all. Per person. Single arm.
+    INCREMENTAL_AREA = "incremental_area"
+
+
+class BelowBaseline(str, Enum):
+    """What an incremental area does with the time the marker is under baseline.
+
+    * ``subtracted`` — a net area: those stretches count negative.
+    * ``ignored`` — only the area above baseline counts; a segment that crosses
+      the baseline is cut where the straight line between its two samples
+      crosses it (the usual "positive incremental area").
+    """
+
+    SUBTRACTED = "subtracted"
+    IGNORED = "ignored"
 
 
 # Named axes of the person code. A draw writes factor ``i`` into coordinate
@@ -87,6 +112,13 @@ TWO_ARM_KINDS = frozenset({
     StatisticKind.RATIO_INCREMENTS,
 })
 _RATIO_KINDS = frozenset({StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS})
+# Kinds read at the paper's own sampling minutes (``sample_times``), not over a window.
+SAMPLED_KINDS = frozenset({StatisticKind.AREA_UNDER_CURVE, StatisticKind.INCREMENTAL_AREA})
+# Single-arm kinds that are a per-person quantity averaged over people, scored as a
+# mean (sigma is the between-person SD, divided by sqrt(n_arm)); they have no entry in
+# MEAN_KINDS because that reads a plain window mean.
+PER_PERSON_KINDS = frozenset({StatisticKind.CHANGE_FROM_BASELINE}) | SAMPLED_KINDS
+_SINGLE_ARM_ONLY = PER_PERSON_KINDS | {StatisticKind.SPREAD, StatisticKind.CORRELATION}
 MEAN_KINDS = frozenset({
     StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS, StatisticKind.RATIO_MEANS,
 })
@@ -99,6 +131,22 @@ def combine_arms(kind: StatisticKind, per_arm):
     if kind in TWO_ARM_KINDS:
         return per_arm[1] - per_arm[0]
     return per_arm[0]
+
+
+def statistic_cuts(spec: "CohortStatisticSpec", arm_idx: int = 0) -> tuple[int, ...]:
+    """The minutes of an arm where a statistic starts or stops reading it.
+
+    A meal that moves across one of them changes what the statistic measures. The
+    window's two ends for every kind; for the kinds that read a baseline or the
+    paper's sampling minutes, those too (a sample at ``t`` reads minute ``t`` only).
+    """
+    window = spec.per_arm_windows[arm_idx] if spec.per_arm_windows is not None else spec.window
+    cuts = [window.start_min, window.end_min]
+    if spec.kind in PER_PERSON_KINDS and spec.baseline is not None:
+        cuts += [spec.baseline.start_min, spec.baseline.end_min]
+    if spec.sample_times is not None:
+        cuts += [x for t in spec.sample_times for x in (t, t + 1)]
+    return tuple(cuts)
 
 
 @dataclass(frozen=True)
@@ -293,9 +341,19 @@ class CohortStatisticSpec:
     # window-means; a factor name correlates the marker's window-mean with
     # that factor's code.
     partner: str | None = None
-    # RATIO_INCREMENTS only: each arm's run-in. The area is the measured window
-    # minus this window's mean, and the baseline ends where the window starts.
+    # RATIO_INCREMENTS: each arm's run-in. The area is the measured window minus
+    # this window's mean, and the baseline ends where the window starts.
+    # CHANGE_FROM_BASELINE: the window the change is measured from (anywhere in the
+    # arm). INCREMENTAL_AREA: optional; the mean of this window is the baseline, in
+    # place of the value at the first sample time.
     baseline: StatisticWindow | None = None
+    # AREA_UNDER_CURVE and INCREMENTAL_AREA: the minutes (from arm start, strictly
+    # increasing, inside the arm) at which the paper drew its samples. ``window`` is
+    # ``[sample_times[0], sample_times[-1] + 1)``. ``target`` and ``sigma`` are in the
+    # marker's unit: the area divided by ``sample_times[-1] - sample_times[0]``.
+    sample_times: tuple[int, ...] | None = None
+    # INCREMENTAL_AREA only (required there).
+    below_baseline: BelowBaseline | None = None
     # The paper this finding comes from: a lowercase ASCII slug, ``firstauthor-year``,
     # read off ``source``. Sealing is decided per paper (``sealing.paper_is_sealed``),
     # so every item of a paper is held out or trained together. Required of every
@@ -351,10 +409,40 @@ class CohortStatisticSpec:
                     )
                 if window.end_min > arm.duration_min or self.baseline.end_min > arm.duration_min:
                     raise ValueError(f"{self.name}: a window runs past the arm")
+        elif self.kind is StatisticKind.CHANGE_FROM_BASELINE:
+            if self.baseline is None:
+                raise ValueError(f"{self.name}: kind=change_from_baseline needs a baseline window")
+            self._check_inside_arm("window", self.window)
+            self._check_inside_arm("baseline window", self.baseline)
+        elif self.kind is StatisticKind.INCREMENTAL_AREA and self.baseline is not None:
+            self._check_inside_arm("baseline window", self.baseline)
         elif self.baseline is not None:
-            raise ValueError(f"{self.name}: baseline is only for kind=ratio_increments")
-        if self.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION) and len(self.arms) != 1:
-            raise ValueError(f"{self.name}: kind={self.kind.value} is a single-arm population statistic")
+            raise ValueError(
+                f"{self.name}: baseline is only for kinds ratio_increments, change_from_baseline "
+                "and incremental_area",
+            )
+        if self.kind in SAMPLED_KINDS:
+            times = self.sample_times
+            if times is None or len(times) < 2:
+                raise ValueError(f"{self.name}: kind={self.kind.value} needs at least two sample_times")
+            if any(b <= a for a, b in zip(times, times[1:])):
+                raise ValueError(f"{self.name}: sample_times must be strictly increasing")
+            if times[0] < 0 or times[-1] >= self.arms[0].duration_min:
+                raise ValueError(
+                    f"{self.name}: sample_times {times[0]}..{times[-1]} lie outside the arm "
+                    f"[0, {self.arms[0].duration_min})",
+                )
+            if (self.window.start_min, self.window.end_min) != (times[0], times[-1] + 1):
+                raise ValueError(f"{self.name}: window must be [first sample time, last sample time + 1)")
+        elif self.sample_times is not None:
+            raise ValueError(f"{self.name}: sample_times is only for kinds area_under_curve and incremental_area")
+        if self.kind is StatisticKind.INCREMENTAL_AREA:
+            if self.below_baseline is None:
+                raise ValueError(f"{self.name}: kind=incremental_area needs below_baseline")
+        elif self.below_baseline is not None:
+            raise ValueError(f"{self.name}: below_baseline is only for kind=incremental_area")
+        if self.kind in _SINGLE_ARM_ONLY and len(self.arms) != 1:
+            raise ValueError(f"{self.name}: kind={self.kind.value} is a single-arm statistic")
         if self.kind is StatisticKind.CORRELATION:
             if self.partner is None:
                 raise ValueError(f"{self.name}: kind=correlation needs a partner")
@@ -367,4 +455,11 @@ class CohortStatisticSpec:
         if self.per_arm_windows is not None and len(self.per_arm_windows) != len(self.arms):
             raise ValueError(
                 f"{self.name}: per_arm_windows length must equal arms length",
+            )
+
+    def _check_inside_arm(self, label: str, window: StatisticWindow) -> None:
+        if not 0 <= window.start_min < window.end_min <= self.arms[0].duration_min:
+            raise ValueError(
+                f"{self.name}: {label} [{window.start_min}, {window.end_min}) is empty or runs "
+                f"outside the arm [0, {self.arms[0].duration_min})",
             )

@@ -102,7 +102,7 @@ This file is parsed by the test suite, so it cannot go stale. It is made up.
     {
       "name": "ogtt",
       "description": "75 g oral glucose after an overnight fast, two hours observed",
-      "duration_min": 120,
+      "duration_min": 121,
       "start_hour": 8.0,
       "meals": [
         {
@@ -225,6 +225,79 @@ This file is parsed by the test suite, so it cannot go stale. It is made up.
       "location": {
         "where": "Results, paragraph 3",
         "quote": "The second-hour difference was 1.1 mmol/L (95% CI 0.5 to 1.7)."
+      }
+    },
+    {
+      "id": "ogtt_glucose_second_hour_rise",
+      "description": "Glucose over the second hour of the OGTT minus the fasting sample at minute 0",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 121
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, paragraph 4",
+        "quote": "From fasting to the second hour glucose rose by 1.4 (SEM 0.2) mmol/L."
+      }
+    },
+    {
+      "id": "ogtt_glucose_auc",
+      "description": "Area under the glucose curve, 0 to 120 min, trapezoid on the five samples",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "times": [0, 30, 60, 90, 120],
+      "value": 900.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 100.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, row 'AUC'",
+        "quote": "Glucose AUC 0-120 min (mmol/L x min) | 900 (SD 100)"
+      }
+    },
+    {
+      "id": "ogtt_glucose_iauc",
+      "description": "Positive incremental area under the glucose curve, 0 to 120 min, over the fasting sample",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "ogtt"
+      ],
+      "times": [0, 30, 60, 90, 120],
+      "below_baseline": "ignored",
+      "value": 210.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 25.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC'",
+        "quote": "Glucose iAUC 0-120 min (mmol/L x min) | 210 (SEM 25); only the area above fasting is counted"
       }
     }
   ],
@@ -441,8 +514,8 @@ be counted over all papers (`python -m pulse.admit --missing`): the count is
 what the model and this format should learn next.
 
 ```json
-{"what": "glucose incremental area 0-120 min, by fast length (Tables 1 and 2)",
- "missing": {"kind": "operator", "name": "single_arm_incremental_auc"}}
+{"what": "glucose median and interquartile range 0-120 min, by fast length (Tables 1 and 2)",
+ "missing": {"kind": "operator", "name": "median_with_iqr"}}
 ```
 
 * `what`: one line, with where it is in the paper. One entry for a family of
@@ -456,9 +529,10 @@ what the model and this format should learn next.
   gap are counted as two gaps. Names in use for `source`: `figure_only`,
   `unlabelled_uncertainty`, `uncertainty_not_printed`, `zero_uncertainty`,
   `unit_not_printed`, `unit_implausible`, `value_not_printed`,
-  `time_not_printed`, `input_not_printed` (a meal, a dose, an infusion or an
-  exercise intensity the paper does not give), `table_ambiguous`,
-  `assay_not_comparable`.
+  `time_not_printed`, `below_baseline_not_printed` (an incremental area whose
+  paper does not say whether stretches under baseline count),
+  `input_not_printed` (a meal, a dose, an infusion or an exercise intensity the
+  paper does not give), `table_ambiguous`, `assay_not_comparable`.
 * Leave out of `left_out` what nobody would enter: numbers about markers far
   from physiology the model covers (liver enzymes, questionnaire scores), a
   duplicate of a number you did enter, and statistics of the authors' own
@@ -475,6 +549,9 @@ what the model and this format should learn next.
 | `delta_peaks` | peak(second) minus peak(first) | 2 | a difference | `sd`, `sem`, `ci`, `range` |
 | `ratio_means` | mean(second) divided by mean(first) | 2 | unit `ratio` | `sem`, `ci` |
 | `ratio_increments` | area above each arm's own baseline, second over first | 2 | unit `ratio` | `sem`, `ci` |
+| `change_from_baseline` | the mean of the marker over `window` minus its mean over `baseline_window`, in one arm | 1 | a difference | `sd`, `sem`, `ci`, `range` |
+| `area_under_curve` | the trapezoidal area of one arm, over the sampling minutes `times` | 1 | an area: `unit` is the concentration, `time_unit` is `min` or `h` | `sd`, `sem`, `ci`, `range` |
+| `incremental_area` | the trapezoidal area of the marker above (or net of) the person's own baseline, over `times` | 1 | an area, as above | `sd`, `sem`, `ci`, `range` |
 | `spread` | the between-person standard deviation of the person's window mean | 1 | an SD, in the marker's unit | `n_only`, `sem`, `ci` |
 | `correlation` | Pearson r, across people, of the window mean with `partner` | 1 | unit `r` | `n_only`, `sem`, `ci` |
 | `curve` | the marker at several timepoints | 1 | per point | per point: `sd`, `sem`, `ci`, `range` |
@@ -484,8 +561,35 @@ what the model and this format should learn next.
   the peak or Cmax), wherever in the window it fell. The highest point of the
   mean curve is a different and smaller number: enter the mean curve as a `curve`.
 * `ratio_increments` also takes `baseline_window` (the run-in, ending before `window`
-  starts). It is for "incremental area under the curve" comparisons, where the fasting
-  level must cancel.
+  starts). It is for "incremental area under the curve" comparisons between two arms, where
+  the fasting level must cancel. One arm's own incremental area is `incremental_area`.
+* `change_from_baseline` is the mean of the marker over `window` minus its mean over
+  `baseline_window`, one arm, one person at a time. It takes both windows, each inside the
+  arm and nowhere else constrained (the baseline need not come first). The value is a
+  difference: it converts by the unit's factor alone, never the offset.
+* `area_under_curve` is the **trapezoidal** area of the marker over `times`, the minutes
+  from the start of the arm at which the paper drew its samples (whole minutes, strictly
+  increasing, at least two, inside the arm; an arm sampled at minute 120 needs
+  `duration_min` 121). Papers compute an area from the samples they drew, so the model is
+  read at those minutes and no others, and a dense integral of the model's curve is a
+  different number. It takes no `window`. `unit` is the concentration as the paper prints
+  it and `time_unit` is `min` or `h`: split "mmol/L x min" into `"unit": "mmol/L"` and
+  `"time_unit": "min"`, and leave the printed form in the quote. A unit printed as one
+  product (`mg*min/dL`, `mmol*h/L`) is split the same way.
+* `incremental_area` is the trapezoidal area, over `times`, of the marker minus that
+  person's baseline. The baseline is the person's value at the first of `times`, or, when
+  the paper defines it as the mean of several samples, their mean over `baseline_window`
+  (inside the arm; it may overlap `times`). `below_baseline` is **required**:
+  `"subtracted"` is a net incremental area (stretches below baseline count negative),
+  `"ignored"` counts only the area above baseline (a segment of two samples that crosses
+  the baseline is cut where the straight line between them does: this is the common
+  "positive incremental area", and it cannot be negative). The paper must say which. If it
+  does not, leave the number out: `left_out`, kind `source`, name
+  `below_baseline_not_printed`.
+* An area is a mean over people of one number per person, like every statistic here. Its
+  value, unit and uncertainty are the paper's, and the SD and n it carries are those of the
+  per-person areas. If the paper does not print the sampling minutes, leave the number out
+  (`source`, `time_not_printed`).
 * `correlation` takes `partner`: another marker's name, or one of the person factors
   `insulin_resistance`, `beta_cell`, `adiposity`, `fitness`, `chronotype`,
   `hpa_reactivity`, `gastric_emptying`, `sex`, `age`.
@@ -495,8 +599,7 @@ what the model and this format should learn next.
   `{"t_min", "value", "uncertainty"}`; `unit` is shared. Times are minutes from the
   start of the arm and must fall inside it.
 * If the paper reports a statistic that is not in this table (a median with an
-  interquartile range, a slope, a threshold crossing, an area under the curve of a
-  single arm), that is a refusal of kind `operator`.
+  interquartile range, a slope, a threshold crossing), that is a refusal of kind `operator`.
 
 ## Units
 
@@ -513,14 +616,17 @@ loader does not: write a refusal of kind `input` or `marker` naming the unit, or
 find the paper's own conversion and say so in the quote. Do not convert by hand
 and enter the model's unit unless the paper itself states the converted number.
 
-The gate also refuses a level (a mean, a peak, a curve point) that lies outside a
-plausible range for its marker, and a difference or spread wider than that whole
-range. That is how the commonest slip is caught: 5.5 read as mg/dL when it was
-mmol/L.
+The gate also refuses a level (a mean, a peak, a curve point, an area under the
+curve) that lies outside a plausible range for its marker, and a difference,
+spread, change from baseline or incremental area wider than that whole range.
+An area is checked as its time-weighted mean, the area divided by the span of
+`times`. That is how the commonest slip is caught: 5.5 read as mg/dL when it
+was mmol/L.
 
-Differences, spreads and uncertainties convert by the factor alone; levels by the
-factor and, for temperature only, an offset (98.6 degF is 37 degC; a 1.8 degF
-difference is 1 degC).
+Differences (a change from baseline and an incremental area among them),
+spreads and uncertainties convert by the factor alone; levels (an area under
+the curve among them) by the factor and, for temperature only, an offset
+(98.6 degF is 37 degC; a 1.8 degF difference is 1 degC).
 
 Molar conversions use the molecular weights in `pulse/knowledge/corpus_units.py`.
 Insulin uses 6.0 pmol/L per uU/mL (SI).
@@ -608,6 +714,11 @@ mean of its virtual people against the paper's mean at a standard error
 `sigma / sqrt(n_arm)`, where `sigma` is the **between-person SD** and `n_arm` the
 paper's n. From an `sd` those are the SD and n. From an `sem` or a `ci` the SD is
 recovered (`sem * sqrt(n)`; the t quantile for a CI; Wan et al. 2014 for a range).
+An area (`area_under_curve`, `incremental_area`) and a change from baseline are means over
+people of one number per person, and are treated as a mean is. An area is carried as its
+time-weighted mean (the area in unit-minutes, divided by the minutes from the first to the
+last of `times`), so it stays in the marker's unit; its value and its sigma are scaled
+together by the same factor.
 For a curve, a ratio of increments, a spread or a correlation the sigma is the
 standard error itself. **n is capped at 25**: a paper with 200 subjects
 is held to the standard error 25 would give, because one cohort's mean does not pin
@@ -659,7 +770,7 @@ change, and it is counted by kind.
 | `input` | something done to the subjects that the protocol cannot express, or a unit that cannot be converted | `hypoxia`, `metformin`, `growth_hormone_infusion`, `insulin_in_ng_per_ml` |
 | `population` | subjects the model cannot represent | `type_2_diabetes`, `pregnancy`, `children` |
 | `timescale` | a duration or resolution the model does not simulate | `weeks_of_training`, `sub_minute_pulsatility` |
-| `operator` | a kind of number the statistics do not cover | `median_with_iqr`, `slope`, `single_arm_incremental_auc` |
+| `operator` | a kind of number the statistics do not cover | `median_with_iqr`, `slope`, `threshold_crossing` |
 | `source` | not a gap in the model: the paper does not give what is needed | `figure_only`, `unlabelled_uncertainty`, `input_not_printed` |
 
 `missing.name` is lowercase with underscores; reuse a name already in use
@@ -762,6 +873,19 @@ used.
   baseline as the mean over a run-in (start the protocol 30 minutes before the load
   and put the meal at `t_min: 30`), or keep it as the first point of a curve, where
   the later points carry it.
+* An area under the curve is only the paper's own number if it is computed over the
+  paper's own samples. A table that gives the area and the sampling times separately
+  (0, 30, 60, 90, 120 min) is a finding; an area over "the first two hours" of a curve
+  drawn at times the paper does not list is not (`source`, `time_not_printed`).
+* "AUC" and "iAUC" are not interchangeable: `area_under_curve` includes the fasting level
+  (a glucose AUC of 16,000 mg/dL x min), `incremental_area` removes it. A paper's "AUC"
+  that subtracts the baseline is an `incremental_area`; read its methods for `below_baseline`.
+  If the methods do not say whether the area under baseline counts, leave it out.
+* The sampling `times` are the minutes the paper drew blood, from the start of the arm:
+  put the arm's load at the minute the paper's clock says, and the first sample at the
+  first of `times`. An incremental area's baseline at the first sample is the start state
+  of the arm when that sample is minute 0; the later samples still move with the model, so
+  the finding passes check 4.
 * One paper, many arms: declare each arm once, and let findings share it.
 * Do not copy numbers from the abstract of a paper you have not read; do not copy
   from a review.

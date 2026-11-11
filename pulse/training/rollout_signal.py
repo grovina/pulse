@@ -31,7 +31,7 @@ from ..dose_response import (
     cold_initial_state,
     dose_response_epoch_loss,
 )
-from ..knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode
+from ..knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode, statistic_cuts
 from ..knowledge.evidence import (
     Authority,
     EvidenceItem,
@@ -92,9 +92,8 @@ PERTURB_START_HOUR = 1.0
 PERTURB_MIN_DURATION = 1440
 
 
-def _windows_of(spec: CohortStatisticSpec, arm_idx: int) -> tuple[int, int]:
-    w = spec.per_arm_windows[arm_idx] if spec.per_arm_windows is not None else spec.window
-    return int(w.start_min), int(w.end_min)
+def _cuts_of(spec: CohortStatisticSpec, arm_idx: int) -> tuple[int, ...]:
+    return tuple(int(c) for c in statistic_cuts(spec, arm_idx))
 
 
 def _same_side(t: float, t_new: float, bounds: list[int]) -> bool:
@@ -123,8 +122,7 @@ def perturb_group_arms(
     for arm_idx, arm in enumerate(arms):
         bounds: list[int] = []
         for sp in specs:
-            lo, hi = _windows_of(sp, arm_idx)
-            bounds.extend((lo, hi))
+            bounds.extend(_cuts_of(sp, arm_idx))
         new_meals = []
         for m in arm.meals:
             key = tuple(float(x) for x in m)

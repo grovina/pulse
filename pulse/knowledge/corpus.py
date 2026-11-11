@@ -35,7 +35,9 @@ from ..types import (
 )
 from .cohort_types import (
     FACTORS,
+    SAMPLED_KINDS,
     TWO_ARM_KINDS,
+    BelowBaseline,
     CohortArmSpec,
     CohortStatisticSpec,
     CurvePoint,
@@ -735,18 +737,33 @@ def _protocol(
 # Findings
 # --------------------------------------------------------------------------------
 
-_LEVEL_KINDS = frozenset({StatisticKind.MEAN_IN_WINDOW, StatisticKind.PEAK_VALUE})
-_DIFF_KINDS = frozenset({StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.SPREAD})
+# An area is carried as a time-weighted mean, so a total area is a level and an
+# incremental area (a mean of a difference) is a difference.
+_LEVEL_KINDS = frozenset({
+    StatisticKind.MEAN_IN_WINDOW, StatisticKind.PEAK_VALUE, StatisticKind.AREA_UNDER_CURVE,
+})
+_DIFF_KINDS = frozenset({
+    StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.SPREAD,
+    StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.INCREMENTAL_AREA,
+})
+# The paper's time unit for an area, in minutes.
+_TIME_UNITS = {"min": 1.0, "h": 60.0}
 _RATIO_KINDS = frozenset({StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS})
 
 
 @dataclass(frozen=True)
 class _Units:
-    """Convert a finding's numbers from its stated unit."""
+    """Convert a finding's numbers from its stated unit.
+
+    ``scale`` turns a printed area into the time-weighted mean the spec carries:
+    minutes per printed time unit over the span of the sample times. It is 1 for
+    every other statistic, and applies to a value and to every width alike.
+    """
 
     kind: StatisticKind
     marker: str
     unit: str
+    scale: float = 1.0
 
     def check_unit(self) -> None:
         if self.kind in _RATIO_KINDS:
@@ -766,15 +783,15 @@ class _Units:
         if self.kind is StatisticKind.TIME_TO_PEAK:
             return time_to_minutes(v, self.unit)
         if self.kind in _DIFF_KINDS:
-            return to_native(self.marker, v, self.unit, difference=True)
-        return to_native(self.marker, v, self.unit)
+            return to_native(self.marker, v * self.scale, self.unit, difference=True)
+        return to_native(self.marker, v * self.scale, self.unit)
 
     def width(self, v: float) -> float:
         if self.kind in _RATIO_KINDS | {StatisticKind.CORRELATION}:
             return v
         if self.kind is StatisticKind.TIME_TO_PEAK:
             return time_to_minutes(v, self.unit)
-        return to_native(self.marker, v, self.unit, difference=True)
+        return to_native(self.marker, v * self.scale, self.unit, difference=True)
 
 
 _UNCERTAINTY_KEYS = {
@@ -877,6 +894,27 @@ def _window(r: _Reader, data: Any, where: str, duration: int) -> StatisticWindow
     return StatisticWindow(lo, hi)
 
 
+def _sample_times(r: _Reader, data: Any, where: str, duration: int) -> tuple[int, ...] | None:
+    """The paper's sampling minutes: whole minutes, at least two, strictly increasing,
+    inside the arm (an arm has a state at minutes ``0 .. duration - 1``)."""
+    if not isinstance(data, list) or len(data) < 2:
+        r.add("parse", f"{where} times is not a list of at least two minutes")
+        return None
+    if any(isinstance(t, bool) or not isinstance(t, int) for t in data):
+        r.add("parse", f"{where} times are not whole minutes")
+        return None
+    if any(b <= a for a, b in zip(data, data[1:])):
+        r.add("parse", f"{where} times are not strictly increasing")
+        return None
+    if data[0] < 0 or data[-1] >= duration:
+        r.add("protocol", (
+            f"{where} times run {data[0]}..{data[-1]}, outside the arm's minutes 0..{duration - 1}: "
+            f"an arm sampled at minute {data[-1]} needs duration_min {data[-1] + 1}"
+        ))
+        return None
+    return tuple(data)
+
+
 def _finding_item(
     r: _Reader, data: Any, index: int, paper: str, citation: Citation | None,
     protocols: dict[str, CohortArmSpec], inits_by_name: dict[str, InitMode],
@@ -899,12 +937,18 @@ def _finding_item(
     optional = set(_FINDING_OPTIONAL)
     if kind is StatisticKind.CURVE:
         required |= {"points"}
+    elif kind in SAMPLED_KINDS:
+        # The window is the sample times', so it is not stated.
+        required |= {"times", "time_unit", "value", "uncertainty"}
     else:
         required |= {"window", "value", "uncertainty"}
     if kind in TWO_ARM_KINDS:
         optional |= {"per_arm_windows"}
-    if kind is StatisticKind.RATIO_INCREMENTS:
+    if kind in (StatisticKind.RATIO_INCREMENTS, StatisticKind.CHANGE_FROM_BASELINE):
         required |= {"baseline_window"}
+    if kind is StatisticKind.INCREMENTAL_AREA:
+        required |= {"below_baseline"}
+        optional |= {"baseline_window"}
     if kind is StatisticKind.CORRELATION:
         required |= {"partner"}
     d = r.obj(data, where, required, optional)
@@ -951,10 +995,25 @@ def _finding_item(
 
     duration = min((a.duration_min for a in arms), default=0)
 
+    # The sampling minutes of an area
+    sample_times: tuple[int, ...] | None = None
+    below_baseline: BelowBaseline | None = None
+    scale = 1.0
+    if kind in SAMPLED_KINDS:
+        sample_times = _sample_times(r, d.get("times"), where, duration) if "times" in d and duration else None
+        time_unit = r.choice(d, "time_unit", where, tuple(_TIME_UNITS), "units") if "time_unit" in d else None
+        if sample_times is not None and time_unit is not None:
+            scale = _TIME_UNITS[time_unit] / (sample_times[-1] - sample_times[0])
+        else:
+            sample_times = None
+    if kind is StatisticKind.INCREMENTAL_AREA and "below_baseline" in d:
+        raw = r.choice(d, "below_baseline", where, tuple(b.value for b in BelowBaseline))
+        below_baseline = BelowBaseline(raw) if raw is not None else None
+
     # Units
     units: _Units | None = None
     if marker is not None and unit is not None:
-        units = _Units(kind, marker, unit)
+        units = _Units(kind, marker, unit, scale)
         try:
             units.check_unit()
         except UnitError as err:
@@ -993,7 +1052,12 @@ def _finding_item(
     per_arm = None
     baseline = None
     partner = None
-    if kind is not StatisticKind.CURVE and ok_protocols and duration:
+    if kind in SAMPLED_KINDS:
+        if sample_times is not None:
+            window = StatisticWindow(sample_times[0], sample_times[-1] + 1)
+        if "baseline_window" in d and ok_protocols and duration:
+            baseline = _window(r, d["baseline_window"], f"{where} baseline_window", duration)
+    elif kind is not StatisticKind.CURVE and ok_protocols and duration:
         window = _window(r, d.get("window"), f"{where} window", duration) if "window" in d else None
         if "per_arm_windows" in d:
             raw = d["per_arm_windows"]
@@ -1084,6 +1148,14 @@ def _finding_item(
                             f"[{window.start_min}, {window.end_min}) min",
                         )
                         complete = False
+                if kind is StatisticKind.INCREMENTAL_AREA and below_baseline is BelowBaseline.IGNORED \
+                        and target < 0:
+                    r.add(
+                        "parse",
+                        f"{where}: an incremental area with below_baseline 'ignored' counts only "
+                        f"what is above baseline, so it cannot be negative",
+                    )
+                    complete = False
                 if kind in _RATIO_KINDS and not target > 0:
                     r.add("parse", f"{where}: a ratio must be positive")
                     complete = False
@@ -1101,7 +1173,14 @@ def _finding_item(
                 complete = False
         if window is None and "window" in d and ok_protocols:
             complete = False
-        if kind is StatisticKind.RATIO_INCREMENTS and baseline is None:
+        if kind in (StatisticKind.RATIO_INCREMENTS, StatisticKind.CHANGE_FROM_BASELINE) \
+                and baseline is None:
+            complete = False
+        if kind in SAMPLED_KINDS and sample_times is None:
+            complete = False
+        if kind is StatisticKind.INCREMENTAL_AREA and below_baseline is None:
+            complete = False
+        if "baseline_window" in d and baseline is None:
             complete = False
 
     if (
@@ -1127,6 +1206,8 @@ def _finding_item(
             curve=curve,
             partner=partner,
             baseline=baseline,
+            sample_times=sample_times,
+            below_baseline=below_baseline,
             paper=paper,
         )
     except ValueError as err:

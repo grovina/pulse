@@ -44,6 +44,7 @@ import numpy as np
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
     MEAN_KINDS,
+    PER_PERSON_KINDS,
     CohortArmSpec,
     CohortStatisticSpec,
     StatisticKind,
@@ -107,6 +108,16 @@ def _extract_statistic(
     raise ValueError(f"Unknown statistic kind: {kind}")
 
 
+def _per_person(traj: np.ndarray, marker_idx: int, spec: CohortStatisticSpec) -> float:
+    """A single-arm per-person kind on one cold trajectory, by the function the loss uses."""
+    import torch
+
+    from ..cohort_loss import per_person_statistic
+
+    series = torch.as_tensor(traj[:, marker_idx], dtype=torch.float64).unsqueeze(0)
+    return float(per_person_statistic(series, spec)[0])
+
+
 def _runs_an_input(arm: CohortArmSpec) -> bool:
     return any(is_on(s) for s in (
         arm.glucose_infusion, arm.glucose_clamp, arm.insulin_clamp, arm.sglt2, arm.bile_fistula,
@@ -160,7 +171,9 @@ def cold_calibration(
         for arm_idx, arm in enumerate(spec.arms):
             traj = _run_arm(arm, p, seed=seed + i * 100 + arm_idx)
             win = _arm_window(spec, arm_idx)
-            if spec.kind is StatisticKind.RATIO_INCREMENTS:
+            if spec.kind in PER_PERSON_KINDS:
+                per_arm.append(_per_person(traj, marker_idx, spec))
+            elif spec.kind is StatisticKind.RATIO_INCREMENTS:
                 assert spec.baseline is not None
                 per_arm.append(_excess_area(traj, marker_idx, win, spec.baseline))
             else:

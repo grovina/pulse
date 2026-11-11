@@ -27,5 +27,5 @@ def test_the_readme_examples_parse():
     worked = [json.loads(b) for b in blocks if '"paper": "example-2099"' in b]
     refusal = [json.loads(b) for b in blocks if '"paper": "example-2098"' in b]
     assert len(worked) == 1 and len(refusal) == 1
-    assert len(parse_finding(worked[0]).items) == 3
+    assert len(parse_finding(worked[0]).items) == 6
     assert parse_refusal(refusal[0]).kind == "marker"

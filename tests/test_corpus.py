@@ -547,7 +547,7 @@ def test_a_directory_loads_every_paper(tmp_path):
     )
     corpus = load_corpus(root)
     assert [f.paper for f in corpus.findings] == ["synthetic-test-2099", SEALED_SLUG]
-    assert len(corpus.specs) == 20 and len(corpus.refusals) == 1
+    assert len(corpus.specs) == 26 and len(corpus.refusals) == 1
 
 
 def test_a_paper_cannot_be_both_a_finding_and_a_refusal(tmp_path):

@@ -26,9 +26,12 @@ The rules (``to_sigma``), with ``N_CAP = 25``:
 statistic                      sigma                                       n_arm
 =============================  ==========================================  ==========
 mean / peak / time-to-peak /   the between-person SD: ``sd`` as reported;   min(n, 25)
-delta / ratio of means         ``sem * sqrt(n)``; ``(hi - lo) / (2 t) *
-                               sqrt(n)`` for a CI; ``(hi - lo) / xi(n)``
-                               for a range (Wan et al. 2014)
+delta / ratio of means /       ``sem * sqrt(n)``; ``(hi - lo) / (2 t) *
+change from baseline /         sqrt(n)`` for a CI; ``(hi - lo) / xi(n)``
+area / incremental area        for a range (Wan et al. 2014). An area is
+                               carried as its time-weighted mean (area / span of
+                               the sample times), so its sigma is the SD of that
+                               mean, scaled by the same factor as the value.
 ratio of increments            the reported standard error (``sem`` or     1
                                CI half-width / quantile)
 spread                         ``sd / sqrt(2 (n_eff - 1))`` from ``n``     1
@@ -89,6 +92,9 @@ ALLOWED_KINDS: dict[StatisticKind, frozenset[str]] = {
     StatisticKind.DELTA_MEANS: _SCALAR,
     StatisticKind.DELTA_PEAKS: _SCALAR,
     StatisticKind.CURVE: _SCALAR,
+    StatisticKind.CHANGE_FROM_BASELINE: _SCALAR,
+    StatisticKind.AREA_UNDER_CURVE: _SCALAR,
+    StatisticKind.INCREMENTAL_AREA: _SCALAR,
     StatisticKind.RATIO_MEANS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_INCREMENTS: frozenset({"sem", "ci"}),
     StatisticKind.SPREAD: frozenset({"n_only", "sem", "ci"}),
@@ -249,6 +255,8 @@ def to_sigma(kind: StatisticKind, target: float, u: Uncertainty) -> tuple[float,
     if kind in (
         StatisticKind.MEAN_IN_WINDOW, StatisticKind.PEAK_VALUE, StatisticKind.TIME_TO_PEAK,
         StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.RATIO_MEANS,
+        StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.AREA_UNDER_CURVE,
+        StatisticKind.INCREMENTAL_AREA,
     ):
         sigma = between_person_sd(u)
         return _positive(sigma), n_eff

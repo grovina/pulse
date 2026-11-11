@@ -41,11 +41,12 @@ from typing import Any, Callable, Sequence
 import torch
 
 from ..cohort_loss import (
-    _arm_statistic_batched, _arm_window, _excess_area, _rollout_arm_batched, shaped_residual,
+    _arm_statistic_batched, _arm_window, _excess_area, _rollout_arm_batched, per_person_statistic,
+    shaped_residual,
 )
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
-    CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, combine_arms,
+    PER_PERSON_KINDS, CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, combine_arms,
 )
 from ..knowledge.physiology_rules import PHYSIOLOGY_RULES, PhysiologyRule
 from ..model import ModularPhysiologyNetwork
@@ -137,6 +138,9 @@ def _cohort_residual(
                 traj, series, _arm_window(spec, arm_idx), spec.baseline,
             ))
         pred = combine_arms(spec.kind, areas)
+    elif spec.kind in PER_PERSON_KINDS:
+        traj = _rollout_arm_batched(model, embedding, spec.arms[0], initial_state, observe=observe)
+        pred = per_person_statistic(traj[:, :, series], spec)
     else:
         per_arm: list[torch.Tensor] = []
         for arm_idx, arm in enumerate(spec.arms):

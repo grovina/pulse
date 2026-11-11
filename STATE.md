@@ -119,6 +119,12 @@ checkpoint has been scored by it yet.
   `ada-2024`, `who-1999`, `acsm-guidelines`, `icp-reference-range-2022`,
   `digestion-1978`, `diabetes-2017-66-1999`, `pmid-2424396`, `pmid-3525269`
   and `task-force-1996`.
+- The format takes three single-arm statistics, `change_from_baseline`,
+  `area_under_curve` and `incremental_area`; an area is carried as its
+  time-weighted mean over the paper's own sample minutes. No committed file
+  uses them yet. `--missing` counts the gaps they close under their old names:
+  `single_arm_auc` in 8 papers, `single_arm_incremental_auc` in 5 (one of them
+  the refusal `lindgren-2020`) and `change_from_baseline` in 4.
 - One item is a spread across people and none is a correlation. Every
   population is healthy adults.
 - About 50 items cite several papers; the first is taken as the paper.
