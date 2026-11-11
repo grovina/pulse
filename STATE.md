@@ -36,6 +36,12 @@ The recipe is `train/spec.json` (iter 115: 58 epochs, 30 on trajectories
 alone, then 28 with the literature). The job is 8 vCPU, 32 GiB, 72 h, no
 retries.
 
+A step now spins up all of its people in one rollout and rolls its items in
+groups of similar horizon (`pulse/training/evidence_step.py`). A run writes a
+board at the end of each phase, and `--deadline-hours` stops it cleanly
+before the job's timeout. No run has used any of this yet: the recipe is
+unchanged, and the numbers below are from before.
+
 Measured on iter 115's log (2026-10-31 to 2026-11-03):
 
 - An epoch with the literature takes 3 to 3.7 h for 40 steps. The 160
@@ -45,6 +51,17 @@ Measured on iter 115's log (2026-10-31 to 2026-11-03):
   memory is 10.7 GB.
 - 63% of the simulated minutes are the 1,440-minute fed day that starts every
   arm, redone for each arm of each item.
+
+Measured on a 2-CPU box on 2026-11-11 (`python -m pulse.diagnostics
+step-time`, untrained model, 4 items and 1 rule, arms capped at 300 minutes,
+CPU seconds):
+
+- Item by item, as iter 115 ran: 47.5 s. Batched, on this commit: 9.9 s
+  (spin-up 3.4 s, rollout and scoring 2.3 s, backward 4.2 s).
+- A simulated minute costs 979 tensor operations, down from 1,167. With a
+  different meal list for every member of a batch it cost 8,009.
+- An uncapped step and a whole epoch have not been timed since the change;
+  this box cannot hold a day-long rollout with its gradient.
 
 ## Runs
 
@@ -105,14 +122,19 @@ checkpoint has been scored by it yet.
 - There is no CI. The suite is run by hand:
   `uv run --group dev pytest tests/ -n auto`.
 
+- 693 parameters of the gut kernel (the mixture logits of its last layer)
+  receive no gradient from any loss.
+- The stomach's split correction acts on the three gastric pools and never
+  reaches absorption: no module reads a gastric state. It is exactly zero in
+  iter 114.
+- The cortisol gain on glucose production is centred on the population's
+  12 µg/dL, not the person's own basal cortisol, which the stress module
+  learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
+  for a person away from the median.
+
 Reported by the review of 2026-11-11 and not yet confirmed:
 
-- the 693 parameters of the gut kernel receive no gradient;
-- the stomach's split correction never reaches absorption;
-- the cortisol gain is centred on the population's cortisol, not the
-  person's;
-- calibration fits interstitial glucose while evaluation reads plasma;
-- `integrate` with a step other than one minute is silently wrong.
+- calibration fits interstitial glucose while evaluation reads plasma.
 
 ## Live
 

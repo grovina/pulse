@@ -65,8 +65,10 @@ epochs, 28 with the literature stack) the same per-signal costs put a run at abo
   `drives(external, coupling, time)` — the protocol; `step(state, …)` — the ODE state.
   `integrate` evaluates the first two once per rollout over the whole `[B, T]` window
   and runs only `step` per minute; `model.forward` composes the same three for one
-  time point, so there is one physiology implementation. ~530 ops per minute.
-- **Fused heads** (`model._HeadBank`). The ten MLP heads run as one block-diagonal
+  time point, so there is one physiology implementation. ~530 ops per minute then; 979
+  aten dispatches per minute today, counted by a `TorchDispatchMode`, which counts more
+  than the earlier figure did.
+- **Fused heads** (`model._HeadBank`). The eight MLP heads run as one block-diagonal
   three-layer network per step; the protocol and embedding halves of every first
   layer are computed once per rollout.
 - **Batching independent rollouts.** A step costs about the same at batch 1 and 64,
@@ -132,12 +134,13 @@ untrained default model, fed day 1,440 min, arms capped at 300 min, 4 draws per 
 | 4 (mean of 2 steps) | 47.5 s | 15.7 s (3.0x) | 8.0 / 2.8 / 4.9 s | 4, 22 |
 | 16 (1 step) | 228 s | 37.3 s (6.1x) | 24.4 / 4.3 / 8.6 s | 5, 98 |
 
-The 1,440-minute spin-up is now the largest part of a capped step, and it grows with rows
-(8 s at 22 rows, 24 s at 98) because `integrate` builds the gut and duodenal windows of
-members with different meals one member at a time; once that is one batched call the spin-up
-costs about one rollout at any row count. Uncapped steps are dominated by the long
-rollouts, which this box cannot hold with gradient: run the same command with
-`--max-arm-minutes 0` in the cloud.
+Those two rows were measured while `integrate` still built the gut and duodenal windows of
+members with different meals one member at a time, which is what the spin-up of a step is.
+With one stomach run for the whole batch (`model._meal_outputs`) the batch-size-4 step
+measures 39.8 s item by item and 9.9 s batched (spin-up 3.4 s, rollout and score 2.3 s,
+backward 4.2 s; peak RSS 1.3 GB). Uncapped steps are dominated by the long rollouts, which
+this box cannot hold with gradient: run the same command with `--max-arm-minutes 0` in the
+cloud.
 
 **A run that dies leaves a board.** At the end of phase 1 (and of phase 2 when phase 3
 follows) the trainer scores the model on the literature board without the identifiability
