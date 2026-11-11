@@ -1,0 +1,160 @@
+{
+  "paper": "welch-2023",
+  "citation": {
+    "authors": "Welch AA, Farahani RA, Egan AM, et al.",
+    "title": "Glucagon-like peptide-1 receptor blockade impairs islet secretion and glucose metabolism in humans",
+    "journal": "The Journal of Clinical Investigation",
+    "year": 2023,
+    "doi": "10.1172/JCI173495",
+    "pmid": "37751301",
+    "pmcid": "PMC10645389"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": {
+      "mean": 32.0,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "The 12 participants without diabetes (the 11 with type 2 diabetes are not entered). Eligibility: no chronic illness, no upper GI surgery, no medication affecting glucose metabolism. On the screening 75 g OGTT none had impaired fasting glucose and 4 had impaired glucose tolerance, so status is unselected rather than healthy. Printed in the text: only a mean BMI of 32 kg/m2 (Discussion), with no spread, so the draw of virtual people cannot use it; and that the two groups were matched for age, sex and weight. Sex and age are in Table 1, which is an image: sex 'mixed' is a placeholder the format requires, not a printed fact, and age is not given."
+  },
+  "protocols": [
+    {
+      "name": "saline_fasting",
+      "description": "Saline-infusion study day in the 12 participants without diabetes, fasting part only. Arm minute 0 is 06:00, which the paper calls -180 min (paper minute 0 is 09:00, arm minute 180), after the standard 10 kcal/kg evening meal and an overnight fast; the fasting window -30 to 0 min is arm minutes 150 to 180 and the arm ends after the sample at 180 (duration 181). During the arm: a trace [3-3H] glucose infusion from 06:00 (not simulated), 0.9% saline from 07:00 (arm 60) in place of exendin 9-39, hand vein warmed to 55 C for arterialized sampling; no glucose is given before paper minute 0 and no meal. The hyperglycemic clamp from 09:00 and everything after it are not entered.",
+      "duration_min": 181,
+      "start_hour": 6.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_saline",
+      "description": "Fasting plasma glucose (mean of the samples from -30 to 0 min) on the saline day, people without diabetes",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "saline_fasting"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 181
+      },
+      "value": 5.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, 'Glucose and total GLP-1 concentrations' paragraph (saline value; mean +/- SEM per Statistics)",
+        "quote": "exendin 9-39 infusion raised fasting glucose concentrations compared to saline infusion (5.0 ± 0.1 mmol/L versus. 5.5 ± 0.1 mmol/L, P = 0.02"
+      }
+    },
+    {
+      "id": "fasting_insulin_saline",
+      "description": "Fasting plasma insulin (mean of the samples from -30 to 0 min) on the saline day, people without diabetes",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "saline_fasting"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 181
+      },
+      "value": 47.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, 'Insulin, C-peptide and glucagon' paragraph 1 (saline value)",
+        "quote": "exendin 9-39 infusion lowered fasting insulin concentrations compared to saline infusion (47 ± 6 pmol/L versus 39 ± 5 pmol/L, P = 0.02"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "All exendin 9-39 day numbers (glucose, insulin, C-peptide, glucagon, EGP, hepatic extraction, ISR, GSR) and the saline-versus-exendin differences",
+      "missing": {
+        "kind": "input",
+        "name": "exendin_9_39"
+      }
+    },
+    {
+      "what": "All numbers for the 11 participants with type 2 diabetes (fasting and clamp glucose, glucagon, C-peptide, EGP, ISR, GSR)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "C-peptide, fasting and final hour of clamp, people without diabetes (Results, Figure 2C)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "Insulin secretion rate (Figure 4C, no saline-day number in text for people without diabetes)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_secretion_rate"
+      }
+    },
+    {
+      "what": "Hepatic insulin extraction, fasting (Results, Figure 4A)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_clearance"
+      }
+    },
+    {
+      "what": "Fasting EGP on saline in people without diabetes: Methods say infusion rates are expressed per lean body mass, not body weight",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "Incremental (AAB) integrated insulin and C-peptide over the first 30 min of hyperglycemia (Figure 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_incremental_auc"
+      }
+    },
+    {
+      "what": "Time courses of glucose, insulin, total GLP-1, glucagon and glucose disappearance through the clamp, people without diabetes (Figures 1-5 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Beta-cell responsivity phi-b (Figure 3A, symmetric percent change only in text)",
+      "missing": {
+        "kind": "marker",
+        "name": "beta_cell_responsivity"
+      }
+    },
+    {
+      "what": "Response to 1 mg i.v. glucagon bolus and the Intralipid/heparin FFA subset (Supplemental Figures 2-3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
