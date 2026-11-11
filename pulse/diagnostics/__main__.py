@@ -237,7 +237,7 @@ def _cmd_scoreboard(args: argparse.Namespace) -> int:
         previous = _localize(args.previous, tmp)
         board = scoreboard_for_checkpoint(
             ckpt, previous, n_draws=args.n_draws, seed=args.seed,
-            identifiability=args.identifiability,
+            identifiability=args.identifiability, baseline=args.baseline,
         )
         print(render_scoreboard(board))
         if args.out:
@@ -353,6 +353,8 @@ def main(argv: list[str] | None = None) -> int:
     sb.add_argument("--n-draws", type=int, default=4, help="Population draws per item")
     sb.add_argument("--seed", type=int, default=0)
     sb.add_argument("--identifiability", action=argparse.BooleanOptionalAction, default=True)
+    sb.add_argument("--baseline", action="store_true",
+                    help="Also score the untrained student on the same items and people (doubles the cost)")
     sb.add_argument("--out", default=None, help="Optional path to write JSON")
     sb.set_defaults(func=_cmd_scoreboard)
 

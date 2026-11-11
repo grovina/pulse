@@ -269,3 +269,22 @@ def test_the_board_renders_every_line(board):
     ):
         assert line in text
     assert "cgmacros" in text
+
+
+def test_the_command_line_can_ask_for_the_untrained_baseline(monkeypatch, tmp_path):
+    import pulse.diagnostics.__main__ as cli
+    import pulse.scoreboard as board_module
+
+    seen: dict = {}
+
+    def fake(_checkpoint, _previous, **kwargs):
+        seen.update(kwargs)
+        return {}
+
+    monkeypatch.setattr(board_module, "scoreboard_for_checkpoint", fake)
+    monkeypatch.setattr(board_module, "render", lambda board: "")
+    checkpoint = str(tmp_path / "model.pt")
+    assert cli.main(["scoreboard", "--checkpoint", checkpoint, "--baseline", "--no-identifiability"]) == 0
+    assert seen["baseline"] is True and seen["identifiability"] is False
+    assert cli.main(["scoreboard", "--checkpoint", checkpoint]) == 0
+    assert seen["baseline"] is False and seen["identifiability"] is True
