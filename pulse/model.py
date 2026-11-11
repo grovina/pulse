@@ -1224,7 +1224,8 @@ def enable_compiled_steps(model: Optional["ModularPhysiologyNetwork"] = None, *,
     once, lazily, in 30-60 s.
 
     With ``model``, the compiled step is warmed up here on short rollouts (batch 1
-    and 2, with and without grad) and checked against the eager step, so a missing
+    and 2, with and without grad, and a batch of 2 with per-member meals and horizons)
+    and checked against the eager step, so a missing
     toolchain or a backend problem surfaces at startup, not mid-run; on any failure
     or mismatch compiled steps stay OFF and the reason is printed. Returns whether
     compiled steps are on.
@@ -1256,8 +1257,15 @@ def enable_compiled_steps(model: Optional["ModularPhysiologyNetwork"] = None, *,
 def _check_compiled_steps(model: "ModularPhysiologyNetwork") -> None:
     global _COMPILED_STEP
     device = model.norm_center.device
-    meals = [MealEvent(time=1.0, carbs=50.0, fats=10.0, proteins=10.0)]
-    for batch in (1, 2):
+    meal = MealEvent(time=1.0, carbs=50.0, fats=10.0, proteins=10.0)
+    # Batch 1 and 2 share one protocol; the second batch-2 case is the training step's shape:
+    # a different meal list and horizon per member.
+    cases = (
+        (1, dict(meals=[meal])),
+        (2, dict(meals=[meal])),
+        (2, dict(meals=[[meal], []], member_steps=torch.tensor([3, 2], device=device))),
+    )
+    for batch, protocol in cases:
         state = model.norm_center.unsqueeze(0).expand(batch, -1)
         emb = torch.zeros(batch, model.embedding_dim, device=device, requires_grad=True)
         results = []
@@ -1265,14 +1273,15 @@ def _check_compiled_steps(model: "ModularPhysiologyNetwork") -> None:
         for kernel in (compiled, None):
             _COMPILED_STEP = kernel
             with torch.no_grad():
-                frozen = integrate(model, state, emb, 3, meals=meals)
-            traj = integrate(model, state, emb, 3, meals=meals)
+                frozen = integrate(model, state, emb, 3, **protocol)
+            traj = integrate(model, state, emb, 3, **protocol)
             (grad,) = torch.autograd.grad(traj.pow(2).sum(), emb)
             results.append((frozen, traj.detach(), grad))
         _COMPILED_STEP = compiled
         for got, want in zip(results[0], results[1]):
             if not torch.allclose(got, want, rtol=1e-4, atol=1e-5):
-                raise RuntimeError(f"compiled step disagrees with eager at batch {batch}")
+                raise RuntimeError(
+                    f"compiled step disagrees with eager at batch {batch} ({sorted(protocol)})")
 
 
 def _swallow_window(
@@ -1352,8 +1361,9 @@ def integrate(
     - Batched (``initial_state[B, STATE_DIM]``, ``embedding[B, EMB]``,
       ``gut_outputs[B, T, OUT]``) → ``[B, T, STATE_DIM]``
 
-    The rollout steps whole minutes: ``dt`` must be 1.0 (the clock, the stomach's emptying and
-    the gut window are indexed by minute), and any other value raises ``ValueError``.
+    The rollout steps whole minutes: ``dt`` must be 1.0 (the circadian night marks are a
+    half-minute window, the stomach empties once per step and the gut window is indexed by
+    minute), and any other value raises ``ValueError``.
 
     The protocol is shared across batch members or given per member:
 
@@ -1417,8 +1427,9 @@ def integrate(
     """
     if dt != 1.0:
         raise ValueError(
-            f"integrate steps whole minutes (dt={dt}): the clock, the stomach's per-minute "
-            "emptying and the gut and duodenal windows are indexed by minute"
+            f"integrate steps whole minutes (dt={dt}): the circadian night marks are a "
+            "half-minute window, the stomach empties once per step and the gut and duodenal "
+            "windows are indexed by minute"
         )
     if meals is None:
         meals = []

@@ -655,11 +655,17 @@ def test_compiled_steps_match_the_eager_step() -> None:
         state = _states(3, 40)
         emb = 0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(9))
         compiled = _roll(model, True, state=state, emb=emb, T=30, meals=MEALS)
+        per_member = _roll(model, True, state=state, emb=emb, T=30, meals=_member_meals(3),
+                           member_steps=torch.tensor([30, 12, 21]))
     finally:
         enable_compiled_steps(enabled=False)
     eager = _roll(model, True, state=state, emb=emb, T=30, meals=MEALS)
     _close(compiled[0], eager[0], 1e-5)
     _close(compiled[1], eager[1], 1e-4)
+    eager_per_member = _roll(model, True, state=state, emb=emb, T=30, meals=_member_meals(3),
+                             member_steps=torch.tensor([30, 12, 21]))
+    _close(per_member[0], eager_per_member[0], 1e-5)
+    _close(per_member[1], eager_per_member[1], 1e-4)
 
 
 def test_compiled_steps_match_the_eager_step_with_decay(monkeypatch) -> None:
