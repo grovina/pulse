@@ -320,6 +320,22 @@ def test_protocol_references_are_checked():
     assert any("declared twice" in p for p in _problems(data))
 
 
+def test_a_file_can_say_an_error_was_computed_over_more_tests_than_people():
+    data = _data()
+    u = _finding(data, "fasting_glucose_mean")["uncertainty"]
+    plain = next(i.spec for i in parse_finding(data).items if i.id == "fasting_glucose_mean")
+    if u["kind"] != "sem":
+        u.clear()
+        u.update({"kind": "sem", "value": 0.1, "n": 12})
+        plain = next(i.spec for i in parse_finding(data).items if i.id == "fasting_glucose_mean")
+    u["observations"] = 3 * u["n"]
+    spec = next(i.spec for i in parse_finding(data).items if i.id == "fasting_glucose_mean")
+    assert spec.n_arm == plain.n_arm
+    assert spec.sigma == pytest.approx(plain.sigma * 3 ** 0.5)
+    u["observations"] = u["n"]
+    assert any("must exceed n" in p for p in _problems(data))
+
+
 def test_a_protocol_names_the_keys_the_paper_does_not_state():
     data = _data()
     data["protocols"][0]["assumed"] = ["start_hour", "duration_min"]

@@ -41,7 +41,10 @@ curve point                    the point's standard error                  1
 =============================  ==========================================  ==========
 
 ``n_eff = min(n, N_CAP)``, and a reported standard error from a study with
-``n > N_CAP`` is widened by ``sqrt(n / N_CAP)``. PLAN section 3: a sigma tighter
+``n > N_CAP`` is widened by ``sqrt(n / N_CAP)``. When the paper computed its
+standard error or interval over more measurements than people
+(``observations``), the SD is recovered with that count and ``n`` stays the
+people: a standard error is widened by ``sqrt(observations / n)``. PLAN section 3: a sigma tighter
 than the study supports can wrongly exclude the truth. One cohort's mean is
 an estimate of the population mean no better than the difference between
 cohorts allows, and a large n makes a paper's own standard error much smaller
@@ -118,6 +121,13 @@ class Uncertainty:
     ``sd`` / ``sem``: ``value``. ``ci``: ``low`` / ``high`` / ``level`` (percent).
     ``range``: ``low`` / ``high`` (the smallest and largest individual). ``n_only``:
     nothing but ``n``. ``n`` is the number of people behind the number.
+
+    ``observations`` is for a standard error or an interval computed over more
+    measurements than people (twelve subjects each tested three times: 36). The
+    paper's error then treats repeats of one person as independent, which they
+    are not. The spread is recovered with the count the paper used, and the mean
+    is held only to what ``n`` people support: the widest reading the report
+    allows.
     """
 
     kind: str
@@ -126,6 +136,12 @@ class Uncertainty:
     low: float | None = None
     high: float | None = None
     level: int | None = None
+    observations: int | None = None
+
+    @property
+    def count(self) -> int:
+        """How many measurements the paper's standard error or interval is over."""
+        return self.observations if self.observations is not None else self.n
 
     def problems(self) -> list[str]:
         """Everything wrong with this uncertainty on its own, as sentences."""
@@ -146,6 +162,11 @@ class Uncertainty:
                 out.append(f"a {self.kind} needs n of at least 2")
             if self.kind == "ci" and self.level not in CI_LEVELS:
                 out.append(f"a ci level is one of {CI_LEVELS}")
+        if self.observations is not None:
+            if self.kind not in ("sem", "ci"):
+                out.append(f"observations is for a sem or a ci, not a {self.kind}")
+            elif not self.observations > self.n:
+                out.append("observations must exceed n (leave it out when each person was measured once)")
         return out
 
 
@@ -179,7 +200,7 @@ def standard_error(u: Uncertainty) -> float:
     assert u.low is not None and u.high is not None
     if u.kind == "ci":
         assert u.level is not None
-        return (u.high - u.low) / (2.0 * _t_quantile(u.level, u.n - 1))
+        return (u.high - u.low) / (2.0 * _t_quantile(u.level, u.count - 1))
     if u.kind == "range":
         return (u.high - u.low) / _range_xi(u.n) / math.sqrt(u.n)
     raise UncertaintyError(f"a {u.kind} carries no standard error")
@@ -193,12 +214,13 @@ def between_person_sd(u: Uncertainty) -> float:
     if u.kind == "range":
         assert u.low is not None and u.high is not None
         return (u.high - u.low) / _range_xi(u.n)
-    return standard_error(u) * math.sqrt(u.n)
+    return standard_error(u) * math.sqrt(u.count)
 
 
 def _widened_se(u: Uncertainty) -> float:
-    """The standard error, widened by ``sqrt(n / N_CAP)`` for an n past the cap."""
-    return standard_error(u) * math.sqrt(max(1.0, u.n / N_CAP))
+    """The standard error over people: widened by ``sqrt(observations / n)`` when the
+    paper counted repeats, and by ``sqrt(n / N_CAP)`` for an n past the cap."""
+    return standard_error(u) * math.sqrt(u.count / u.n) * math.sqrt(max(1.0, u.n / N_CAP))
 
 
 def curve_point_sigma(u: Uncertainty) -> float:

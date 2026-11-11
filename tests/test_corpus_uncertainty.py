@@ -49,6 +49,33 @@ def test_a_standard_error_is_not_divided_again_by_the_draws():
         assert se == pytest.approx(3.0)
 
 
+def test_repeated_tests_of_the_same_people_do_not_tighten_the_mean():
+    """Twelve people tested three times, SEM 0.06 over the 36 tests: the spread is
+    0.06 * 6, and the mean is held to what twelve people support."""
+    once = Uncertainty("sem", 12, value=0.06)
+    repeated = Uncertainty("sem", 12, value=0.06, observations=36)
+    se_once, _, _ = _sem_used(K.MEAN_IN_WINDOW, 5.2, once)
+    se, sigma, n_arm = _sem_used(K.MEAN_IN_WINDOW, 5.2, repeated)
+    assert sigma == pytest.approx(0.36) and n_arm == 12
+    assert se == pytest.approx(0.36 / math.sqrt(12))
+    assert se == pytest.approx(se_once * math.sqrt(3))
+    assert curve_point_sigma(repeated) == pytest.approx(0.06 * math.sqrt(3))
+    # A confidence interval over the 36 tests uses 35 degrees of freedom, then the same rule.
+    ci = Uncertainty("ci", 12, low=0.0, high=0.24, level=95, observations=36)
+    _, sigma_ci, n_ci = _sem_used(K.MEAN_IN_WINDOW, 5.2, ci)
+    assert n_ci == 12 and sigma_ci == pytest.approx(0.24 / (2 * 2.030) * 6, rel=2e-3)
+
+
+@pytest.mark.parametrize("u, fragment", [
+    (Uncertainty("sem", 12, value=0.06, observations=12), "must exceed n"),
+    (Uncertainty("sem", 12, value=0.06, observations=6), "must exceed n"),
+    (Uncertainty("sd", 12, value=0.3, observations=36), "not a sd"),
+    (Uncertainty("range", 12, low=0.0, high=1.0, observations=36), "not a range"),
+])
+def test_observations_is_only_for_more_measurements_than_people(u, fragment):
+    assert any(fragment in p for p in u.problems())
+
+
 def test_a_large_study_is_not_trusted_past_the_cap():
     se, sigma, n_arm = _sem_used(K.MEAN_IN_WINDOW, 100.0, Uncertainty("sem", 100, value=1.0))
     assert n_arm == N_CAP

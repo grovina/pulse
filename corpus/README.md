@@ -513,7 +513,11 @@ Do not compute a standard error yourself and do not choose a sigma.
 | `n_only` | `n` | only for `spread` and `correlation`, when the paper gives the statistic and its n and nothing else |
 
 `n` is the number of **people** behind the number, not of tests or samples: twelve
-subjects each tested three times are 12. If error bars are not labelled
+subjects each tested three times are 12. If the paper says its standard error or
+interval was computed over more measurements than people ("n = 36: 12 subjects x
+3 repeated tests"), add `"observations": 36` beside `"n": 12`. The loader then
+recovers the spread with the count the paper used and holds the mean only to what
+twelve people support. If error bars are not labelled
 (SD or SEM?) in text, caption or methods, do not guess: the finding cannot be
 entered; write a refusal of kind `operator` naming "unlabelled error bars", or
 leave the number out. The statistic has to lie inside its own `ci` or `range`.
@@ -641,6 +645,11 @@ used.
   leave its numbers out.
 * An uncertainty printed as zero (`0.1 ± 0.0`) is a rounded number, not a
   measurement without error. Leave that number out.
+* `ghrelin` in the model is a nominal level that rests near 100 pg/mL. It does not
+  say active or total ghrelin, whose assays differ several-fold. Leave absolute
+  ghrelin levels out.
+* A unit the paper does not print is not to be supplied from convention (RMSSD "in
+  ms"): leave the number out.
 * If the unit as printed converts to an absurd value (adrenaline in ng/mL), the paper
   has probably misprinted it. Leave the number out; do not correct the paper.
 * When a table does not say when a baseline value was drawn, enter it on a fasted

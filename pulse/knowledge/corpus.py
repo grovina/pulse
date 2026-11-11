@@ -762,8 +762,8 @@ class _Units:
 
 _UNCERTAINTY_KEYS = {
     "sd": ({"kind", "n", "value"}, set()),
-    "sem": ({"kind", "n", "value"}, set()),
-    "ci": ({"kind", "n", "low", "high", "level"}, set()),
+    "sem": ({"kind", "n", "value"}, {"observations"}),
+    "ci": ({"kind", "n", "low", "high", "level"}, {"observations"}),
     "range": ({"kind", "n", "low", "high"}, set()),
     "n_only": ({"kind", "n"}, set()),
 }
@@ -802,6 +802,11 @@ def _uncertainty(
         high = r.number(d, "high", w, "uncertainty")
         if k == "ci":
             level = r.integer(d, "level", w, "uncertainty")
+    observations = None
+    if "observations" in d:
+        observations = r.integer(d, "observations", w, "uncertainty", minimum=1)
+        if observations is None:
+            return None
     if n is None or (k in ("sd", "sem") and value is None) or (
         k in ("ci", "range") and (low is None or high is None)
     ):
@@ -817,6 +822,7 @@ def _uncertainty(
             None if low is None or high is None else 0.0,
             None if low is None or high is None else units.width(high - low),
             level,
+            observations,
         )
     except UnitError as err:
         r.add("units", f"{w}: {err}")
