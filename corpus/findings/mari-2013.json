@@ -1,0 +1,151 @@
+{
+  "paper": "mari-2013",
+  "citation": {
+    "authors": "Mari A, Bagger JI, Ferrannini E, et al.",
+    "title": "Mechanisms of the Incretin Effect in Subjects with Normal Glucose Tolerance and Patients with Type 2 Diabetes",
+    "journal": "PLoS ONE",
+    "year": 2013,
+    "doi": "10.1371/journal.pone.0073154",
+    "pmid": "24019903",
+    "pmcid": "PMC3760909"
+  },
+  "population": {
+    "n": 8,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 57.0,
+      "sd": 11.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 29.0,
+      "sd": 3.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eight subjects with normal glucose tolerance and negative family history of diabetes; 3 males; age 57±11 years, BMI 29±3 kg/m2 (mean±SD, both groups pooled as printed)."
+  },
+  "protocols": [
+    {
+      "name": "ogtt_25g",
+      "description": "25 g water-free glucose in 300 ml water after 10 h overnight fast, 240 min observed",
+      "duration_min": 240,
+      "start_hour": 8.0,
+      "prefast_hours": 10.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 25.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ]
+    },
+    {
+      "name": "ogtt_75g",
+      "description": "75 g water-free glucose in 300 ml water after 10 h overnight fast, 240 min observed",
+      "duration_min": 240,
+      "start_hour": 8.0,
+      "prefast_hours": 10.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ]
+    },
+    {
+      "name": "ogtt_125g",
+      "description": "125 g water-free glucose in 300 ml water after 10 h overnight fast, 240 min observed",
+      "duration_min": 240,
+      "start_hour": 8.0,
+      "prefast_hours": 10.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 125.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ngt_ogtt_25g_mean_glucose",
+      "description": "Mean plasma glucose over the 4-h 25 g OGTT in NGT subjects (AUC/240 min), mean and SE",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_25g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 240
+      },
+      "value": 5.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, NGT, row 'Mean glucose (mmol/L)', OGTT column 25 g",
+        "quote": "Mean glucose (mmol/L) | 6.0±0.2 | 6.5±0.3 | 7.2±0.3 | 5.7±0.2 | 6.4±0.3 | 7.4±0.3"
+      }
+    },
+    {
+      "id": "ngt_ogtt_75g_mean_glucose",
+      "description": "Mean plasma glucose over the 4-h 75 g OGTT in NGT subjects (AUC/240 min), mean and SE",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_75g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 240
+      },
+      "value": 6.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, NGT, row 'Mean glucose (mmol/L)', OGTT column 75 g",
+        "quote": "Mean glucose (mmol/L) | 6.0±0.2 | 6.5±0.3 | 7.2±0.3 | 5.7±0.2 | 6.4±0.3 | 7.4±0.3"
+      }
+    },
+    {
+      "id": "ngt_ogtt_125g_mean_glucose",
+      "description": "Mean plasma glucose over the 4-h 125 g OGTT in NGT subjects (AUC/240 min), mean and SE",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_125g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 240
+      },
+      "value": 7.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, NGT, row 'Mean glucose (mmol/L)', OGTT column 125 g",
+        "quote": "Mean glucose (mmol/L) | 6.0±0.2 | 6.5±0.3 | 7.2±0.3 | 5.7±0.2 | 6.4±0.3 | 7.4±0.3"
+      }
+    }
+  ]
+}

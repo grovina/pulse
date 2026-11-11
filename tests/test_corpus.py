@@ -498,26 +498,34 @@ def test_the_real_corpus_directory_is_clean():
     assert not both
 
 
-def test_nothing_unverified_is_in_the_real_corpus():
-    """The machinery ships empty: a separate reading step, with a second reader, fills it."""
-    assert not list((ROOT / "corpus" / "findings").glob("*.json"))
-    assert not list((ROOT / "corpus" / "refusals").glob("*.json"))
+def test_the_real_corpus_loads_and_every_paper_is_in_one_pile():
+    """Every file under ``corpus/`` parses, and no paper is in two piles or under two slugs
+    (``load_corpus`` raises otherwise). Whether a number is the paper's is the second
+    reader's check, not a test's."""
+    corpus = load_corpus(ROOT / "corpus")
+    papers = [x.paper for pile in (corpus.findings, corpus.refusals, corpus.queue) for x in pile]
+    assert len(papers) == len(set(papers))
+    assert papers
 
 
 # --- the registry -------------------------------------------------------------------
 
-def test_with_no_files_the_registry_is_what_it_was():
-    assert registry._AUTHORED == registry._PYTHON_AUTHORED
-    from pulse.scoreboard import _fingerprint
-    from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
+def test_file_papers_are_added_after_the_python_registry_and_change_none_of_it():
+    python = registry._PYTHON_AUTHORED
+    assert registry._AUTHORED[: len(python)] == python
+    added = registry._AUTHORED[len(python):]
+    file_papers = {f.paper for f in load_corpus(ROOT / "corpus").findings}
+    assert {s.paper for s in added} == file_papers
+    assert file_papers.isdisjoint(s.paper for s in python)
 
-    old = expand_curves([apply_seal(s) for s in registry._PYTHON_AUTHORED])
-    training = [s for s in old if not s.sealed]
-    assert [s.name for s in training] == [s.name for s in ALL_COHORT_STATISTICS]
-    assert _fingerprint(training, PHYSIOLOGY_RULES) == _fingerprint(ALL_COHORT_STATISTICS, PHYSIOLOGY_RULES)
-    assert sorted(s.name for s in old) == sorted(
-        s.name for s in (*ALL_COHORT_STATISTICS, *registry.SEALED_COHORT_STATISTICS)
-    )
+    from pulse.knowledge.physiology_rules import PHYSIOLOGY_RULES
+    from pulse.scoreboard import _fingerprint
+
+    old = expand_curves([apply_seal(s) for s in python])
+    kept = [s for s in ALL_COHORT_STATISTICS if s.paper not in file_papers]
+    assert _fingerprint([s for s in old if not s.sealed], PHYSIOLOGY_RULES) == _fingerprint(kept, PHYSIOLOGY_RULES)
+    everything = (*ALL_COHORT_STATISTICS, *registry.SEALED_COHORT_STATISTICS)
+    assert sorted(s.name for s in old) == sorted(s.name for s in everything if s.paper not in file_papers)
 
 
 def test_file_papers_join_the_registry_and_are_sealed_by_the_draw(tmp_path):
