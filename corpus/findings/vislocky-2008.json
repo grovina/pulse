@@ -1,0 +1,309 @@
+{
+  "paper": "vislocky-2008",
+  "citation": {
+    "authors": "Vislocky LM, Gaine PC, Pikosky MA, et al.",
+    "title": "Gender impacts the post-exercise substrate and endocrine response in trained runners",
+    "journal": "Journal of the International Society of Sports Nutrition",
+    "year": 2008,
+    "doi": "10.1186/1550-2783-5-7",
+    "pmid": "18302755",
+    "pmcid": "PMC2288589"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Six trained men and six trained women, runners: 'a mix of collegiate runners and serious recreational athletes'. Enrolment: aged 18-30 y, running >= 56 km/wk, VO2peak > 45 (women) and > 50 (men) mL/kg/min, matched on training volume and fitness; no resistance training during or for a month before. Printed weekly running: men 51 +/- 4 and women 37 +/- 1 miles/wk (Discussion); men ran about 14 more miles/wk (P < 0.05). Screened by medical history (no metabolic or cardiovascular abnormality, no gastrointestinal disorder, no supplements or anabolic steroids; women eumenorrheic, not on oral contraceptives, studied in the early follicular phase, days 1-7, estradiol 39.2 +/- 3.6 pg/mL). The model carries no training status, so these are endurance-trained people, not an average healthy adult; the men and women were two independent studies with identical conditions. Age and BMI are given per sex in the protocol arms (Table 1, mean +/- SEM, n = 6, SD computed as SEM x sqrt(6)); the paper gives no observed ranges."
+  },
+  "protocols": [
+    {
+      "name": "rest_female",
+      "description": "female runners at rest: baseline (REST) blood sample after a 10-12 h overnight fast, before the 75 min run (run not entered) Arrival ~0600 h after a 10-12 h overnight fast; a catheter was inserted into an antecubital vein and the baseline (REST) sample drawn after that (no rest period or exact clock time of the draw is stated; venous, lithium-heparin/EDTA plasma). Before it: 8 days of provided eucaloric diet (1.8 g/kg/d protein, 30% fat, remainder carbohydrate; training and competing continued) and no exercise the day before (~36 h).; a 30-minute fasted run-in stands for the single sample (arm ends there). prefast_hours 10 is the lower end of the stated 10-12 h. Age and BMI SEs from Table 1 converted to SD = SE x sqrt(6): age 22.7 +/- 0.7 SE -> 1.71; BMI 22.9 +/- 1.6 SE -> 3.92.",
+      "duration_min": 30,
+      "start_hour": 6.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 22.7,
+          "sd": 1.71,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.9,
+          "sd": 3.92,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "rest_male",
+      "description": "male runners at rest: baseline (REST) blood sample after a 10-12 h overnight fast, before the 75 min run (run not entered) Arrival ~0600 h after a 10-12 h overnight fast; a catheter was inserted into an antecubital vein and the baseline (REST) sample drawn after that (no rest period or exact clock time of the draw is stated; venous, lithium-heparin/EDTA plasma). Before it: 8 days of provided eucaloric diet (1.8 g/kg/d protein, 30% fat, remainder carbohydrate; training and competing continued) and no exercise the day before (~36 h).; a 30-minute fasted run-in stands for the single sample (arm ends there). prefast_hours 10 is the lower end of the stated 10-12 h. Age and BMI SEs from Table 1 converted to SD = SE x sqrt(6): age 20.6 +/- 0.6 SE -> 1.47; BMI 21.6 +/- 0.4 SE -> 0.98.",
+      "duration_min": 30,
+      "start_hour": 6.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 20.6,
+          "sd": 1.47,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.6,
+          "sd": 0.98,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rest_glucose_female",
+      "description": "Resting (REST) plasma glucose of the female runners after an overnight fast (first value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_female"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Glucose (REST; females and males respectively)",
+        "quote": "REST, 4.4 ± 0.1 and 4.7 ± 0.1;"
+      }
+    },
+    {
+      "id": "rest_glucose_male",
+      "description": "Resting (REST) plasma glucose of the male runners after an overnight fast (second value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_male"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Glucose (REST; females and males respectively)",
+        "quote": "REST, 4.4 ± 0.1 and 4.7 ± 0.1;"
+      }
+    },
+    {
+      "id": "rest_lactate_female",
+      "description": "Resting (REST) plasma lactate of the female runners after an overnight fast (first value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_female"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 1.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Lactate (REST; females and males respectively)",
+        "quote": "REST, 1.3 ± 0.1 and 1.0 ± 0.1;"
+      }
+    },
+    {
+      "id": "rest_lactate_male",
+      "description": "Resting (REST) plasma lactate of the male runners after an overnight fast (second value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_male"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 1.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Lactate (REST; females and males respectively)",
+        "quote": "REST, 1.3 ± 0.1 and 1.0 ± 0.1;"
+      }
+    },
+    {
+      "id": "rest_ffa_female",
+      "description": "Resting (REST) plasma free fatty acids of the female runners after an overnight fast (first value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_female"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.54,
+      "unit": "mEq/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.15,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, FFAs (REST; females and males respectively)",
+        "quote": "REST, 0.54 ± 0.15 and 0.64 ± 0.06;"
+      }
+    },
+    {
+      "id": "rest_ffa_male",
+      "description": "Resting (REST) plasma free fatty acids of the male runners after an overnight fast (second value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_male"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.64,
+      "unit": "mEq/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, FFAs (REST; females and males respectively)",
+        "quote": "REST, 0.54 ± 0.15 and 0.64 ± 0.06;"
+      }
+    },
+    {
+      "id": "rest_insulin_female",
+      "description": "Resting (REST) plasma insulin of the female runners after an overnight fast (first value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_female"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 54.9,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 10.3,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Insulin (REST; females and males respectively)",
+        "quote": "REST, 54.9 ± 10.3 and 38.2 ± 3.4;"
+      }
+    },
+    {
+      "id": "rest_insulin_male",
+      "description": "Resting (REST) plasma insulin of the male runners after an overnight fast (second value in the sentence: females and males, respectively); mean +/- SEM, n = 6",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_male"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 38.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.4,
+        "n": 6
+      },
+      "location": {
+        "where": "Results, Insulin (REST; females and males respectively)",
+        "quote": "REST, 54.9 ± 10.3 and 38.2 ± 3.4;"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "All post-exercise values (glucose, lactate, FFA, insulin at POST+30, POST+45, POST+210 min; text of Results) after the 75 min run at 70% VO2peak: the paper defines the intensity as 70% of VO2peak in mL/kg BW/min but prints VO2peak only per kg fat-free mass (Table 1, 71.6 and 78.0 mL/kg FFM/min); no per-body-weight or absolute VO2peak and no VO2 during the run is printed",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "Resting and post-exercise growth hormone (Results, GH)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "Resting and post-exercise free IGF-I (Results, IGF-I)",
+      "missing": {
+        "kind": "marker",
+        "name": "igf1"
+      }
+    },
+    {
+      "what": "Plasma estradiol at rest in the women (Results, Estradiol)",
+      "missing": {
+        "kind": "marker",
+        "name": "estradiol"
+      }
+    },
+    {
+      "what": "Cortisol at REST, POST+30, POST+210 (Results, Cortisol): means labelled nmol/L, changes labelled ng/mL; the male change (-95.7) equals the difference of the nmol/L means (375.3 - 471.0) but the female change (+210.3) does not (889.7 - 661.6 = 228.1), so the unit label and the arithmetic disagree and the unit cannot be settled",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    }
+  ]
+}
