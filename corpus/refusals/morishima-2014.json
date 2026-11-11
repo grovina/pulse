@@ -1,0 +1,33 @@
+{
+  "paper": "morishima-2014",
+  "citation": {
+    "authors": "Morishima T, Mori A, Sasaki H, et al.",
+    "title": "Impact of Exercise and Moderate Hypoxia on Glycemic Regulation and Substrate Oxidation Pattern",
+    "journal": "PLoS ONE",
+    "year": 2014,
+    "doi": "10.1371/journal.pone.0108629",
+    "pmid": "25329405",
+    "pmcid": "PMC4199615"
+  },
+  "reported": [
+    {
+      "what": "percentage carbohydrate contribution to energy production 120 min after the second exercise bout, normoxic exercise trial (mean ± SE, n=8); the paper's only printed value for the normoxic trials",
+      "location": {
+        "where": "Results, Relative contributions of carbohydrate and fat oxidation, paragraph 1",
+        "quote": "50.2±5.9% in the HYP-Ex vs. 39.7±3.6% in the NOR-Ex"
+      }
+    },
+    {
+      "what": "percentage fat contribution to energy production at the same time point, normoxic exercise trial (mean ± SE, n=8)",
+      "location": {
+        "where": "Results, Relative contributions of carbohydrate and fat oxidation, paragraph 2",
+        "quote": "49.8±5.9% in the HYP-Ex vs. 60.3±3.6% in the NOR-Ex"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "marker",
+    "name": "carbohydrate_oxidation_fraction"
+  },
+  "detail": "The only printed numbers for arms the model can run (normoxic rest and exercise) are the relative carbohydrate and fat shares of energy production derived from RER, which the model has no series for (it has rq, not the oxidation split); glucose, insulin, FFA, lactate and glycerol time courses and AUCs appear only in Figures 3 and 4 and Table 1 holds only participant characteristics, with no fasting value."
+}
