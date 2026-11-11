@@ -1,0 +1,139 @@
+{
+  "paper": "zilstorff-2024",
+  "citation": {
+    "authors": "Zilstorff DB, Richter MM, Hannibal J, et al.",
+    "title": "Secretion of glucagon, GLP-1 and GIP may be affected by circadian rhythm in healthy males",
+    "journal": "BMC Endocrine Disorders",
+    "year": 2024,
+    "doi": "10.1186/s12902-024-01566-9",
+    "pmid": "38481208",
+    "pmcid": "PMC10938734"
+  },
+  "population": {
+    "n": 24,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.0,
+      "sd": 5.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.9,
+      "sd": 1.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "24 healthy men, inclusion age 18-45 y, BMI 18.5-24.9 kg/m2 (enrolment criteria; observed min/max not reported). Age and BMI mean ± SD from Table 1. The 09:00 fasting values are from 22 men: two subjects had not fasted overnight and their 09:00 samples were excluded (Table 2 footnote N = 22 for the first timepoint)."
+  },
+  "protocols": [
+    {
+      "name": "day24",
+      "description": "Hospital ward, arrive 08:00 after an overnight fast (fasting from 22:00, 10 h at arrival); first blood sample 09:00 (minute 60, fasted 11 h) before breakfast at 09:30; arm ends after that sample",
+      "duration_min": 61,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "assumed": [],
+      "meals": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucagon",
+      "description": "Fasting plasma glucagon at 09:00",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day24"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "value": 3.5,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.6,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 2, columns 'Unit' and 'Baseline fasting value Mean (SD)' (header says SD; footnote: N = 22 for the first timepoint, t = 9 h; same value as Table 1)",
+        "quote": "Glucagon | pmol/L | 3.5 (1.6)"
+      }
+    },
+    {
+      "id": "fasting_glp1",
+      "description": "Fasting plasma total GLP-1 at 09:00",
+      "marker": "glp1",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day24"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "value": 4.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.5,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 2, columns 'Unit' and 'Baseline fasting value Mean (SD)' (header says SD; footnote: N = 22 for the first timepoint, t = 9 h; same value as Table 1)",
+        "quote": "GLP-1 | pmol/L | 4.0 (1.5)"
+      }
+    },
+    {
+      "id": "fasting_gip",
+      "description": "Fasting plasma total GIP at 09:00",
+      "marker": "gip",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day24"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "value": 4,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 2, columns 'Unit' and 'Baseline fasting value Mean (SD)' (header says SD; footnote: N = 22 for the first timepoint, t = 9 h; same value as Table 1)",
+        "quote": "GIP | pmol/L | 4 (2)"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose at 09:00",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day24"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "value": 4.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 2, columns 'Unit' and 'Baseline fasting value Mean (SD)' (header says SD; footnote: N = 22 for the first timepoint, t = 9 h; same value as Table 1)",
+        "quote": "Glucose | mmol/L | 4.8 (0.4)"
+      }
+    }
+  ]
+}
