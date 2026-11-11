@@ -286,6 +286,8 @@ class Finding:
     protocols: dict[str, CohortArmSpec]
     items: tuple[FindingItem, ...]
     path: Path | None = None
+    # protocol name -> the keys whose values the reader assumed (the paper does not state them)
+    assumed: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     @property
     def specs(self) -> list[CohortStatisticSpec]:
@@ -570,13 +572,35 @@ def _series_input(
     return tuple(series) if ok else None
 
 
+# Keys of a protocol that say nothing about what the subjects did, so cannot be assumed.
+_NOT_ASSUMABLE = frozenset({"name", "description", "population", "assumed"})
+
+
+def _assumed(r: _Reader, d: dict, where: str) -> tuple[str, ...] | None:
+    """``assumed``: the protocol's own keys whose values the paper does not state."""
+    raw = d.get("assumed")
+    if not isinstance(raw, list) or not all(isinstance(x, str) for x in raw):
+        r.add("protocol", f"{where} assumed is not a list of this protocol's keys ([] if the paper states them all)")
+        return None
+    stated = sorted(set(d) - _NOT_ASSUMABLE)
+    ok = True
+    for key in raw:
+        if key not in stated:
+            r.add("protocol", f"{where} assumed names {key!r}, which is not one of its keys ({', '.join(stated)})")
+            ok = False
+    if len(set(raw)) != len(raw):
+        r.add("protocol", f"{where} assumed repeats a key")
+        ok = False
+    return tuple(raw) if ok else None
+
+
 def _protocol(
     r: _Reader, data: Any, index: int, who: _Who,
-) -> tuple[str, CohortArmSpec, InitMode] | None:
+) -> tuple[str, CohortArmSpec, InitMode, tuple[str, ...]] | None:
     where = f"protocol {index + 1}"
     optional = set(_SERIES_INPUTS) | {"glucose_bolus", "population", "prefast_hours", "init"}
     d = r.obj(
-        data, where, {"name", "description", "duration_min", "start_hour", "meals"}, optional,
+        data, where, {"name", "description", "duration_min", "start_hour", "meals", "assumed"}, optional,
         check="protocol",
     )
     if d is None:
@@ -599,6 +623,7 @@ def _protocol(
     if "init" in d:
         mode = r.choice(d, "init", where, tuple(m.value for m in InitMode), "protocol")
         init = InitMode(mode) if mode else init
+    assumed = _assumed(r, d, where) if "assumed" in d else None
 
     meals: list[tuple[float, float, float, float]] = []
     raw_meals = d.get("meals")
@@ -617,7 +642,7 @@ def _protocol(
             continue
         assert t is not None and c is not None and f is not None and p is not None
         if duration is not None and t >= duration:
-            r.add("protocol", f"{w} t_min {t:g} is after the arm ends ({duration})")
+            r.add("protocol", f"{w} t_min {t:g} is not before the arm ends (duration_min {duration})")
         meals.append((t, c, f, p))
 
     series: dict[str, tuple[float, ...] | None] = {}
@@ -674,7 +699,7 @@ def _protocol(
                 if s:
                     override["healthy"] = s == "healthy"
 
-    if name is None or duration is None or start is None or prefast is None:
+    if name is None or duration is None or start is None or prefast is None or assumed is None:
         return None
     if any(series.get(k, 0) is None for k in series):
         return None
@@ -686,7 +711,7 @@ def _protocol(
         bile_fistula=series.get("bile_fistula"), prefast_hours=prefast,
         population=_arm_population(who, override),
     )
-    return name, arm, init
+    return name, arm, init, assumed
 
 
 # --------------------------------------------------------------------------------
@@ -995,7 +1020,10 @@ def _finding_item(
                 if t is not None:
                     seen.add(t)
                     if t >= arms[0].duration_min:
-                        r.add("protocol", f"{w} t_min {t} is after the arm ends ({arms[0].duration_min})")
+                        r.add("protocol", (
+                            f"{w} t_min {t} is past the arm's last minute ({arms[0].duration_min - 1}): "
+                            f"an arm sampled at minute {t} needs duration_min {t + 1}"
+                        ))
                         t = None
                 if t is None or v is None or u is None:
                     complete = False
@@ -1106,6 +1134,7 @@ def parse_finding(data: Any, *, path: Path | None = None) -> Finding:
 
     protocols: dict[str, CohortArmSpec] = {}
     inits: dict[str, InitMode] = {}
+    assumed: dict[str, tuple[str, ...]] = {}
     raw_protocols = d.get("protocols")
     if "protocols" in d and (not isinstance(raw_protocols, list) or not raw_protocols):
         r.add("protocol", "protocols is not a non-empty list")
@@ -1116,11 +1145,11 @@ def parse_finding(data: Any, *, path: Path | None = None) -> Finding:
             got = _protocol(r, p, i, stand_in)
             if got is None:
                 continue
-            nm, arm, init = got
+            nm, arm, init, unstated = got
             if nm in protocols:
                 r.add("protocol", f"protocol {nm} is declared twice")
             else:
-                protocols[nm], inits[nm] = arm, init
+                protocols[nm], inits[nm], assumed[nm] = arm, init, unstated
 
     items: list[FindingItem] = []
     used: set[str] = set()
@@ -1143,7 +1172,7 @@ def parse_finding(data: Any, *, path: Path | None = None) -> Finding:
     if r.problems:
         raise CorpusError(r.problems, paper)
     assert citation is not None and who is not None
-    return Finding(paper, citation, who.n, protocols, tuple(items), path)
+    return Finding(paper, citation, who.n, protocols, tuple(items), path, assumed)
 
 
 def parse_refusal(data: Any, *, path: Path | None = None) -> Refusal:

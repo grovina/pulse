@@ -111,14 +111,16 @@ This file is parsed by the test suite, so it cannot go stale. It is made up.
           "fat_g": 0.0,
           "protein_g": 0.0
         }
-      ]
+      ],
+      "assumed": ["start_hour"]
     },
     {
       "name": "fasting",
       "description": "the same morning with water only",
       "duration_min": 120,
       "start_hour": 8.0,
-      "meals": []
+      "meals": [],
+      "assumed": ["start_hour"]
     }
   ],
   "findings": [
@@ -257,6 +259,16 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   four of `mean`, `sd`, `min`, `max`, each a number or `null`, not all `null`.
   The virtual people are drawn from `[min, max]` if both are given, otherwise from
   `mean +/- 2 sd`.
+  * `min` and `max` are the youngest and oldest (leanest and heaviest) subject
+    **observed**. Enrolment criteria ("aged 18 to 40") are not that: put them in
+    `description` and leave `min` and `max` `null`, unless the paper gives nothing
+    else about age or BMI.
+  * A median with an interquartile range is not a mean and an SD: `null`.
+  * If the paper gives mean and standard error, `sd` is `SE x sqrt(n)`; say in
+    `description` that you computed it. (This is the one place you convert. It
+    only shapes who the virtual people are; no finding is scored against it.)
+  * If the paper gives age or BMI for a larger or pooled group and not for the
+    group the findings are about, use it and say so in `description`.
 * `status` is `healthy` or `unselected` (no screening was reported). **Nothing
   else.** Diabetes, hypertension, pregnancy, an illness, a drug the model has no
   input for: the model has no way to say it. That is a refusal (kind `population`),
@@ -274,12 +286,31 @@ protocol must be used by at least one finding.
 |---|---|
 | `name` | lowercase letters, digits, underscore |
 | `description` | one line |
-| `duration_min` | minutes simulated. The clock starts at 0. |
+| `duration_min` | minutes simulated: the arm has a state at minutes 0 to `duration_min - 1`. A test sampled at 0 and 120 minutes needs 121. |
 | `start_hour` | clock hour at minute 0 (8.0 is 08:00); the model has a circadian clock |
 | `meals` | list of `{"t_min", "carbs_g", "fat_g", "protein_g"}`; `[]` for none. An oral glucose load is carbs only. |
+| `assumed` | the keys of this protocol whose values **the paper does not state**; `[]` if it states them all. Below. |
 | `prefast_hours` | optional: hours already fasted when the arm starts (overnight is about 10) |
 | `init` | optional: `cold` (default; the person is spun up through a normal fed day, then fasted `prefast_hours`) or `norm_center` (start from typical values; use when the paper's subjects were not in a clean fasted state) |
 | `population` | optional override, above |
+
+**`assumed`.** A paper rarely states everything a simulation needs. "In the
+morning after an overnight fast" gives neither a clock hour nor a number of
+hours, and a fasting sample has no duration at all. You still have to enter a
+value: use 8.0 for a morning and 10 for an overnight fast, and a short run-in
+for a single sample. Then name every key you filled in that way:
+
+```json
+"start_hour": 8.0, "prefast_hours": 10, "assumed": ["start_hour", "prefast_hours"]
+```
+
+A key is stated when the paper gives its value in words or numbers ("a 10-hour
+fast", "at 08:00", "samples were drawn for 240 min"). Anything else is assumed,
+however reasonable. The second reader checks this list against the paper as
+closely as the numbers, and the gate prints it. Do not assume a meal, a dose or
+an intensity: if the paper does not report what the subjects ate or were given,
+the protocol cannot be written (leave those findings out, or refuse with kind
+`input`).
 
 Optional inputs, each `{"segments": [{"from_min", "to_min", "level"}, ...]}` (and
 `"unit"` where shown). Outside the segments an input is at its baseline.
@@ -316,7 +347,9 @@ of kind `input`. Do not approximate it with something else.
   loader converts. Do not convert by hand; do not round.
 * `location.where` names the table, figure or section; `location.quote` is the
   reported text with the number in it, copied. A second reader will check every
-  number against this quote.
+  number against this quote. For a table, quote the row's label and the cell,
+  separated by ` | ` (`"Glucose, mg/dL | 85.1 ± 2.8"`), and name the column in
+  `where`.
 * `window` is minutes from the start of the arm, `start_min <= t < end_min`, and must
   lie inside `duration_min`.
 * An optional `unusual_value_ok: "<reason>"` waives the check that a level lies in a
@@ -339,6 +372,10 @@ of kind `input`. Do not approximate it with something else.
 | `correlation` | Pearson r, across people, of the window mean with `partner` | 1 | unit `r` | `n_only`, `sem`, `ci` |
 | `curve` | the marker at several timepoints | 1 | per point | per point: `sd`, `sem`, `ci`, `range` |
 
+* Every statistic is taken **per person and then averaged over people**. So
+  `peak_value` is the mean of each subject's own highest value (what papers call
+  the peak or Cmax), wherever in the window it fell. The highest point of the
+  mean curve is a different and smaller number: enter the mean curve as a `curve`.
 * `ratio_increments` also takes `baseline_window` (the run-in, ending before `window`
   starts). It is for "incremental area under the curve" comparisons, where the fasting
   level must cancel.
@@ -548,7 +585,8 @@ Exit 0 means admitted. The gate checks, and names the check that failed:
    structure, never to widen a sigma. Acknowledging a conflict that does not exist is
    refused.
 
-It then says whether the paper is **sealed** (held out of training) or trains.
+It then lists what each protocol `assumed`, and says whether the paper is
+**sealed** (held out of training) or trains.
 
 The gate uses only the untrained model and never prints how well any model fits a
 finding. A finding is not better for agreeing with the model, and a paper is never to be
@@ -566,6 +604,17 @@ used.
 * IV glucose in g/kg is a `glucose_bolus`; per minute is a `glucose_infusion`.
 * The clamp's glucose infusion rate is the marker `glucose_infusion_rate` (mg/kg/min).
 * Fasting studies: set `prefast_hours`. A "morning after an overnight fast" is about 10.
+  A sample after 72 hours without food is a short arm with `prefast_hours: 72`, not
+  a three-day arm: the person is spun up through a normal fed day and then fasted
+  that long.
+* `glucose` is blood (plasma) glucose. A glucose sensor reads interstitial fluid:
+  leave its numbers out.
+* An uncertainty printed as zero (`0.1 ± 0.0`) is a rounded number, not a
+  measurement without error. Leave that number out.
+* If the unit as printed converts to an absurd value (adrenaline in ng/mL), the paper
+  has probably misprinted it. Leave the number out; do not correct the paper.
+* When a table does not say when a baseline value was drawn, enter it on a fasted
+  morning and put `duration_min` in `assumed`.
 * A number read only at minute 0 fails check 4: minute 0 is the state the protocol
   starts from, and training does not differentiate through how it got there. Give a
   baseline as the mean over a run-in (start the protocol 30 minutes before the load

@@ -34,7 +34,11 @@
       "duration_min": 60,
       "start_hour": 8.0,
       "meals": [],
-      "prefast_hours": 12.0
+      "prefast_hours": 12.0,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
     },
     {
       "name": "fast_72h",
@@ -42,7 +46,11 @@
       "duration_min": 60,
       "start_hour": 8.0,
       "meals": [],
-      "prefast_hours": 72.0
+      "prefast_hours": 72.0,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
     }
   ],
   "findings": [

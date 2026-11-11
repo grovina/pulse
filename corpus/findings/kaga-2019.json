@@ -13,7 +13,12 @@
     "n": 49,
     "sex": "male",
     "age_years": null,
-    "bmi": {"mean": 23.1, "sd": 1.0, "min": null, "max": null},
+    "bmi": {
+      "mean": 23.1,
+      "sd": 1.0,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
     "description": "Apparently healthy nonobese Japanese men, BMI 21.0 to <25.0 kg/m2, no cardiometabolic risk factors."
   },
@@ -24,7 +29,12 @@
       "duration_min": 30,
       "start_hour": 8.0,
       "meals": [],
-      "prefast_hours": 10
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
     }
   ],
   "findings": [
@@ -33,36 +43,72 @@
       "description": "Fasting plasma glucose, all subjects",
       "marker": "glucose",
       "statistic": "mean_in_window",
-      "protocols": ["fasting_before_clamp"],
-      "window": {"start_min": 0, "end_min": 30},
+      "protocols": [
+        "fasting_before_clamp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
       "value": 93.2,
       "unit": "mg/dL",
-      "uncertainty": {"kind": "sd", "value": 6.8, "n": 49},
-      "location": {"where": "Table 1, row FPG, Overall", "quote": "FPG, mg/dL | 93.2 ± 6.8 | 94.7 ± 6.7 | 91.7 ± 6.7 | 0.123"}
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.8,
+        "n": 49
+      },
+      "location": {
+        "where": "Table 1, row FPG, Overall",
+        "quote": "FPG, mg/dL | 93.2 ± 6.8 | 94.7 ± 6.7 | 91.7 ± 6.7 | 0.123"
+      }
     },
     {
       "id": "fasting_insulin",
       "description": "Fasting serum insulin, all subjects",
       "marker": "insulin",
       "statistic": "mean_in_window",
-      "protocols": ["fasting_before_clamp"],
-      "window": {"start_min": 0, "end_min": 30},
+      "protocols": [
+        "fasting_before_clamp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
       "value": 4.9,
       "unit": "μU/mL",
-      "uncertainty": {"kind": "sd", "value": 2.1, "n": 49},
-      "location": {"where": "Table 1, row Fasting serum insulin, Overall", "quote": "Fasting serum insulin, μU/mL | 4.9 ± 2.1 | 4.15 ± 1.83 | 5.67 ± 2.02 | 0.008"}
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.1,
+        "n": 49
+      },
+      "location": {
+        "where": "Table 1, row Fasting serum insulin, Overall",
+        "quote": "Fasting serum insulin, μU/mL | 4.9 ± 2.1 | 4.15 ± 1.83 | 5.67 ± 2.02 | 0.008"
+      }
     },
     {
       "id": "fasting_ffa",
       "description": "Fasting free fatty acids, all subjects",
       "marker": "ffa",
       "statistic": "mean_in_window",
-      "protocols": ["fasting_before_clamp"],
-      "window": {"start_min": 0, "end_min": 30},
+      "protocols": [
+        "fasting_before_clamp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
       "value": 335,
       "unit": "μEq/L",
-      "uncertainty": {"kind": "sd", "value": 105, "n": 49},
-      "location": {"where": "Table 1, row FFAs, Overall", "quote": "FFAs, μEq/L | 335 ± 105 | 317.4 ± 112.0 | 353.8 ± 96.8 | 0.231"}
+      "uncertainty": {
+        "kind": "sd",
+        "value": 105,
+        "n": 49
+      },
+      "location": {
+        "where": "Table 1, row FFAs, Overall",
+        "quote": "FFAs, μEq/L | 335 ± 105 | 317.4 ± 112.0 | 353.8 ± 96.8 | 0.231"
+      }
     }
   ]
 }

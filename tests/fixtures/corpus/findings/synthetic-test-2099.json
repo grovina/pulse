@@ -33,14 +33,16 @@
           "fat_g": 0.0,
           "protein_g": 0.0
         }
-      ]
+      ],
+      "assumed": []
     },
     {
       "name": "fasting",
       "description": "the same morning with water only",
       "duration_min": 120,
       "start_hour": 8.0,
-      "meals": []
+      "meals": [],
+      "assumed": []
     },
     {
       "name": "iv_bolus",
@@ -52,7 +54,8 @@
         "dose_g_per_kg": 0.3,
         "start_min": 0,
         "over_min": 2
-      }
+      },
+      "assumed": []
     }
   ],
   "findings": [

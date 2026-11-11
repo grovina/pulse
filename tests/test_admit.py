@@ -76,6 +76,15 @@ def test_the_fixture_is_admitted_on_the_untrained_student(full_run):
     assert full_run.items == 2 and full_run.sealed is False
 
 
+def test_it_lists_what_the_reader_assumed(root, stub_rollouts):
+    data = _data()
+    assert "assumed by the reader" not in format_admission(admit(_put(root, data), root=root))
+    first = data["protocols"][0]
+    first["assumed"] = ["start_hour"]
+    text = format_admission(admit(_put(root, data), root=root))
+    assert f"assumed by the reader, not stated by the paper:\n  {first['name']}: start_hour" in text
+
+
 def test_it_reports_whether_the_paper_is_sealed(root, stub_rollouts):
     data = _data()
     data["paper"], data["citation"]["year"], data["citation"]["doi"] = "synthetic-test-2104", 2104, "10.0000/s.2104"

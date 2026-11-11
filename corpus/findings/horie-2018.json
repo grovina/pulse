@@ -39,7 +39,11 @@
       ],
       "population": {
         "sex": "male"
-      }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
     },
     {
       "name": "ogtt_female",
@@ -57,7 +61,11 @@
       ],
       "population": {
         "sex": "female"
-      }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
     }
   ],
   "findings": [

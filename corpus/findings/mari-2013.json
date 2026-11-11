@@ -41,6 +41,9 @@
           "fat_g": 0.0,
           "protein_g": 0.0
         }
+      ],
+      "assumed": [
+        "start_hour"
       ]
     },
     {
@@ -56,6 +59,9 @@
           "fat_g": 0.0,
           "protein_g": 0.0
         }
+      ],
+      "assumed": [
+        "start_hour"
       ]
     },
     {
@@ -71,6 +77,9 @@
           "fat_g": 0.0,
           "protein_g": 0.0
         }
+      ],
+      "assumed": [
+        "start_hour"
       ]
     }
   ],

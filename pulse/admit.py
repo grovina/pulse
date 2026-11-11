@@ -94,6 +94,8 @@ class Admission:
     sealed: bool | None = None
     sealed_note: str = ""
     items: int = 0
+    # (protocol, keys) for each protocol with values the paper does not state
+    assumed: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -465,16 +467,17 @@ def admit(
         return Admission(kind, paper, (*base_checks, filing_check), sealed if kind == "queue" else None,
                          note if kind == "queue" else "")
     assert isinstance(parsed, Finding)
+    assumed = tuple((name, keys) for name, keys in parsed.assumed.items() if keys)
     if filing:
         return Admission(
             kind, paper, (*base_checks, filing_check, *_skip(("runs", "gradient", "conflicts"))),
-            sealed, note, len(parsed.items),
+            sealed, note, len(parsed.items), assumed,
         )
     runs, gradient = _on_one_thread(_run_checks, parsed, device, fed_day_minutes)
     conflicts = _conflict_check(parsed)
     return Admission(
         kind, paper, (*base_checks, filing_check, runs, gradient, conflicts), sealed, note,
-        len(parsed.items),
+        len(parsed.items), assumed,
     )
 
 
@@ -487,6 +490,9 @@ def format_admission(result: Admission) -> str:
         lines.append(f"  {mark}  {c.label}")
         if not c.ok and not c.skipped:
             lines.extend(f"        - {r}" for r in c.reasons)
+    if result.assumed:
+        lines.append("assumed by the reader, not stated by the paper:")
+        lines.extend(f"  {name}: {', '.join(keys)}" for name, keys in result.assumed)
     if result.sealed is not None:
         lines.append(f"sealed: {'yes' if result.sealed else 'no'} ({result.sealed_note})")
     lines.append("admitted" if result.ok else "not admitted")

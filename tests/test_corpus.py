@@ -183,7 +183,7 @@ def test_a_file_never_states_sigma_n_arm_weight_shape_or_sealed():
 @pytest.mark.parametrize("path, key", [
     ([], "citation"), ([], "population"), ([], "protocols"), ([], "findings"),
     (["citation"], "title"), (["population"], "n"), (["population"], "age_years"),
-    (["protocols", 0], "meals"), (["protocols", 0], "start_hour"),
+    (["protocols", 0], "meals"), (["protocols", 0], "start_hour"), (["protocols", 0], "assumed"),
     (["findings", 0], "location"), (["findings", 0], "uncertainty"), (["findings", 0], "unit"),
     (["findings", 0], "window"), (["findings", 0, "uncertainty"], "n"),
     (["findings", 0, "location"], "quote"),
@@ -320,13 +320,37 @@ def test_protocol_references_are_checked():
     assert any("declared twice" in p for p in _problems(data))
 
 
+def test_a_protocol_names_the_keys_the_paper_does_not_state():
+    data = _data()
+    data["protocols"][0]["assumed"] = ["start_hour", "duration_min"]
+    finding = parse_finding(data)
+    name = data["protocols"][0]["name"]
+    assert finding.assumed[name] == ("start_hour", "duration_min")
+    assert all(not keys for other, keys in finding.assumed.items() if other != name)
+
+
+@pytest.mark.parametrize("assumed, fragment", [
+    ("start_hour", "not a list"),
+    (["start_hour", 3], "not a list"),
+    (["prefast_hours"], "not one of its keys"),   # the fixture's first protocol does not state it
+    (["name"], "not one of its keys"),
+    (["clock"], "not one of its keys"),
+    (["start_hour", "start_hour"], "repeats"),
+])
+def test_assumed_names_only_keys_the_protocol_states(assumed, fragment):
+    data = _data()
+    assert "prefast_hours" not in data["protocols"][0]
+    data["protocols"][0]["assumed"] = assumed
+    assert any("assumed" in p and fragment in p for p in _problems(data))
+
+
 def test_windows_must_fit_the_arm():
     data = _data()
     _finding(data, "ogtt_glucose_peak")["window"] = {"start_min": 0, "end_min": 121}
     assert any("duration_min" in p for p in _problems(data))
     data = _data()
     _finding(data, "ogtt_insulin_curve")["points"][3]["t_min"] = 120
-    assert any("after the arm ends" in p for p in _problems(data))
+    assert any("needs duration_min 121" in p for p in _problems(data))
     data = _data()
     _finding(data, "insulin_increment_ogtt_over_bolus")["baseline_window"] = {"start_min": 0, "end_min": 30}
     assert any("baseline" in p for p in _problems(data))
