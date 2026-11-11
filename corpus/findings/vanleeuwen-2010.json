@@ -279,10 +279,10 @@
       }
     },
     {
-      "what": "changes expressed as percent of each person's own baseline (Results 3.2, 3.3)",
+      "what": "changes expressed as percent of each person's own baseline (Results 3.2, 3.3): not a difference in the marker's unit",
       "missing": {
         "kind": "operator",
-        "name": "change_from_baseline"
+        "name": "percent_change"
       }
     }
   ]

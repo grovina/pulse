@@ -201,10 +201,10 @@
       }
     },
     {
-      "what": "After/before % and Cohen d columns of Table 2",
+      "what": "After/before % and Cohen d columns of Table 2: a percentage of each person's own value and a standardized effect, not a difference in the marker's unit",
       "missing": {
         "kind": "operator",
-        "name": "change_from_baseline"
+        "name": "percent_change"
       }
     },
     {

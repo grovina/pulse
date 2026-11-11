@@ -343,17 +343,17 @@
       }
     },
     {
-      "what": "areas under the curve over 36 h per condition and their differences, for all hormones (Table 3, Results 'Area under the curve')",
+      "what": "areas under the curve over 36 h per condition and their differences, for all hormones (Table 3, Results 'Area under the curve'): printed in 'pg/mL2' and pg/mL, with no time unit; the areas also start at the 0 h sample, drawn before the standardized meal in people who had eaten as they pleased",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "unit_not_printed"
       }
     },
     {
-      "what": "energy expended in the exercise bout as a total in kcal (Results, first paragraph); a total over each person's own bout length, not a rate",
+      "what": "energy expended in the exercise bout as a total in kcal (Results, first paragraph): a total over each person's own bout length, which an area over stated minutes cannot say",
       "missing": {
         "kind": "operator",
-        "name": "single_arm_auc"
+        "name": "total_over_own_duration"
       }
     }
   ]

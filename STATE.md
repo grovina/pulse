@@ -123,10 +123,12 @@ checkpoint has been scored by it yet.
   `area_under_curve` and `incremental_area`; an area is carried as its
   time-weighted mean over the paper's own sample minutes, and an incremental
   area whose paper does not say what it does under baseline is entered as
-  `unstated` and held to the nearer of the two readings. No committed file
-  uses them yet. `--missing` counts the gaps they close under their old names:
-  `single_arm_auc` in 8 papers, `single_arm_incremental_auc` in 5 (one of them
-  the refusal `lindgren-2020`) and `change_from_baseline` in 4.
+  `unstated` and held to the nearer of the two readings. Six papers use them:
+  8 changes, 4 areas and 38 incremental areas, 26 of them `unstated`
+  (`atkinson-2020`, which trains, and `lindgren-2020`, which is sealed). No
+  `left_out` entry names one of the three as missing any more: an area that is
+  still out lacks its sampling minutes, its time unit or a writable arm in the
+  paper itself.
 - One item is a spread across people and none is a correlation. Every
   population is healthy adults.
 - About 50 items cite several papers; the first is taken as the paper.

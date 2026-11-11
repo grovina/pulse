@@ -192,10 +192,10 @@
       }
     },
     {
-      "what": "AUC of glucose, insulin, C-peptide, GIP, GLP-1 and glucagon over the meal test, healthy controls (Table 3)",
+      "what": "AUC of glucose, insulin, C-peptide, GIP, GLP-1 and glucagon over the meal test, healthy controls (Table 3): the meal arm cannot be written (10 kcal/kg with no body weight printed, see the entry above)",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "input_not_printed"
       }
     },
     {

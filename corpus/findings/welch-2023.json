@@ -129,10 +129,10 @@
       }
     },
     {
-      "what": "Incremental (AAB) integrated insulin and C-peptide over the first 30 min of hyperglycemia (Figure 3)",
+      "what": "Incremental (AAB) integrated insulin and C-peptide over the first 30 min of hyperglycemia: in Figure 3 only",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_incremental_auc"
+        "kind": "source",
+        "name": "figure_only"
       }
     },
     {

@@ -199,10 +199,10 @@
       }
     },
     {
-      "what": "24 h plasma glucose AUC per diet (Results text, 7276.1 vs 7664.6, unit printed as mmol/L)",
+      "what": "24 h plasma glucose AUC per diet (Results text, 7276.1 vs 7664.6): the unit is printed as mmol/L, with no time unit",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "unit_not_printed"
       }
     },
     {
