@@ -397,7 +397,7 @@ protocol must be used by at least one finding.
 | `start_hour` | clock hour at minute 0 (8.0 is 08:00); the model has a circadian clock |
 | `meals` | list of `{"t_min", "carbs_g", "fat_g", "protein_g"}`; `[]` for none. An oral glucose load is carbs only. |
 | `assumed` | the keys of this protocol whose values **the paper does not state**; `[]` if it states them all. Below. |
-| `prefast_hours` | optional: hours already fasted when the arm starts (overnight is about 10) |
+| `prefast_hours` | optional: hours since the last meal when the arm starts (overnight is about 10); the nights in it are slept, 23:00 to 07:00 |
 | `init` | optional: `cold` (default; the person is spun up through a normal fed day, then fasted `prefast_hours`) or `norm_center` (start from typical values; use when the paper's subjects were not in a clean fasted state) |
 | `population` | optional override, above |
 

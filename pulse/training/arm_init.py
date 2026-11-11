@@ -115,28 +115,63 @@ def _asleep(clock_hour: torch.Tensor) -> torch.Tensor:
     return (clock_hour >= SLEEP_START_HOUR) | (clock_hour < SLEEP_END_HOUR)
 
 
+_DAY = 24.0 * 60.0
+
+
+def _minutes_before(hour: float, clock_minute: float) -> float:
+    """How long before ``clock_minute`` the clock last (or next) read ``hour``, in
+    ``(-720, 720]`` minutes: positive when the nearer occurrence is the earlier one."""
+    gap = (clock_minute - hour * 60.0) % _DAY
+    return gap if gap <= _DAY / 2 else gap - _DAY
+
+
 def _spinup_protocol(
     arm: CohortArmSpec, fed: int, device: torch.device,
 ) -> tuple[int, float, list[MealEvent], torch.Tensor]:
     """The spin-up an arm starts from: ``(minutes, start clock in minutes, meals, sleep_wake)``.
 
     The arm begins at ``arm.start_hour``, so the spin-up begins that long earlier. It is
-    ``fed`` minutes of the standard fed day (three meals, asleep 23:00-07:00) and then
-    ``arm.prefast_hours`` of meal-free rest, awake.
+    ``fed`` minutes of the standard fed day (three meals on the clock) and then
+    ``arm.prefast_hours`` without food, asleep 23:00-07:00 throughout.
+
+    A pre-fast begins with a meal, so that ``prefast_hours`` is the time since food, as a
+    paper means it: the day's meal whose clock hour is nearest the start of the pre-fast is
+    eaten at that start. If that meal's hour had just passed it is moved (a dinner at 22:00
+    for ten hours' fast before 08:00, not at 19:00); if it was still to come it is eaten
+    early (a breakfast at 05:00 for three). An arm with no pre-fast starts from the day as
+    the clock has it.
     """
     pre = int(round(float(arm.prefast_hours) * 60.0))
     total = fed + pre
     start_hour = (float(arm.start_hour) - total / 60.0) % 24.0
+    start = start_hour * 60.0
+    last: tuple[float, float, float, float] | None = None
+    moved_from: float | None = None
+    if pre > 0 and fed > 0:
+        fast_begins = start + fed
+        last = min(
+            FED_DAY_MEALS,
+            key=lambda m: (abs(_minutes_before(m[0], fast_begins)), -_minutes_before(m[0], fast_begins)),
+        )
+        gap = _minutes_before(last[0], fast_begins)
+        if gap > 0:
+            moved_from = fed - gap
     meals: list[MealEvent] = []
-    for hour, carbs, fats, proteins in FED_DAY_MEALS:
-        minute = (hour * 60.0 - start_hour * 60.0) % (24.0 * 60.0)
-        if minute < fed:
-            meals.append(MealEvent(time=float(minute), carbs=carbs, fats=fats, proteins=proteins))
+    for meal in FED_DAY_MEALS:
+        hour, carbs, fats, proteins = meal
+        minute = (hour * 60.0 - start) % _DAY
+        while minute < fed:
+            if not (meal is last and moved_from is not None and abs(minute - moved_from) < 0.5):
+                meals.append(MealEvent(time=float(minute), carbs=carbs, fats=fats, proteins=proteins))
+            minute += _DAY
+    if last is not None:
+        _hour, carbs, fats, proteins = last
+        meals.append(MealEvent(time=float(fed), carbs=carbs, fats=fats, proteins=proteins))
+    meals.sort(key=lambda m: m.time)
     minutes = torch.arange(total, dtype=torch.float64, device=device)
     clock = (start_hour + minutes / 60.0) % 24.0
-    fed_sleep = torch.where(_asleep(clock), 0.0, 1.0)
-    sleep = torch.where(minutes < fed, fed_sleep, ARM_DEFAULT_SLEEP_WAKE).to(torch.float32)
-    return total, start_hour * 60.0, meals, sleep
+    sleep = torch.where(_asleep(clock), 0.0, 1.0).to(torch.float32)
+    return total, start, meals, sleep
 
 
 def student_initial_states_for_rows(

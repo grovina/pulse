@@ -43,6 +43,17 @@ board at the end of each phase, and `--deadline-hours` stops it cleanly
 before the job's timeout. No run has used any of this yet: the recipe is
 unchanged, and the numbers below are from before.
 
+An arm's pre-fast now begins with a meal and its nights are slept
+(`pulse/training/arm_init.py`); before, the last meal was the fed day's 19:00
+dinner whatever the pre-fast, and the pre-fast was spent awake. No checkpoint
+has trained from these start states. Measured on iter 114's median person:
+at 08:00 after a 10-hour fast (food 10 h ago, not 13) insulin starts at 5.7
+µU/mL where it was 6.3 and β-hydroxybutyrate 13% higher; at 12:00 after a
+4-hour fast (food 4 h ago, not 17) glucose starts at 101 mg/dL where it was
+83 and insulin at 19 µU/mL where it was 8.6. An arm with no pre-fast is
+unchanged. Every file in `corpus/findings/` still passes the gate from the
+new start states.
+
 Measured on iter 115's log (2026-10-31 to 2026-11-03):
 
 - An epoch with the literature takes 3 to 3.7 h for 40 steps. The 160
@@ -162,15 +173,6 @@ checkpoint has been scored by it yet.
   12 µg/dL, not the person's own basal cortisol, which the stress module
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
   for a person away from the median.
-
-- `prefast_hours` is counted from the end of the spin-up's fed day, not from
-  its last meal, which is at 19:00 (`pulse/training/arm_init.py`). An arm at
-  08:00 with a 10-hour pre-fast starts 13 hours after food. One with a 3-hour
-  pre-fast also starts 13 hours after food: there is no breakfast in it.
-- The pre-fast is spent awake (same function). An arm at 08:00 after an
-  overnight fast starts from a night without sleep, and one after a 72-hour
-  fast from three. Most findings read from papers are morning values after an
-  overnight fast, so this is the state most of the corpus is scored in.
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 

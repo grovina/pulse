@@ -212,8 +212,9 @@ def test_cohort_spinup_is_the_students_fed_day_then_the_prefast(monkeypatch) -> 
     assert seen["n"] == 1440 + 12 * 60
     # The spin-up ends at 08:00.
     assert seen["start"] / 60.0 == pytest.approx((8.0 - (1440 + 12 * 60) / 60.0) % 24.0)
+    # Twelve hours before 08:00 is 20:00, so the dinner is eaten then and not at 19:00.
     meal_clocks = sorted((seen["start"] / 60.0 + minute / 60.0) % 24.0 for minute, _c in seen["meals"])
-    assert meal_clocks == pytest.approx([8.0, 13.0, 19.0])
+    assert meal_clocks == pytest.approx([8.0, 13.0, 20.0])
     codes.requires_grad_(True)
     spun = student_initial_states(model, codes, arm, fed_day_minutes=30)
     assert spun.grad_fn is None

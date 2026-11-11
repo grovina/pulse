@@ -32,7 +32,7 @@ FED_DAY_MEALS: tuple[tuple[float, float, float, float], ...] = (
     (13.0, 90.0, 30.0, 35.0),
     (19.0, 80.0, 25.0, 30.0),
 )
-# Asleep from 23:00 to 07:00 on that day. The pre-fast after it is awake.
+# Asleep from 23:00 to 07:00, on that day and through the pre-fast after it.
 SLEEP_START_HOUR = 23.0
 SLEEP_END_HOUR = 7.0
 

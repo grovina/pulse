@@ -239,16 +239,51 @@ def test_spinup_rows_match_arm_by_arm() -> None:
     assert not torch.allclose(together[0][0], together[2][0])
 
 
-def test_the_fed_day_clock_is_asleep_from_23_to_07_then_awake_for_the_prefast() -> None:
-    arm = _arm("a", 60, start_hour=8.0, prefast_hours=2.0)
-    total, start_min, meals, sleep = arm_init._spinup_protocol(arm, 1440, torch.device("cpu"))
-    assert total == 1440 + 120 and start_min == pytest.approx(((8.0 - total / 60.0) % 24.0) * 60.0)
-    start_hour = start_min / 60.0
+def test_the_spinup_sleeps_from_23_to_07_through_the_prefast() -> None:
+    arm = _arm("a", 60, start_hour=8.0, prefast_hours=10.0)
+    total, start_min, _meals, sleep = arm_init._spinup_protocol(arm, 1440, torch.device("cpu"))
+    assert total == 1440 + 600 and start_min == pytest.approx(22.0 * 60.0)
     want = []
     for minute in range(total):
-        clock = (start_hour + minute / 60.0) % 24.0
-        asleep = clock >= 23.0 or clock < 7.0
-        want.append(1.0 if minute >= 1440 else (0.0 if asleep else 1.0))
+        clock = (22.0 + minute / 60.0) % 24.0
+        want.append(0.0 if (clock >= 23.0 or clock < 7.0) else 1.0)
     assert sleep.tolist() == want
-    assert sorted(((start_hour * 60 + m.time) / 60.0) % 24.0 for m in meals) == pytest.approx(
-        sorted(h for h, *_ in FED_DAY_MEALS))
+    # The night before the arm is slept: 23:00 to 07:00 lie inside the pre-fast.
+    assert float(sleep[1440 + 60:1440 + 540].sum()) == 0.0 and float(sleep[-60:].min()) == 1.0
+
+
+def _spinup_meals(arm, fed: int = 1440) -> list[tuple[float, float, float]]:
+    """``(clock hour, spin-up minute, carbohydrate)`` of each meal, in order."""
+    _total, start_min, meals, _sleep = arm_init._spinup_protocol(arm, fed, torch.device("cpu"))
+    return [(round(((start_min + m.time) / 60.0) % 24.0, 3), m.time, m.carbs) for m in meals]
+
+
+def test_a_prefast_begins_with_the_meal_nearest_its_start() -> None:
+    breakfast, _lunch, dinner = FED_DAY_MEALS
+    # Ten hours before 08:00 is 22:00: the 19:00 dinner is eaten then instead.
+    got = _spinup_meals(_arm("a", 60, start_hour=8.0, prefast_hours=10.0))
+    assert [clock for clock, _t, _c in got] == [8.0, 13.0, 22.0]
+    assert got[-1][1:] == (1440.0, dinner[1])
+    # Three hours before 08:00 is 05:00: the breakfast still to come is eaten early,
+    # and the day before it keeps its three meals.
+    got = _spinup_meals(_arm("a", 60, start_hour=8.0, prefast_hours=3.0))
+    assert [clock for clock, _t, _c in got] == [8.0, 13.0, 19.0, 5.0]
+    assert got[-1][1:] == (1440.0, breakfast[1])
+    # Thirteen hours before 08:00 is 19:00, the dinner's own hour: yesterday's stays.
+    got = _spinup_meals(_arm("a", 60, start_hour=8.0, prefast_hours=13.0))
+    assert [(clock, t) for clock, t, _c in got] == [
+        (19.0, 0.0), (8.0, 780.0), (13.0, 1080.0), (19.0, 1440.0),
+    ]
+    # Whatever the clock, the last meal is prefast_hours before the arm.
+    for start_hour, pre in ((8.0, 10.0), (23.0, 1.5), (8.0, 72.0), (15.0, 8.0), (12.0, 4.0)):
+        arm = _arm("a", 60, start_hour=start_hour, prefast_hours=pre)
+        total, _start, meals, _sleep = arm_init._spinup_protocol(arm, 1440, torch.device("cpu"))
+        assert total - max(m.time for m in meals) == pytest.approx(pre * 60.0)
+
+
+def test_an_arm_with_no_prefast_starts_from_the_day_on_its_clock() -> None:
+    got = _spinup_meals(_arm("a", 60, start_hour=8.0))
+    assert sorted(clock for clock, _t, _c in got) == sorted(h for h, *_ in FED_DAY_MEALS)
+    assert max(t for _clock, t, _c in got) < 1440
+    # A fed day of no length has no meal in it, pre-fast or not.
+    assert _spinup_meals(_arm("a", 60, start_hour=8.0, prefast_hours=10.0), fed=0) == []
