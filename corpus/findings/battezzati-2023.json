@@ -1,0 +1,424 @@
+{
+  "paper": "battezzati-2023",
+  "citation": {
+    "authors": "Battezzati A, Foppiani A, Leone A, et al.",
+    "title": "Acute Insulin Secretory Effects of a Classic Ketogenic Meal in Healthy Subjects: A Randomized Cross-Over Study",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15051119",
+    "pmid": "36904127",
+    "pmcid": "PMC10005334"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 19.0,
+      "max": 31.0
+    },
+    "bmi": {
+      "mean": null,
+      "sd": null,
+      "min": 19.7,
+      "max": 24.7
+    },
+    "status": "healthy",
+    "description": "Twelve healthy normal-weight students (50% female), age range 19-31 y, BMI range 19.7-24.7 kg/m2; age and BMI are given as median (IQR) in Table 1 so mean and SD are null."
+  },
+  "protocols": [
+    {
+      "name": "med",
+      "description": "Mediterranean mixed meal (sandwich) at 09:00 after at least 12 h fast; ~40% of daily energy need; carbohydrate 136.4 g is printed, fat and protein grams are computed from the printed 27.0% and 17.6% of energy and the printed median energy of 951 kcal (9 and 4 kcal/g)",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 136.4,
+          "fat_g": 28.5,
+          "protein_g": 41.8
+        }
+      ],
+      "assumed": [
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "keto",
+      "description": "Ketogenic meal (mascarpone, hazelnuts, cocoa; 4:1) at 09:00 after at least 12 h fast; isocaloric with the Mediterranean meal; carbohydrate 7.0 g is printed, fat and protein grams are computed from the printed 89.5% and 7.1% of energy and the printed median energy of 950 kcal (9 and 4 kcal/g)",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 7.0,
+          "fat_g": 94.5,
+          "protein_g": 16.9
+        }
+      ],
+      "assumed": [
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "med_glucose_curve",
+      "description": "Plasma glucose after the mediterranean meal, mean and standard error",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "med"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 85.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 10,
+          "value": 106.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 20,
+          "value": 110.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 96.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 78.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 80.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 83.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 78.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, glucose rows, Mediterranean (columns 0-180 min; footnote: Mean ± SE)",
+        "quote": "Mediterranean | 85 ± 2 | 106 ± 4 | 110 ± 5 | 96 ± 6 | 78 ± 5 | 80 ± 4 | 83 ± 4 | 78 ± 4"
+      }
+    },
+    {
+      "id": "keto_glucose_curve",
+      "description": "Plasma glucose after the ketogenic meal, mean and standard error",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "keto"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 88.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 10,
+          "value": 88.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 20,
+          "value": 86.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 85.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 79.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 82.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 82.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 86.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 12
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, glucose rows, Ketogenic (columns 0-180 min; footnote: Mean ± SE)",
+        "quote": "Ketogenic | 88 ± 2 | 88 ± 3 | 86 ± 3 | 85 ± 3 | 79 ± 3 | 82 ± 2 | 82 ± 2 | 86 ± 2"
+      }
+    },
+    {
+      "id": "med_insulin_curve",
+      "description": "Plasma insulin after the mediterranean meal, mean and standard error",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "med"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 40.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 10,
+          "value": 325.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 54.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 20,
+          "value": 497.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 101.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 469.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 88.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 293.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 41.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 314.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 46.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 299.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 38.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 190.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 23.0,
+            "n": 12
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, insulin rows, Mediterranean (columns 0-180 min; footnote: Mean ± SE)",
+        "quote": "Mediterranean | 40 ± 4 | 325 ± 54 | 497 ± 101 | 469 ± 88 | 293 ± 41 | 314 ± 46 | 299 ± 38 | 190 ± 23"
+      }
+    },
+    {
+      "id": "keto_insulin_curve",
+      "description": "Plasma insulin after the ketogenic meal, mean and standard error",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "keto"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 44.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 10,
+          "value": 67.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 11.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 20,
+          "value": 86.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 10.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 88.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 12.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 71.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 63.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 8.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 55.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 48.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.0,
+            "n": 12
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, insulin rows, Ketogenic (columns 0-180 min; footnote: Mean ± SE)",
+        "quote": "Ketogenic | 44 ± 5 | 67 ± 11 | 86 ± 10 | 88 ± 12 | 71 ± 6 | 63 ± 8 | 55 ± 5 | 48 ± 4"
+      }
+    }
+  ]
+}
