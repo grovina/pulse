@@ -192,9 +192,10 @@ meal, overnight fast → challenge); `NORM_CENTER` for protocols that
 should start at a typical fed/awake state.
 
 **Choosing `window` and `kind`:** `kind` is one of the
-`StatisticKind` enum values (`PEAK_VALUE`, `MEAN_VALUE`,
-`AUC_OVER_BASELINE`, etc.); `window` is the time range over which to
-compute it, both relative to start of the arm.
+`StatisticKind` enum values (`PEAK_VALUE`, `MEAN_IN_WINDOW`,
+`CHANGE_FROM_BASELINE`, `AREA_UNDER_CURVE`, and the rest: the statistics
+table of `corpus/README.md` says what each computes); `window` is the time
+range over which to compute it, relative to the start of the arm.
 
 **Cost:** ~5 minutes per spec. **Power:** strong amplitude pull on
 whichever module owns the marker. Use *highly-cited, quantitative*

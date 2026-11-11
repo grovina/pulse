@@ -18,6 +18,10 @@ and says which check failed:
 It also says whether the paper is sealed (held out of training). Exit 0 when
 admitted, 1 otherwise.
 
+``--paper <full text>`` adds a check that needs the paper, which the repository
+does not hold: that each quote in the file is in it (``knowledge/corpus_quotes.py``).
+A reader runs the gate this way; a file is committed only after it passed so.
+
 The gate uses only the untrained student, never a checkpoint, and prints nothing
 about how well any model fits a finding: not a residual, not a prediction, not a
 loss. Nobody should be able to drop a paper because it scores badly. Check 4
@@ -67,6 +71,7 @@ _LABELS = {
     "units": "units are listed and values plausible",
     "place": "each number has a place in the paper",
     "uncertainty": "each uncertainty is of a stated kind",
+    "quotes": "each quote is in the paper",
     "filing": "the paper is filed once",
     "runs": "each protocol runs on the untrained student",
     "gradient": "each finding moves when the parameters move",
@@ -80,10 +85,11 @@ class Check:
     ok: bool
     reasons: tuple[str, ...] = ()
     skipped: bool = False
+    note: str = ""  # said beside the label of a check that passed
 
     @property
     def label(self) -> str:
-        return _LABELS[self.name]
+        return _LABELS[self.name] + (f" ({self.note})" if self.note and self.ok else "")
 
 
 @dataclass(frozen=True)
@@ -439,16 +445,37 @@ def _group(problems: list[Problem]) -> list[Check]:
     ]
 
 
+def _quotes_check(parsed, paper_file: Path) -> Check:
+    """Each quote of a finding or a refusal against the paper's full text."""
+    from .knowledge.corpus_quotes import FOUND, MISSING, check_quotes, read_paper
+
+    try:
+        paper = read_paper(paper_file)
+    except OSError as err:
+        return Check("quotes", False, (f"cannot read the paper: {err}",))
+    if isinstance(parsed, Finding):
+        quotes = [(item.id, item.location.quote) for item in parsed.items]
+    else:
+        quotes = [(r.what[:60], r.location.quote) for r in parsed.reported]
+    verdicts = check_quotes(quotes, paper)
+    missing = tuple(f"{v.label}: {v.reason}" for v in verdicts if v.verdict == MISSING)
+    word_for_word = sum(v.verdict == FOUND for v in verdicts)
+    note = f"{word_for_word} word for word, {len(verdicts) - word_for_word} by their numbers"
+    return Check("quotes", not missing, missing, note=note)
+
+
 def _skip(names: tuple[str, ...]) -> list[Check]:
     return [Check(n, False, ("not run: an earlier check failed",), skipped=True) for n in names]
 
 
 def admit(
     path: Path, *, kind: str | None = None, root: Path | None = None, device: str = "cpu",
-    fed_day_minutes: int | None = None,
+    fed_day_minutes: int | None = None, paper_file: Path | None = None,
 ) -> Admission:
     """Run the gate on ``path``. ``kind`` is ``"finding"`` or ``"refusal"``; when
-    omitted it is read from the directory the file sits in."""
+    omitted it is read from the directory the file sits in. ``paper_file`` is the
+    paper's full text, for the check that each quote is in it; a queue item has no
+    quotes, so there it is not read."""
     path = Path(path)
     root = root or corpus_root()
     kind = kind or {"findings": "finding", "refusals": "refusal", "queue": "queue"}.get(path.parent.name)
@@ -477,12 +504,14 @@ def admit(
     sealed, note = _sealed(paper)
     filing = _filing_problems(path, paper, set(parsed.identifiers() if kind == "queue" else parsed.citation.identifiers()), root)
     filing_check = Check("filing", not filing, tuple(filing))
+    if paper_file is not None and kind != "queue":
+        base_checks = [*base_checks, _quotes_check(parsed, paper_file)]
     if kind in ("refusal", "queue"):
         return Admission(kind, paper, (*base_checks, filing_check), sealed if kind == "queue" else None,
                          note if kind == "queue" else "")
     assert isinstance(parsed, Finding)
     assumed = tuple((name, keys) for name, keys in parsed.assumed.items() if keys)
-    if filing:
+    if filing or not all(c.ok for c in base_checks):
         return Admission(
             kind, paper, (*base_checks, filing_check, *_skip(("runs", "gradient", "conflicts"))),
             sealed, note, len(parsed.items), assumed,
@@ -551,6 +580,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("path", type=Path, nargs="?", help="corpus/{findings,refusals,queue}/<paper>.json")
     parser.add_argument("--as", dest="kind", choices=("finding", "refusal", "queue"),
                         help="what the file is, when its directory does not say")
+    parser.add_argument("--paper", dest="paper_file", type=Path, metavar="FULL_TEXT",
+                        help="the paper's full text (XML, HTML or plain): also check that each quote is in it")
     parser.add_argument("--refusals", action="store_true", help="count the refusal pile by kind and name")
     parser.add_argument("--missing", action="store_true",
                         help="count refusals and what finding files left out, by the missing piece")
@@ -569,7 +600,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.path is None:
         parser.error("a file is required")
-    result = admit(args.path, kind=args.kind)
+    result = admit(args.path, kind=args.kind, paper_file=args.paper_file)
     print(format_admission(result))
     return 0 if result.ok else 1
 

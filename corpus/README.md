@@ -800,9 +800,13 @@ first and no refusal: a paper is either a finding or a refusal, never both.
 ## Running the gate
 
 ```
-uv run python -m pulse.admit corpus/findings/<paper>.json
-uv run python -m pulse.admit corpus/refusals/<paper>.json
+uv run python -m pulse.admit corpus/findings/<paper>.json --paper <the paper's full text>
+uv run python -m pulse.admit corpus/refusals/<paper>.json --paper <the paper's full text>
 ```
+
+Run it with the paper. The full text (PubMed Central's or the publisher's XML or HTML,
+or plain text) is not kept in this repository, and a test refuses one that is; without
+`--paper` the gate runs every check but the one that needs it.
 
 Exit 0 means admitted. The gate checks, and names the check that failed:
 
@@ -826,6 +830,13 @@ Exit 0 means admitted. The gate checks, and names the check that failed:
    is recorded, not hidden: a real conflict is the signal to change the model's
    structure, never to widen a sigma. Acknowledging a conflict that does not exist is
    refused.
+
+With `--paper` it also checks that **each quote is in the paper**: word for word once
+markup and typography are stripped, or, for a table row quoted as its label and its
+cells, by all of its numbers standing together in the paper. A number the paper nowhere
+prints is named, and the model is not run until the quotes pass. This catches the
+number nobody printed. It does not show that a number was taken from the right row or
+the right group: that is the second reader's work.
 
 It then lists what each protocol `assumed`, and says whether the paper is
 **sealed** (held out of training) or trains.
