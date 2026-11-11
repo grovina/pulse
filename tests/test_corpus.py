@@ -136,11 +136,26 @@ def test_the_population_of_the_paper_becomes_the_arms_population():
     assert arm.population.sex == "male" and arm.population.age == (20.0, 31.0)
     assert arm.population.bmi is None and arm.population.healthy
     data = _data()
-    data["protocols"][1]["population"] = {"sex": "female", "bmi": [30, 40], "status": "unselected"}
+    data["protocols"][1]["population"] = {
+        "sex": "female", "status": "unselected",
+        "age_years": {"mean": 50.0, "sd": 4.0, "min": None, "max": None},
+        "bmi": {"mean": None, "sd": None, "min": 30.0, "max": 40.0},
+    }
     arms = parse_finding(data).protocols
     assert arms["fasting"].population.sex == "female" and arms["fasting"].population.bmi == (30.0, 40.0)
+    assert arms["fasting"].population.age == (42.0, 58.0)
     assert not arms["fasting"].population.healthy
     assert arms["ogtt"].population == read_finding(FINDING).protocols["ogtt"].population
+
+
+def test_an_arms_age_or_bmi_must_give_a_range():
+    data = _data()
+    data["protocols"][1]["population"] = {"bmi": {"mean": 33.0, "sd": None, "min": None, "max": None}}
+    with pytest.raises(CorpusError, match="gives no range"):
+        parse_finding(data)
+    data["protocols"][1]["population"] = {"bmi": [30, 40]}
+    with pytest.raises(CorpusError):
+        parse_finding(data)
 
 
 def test_a_population_with_nothing_set_is_the_reference_prior():

@@ -285,14 +285,22 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   input for: the model has no way to say it. That is a refusal (kind `population`),
   not a finding with the wrong status. Obesity is not a condition here; it is a
   `bmi` range with `unselected`.
-* A protocol can override `sex`, `age_years` (`[lo, hi]`), `bmi` (`[lo, hi]`) or
-  `status` for one arm, when the paper compares groups (lean against obese).
+* A protocol can override `sex`, `age_years`, `bmi` or `status` for one arm, when
+  the paper compares groups (lean against obese, young against old). `age_years`
+  and `bmi` are written as at the top level, with that group's printed numbers
+  (`{"mean": 57.0, "sd": 7.0, "min": null, "max": null}`), and must give a
+  range: `min` and `max`, or `mean` and `sd`.
 * Sex, age and BMI are all the model can be told about a group. Groups the paper
   separates by anything else (insulin-sensitive against insulin-resistant, high
   against low responders, trained against untrained) cannot be entered as two
   arms: the model would be asked for two different numbers from the same
   people. Enter the pooled group if the paper reports it, or the one group that
   is plainly the healthy reference, and leave the other out.
+* A group chosen by a measurement cannot give a finding about that measurement.
+  The two-hour glucose of people enrolled for a two-hour glucose below
+  140 mg/dL says who was let in, not what the body does: leave it out
+  (`population`, `group_split_by_measurement`). The ordinary screening of a
+  healthy cohort (no diabetes, no medication) does not count.
 
 ### `protocols`
 
@@ -350,10 +358,19 @@ with the printed numbers it used, so that the second reader can redo it.
 
 A protocol holds what its findings need and no more. For a sample drawn before
 the first meal of a study day, end the arm after the sample: do not enter the
-day's meals and sleep for a number that does not depend on them.
+day's meals and sleep for a number that does not depend on them. It follows
+that a fasting value needs no meal: when the paper's meal cannot be written (no
+grams, no body weight), its fasting values still can, in a short fasted arm.
+
+An arm that runs through a night needs the night. Awake is the baseline, so an
+arm with no `sleep_wake` is a person who never slept. Enter the hours in bed
+the paper gives; if it gives none, enter 23:00 to 07:00 (the night of the
+model's own ordinary day) and put `sleep_wake` in `assumed`.
 
 Optional inputs, each `{"segments": [{"from_min", "to_min", "level"}, ...]}` (and
-`"unit"` where shown). Outside the segments an input is at its baseline.
+`"unit"` where shown). A segment covers the whole minutes `from_min <= t <
+to_min`: an input that must still be on for a sample at minute 120 runs to 121.
+Outside the segments an input is at its baseline.
 
 | input | baseline | level |
 |---|---|---|
@@ -365,6 +382,16 @@ Optional inputs, each `{"segments": [{"from_min", "to_min", "level"}, ...]}` (an
 | `sglt2` | 0 | 1 is the steady state of empagliflozin 25 mg/day |
 | `bile_fistula` | 0 | 1 drains bile completely |
 | `glucose_bolus` | | `{"dose_g_per_kg", "start_min", "over_min"}`: an IV glucose bolus, as the IVGTT is run |
+
+**A clamp** is entered at the plasma levels it held, because that is what
+`insulin_clamp` and `glucose_clamp` are. Use the insulin and the glucose the
+paper measured during the clamp, in the group and the arm you enter: then they
+are stated. For glucose, use the paper's target if it prints no measurement. A
+level taken from an approximate or pooled figure ("about 90 µU/mL", a mean over
+both study conditions) goes in `assumed`. An insulin infusion rate
+(40 mU/m²/min) is not a plasma level: with no measured insulin the clamp cannot
+be entered (`input`, `insulin_infusion_rate`). What you enter as an input is
+not also a finding.
 
 If the paper's protocol needs an input that is not in this list (a drug, an
 infusion of another hormone, hypoxia, cold, a posture change), write a refusal
@@ -467,6 +494,9 @@ what the model and this format should learn next.
 Write each number in the paper's unit, spelled the way the paper spells it. The
 loader converts to the model's unit through the table below and nowhere else.
 Case, spaces and the micro sign are not significant (`µU/mL`, `uU/mL`, `uu/ml` are one unit).
+A factor raised to minus one is read as a division (`mmol L-1` is `mmol/L`), `M` as
+mol/L (`pM` is `pmol/L`), and the order of the divisors does not count
+(`µmol/min/kg` is `µmol/kg/min`).
 **A unit that is not in the table is refused, never guessed.** If the paper
 uses one (insulin in ng/mL, VO2 in mL/kg/min, glucose infusion per kg of
 fat-free mass), the number cannot be converted without knowing something the
@@ -488,16 +518,16 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 
 | marker | name | model unit | plausible level | accepted units (multiply by) |
 |---|---|---|---|---|
-| `glucose` | Blood Glucose | mg/dL | 40 to 400 | mg/dl (x1), mg/100ml (x1), mmol/l (x18.016), mm (x18.016), g/l (x100), mg/l (x0.1) |
+| `glucose` | Blood Glucose | mg/dL | 40 to 400 | mg/dl (x1), mg/100ml (x1), mmol/l (x18.016), g/l (x100), mg/l (x0.1) |
 | `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
 | `glucagon` | Glucagon | pg/mL | 0 to 500 | pg/ml (x1), ng/l (x1), pmol/l (x3.4828) |
-| `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), mm (x1), meq/l (x1), umol/l (x0.001), ueq/l (x0.001) |
-| `bhb` | β-Hydroxybutyrate | mmol/L | 0 to 10 | mmol/l (x1), mm (x1), umol/l (x0.001), mg/dl (x0.0960615) |
-| `lactate` | Lactate | mmol/L | 0 to 20 | mmol/l (x1), mm (x1), umol/l (x0.001), mg/dl (x0.111012) |
-| `hepatic_output` | Hepatic glucose output | mg/kg/min | 0 to 12 | mg/kg/min (x1), mg/min/kg (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
+| `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), meq/l (x1), umol/l (x0.001), ueq/l (x0.001) |
+| `bhb` | β-Hydroxybutyrate | mmol/L | 0 to 10 | mmol/l (x1), umol/l (x0.001), mg/dl (x0.0960615) |
+| `lactate` | Lactate | mmol/L | 0 to 20 | mmol/l (x1), umol/l (x0.001), mg/dl (x0.111012) |
+| `hepatic_output` | Hepatic glucose output | mg/kg/min | 0 to 12 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `ghrelin` | Ghrelin | pg/mL | 20 to 300 | pg/ml (x1), ng/l (x1), ng/ml (x1000), pmol/l (x3.37) |
 | `leptin` | Leptin | ng/mL | 1 to 50 | ng/ml (x1), ug/l (x1), pg/ml (x0.001), pmol/l (x0.016) |
-| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pm (x1), pg/ml (x0.303242), ng/l (x0.303242) |
+| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242) |
 | `cortisol` | Cortisol | μg/dL | 1 to 40 | ug/dl (x1), ug/l (x0.1), ng/ml (x0.1), nmol/l (x0.036246) |
 | `acth` | ACTH | pg/mL | 5 to 120 | pg/ml (x1), ng/l (x1), pmol/l (x4.541) |
 | `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), /min (x1), 1/min (x1) |
@@ -512,10 +542,10 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `mitochondrial_capacity` | Mitochondrial capacity | × pop. mean | 0 to 3 | ×pop.mean (x1), x_pop_mean (x1) |
 | `crh` | CRH | pg/mL | 0 to 500 | pg/ml (x1), ng/l (x1), pmol/l (x4.758) |
 | `insulin_action` | Insulin action (remote) | a.u. | -5 to 5 | a.u. (x1) |
-| `cck` | Cholecystokinin | pmol/L | 0 to 30 | pmol/l (x1), pm (x1) |
+| `cck` | Cholecystokinin | pmol/L | 0 to 30 | pmol/l (x1) |
 | `gallbladder_bile` | Gallbladder bile acids | mmol | 0 to 12 | mmol (x1), umol (x0.001) |
 | `intestinal_bile` | Intestinal bile acids | mmol | 0 to 10 | mmol (x1), umol (x0.001) |
-| `bile_acids` | Serum total bile acids | µmol/L | 0 to 100 | umol/l (x1), um (x1), nmol/ml (x1), nmol/l (x0.001), mmol/l (x1000) |
+| `bile_acids` | Serum total bile acids | µmol/L | 0 to 100 | umol/l (x1), nmol/ml (x1), nmol/l (x0.001), mmol/l (x1000) |
 | `fat_mass` | Fat mass | kg | 4 to 60 | kg (x1), g (x0.001), lb (x0.453592) |
 | `insulin_slow` | Insulin (slow) | μU/mL | 0 to 80 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
 | `insulin_potentiator` | Insulin potentiator | mg/dL | 0 to 200 | mg/dl (x1) |
@@ -526,9 +556,9 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `gastric_fat` | Gastric fat | g | 0 to 150 | g (x1) |
 | `circ_phase_offset` | Circadian phase | h | -6 to 6 | h (x1), min (x0.0166667) |
 | `sleep_debt` | Sleep debt | h | -16 to 16 | h (x1), min (x0.0166667) |
-| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pm (x1), pg/ml (x0.200662) |
-| `glucose_infusion_rate` | Glucose infusion rate | mg/kg/min | 0 to 20 | mg/kg/min (x1), mg/min/kg (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
-| `glucose_disposal` | Glucose disposal | mg/kg/min | 0 to 30 | mg/kg/min (x1), mg/min/kg (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
+| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662) |
+| `glucose_infusion_rate` | Glucose infusion rate | mg/kg/min | 0 to 20 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
+| `glucose_disposal` | Glucose disposal | mg/kg/min | 0 to 30 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `urinary_glucose` | Urinary glucose | mg/min | 0 to 1000 | mg/min (x1), mg/h (x0.0166667), g/h (x16.6667), g/day (x0.694444), g/24h (x0.694444), mmol/min (x180.16), mmol/day (x0.125111), mmol/24h (x0.125111) |
 | `vo2` | Oxygen uptake | mL/min | 50 to 6000 | ml/min (x1), l/min (x1000) |
 | `vco2` | Carbon dioxide output | mL/min | 50 to 6000 | ml/min (x1), l/min (x1000) |
@@ -701,6 +731,9 @@ used.
   has probably misprinted it. Leave the number out; do not correct the paper.
 * When a table does not say when a baseline value was drawn, enter it on a fasted
   morning and put `duration_min` in `assumed`.
+* A sample drawn a few hours after food the paper does not describe (subjects who
+  "abstained for at least four hours") is not a fasting sample, and the state it
+  was drawn in cannot be written: leave it out (`source`, `input_not_printed`).
 * A "fasting" or "baseline" value that the paper defines as the mean of several
   samples (-20, -10 and 0 min) is a `mean_in_window` over the minutes those samples
   span, in a run-in before the load.

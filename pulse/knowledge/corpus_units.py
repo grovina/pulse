@@ -16,11 +16,15 @@ Molar conversions use the molecular weight named beside them. Insulin uses the
 SI/IUPAC 6.0 pmol/L per µU/mL; some older papers use 6.945 or 7.175, and a paper
 that says so is converted by hand, not listed here.
 
-Unit strings are compared after ``normalise`` (case folded, spaces removed, both
-micro signs written ``u``), so ``µU/mL``, ``μU/mL`` and ``uU/mL`` are one unit.
+Unit strings are compared after ``normalise``, which gives each unit one spelling:
+``µU/mL``, ``μU/mL`` and ``uU/mL`` are one unit, and so are ``mmol L-1``, ``mM`` and
+``mmol/L``, or ``µmol min-1 kg-1`` and ``umol/kg/min``. The tables hold that spelling
+and no other.
 """
 
 from __future__ import annotations
+
+import re
 
 from ..types import MARKERS, OBSERVABLES, SERIES_INDEX
 
@@ -41,10 +45,29 @@ class UnitError(ValueError):
     """A unit the table does not list, or a number outside any sane range for it."""
 
 
+# A molar concentration written with M: pM is pmol/L.
+_MOLAR = {"mm": "mmol/l", "um": "umol/l", "nm": "nmol/l", "pm": "pmol/l"}
+_PER = re.compile(r"^(.+)-1$")
+
+
 def normalise(unit: str) -> str:
-    return (
-        unit.strip().replace("µ", "u").replace("μ", "u").replace(" ", "").replace("·", "").lower()
-    )
+    """The one spelling of ``unit`` the tables use.
+
+    Case, spaces and the micro sign do not count. A factor raised to minus one is
+    a division (``mmol L-1`` is ``mmol/l``), ``M`` is mol/L, and the divisors are
+    put in alphabetical order (``umol/min/kg`` is ``umol/kg/min``).
+    """
+    text = unit.strip().lower().replace("µ", "u").replace("μ", "u")
+    text = text.replace("⁻¹", "-1").replace("−", "-").replace("–", "-")
+    text = text.replace("·", " ").replace("⋅", " ")
+    parts = []
+    for token in text.split():
+        per = _PER.match(token)
+        parts.append("/" + per.group(1) if per else token)
+    text = "".join(parts)
+    text = _MOLAR.get(text, text)
+    head, *divisors = text.split("/")
+    return "/".join([head, *sorted(divisors)])
 
 
 # Molecular weights (g/mol) behind the molar factors.
@@ -71,7 +94,6 @@ _INSULIN: dict[str, tuple[float, float]] = {
 }
 _GLUCOSE_INFUSION: dict[str, tuple[float, float]] = {
     "mg/kg/min": (1.0, 0.0),
-    "mg/min/kg": (1.0, 0.0),
     "umol/kg/min": (_GLUCOSE_MW / 1000.0, 0.0),
     "mmol/kg/min": (_GLUCOSE_MW, 0.0),
 }
@@ -83,7 +105,7 @@ _GRAMS: dict[str, tuple[float, float]] = {"g": (1.0, 0.0)}
 CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "glucose": {
         "mg/dl": (1.0, 0.0), "mg/100ml": (1.0, 0.0),
-        "mmol/l": (_MG_DL_PER_MMOL_L, 0.0), "mm": (_MG_DL_PER_MMOL_L, 0.0),
+        "mmol/l": (_MG_DL_PER_MMOL_L, 0.0),
         "g/l": (100.0, 0.0), "mg/l": (0.1, 0.0),
     },
     "insulin": dict(_INSULIN),
@@ -91,14 +113,14 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
         "pg/ml": (1.0, 0.0), "ng/l": (1.0, 0.0), "pmol/l": (_pg_ml_per_pmol_l(3482.8), 0.0),
     },
     "ffa": {
-        "mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "meq/l": (1.0, 0.0), "umol/l": (0.001, 0.0),
+        "mmol/l": (1.0, 0.0), "meq/l": (1.0, 0.0), "umol/l": (0.001, 0.0),
         "ueq/l": (0.001, 0.0),  # monocarboxylic acids: 1 uEq = 1 umol
     },
     "bhb": {  # beta-hydroxybutyric acid, 104.1 g/mol
-        "mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "umol/l": (0.001, 0.0), "mg/dl": (10.0 / 104.1, 0.0),
+        "mmol/l": (1.0, 0.0), "umol/l": (0.001, 0.0), "mg/dl": (10.0 / 104.1, 0.0),
     },
     "lactate": {  # lactic acid, 90.08 g/mol
-        "mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "umol/l": (0.001, 0.0), "mg/dl": (10.0 / 90.08, 0.0),
+        "mmol/l": (1.0, 0.0), "umol/l": (0.001, 0.0), "mg/dl": (10.0 / 90.08, 0.0),
     },
     "hepatic_output": dict(_GLUCOSE_INFUSION),
     "ghrelin": {
@@ -109,8 +131,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
         "ng/ml": (1.0, 0.0), "ug/l": (1.0, 0.0), "pg/ml": (0.001, 0.0), "pmol/l": (0.016, 0.0),
     },
     "glp1": {  # GLP-1(7-36) amide, 3297.7 g/mol; pg/mL = ng/L
-        "pmol/l": (1.0, 0.0), "pm": (1.0, 0.0),
-        "pg/ml": (1.0 / 3.2977, 0.0), "ng/l": (1.0 / 3.2977, 0.0),
+        "pmol/l": (1.0, 0.0), "pg/ml": (1.0 / 3.2977, 0.0), "ng/l": (1.0 / 3.2977, 0.0),
     },
     "cortisol": {  # 362.46 g/mol
         "ug/dl": (1.0, 0.0), "ug/l": (0.1, 0.0), "ng/ml": (0.1, 0.0),
@@ -132,10 +153,10 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "mitochondrial_capacity": {"×pop.mean": (1.0, 0.0), "x_pop_mean": (1.0, 0.0)},
     "crh": {"pg/ml": (1.0, 0.0), "ng/l": (1.0, 0.0), "pmol/l": (_pg_ml_per_pmol_l(4758.0), 0.0)},
     "insulin_action": {"a.u.": (1.0, 0.0)},
-    "cck": {"pmol/l": (1.0, 0.0), "pm": (1.0, 0.0)},
+    "cck": {"pmol/l": (1.0, 0.0)},
     "gallbladder_bile": {"mmol": (1.0, 0.0), "umol": (0.001, 0.0)},
     "intestinal_bile": {"mmol": (1.0, 0.0), "umol": (0.001, 0.0)},
-    "bile_acids": {"umol/l": (1.0, 0.0), "um": (1.0, 0.0), "nmol/ml": (1.0, 0.0),
+    "bile_acids": {"umol/l": (1.0, 0.0), "nmol/ml": (1.0, 0.0),
                    "nmol/l": (0.001, 0.0), "mmol/l": (1000.0, 0.0)},
     "fat_mass": {"kg": (1.0, 0.0), "g": (0.001, 0.0), "lb": (0.45359237, 0.0)},
     "insulin_slow": dict(_INSULIN),
@@ -151,7 +172,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "circ_phase_offset": dict(_HOURS),
     "sleep_debt": dict(_HOURS),
     "gip": {  # GIP(1-42), 4983.5 g/mol
-        "pmol/l": (1.0, 0.0), "pm": (1.0, 0.0), "pg/ml": (1000.0 / 4983.5, 0.0),
+        "pmol/l": (1.0, 0.0), "pg/ml": (1000.0 / 4983.5, 0.0),
     },
     # observables
     "glucose_infusion_rate": dict(_GLUCOSE_INFUSION),

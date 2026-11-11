@@ -42,6 +42,34 @@ def test_micro_signs_and_case_are_one_unit():
         assert to_native("insulin", 10.0, spelling) == pytest.approx(10.0)
 
 
+@pytest.mark.parametrize("spelling, listed", [
+    ("mmol L-1", "mmol/l"),
+    ("mmol·L−1", "mmol/l"),
+    ("mmol L⁻¹", "mmol/l"),
+    ("μmol min-1 kg-1", "umol/kg/min"),
+    ("umol/min/kg", "umol/kg/min"),
+    ("mg/min/kg", "mg/kg/min"),
+    ("mM", "mmol/l"),
+    ("pM", "pmol/l"),
+    ("µM", "umol/l"),
+    ("min-1", "/min"),
+])
+def test_a_unit_has_one_spelling(spelling, listed):
+    assert normalise(spelling) == listed
+
+
+def test_the_tables_hold_only_that_spelling():
+    for sid, table in CONVERSIONS.items():
+        for unit in table:
+            assert normalise(unit) == unit, (sid, unit)
+
+
+def test_a_molar_abbreviation_converts_wherever_the_molar_unit_does():
+    assert to_native("insulin", 60.0, "pM") == pytest.approx(10.0)
+    assert to_native("glucagon", 10.0, "pM") == pytest.approx(34.828)
+    assert to_native("glucose_infusion_rate", 45.0, "μmol min-1 kg-1") == pytest.approx(8.1072)
+
+
 @pytest.mark.parametrize("series, value, unit, expected", [
     ("glucose", 5.5, "mmol/L", 5.5 * 18.016),
     ("glucose", 5.5, "mM", 5.5 * 18.016),

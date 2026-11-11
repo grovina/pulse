@@ -697,17 +697,20 @@ def _protocol(
                     override["sex"] = None if s == "mixed" else s
             for key, field_name in (("age_years", "age"), ("bmi", "bmi")):
                 if key in pd:
-                    span = pd[key]
-                    if (
-                        isinstance(span, list) and len(span) == 2
-                        and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in span)
-                        and span[0] <= span[1]
-                    ):
-                        override[field_name] = (float(span[0]), float(span[1]))
-                    elif span is None:
+                    if pd[key] is None:
                         override[field_name] = None
+                        continue
+                    summary = _summary(r, pd[key], f"{where} population {key}")
+                    if summary is None:
+                        continue
+                    if summary.span() is None:
+                        r.add(
+                            "protocol",
+                            f"{where} population {key} gives no range: "
+                            f"it needs min and max, or mean and sd",
+                        )
                     else:
-                        r.add("protocol", f"{where} population {key} is not [low, high] or null")
+                        override[field_name] = summary.span()
             if "status" in pd:
                 s = r.choice(pd, "status", f"{where} population", ("healthy", "unselected"), "protocol")
                 if s:

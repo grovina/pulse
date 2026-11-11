@@ -144,6 +144,11 @@ checkpoint has been scored by it yet.
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
   for a person away from the median.
 
+- `prefast_hours` is counted from the end of the spin-up's fed day, not from
+  its last meal, which is at 19:00 (`pulse/training/arm_init.py`). An arm at
+  08:00 with a 10-hour pre-fast starts 13 hours after food. One with a 3-hour
+  pre-fast also starts 13 hours after food: there is no breakfast in it.
+
 Reported by the review of 2026-11-11 and not yet confirmed:
 
 - calibration fits interstitial glucose while evaluation reads plasma.
