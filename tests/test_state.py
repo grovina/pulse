@@ -14,6 +14,7 @@ from pathlib import Path
 import pulse.knowledge.cohort_statistics as registry
 from pulse.correction import Correction
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
+from pulse.knowledge.corpus import count_piles
 from pulse.knowledge.coupling_priors import ALL_COUPLING_PRIORS
 from pulse.knowledge.physiology_rules import (
     _AUTHORED_RULES,
@@ -69,6 +70,8 @@ def test_the_corpus_counts_match_the_registries():
     papers = {s.paper for s in authored} | {r.paper for r in _AUTHORED_RULES}
     assert _counts("Papers") == [len(papers), sum(paper_is_sealed(p) for p in papers)]
     assert _counts("Held-out items") == [len(HELD_OUT_ITEMS)]
+    piles = count_piles()
+    assert _counts("Corpus files") == [piles["findings"], piles["refusals"], piles["queue"]]
 
 
 def test_the_queue_counts_match_the_queue():

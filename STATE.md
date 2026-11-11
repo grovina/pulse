@@ -21,7 +21,8 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Coupling priors | 32 |
 | Papers | 68, of which 0 are sealed |
 | Held-out items | 5 |
-| Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) |
+| Corpus files | 0 papers as findings, 0 as refusals, 35 queued to be read |
+| Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) in the older Python queue |
 
 ## The model
 
@@ -96,6 +97,14 @@ checkpoint has been scored by it yet.
 
 ## The corpus
 
+- A new paper is a file: `corpus/findings/<paper>.json` when the model can
+  express it, `corpus/refusals/<paper>.json` naming the missing piece when it
+  cannot, `corpus/queue/<paper>.json` while it waits to be read
+  ([`corpus/README.md`](corpus/README.md)). `python -m pulse.admit <file>` is
+  the gate; it takes 22 s on a ten-finding file. The file states what the
+  paper printed, in the paper's unit, with the kind of its uncertainty and
+  its n; the loader derives the sigma. No paper has been read into a file
+  yet. The 68 papers below are still Python registries.
 - Every one of the 68 papers has a training item, so none is sealed
   (`pulse/knowledge/sealing.py`). The sealed line fills only as new papers
   are admitted; a fifth of them are held out.
