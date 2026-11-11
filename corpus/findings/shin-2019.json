@@ -1,0 +1,340 @@
+{
+  "paper": "shin-2019",
+  "citation": {
+    "authors": "Shin D, Eom YS, Chon S, et al.",
+    "title": "Factors influencing insulin sensitivity during hyperinsulinemic-euglycemic clamp in healthy Korean male subjects",
+    "journal": "Diabetes, Metabolic Syndrome and Obesity: Targets and Therapy",
+    "year": 2019,
+    "doi": "10.2147/DMSO.S195350",
+    "pmid": "31114276",
+    "pmcid": "PMC6497818"
+  },
+  "population": {
+    "n": 23,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Healthy non-diabetic Korean men who completed the clamp (Tables 1 and 2): young group n=10, elderly group n=13. Each arm states its own group's age and BMI as printed in Table 1 (mean ± SD): young 23±3 y, BMI 22.6±1.6; elderly 57±7 y, BMI 23.2±1.3. The Results text gives the young group's BMI as 22.6±1.3; Table 1 prints 22.6±1.6 (CV 7.3%, which fits 1.6, not 1.3); the table's SD is used. No observed min/max is printed, so the arms use mean and SD; the enrolment criteria (age 19-29 and 50-70 y; BMI 18.5-25.0 and 18.5-29.0) are not used as ranges. Screening excluded those with 2-h OGTT glucose >=140 mg/dL from the clamp (Results; the Methods say >=200)."
+  },
+  "protocols": [
+    {
+      "name": "fasting_young",
+      "description": "Fasting sample after a 10-hour overnight fast, young group (Table 2 baseline values; the paper does not say whether the sample is from the OGTT or the clamp day, both of which followed a 10-hour fast); run-in length and clock hour not stated",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "population": {
+        "age_years": {
+          "mean": 23.0,
+          "sd": 3.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.6,
+          "sd": 1.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasting_elderly",
+      "description": "Fasting sample after a 10-hour overnight fast, elderly group (Table 2 baseline values; the paper does not say whether the sample is from the OGTT or the clamp day, both of which followed a 10-hour fast); run-in length and clock hour not stated",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "population": {
+        "age_years": {
+          "mean": 57.0,
+          "sd": 7.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.2,
+          "sd": 1.3,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "young_fasting_glucose",
+      "description": "Fasting glucose, young group (mean ± SD, Table 2 footnote 'mean ± SD (CV, %)')",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_young"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 93.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.6,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucose (mg/dL)', Young group column",
+        "quote": "Fasting glucose (mg/dL) | 93.0±6.6 (7.1)"
+      }
+    },
+    {
+      "id": "elderly_fasting_glucose",
+      "description": "Fasting glucose, elderly group (mean ± SD, Table 2 footnote 'mean ± SD (CV, %)')",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_elderly"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 95.4,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.1,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucose (mg/dL)', Elderly group column",
+        "quote": "Fasting glucose (mg/dL) | 95.4±6.1 (6.4)"
+      }
+    },
+    {
+      "id": "young_baseline_insulin",
+      "description": "Baseline insulin, young group (mean ± SD, Table 2 footnote 'mean ± SD (CV, %)')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_young"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 10.8,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, row 'Baseline insulin (mU/L)', Young group column",
+        "quote": "Baseline insulin (mU/L) | 10.8±6.0 (55.8)"
+      }
+    },
+    {
+      "id": "elderly_baseline_insulin",
+      "description": "Baseline insulin, elderly group (mean ± SD, Table 2 footnote 'mean ± SD (CV, %)')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_elderly"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 8.3,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.2,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, row 'Baseline insulin (mU/L)', Elderly group column",
+        "quote": "Baseline insulin (mU/L) | 8.3±3.2 (39.0)"
+      }
+    },
+    {
+      "id": "elderly_baseline_glucagon",
+      "description": "Baseline glucagon, elderly group, 10 men (mean ± SD per the Methods sentence; Table S2 does not label the ±)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_elderly"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 8.8,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table S2, row 'Baseline glucagon (pmol/L)', Old group column; n=10 from footnote a ('measured in 10 subjects in the elderly group'); ± label from the Methods sentence 'Baseline demographic and clinical data are presented as the mean ± SD with the coefficient of variation according to the age group'",
+        "quote": "Baseline glucagon (pmol/L) | 8.8±6.3 (71.8)"
+      }
+    },
+    {
+      "id": "elderly_baseline_gip",
+      "description": "Baseline total GIP, elderly group, 10 men (mean ± SD per the Methods sentence; Table S2 does not label the ±)",
+      "marker": "gip",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_elderly"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 23.6,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.5,
+        "n": 10
+      },
+      "location": {
+        "where": "Table S2, row 'Baseline total GIP (pmol/L)', Old group column; n=10 from footnote a ('measured in 10 subjects in the elderly group'); ± label from the Methods sentence 'Baseline demographic and clinical data are presented as the mean ± SD with the coefficient of variation according to the age group'",
+        "quote": "Baseline total GIP (pmol/L) | 23.6±18.5 (78.1)"
+      }
+    },
+    {
+      "id": "young_fat_mass",
+      "description": "Fat mass, young group (arithmetic mean ± SD, Table 1 footnote)",
+      "marker": "fat_mass",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_young"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 12.0,
+      "unit": "kg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'Fat mass (kg)', Young group column; footnote a 'arithmetic mean ± SD (CV, %)'",
+        "quote": "Fat mass (kg) | 12.0±2.9 (24.4)"
+      }
+    },
+    {
+      "id": "elderly_fat_mass",
+      "description": "Fat mass, elderly group (arithmetic mean ± SD, Table 1 footnote)",
+      "marker": "fat_mass",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_elderly"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 15.9,
+      "unit": "kg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.5,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, row 'Fat mass (kg)', Elderly group column; footnote a 'arithmetic mean ± SD (CV, %)'",
+        "quote": "Fat mass (kg) | 15.9±3.5 (21.9)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "M-value (glucose disposal rate) under 10 then 80 mU/m2/min insulin infusion, by age group (Table 2, text); also reported per kg fat-free mass",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "M-value per kg fat-free mass (mg/kg FFM/min) (Table 2)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "baseline C-peptide (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "2-hour OGTT glucose by group (Table 2): the clamp group was selected on this very quantity (2-h glucose >=140 mg/dL excluded)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "Matsuda index and HOMA-IR (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "correlations of M-value with baseline insulin, C-peptide, 2-h glucose, Matsuda, HOMA-IR (Tables 3, S1, text), and of M-value with the glucagon, active GLP-1 and total GIP values (Table S2); M-value is not an enterable marker",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "AUC of glucagon, active GLP-1 and total GIP during the OGTT in 10 elderly men (Table S2)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "Cmax of active GLP-1 and total GIP during the OGTT in 10 elderly men (Table S2); OGTT sampling times are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Cmin of glucagon during the OGTT in 10 elderly men (Table S2); no statistic for a minimum, and OGTT sampling times are not printed",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "baseline active GLP-1 in 10 elderly men (Table S2); the model's glp1 is total GLP-1, and the assays differ several-fold",
+      "missing": {
+        "kind": "marker",
+        "name": "active_glp1"
+      }
+    }
+  ]
+}
