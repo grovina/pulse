@@ -195,8 +195,8 @@ def test_cohort_spinup_is_the_students_fed_day_then_the_prefast(monkeypatch) -> 
 
     def fake_integrate(model, state, emb, n_steps, **kw):
         seen["n"] = n_steps
-        seen["start"] = kw["start_time_minutes"]
-        seen["meals"] = [(m.time, m.carbs) for m in kw["meals"]]
+        seen["start"] = float(kw["start_time_minutes"][0])
+        seen["meals"] = [(m.time, m.carbs) for m in kw["meals"][0]]
         return state.unsqueeze(1).expand(-1, n_steps, -1).contiguous()
 
     monkeypatch.setattr("pulse.training.arm_init.integrate", fake_integrate)

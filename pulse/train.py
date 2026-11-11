@@ -126,7 +126,7 @@ from .training import (
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
 from .correction import shrinkage_of
-from .training.evidence_step import item_nll, rule_nll, sample_evidence
+from .training.evidence_step import EvidenceTerm, accumulate_evidence_step, sample_evidence
 from .training.factors import reference_prior_stats, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
@@ -776,43 +776,48 @@ def train(
             n_carb = 0
             joint_norms: list[float] = []
             signal_times = {
-                "evidence": 0.0, "rules": 0.0, "teacher_tape": 0.0, "population_prior": 0.0,
+                "evidence": 0.0, "evidence_spinup": 0.0, "teacher_tape": 0.0, "population_prior": 0.0,
                 "dose_response": 0.0, "carb_mass_balance": 0.0,
             }
+            evidence_backwards = 0
+            evidence_clipped = 0
 
             for _step in range(n_steps_default):
-                # One rollout's graph at a time. Summing a batch of day-long
+                # One rollout group's graph at a time: the evidence step backwards
+                # each group before rolling the next. Summing a batch of day-long
                 # arms before backward is what hit the memory limit.
                 accumulate_grad(
                     _CORRECTION_SHRINKAGE * shrinkage_of(model), ctx, signal="evidence",
                 )
-                if w_cohort > 0.0 and evidence_pool and evidence_batch_size > 0:
+                evidence_on = w_cohort > 0.0 and bool(evidence_pool) and evidence_batch_size > 0
+                rules_on = w_rules > 0.0 and bool(PHYSIOLOGY_RULES)
+                if evidence_on or rules_on:
                     t0 = time.time()
-                    items = sample_evidence(evidence_pool, evidence_batch_size, rng)
-                    for spec in items:
-                        nll = item_nll(
-                            model, spec, n_draws=cohort_sample_patients, rng=rng, device=device,
+                    item_terms = [
+                        EvidenceTerm(spec, w_cohort * float(spec.weight), cohort_sample_patients)
+                        for spec in (
+                            sample_evidence(evidence_pool, evidence_batch_size, rng)
+                            if evidence_on else []
                         )
-                        accumulate_grad(
-                            w_cohort * float(spec.weight) * nll, ctx, signal="evidence",
+                    ]
+                    rule_terms = [
+                        EvidenceTerm(
+                            rule, w_rules * float(rule.weight), physiology_rules_sample_patients,
                         )
-                        evidence_sum += float(nll.detach())
-                        n_items += 1
+                        for rule in (sample_evidence(PHYSIOLOGY_RULES, 1, rng) if rules_on else [])
+                    ]
+                    step_report = accumulate_evidence_step(
+                        model, ctx, [*item_terms, *rule_terms], rng=rng, device=device,
+                    )
+                    n_split = len(item_terms)
+                    evidence_sum += sum(step_report.nll[:n_split])
+                    rules_sum += sum(step_report.nll[n_split:])
+                    n_items += n_split
+                    n_rules += len(rule_terms)
+                    evidence_backwards += step_report.n_backwards
+                    evidence_clipped += step_report.n_clipped
                     signal_times["evidence"] += time.time() - t0
-                if w_rules > 0.0 and PHYSIOLOGY_RULES:
-                    t0 = time.time()
-                    rules = sample_evidence(PHYSIOLOGY_RULES, 1, rng)
-                    for rule in rules:
-                        hinge = rule_nll(
-                            model, rule, n_draws=physiology_rules_sample_patients,
-                            rng=rng, device=device,
-                        )
-                        accumulate_grad(
-                            w_rules * float(rule.weight) * hinge, ctx, signal="evidence",
-                        )
-                        rules_sum += float(hinge.detach())
-                        n_rules += 1
-                    signal_times["rules"] += time.time() - t0
+                    signal_times["evidence_spinup"] += step_report.spinup_s
                 if w_tape > 0.0 and trajectory_signal is not None:
                     t0 = time.time()
                     tape_loss = trajectory_signal.tape_window_loss(model, ctx)
@@ -875,12 +880,20 @@ def train(
                 "phase": float(cur_phase),
                 "lr": float(scheduler.get_last_lr()[0]),
                 "elapsed_s": float(elapsed),
+            print(
+                f"[CLIP] epoch={epoch:3d} phase={cur_phase} evidence_backwards={evidence_backwards} "
+                f"clipped={evidence_clipped} aux_signal_clip={float(aux_signal_clip):g}",
+                flush=True,
+            )
+
                 "evidence_items": float(n_items),
                 "evidence_nll": float(evidence_mean),
                 "rules_nll": float(rules_mean),
                 "teacher_tape_weight": float(w_tape),
                 "teacher_tape_loss": float(tape_mean),
                 "population_prior_nll": float(prior_mean),
+                "evidence_backwards": float(evidence_backwards),
+                "evidence_clipped": float(evidence_clipped),
                 "dose_loss": float(dose_sum) if n_dose else 0.0,
                 "carb_loss": float(carb_sum) if n_carb else 0.0,
                 "traj_grad_norm_mean": float(_tn.mean()) if _tn.size else 0.0,

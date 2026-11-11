@@ -20,6 +20,8 @@ row. Both signals and both audit scripts call these.
 
 from __future__ import annotations
 
+from typing import Sequence
+
 import numpy as np
 import torch
 
@@ -109,8 +111,83 @@ def cold_initial_state_for_arm(
     return teacher_arm_trajectory(arm, params, rng=rng, noise_scale=_COLD_INIT_NOISE)[0].copy()
 
 
-def _asleep(clock_hour: float) -> bool:
-    return clock_hour >= SLEEP_START_HOUR or clock_hour < SLEEP_END_HOUR
+def _asleep(clock_hour: torch.Tensor) -> torch.Tensor:
+    return (clock_hour >= SLEEP_START_HOUR) | (clock_hour < SLEEP_END_HOUR)
+
+
+def _spinup_protocol(
+    arm: CohortArmSpec, fed: int, device: torch.device,
+) -> tuple[int, float, list[MealEvent], torch.Tensor]:
+    """The spin-up an arm starts from: ``(minutes, start clock in minutes, meals, sleep_wake)``.
+
+    The arm begins at ``arm.start_hour``, so the spin-up begins that long earlier. It is
+    ``fed`` minutes of the standard fed day (three meals, asleep 23:00-07:00) and then
+    ``arm.prefast_hours`` of meal-free rest, awake.
+    """
+    pre = int(round(float(arm.prefast_hours) * 60.0))
+    total = fed + pre
+    start_hour = (float(arm.start_hour) - total / 60.0) % 24.0
+    meals: list[MealEvent] = []
+    for hour, carbs, fats, proteins in FED_DAY_MEALS:
+        minute = (hour * 60.0 - start_hour * 60.0) % (24.0 * 60.0)
+        if minute < fed:
+            meals.append(MealEvent(time=float(minute), carbs=carbs, fats=fats, proteins=proteins))
+    minutes = torch.arange(total, dtype=torch.float64, device=device)
+    clock = (start_hour + minutes / 60.0) % 24.0
+    fed_sleep = torch.where(_asleep(clock), 0.0, 1.0)
+    sleep = torch.where(minutes < fed, fed_sleep, ARM_DEFAULT_SLEEP_WAKE).to(torch.float32)
+    return total, start_hour * 60.0, meals, sleep
+
+
+def student_initial_states_for_rows(
+    model: torch.nn.Module,
+    rows: Sequence[tuple[torch.Tensor, CohortArmSpec]],
+    *,
+    fed_day_minutes: int = FED_DAY_MINUTES,
+) -> list[torch.Tensor]:
+    """Where each ``(codes[B_i, EMB], arm)`` row group starts: the student's own fed
+    day, then the arm's pre-fast. Each result is ``[B_i, STATE_DIM]`` and detached.
+
+    The spin-up starts at the marker typicals and ends at the arm's ``start_hour``
+    (see ``_spinup_protocol``). Every row group with the same spin-up length rolls
+    together as ONE no-grad ``integrate`` call, each member on its own clock, meals
+    and sleep: a step costs about the same at batch 1 and at batch 100, and the day
+    is what the arms of a step would otherwise each redo. The protocol that follows is
+    in the graph, the day that prepared it is not. A day of activations held for every
+    item is what exhausted the trainer.
+    """
+    fed = max(int(fed_day_minutes), 0)
+    out: list[torch.Tensor | None] = [None] * len(rows)
+    by_length: dict[int, list[int]] = {}
+    for i, (codes, arm) in enumerate(rows):
+        basal = torch.tensor(NORM_CENTER, dtype=torch.float32, device=codes.device)
+        out[i] = basal.unsqueeze(0).expand(int(codes.shape[0]), -1).contiguous()
+        total = fed + int(round(float(arm.prefast_hours) * 60.0))
+        if total > 0 and int(codes.shape[0]) > 0:
+            by_length.setdefault(total, []).append(i)
+    for total, members in by_length.items():
+        device = rows[members[0]][0].device
+        protocols = [_spinup_protocol(rows[i][1], fed, device) for i in members]
+        sizes = [int(rows[i][0].shape[0]) for i in members]
+        with torch.no_grad():
+            traj = integrate(
+                model, torch.cat([out[i] for i in members]),
+                torch.cat([rows[i][0] for i in members]), total,
+                dt=1.0,
+                start_time_minutes=torch.cat([
+                    torch.full((n,), start, dtype=torch.float64, device=device)
+                    for n, (_t, start, _m, _s) in zip(sizes, protocols)
+                ]),
+                meals=[meals for n, (_t, _s, meals, _w) in zip(sizes, protocols) for _ in range(n)],
+                sleep_wake=torch.cat([sleep.expand(n, total) for n, (_t, _s, _m, sleep) in zip(sizes, protocols)]),
+                activity=torch.full((total,), ARM_DEFAULT_ACTIVITY, dtype=torch.float32, device=device),
+            )
+        final = traj[:, -1, :STATE_DIM].detach()
+        row = 0
+        for i, n in zip(members, sizes):
+            out[i] = final[row:row + n]
+            row += n
+    return out  # type: ignore[return-value]
 
 
 def student_initial_states(
@@ -120,50 +197,12 @@ def student_initial_states(
     *,
     fed_day_minutes: int = FED_DAY_MINUTES,
 ) -> torch.Tensor:
-    """Where a cohort arm starts: the student's own fed day, then the pre-fast.
-
-    ``codes`` is ``[B, EMBEDDING_DIM]``. The spin-up starts at the marker
-    typicals, runs a standard fed day (three meals, asleep 23:00–07:00), then
-    ``arm.prefast_hours`` of meal-free rest, awake. The clock at the end is
-    the arm's ``start_hour``. The returned state is ``[B, STATE_DIM]`` and is
-    detached: the protocol that follows is in the graph, the day that prepared
-    it is not. A day of activations held for every item is what exhausted the
-    trainer.
-
-    ``fed_day_minutes`` is the length of that day. The training path uses
-    ``FED_DAY_MINUTES``.
-    """
-    b = int(codes.shape[0])
-    device = codes.device
-    basal = torch.tensor(NORM_CENTER, dtype=torch.float32, device=device)
-    state = basal.unsqueeze(0).expand(b, -1).contiguous()
-    pre = int(round(float(arm.prefast_hours) * 60.0))
-    fed = max(int(fed_day_minutes), 0)
-    total = fed + pre
-    if total <= 0 or b == 0:
-        return state
-    # The arm begins at start_hour, so the spin-up begins that long earlier.
-    start_hour = (float(arm.start_hour) - total / 60.0) % 24.0
-    meals: list[MealEvent] = []
-    for hour, carbs, fats, proteins in FED_DAY_MEALS:
-        minute = (hour * 60.0 - start_hour * 60.0) % (24.0 * 60.0)
-        if minute < fed:
-            meals.append(MealEvent(time=float(minute), carbs=carbs, fats=fats, proteins=proteins))
-    sleep = torch.empty(total, dtype=torch.float32, device=device)
-    for minute in range(total):
-        if minute >= fed:
-            sleep[minute] = ARM_DEFAULT_SLEEP_WAKE
-            continue
-        clock = (start_hour + minute / 60.0) % 24.0
-        sleep[minute] = 0.0 if _asleep(clock) else 1.0
-    activity = torch.full((total,), ARM_DEFAULT_ACTIVITY, dtype=torch.float32, device=device)
-    with torch.no_grad():
-        traj = integrate(
-            model, state, codes, total,
-            dt=1.0, start_time_minutes=start_hour * 60.0, meals=meals,
-            sleep_wake=sleep, activity=activity,
-        )
-    return traj[:, -1, :STATE_DIM].detach()
+    """``student_initial_states_for_rows`` for one arm: ``codes`` is ``[B, EMBEDDING_DIM]``
+    and the result ``[B, STATE_DIM]``. ``fed_day_minutes`` is the length of the fed day;
+    the training path uses ``FED_DAY_MINUTES``."""
+    return student_initial_states_for_rows(
+        model, [(codes, arm)], fed_day_minutes=fed_day_minutes,
+    )[0]
 
 
 def item_initial_state(init_mode: InitMode, arm: CohortArmSpec, seed: int) -> np.ndarray:
@@ -178,5 +217,6 @@ __all__ = [
     "cold_initial_state_for_arm",
     "item_initial_state",
     "student_initial_states",
+    "student_initial_states_for_rows",
     "teacher_arm_trajectory",
 ]
