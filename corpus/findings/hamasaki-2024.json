@@ -1,0 +1,184 @@
+{
+  "paper": "hamasaki-2024",
+  "citation": {
+    "authors": "Hamasaki A, Harada N, Muraoka A, et al.",
+    "title": "The integrated incretin effect is reduced by both glucose intolerance and obesity in Japanese subjects",
+    "journal": "Frontiers in Endocrinology",
+    "year": 2024,
+    "doi": "10.3389/fendo.2024.1301352",
+    "pmid": "38966210",
+    "pmcid": "PMC11222327"
+  },
+  "population": {
+    "n": 14,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.9,
+      "sd": 7.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.8,
+      "sd": 3.8,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fourteen Japanese subjects with normal glucose tolerance (3 women, 11 men; Table 1), classified by the Japan Diabetes Society criteria from a 75 g OGTT. That classification is the screening: the paper gives no recruitment route and no other health or medication information. Age and BMI are the NGT group's printed mean +/- SD; no observed range is printed. Only the NGT group is entered; the IGT and T2D groups are not."
+  },
+  "protocols": [
+    {
+      "name": "fasting_sample",
+      "description": "Fasting sample of the NGT group after an overnight fast, before the 75 g OGTT; no meal; a 30-minute run-in stands for the single sample (Table 1 does not say when the fasting value was drawn; OGTT samples were at -15 and 0 min)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ngt_fasting_glucose",
+      "description": "Fasting plasma glucose, NGT group",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_sample"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.8,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row 'fPG (mM)', NGT column",
+        "quote": "fPG (mM) | 4.8±0.4"
+      }
+    },
+    {
+      "id": "ngt_fasting_insulin",
+      "description": "Fasting immunoreactive insulin (serum, two-site radioimmunoassay), NGT group",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_sample"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 28.8,
+      "unit": "pM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.0,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row 'fIRI (pM)', NGT column",
+        "quote": "fIRI (pM) | 28.8±18.0"
+      }
+    },
+    {
+      "id": "ngt_fasting_glucagon",
+      "description": "Fasting plasma glucagon (radioimmunoassay, Millipore), NGT group",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_sample"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 28.4,
+      "unit": "pM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.2,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row 'fGlucagon (pM)', NGT column",
+        "quote": "fGlucagon (pM) | 28.4±12.2"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "AUC of glucose, insulin, C-peptide, total and active GIP and GLP-1, and glucagon delta-AUC, during OGTT and IIGI, all groups (Tables 2 and 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "numerical incretin effect (insulin and C-peptide) and GIGD, a function of two arms' incremental AUCs or of infused glucose (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "isoglycemic IV glucose infusion arm: the infusion rate profile that reproduced each OGTT glucose curve is only in Figure 1J-L (total infused grams are in Table 2)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "IGT and T2D groups (Tables 1-3): type 2 diabetes cannot be stated; IGT is a glucose-tolerance class the model cannot be told",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "fasting C-peptide (fCPR, Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "glucose, insulin, C-peptide, GIP, GLP-1 and glucagon time courses (Figures 1, 3, 5)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "HbA1c, NGT group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "HOMA-IR and insulinogenic index, computed from the 0 and 30 min OGTT values (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "correlations with BMI, AUC-glucose and GIGD pooled over all 28 subjects of the NGT, IGT and T2D groups (Results text)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    }
+  ]
+}
