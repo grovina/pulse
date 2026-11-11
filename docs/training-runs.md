@@ -83,6 +83,76 @@ epochs, 28 with the literature stack) the same per-signal costs put a run at abo
   split in a dispatch-bound step; 4 threads next to one other busy process made a
   window 8x slower.
 
+### The evidence step
+
+A phase-2 optimizer step samples `--evidence-batch-size` cohort items and one rule and
+rolls them together (`training/evidence_step.accumulate_evidence_step`; the trainer only
+calls it).
+
+1. **Draw people** term by term, in order, exactly as `item_nll` / `rule_nll` do.
+2. **Spin up once.** Every row's fed day (plus its arm's pre-fast) is one no-grad
+   `integrate` call per distinct spin-up length, each member on its own clock, meals and
+   sleep (`arm_init.student_initial_states_for_rows`). Before, each arm of each item
+   redid its own 1,440-minute day, 63% of all simulated minutes in the corpus.
+3. **Roll in groups.** Items are grouped by horizon (`_group_units`): a group stops growing
+   when the next item is shorter than half its longest, or when rows x horizon passes
+   120,000 row-minutes (about 80 day-long rows), and observing items group apart from plain
+   ones. A group is ONE `rollout_arms` call with every arm of every member item as rows, so
+   all the arms of an item share one graph, and short arms are held (`member_steps`), not
+   padded out to a day.
+4. **Score, then backward per group.** Each item is scored on its own rows, the group's loss
+   is the weighted sum of its items' NLLs, and `accumulate_grad` backpropagates it before the
+   next group is rolled, so one graph is alive at a time. The step's loss is the same weighted
+   sum of per-item NLLs as before; `tests/test_evidence_step_batched.py` pins the per-item NLL
+   (1e-4 relative) and the accumulated gradient (cosine > 0.9999, norm within 1e-3) against
+   the item-by-item path.
+
+**Clipping is per group.** `--aux-signal-clip` used to clip each item's gradient before it
+joined the step; one backward per group clips the group's gradient as a whole. A
+non-finite loss or gradient likewise drops the group rather than the item. Each epoch logs
+`[CLIP] ... evidence_backwards=N clipped=K` (also `evidence_backwards` / `evidence_clipped`
+in the epoch metrics) so a run shows whether the clip binds.
+
+**Graph memory.** A rollout with gradient holds about 1.2 MB per simulated minute however
+few rows it has, plus about 16 KB per row-minute (peak RSS over the model, 240 min:
+287 MB at 1 row, 354 MB at 32, 554 MB at 128, 773 MB at 256). Up to ~75 rows the fixed part
+dominates, so adding rows is nearly free; past that rows dominate. The item-by-item path held
+every arm of an item at once (an item with two 2,521-minute arms is two graphs of
+~3 GB each, before the backward's own buffers); the batched step holds one.
+Across eight consecutive steps resident memory was flat (no growth) and `malloc_trim`
+returned the allocator's retained pages, so there is no cache to clear: the 10.7 GB peak of
+iter 115 is the graph of its longest items plus allocator retention.
+
+**Measured** (`python -m pulse.diagnostics step-time`, CPU seconds per step, one torch thread,
+untrained default model, fed day 1,440 min, arms capped at 300 min, 4 draws per arm, one
+2-draw rule per step, on a 2-CPU box shared with other jobs):
+
+| `--evidence-batch-size` | item by item | batched | spin-up / rollout+score / backward | groups, rows |
+|---|---|---|---|---|
+| 4 (mean of 2 steps) | 47.5 s | 15.7 s (3.0x) | 8.0 / 2.8 / 4.9 s | 4, 22 |
+| 16 (1 step) | 228 s | 37.3 s (6.1x) | 24.4 / 4.3 / 8.6 s | 5, 98 |
+
+The 1,440-minute spin-up is now the largest part of a capped step, and it grows with rows
+(8 s at 22 rows, 24 s at 98) because `integrate` builds the gut and duodenal windows of
+members with different meals one member at a time; once that is one batched call the spin-up
+costs about one rollout at any row count. Uncapped steps are dominated by the long
+rollouts, which this box cannot hold with gradient: run the same command with
+`--max-arm-minutes 0` in the cloud.
+
+**A run that dies leaves a board.** At the end of phase 1 (and of phase 2 when phase 3
+follows) the trainer scores the model on the literature board without the identifiability
+pass and without the individual ruler and writes
+`<stem>.phase<N>.scoreboard.json` beside the checkpoint (uploaded next to `last_good.pt`).
+`--deadline-hours H` stops training after the epoch whose successor, at that epoch's
+duration, would end past `H` hours; the normal end-of-run checkpoint, board and upload
+follow, so set `H` below the task timeout by the time that end-of-run scoring takes.
+
+**Across processes.** The groups of a step are independent given the weights, so the way
+to use more cores is one worker per group: the parent draws the people (keeping the rng
+order), runs the spin-up, ships each worker the weights, its rows and its terms, and each
+worker returns its group's gradient and NLLs; the parent applies the per-group clip and sums.
+The tape, dose-response and carb-balance signals are separate tasks of the same shape.
+
 `tests/test_planned_integrator.py` pins the equivalence: the planned rollout matches
 the per-minute `model.forward` reference (`integrate(..., planned=False)` — also the
 path to use when module or head forward hooks must fire), per-member protocols match
