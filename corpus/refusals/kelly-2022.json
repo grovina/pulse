@@ -1,0 +1,40 @@
+{
+  "paper": "kelly-2022",
+  "citation": {
+    "authors": "Kelly MR, Yuen F, Satterfield BC, et al.",
+    "title": "Endogenous Diurnal Patterns of Adrenal and Gonadal Hormones During a 24-Hour Constant Routine After Simulated Shift Work",
+    "journal": "Journal of the Endocrine Society",
+    "year": 2022,
+    "doi": "10.1210/jendso/bvac153",
+    "pmid": "36330292",
+    "pmcid": "PMC9620969"
+  },
+  "reported": [
+    {
+      "what": "cortisol mesor (24 h mean abundance) in the constant routine after 3 days of simulated day shift, mean +/- SE, pg/mL, n=7 (sex-adjusted cosinor estimate)",
+      "location": {
+        "where": "Table 2, Cortisol row, Mesor +/- SE (pg/mL), day-shift column",
+        "quote": "Cortisol | 36 043.81 4705.42e | 38 728.17 4869.28e | 2684.36 6771.33 | 62 903.27 3474.52 | 74 300.45 3482.08 | 11 397.18 4919.06c | 8:43 0:31 | 9:44 0:28 | 1:00 0:42"
+      }
+    },
+    {
+      "what": "cortisol cosinor amplitude and acrophase by prior shift condition (Table 2)",
+      "location": {
+        "where": "Table 2, Cortisol row",
+        "quote": "Cortisol | 36 043.81 4705.42e | 38 728.17 4869.28e"
+      }
+    },
+    {
+      "what": "night-minus-day difference in cortisol mesor, printed in the text in ug/dL without an uncertainty",
+      "location": {
+        "where": "Results, paragraph after Table 2",
+        "quote": "Night-shift work marginally increased the mesor of the major glucocorticoid cortisol, by 1 μg/dL"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The constant routine's hourly isocaloric snacks (and the shift-day meals) are given without any energy or macronutrient amount, so no protocol can be written without assuming a meal; in addition every cortisol number is a sex-adjusted cosinor estimate in pg/mL, a unit the loader does not accept, with amplitude and acrophase being cosinor parameters the statistics do not cover."
+}
