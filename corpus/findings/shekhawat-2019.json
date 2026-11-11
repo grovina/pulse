@@ -1,0 +1,230 @@
+{
+  "paper": "shekhawat-2019",
+  "citation": {
+    "authors": "Shekhawat VS, Bhansali S, Dutta P, et al.",
+    "title": "Glucose-dependent Insulinotropic Polypeptide (GIP) Resistance and β-cell Dysfunction Contribute to Hyperglycaemia in Acromegaly",
+    "journal": "Scientific Reports",
+    "year": 2019,
+    "doi": "10.1038/s41598-019-41887-7",
+    "pmid": "30948746",
+    "pmcid": "PMC6449401"
+  },
+  "population": {
+    "n": 10,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 29.7,
+      "sd": 4.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 27.7,
+      "sd": 2.4,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Ten healthy controls (5 men, 5 women; Table 1 sex M:F 5:5), described as age, BMI and HbA1c matched to the acromegaly patients (HbA1c 5.0 ± 0.35 %); the paper prints no other screening or exclusion criteria for them. Age and BMI from Table 1, Group HC (mean ± S.D.)."
+  },
+  "protocols": [
+    {
+      "name": "fasted_sample_12h",
+      "description": "Fasting sample before the mixed meal test: overnight fast of 12 hours, no meal; 30-minute fasted run-in stands for the single sample (run-in length and clock hour not stated)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ],
+      "prefast_hours": 12
+    },
+    {
+      "name": "fasted_sample_morning",
+      "description": "Fasting sample of the baseline biochemistry (Table 2); the paper does not say when or after how long a fast it was drawn, so an overnight fast of 10 h in the morning is assumed; no meal; 30-minute run-in",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "prefast_hours": 10
+    }
+  ],
+  "findings": [
+    {
+      "id": "hc_fasting_glucose",
+      "description": "Fasting plasma glucose, healthy controls",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 86.6,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.55,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, column Group HC (n = 10, MEAN ± S.D.)",
+        "quote": "FPG (mg/dl) | 86.60 ± 06.55(07.00)"
+      }
+    },
+    {
+      "id": "hc_fasting_insulin",
+      "description": "Fasting plasma insulin, healthy controls",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 12.66,
+      "unit": "µU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.07,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, column Group HC (n = 10, MEAN ± S.D.)",
+        "quote": "FPI (µU/ml) | 12.66 ± 04.07(08.20)"
+      }
+    },
+    {
+      "id": "hc_fasting_gip",
+      "description": "Fasting total GIP, healthy controls",
+      "marker": "gip",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample_12h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 15.9,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, column Group HC (n = 10, MEAN ± S.D.)",
+        "quote": "Fasting GIP (total)(pmol/L) | 15.9 ± 5.2(07.40)"
+      }
+    },
+    {
+      "id": "hc_fasting_glp1",
+      "description": "Fasting total GLP-1, healthy controls",
+      "marker": "glp1",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample_12h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 22.8,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.7,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, column Group HC (n = 10, MEAN ± S.D.)",
+        "quote": "Fasting GLP-1 (total)(pmol/L) | 22.8 ± 9.7(21.60)"
+      }
+    },
+    {
+      "id": "hc_fasting_glucagon",
+      "description": "Fasting glucagon, healthy controls",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample_12h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 3.7,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, column Group HC (n = 10, MEAN ± S.D.)",
+        "quote": "Fasting Glucagon(pmol/L) | 3.7 ± 1.4(6.40)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose, insulin, C-peptide, GIP, GLP-1 and glucagon after the 10 kcal/kg Ensure meal in healthy controls (Figures 1-2; time courses at 30-180 min)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "the mixed-meal arm itself: meal is 10 kcal/kg and no body weight or height of the controls is printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "AUC of glucose, insulin, C-peptide, GIP, GLP-1 and glucagon over the meal test, healthy controls (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "fasting C-peptide, healthy controls (Table 2, FCP)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-IS, HOMA-beta, Matsuda index, insulinogenic index, C-peptide/GLP-1 and C-peptide/GIP AUC ratios (Tables 2, 6)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "basal GH of healthy controls (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "all acromegaly groups A and B (Tables 1-6), before and after surgery, and the clamp in patients",
+      "missing": {
+        "kind": "population",
+        "name": "acromegaly"
+      }
+    }
+  ]
+}
