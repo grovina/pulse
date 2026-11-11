@@ -577,6 +577,31 @@ def test_a_file_with_the_three_statistics_passes_the_gate_on_the_untrained_model
     assert [c.name for c in result.checks if c.name == "gradient"] == ["gradient"]
 
 
+def test_the_gate_asks_an_unstated_area_whether_its_net_reading_moves():
+    """Scored, an unstated area whose value lies between the two readings is the paper's
+    own number however the curves move. The gate must not take that for a dead finding."""
+    from pulse import admit as gate
+    from pulse.cohort_loss import _score_arm_trajs
+    from pulse.types import EMBEDDING_DIM
+
+    spec = replace(_hand_spec(StatisticKind.INCREMENTAL_AREA, below=BelowBaseline.UNSTATED), target=10.0)
+    key = (spec.arms[0], spec.init_mode)
+    codes = torch.zeros(gate._PROBE_DRAWS, EMBEDDING_DIM)
+
+    def rolled(second_sample: float) -> dict:
+        rows = [[100, second_sample, 140, 90, 100], [100, 80, 60, 120, 110]] * (gate._PROBE_DRAWS // 2)
+        traj = torch.zeros(len(rows), 121, len(SERIES_INDEX), dtype=torch.float64)
+        traj[:, :, SERIES_INDEX["glucose"]] = _series(rows)
+        return {key: traj}
+
+    before, after = rolled(160.0), rolled(170.0)
+    scored = [_score_arm_trajs(spec, [r[key]], codes, gate._PROBE_DRAWS)[1] for r in (before, after)]
+    assert scored == pytest.approx([10.0, 10.0])        # 6.875 <= 10 <= 14.29, and still so
+    probe = gate._Probe.__new__(gate._Probe)            # predictions() reads only the people and the rollouts
+    probe.codes = {key: codes}
+    assert probe.predictions(spec, after)[0] - probe.predictions(spec, before)[0] == pytest.approx(1.25)
+
+
 # --- the diagnostics that read a spec by kind ---------------------------------------
 
 def test_the_median_persons_residual_and_the_cold_model_read_the_new_kinds():

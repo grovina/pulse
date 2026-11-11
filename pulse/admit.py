@@ -265,7 +265,7 @@ class _Probe:
         embeddings = self.codes[keys[0]]
         out = []
         for s in expand_curve_spec(spec):
-            _loss, pred, _z = _score_arm_trajs(s, trajs, embeddings, _PROBE_DRAWS)
+            _loss, pred, _z = _score_arm_trajs(_as_probed(s), trajs, embeddings, _PROBE_DRAWS)
             out.append(float(pred))
         return out
 
@@ -300,6 +300,20 @@ class _Probe:
                     for p, v in zip(self.params, saved):
                         p.copy_(v)
         return best
+
+
+def _as_probed(spec):
+    """``spec`` as the gradient check reads it. An incremental area whose paper does
+    not say what lies under baseline is scored as the nearer of two readings of the
+    model's curves, and while the paper's value lies between them the score IS that
+    value, however the curves move: a live finding would look dead, and the refusal
+    would tell its reader where the model stands. The check asks its question of the
+    net reading, one of the two the score is made from."""
+    from .knowledge.cohort_types import BelowBaseline
+
+    if spec.below_baseline is BelowBaseline.UNSTATED:
+        return replace(spec, below_baseline=BelowBaseline.SUBTRACTED)
+    return spec
 
 
 def _on_one_thread(fn, *args):
