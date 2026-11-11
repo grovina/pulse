@@ -227,6 +227,16 @@ This file is parsed by the test suite, so it cannot go stale. It is made up.
         "quote": "The second-hour difference was 1.1 mmol/L (95% CI 0.5 to 1.7)."
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "C-peptide at each sampling time (Table 2)",
+      "missing": {"kind": "marker", "name": "c_peptide"}
+    },
+    {
+      "what": "glucagon time course (Figure 3 only)",
+      "missing": {"kind": "source", "name": "figure_only"}
+    }
   ]
 }
 ```
@@ -240,6 +250,7 @@ This file is parsed by the test suite, so it cannot go stale. It is made up.
 | `population` | who was measured, below |
 | `protocols` | what they did, below |
 | `findings` | the numbers, below |
+| `left_out` | what the paper reports that you could not enter, and the piece that was missing; `[]` if nothing. Below. |
 
 Every object is strict. An unknown key, a missing key, a wrong type, an unknown
 marker or an unlisted unit is an error, and the gate lists **all** of a file's
@@ -386,6 +397,37 @@ of kind `input`. Do not approximate it with something else.
   Use it only when the paper really reports such a value.
 * An optional `acknowledged_conflicts: ["<paper>.<id>"]` is explained under the gate.
 
+### `left_out`
+
+Almost every paper reports more than the model can take. Each thing you leave
+out is recorded with the piece that was missing, so that the missing pieces can
+be counted over all papers (`python -m pulse.admit --missing`): the count is
+what the model and this format should learn next.
+
+```json
+{"what": "glucose incremental area 0-120 min, by fast length (Tables 1 and 2)",
+ "missing": {"kind": "operator", "name": "single_arm_incremental_auc"}}
+```
+
+* `what`: one line, with where it is in the paper. One entry for a family of
+  numbers (all the C-peptide values), not one per number. No values: this is a
+  list of gaps, not of findings.
+* `missing.kind` is one of the refusal kinds (`marker`, `input`, `population`,
+  `timescale`, `operator`, or `source` when the gap is in the paper and not in
+  the model; see "When to write a refusal instead").
+* `missing.name` is lowercase with underscores. **Reuse a name that is already
+  in use** (run `--missing` to see them) before making one: two names for one
+  gap are counted as two gaps. Names in use for `source`: `figure_only`,
+  `unlabelled_uncertainty`, `uncertainty_not_printed`, `zero_uncertainty`,
+  `unit_not_printed`, `unit_implausible`, `value_not_printed`,
+  `time_not_printed`, `input_not_printed` (a meal, a dose, an infusion or an
+  exercise intensity the paper does not give), `table_ambiguous`,
+  `assay_not_comparable`.
+* Leave out of `left_out` what nobody would enter: numbers about markers far
+  from physiology the model covers (liver enzymes, questionnaire scores), a
+  duplicate of a number you did enter, and statistics of the authors' own
+  model fits.
+
 #### The statistics
 
 | `statistic` | the paper reports | protocols | `value` | uncertainty kinds |
@@ -519,8 +561,8 @@ interval was computed over more measurements than people ("n = 36: 12 subjects x
 recovers the spread with the count the paper used and holds the mean only to what
 twelve people support. If error bars are not labelled
 (SD or SEM?) in text, caption or methods, do not guess: the finding cannot be
-entered; write a refusal of kind `operator` naming "unlabelled error bars", or
-leave the number out. The statistic has to lie inside its own `ci` or `range`.
+entered; leave the number out (`left_out`, kind `source`, name
+`unlabelled_uncertainty`), or refuse the paper with that if nothing else is left. The statistic has to lie inside its own `ci` or `range`.
 
 What the loader does (`pulse/knowledge/corpus_uncertainty.py`): the model scores the
 mean of its virtual people against the paper's mean at a standard error
@@ -578,7 +620,11 @@ change, and it is counted by kind.
 | `input` | something done to the subjects that the protocol cannot express, or a unit that cannot be converted | `hypoxia`, `metformin`, `growth_hormone_infusion`, `insulin_in_ng_per_ml` |
 | `population` | subjects the model cannot represent | `type_2_diabetes`, `pregnancy`, `children` |
 | `timescale` | a duration or resolution the model does not simulate | `weeks_of_training`, `sub_minute_pulsatility` |
-| `operator` | a kind of number the statistics do not cover | `median_with_iqr`, `slope`, `unlabelled_error_bars` |
+| `operator` | a kind of number the statistics do not cover | `median_with_iqr`, `slope`, `single_arm_incremental_auc` |
+| `source` | not a gap in the model: the paper does not give what is needed | `figure_only`, `unlabelled_uncertainty`, `input_not_printed` |
+
+`missing.name` is lowercase with underscores; reuse a name already in use
+(`python -m pulse.admit --missing`) before making one.
 
 `reported` lists what the paper reported that you could not enter: each with
 `what`, and a `location` (`where`, `quote`) as for a finding. `detail` is one
@@ -587,7 +633,8 @@ the **one** piece that, if added, would let you write the file. If a paper has s
 findings the model can express and some it cannot, write the finding file for the
 first and no refusal: a paper is either a finding or a refusal, never both.
 
-`python -m pulse.admit --refusals` counts the pile by kind and by name.
+`python -m pulse.admit --refusals` counts the pile by kind and by name, and
+`--missing` counts it together with what the finding files left out.
 
 ## Running the gate
 

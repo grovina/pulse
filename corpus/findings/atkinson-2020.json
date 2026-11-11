@@ -768,5 +768,49 @@
         "quote": "2-h insulin (pmol/L) | 71.8 ± 8.0"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "incremental areas under the glucose and insulin curves, by sex and fast length (Tables 1 and 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_incremental_auc"
+      }
+    },
+    {
+      "what": "differences between the 16-h and 12-h fasts, printed as percentages with P values (text)",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "HOMA-IR, %S and %B by sex and fast length (Tables 1 and 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "glucose and insulin time courses (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "energy and macronutrient intake at the ad libitum meal (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "energy_intake"
+      }
+    },
+    {
+      "what": "satiety ratings (text)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    }
   ]
 }

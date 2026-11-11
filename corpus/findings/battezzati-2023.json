@@ -420,5 +420,56 @@
         "quote": "Ketogenic | 44 ± 5 | 67 ± 11 | 86 ± 10 | 88 ± 12 | 71 ± 6 | 63 ± 8 | 55 ± 5 | 48 ± 4"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "C-peptide at each sampling time (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "insulin secretion rate (Tables 2 and 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_secretion_rate"
+      }
+    },
+    {
+      "what": "incremental peaks and fold changes of glucose and insulin (text, Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "change_from_baseline"
+      }
+    },
+    {
+      "what": "total and incremental insulin concentration over the test, and glucose area in the first hour (Table 3, abstract)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "insulin clearance (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_clearance"
+      }
+    },
+    {
+      "what": "mean differences between the meals with 95% intervals, printed without a unit (text)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "the ketogenic arm's samples from 240 to 360 min (Methods): no values printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
   ]
 }

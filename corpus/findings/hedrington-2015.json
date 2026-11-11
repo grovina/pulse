@@ -397,5 +397,77 @@
         "quote": "compared with 1.2 ± 0.4 μmol/kg/min following day 1 euglycemia"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "the alprazolam arms (Tables 1 and 2)",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "the arms that follow hypoglycaemic clamps on the day before (Tables 1 and 2)",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "changes from baseline during exercise of adrenaline, noradrenaline, pancreatic polypeptide, glucagon, growth hormone, cortisol, lactate, fatty acids and glycerol (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "change_from_baseline"
+      }
+    },
+    {
+      "what": "noradrenaline at baseline (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "growth hormone at baseline (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "pancreatic polypeptide at baseline (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "pancreatic_polypeptide"
+      }
+    },
+    {
+      "what": "glycerol at baseline (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
+      }
+    },
+    {
+      "what": "mean arterial pressure (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "insulin during exercise, given in the text without the times it was sampled",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "time courses (figures)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
   ]
 }

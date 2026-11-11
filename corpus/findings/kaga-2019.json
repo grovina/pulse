@@ -110,5 +110,63 @@
         "quote": "FFAs, μEq/L | 335 ± 105 | 317.4 ± 112.0 | 353.8 ± 96.8 | 0.231"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "steady-state insulin, glucose disposal and endogenous glucose production at two insulin infusion rates (Tables 1 and 2)",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "glucose disposal per kg of fat-free mass and glucose production per m2 (Table 2)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "C-peptide, fasting and during the clamp, and its correlations (Tables 1 to 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "insulin area under the curve of the oral glucose test (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "oral glucose test curves (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "the low and high C-peptide groups (Tables 1 and 2)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "Matsuda index, given as median (interquartile range) (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "metabolic clearance rate of insulin and insulin clearance (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_clearance"
+      }
+    }
   ]
 }

@@ -435,5 +435,28 @@
         "quote": "IRG 0 min (pg/mL) 28.2 ± 17.0 ; IRG 30 min (pg/mL) 16.1 ± 11.1 ; IRG 60 min (pg/mL) 13.9 ± 10.1 ; IRG 90 min (pg/mL) 14.6 ± 9.2 ; IRG 120 min (pg/mL) 15.5 ± 10.4"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "changes from baseline of glucose, insulin and glucagon, and their areas over and under the curve (Figures 1 and 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-beta, Matsuda index and insulinogenic index by sex (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "sex differences in the areas, quoted in the text as percentages with a P value only",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    }
   ]
 }

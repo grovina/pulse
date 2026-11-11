@@ -393,5 +393,49 @@
         "quote": "0 min | 119 ± 12 | 76 ± 11 | 107 ± 14 | 74 ± 10 | 64 ± 7 | 6 ± 8 | 97 ± 12 | 5 ± 1 ; 60 min | 118 ± 17 | 73 ± 11 | 105 ± 14 | 69 ± 7 | 61 ± 9 | 9 ± 12 | 94 ± 12 | 5 ± 1 ; 120 min | 113 ± 11 | 78 ± 10 | 102 ± 8 | 75 ± 8 | 60 ± 10 | 9 ± 9 | 94 ± 10 | 5 ± 1"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "glucose, insulin, C-peptide, glucagon, fatty acids, GLP-1 and GIP time courses (figures)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "glucose and insulin areas under the curve of each visit (text)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "active ghrelin at seven times in both visits (Table 4)",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "skeletal muscle microvascular blood volume and flow (figures)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_microvascular_blood_flow"
+      }
+    },
+    {
+      "what": "peptide YY (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "central blood pressure, mean arterial pressure, augmentation index and pulse wave velocity (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    }
   ]
 }

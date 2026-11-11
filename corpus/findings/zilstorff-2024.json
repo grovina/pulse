@@ -135,5 +135,35 @@
         "quote": "Glucose | mmol/L | 4.8 (0.4)"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "mesor, amplitude and peak time of the 24-h rhythms of glucagon, GLP-1, GIP, glucose and C-peptide (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "cosinor_rhythm"
+      }
+    },
+    {
+      "what": "the nine-point 24-h time courses (Figures 2 and 3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "C-peptide, fasting and over 24 h (Tables 1 and 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "correlations of glucose with each hormone, pooled over time points and subjects (Figure 4)",
+      "missing": {
+        "kind": "operator",
+        "name": "correlation_pooled_over_time"
+      }
+    }
   ]
 }

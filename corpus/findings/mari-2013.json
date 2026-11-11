@@ -156,5 +156,28 @@
         "quote": "Mean glucose (mmol/L) | 6.0±0.2 | 6.5±0.3 | 7.2±0.3 | 5.7±0.2 | 6.4±0.3 | 7.4±0.3"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "the type 2 diabetes group, all rows of Table 1",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "the isoglycaemic intravenous glucose arms (Table 1): the infusion rates are not reported",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "insulin secretion, glucose and rate sensitivity, potentiation, GLP-1 and GIP, given as median [interquartile range] (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    }
   ]
 }

@@ -669,5 +669,77 @@
         "quote": "Lactate (mmol/L) | Rest | 0.7 ± 0.1"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "the men with type 2 diabetes, on metformin (Tables 2 to 5)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "the second bout of day 1 and that day's meals, given as a multiple of a resting metabolic rate that is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "day 2 after the exercise day (Tables 4 and 5)",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "lactate at rest on day 1, one value printed 0.7 ± 0.0 (Table 3)",
+      "missing": {
+        "kind": "source",
+        "name": "zero_uncertainty"
+      }
+    },
+    {
+      "what": "areas and incremental areas under the curve after the oral glucose load (Table 5)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_incremental_auc"
+      }
+    },
+    {
+      "what": "respiratory exchange ratio, heart rate and heart rate variability after the glucose load, each the average of four separate ten-minute collections (Table 4)",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_over_separate_windows"
+      }
+    },
+    {
+      "what": "energy expenditure in METs (Tables 2 and 4)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_mets"
+      }
+    },
+    {
+      "what": "GIP before and after the glucose load: the table's rows are not labelled by condition (Table 5)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "glucagon, GLP-1 and the glucose and insulin time courses on day 2 (Figure 3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "RMSSD of heart rate at rest, printed without a unit (Table 4)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    }
   ]
 }

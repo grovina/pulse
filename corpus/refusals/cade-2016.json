@@ -33,8 +33,8 @@
     }
   ],
   "missing": {
-    "kind": "input",
-    "name": "exercise_intensity_without_printed_vo2_peak"
+    "kind": "source",
+    "name": "input_not_printed"
   },
   "detail": "The paper gives the bout only as a percentage of each subject's measured VO2 peak and prints neither that peak (mL/kg/min, or absolute with a body weight) nor a work rate nor a measured uptake, so the activity level cannot be derived."
 }

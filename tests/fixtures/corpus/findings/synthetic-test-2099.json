@@ -339,5 +339,6 @@
         "quote": "Incremental AUC ratio 1.6 (95% CI 1.2 to 2.0)."
       }
     }
-  ]
+  ],
+  "left_out": []
 }

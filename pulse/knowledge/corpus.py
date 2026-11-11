@@ -89,7 +89,11 @@ __all__ = [
 
 CORPUS_ENV = "PULSE_CORPUS_DIR"
 
-REFUSAL_KINDS = ("marker", "input", "population", "timescale", "operator")
+# Why a paper, or part of one, could not be entered: a piece the model lacks, or
+# (``source``) something the paper itself does not give (a number only in a figure,
+# an error bar nobody labelled, an exercise intensity it never states).
+REFUSAL_KINDS = ("marker", "input", "population", "timescale", "operator", "source")
+LEFT_OUT_KINDS = REFUSAL_KINDS
 
 # A queued paper: what a reader needs to start, and nothing the reader must derive.
 QUEUE_PROTOCOL_KINDS = (
@@ -279,6 +283,15 @@ class FindingItem:
 
 
 @dataclass(frozen=True)
+class LeftOut:
+    """Something the paper reports that its finding file could not carry, and why."""
+
+    what: str
+    kind: str  # one of LEFT_OUT_KINDS
+    name: str
+
+
+@dataclass(frozen=True)
 class Finding:
     paper: str
     citation: Citation
@@ -288,6 +301,7 @@ class Finding:
     path: Path | None = None
     # protocol name -> the keys whose values the reader assumed (the paper does not state them)
     assumed: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    left_out: tuple[LeftOut, ...] = ()
 
     @property
     def specs(self) -> list[CohortStatisticSpec]:
@@ -1118,11 +1132,44 @@ def _finding_item(
     return FindingItem(fid, spec, location, acknowledged), used
 
 
+def _missing(r: _Reader, data: Any, where: str, kinds: tuple[str, ...]) -> tuple[str, str] | None:
+    """``{"kind", "name"}``: the piece that is missing, countable by both."""
+    md = r.obj(data, where, {"kind", "name"})
+    if md is None:
+        return None
+    kind = r.choice(md, "kind", where, kinds)
+    name = r.string(md, "name", where)
+    if name is not None and not _NAME.fullmatch(name):
+        r.add("parse", f"{where} name {name!r} is not lowercase letters, digits and underscores")
+        name = None
+    if kind == "marker" and name in SERIES_INDEX:
+        r.add("parse", f"{where}: marker {name!r} is a series the model already carries")
+        name = None
+    return (kind, name) if kind and name else None
+
+
+def _left_out(r: _Reader, raw: Any) -> tuple[LeftOut, ...]:
+    if not isinstance(raw, list):
+        r.add("parse", "left_out is not a list ([] if the file carries everything the paper reports)")
+        return ()
+    out: list[LeftOut] = []
+    for i, item in enumerate(raw):
+        w = f"left_out {i + 1}"
+        d = r.obj(item, w, {"what", "missing"})
+        if d is None:
+            continue
+        what = r.string(d, "what", w)
+        missing = _missing(r, d.get("missing"), f"{w} missing", LEFT_OUT_KINDS) if "missing" in d else None
+        if what and missing:
+            out.append(LeftOut(what, *missing))
+    return tuple(out)
+
+
 def parse_finding(data: Any, *, path: Path | None = None) -> Finding:
     """One paper's file as a ``Finding``. Raises ``CorpusError`` with every problem."""
     r = _Reader()
     d = r.obj(
-        data, "file", {"paper", "citation", "population", "protocols", "findings"},
+        data, "file", {"paper", "citation", "population", "protocols", "findings", "left_out"},
     )
     paper = ""
     if d is not None:
@@ -1175,10 +1222,11 @@ def parse_finding(data: Any, *, path: Path | None = None) -> Finding:
         if isinstance(raw_protocols, list) and len(items) == len(raw_findings):
             for nm in sorted(set(protocols) - used):
                 r.add("protocol", f"protocol {nm} is declared but no finding uses it")
+    left_out = _left_out(r, d.get("left_out")) if "left_out" in d else ()
     if r.problems:
         raise CorpusError(r.problems, paper)
     assert citation is not None and who is not None
-    return Finding(paper, citation, who.n, protocols, tuple(items), path, assumed)
+    return Finding(paper, citation, who.n, protocols, tuple(items), path, assumed, left_out)
 
 
 def parse_refusal(data: Any, *, path: Path | None = None) -> Refusal:
@@ -1212,13 +1260,9 @@ def parse_refusal(data: Any, *, path: Path | None = None) -> Refusal:
             if what and loc:
                 reported.append(Reported(what, loc))
     kind = name = None
-    md = r.obj(d.get("missing"), "missing", {"kind", "name"}) if "missing" in d else None
-    if md is not None:
-        kind = r.choice(md, "kind", "missing", REFUSAL_KINDS)
-        name = r.string(md, "name", "missing")
-        if kind == "marker" and name in SERIES_INDEX:
-            r.add("parse", f"missing marker {name!r} is a series the model already carries")
-            name = None
+    missing = _missing(r, d.get("missing"), "missing", REFUSAL_KINDS) if "missing" in d else None
+    if missing is not None:
+        kind, name = missing
     detail = r.string(d, "detail", "refusal")
     if r.problems:
         raise CorpusError(r.problems, paper)
@@ -1408,6 +1452,29 @@ def _cross_problems(
 def load_file_specs(root: Path | None = None) -> list[CohortStatisticSpec]:
     """The unsealed specs of every finding file: what ``cohort_statistics`` joins."""
     return list(load_corpus(root).specs)
+
+
+def count_missing(corpus: "Corpus") -> dict[str, dict[str, tuple[int, int]]]:
+    """``{kind: {name: (papers refused for it, papers that left something out for it)}}``.
+
+    Everything the papers report that the corpus could not take, by the piece that
+    was missing: the refusal pile and every finding file's ``left_out``. A paper
+    counts once per name.
+    """
+    refused: dict[tuple[str, str], set[str]] = {}
+    left: dict[tuple[str, str], set[str]] = {}
+    for x in corpus.refusals:
+        refused.setdefault((x.kind, x.name), set()).add(x.paper)
+    for f in corpus.findings:
+        for item in f.left_out:
+            left.setdefault((item.kind, item.name), set()).add(f.paper)
+    out: dict[str, dict[str, tuple[int, int]]] = {}
+    for kind in LEFT_OUT_KINDS:
+        names = {n for k, n in (*refused, *left) if k == kind}
+        rows = {n: (len(refused.get((kind, n), ())), len(left.get((kind, n), ()))) for n in names}
+        if rows:
+            out[kind] = dict(sorted(rows.items(), key=lambda kv: (-sum(kv[1]), kv[0])))
+    return out
 
 
 def count_refusals(refusals: list[Refusal] | tuple[Refusal, ...]) -> dict[str, dict[str, int]]:

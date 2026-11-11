@@ -66,5 +66,49 @@
         "quote": "Plasma glucose (mmol/L) | 4.9 ± 0.1"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "glucose infusion rate (M) at the end of the clamp, for groups the paper defines by M itself (Table 1)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "the clamp at an insulin infusion of 40 mU/min/m2: insulin, glucose slope (Table 1)",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "C-peptide and insulin secretion, basal and at the end of the clamp, and their slopes (Table 1, Figure 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "basal insulin, printed 0.05 ± 0.00 nmol/L (Table 1)",
+      "missing": {
+        "kind": "source",
+        "name": "zero_uncertainty"
+      }
+    },
+    {
+      "what": "the type 2 diabetes group (Table 1)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "time courses during the clamp (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
   ]
 }

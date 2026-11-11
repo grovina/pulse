@@ -514,6 +514,21 @@ def format_refusals(root: Path) -> str:
     return "\n".join(lines)
 
 
+def format_missing(root: Path) -> str:
+    """What the papers report that the corpus could not take, by the missing piece."""
+    from .knowledge.corpus import LEFT_OUT_KINDS, count_missing, load_corpus
+
+    counts = count_missing(load_corpus(root))
+    if not counts:
+        return "nothing refused or left out"
+    lines = ["papers refused / papers that left something out, by the missing piece"]
+    for kind in LEFT_OUT_KINDS:
+        if kind in counts:
+            lines.append(f"  {kind}")
+            lines.extend(f"    {r:3d} {o:3d}  {name}" for name, (r, o) in counts[kind].items())
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m pulse.admit",
@@ -523,6 +538,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--as", dest="kind", choices=("finding", "refusal", "queue"),
                         help="what the file is, when its directory does not say")
     parser.add_argument("--refusals", action="store_true", help="count the refusal pile by kind and name")
+    parser.add_argument("--missing", action="store_true",
+                        help="count refusals and what finding files left out, by the missing piece")
     parser.add_argument("--piles", action="store_true", help="count the papers in queue, findings and refusals")
     args = parser.parse_args(argv)
     if args.piles:
@@ -532,6 +549,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.refusals:
         print(format_refusals(corpus_root()))
+        return 0
+    if args.missing:
+        print(format_missing(corpus_root()))
         return 0
     if args.path is None:
         parser.error("a file is required")

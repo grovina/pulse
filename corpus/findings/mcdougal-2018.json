@@ -246,5 +246,49 @@
         "quote": "Insulin, µU/mL | 3.1 ± 1.0"
       }
     }
+  ],
+  "left_out": [
+    {
+      "what": "mean, maximum and minimum sensor glucose over the fast, and time below 70 and 54 mg/dL (Table 3, Figure 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "interstitial_glucose"
+      }
+    },
+    {
+      "what": "serum beta-hydroxybutyrate after the 12-h fast, printed 0.1 ± 0.0 (Table 2)",
+      "missing": {
+        "kind": "source",
+        "name": "zero_uncertainty"
+      }
+    },
+    {
+      "what": "adrenaline, printed in ng/mL, which converts to an impossible level (Table 2)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "noradrenaline at 12 and 72 h (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "insulin at 72 h, below the assay's detection limit in five of six subjects (Table 2)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "blood acetate, urine ketones and brain acetate metabolism (Tables 2 and 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "acetate"
+      }
+    }
   ]
 }

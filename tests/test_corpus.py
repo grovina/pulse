@@ -12,7 +12,7 @@ import pulse.knowledge.cohort_statistics as registry
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS, expand_curves, join_file_findings
 from pulse.knowledge.cohort_types import InitMode, StatisticKind
 from pulse.knowledge.corpus import (
-    REFUSAL_KINDS, CorpusError, count_refusals, load_corpus, parse_finding, parse_refusal, read_finding,
+    REFUSAL_KINDS, CorpusError, count_missing, count_refusals, load_corpus, parse_finding, parse_refusal, read_finding,
 )
 from pulse.knowledge.physiology_rules import _AUTHORED_RULES
 from pulse.knowledge.sealing import apply_seal, paper_is_sealed
@@ -181,7 +181,7 @@ def test_a_file_never_states_sigma_n_arm_weight_shape_or_sealed():
 
 
 @pytest.mark.parametrize("path, key", [
-    ([], "citation"), ([], "population"), ([], "protocols"), ([], "findings"),
+    ([], "citation"), ([], "population"), ([], "protocols"), ([], "findings"), ([], "left_out"),
     (["citation"], "title"), (["population"], "n"), (["population"], "age_years"),
     (["protocols", 0], "meals"), (["protocols", 0], "start_hour"), (["protocols", 0], "assumed"),
     (["findings", 0], "location"), (["findings", 0], "uncertainty"), (["findings", 0], "unit"),
@@ -336,6 +336,44 @@ def test_a_file_can_say_an_error_was_computed_over_more_tests_than_people():
     assert any("must exceed n" in p for p in _problems(data))
 
 
+def test_a_finding_file_records_what_it_left_out_and_why():
+    data = _data()
+    data["left_out"] = [
+        {"what": "C-peptide at each time (Table 2)", "missing": {"kind": "marker", "name": "c_peptide"}},
+        {"what": "time courses (Figure 1)", "missing": {"kind": "source", "name": "figure_only"}},
+    ]
+    left = parse_finding(data).left_out
+    assert [(x.kind, x.name) for x in left] == [("marker", "c_peptide"), ("source", "figure_only")]
+
+
+@pytest.mark.parametrize("entry, fragment", [
+    ({"what": "x", "missing": {"kind": "marker", "name": "glucose"}}, "already carries"),
+    ({"what": "x", "missing": {"kind": "figure", "name": "figure_only"}}, "kind"),
+    ({"what": "x", "missing": {"kind": "source", "name": "Figure only"}}, "lowercase"),
+    ({"what": "x"}, "missing"),
+    ({"what": "x", "missing": {"kind": "source", "name": "figure_only"}, "value": 3}, "value"),
+])
+def test_a_left_out_entry_names_a_countable_missing_piece(entry, fragment):
+    data = _data()
+    data["left_out"] = [entry]
+    assert any("left_out 1" in p and fragment in p for p in _problems(data))
+
+
+def test_what_is_missing_is_counted_over_refusals_and_left_outs(tmp_path):
+    data = _data()
+    data["left_out"] = [
+        {"what": "a", "missing": {"kind": "operator", "name": "single_arm_auc"}},
+        {"what": "b", "missing": {"kind": "operator", "name": "single_arm_auc"}},
+        {"what": "c", "missing": {"kind": "source", "name": "figure_only"}},
+    ]
+    other = _renamed(SEALED_SLUG, 2104, "10.0000/synthetic.2104")
+    other["left_out"] = [{"what": "d", "missing": {"kind": "source", "name": "figure_only"}}]
+    corpus = load_corpus(_corpus(tmp_path, {data["paper"]: data, SEALED_SLUG: other}))
+    counts = count_missing(corpus)
+    assert counts["operator"] == {"single_arm_auc": (0, 1)}  # one paper, however many entries
+    assert counts["source"] == {"figure_only": (0, 2)}
+
+
 def test_a_protocol_names_the_keys_the_paper_does_not_state():
     data = _data()
     data["protocols"][0]["assumed"] = ["start_hour", "duration_min"]
@@ -444,7 +482,7 @@ def test_the_fixture_refusal_parses_and_counts_by_kind():
     r = parse_refusal(json.loads(REFUSAL.read_text(encoding="utf-8")), path=REFUSAL)
     assert (r.kind, r.name) == ("marker", "adiponectin")
     assert count_refusals([r, r]) == {"marker": {"adiponectin": 2}}
-    assert REFUSAL_KINDS == ("marker", "input", "population", "timescale", "operator")
+    assert REFUSAL_KINDS == ("marker", "input", "population", "timescale", "operator", "source")
 
 
 def test_a_refusal_is_strict_too():
