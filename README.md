@@ -26,10 +26,11 @@ is **learned** follow a deliberate hierarchy:
 | Medical knowledge | What typically happens | Training signal and coupling-sign priors |
 | Individual variation | This person | Learned from their own data |
 
-Seven subsystems — metabolic, appetite, stress, cardiovascular, thermoregulation, respiratory, gut —
-are wired along a sparse, anatomically faithful coupling graph. Chemical species follow mass-action
-rate laws; vital signs use learned dynamics constrained by the known couplings. A single glucose
-reading propagates through real pathways instead of an entangled hidden state.
+Nine subsystems — metabolic, appetite, stress, cardiovascular, thermoregulation, respiratory,
+hepatobiliary, gastric, circadian — are wired along a sparse, anatomically faithful coupling graph.
+Chemical species follow mass-action rate laws; vital signs use learned dynamics constrained by the
+known couplings. A single glucose reading propagates through real pathways instead of an entangled
+hidden state.
 
 ## Running it
 
@@ -60,8 +61,9 @@ uv sync --no-default-groups --group gpu
 
 ## Documents
 
+- [PLAN.md](PLAN.md) — where it is headed, and in what order.
+- [STATE.md](STATE.md) — what is true at this commit: counts, speed, the last board, known defects.
 - [docs/prd.md](docs/prd.md) — the vision, prior art, and the philosophy of many weak constraints.
-- [docs/roadmap.md](docs/roadmap.md) — where it stands and where it's headed.
 - [docs/training-runs.md](docs/training-runs.md) — how to launch local + Cloud Run training.
 - [docs/](docs/) — design notes plus the iteration history. The `iter<N>-handoff.md` files are a
   running lab notebook; they predate this standalone repo, so their paths/commands reflect the

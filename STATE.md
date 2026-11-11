@@ -1,0 +1,121 @@
+# State
+
+Snapshot of **this commit**. Rewrite it in the same commit as the change it
+describes; `git show <rev>:STATE.md` is pulse at that point. The count table
+is checked against the code by `tests/test_state.py`, so it cannot go stale
+quietly. Everything below the table is a measurement with its date, and has
+to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
+
+## Counts
+
+| Metric | Now |
+|---|---|
+| Modules | 9 (metabolic 13 states, appetite 5, stress 5, cardiovascular 4, hepatobiliary 4, gastric 3, respiratory 2, circadian 2, thermoreg 1) |
+| States | 39 |
+| Observables | 10 |
+| Parameters | 37,287 at the default widths |
+| Published numbers | 43 in 10 tables, each learned from its published value |
+| Corrections | 3 |
+| Cohort specs | 66 authored, 4 of them curves; 73 training points and 12 held-out points |
+| Rules | 62 training, 0 held out |
+| Coupling priors | 32 |
+| Papers | 68, of which 0 are sealed |
+| Held-out items | 5 |
+| Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) |
+
+## The model
+
+One network of nine modules over 39 states, stepped by explicit Euler at one
+minute for every state. A person is a 32-number embedding; the median person
+is the zero embedding. The checkpoints of iters 113–115 have 35,551
+parameters (`--hidden-dim=48`).
+
+## Training
+
+The recipe is `train/spec.json` (iter 115: 58 epochs, 30 on trajectories
+alone, then 28 with the literature). The job is 8 vCPU, 32 GiB, 72 h, no
+retries.
+
+Measured on iter 115's log (2026-10-31 to 2026-11-03):
+
+- An epoch with the literature takes 3 to 3.7 h for 40 steps. The 160
+  evidence items of an epoch take 9,167 s (57 s each), the rules 2,418 s, the
+  dose response 679 s, the carbohydrate balance 537 s, the teacher tape 356 s.
+- One core of eight is busy (`--torch-threads` 1, `--compile-steps` off). Peak
+  memory is 10.7 GB.
+- 63% of the simulated minutes are the 1,440-minute fed day that starts every
+  arm, redone for each arm of each item.
+
+## Runs
+
+| Execution | Iter | Started | Ended |
+|---|---|---|---|
+| `trainer-rgg6f` | 115 | 2026-10-31 | timed out at 72 h in epoch 49 of 58; left `last_good.pt` and no board |
+| `trainer-bgdhx` | 114 | 2026-10-28 | finished in 3 h 11 min; the last scored checkpoint |
+| `trainer-kd75r` | 114 | 2026-10-28 | out of memory after 10 h |
+| `trainer-sfb64` | 114 | 2026-10-24 | timed out at 72 h |
+| `trainer-krqfh` | 114 | 2026-10-24 | out of memory after 4.6 h |
+| `trainer-2j88z` | 113 | 2026-10-19 | finished in 1 h 38 min |
+
+## The board
+
+Iter 114 is the last checkpoint with a board. It was scored on 2026-10-29,
+before sealing went by paper:
+
+- Held out: median |z| 1.21 on 9 points, 7 of one glucose curve and 2 of one
+  oxygen-uptake curve. Training: 0.09 on 131 items. Both curves come from
+  papers that also train, and the oxygen-uptake targets equal the constants
+  the student starts from.
+- People (CGMacros, 44 episodes): glucose error 28.17 mg/dL calibrated against
+  28.06 for the median person. Of 36 accepted calibrations 18 left the median
+  person unchanged, and 11 of the 26 that changed improved. Heart-rate skill
+  is +0.14.
+- 46 of 101 scalar directions are open.
+
+The board now reports sealed papers and held-out items as separate lines,
+each with its paper count and a 90% interval from resampling papers, and can
+score the untrained student beside them (`pulse/scoreboard.py`). No
+checkpoint has been scored by it yet.
+
+## The corpus
+
+- Every one of the 68 papers has a training item, so none is sealed
+  (`pulse/knowledge/sealing.py`). The sealed line fills only as new papers
+  are admitted; a fifth of them are held out.
+- The five held-out items predate sealing by paper. Four share a paper or an
+  arm with training and two have targets equal to a starting constant; the
+  board prints what each shares.
+- About 45% of the cohort targets are textbook ranges, not numbers reported
+  by a study (review of 2026-11-11). Their papers are the slugs `textbook-*`,
+  `ada-2024`, `who-1999`, `acsm-guidelines`, `icp-reference-range-2022`,
+  `digestion-1978`, `diabetes-2017-66-1999`, `pmid-2424396`, `pmid-3525269`
+  and `task-force-1996`.
+- One item is a spread across people and none is a correlation. Every
+  population is healthy adults.
+- About 50 items cite several papers; the first is taken as the paper.
+
+## Known wrong
+
+- A cohort item with no `n_arm` has its sigma divided by the square root of
+  the number of people drawn (`pulse/cohort_loss.py`,
+  `pulse/training/evidence_step.py`), so how tightly it binds depends on a
+  training flag. That is 35 of the 85 scored points.
+- `pytest` from the repository root fails while collecting
+  `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
+- There is no CI. The suite is run by hand:
+  `uv run --group dev pytest tests/ -n auto`.
+
+Reported by the review of 2026-11-11 and not yet confirmed:
+
+- the 693 parameters of the gut kernel receive no gradient;
+- the stomach's split correction never reaches absorption;
+- the cortisol gain is centred on the population's cortisol, not the
+  person's;
+- calibration fits interstitial glucose while evaluation reads plasma;
+- `integrate` with a step other than one minute is silently wrong.
+
+## Live
+
+- The `engine` service is not ready: its container fails the health check
+  (2026-11-11). `models/prod.pt` dates from 2026-06-07 and has an earlier
+  state layout.
