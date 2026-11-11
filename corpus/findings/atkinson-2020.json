@@ -1,0 +1,772 @@
+{
+  "paper": "atkinson-2020",
+  "citation": {
+    "authors": "Atkinson FS, Heruc GA, Tan VMH, et al.",
+    "title": "Extending the Overnight Fast: Sex Differences in Acute Metabolic Responses to Breakfast",
+    "journal": "Nutrients",
+    "year": 2020,
+    "doi": "10.3390/nu12082173",
+    "pmid": "32707917",
+    "pmcid": "PMC7469038"
+  },
+  "population": {
+    "n": 24,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 23.0,
+      "sd": 2.6,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.1,
+      "sd": 2.5,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve male and twelve female healthy University of Sydney students (11 European-Caucasian, 13 Southeast Asian). Age and BMI are mean +/- SD for all 24 (not given by sex); each arm uses one sex. Each fast length was tested three times per person (the table footnotes' n = 36 is 12 people x 3 tests per sex per fast length); uncertainty n is the 12 people."
+  },
+  "protocols": [
+    {
+      "name": "f_fast12h",
+      "description": "female participants, 12 h fast from the 19:00 evening meal to the 7:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 7:00 - 0.5 h = 6.5, prefast_hours = 12 - 0.5 = 11.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 6.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 11.5,
+      "population": {
+        "sex": "female"
+      }
+    },
+    {
+      "name": "f_fast14h",
+      "description": "female participants, 14 h fast from the 19:00 evening meal to the 9:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 9:00 - 0.5 h = 8.5, prefast_hours = 14 - 0.5 = 13.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 13.5,
+      "population": {
+        "sex": "female"
+      }
+    },
+    {
+      "name": "f_fast16h",
+      "description": "female participants, 16 h fast from the 19:00 evening meal to the 11:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 11:00 - 0.5 h = 10.5, prefast_hours = 16 - 0.5 = 15.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 10.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 15.5,
+      "population": {
+        "sex": "female"
+      }
+    },
+    {
+      "name": "m_fast12h",
+      "description": "male participants, 12 h fast from the 19:00 evening meal to the 7:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 7:00 - 0.5 h = 6.5, prefast_hours = 12 - 0.5 = 11.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 6.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 11.5,
+      "population": {
+        "sex": "male"
+      }
+    },
+    {
+      "name": "m_fast14h",
+      "description": "male participants, 14 h fast from the 19:00 evening meal to the 9:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 9:00 - 0.5 h = 8.5, prefast_hours = 14 - 0.5 = 13.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 13.5,
+      "population": {
+        "sex": "male"
+      }
+    },
+    {
+      "name": "m_fast16h",
+      "description": "male participants, 16 h fast from the 19:00 evening meal to the 11:00 breakfast (75 g available carbohydrate, 3 g fat, 12 g protein), samples at -20, -10, 0 min and to 120 min after the start of the meal. Arm starts 30 min before breakfast so that the -20 to 0 min fasting samples fall inside it: start_hour = 11:00 - 0.5 h = 10.5, prefast_hours = 16 - 0.5 = 15.5, duration_min = 30 + 120 + 1 = 151",
+      "duration_min": 151,
+      "start_hour": 10.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 3.0,
+          "protein_g": 12.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ],
+      "prefast_hours": 15.5,
+      "population": {
+        "sex": "male"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "f_12h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), females, 12 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column '12 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.2 ± 0.06"
+      }
+    },
+    {
+      "id": "f_12h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, females, 12 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h glucose (mmol/L)', column '12 h'",
+        "quote": "2-h glucose (mmol/L) | 5.4 ± 0.10"
+      }
+    },
+    {
+      "id": "f_12h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), females, 12 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 28.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column '12 h'",
+        "quote": "Fasting insulin (pmol/L) | 28.0 ± 2.0"
+      }
+    },
+    {
+      "id": "f_12h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, females, 12 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 94.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.9,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h insulin (pmol/L)', column '12 h'",
+        "quote": "2-h insulin (pmol/L) | 94.2 ± 11.9"
+      }
+    },
+    {
+      "id": "f_14h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), females, 14 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column '14 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.2 ± 0.06"
+      }
+    },
+    {
+      "id": "f_14h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, females, 14 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h glucose (mmol/L)', column '14 h'",
+        "quote": "2-h glucose (mmol/L) | 5.5 ± 0.10"
+      }
+    },
+    {
+      "id": "f_14h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), females, 14 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 24.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column '14 h'",
+        "quote": "Fasting insulin (pmol/L) | 24.1 ± 2.0"
+      }
+    },
+    {
+      "id": "f_14h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, females, 14 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 107.8,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.9,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h insulin (pmol/L)', column '14 h'",
+        "quote": "2-h insulin (pmol/L) | 107.8 ± 11.9"
+      }
+    },
+    {
+      "id": "f_16h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), females, 16 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column '16 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.0 ± 0.06"
+      }
+    },
+    {
+      "id": "f_16h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, females, 16 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h glucose (mmol/L)', column '16 h'",
+        "quote": "2-h glucose (mmol/L) | 5.8 ± 0.10"
+      }
+    },
+    {
+      "id": "f_16h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), females, 16 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 18.6,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column '16 h'",
+        "quote": "Fasting insulin (pmol/L) | 18.6 ± 2.0"
+      }
+    },
+    {
+      "id": "f_16h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, females, 16 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 118.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.9,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row '2-h insulin (pmol/L)', column '16 h'",
+        "quote": "2-h insulin (pmol/L) | 118.2 ± 11.9"
+      }
+    },
+    {
+      "id": "m_12h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), males, 12 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.05,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucose (mmol/L)', column '12 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.4 ± 0.05"
+      }
+    },
+    {
+      "id": "m_12h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, males, 12 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucose (mmol/L)', column '12 h'",
+        "quote": "2-h glucose (mmol/L) | 5.8 ± 0.11"
+      }
+    },
+    {
+      "id": "m_12h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), males, 12 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 24.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting insulin (pmol/L)', column '12 h'",
+        "quote": "Fasting insulin (pmol/L) | 24.2 ± 2.1"
+      }
+    },
+    {
+      "id": "m_12h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, males, 12 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 95.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h insulin (pmol/L)', column '12 h'",
+        "quote": "2-h insulin (pmol/L) | 95.2 ± 8.0"
+      }
+    },
+    {
+      "id": "m_14h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), males, 14 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.05,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucose (mmol/L)', column '14 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.3 ± 0.05"
+      }
+    },
+    {
+      "id": "m_14h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, males, 14 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucose (mmol/L)', column '14 h'",
+        "quote": "2-h glucose (mmol/L) | 5.6 ± 0.11"
+      }
+    },
+    {
+      "id": "m_14h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), males, 14 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 24.3,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting insulin (pmol/L)', column '14 h'",
+        "quote": "Fasting insulin (pmol/L) | 24.3 ± 2.1"
+      }
+    },
+    {
+      "id": "m_14h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, males, 14 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 78.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h insulin (pmol/L)', column '14 h'",
+        "quote": "2-h insulin (pmol/L) | 78.0 ± 8.0"
+      }
+    },
+    {
+      "id": "m_16h_fasting_glucose",
+      "description": "Fasting plasma glucose (mean of -20, -10, 0 min samples), males, 16 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.05,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucose (mmol/L)', column '16 h'",
+        "quote": "Fasting glucose (mmol/L) | 5.2 ± 0.05"
+      }
+    },
+    {
+      "id": "m_16h_glucose_2h",
+      "description": "Plasma glucose 120 min after breakfast start, males, 16 h fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucose (mmol/L)', column '16 h'",
+        "quote": "2-h glucose (mmol/L) | 5.6 ± 0.11"
+      }
+    },
+    {
+      "id": "m_16h_fasting_insulin",
+      "description": "Fasting plasma insulin (mean of -20, -10, 0 min samples), males, 16 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "value": 21.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.1,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting insulin (pmol/L)', column '16 h'",
+        "quote": "Fasting insulin (pmol/L) | 21.2 ± 2.1"
+      }
+    },
+    {
+      "id": "m_16h_insulin_2h",
+      "description": "Plasma insulin 120 min after breakfast start, males, 16 h fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 71.8,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row '2-h insulin (pmol/L)', column '16 h'",
+        "quote": "2-h insulin (pmol/L) | 71.8 ± 8.0"
+      }
+    }
+  ]
+}
