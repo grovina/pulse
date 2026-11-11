@@ -89,7 +89,10 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "glucagon": {
         "pg/ml": (1.0, 0.0), "ng/l": (1.0, 0.0), "pmol/l": (_pg_ml_per_pmol_l(3482.8), 0.0),
     },
-    "ffa": {"mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "meq/l": (1.0, 0.0), "umol/l": (0.001, 0.0)},
+    "ffa": {
+        "mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "meq/l": (1.0, 0.0), "umol/l": (0.001, 0.0),
+        "ueq/l": (0.001, 0.0),  # monocarboxylic acids: 1 uEq = 1 umol
+    },
     "bhb": {  # beta-hydroxybutyric acid, 104.1 g/mol
         "mmol/l": (1.0, 0.0), "mm": (1.0, 0.0), "umol/l": (0.001, 0.0), "mg/dl": (10.0 / 104.1, 0.0),
     },

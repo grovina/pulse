@@ -54,6 +54,8 @@ def test_micro_signs_and_case_are_one_unit():
     ("glucagon", 3.4828, "pmol/L", 12.13, ),
     ("glucagon", 70.0, "ng/L", 70.0),
     ("ffa", 500.0, "µmol/L", 0.5),
+    ("ffa", 500.0, "µEq/L", 0.5),
+    ("ffa", 500.0, "uEq/L", 0.5),
     ("bhb", 10.41, "mg/dL", 1.0),
     ("bhb", 1000.0, "µmol/L", 1.0),
     ("lactate", 9.008, "mg/dL", 1.0),
