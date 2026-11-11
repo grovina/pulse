@@ -1,0 +1,143 @@
+{
+  "paper": "bassami-2011",
+  "citation": {
+    "authors": "Bassami M, MacLaren DPM, Ahmadizad S, et al.",
+    "title": "Effects of Mixed Isoenergetic Meals on Fat and Carbohydrate Metabolism during Exercise in Older Men",
+    "journal": "Journal of Nutrition and Metabolism",
+    "year": 2011,
+    "doi": "10.1155/2011/172853",
+    "pmid": "21773014",
+    "pmcid": "PMC3136113"
+  },
+  "population": {
+    "n": 8,
+    "sex": "male",
+    "age_years": {
+      "mean": 63.3,
+      "sd": 5.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Eight healthy older men (mean age 63.3 +/- 5.2 y, body mass 78.1 +/- 14.0 kg, height 168 cm, body fat 21 +/- 5.3%); HOMA2-IR and HOMA2-%B described by the authors as normal. BMI is not printed."
+  },
+  "protocols": [
+    {
+      "name": "fasting",
+      "description": "Overnight-fasted pre-meal blood sample of a laboratory visit at 08:00 (stated), drawn seated after 20 min rest (stated); the paper gives no fast length (only 'overnight') and no sample duration, so a 10 h fast and a 30 min run-in are assumed",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_nefa_hf_visit",
+      "description": "Fasting (pre-meal) plasma NEFA on the high-fat-meal visit, mean and SE; the same eight men were tested on each of four visits",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.39,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.08,
+        "n": 8
+      },
+      "location": {
+        "where": "Results, NEFA paragraph (pre-meal value of the 'from ... to ...' pair; Figure 1 pre-meal)",
+        "quote": "Pre-exercise NEFA concentration increased significantly following HF (from 0.39 ± 0.08 to 0.61 ± 0.08 mmol/L)"
+      }
+    },
+    {
+      "id": "fasting_nefa_hgi_visit",
+      "description": "Fasting (pre-meal) plasma NEFA on the high-GI-meal visit, mean and SE; the same eight men were tested on each of four visits",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.44,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Results, NEFA paragraph (pre-meal value of the 'from ... to ...' pair; Figure 1 pre-meal)",
+        "quote": "decreased significantly after eating HGI (from 0.44 ± 0.09 to 0.13 ± 0.02 mmol/L)"
+      }
+    },
+    {
+      "id": "fasting_nefa_lgi_visit",
+      "description": "Fasting (pre-meal) plasma NEFA on the low-GI-meal visit, mean and SE; the same eight men were tested on each of four visits",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.55,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.08,
+        "n": 8
+      },
+      "location": {
+        "where": "Results, NEFA paragraph (pre-meal value of the 'from ... to ...' pair; Figure 1 pre-meal)",
+        "quote": "LGI (from 0.55 ± 0.08 to 0.27 ± 0.07 mmol/L)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all post-meal and post-exercise values (NEFA, glucose, insulin, glycerol, 3-OHB; text and Figures 1-5), and fat/CHO oxidation rates (g/min) during exercise: the meals are given only as percentages of an unstated energy",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "glycerol, 3-OHB and insulin time points shown only in Figures 2, 3, 5",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "resting insulin 15.2 +/- 1.1 uU/mL (Results, insulin paragraph): text does not say whether it is the HGI visit or all visits",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "HOMA2-IR 0.76 +/- 0.06 and HOMA2-B 78.5 +/- 69 (derived indices)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
