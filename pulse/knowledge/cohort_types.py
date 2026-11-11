@@ -75,10 +75,16 @@ class BelowBaseline(str, Enum):
     * ``ignored`` — only the area above baseline counts; a segment that crosses
       the baseline is cut where the straight line between its two samples
       crosses it (the usual "positive incremental area").
+    * ``unstated`` — the paper does not say which of the two it printed, and
+      most do not. The model answers for both: its number is the paper's value
+      when that lies between the two readings of the model's own curves, and
+      the nearer reading otherwise. Where a marker never goes under its
+      baseline the readings are one and nothing is lost.
     """
 
     SUBTRACTED = "subtracted"
     IGNORED = "ignored"
+    UNSTATED = "unstated"
 
 
 # Named axes of the person code. A draw writes factor ``i`` into coordinate

@@ -374,6 +374,11 @@ def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> tor
       the first sample time). ``subtracted`` counts what is under baseline
       negative. ``ignored`` counts only what is above it; a segment that crosses
       the baseline is cut where the straight line between its samples does.
+      ``unstated`` is both: each person's number is the blend of the two readings
+      whose mean over these people is nearest ``spec.target`` (the target itself
+      when it lies between the two means, the nearer reading otherwise). The
+      blend's weight is a constant of the batch, so a target between the readings
+      costs nothing and pulls on nothing.
     """
     T = int(series.shape[1])
     if spec.kind is StatisticKind.CHANGE_FROM_BASELINE:
@@ -400,19 +405,27 @@ def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> tor
         base = y[:, 0]
     d = y - base.unsqueeze(1)
     d0, d1 = d[:, :-1], d[:, 1:]
+    net = (0.5 * (d0 + d1) * dt).sum(dim=1) / span
     if spec.below_baseline is BelowBaseline.SUBTRACTED:
-        seg = 0.5 * (d0 + d1)
-    else:
-        zero = torch.zeros_like(d0)
-        above = (d0 >= 0) & (d1 >= 0)
-        crosses = d0 * d1 < 0
-        # A crossing segment keeps the triangle on its positive side: height p, and
-        # a share p / (p + |n|) of the segment. ``den`` is 1 elsewhere so the
-        # unselected branch has a finite gradient.
-        den = torch.where(crosses, (d1 - d0).abs(), torch.ones_like(d0))
-        p = torch.where(d0 > 0, d0, d1)
-        seg = torch.where(above, 0.5 * (d0 + d1), zero) + torch.where(crosses, p * p / (2.0 * den), zero)
-    return (seg * dt).sum(dim=1) / span
+        return net
+    zero = torch.zeros_like(d0)
+    both_above = (d0 >= 0) & (d1 >= 0)
+    crosses = d0 * d1 < 0
+    # A crossing segment keeps the triangle on its positive side: height p, and
+    # a share p / (p + |n|) of the segment. ``den`` is 1 elsewhere so the
+    # unselected branch has a finite gradient.
+    den = torch.where(crosses, (d1 - d0).abs(), torch.ones_like(d0))
+    p = torch.where(d0 > 0, d0, d1)
+    seg = torch.where(both_above, 0.5 * (d0 + d1), zero) + torch.where(crosses, p * p / (2.0 * den), zero)
+    above = (seg * dt).sum(dim=1) / span
+    if spec.below_baseline is BelowBaseline.IGNORED:
+        return above
+    assert spec.below_baseline is BelowBaseline.UNSTATED
+    low, gap = net.mean().detach(), (above.mean() - net.mean()).detach()
+    if float(gap) <= 0.0:
+        return net
+    share = ((float(spec.target) - low) / gap).clamp(0.0, 1.0)
+    return net + share * (above - net)
 
 
 def _window_mean(traj: torch.Tensor, marker_idx: int, window: StatisticWindow) -> torch.Tensor:

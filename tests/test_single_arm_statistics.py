@@ -112,6 +112,44 @@ def test_incremental_area_ignored_cuts_a_crossing_segment_and_drops_one_wholly_b
     assert net.tolist() == pytest.approx([2700.0 / 120.0, -1050.0 / 120.0])
 
 
+def test_an_unstated_incremental_area_is_held_to_the_nearer_of_the_two_readings():
+    rows = _series([[100, 160, 140, 90, 100], [100, 80, 60, 120, 110]])
+    net = [2700.0 / 120.0, -1050.0 / 120.0]     # mean 6.875
+    above = [2880.0 / 120.0, 550.0 / 120.0]     # mean 14.29
+    spec = _hand_spec(StatisticKind.INCREMENTAL_AREA, below=BelowBaseline.UNSTATED)
+    # The paper's value lies under both readings: the model is held to the net one.
+    assert per_person_statistic(rows, replace(spec, target=5.0)).tolist() == pytest.approx(net)
+    # Over both: to the one that ignores what is under baseline.
+    assert per_person_statistic(rows, replace(spec, target=20.0)).tolist() == pytest.approx(above)
+    # Between them: the people's mean is the paper's value, whichever of the two it printed.
+    got = per_person_statistic(rows, replace(spec, target=10.0))
+    assert float(got.mean()) == pytest.approx(10.0)
+    assert all(lo <= x <= hi for lo, x, hi in zip(net, got.tolist(), above))
+
+
+def test_an_unstated_area_between_the_readings_pulls_on_nothing():
+    rows = _series([[100, 160, 140, 90, 100], [100, 80, 60, 120, 110]]).requires_grad_(True)
+    spec = _hand_spec(StatisticKind.INCREMENTAL_AREA, below=BelowBaseline.UNSTATED)
+    inside = (per_person_statistic(rows, replace(spec, target=10.0)).mean() - 10.0) ** 2
+    (grad,) = torch.autograd.grad(inside, rows)
+    assert float(grad.abs().max()) == pytest.approx(0.0, abs=1e-9)
+    # Outside them it pulls exactly as the nearer reading would.
+    outside = (per_person_statistic(rows, replace(spec, target=5.0)).mean() - 5.0) ** 2
+    (grad,) = torch.autograd.grad(outside, rows)
+    net_spec = _hand_spec(StatisticKind.INCREMENTAL_AREA, below=BelowBaseline.SUBTRACTED)
+    (want,) = torch.autograd.grad((per_person_statistic(rows, net_spec).mean() - 5.0) ** 2, rows)
+    assert float(grad.abs().max()) > 0 and torch.allclose(grad, want)
+
+
+def test_an_area_that_never_goes_under_baseline_is_one_number_under_all_three_words():
+    rows = _series([[100, 160, 140, 120, 100], [100, 130, 150, 120, 110]])
+    subtracted, ignored, unstated = (
+        per_person_statistic(rows, _hand_spec(StatisticKind.INCREMENTAL_AREA, below=b)).tolist()
+        for b in (BelowBaseline.SUBTRACTED, BelowBaseline.IGNORED, BelowBaseline.UNSTATED)
+    )
+    assert subtracted == pytest.approx(ignored) and unstated == pytest.approx(ignored)
+
+
 def test_incremental_area_takes_its_baseline_from_a_window_when_there_is_one():
     # Minutes 0 and 1 hold 100 and 120, so the baseline is 110 and not the first sample's
     # 100: d = -10, 50, 30, -20, -10.
@@ -320,7 +358,7 @@ def test_the_sampling_times_are_checked_against_the_arm(fid, times, message):
 
 
 @pytest.mark.parametrize("bad", ["ignore", "Ignored", "positive", "", None, True, 1])
-def test_below_baseline_must_be_one_of_the_two_words(bad):
+def test_below_baseline_must_be_one_of_the_three_words(bad):
     data = _data()
     _finding(data, "ogtt_glucose_iauc")["below_baseline"] = bad
     assert any("below_baseline" in p for p in _problems(data))
@@ -341,6 +379,14 @@ def test_an_ignored_incremental_area_cannot_be_negative_but_a_net_one_can():
     _finding(data, "ogtt_glucose_iauc")["below_baseline"] = "subtracted"
     spec = _spec("ogtt_glucose_iauc", data)
     assert spec.below_baseline is BelowBaseline.SUBTRACTED and spec.target == pytest.approx(-3.0 / 119.0 * MG_DL_PER_MMOL)
+
+
+def test_an_unstated_incremental_area_loads_and_may_be_negative():
+    data = _data()
+    _finding(data, "ogtt_glucose_iauc")["below_baseline"] = "unstated"
+    assert _spec("ogtt_glucose_iauc", data).below_baseline is BelowBaseline.UNSTATED
+    _finding(data, "ogtt_glucose_iauc")["value"] = -3.0
+    assert _spec("ogtt_glucose_iauc", data).target < 0
 
 
 def test_a_baseline_window_outside_the_arm_or_empty_is_refused():

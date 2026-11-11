@@ -121,7 +121,9 @@ checkpoint has been scored by it yet.
   and `task-force-1996`.
 - The format takes three single-arm statistics, `change_from_baseline`,
   `area_under_curve` and `incremental_area`; an area is carried as its
-  time-weighted mean over the paper's own sample minutes. No committed file
+  time-weighted mean over the paper's own sample minutes, and an incremental
+  area whose paper does not say what it does under baseline is entered as
+  `unstated` and held to the nearer of the two readings. No committed file
   uses them yet. `--missing` counts the gaps they close under their old names:
   `single_arm_auc` in 8 papers, `single_arm_incremental_auc` in 5 (one of them
   the refusal `lindgren-2020`) and `change_from_baseline` in 4.

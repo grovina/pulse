@@ -529,10 +529,9 @@ what the model and this format should learn next.
   gap are counted as two gaps. Names in use for `source`: `figure_only`,
   `unlabelled_uncertainty`, `uncertainty_not_printed`, `zero_uncertainty`,
   `unit_not_printed`, `unit_implausible`, `value_not_printed`,
-  `time_not_printed`, `below_baseline_not_printed` (an incremental area whose
-  paper does not say whether stretches under baseline count),
-  `input_not_printed` (a meal, a dose, an infusion or an exercise intensity the
-  paper does not give), `table_ambiguous`, `assay_not_comparable`.
+  `time_not_printed`, `input_not_printed` (a meal, a dose, an infusion or an
+  exercise intensity the paper does not give), `table_ambiguous`,
+  `assay_not_comparable`.
 * Leave out of `left_out` what nobody would enter: numbers about markers far
   from physiology the model covers (liver enzymes, questionnaire scores), a
   duplicate of a number you did enter, and statistics of the authors' own
@@ -579,13 +578,22 @@ what the model and this format should learn next.
 * `incremental_area` is the trapezoidal area, over `times`, of the marker minus that
   person's baseline. The baseline is the person's value at the first of `times`, or, when
   the paper defines it as the mean of several samples, their mean over `baseline_window`
-  (inside the arm; it may overlap `times`). `below_baseline` is **required**:
-  `"subtracted"` is a net incremental area (stretches below baseline count negative),
-  `"ignored"` counts only the area above baseline (a segment of two samples that crosses
-  the baseline is cut where the straight line between them does: this is the common
-  "positive incremental area", and it cannot be negative). The paper must say which. If it
-  does not, leave the number out: `left_out`, kind `source`, name
-  `below_baseline_not_printed`.
+  (inside the arm; it may overlap `times`). `below_baseline` is **required**, one of
+  three words:
+  * `"subtracted"`: a net incremental area; stretches below baseline count negative.
+  * `"ignored"`: only the area above baseline counts (a segment of two samples that
+    crosses the baseline is cut where the straight line between them does: the
+    "positive incremental area"). It cannot be negative.
+  * `"unstated"`: the paper does not say, as most do not. The model then answers for
+    both readings of its own curves: the paper's value is right if it lies between
+    them and is held to the nearer one otherwise. The finding is as sharp as any other
+    where the marker never goes under its baseline, and looser where it does.
+
+  Write `subtracted` or `ignored` only on the paper's own words about what lies under
+  baseline ("net", "negative areas were subtracted"; "only values above baseline",
+  "negative areas were ignored"), or on a printed negative mean, which only a net area
+  can have. "Incremental", "suprabasal" or "above baseline" alone do not say: one paper
+  here defines its area as the "AUC above baseline" and prints a negative one.
 * An area is a mean over people of one number per person, like every statistic here. Its
   value, unit and uncertainty are the paper's, and the SD and n it carries are those of the
   per-person areas. If the paper does not print the sampling minutes, leave the number out
@@ -879,8 +887,20 @@ used.
   drawn at times the paper does not list is not (`source`, `time_not_printed`).
 * "AUC" and "iAUC" are not interchangeable: `area_under_curve` includes the fasting level
   (a glucose AUC of 16,000 mg/dL x min), `incremental_area` removes it. A paper's "AUC"
-  that subtracts the baseline is an `incremental_area`; read its methods for `below_baseline`.
-  If the methods do not say whether the area under baseline counts, leave it out.
+  that subtracts the baseline is an `incremental_area`; read its methods for `below_baseline`,
+  and write `"unstated"` if they do not say what happens under baseline.
+* When the paper's area starts at the load ("0 to 180 min") and the fasting samples were
+  drawn before it, the first of `times` is the minute of the load and the fasting samples
+  are the `baseline_window` (for an incremental area) or simply the run-in (for a total
+  one): the model is still fasted at the minute the load is given.
+* An area printed without saying which of the samples it spans (a test sampled from -15 to
+  180 min, and an "AUC") is left out (`source`, `time_not_printed`), and so is one whose
+  time unit is not printed (`source`, `unit_not_printed`).
+* A power of ten in a column header ("x 10^3") is part of how the table prints the number,
+  not a unit to convert: enter the number multiplied out, with its uncertainty, say so in
+  the description, and keep the printed form in the quote. A header can mean either
+  direction; if the gate's range check admits both, leave the number out
+  (`source`, `table_ambiguous`).
 * The sampling `times` are the minutes the paper drew blood, from the start of the arm:
   put the arm's load at the minute the paper's clock says, and the first sample at the
   first of `times`. An incremental area's baseline at the first sample is the start state
