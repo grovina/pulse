@@ -1,0 +1,673 @@
+{
+  "paper": "eshghi-2017",
+  "citation": {
+    "authors": "Eshghi SR, Fletcher K, Myette-Côté É, et al.",
+    "title": "Glycemic and Metabolic Effects of Two Long Bouts of Moderate-Intensity Exercise in Men with Normal Glucose Tolerance or Type 2 Diabetes",
+    "journal": "Frontiers in Endocrinology",
+    "year": 2017,
+    "doi": "10.3389/fendo.2017.00154",
+    "pmid": "28744255",
+    "pmcid": "PMC5504214"
+  },
+  "population": {
+    "n": 6,
+    "sex": "male",
+    "age_years": {
+      "mean": 42.5,
+      "sd": 10.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.7,
+      "sd": 3.2,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Six healthy men without diabetes (Table 1, mean ± SD). Only the healthy group is entered; the six men with T2D are left out. The day-1 rest condition and the day-1 first exercise bout are entered; the day-2 exercise condition is not."
+  },
+  "protocols": [
+    {
+      "name": "day1_rest_fasted_90min",
+      "description": "Day 1 rest condition: sedentary 09:00-10:30 in the fasted state, blood at 09:00 and 10:30",
+      "duration_min": 91,
+      "start_hour": 9.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "day1_exercise_fasted_90min",
+      "description": "Day 1 exercise condition, first bout: treadmill walking 09:00-10:30 fasted, blood at 09:00 and 10:30. Activity from the printed METs of healthy men in this bout, Table 2: 7.25 (9h00-9h10) and 7.59 (10h20-10h30) METs, mean 7.42 METs; 7.42 x 3.5 = 25.97 mL/kg/min; level = (25.97 - 3.7) / 31.7 = 0.7025",
+      "duration_min": 91,
+      "start_hour": 9.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 90,
+            "level": 0.7025
+          }
+        ]
+      },
+      "assumed": [
+        "prefast_hours",
+        "activity"
+      ]
+    },
+    {
+      "name": "day2_ogtt_rest",
+      "description": "Day 2 after the day-1 rest condition: fasting blood samples 15 min and 0 min before the 75 g OGTT (here t=15 and t=30), calorimetry in the 10 min before the OGTT; arm ends after the last fasting sample",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "d1_rest_glucose",
+      "description": "Plasma glucose before (09:00) and after (10:30) 90 min of sedentary rest in the fasted state, healthy men, day 1 rest condition",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 4.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Rest rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Glucose (mmol/L) | Rest | 4.5 ± 0.3 | 4.7 ± 0.2"
+      }
+    },
+    {
+      "id": "d1_rest_nefa",
+      "description": "Plasma NEFA before and after 90 min of fasted rest, healthy men, day 1",
+      "marker": "ffa",
+      "statistic": "curve",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 0.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 0.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Rest rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "NEFA (mmol/L) | Rest | 0.5 ± 0.1 | 0.5 ± 0.1"
+      }
+    },
+    {
+      "id": "d1_rest_insulin",
+      "description": "Plasma insulin before and after 90 min of fasted rest, healthy men, day 1",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 37.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.6,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 32.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 8.9,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Rest rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Insulin (pmol/L) | Rest | 37.2 ± 7.6 | 32.5 ± 8.9"
+      }
+    },
+    {
+      "id": "d1_rest_glucagon",
+      "description": "Plasma glucagon before and after 90 min of fasted rest, healthy men, day 1",
+      "marker": "glucagon",
+      "statistic": "curve",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "unit": "ng/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 50.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.9,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 49.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.7,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Rest rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Glucagon (ng/L) | Rest | 50.2 ± 6.9 | 49.8 ± 7.7"
+      }
+    },
+    {
+      "id": "d1_rest_rer_first10",
+      "description": "RER during the first 10 min (09:00-09:10) of the fasted rest period, healthy men, day 1",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 0.76,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.03,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Rest row, mean ± SD (9h00–9h10)",
+        "quote": "RER (VCO2/VO2) | Rest | 0.76 ± 0.03"
+      }
+    },
+    {
+      "id": "d1_rest_rer_last10",
+      "description": "RER during the last 10 min (10:20-10:30) of the fasted rest period, healthy men, day 1",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_rest_fasted_90min"
+      ],
+      "window": {
+        "start_min": 80,
+        "end_min": 90
+      },
+      "value": 0.74,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.05,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Rest row, mean ± SD (10h20–10h30)",
+        "quote": "0.76 ± 0.03 | 0.74 ± 0.05"
+      }
+    },
+    {
+      "id": "d1_ex_glucose",
+      "description": "Plasma glucose before and after the fasted 90-min treadmill bout, healthy men, day 1",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 4.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Ex rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Glucose (mmol/L) | Ex | 4.7 ± 0.2 | 4.3 ± 0.3"
+      }
+    },
+    {
+      "id": "d1_ex_lactate",
+      "description": "Plasma lactate before and after the fasted 90-min treadmill bout, healthy men, day 1",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 0.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Ex rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Lactate (mmol/L) | Ex | 0.9 ± 0.2 | 1.1 ± 0.2"
+      }
+    },
+    {
+      "id": "d1_ex_nefa",
+      "description": "Plasma NEFA before and after the fasted 90-min treadmill bout, healthy men, day 1",
+      "marker": "ffa",
+      "statistic": "curve",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 0.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Ex rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "NEFA (mmol/L) | Ex | 0.4 ± 0.1 | 1.2 ± 0.3"
+      }
+    },
+    {
+      "id": "d1_ex_insulin",
+      "description": "Plasma insulin before and after the fasted 90-min treadmill bout, healthy men, day 1",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 39.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 8.9,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 20.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.2,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Ex rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Insulin (pmol/L) | Ex | 39.1 ± 8.9 | 20.8 ± 6.2"
+      }
+    },
+    {
+      "id": "d1_ex_glucagon",
+      "description": "Plasma glucagon before and after the fasted 90-min treadmill bout, healthy men, day 1",
+      "marker": "glucagon",
+      "statistic": "curve",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "unit": "ng/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 54.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.5,
+            "n": 6
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 81,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 14.7,
+            "n": 6
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, healthy columns, Ex rows (9h00 pre-first bout, 10h30 post-first bout), mean ± SEM",
+        "quote": "Glucagon (ng/L) | Ex | 54.7 ± 6.5 | 81 ± 14.7"
+      }
+    },
+    {
+      "id": "d1_ex_rer_first10",
+      "description": "RER in the first 10 min of the fasted exercise bout, healthy men, day 1",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 0.87,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Ex row, mean ± SD (9h00–9h10)",
+        "quote": "RER (VCO2/VO2) | Ex | 0.87 ± 0.04 | 0.84 ± 0.02"
+      }
+    },
+    {
+      "id": "d1_ex_rer_last10",
+      "description": "RER in the last 10 min of the fasted exercise bout, healthy men, day 1",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "window": {
+        "start_min": 80,
+        "end_min": 90
+      },
+      "value": 0.84,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.02,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Ex row, mean ± SD (10h20–10h30)",
+        "quote": "RER (VCO2/VO2) | Ex | 0.87 ± 0.04 | 0.84 ± 0.02"
+      }
+    },
+    {
+      "id": "d1_ex_hr_first10",
+      "description": "Heart rate in the first 10 min of the fasted exercise bout, healthy men, day 1",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 120,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Ex row, mean ± SD (9h00–9h10)",
+        "quote": "HR (bpm) | Ex | 120 ± 13 | 135 ± 23"
+      }
+    },
+    {
+      "id": "d1_ex_hr_last10",
+      "description": "Heart rate in the last 10 min of the fasted exercise bout, healthy men, day 1",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day1_exercise_fasted_90min"
+      ],
+      "window": {
+        "start_min": 80,
+        "end_min": 90
+      },
+      "value": 135,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 23,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 2, Healthy columns, Ex row, mean ± SD (10h20–10h30)",
+        "quote": "HR (bpm) | Ex | 120 ± 13 | 135 ± 23"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_rer",
+      "description": "RER in the fasting 10 min before the OGTT, healthy men, day 2 after the rest condition",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 30
+      },
+      "value": 0.8,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.03,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 4, Fasting columns, Healthy, Rest row, mean ± SD",
+        "quote": "RER (VCO2/VO2) | Rest | 0.80 ± 0.03 | 0.76 ± 0.02"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_hr",
+      "description": "Fasting heart rate before the OGTT, healthy men, day 2 after the rest condition",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 30
+      },
+      "value": 56,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 4, Fasting columns, Healthy, Rest row, mean ± SD",
+        "quote": "HR (bpm) | Rest | 56 ± 5"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_glucose",
+      "description": "Fasting plasma glucose (samples at -15 and 0 min), healthy men, day 2 after the rest condition",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 31
+      },
+      "value": 4.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 5, Fasting column, Healthy, Rest row, mean ± SEM",
+        "quote": "Glucose (mmol/L) | Rest | 4.7 ± 0.2"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_insulin",
+      "description": "Fasting plasma insulin, healthy men, day 2 after the rest condition",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 31
+      },
+      "value": 40.7,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.2,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 5, Fasting column, Healthy, Rest row, mean ± SEM",
+        "quote": "Insulin (pmol/L) | Rest | 40.7 ± 9.2"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_nefa",
+      "description": "Fasting plasma NEFA, healthy men, day 2 after the rest condition",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 31
+      },
+      "value": 0.6,
+      "unit": "meq/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 5, Fasting column, Healthy, Rest row, mean ± SEM",
+        "quote": "NEFA (mEq/L) | Rest | 0.6 ± 0.1"
+      }
+    },
+    {
+      "id": "d2_rest_fasting_lactate",
+      "description": "Fasting plasma lactate, healthy men, day 2 after the rest condition",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "day2_ogtt_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 31
+      },
+      "value": 0.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 5, Fasting column, Healthy, Rest row, mean ± SEM",
+        "quote": "Lactate (mmol/L) | Rest | 0.7 ± 0.1"
+      }
+    }
+  ]
+}
