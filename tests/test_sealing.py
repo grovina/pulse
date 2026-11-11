@@ -139,11 +139,6 @@ def test_the_items_held_out_before_sealing_went_by_paper_are_frozen_and_still_he
     assert set(HELD_OUT_ITEMS) <= {s.name for s in _authored()}
 
 
-def test_no_rule_is_sealed_yet():
-    assert SEALED_PHYSIOLOGY_RULES == []
-    assert len(PHYSIOLOGY_RULES) == len(_AUTHORED_RULES)
-
-
 # --- what the held-out items share with training ----------------------------
 
 def _training_by_base() -> dict[str, CohortStatisticSpec]:
