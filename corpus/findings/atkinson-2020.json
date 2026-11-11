@@ -767,14 +767,453 @@
         "where": "Table 2, row '2-h insulin (pmol/L)', column '16 h'",
         "quote": "2-h insulin (pmol/L) | 71.8 ± 8.0"
       }
+    },
+    {
+      "id": "f_12h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, females, 12 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 162.9,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.3,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose iAUC (mmol/L·120 min)', column '12 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 162.9 ± 11.3"
+      }
+    },
+    {
+      "id": "f_14h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, females, 14 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 143.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.3,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose iAUC (mmol/L·120 min)', column '14 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 143.0 ± 11.3"
+      }
+    },
+    {
+      "id": "f_16h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, females, 16 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 225.5,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.3,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose iAUC (mmol/L·120 min)', column '16 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 225.5 ± 11.3"
+      }
+    },
+    {
+      "id": "f_12h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, females, 12 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast12h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 26582.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2283.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Insulin iAUC (pmol/L·120 min)', column '12 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 26,582 ± 2283"
+      }
+    },
+    {
+      "id": "f_14h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, females, 14 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast14h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 24176.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2283.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Insulin iAUC (pmol/L·120 min)', column '14 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 24,176 ± 2283"
+      }
+    },
+    {
+      "id": "f_16h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, females, 16 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "f_fast16h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 25574.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2283.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 1, row 'Insulin iAUC (pmol/L·120 min)', column '16 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 25,574 ± 2283"
+      }
+    },
+    {
+      "id": "m_12h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, males, 12 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 168.8,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.4,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose iAUC (mmol/L·120 min)', column '12 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 168.8 ± 6.4"
+      }
+    },
+    {
+      "id": "m_14h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, males, 14 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 149.9,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.4,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose iAUC (mmol/L·120 min)', column '14 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 149.9 ± 6.4"
+      }
+    },
+    {
+      "id": "m_16h_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after breakfast start, males, 16 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'mmol/L·120 min' read as mmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 165.6,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.4,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose iAUC (mmol/L·120 min)', column '16 h'",
+        "quote": "Glucose iAUC (mmol/L·120 min) | 165.6 ± 6.4"
+      }
+    },
+    {
+      "id": "m_12h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, males, 12 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast12h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 21739.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2481.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin iAUC (pmol/L·120 min)', column '12 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 21,739 ± 2481"
+      }
+    },
+    {
+      "id": "m_14h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, males, 14 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast14h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 20255.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2481.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin iAUC (pmol/L·120 min)', column '14 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 20,255 ± 2481"
+      }
+    },
+    {
+      "id": "m_16h_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after breakfast start, males, 16 h fast; trapezoidal, baseline = mean of the -20, -10, 0 min samples; samples at 0, 15, 30, 45, 60, 90, 120 min (arm minutes 30 to 150). Printed unit 'pmol/L·120 min' read as pmol/L x min over the 120-min span (value not rescaled); paper does not say what lies under baseline",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "m_fast16h"
+      ],
+      "times": [
+        30,
+        45,
+        60,
+        75,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 10,
+        "end_min": 31
+      },
+      "below_baseline": "unstated",
+      "value": 16303.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2481.0,
+        "n": 12,
+        "observations": 36
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin iAUC (pmol/L·120 min)', column '16 h'",
+        "quote": "Insulin iAUC (pmol/L·120 min) | 16,303 ± 2481"
+      }
     }
   ],
   "left_out": [
     {
-      "what": "incremental areas under the glucose and insulin curves, by sex and fast length (Tables 1 and 2)",
+      "what": "log-transformed insulin iAUC, by sex and fast length (Tables 1 and 2): geometric means with no SEM",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "average within-individual coefficient of variation of glucose iAUC across sessions (text, Results): all nine sessions, per fast length, and males against females",
       "missing": {
         "kind": "operator",
-        "name": "single_arm_incremental_auc"
+        "name": "within_person_cv"
       }
     },
     {
