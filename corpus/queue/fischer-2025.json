@@ -1,0 +1,45 @@
+{
+  "paper": "fischer-2025",
+  "citation": "Fischer LS, Kiesswetter E, Brandl B, et al. Association of OGTT-curve Shape With Anthropometric, Metabolic, and Inflammatory Parameters in Healthy Adults. Journal of the Endocrine Society. 2025.",
+  "doi": "10.1210/jendso/bvaf060",
+  "pmid": "40271225",
+  "pmcid": "PMC12013282",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g glucose in 300 mL water OGTT, 0-120 min (glucose at fasting, 1 h, 2 h in Table 1)",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "n=354 (177 W, 177 M) healthy adults in two age bands (40-65 y and 75-85 y); BMI median 25.4-27.9; Enable study",
+  "population_class": "nonhealthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (fasting, 1 h, 2 h, AUC) by sex and age band",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1 (fasting)",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 1 (fasting)",
+      "form": "table"
+    },
+    {
+      "marker": "leptin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Fig (mean+/-SEM 0-120 min by curve shape)",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "range",
+  "figure_only": false,
+  "note": "Older-adult cohort and large n. Table 1 uses median [IQR] (sometimes mean+/-SD); uncertainty is IQR-type. Insulin and GLP-1 only at fasting."
+}

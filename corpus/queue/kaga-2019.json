@@ -1,0 +1,46 @@
+{
+  "paper": "kaga-2019",
+  "citation": "Kaga H, Tamura Y, Takeno K, et al. Higher C-Peptide Level During Glucose Clamp Is Associated With Muscle Insulin Resistance in Nonobese Japanese Men. Journal of the Endocrine Society. 2019.",
+  "doi": "10.1210/js.2019-00167",
+  "pmid": "31555755",
+  "pmcid": "PMC6753586",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "Two-step hyperinsulinaemic euglycaemic clamp after overnight fast: step 1 primed + 10 mU/m2/min insulin for 3 h, step 2 priming + higher infusion (80 mU/m2 priming; rate per Methods); preceded by 75 g OGTT visits",
+  "protocol_kinds": [
+    "clamp",
+    "OGTT"
+  ],
+  "population": "n=49 nonobese Japanese men, age median 40 (IQR 36-45) y, BMI 23.1+/-1.0 (split into Low and High steady-state serum C-peptide groups, n=25/24)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin (steady-state)",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "c-peptide",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "endogenous glucose production",
+      "where": "Table 2 (basal and % reduction)",
+      "form": "table"
+    },
+    {
+      "marker": "glucose disposal (Rd)",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "ffa (% suppression)",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Two-step clamp with EGP, Rd and FFA suppression in one table. Overall and per-group columns. Some rows are median (IQR)."
+}

@@ -1,0 +1,50 @@
+{
+  "paper": "zilstorff-2024",
+  "citation": "Zilstorff DB, Richter MM, Hannibal J, et al. Secretion of glucagon, GLP-1 and GIP may be affected by circadian rhythm in healthy males. BMC Endocrine Disorders. 2024.",
+  "doi": "10.1186/s12902-024-01566-9",
+  "pmid": "38481208",
+  "pmcid": "PMC10938734",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "24 h on a hospital ward, 15 h awake / 9 h sleep; after overnight fast, blood every 3 h from 09:00; standardised breakfast 09:30 (846 kcal), lunch 13:00 (636 kcal), dinner 19:00",
+  "protocol_kinds": [
+    "24 h profile"
+  ],
+  "population": "n=24 healthy men, age 26+/-5 y, BMI 22.9+/-1.6, HbA1c 33.7+/-2.2 mmol/mol",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucagon",
+      "where": "Table 2 (baseline, mesor, amplitude, peak time) and Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "gip",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "c-peptide",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "9-point time courses",
+      "where": "Fig 1-3 (text)",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Cosinor summaries in the table rather than per-time means; per-time values are in figures. Two subjects were not fasted at the 09:00 sample (n=22 at first time point). Closest paper to a controlled 24 h meals + sleep protocol."
+}

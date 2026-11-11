@@ -1,0 +1,55 @@
+{
+  "paper": "mcdougal-2018",
+  "citation": "McDougal DH, Darpolor MM, DuVall MA, et al. Glial acetate metabolism is increased following a 72-h fast in metabolically healthy men and correlates with susceptibility to hypoglycemia. Acta Diabetologica. 2018.",
+  "doi": "10.1007/s00592-018-1180-5",
+  "pmid": "29931424",
+  "pmcid": "PMC6153507",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "~75 h inpatient fast with water ad libitum after a fed baseline; fasted 12 h (day 0) vs 72 h (day 3) samples; continuous glucose monitoring throughout",
+  "protocol_kinds": [
+    "prolonged fast"
+  ],
+  "population": "n=6 men (3 Black, 3 White), age 28.7+/-1.0 y, BMI 23.5+/-1.1, body fat 17.6+/-3.0%; metabolically healthy",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2 (12 h vs 72 h)",
+      "form": "table"
+    },
+    {
+      "marker": "ffa",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "bhb",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2 (day 0 only)",
+      "form": "table"
+    },
+    {
+      "marker": "epinephrine",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose (CGM)",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Two-point fast contrast, small n. A hepatic acetate MRS outcome is not relevant. Epinephrine/norepinephrine labelled ng/mL (as printed)."
+}

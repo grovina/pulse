@@ -1,0 +1,40 @@
+{
+  "paper": "welch-2023",
+  "citation": "Welch AA, Farahani RA, Egan AM, et al. Glucagon-like peptide-1 receptor blockade impairs islet secretion and glucose metabolism in humans. The Journal of Clinical Investigation. 2023.",
+  "doi": "10.1172/JCI173495",
+  "pmid": "37751301",
+  "pmcid": "PMC10645389",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Hyperglycaemic clamp with [3-3H]glucose tracer, saline vs exendin 9-39 (GLP-1 receptor blocker) infusion on two occasions in random order",
+  "protocol_kinds": [
+    "clamp"
+  ],
+  "population": "n=12 without diabetes (BMI ~32, matched) and n=11 with type 2 diabetes",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "text (fasting 5.0+/-0.1 saline; clamp last hour 8.3+/-0.8)",
+      "form": "text"
+    },
+    {
+      "marker": "insulin",
+      "where": "text (fasting 47+/-6 pmol/L) and Fig 2",
+      "form": "text"
+    },
+    {
+      "marker": "glucagon",
+      "where": "text (T2D fasting 7.9+/-0.3)",
+      "form": "text"
+    },
+    {
+      "marker": "c-peptide",
+      "where": "text",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Use the saline day for the hyperglycaemic clamp; the exendin 9-39 day is a pharmacological arm to ignore. Tables in the XML are images (Table 1 has no rows), so numbers come from the text only; most time courses are figures. Non-diabetic participants are obese."
+}

@@ -1,0 +1,51 @@
+{
+  "paper": "lindgren-2020",
+  "citation": "Lindgren O, Ahrén B Consequences on islet and incretin hormone responses to dinner by omission of lunch in healthy men. Endocrinology, Diabetes & Metabolism. 2020.",
+  "doi": "10.1002/edm2.141",
+  "pmid": "32704562",
+  "pmcid": "PMC7375076",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Two test days (random order): standard breakfast and standard dinner (17:00) with or without a standard lunch between; samples to 300 min after dinner",
+  "protocol_kinds": [
+    "mixed meal",
+    "24 h profile"
+  ],
+  "population": "n=12 healthy men, mean age 22 y, BMI 22.5",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (suprabasal AUC 0-30, 30-300, 0-300 min)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "gip",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "time courses",
+      "where": "Fig 1",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Meal-pattern (second-meal) effect. Table is incremental AUCs; time curves are a figure. Meal composition is in the Methods."
+}

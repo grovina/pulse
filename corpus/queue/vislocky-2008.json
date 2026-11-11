@@ -1,0 +1,35 @@
+{
+  "paper": "vislocky-2008",
+  "citation": "Vislocky LM, Gaine PC, Pikosky MA, et al. Gender impacts the post-exercise substrate and endocrine response in trained runners. Journal of the International Society of Sports Nutrition. 2008.",
+  "doi": "10.1186/1550-2783-5-7",
+  "pmid": "18302755",
+  "pmcid": "PMC2288589",
+  "licence": "CC BY 2.0",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "75 min run at 70% VO2peak after 8 days of a controlled eucaloric diet; blood at rest and during 3.5 h recovery (POST+30, POST+210 min)",
+  "protocol_kinds": [
+    "exercise"
+  ],
+  "population": "n=6 trained men (21 y, 70 kg) + n=6 trained women (23 y, 66 kg); VO2peak 78.0 (M) and 71.6 (F) mL/kg FFM/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Fig (mean+/-SEM)",
+      "form": "figure"
+    },
+    {
+      "marker": "cortisol",
+      "where": "Fig",
+      "form": "figure"
+    },
+    {
+      "marker": "glucose, lactate, FFA, GH",
+      "where": "text and figures",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": true,
+  "note": "Figure-only: Table 1 holds only subject characteristics. Included because steady-bout exercise with endocrine recovery in healthy people is scarce; trained athletes, so not typical."
+}

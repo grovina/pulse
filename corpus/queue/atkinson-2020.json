@@ -1,0 +1,36 @@
+{
+  "paper": "atkinson-2020",
+  "citation": "Atkinson FS, Heruc GA, Tan VMH, et al. Extending the Overnight Fast: Sex Differences in Acute Metabolic Responses to Breakfast. Nutrients. 2020.",
+  "doi": "10.3390/nu12082173",
+  "pmid": "32707917",
+  "pmcid": "PMC7469038",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Overnight fasts of 12, 14 and 16 h (each repeated three times per person) ending in a standard breakfast with 75 g available carbohydrate; standard evening meal at 19:00 (55/15/30 % E); glucose and insulin for 120 min",
+  "protocol_kinds": [
+    "prolonged fast",
+    "mixed meal"
+  ],
+  "population": "n=24 healthy adults (sex split in Tables 1 and 2), age 23.0+/-2.6 y, BMI 22.1+/-2.5; University students",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (F) and Table 2 (M): fasting, 2 h, iAUC by fast length",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1 and 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose, insulin time course",
+      "where": "Fig 1",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Directly exercises the prefast_hours input (12/14/16 h). SEs in the tables are model-estimated and identical across columns. Ad libitum intake after breakfast also reported."
+}

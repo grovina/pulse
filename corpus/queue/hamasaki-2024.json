@@ -1,0 +1,56 @@
+{
+  "paper": "hamasaki-2024",
+  "citation": "Hamasaki A, Harada N, Muraoka A, et al. The integrated incretin effect is reduced by both glucose intolerance and obesity in Japanese subjects. Frontiers in Endocrinology. 2024.",
+  "doi": "10.3389/fendo.2024.1301352",
+  "pmid": "38966210",
+  "pmcid": "PMC11222327",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0",
+  "protocol": "75 g OGTT (180 min) and isoglycaemic IV glucose infusion (20% w/v) on separate days after overnight fast",
+  "protocol_kinds": [
+    "OGTT",
+    "IVGTT"
+  ],
+  "population": "NGT n=14 (3 F, age 31.9+/-7.4, BMI 23.8+/-3.8); IGT n=6 (age 45.7); T2D n=8 (age 62.1); Japanese",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2 (AUC, OGTT vs IIGI)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2 (AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "c-peptide",
+      "where": "Table 2 (AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "gip",
+      "where": "Table 3 (AUC total and active)",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 3 (AUC total and active)",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 1 fasting; Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucose, insulin, C-peptide time courses",
+      "where": "figure legends in text",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Tables hold AUCs and fasting values; per-time curves are in figures. Gives the oral vs IV (incretin) contrast in a healthy (NGT) group and in IGT/T2D."
+}

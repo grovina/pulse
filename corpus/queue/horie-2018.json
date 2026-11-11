@@ -1,0 +1,35 @@
+{
+  "paper": "horie-2018",
+  "citation": "Horie I, Abiru N, Eto M, et al. Sex differences in insulin and glucagon responses for glucose homeostasis in young healthy Japanese adults. Journal of Diabetes Investigation. 2018.",
+  "doi": "10.1111/jdi.12829",
+  "pmid": "29489067",
+  "pmcid": "PMC6215950",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "75 g OGTT (Trelan-G75) after overnight fast; samples 0, 30, 60, 90, 120 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "n=63 (38 M, 25 F); age 24.4+/-1.9 (M), 25.4+/-2.5 (F) y; BMI 21.4 (M), 20.1 (F); healthy Japanese adults, NGT, BMI<=25",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (0-120 min, by sex)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1 (0-120 min, by sex)",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 1 (0-120 min, by sex)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Best-in-class healthy OGTT: three pulse markers at five times in one table, split by sex. Insulin is IRI (uU/mL), glucagon IRG (pg/mL)."
+}

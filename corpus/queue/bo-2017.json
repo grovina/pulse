@@ -1,0 +1,36 @@
+{
+  "paper": "bo-2017",
+  "citation": "Bo S, Broglio F, Settanni F, et al. Effects of meal timing on changes in circulating epinephrine, norepinephrine, and acylated ghrelin concentrations: a pilot study. Nutrition & Diabetes. 2017.",
+  "doi": "10.1038/s41387-017-0010-0",
+  "pmid": "29255175",
+  "pmcid": "PMC5865548",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cross-over: standard meal (100 g white bread, 100 g ham, 50 g cheese, 125 g yogurt, 200 mL fruit juice; eaten in 25-30 min) at 08:00 and, a week later, at 20:00 (or reverse); the same meal was eaten at home at 24:00 or 12:00 beforehand, then 6 h in bed; indirect calorimetry; blood 0-180 min",
+  "protocol_kinds": [
+    "mixed meal",
+    "24 h profile"
+  ],
+  "population": "n=20 healthy volunteers (10 M, 10 F), age 27.6+/-3.4 y, BMI 23.4+/-3.2 (Table 2)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "epinephrine",
+      "where": "Table 3 (0-180 min, morning vs evening)",
+      "form": "table"
+    },
+    {
+      "marker": "norepinephrine",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "ghrelin (acylated)",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "range",
+  "figure_only": false,
+  "note": "Time-of-day contrast for the same meal. Table 3 values look like median (IQR) (labelled so in Methods for non-normal data); epinephrine in ng/L. Pilot-sized analysis."
+}

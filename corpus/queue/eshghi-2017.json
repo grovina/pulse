@@ -1,0 +1,56 @@
+{
+  "paper": "eshghi-2017",
+  "citation": "Eshghi SR, Fletcher K, Myette-Côté É, et al. Glycemic and Metabolic Effects of Two Long Bouts of Moderate-Intensity Exercise in Men with Normal Glucose Tolerance or Type 2 Diabetes. Frontiers in Endocrinology. 2017.",
+  "doi": "10.3389/fendo.2017.00154",
+  "pmid": "28744255",
+  "pmcid": "PMC5504214",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Day 1: two 90-min treadmill bouts at 80% of ventilatory threshold, at 09:00 (fasted) and 14:00, or rest (cross-over); day 2: 4 h 75 g OGTT after overnight fast",
+  "protocol_kinds": [
+    "exercise",
+    "OGTT"
+  ],
+  "population": "n=6 men with T2D (age 60.5+/-8.5, BMI 24.8, HbA1c 6.4%) + n=6 healthy men (age 42.5+/-10.5, BMI 26.7, HbA1c 5.6%)",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "hr",
+      "where": "Table 2 (start and end of bouts)",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3 (pre/post each bout); Table 5 (OGTT)",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "ffa",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 3, Table 5",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 3, Table 5",
+      "form": "table"
+    },
+    {
+      "marker": "oxygen uptake / RER",
+      "where": "Table 2, Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Exercise plus next-day OGTT in healthy and T2D men in one paper. Intensity is relative to ventilatory threshold, not %VO2max. Glucagon in ng/L, insulin pmol/L. Small n (6 per group)."
+}

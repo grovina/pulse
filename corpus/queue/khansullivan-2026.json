@@ -1,0 +1,35 @@
+{
+  "paper": "khansullivan-2026",
+  "citation": "Khan Sullivan AM, Isherwood CM, Hassanin H, et al. Diurnal Variation and Impairment of Postprandial Glucose‐Insulin Responses and Lipid Rhythms in Simulated Shift Work. Nutrition Bulletin. 2026.",
+  "doi": "10.1111/nbu.70060",
+  "pmid": "42324738",
+  "pmcid": "PMC13522867",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Simulated shift work in lab: day shift (sleep 23:00-07:00; four identical isoenergetic meals at 08:00, 13:00, 18:00, 22:00) followed by two night-shift days with 10 h delayed sleep and meals; serial blood sampling",
+  "protocol_kinds": [
+    "24 h profile"
+  ],
+  "population": "n=9 healthy non-shift workers (6 M, 3 F), age 21-33 (mean 28.8+/-3.1) y, BMI 25+/-2",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (model-derived mean by shift) and Table 2 (acrophase, amplitude)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1, Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides, cholesterol",
+      "where": "Table 1, Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "ci",
+  "figure_only": false,
+  "note": "Use the day-shift condition as the controlled 24 h meal+sleep arm; night-shift arms are circadian misalignment. Table 1 gives model-derived means with 95% CI; text states SEM elsewhere. Glucose in mmol/L, insulin in uU/mL."
+}

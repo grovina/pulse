@@ -1,0 +1,40 @@
+{
+  "paper": "hedrington-2015",
+  "citation": "Hedrington MS, Tate DB, Younk LM, et al. Effects of Antecedent GABA A Receptor Activation on Counterregulatory Responses to Exercise in Healthy Man. Diabetes. 2015.",
+  "doi": "10.2337/db15-0212",
+  "pmid": "25901095",
+  "pmcid": "PMC4542446",
+  "licence": "ADA custom terms (no Creative Commons licence): readers may use as long as properly cited, educational and not for profit, and not altered",
+  "licence_url": null,
+  "protocol": "Day 2, after overnight fast: 90 min continuous cycling at 50% of individual VO2max with a variable 20% dextrose infusion to hold euglycaemia and [3H]glucose tracer; day 1 was euglycaemia or hypoglycaemia, with or without alprazolam",
+  "protocol_kinds": [
+    "exercise"
+  ],
+  "population": "Protocol 1-4 of 31 healthy individuals (16 M, 15 F, age 28+/-1, BMI 23+/-3, VO2max 39+/-2 mL/kg/min)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "hr",
+      "where": "Table 2 (baseline 63 -> final 139 bpm, control arm)",
+      "form": "table"
+    },
+    {
+      "marker": "sbp",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "dbp",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "epinephrine, glucagon, cortisol, NEFA, lactate (baseline)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Exercise under a glucose infusion (euglycaemic). Use the 'prior euglycaemia, no alprazolam' arm; others are antecedent hypoglycaemia or drug arms. Table 2 gives HR/BP at baseline and end of exercise; Table 1 is resting baseline. Hormone time courses are in figures."
+}

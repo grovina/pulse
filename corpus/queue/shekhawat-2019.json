@@ -1,0 +1,46 @@
+{
+  "paper": "shekhawat-2019",
+  "citation": "Shekhawat VS, Bhansali S, Dutta P, et al. Glucose-dependent Insulinotropic Polypeptide (GIP) Resistance and β-cell Dysfunction Contribute to Hyperglycaemia in Acromegaly. Scientific Reports. 2019.",
+  "doi": "10.1038/s41598-019-41887-7",
+  "pmid": "30948746",
+  "pmcid": "PMC6449401",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Mixed meal test: 10 kcal/kg Ensure powder (57% carbohydrate, 13.5% fat, 15.1% protein) after 12 h overnight fast; also hyperinsulinaemic euglycaemic clamp in patients (before and after surgery)",
+  "protocol_kinds": [
+    "mixed meal",
+    "clamp"
+  ],
+  "population": "Healthy controls n=10 (age, BMI, HbA1c matched) vs 20 patients with acromegaly (10 with, 10 without diabetes; age 34.6+/-9.0 y)",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 3 (AUC; healthy controls column)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 3 (AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "gip",
+      "where": "Table 3 (fasting total, AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 3 (fasting total, AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 3 (fasting, AUC)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Only the healthy-control column is usable as normal physiology; acromegaly groups are a disease cohort pulse cannot represent. Summary values only (AUC, fasting)."
+}

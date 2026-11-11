@@ -1,0 +1,36 @@
+{
+  "paper": "hahn-2011",
+  "citation": "Hahn RG, Ljunggren S, Larsen F, et al. A simple intravenous glucose tolerance test for assessment of insulin sensitivity. Theoretical Biology & Medical Modelling. 2011.",
+  "doi": "10.1186/1742-4682-8-12",
+  "pmid": "21535887",
+  "pmcid": "PMC3113339",
+  "licence": "CC BY 2.0",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "IVGTT: glucose bolus 300 mg/kg (30% solution) over 60 s, 12 samples in 75 min; separate hyperinsulinaemic euglycaemic clamp",
+  "protocol_kinds": [
+    "IVGTT",
+    "clamp"
+  ],
+  "population": "n=20 healthy volunteers, age 18-51 (mean 28) y, BMI 23.4+/-2.3, HbA1c 44 mmol/mol",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (baseline, Vd, CL)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1 (baseline, AUC)",
+      "form": "table"
+    },
+    {
+      "marker": "glucose uptake (Mbw)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Kinetic summary (volume of distribution, clearance) rather than per-time glucose. Baseline insulin reported as median (25th-75th percentile)."
+}

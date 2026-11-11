@@ -1,0 +1,41 @@
+{
+  "paper": "bassami-2011",
+  "citation": "Bassami M, MacLaren DPM, Ahmadizad S, et al. Effects of Mixed Isoenergetic Meals on Fat and Carbohydrate Metabolism during Exercise in Older Men. Journal of Nutrition and Metabolism. 2011.",
+  "doi": "10.1155/2011/172853",
+  "pmid": "21773014",
+  "pmcid": "PMC3136113",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+  "protocol": "30 min cycling at 60% VO2max after four different meals (normal, high fat, high-carbohydrate high-GI, high-carbohydrate low-GI) on four visits",
+  "protocol_kinds": [
+    "exercise",
+    "mixed meal"
+  ],
+  "population": "n=8 healthy older men, age 63.3+/-5.2 y, body fat 21%, VO2max 36.9+/-10.4 mL/kg/min",
+  "population_class": "nonhealthy",
+  "reports": [
+    {
+      "marker": "ffa (NEFA)",
+      "where": "text and figures",
+      "form": "text"
+    },
+    {
+      "marker": "glucose",
+      "where": "text (pre/post exercise)",
+      "form": "text"
+    },
+    {
+      "marker": "insulin",
+      "where": "figure",
+      "form": "figure"
+    },
+    {
+      "marker": "bhb (3-OHB), glycerol",
+      "where": "figure",
+      "form": "figure"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": true,
+  "note": "Older-adult flag. No data tables in the paper; numbers are in text and figures, so treated as figure-dominant. 'Values in the text are mean (+/-SE)'."
+}

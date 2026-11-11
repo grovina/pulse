@@ -1,0 +1,50 @@
+{
+  "paper": "deru-2023",
+  "citation": "Deru LS, Chamberlain CJ, Lance GR, et al. The Effects of Exercise on Appetite-Regulating Hormone Concentrations over a 36-h Fast in Healthy Young Adults: A Randomized Crossover Study. Nutrients. 2023.",
+  "doi": "10.3390/nu15081911",
+  "pmid": "37111130",
+  "pmcid": "PMC10142171",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "36 h fast, cross-over with or without an exercise bout at the start of the fast; samples at 0, 12, 24, 36 h",
+  "protocol_kinds": [
+    "prolonged fast"
+  ],
+  "population": "n=20 (11 M, 9 F), age 26.2+/-5.8 y, BMI 23.8+/-3.4, body fat 22.9+/-7.1%",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2 (pg/mL)",
+      "form": "table"
+    },
+    {
+      "marker": "gip",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glp1",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "ghrelin",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "leptin",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "PP, PYY",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Hormones in pg/mL by multiplex (insulin reported in pg/mL, not uU/mL; GLP-1 pg/mL, likely total). Exercise bout (about 50 min, intensity per Methods) is the manipulated arm; the no-exercise arm is the plain 36 h fast. No glucose or FFA reported."
+}

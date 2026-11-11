@@ -1,0 +1,40 @@
+{
+  "paper": "battezzati-2023",
+  "citation": "Battezzati A, Foppiani A, Leone A, et al. Acute Insulin Secretory Effects of a Classic Ketogenic Meal in Healthy Subjects: A Randomized Cross-Over Study. Nutrients. 2023.",
+  "doi": "10.3390/nu15051119",
+  "pmid": "36904127",
+  "pmcid": "PMC10005334",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cross-over, 7-day washout: Mediterranean meal vs classic ketogenic meal, each ~40% of individual daily energy need, eaten at 09:00 after >=12 h fast; samples 0,10,20,30,(45),60,90,120,180 min",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "n=12 (6 F, 6 M), age 19-31 y, BMI 19.7-24.7; healthy",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2 (0-180 min)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2 (0-180 min)",
+      "form": "table"
+    },
+    {
+      "marker": "c-peptide",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "insulin secretion rate",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Time-course table. Mediterranean arm is an ordinary mixed meal; ketogenic arm is unusual (very low carbohydrate) but is a valid dose contrast. Insulin in pmol/L, glucose mg/dL. Table 2 columns show 0,10,20,30,60,90,120,180 min (abstract also lists 45 min)."
+}
