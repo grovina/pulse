@@ -1,0 +1,61 @@
+{
+  "paper": "bo-2017",
+  "citation": {
+    "authors": "Bo S, Broglio F, Settanni F, et al.",
+    "title": "Effects of meal timing on changes in circulating epinephrine, norepinephrine, and acylated ghrelin concentrations: a pilot study",
+    "journal": "Nutrition & Diabetes",
+    "year": 2017,
+    "doi": "10.1038/s41387-017-0010-0",
+    "pmid": "29255175",
+    "pmcid": "PMC5865548"
+  },
+  "reported": [
+    {
+      "what": "plasma epinephrine, morning vs evening meal, 0-180 min every 30 min, median (IQR), n=20; epinephrine in ng/l is a convertible unit but the statistic is a median with IQR",
+      "location": {
+        "where": "Table 3, columns Morning meal | Evening meal",
+        "quote": "Epinephrine 60 (ng/l) | 19.0 (21.0) | 15.0 (11.0)"
+      }
+    },
+    {
+      "what": "plasma norepinephrine (no marker in the model), morning vs evening meal, median (IQR)",
+      "location": {
+        "where": "Table 3",
+        "quote": "Norepinephrine 60 (ng/l) | 235.3 (115.0) | 206.3 (200.1)"
+      }
+    },
+    {
+      "what": "acylated ghrelin, morning vs evening meal, median (IQR); absolute ghrelin levels are also not enterable",
+      "location": {
+        "where": "Table 3",
+        "quote": "Acylated ghrelin 180 (ng/l) | 49.2 (22.9) | 58.4 (61.9)"
+      }
+    },
+    {
+      "what": "glucose, insulin, triglyceride and FFA net AUCs after morning and evening meals, mean +/- SD (single-arm AUC; units such as mg/dl x h not in the unit table)",
+      "location": {
+        "where": "Results, paragraph on mean AUCs",
+        "quote": "Mean AUCs for glucose, insulin, triglyceride, and FFA blood concentrations were, respectively 15 383.2 ± 2045.3 mg/dl × h"
+      }
+    },
+    {
+      "what": "diet-induced thermogenesis, morning vs evening, mean +/- SD in kcal (an average post-meal RMR minus basal RMR, not a rate or a model marker)",
+      "location": {
+        "where": "Results, paragraph on DIT",
+        "quote": "Mean morning DIT values were significantly higher than evening DIT values (327.5 ± 103.7 vs. 237.0 ± 89.5 kcal, p = 0.003)"
+      }
+    },
+    {
+      "what": "time-0 glucose 77.4 +/- 12.5 mg/dl for the 20 participants; every participant had a time-0 sample before the 08:00 meal and another before the 20:00 meal, and Table 2 does not say which it reports or whether it pools them",
+      "location": {
+        "where": "Table 2",
+        "quote": "Glucose (mg/dl) | 77.4 ± 12.5"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "median_with_iqr"
+  },
+  "detail": "Every hormone time course (Table 3) is printed as median (interquartile range), which the statistics cannot carry; the only mean +/- SD values are single-arm AUCs, a DIT in kcal, and a time-0 glucose that Table 2 does not tie to either the 08:00 or the 20:00 visit."
+}
