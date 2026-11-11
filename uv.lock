@@ -1,21 +1,21 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "(python_full_version >= '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
-    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
-    "(python_full_version < '3.11' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
     "python_full_version >= '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
-    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
-    "python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
     "(python_full_version >= '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
-    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
-    "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
     "python_full_version >= '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
-    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
-    "python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
     "python_full_version >= '3.13' and extra != 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
+    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
+    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
+    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
+    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
     "python_full_version >= '3.11' and python_full_version < '3.13' and extra != 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
+    "(python_full_version < '3.11' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
+    "python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
+    "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
+    "python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
     "python_full_version < '3.11' and extra != 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
 ]
 conflicts = [[
@@ -46,9 +46,9 @@ name = "anyio"
 version = "4.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/19/14/2c5dd9f512b66549ae92767a9c7b330ae88e1932ca57876909410251fe13/anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc", size = 231622, upload-time = "2026-03-24T12:59:09.671Z" }
 wheels = [
@@ -69,7 +69,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -256,7 +256,7 @@ name = "click"
 version = "8.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/57/75/31212c6bf2503fdf920d87fee5d7a86a2e3bcf444984126f13d8e4016804/click-8.3.2.tar.gz", hash = "sha256:14162b8b3b3550a7d479eafa77dfd3c38d9dc8951f6f69c78913a8f9a7540fd5", size = 302856, upload-time = "2026-04-03T19:14:45.118Z" }
 wheels = [
@@ -277,8 +277,8 @@ name = "cryptography"
 version = "46.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a4/ba/04b1bd4218cbc58dc90ce967106d51582371b898690f3ae0402876cc4f34/cryptography-46.0.6.tar.gz", hash = "sha256:27550628a518c5c6c903d84f637fbecf287f6cb9ced3804838a1295dc1fd0759", size = 750542, upload-time = "2026-03-25T23:34:53.396Z" }
 wheels = [
@@ -413,11 +413,20 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/0e/97c33bf5009bdbac74fd2beace167cab3f978feb69cc36f1ef79360d6c4e/exceptiongroup-1.3.1-py3-none-any.whl", hash = "sha256:a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598", size = 16740, upload-time = "2025-11-21T23:01:53.443Z" },
+]
+
+[[package]]
+name = "execnet"
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd", size = 166622, upload-time = "2025-11-12T09:56:37.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec", size = 40708, upload-time = "2025-11-12T09:56:36.333Z" },
 ]
 
 [[package]]
@@ -724,8 +733,8 @@ version = "3.6.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "(python_full_version >= '3.13' and sys_platform == 'linux') or (python_full_version >= '3.13' and sys_platform == 'win32')",
-    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32')",
     "python_full_version >= '3.13' and sys_platform != 'linux' and sys_platform != 'win32'",
+    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32')",
     "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6a/51/63fe664f3908c97be9d2e4f1158eb633317598cfa6e1fc14af5383f17512/networkx-3.6.1.tar.gz", hash = "sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509", size = 2517025, upload-time = "2025-12-08T17:02:39.908Z" }
@@ -808,14 +817,14 @@ version = "2.4.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "(python_full_version >= '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
-    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
     "python_full_version >= '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
-    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
     "(python_full_version >= '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
-    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
     "python_full_version >= '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
-    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
     "python_full_version >= '3.13' and extra != 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
+    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')",
+    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra != 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu'",
+    "(python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu') or (python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu')",
+    "python_full_version >= '3.11' and python_full_version < '3.13' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
     "python_full_version >= '3.11' and python_full_version < '3.13' and extra != 'group-5-pulse-cpu' and extra != 'group-5-pulse-gpu'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d7/9f/b8cef5bffa569759033adda9481211426f12f53299629b410340795c2514/numpy-2.4.4.tar.gz", hash = "sha256:2d390634c5182175533585cc89f3608a4682ccb173cc9bb940b2881c8d6f8fa0", size = 20731587, upload-time = "2026-03-29T13:22:01.298Z" }
@@ -1103,24 +1112,26 @@ wheels = [
 name = "pulse"
 version = "0.1.0"
 source = { editable = "." }
+default-groups = ["cpu"]
 dependencies = [
     { name = "fastapi" },
     { name = "google-cloud-storage" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
 cpu = [
-    { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
     { name = "torch", version = "2.12.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'linux' and extra == 'group-5-pulse-cpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
 ]
 dev = [
     { name = "pytest" },
+    { name = "pytest-xdist" },
 ]
 gpu = [
-    { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "torch", version = "2.11.0", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
     { name = "torch", version = "2.12.0+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "(sys_platform == 'linux' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
 ]
 
@@ -1137,7 +1148,10 @@ cpu = [
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "pulse", group = "cpu" } },
 ]
-dev = [{ name = "pytest" }]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-xdist" },
+]
 gpu = [
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", index = "https://download.pytorch.org/whl/cu130", conflict = { package = "pulse", group = "gpu" } },
@@ -1320,17 +1334,30 @@ name = "pytest"
 version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
     { name = "pygments" },
-    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7d/0d/549bd94f1a0a402dc8cf64563a117c0f3765662e2e668477624baeec44d5/pytest-9.0.3.tar.gz", hash = "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c", size = 1572165, upload-time = "2026-04-07T17:16:18.027Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/24/a372aaf5c9b7208e7112038812994107bc65a84cd00e0354a88c2c77a617/pytest-9.0.3-py3-none-any.whl", hash = "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9", size = 375249, upload-time = "2026-04-07T17:16:16.13Z" },
+]
+
+[[package]]
+name = "pytest-xdist"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "execnet" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl", hash = "sha256:202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88", size = 46396, upload-time = "2025-07-01T13:30:56.632Z" },
 ]
 
 [[package]]
@@ -1363,7 +1390,7 @@ version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/81/69/17425771797c36cded50b7fe44e850315d039f28b15901ab44839e70b593/starlette-1.0.0.tar.gz", hash = "sha256:6a4beaf1f81bb472fd19ea9b918b50dc3a77a6f2e190a12954b25e6ed5eea149", size = 2655289, upload-time = "2026-03-22T18:29:46.779Z" }
 wheels = [
@@ -1449,8 +1476,8 @@ dependencies = [
     { name = "filelock", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "fsspec", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "jinja2", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
-    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (python_full_version >= '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (python_full_version < '3.11' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (python_full_version < '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu') or (python_full_version >= '3.11' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
     { name = "setuptools", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "sympy", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "typing-extensions", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
@@ -1499,8 +1526,8 @@ dependencies = [
     { name = "filelock", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fsspec", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jinja2", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu') or (python_full_version >= '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-cpu') or (python_full_version >= '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-cpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
     { name = "setuptools", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "sympy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "typing-extensions", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1554,8 +1581,8 @@ dependencies = [
     { name = "filelock", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fsspec", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jinja2", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-gpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-gpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'linux' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu') or (sys_platform == 'win32' and extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-gpu') or (python_full_version < '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and sys_platform == 'linux' and extra == 'group-5-pulse-gpu') or (python_full_version >= '3.11' and sys_platform == 'win32' and extra == 'group-5-pulse-gpu') or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
     { name = "nvidia-cublas", marker = "sys_platform == 'linux'" },
     { name = "nvidia-cudnn-cu13", marker = "sys_platform == 'linux'" },
     { name = "nvidia-cusparselt-cu13", marker = "sys_platform == 'linux'" },
@@ -1648,7 +1675,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'group-5-pulse-cpu' and extra == 'group-5-pulse-gpu')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/62/f2/368268300fb8af33743508d738ef7bb4d56afdb46c6d9c0fa3dd515df171/uvicorn-0.43.0.tar.gz", hash = "sha256:ab1652d2fb23abf124f36ccc399828558880def222c3cb3d98d24021520dc6e8", size = 85686, upload-time = "2026-04-03T18:37:48.984Z" }
 wheels = [

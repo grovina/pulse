@@ -29,7 +29,7 @@ include = ["pulse*"]
 [dependency-groups]
 cpu = ["torch"]
 gpu = ["torch"]
-dev = ["pytest"]
+dev = ["pytest", "pytest-xdist"]
 
 [tool.uv]
 # `dev` is opt-in (kept out of the prod image): `uv sync --group dev` for the

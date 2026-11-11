@@ -123,7 +123,8 @@ Commit the code you intend to train before deploying — the trainer image is
 built from your working tree, so a clean commit ties each `jobId` to an exact
 tree and avoids "which uncommitted edit was in that run?" confusion when
 comparing benchmarks or handoffs. Run the tests first:
-`uv run --group dev pytest tests/`.
+`uv run --group dev pytest tests/ -n auto` (the suite is rollout-heavy, so it
+runs across cores).
 
 ## Choosing the next iteration: structural over parametric
 
