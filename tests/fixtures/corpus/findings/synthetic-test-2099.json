@@ -1,0 +1,340 @@
+{
+  "paper": "synthetic-test-2099",
+  "citation": {
+    "authors": "Fixture A, Fixture B",
+    "title": "A made-up glucose tolerance study that exists only to test the loader",
+    "journal": "Journal of Synthetic Fixtures",
+    "year": 2099,
+    "doi": "10.0000/synthetic.2099.001"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 25.0,
+      "sd": 3.0,
+      "min": 20.0,
+      "max": 31.0
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twelve invented healthy young men."
+  },
+  "protocols": [
+    {
+      "name": "ogtt",
+      "description": "75 g oral glucose after an overnight fast, two hours observed",
+      "duration_min": 120,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ]
+    },
+    {
+      "name": "fasting",
+      "description": "the same morning with water only",
+      "duration_min": 120,
+      "start_hour": 8.0,
+      "meals": []
+    },
+    {
+      "name": "iv_bolus",
+      "description": "0.3 g/kg glucose intravenously over two minutes, one hour observed",
+      "duration_min": 60,
+      "start_hour": 8.0,
+      "meals": [],
+      "glucose_bolus": {
+        "dose_g_per_kg": 0.3,
+        "start_min": 0,
+        "over_min": 2
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "ogtt_glucose_peak",
+      "description": "Peak plasma glucose in the first two hours of the OGTT",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 120
+      },
+      "value": 8.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, row 'peak'",
+        "quote": "Peak glucose was 8.0 (SD 1.2) mmol/L (n = 12)."
+      }
+    },
+    {
+      "id": "fasting_glucose_mean",
+      "description": "Mean plasma glucose over the first hour of the water-only morning",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 5.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.15,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1",
+        "quote": "Fasting glucose 5.0 +/- 0.15 mmol/L (mean +/- SEM, n = 12)."
+      }
+    },
+    {
+      "id": "ogtt_insulin_curve",
+      "description": "Plasma insulin through the OGTT, mean and standard error",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 60.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 420.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 60.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 480.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 72.0,
+            "n": 12
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 300.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 48.0,
+            "n": 12
+          }
+        }
+      ],
+      "location": {
+        "where": "Figure 1B",
+        "quote": "Insulin (pmol/L) at 0, 30, 60 and 90 min: 60, 420, 480, 300 (mean +/- SEM)."
+      }
+    },
+    {
+      "id": "ogtt_minus_fasting_glucose",
+      "description": "Mean glucose over the second hour, OGTT minus the water-only morning",
+      "marker": "glucose",
+      "statistic": "delta_means",
+      "protocols": [
+        "fasting",
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 120
+      },
+      "value": 1.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 0.5,
+        "high": 1.7,
+        "level": 95,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, paragraph 3",
+        "quote": "The second-hour difference was 1.1 mmol/L (95% CI 0.5 to 1.7)."
+      }
+    },
+    {
+      "id": "ogtt_minus_fasting_insulin_peak",
+      "description": "Peak insulin, OGTT minus the water-only morning",
+      "marker": "insulin",
+      "statistic": "delta_peaks",
+      "protocols": [
+        "fasting",
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 120
+      },
+      "value": 420.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 130.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, row 'peak insulin'",
+        "quote": "Peak insulin rose by 420 pmol/L (SD 130) with the load."
+      }
+    },
+    {
+      "id": "ogtt_glucose_time_to_peak",
+      "description": "Time of the glucose peak on the paper's own clock",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 120
+      },
+      "value": 0.5,
+      "unit": "h",
+      "uncertainty": {
+        "kind": "range",
+        "low": 0.25,
+        "high": 1.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, paragraph 2",
+        "quote": "Glucose peaked at a median of 30 min (range 15 to 60 min)."
+      }
+    },
+    {
+      "id": "fasting_insulin_spread",
+      "description": "Between-person SD of fasting insulin",
+      "marker": "insulin",
+      "statistic": "spread",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 18.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "n_only",
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1",
+        "quote": "Fasting insulin 60 pmol/L, SD 18 (n = 12)."
+      }
+    },
+    {
+      "id": "glucose_insulin_resistance_r",
+      "description": "Correlation of fasting glucose with insulin resistance",
+      "marker": "glucose",
+      "statistic": "correlation",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "partner": "insulin_resistance",
+      "value": 0.4,
+      "unit": "r",
+      "uncertainty": {
+        "kind": "n_only",
+        "n": 12
+      },
+      "location": {
+        "where": "Results, paragraph 5",
+        "quote": "Fasting glucose correlated with HOMA-IR, r = 0.40 (n = 12)."
+      }
+    },
+    {
+      "id": "insulin_ogtt_over_fasting",
+      "description": "Ratio of mean second-hour insulin, OGTT over water-only",
+      "marker": "insulin",
+      "statistic": "ratio_means",
+      "protocols": [
+        "fasting",
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 120
+      },
+      "value": 5.0,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.8,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3",
+        "quote": "Insulin ratio OGTT/fasting 5.0 +/- 0.8 (SEM)."
+      }
+    },
+    {
+      "id": "insulin_increment_ogtt_over_bolus",
+      "description": "Insulin area above baseline, OGTT over IV bolus",
+      "marker": "insulin",
+      "statistic": "ratio_increments",
+      "protocols": [
+        "iv_bolus",
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 60
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.6,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.2,
+        "high": 2.0,
+        "level": 95,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, last row",
+        "quote": "Incremental AUC ratio 1.6 (95% CI 1.2 to 2.0)."
+      }
+    }
+  ]
+}

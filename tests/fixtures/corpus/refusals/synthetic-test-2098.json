@@ -1,0 +1,15 @@
+{
+  "paper": "synthetic-test-2098",
+  "citation": {
+    "authors": "Fixture C",
+    "title": "A made-up study of a marker the model does not carry",
+    "journal": "Journal of Synthetic Fixtures",
+    "year": 2098,
+    "pmid": "99999998"
+  },
+  "reported": [
+    {"what": "plasma adiponectin fell 20% after the meal", "location": {"where": "Figure 2", "quote": "Adiponectin fell by 20% at 120 min."}}
+  ],
+  "missing": {"kind": "marker", "name": "adiponectin"},
+  "detail": "The finding is about adiponectin, which the model has no state for."
+}

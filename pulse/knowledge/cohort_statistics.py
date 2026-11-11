@@ -10,6 +10,9 @@ Two transforms run over the merged list before it is used:
 * ``expand_curves`` compiles every ``kind=CURVE`` spec (a whole published
   trajectory) into one ``MEAN_IN_WINDOW`` spec per timepoint, so the batched
   scorer handles a curve with no special-casing (PLAN Phase 4).
+* findings filed as files (``corpus/findings/``, ``corpus.py``) join the authored
+  list, so they pass through the same seal. A paper may live in the Python
+  registries or in a file, never both.
 * the sealed split holds back held-out items (PLAN Phase 0): ``sealing`` decides
   from each item's ``paper``, the training registry ``ALL_COHORT_STATISTICS`` is
   the unsealed items only, and the scoreboard reads ``SEALED_COHORT_STATISTICS``.
@@ -25,6 +28,7 @@ from .cohort_types import (
     StatisticKind,
     StatisticWindow,
 )
+from .corpus import load_file_specs
 from .sealing import apply_seal
 from .cohorts import (
     breadth_floor, cardiovascular, counterregulation, curves, glucose_handling, hepatobiliary,
@@ -70,7 +74,7 @@ def expand_curves(specs: list[CohortStatisticSpec]) -> list[CohortStatisticSpec]
     return out
 
 
-_AUTHORED: list[CohortStatisticSpec] = [
+_PYTHON_AUTHORED: list[CohortStatisticSpec] = [
     *nutrition.COHORT_STATISTICS,
     *sleep.COHORT_STATISTICS,
     *glucose_handling.COHORT_STATISTICS,
@@ -83,6 +87,40 @@ _AUTHORED: list[CohortStatisticSpec] = [
     *curves.COHORT_STATISTICS,
     *renal.COHORT_STATISTICS,
 ]
+
+
+def join_file_findings(
+    python_authored: list[CohortStatisticSpec],
+    file_specs: list[CohortStatisticSpec],
+    rule_papers: frozenset[str] = frozenset(),
+) -> list[CohortStatisticSpec]:
+    """The authored list with the corpus files' specs appended.
+
+    A paper that is a file may not also name an item in a Python registry (cohort
+    statistics or physiology rules): one source per paper, or a number could be
+    in training twice under two sigmas.
+    """
+    both = {s.paper for s in file_specs} & ({s.paper for s in python_authored} | set(rule_papers))
+    if both:
+        raise ValueError(
+            f"papers filed both as corpus files and in a Python registry: {', '.join(sorted(both))}",
+        )
+    names = [s.name for s in [*python_authored, *file_specs]]
+    clash = sorted({n for n in names if names.count(n) > 1})
+    if clash:
+        raise ValueError(f"item names used twice: {', '.join(clash)}")
+    return [*python_authored, *file_specs]
+
+
+def _rule_papers() -> frozenset[str]:
+    from .physiology_rules import _AUTHORED_RULES
+
+    return frozenset(r.paper for r in _AUTHORED_RULES)
+
+
+_AUTHORED: list[CohortStatisticSpec] = join_file_findings(
+    _PYTHON_AUTHORED, load_file_specs(), _rule_papers(),
+)
 
 # The seal is applied to the authored items, then curves become point specs, so a
 # sealed curve is sealed on every point (``replace`` preserves it).
