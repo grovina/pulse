@@ -309,10 +309,17 @@
       }
     },
     {
-      "what": "AUC of glucagon, active GLP-1 and total GIP during the OGTT in 10 elderly men (Table S2)",
+      "what": "AUC of glucagon and of total GIP during the OGTT in 10 elderly men (Table S2, pmol·h/L, mean ± SD per the Methods); the paper says the AUC is linear-trapezoidal but prints no OGTT sampling minutes, and no incremental/total definition",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "AUC of active GLP-1 during the OGTT in 10 elderly men (Table S2); the model's glp1 is total GLP-1, and OGTT sampling times are not printed",
+      "missing": {
+        "kind": "marker",
+        "name": "active_glp1"
       }
     },
     {

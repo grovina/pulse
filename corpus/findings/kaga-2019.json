@@ -134,10 +134,10 @@
       }
     },
     {
-      "what": "insulin area under the curve of the oral glucose test (Table 1)",
+      "what": "insulin area under the curve of the 75 g oral glucose test, overall and by SSSC group (Table 1); the paper does not print the OGTT sampling minutes (only 'as described previously')",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "time_not_printed"
       }
     },
     {

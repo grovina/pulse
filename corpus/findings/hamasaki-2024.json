@@ -118,10 +118,45 @@
   ],
   "left_out": [
     {
-      "what": "AUC of glucose, insulin, C-peptide, total and active GIP and GLP-1, and glucagon delta-AUC, during OGTT and IIGI, all groups (Tables 2 and 3)",
+      "what": "AUC of glucose and of insulin during the OGTT, NGT group (Table 2, rows 'OGTT'): the samples are printed (-15, 0, 10, 20, 30, 60, 90, 120, 150, 180 min) but the paper does not say which of them the AUC spans (from -15 or from 0, to 180), and Table 2 gives no window",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_auc"
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "glucagon change in AUC from baseline, 0-180 and 0-60 min, during the OGTT, NGT group (Table 3): printed in min·nM, which is not a glucagon unit the model reads and would be a mean fall of several nM against a fasting glucagon of 28 pM in Table 1; the baseline value is not defined (first sample or mean of the -15 and 0 min samples)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "AUC of total GIP and of total GLP-1 during the OGTT, NGT group (Table 3, printed in min·nM): as for glucose and insulin, the paper does not say which of the printed samples the AUC spans (from -15 or from 0, to 180 min)",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "AUC of active GIP and of active GLP-1 during the OGTT, NGT group (Table 3): the model's gip and glp1 are the total hormones",
+      "missing": {
+        "kind": "marker",
+        "name": "active_gip"
+      }
+    },
+    {
+      "what": "AUC of C-peptide during the OGTT, NGT group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "AUC of glucose, insulin, C-peptide, GIP, GLP-1 and glucagon during the isoglycemic intravenous infusion (IIGI), NGT group (Tables 2 and 3): the arm cannot be written, see the infusion entry below",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
       }
     },
     {

@@ -700,10 +700,10 @@
       }
     },
     {
-      "what": "areas and incremental areas under the curve after the oral glucose load (Table 5)",
+      "what": "areas and incremental areas under the curve after the oral glucose load (Table 5): the sampling times are stated but the unit of the areas (the time unit) is not printed",
       "missing": {
-        "kind": "operator",
-        "name": "single_arm_incremental_auc"
+        "kind": "source",
+        "name": "unit_not_printed"
       }
     },
     {
