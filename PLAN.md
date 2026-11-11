@@ -1,18 +1,19 @@
 # Plan — one physiology, found by the literature
 
-*Written 2026-10-17. Supersedes the 2026-10-09 plan ("a body a gradient
-can move"). That plan's hard-won measurements still bind; they are
-restated in §10. The completeness map remains `docs/modeling-state.md`.
-The authoring surfaces remain `pulse/knowledge/AUTHORING.md`.*
+*Written 2026-11-11. Supersedes the 2026-10-17 plan. That plan's doctrine
+stands and is restated in §1–§5. Most of its phases landed (§6 lists
+them); what is true at this commit is `STATE.md`. The completeness map
+remains `docs/modeling-state.md`. The authoring surfaces remain
+`pulse/knowledge/AUTHORING.md`.*
 
-*This plan changes direction. The 2026-10-09 plan replaced stalled
-learned laws with the teacher's constants (iters 98–109: 68,293 → 37,343
-parameters) and then landed eight physiology hubs the same way — a
-mechanism copied from the teacher, confirmed by a noise-free test, with
-no degree of freedom a later paper could move. That is a copy, and a
-copy cannot be overturned by evidence. This plan unfreezes those
-numbers, turns each citation into evidence on the protocol it was
-measured in, and sets a course where the teacher is removed.*
+*This plan changes the order of work, not the destination. Three weeks of
+runs under the last plan showed where the limit now is. A run no longer
+finishes: an evidence epoch takes three hours and iters 114 and 115 both
+reached the 72 h timeout. The held-out set is nine points from two
+curves, so it cannot tell a better checkpoint from a worse one. And a
+calibrated person predicts glucose no better than the median person. The
+physiology is not what is holding the model back. The loop, the board and
+the size of the corpus are, so they come first.*
 
 ## 1. Destination
 
@@ -35,10 +36,12 @@ The simulation is never "done." It is more or less constrained. A later
 paper can always move it, including a law that today sits at a value
 nothing has yet measured against.
 
-## 2. What is imposed, and what is learned
+What it is for, in two sentences. It predicts the result of a physiology
+study it has never read, with an interval. It predicts a person's next
+response from a few days of their own data. The board of §4 has one line
+for each, and the stages of §6 are ordered by what moves those two lines.
 
-The hierarchy is the PRD's. This plan sharpens the boundary and holds to
-it without exception.
+## 2. What is imposed, and what is learned
 
 | Layer | Nature | In the model |
 |---|---|---|
@@ -56,10 +59,8 @@ Three consequences, which are the rules of this plan:
 
 - **No forced value.** A number a physiologist could measure is a
   learnable population parameter, initialised at the current best value,
-  with no restoring pull toward it. `2.13 kcal/min`, `190 mg/dL`, the
-  potentiator's `0.025`, glucagon's `3.5`, the incretin split, the bile
-  floor, the sleep-debt gains — all of them. The value today is a
-  starting point, not a target.
+  with no restoring pull toward it. The value today is a starting point,
+  not a target.
 
 - **Functional forms are defaults, not constraints.** Mass action, a Hill
   curve, the one-compartment stomach — each carries a learned correction
@@ -72,9 +73,8 @@ Three consequences, which are the rules of this plan:
 - **A parameter that drifts into nonsense means a slice is missing.** In
   iter 107 obligatory uptake walked 0.0114 → 0.0083 because every slice
   then written permitted it. The fix is never to pin the value. It is to
-  write the finding that forbids the drift (Landau's tracer shares, the
-  prolonged-fast floor) and let it hold the parameter by evidence. The
-  identifiability report (§6, Phase 0) is the standing list of which
+  write the finding that forbids the drift and let it hold the parameter
+  by evidence. The identifiability report is the standing list of which
   parameters no slice yet constrains, each paired with the study that
   would constrain it. That list is the reading list.
 
@@ -93,28 +93,29 @@ A finding enters at the smallest surface that captures it.
 
 | The finding | Where it goes |
 |---|---|
-| X raises or lowers Y, with a magnitude band | `CouplingPrior` in `pulse/knowledge/coupling_priors/` |
-| In protocol P, marker M had statistic S ± σ over window W | `CohortStatisticSpec` in `pulse/knowledge/cohorts/` |
-| In protocol P, marker M followed this curve (mean ± SEM at timepoints) | `CohortStatisticSpec` with `StatisticKind.CURVE` — the replacement for the teacher's dense tape |
-| Across people, marker/parameter M had spread S or correlation R | `StatisticKind.SPREAD` / `StatisticKind.CORRELATION` — the replacement for teacher-drawn setpoint supervision |
-| Under an IV glucose, insulin, or hormone infusion (incl. a clamp) | an infusion arm (`CohortArmSpec` infusion/clamp series), then any operator above |
-| A direction, floor, ceiling, or timing on one trajectory | `PhysiologyRule` in `pulse/knowledge/physiology_rules.py` |
-| A dose scales a peak, rank, or slope | `OperatorKind.DOSE_*`, scored by `RolloutEvidenceSignal` |
-| For one subject, these sparse readings under this protocol | an individual-level item (`authority=real`), scored like the real-data ruler |
+| X raises or lowers Y, with a magnitude band | `CouplingPrior` |
+| In protocol P, marker M had statistic S ± σ over window W | `CohortStatisticSpec` |
+| In protocol P, marker M followed this curve (mean ± SEM at timepoints) | `StatisticKind.CURVE` |
+| Across people, marker or parameter M had spread S or correlation R | `StatisticKind.SPREAD` / `StatisticKind.CORRELATION` |
+| Under an IV glucose, insulin, or hormone infusion (incl. a clamp) | an infusion arm, then any operator above |
+| A direction, floor, ceiling, or timing on one trajectory | `PhysiologyRule` |
+| A dose scales a peak, rank, or slope | `OperatorKind.DOSE_*` |
+| For one subject, these sparse readings under this protocol | an individual-level item (`authority=real`) |
 | Conservation, positivity, ordering, a fixed point | the coordinates or functional form, in `pulse/modules/` |
 
-Every item carries a sigma, a source string, and an authority. Literature
+Every item names its paper, where in the paper the number is (table or
+figure, and the reported text), what kind of uncertainty it carries (a
+between-person SD with its n, a standard error, or a range), and the
+population it was measured in. A number with no place in a paper is a
+rule or a prior, not a cohort target with an invented sigma. Literature
 and real measurements outrank the teacher on any marker they both cover.
-A finding with no sigma is a hinge or a prior, not a cohort target with an
-invented one.
 
 **The slice is soft.** A sigma tighter than the study supports can wrongly
 exclude the truth, so two items on the same protocol and marker whose
-targets disagree beyond their sigmas are recorded as a conflict (§6, M3.2),
-not averaged into a number neither paper reported. A conflict that is
-real — the model cannot satisfy both — is the signal to change structure,
-not to widen a sigma. This is the PRD's "small persistent discrepancies
-are structural signals."
+targets disagree beyond their sigmas are recorded as a conflict, not
+averaged into a number neither paper reported. A conflict that is real —
+the model cannot satisfy both — is the signal to change structure, not to
+widen a sigma.
 
 ## 4. The scoreboard, not a gate
 
@@ -122,19 +123,23 @@ There is no binary gate. Every checkpoint is scored on a continuous
 board, and a run that regresses on one line tells us something; it is not
 rejected. Three lines:
 
-- **Fit to held-out literature.** The median miss on the sealed evidence
-  set, in units of each item's own sigma, and the share of sealed items
-  within 1σ and 2σ, by protocol family.
+- **Fit to held-out literature.** Sealing is by paper: one paper in five,
+  drawn by a hash of the paper's name when it is filed, never chosen. The
+  line is the median miss on the items of sealed papers, in units of each
+  item's own sigma, with an interval from resampling papers, and beside
+  it the same number for the untrained model at its published constants.
+  Items held out before sealing was by paper are reported on their own
+  line, as held-out items whose papers also train.
 
-- **Individual prediction skill.** On held-out people from public
-  individual-level datasets: calibrate on sparse early readings, predict
-  later readings under a different protocol. Skill is reported against two
-  baselines — the population-median person, and the person's own running
-  mean.
+- **Individual prediction skill.** On people from public individual-level
+  datasets who were never used to develop the calibration: calibrate on
+  sparse early readings, predict later readings under a different
+  protocol. Skill is reported against the population-median person and
+  the person's own running mean.
 
 - **How open the model still is.** The count of parameter directions the
-  current evidence does not constrain (the Fisher spectrum of §6, Phase
-  0), each flat direction named with the study that would close it.
+  current evidence does not constrain, each flat direction named with the
+  study that would close it.
 
 Teacher-tape agreement is logged. It is not on the board.
 
@@ -143,228 +148,238 @@ Teacher-tape agreement is logged. It is not on the board.
 The teacher (`pulse/knowledge/full_body.py`) is a lossy copy of the
 literature with no sigmas, no citations, and invented minute-by-minute
 detail. It is a warm start in a reasonable direction and a generator of
-protocols. It is on a path to removal. It does five jobs today; each
-needs a literature replacement before it can go, and each is removed by
-ablation — set its signal to zero weight, and keep the removal if the
-scoreboard holds.
+protocols. It is on a path to removal. Each role it still plays needs a
+literature replacement before it can go, and each is removed by ablation:
+train with that signal at weight zero, and keep the removal if the board
+holds.
 
-| Teacher role today | Literature replacement | Removed in |
+| Teacher role | Literature replacement |
+|---|---|
+| Dense tape of glucose, HR, BP, temperature | `CURVE` items: digitized 24 h profiles, mean ± SEM at timepoints |
+| Distilling internals (CRH, remote insulin, bile pools, fat mass) | latent states with priors on time constants; reported as unidentified if nothing pins them |
+| Generating the population | `SPREAD` / `CORRELATION` items from published distributions |
+| Ground truth for identifiability and recovery tests | synthetic people sampled from the trained student itself |
+| Stable cold start | the literature's own constants as the init; kept until last |
+
+## 6. The work, in order
+
+Stages 1 and 2 start together and everything after leans on them. Stages
+3 and 4 run side by side once they land. Each stage ends on something
+measured.
+
+### Where the 2026-10-17 phases stand
+
+Code and tests that cite "PLAN Phase N" mean these.
+
+| Phase | What it was | Now |
 |---|---|---|
-| Dense tape of glucose/HR/BP/temp | `CURVE` items: digitized 24 h profiles, mean ± SEM at timepoints | Phase 6 |
-| Distilling internals (CRH, remote insulin, bile pools, fat mass) | latent states with priors on time constants; report as unidentified if nothing pins them | Phase 6 |
-| Generating the population (setpoint + sweep supervision) | `SPREAD` / `CORRELATION` items from published distributions; fresh draws from a named latent | Phase 3 → 6 |
-| Ground truth for identifiability and calibration-recovery tests | synthetic people sampled from the trained student itself | Phase 3 |
-| Stable cold start | the literature's own constants as the init | kept until last |
+| 0 | Sealed set, identifiability report, an individual ruler | Landed; the sealed set is too small to judge by (stage 2) |
+| 1 | One baseline run | Landed (iter 113) |
+| 2 | Every measured number a learnable parameter | Half done: 95 scalar laws learn, about 100 numbers are still forced (stage 6) |
+| 3 | The population is a distribution | The factor prior landed; one spread item, no correlation item (stage 4) |
+| 4 | Curve, infusion and clamp operators, residuals, conflicts | Landed |
+| 5 | The loop samples evidence and sums likelihoods | Landed (iter 114) |
+| 6 | Remove the teacher | Stage 5 |
+| 7 | Read at scale | Stage 3 |
 
-The ablation is the test for when each role can go: train with that
-teacher signal at weight zero, and keep the deletion if the held-out
-literature fit and the individual-prediction skill do not fall.
+### Stage 1 — a loop that finishes
 
-## 6. The phases
+A step rolls all of its evidence together. The people of a step are spun
+up once, the arms that share a horizon share a rollout, and the
+likelihoods are summed as before. A rollout costs about the same for one
+person as for a hundred, so the step can see far more of the corpus for
+less than four items cost before. The minute step itself sheds the work
+nothing reads. The cores of the training machine are used. A run writes a
+board at every phase boundary and stops itself before its deadline, so no
+run ends without one.
 
-The phases below are ordered by dependency, not calendar. Phase 0 and the
-Phase 1 run start together. Phases 2–4 can proceed in parallel and must
-all land before Phase 5.
+Done when a full run of the current recipe takes under three hours on the
+training job, and a step that scores every item in the corpus takes under
+a minute.
 
-### Phase 0 — the scoreboard, before anything is tuned
+### Stage 2 — a board that can judge
 
-The board of §4 exists before any run is judged by it.
+Sealing by paper, decided by the registry (§4). An interval on every
+line. The untrained model beside every line. `STATE.md`, rewritten in the
+commit that changes what it describes and checked against the code by a
+test, takes over from the iteration handoffs as the record of what is
+true.
 
-- **A sealed evidence set.** Evidence items carry a `sealed` flag. Sealed
-  items never enter any training registry (`ALL_COHORT_STATISTICS`,
-  `PHYSIOLOGY_RULES`, `all_evidence()`); they are reachable only through a
-  scoring path. New items are sealed at random (about one in five) within
-  each protocol family at filing time, so no one seals only the easy
-  ones. Existing items stay in training — the warm start has already seen
-  them. A test asserts no sealed item appears in any training registry.
+Done when the sealed line holds at least 60 items from at least 20
+sealed papers. It starts near empty, because every paper already in
+training is exempt. Stage 3 is what fills it.
 
-- **The identifiability report.** A checkpoint artifact: the eigen-
-  spectrum of the Fisher information of the total training loss with
-  respect to the population parameters and the per-person heads. Every
-  flat direction is either covered by a slice (named) or listed as open
-  (named, with the study that would close it). This is the "map of
-  holes." It is a run artifact, never a reason to delay a run, and it is
-  the thing that tells us a parameter may be unfrozen without drifting.
+### Stage 3 — the corpus, at the scale of the claim
 
-- **An individual-level ruler.** One public dataset ingested as sparse
-  calibrate-then-predict episodes (CGMacros first; the BIG IDEAs Lab set
-  and OhioT1DM next). The single-subject CGM ruler stops being special:
-  it is one `real` item among several.
+A paper is a file in `corpus/findings/`, the way soma keeps its corpus.
+`python -m pulse.admit` is the gate. It checks that the protocol runs,
+that a gradient reaches a parameter, that the number has a place in the
+paper, that its uncertainty is of a stated kind, and that it does not
+silently contradict an item already admitted. A paper the model cannot
+express becomes a file in `corpus/refusals/` that names the missing
+piece: a marker, an input, a population, a timescale. That pile is the
+specification for the next change to the model.
 
-### Phase 1 — one baseline run
+Reading is done by agents, one paper each: read, write the finding or the
+refusal, run the gate. A second agent checks every number against the
+paper before the file is admitted. The existing registries move into
+files the same way, and the targets that are textbook ranges rather than
+reported numbers (about 45% of the cohort items today) are re-sourced or
+become rules.
 
-Rewrite the iter 112 spec for the current 39-state tree (it was written
-for 31 states), warm-start from iter 111, and score it on the Phase 0
-board. This is both the number to beat and the warm start for everything
-after. The teacher mix is not retuned after this run.
+The order: the metabolic canon where the states already exist (OGTT,
+IVGTT, clamp, mixed meal, fasting), then exercise, sleep and circulation;
+after that, whatever the open-direction list and the refusal pile ask
+for. Open-access papers first.
 
-### Phase 2 — every measured number becomes a learnable parameter
+Done when the corpus holds 1,000 items traceable to a table or figure,
+from at least 300 papers. Then 10,000.
 
-Unfreeze every forced physiological constant (the inventory is the
-explore pass of 2026-10-17; it is ~150 numbers, ~40 already learnable).
-Each becomes an `nn.Parameter` on its owning module, in log or logit
-space for positivity or bounds, initialised at today's value, **with no
-prior pull**. A module that is fully forced today (`CircadianModule`) and
-the hub files (`incretin.py`, `renal.py`, `bile.py`, `expenditure.py`,
-`sympathoadrenal.py`) are where this changes the most.
+### Stage 4 — real people
 
-Unfreezing alone is net-negative: a free parameter the loss does not
-identify drifts (iter 107). So unfreezing is coupled to writing the slice
-that identifies it. Each landed hub already cites the paper it copied;
-that paper becomes an evidence item on its protocol, using the operators
-of Phase 4:
+The population prior is fitted to published distributions: the joint
+spread of fasting glucose, insulin, blood pressure, heart rate and
+lipids by age, sex and BMI (NHANES), as spread and correlation items.
+Prediabetes and type 2 diabetes become regions of the person space with
+their own findings; today every population in the corpus is healthy,
+while two thirds of the CGMacros people are not.
 
-- renal threshold / clearance / empagliflozin → a `CURVE` or cohort on
-  the Diabetes 2017;66:1999 urinary-glucose regression.
-- the incretin split, GIP ratio, GLP-1-on-glucagon → cohorts on Vilsbøll
-  2003, Vollmer 2008, Salehi 2008.
-- the bile floor → a cohort on Borgström 1985.
-- gas exchange → a `CURVE` on Wahren 1971 Table I.
-- sleep-debt gains → the Donga 2010 clamp ratios, via an infusion arm.
+The individual ruler grows from one morning per person to every day of
+CGMacros and at least two more public datasets, with the people split
+once, by a hash of their id, into those used to develop calibration and
+those used only to report it. What a record already says about a person
+(age, sex, BMI) sets those coordinates directly. Calibration then becomes
+a posterior over the person, not a point.
 
-`PopulationPriorSignal` (the four former pins under a log-normal / Beta
-prior) is removed only when the identifying slices exist — Landau's
-tracer curve for `f_gng` and `k_ii`, Eaton's clearance for `k_ffa`. Until
-then it stays, because removing a pin with no slice behind it restores
-the iter-107 drift. This is the one place a prior survives, and it
-survives only as a bridge.
+Done when a calibrated person beats the median person by 20% on next-meal
+glucose on three datasets, on the people held back for reporting.
 
-### Phase 3 — the population becomes a distribution
+### Stage 5 — no teacher
 
-Replace the 40-row memorised embedding table with a prior over a small
-set of named factors, sampled fresh each step: insulin resistance,
-β-cell function, adiposity, fitness, chronotype, HPA reactivity, gastric
-emptying, plus sex and age. Named, because published cohorts are
-restricted populations: each arm declares the population it was measured
-in ("healthy, 20–35 y, BMI 20–25").
+The ablations of §5, in this order: the dense tape, the teacher
+meal-response item, the sweeps, setpoint supervision, distillation. Each
+is one run, which stage 1 makes cheap. Then delete `full_body.py`, the
+distillation and sweep signals, and the teacher-side tests.
 
-- The `SPREAD` and `CORRELATION` operators carry published distributions,
-  replacing teacher-drawn setpoint and sweep supervision.
-- Arm initial states come from the student's own spin-up (a standard fed
-  day, then the protocol's pre-fast), not a teacher row — so even cold
-  cohort arms stop depending on the teacher.
-- The calibration-window question (can a glucose window separate Gb from
-  Si?) becomes a recovery test on people sampled from the student.
+Done when the board holds without it.
 
-Done when setpoint supervision and the sweeps can be switched off without
-the between-person spread collapsing.
+### Stage 6 — wider, and longer
 
-### Phase 4 — the operators the corpus needs, each added once
+Longer first, because the product question is about weeks. Slow states
+step at their own rate, so a twelve-week rollout costs about what a day
+does now. Then the findings that need it: a training block, a
+sleep-restriction week, weight loss.
 
-Each operator lands once, then every later paper of that shape uses it.
+Wider, one hub at a time, each landing with the papers that constrain it
+and each prompted by the refusal pile: drugs as inputs with their own
+kinetics (GLP-1 receptor agonists, metformin, insulin, β-blockers);
+pressure and volume (cardiac output, the baroreflex, the kidney's handling
+of salt and water, renin–angiotensin–aldosterone); lipids and
+lipoproteins; body composition that follows the energy balance; thyroid;
+sex hormones and the menstrual cycle.
 
-- **`CURVE`** — mean ± SEM at published timepoints, with a down-weight for
-  the correlated error between adjacent points. Replaces the dense tape.
-- **Infusion / clamp arms** — IV glucose, insulin, or hormone as source
-  terms threaded through `integrate` the way the SGLT2 input already is; a
-  clamp is an infusion under a differentiable proportional controller
-  that holds a target, with the infusion rate as the observed statistic.
-  Unblocks Donga's clamp ratios, Cryer's thresholds, Salehi's exendin
-  arm, and the whole clamp / IVGTT literature — the gold standard for
-  insulin sensitivity.
-- **Individual-level item** — sparse per-subject observations from public
-  datasets and supplementary tables.
-- **Per-item residuals and conflict records** — written next to every
-  checkpoint (M3.2), so a break (a residual moving from inside σ to well
-  outside it) and a conflict (two items that cannot both be met) are
-  visible.
+The remaining forced numbers (§6 table, phase 2) become parameters as the
+slices that identify them arrive, never before.
 
-### Phase 5 — invert the training loop
+Done when a twelve-week training block and a GLP-1 agonist trial arm are
+both scored on the board.
 
-Today the loop walks teacher windows and runs a literature step every k
-windows (iter 97 measured literature taking 25 of a day's optimizer
-steps). Flip it: each step samples a batch of evidence items, simulates
-their arms on population draws, and sums their Gaussian log-likelihoods.
-**Sum, not average** — adding a paper then adds gradient instead of
-diluting the others (the iter-74 dilution disease). The teacher terms
-become one extra term whose weight decays to zero across the run.
+### Stage 7 — the cell inside the body
 
-### Phase 6 — remove the teacher, one role at a time
+Soma is the same thesis at the grain of one cell, and its first cell is
+the pancreatic β-cell: the cell behind pulse's insulin release, which
+here is one learned gain and a few constants. The two models should agree
+where they overlap, and a module at this grain can be a model at that
+one.
 
-By ablation, in this order: the dense tape (→ curves), the teacher
-meal-response item, the sweeps, setpoint supervision (→ spread /
-correlation), distillation (internals → latent states with priors). Each
-removal is kept if the Phase 0 board holds. Then delete `full_body.py`,
-the distillation and sweep signals, and the teacher-side tests.
-Ground-truth checks sample from the student instead.
+First a probe: drive soma's cell with the plasma pulse predicts and see
+where the two disagree. Then one finding format both corpora read, so a
+perifusion study and an oral glucose test constrain the same cell. Then
+soma's cell as the reference pulse's secretion law is fitted to, and, if
+the cost allows, as the secretion module itself.
 
-### Phase 7 — read at scale
+Done when one finding constrains both models.
 
-Writing evidence items becomes the main activity and the bottleneck. An
-agent reads a paper, writes the item (protocol, operator, population,
-sigma, citation), runs the gradient check (`cohort-ablation`) and the
-conflict check, and the item is sealed at random or released before
-review. The reading order: first the metabolic canon where the states
-already exist (OGTT, IVGTT, clamp, mixed meal, fasting), then exercise,
-sleep, and cardiovascular; within a hub, its §-equivalent evidence list.
-Textbooks first (a sign or time constant, one line each), then the papers
-they cite for a number, then primary papers that contradict an item
-already in the corpus — a contradiction is a conflict record, and it is
-how a copied teacher law gets overturned.
+### Stage 8 — in the open
+
+The corpus published as a dataset others can cite and correct. The board
+for every accepted checkpoint, public. The same sealed papers scored
+against an established hand-built simulator. A preprint. The inference
+service running again on a current checkpoint, with an explorer where
+anyone can run a protocol.
 
 ## 7. Risks
 
-- **Compute.** Making evidence the main step means many protocol rollouts
-  per step. Short protocols dominate; long ones (48 h fasts, training
-  blocks) run on a slower cadence until multi-rate stepping exists (M2.9
-  in the old plan).
+- **Reading at scale invents numbers.** An agent that cannot open a paper
+  will still produce a plausible target. The gate requires the reported
+  text and its place in the paper, a second agent checks it, and a
+  finding that cannot be checked is refused.
+- **The sealed line stays thin.** One paper in five is slow to fill it.
+  If stage 3 stalls, the board judges by the weaker held-out-items line,
+  and says so.
+- **Batching changes the optimisation.** A step that sees forty items
+  takes a different path from one that sees four. The mechanism lands
+  first, proven equivalent on the same items; the recipe that uses it is
+  its own run with its own hypothesis.
 - **Identifiability.** Many parameters will sit at their init. That is
   honest; the report names each and the study that would move it. The
-  risk is a parameter the loss *does* reach for the wrong reason (k_ii
-  cancelling at the fixed point) — caught by the report, fixed by the
-  slice, never by a pin.
+  risk is a parameter the loss reaches for the wrong reason, caught by
+  the report and fixed by a slice, never by a pin.
 - **Population mismatch.** Averaging over the wrong people biases every
-  cohort item. Arm populations (Phase 3) must land before the loop
-  inversion (Phase 5).
+  cohort item. Each arm declares its population, and the admit gate
+  refuses an arm that does not.
 - **The model space may not contain the truth.** Then two well-measured
-  findings cannot both be met and the holes stop overlapping. That
-  conflict is the signal to change a functional form, which is why the
-  correction terms of §2 exist and why conflict records (Phase 4) are
-  first-class.
+  findings cannot both be met. That conflict is the signal to change a
+  functional form, which is why the correction terms of §2 exist and why
+  conflicts and refusals are first-class.
 
 ## 8. How a step is judged
 
 A structural claim (a fixed point, a conservation bound, a decode family,
-an operator's gradient) is a test. It passes for every embedding and
-every protocol, or it does not. It needs no checkpoint.
+an operator's gradient, an equivalence between two ways of computing the
+same thing) is a test. It passes for every embedding and every protocol,
+or it does not. It needs no checkpoint.
 
 Anything that changes what training can learn needs a run, scored on the
-Phase 0 board against the previous accepted checkpoint on a frozen ruler
-with a matching `ruler_fingerprint`. Accepted means: held-out literature
-fit does not fall, individual-prediction skill does not fall, the
-open-direction count is reported, and no slice already in the corpus
-breaks. Teacher agreement is logged, not judged.
+board against the previous accepted checkpoint, with matching evidence
+fingerprints. Accepted means: held-out literature fit does not fall
+outside its interval, individual skill does not fall, the open-direction
+count is reported, and no item already inside one sigma moves beyond two.
+Teacher agreement is logged, not judged.
 
-## 9. The queue
+A run costs money. Its expected cost is stated before it is launched, and
+it is launched from a commit.
 
-`pulse/knowledge/queue.py` is the list of findings not yet in the
-registries. The "blocked on a hub" status is now mostly stale: the hubs
-landed, and the real blocker is a missing operator (an infusion/clamp
-arm, a pmol/L table, a curve). Phase 4 removes those blocks. An item is
-**ready** when its marker exists, a gradient can reach the pathway, and
-the arm we can run is the paper's protocol; an agent lands it, seals it at
-random or releases it, and sets its `spec_name`. The ready list is
-allowed to be empty. When an agent finishes an item it reads another paper
-and files it.
+## 9. Measurements that still bind
 
-## 10. Measurements that still bind
+These were measured while writing this plan and its predecessors. A later
+item that contradicts one of them has to remeasure it.
 
-These were measured while writing earlier plans. A later item that
-contradicts one of them has to remeasure it. They are facts about the
-model and the teacher, and they survive the change of direction.
+**Where the time went.** Iter 115: an evidence epoch of 40 steps took
+3–3.7 h on one busy core of eight, 57 s per evidence item, and 63% of all
+simulated minutes were the fed-day spin-up repeated for every arm of every
+item. A 240-minute rollout with gradient costs about 1.2× as much at
+batch 128 as at batch 1.
+
+**The sealed nine.** The iter 114 board's held-out fit was a median miss
+of 1.21σ on nine points: seven timepoints of one hand-chosen OGTT curve
+and two of one VO₂ curve, against 0.09σ on 131 training items.
+
+**Calibration buys nothing on glucose yet.** CGMacros, iter 114: 28.2
+mg/dL calibrated against 28.1 for the median person over 44 people; of
+the 26 whose prediction changed, 11 improved.
 
 **Log-space decodes.** The teacher draws almost every positive parameter
 lognormally, so the median person is `PatientParams()` and the population
 mean lies above it. A setpoint decoded as `center + scale·tanh` has
 expectation equal to the center for a zero-mean code, and cannot be right
 at the median and in the mean. Log-space decoding makes both true. Zero is
-the median person; the embedding table's mean is pinned to zero.
+the median person.
 
 **Cohort debias floor.** An unbiased estimate of a square can be negative
 and a loss cannot, so the debias is clipped. At batch size 2 the clip
 keeps about 0.64 of the shrinkage force at zero bias. The fix is more
-members, then the quadrature of Phase 3. `--cohort-sample-patients` is 4
-until then.
+members. `--cohort-sample-patients` is 4.
 
 **Insulin sensitivity's share.** Si is 22.5% of between-person glucose
 incremental AUC and 20.7% of insulin iAUC (N = 150). Gb loads +0.50 on the
