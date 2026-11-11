@@ -1,0 +1,289 @@
+{
+  "paper": "vanleeuwen-2010",
+  "citation": {
+    "authors": "van Leeuwen WMA, Hublin C, Sallinen M, Harma M, Hirvonen A, Porkka-Heiskanen T",
+    "title": "Prolonged Sleep Restriction Affects Glucose Metabolism in Healthy Young Men",
+    "journal": "International Journal of Endocrinology",
+    "year": 2010,
+    "doi": "10.1155/2010/108641",
+    "pmid": "20414467",
+    "pmcid": "PMC2857625"
+  },
+  "population": {
+    "n": 23,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.1,
+      "sd": 2.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty-three healthy young men aged 19-29 (enrolment range; mean 23.1, SD 2.5), screened by examination, blood tests and polysomnography; 15 in the experimental group, 8 controls. BMI is given per group (prestudy mean and SD) and entered in each protocol; age is the pooled value."
+  },
+  "protocols": [
+    {
+      "name": "baseline_night_con",
+      "description": "Control (CON) group, baseline night: 8 h in bed every night (the paper gives no clock hours for CON; 23:00-07:00 as for EXP is assumed; minutes 0-479 of the arm), blood drawn 07:30 before the 08:00 breakfast, 10 h after the last food (minute 510). Last food was the 21:30 snack (200 kcal, composition not printed) and is not entered as a meal; prefast_hours 1.5 = 23:00 minus 21:30, derived and assumed.",
+      "duration_min": 511,
+      "start_hour": 23.0,
+      "meals": [],
+      "prefast_hours": 1.5,
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "population": {
+        "bmi": {
+          "mean": 23.24,
+          "sd": 2.39,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "sleep_wake",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "baseline_night_exp",
+      "description": "Experimental (EXP, before restriction) group, baseline night: in bed 23:00-07:00 (8 h in bed; minutes 0-479 of the arm), blood drawn 07:30 before the 08:00 breakfast, 10 h after the last food (minute 510). Last food was the 21:30 snack (200 kcal, composition not printed) and is not entered as a meal; prefast_hours 1.5 = 23:00 minus 21:30, derived and assumed.",
+      "duration_min": 511,
+      "start_hour": 23.0,
+      "meals": [],
+      "prefast_hours": 1.5,
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "population": {
+        "bmi": {
+          "mean": 23.25,
+          "sd": 2.7,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_baseline_con",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) glucose at 07:30 after the second baseline night, CON group (Table 2, BL column)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_con"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 5.14,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group CON",
+        "quote": "Glucose (mmol/L) | CON | 5.14 (±0.50)"
+      }
+    },
+    {
+      "id": "glucose_baseline_exp",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) glucose at 07:30 after the second baseline night, EXP group (Table 2, BL column)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 4.91,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.24,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group EXP",
+        "quote": "Glucose (mmol/L) | EXP | 4.91 (±0.24)"
+      }
+    },
+    {
+      "id": "insulin_baseline_con",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) insulin at 07:30 after the second baseline night, CON group (Table 2, BL column)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_con"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 8.27,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.62,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group CON",
+        "quote": "Insulin (mU/L) | CON | 8.27 (±2.62)"
+      }
+    },
+    {
+      "id": "insulin_baseline_exp",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) insulin at 07:30 after the second baseline night, EXP group (Table 2, BL column)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 6.02,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.9,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group EXP",
+        "quote": "Insulin (mU/L) | EXP | 6.02 (±2.90)"
+      }
+    },
+    {
+      "id": "leptin_baseline_con",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) leptin at 07:30 after the second baseline night, CON group (Table 2, BL column)",
+      "marker": "leptin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_con"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 3.44,
+      "unit": "μg/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group CON",
+        "quote": "Leptin (μg/L) | CON | 3.44 (±3.09)"
+      }
+    },
+    {
+      "id": "leptin_baseline_exp",
+      "description": "Pre-breakfast serum (10 h after the 21:30 snack) leptin at 07:30 after the second baseline night, EXP group (Table 2, BL column)",
+      "marker": "leptin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 6.25,
+      "unit": "μg/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.55,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, BL column (Mean (±SD)), group EXP",
+        "quote": "Leptin (μg/L) | EXP | 6.25 (±4.55)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting glucose, insulin, leptin after five nights of 4 h in bed and after two recovery nights, EXP group (Table 2, SR and REC columns): the arm needs five days of standardized meals whose macronutrient composition is not printed, with sleep debt carried across days",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "meals of the study days (breakfast 600, lunch 800, dinner 700 kcal, snacks 300 and 200 kcal): energy only, no grams of carbohydrate, fat or protein",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "CON group SR and REC columns (Table 2): samples at 07:30 on the corresponding later nights, after days of standardized laboratory meals whose grams are not printed",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "IGF-1 (nmol/L), Table 2 and Results 3.2",
+      "missing": {
+        "kind": "marker",
+        "name": "igf1"
+      }
+    },
+    {
+      "what": "insulin-to-glucose ratio, Table 2 and Results 3.2",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "subjective satiety, 1 to 5 scale, Table 2",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "clock time of the salivary cortisol peak, Table 1 and Results 3.1 (salivary cortisol, not the model's serum cortisol)",
+      "missing": {
+        "kind": "marker",
+        "name": "salivary_cortisol"
+      }
+    },
+    {
+      "what": "changes expressed as percent of each person's own baseline (Results 3.2, 3.3)",
+      "missing": {
+        "kind": "operator",
+        "name": "change_from_baseline"
+      }
+    }
+  ]
+}
