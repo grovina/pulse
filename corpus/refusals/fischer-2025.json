@@ -1,0 +1,40 @@
+{
+  "paper": "fischer-2025",
+  "citation": {
+    "authors": "Fischer LS, Kiesswetter E, Brandl B, et al.",
+    "title": "Association of OGTT-curve Shape With Anthropometric, Metabolic, and Inflammatory Parameters in Healthy Adults",
+    "journal": "Journal of the Endocrine Society",
+    "year": 2025,
+    "doi": "10.1210/jendso/bvaf060",
+    "pmid": "40271225",
+    "pmcid": "PMC12013282"
+  },
+  "reported": [
+    {
+      "what": "fasting, 1-h and 2-h plasma glucose, glucose AUC, fasting insulin, fasting total GLP-1 and leptin of the whole cohort, by sex and age band, as median [IQR] (Table 1; 'Median [interquartile range]' footnote)",
+      "location": {
+        "where": "Table 1, row 'Fasting plasma glucose (mg/dL)', women 40-65 y column",
+        "quote": "Fasting plasma glucose (mg/dL) | 92.0 [87.0-97.5]"
+      }
+    },
+    {
+      "what": "fasting insulin, same four sex-by-age groups, median [IQR]",
+      "location": {
+        "where": "Table 1, row 'Fasting insulin', women 40-65 y column",
+        "quote": "Fasting insulin (µU/mL) | 3.20 [2.00-6.55]"
+      }
+    },
+    {
+      "what": "glucose, insulin, GLP-1 and leptin as mean +/- SD, but only for the groups split by OGTT curve shape (monophasic n = 274, polyphasic n = 80), not the whole cohort",
+      "location": {
+        "where": "Table 3, row '1-hour plasma glucose', monophasic column",
+        "quote": "1-hour plasma glucose (mg/dL) | 163.2 ± 40.7"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "median_with_iqr"
+  },
+  "detail": "The only whole-cohort values of markers the model carries are medians with interquartile ranges, and the only means with SDs belong to groups split by the shape of the glucose curve itself, which the model cannot tell apart and which are chosen by the glucose quantity; the curve means in Figure 1 are figure-only."
+}
