@@ -1,0 +1,772 @@
+{
+  "paper": "meyergerspach-2016",
+  "citation": {
+    "authors": "Meyer-Gerspach AC, Cajacob L, Riva D, et al.",
+    "title": "Mechanisms Regulating Insulin Response to Intragastric Glucose in Lean and Non-Diabetic Obese Subjects: A Randomized, Double-Blind, Parallel-Group Trial",
+    "journal": "PLoS ONE",
+    "year": 2016,
+    "doi": "10.1371/journal.pone.0150803",
+    "pmid": "26942445",
+    "pmcid": "PMC4778796"
+  },
+  "population": {
+    "n": 24,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "unselected",
+    "description": "12 normal-weight (6 M, 6 F; age 24.3 ± 0.6 y, range 20-32; BMI 22.0 ± 0.4, range 19.0-24.9) and 12 non-diabetic obese (6 M, 6 F; age printed '29.4.8 ± 1.8' years, range 19-48, so the mean is unreadable and left null; BMI 38.8 ± 0.9, range 30.5-48.4) volunteers. Group ages and BMI are given on each arm; sd = SEM x sqrt(12) computed here (lean age 0.6 -> 2.08, lean BMI 0.4 -> 1.39, obese BMI 0.9 -> 3.12). The paper says 'all were healthy' and excluded smoking, drugs, illness (especially diabetes) and abnormal examination or laboratory screening. Lean arms are 'healthy' on that word; obese arms are 'unselected' because the paper itself finds them insulin resistant and hyperinsulinaemic (HOMA-IR 3.5, 'prediabetic factors') and gives a BMI range. After the 75 g load, one of the 24 subjects (group not stated) had impaired glucose tolerance and four (groups not stated) had a 60-min glucose above 8.6 mmol/L; none had diabetes. This classification was made after the test, not used to enrol. The paper reports no screening OGTT before enrolment."
+  },
+  "protocols": [
+    {
+      "name": "lean_10g",
+      "description": "lean group; 10 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 10.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 24.3,
+          "sd": 2.08,
+          "min": 20.0,
+          "max": 32.0
+        },
+        "bmi": {
+          "mean": 22.0,
+          "sd": 1.39,
+          "min": 19.0,
+          "max": 24.9
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "lean_25g",
+      "description": "lean group; 25 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 25.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 24.3,
+          "sd": 2.08,
+          "min": 20.0,
+          "max": 32.0
+        },
+        "bmi": {
+          "mean": 22.0,
+          "sd": 1.39,
+          "min": 19.0,
+          "max": 24.9
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "lean_75g",
+      "description": "lean group; 75 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 24.3,
+          "sd": 2.08,
+          "min": 20.0,
+          "max": 32.0
+        },
+        "bmi": {
+          "mean": 22.0,
+          "sd": 1.39,
+          "min": 19.0,
+          "max": 24.9
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "obese_10g",
+      "description": "obese group; 10 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 10.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 19.0,
+          "max": 48.0
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 3.12,
+          "min": 30.5,
+          "max": 48.4
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "obese_25g",
+      "description": "obese group; 25 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 25.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 19.0,
+          "max": 48.0
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 3.12,
+          "min": 30.5,
+          "max": 48.4
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "obese_75g",
+      "description": "obese group; 75 g glucose in 300 mL tap water instilled through a gastric (feeding) tube within 2 min (paper t = 0-2 min), tube then removed; dose and time are stated, entered as one carbohydrate meal at paper t = 0. Blood samples at t = -10 and -1 (fasting), 15, 30, 45, 60, 90, 120, 180 min. Arm clock starts at the paper's t = -10 min, so the load is at arm minute 10 and the paper's t = 180 min is arm minute 190 (duration 191). Not stated: clock hour of the first sample (subjects were admitted at 08:00, tube and catheter placed after) and fasting hours ('at least 10 h' is a lower bound).",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 19.0,
+          "max": 48.0
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 3.12,
+          "min": 30.5,
+          "max": 48.4
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_lean",
+      "description": "Fasting plasma glucose, lean group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/l)', Lean controls column",
+        "quote": "Fasting glucose (mmol/l) | 4.9 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_glucose_obese",
+      "description": "Fasting plasma glucose, obese group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/l)', Obese column",
+        "quote": "Fasting glucose (mmol/l) | 5.2 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_insulin_lean",
+      "description": "Fasting plasma insulin, lean group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 4.3,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (μU/ml)', Lean controls column",
+        "quote": "Fasting insulin (μU/ml) | 4.3 ± 0.5"
+      }
+    },
+    {
+      "id": "fasting_insulin_obese",
+      "description": "Fasting plasma insulin, obese group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 15.2,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (μU/ml)', Obese column",
+        "quote": "Fasting insulin (μU/ml) | 15.2 ± 1.4"
+      }
+    },
+    {
+      "id": "fasting_glucagon_lean",
+      "description": "Fasting plasma glucagon, lean group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 32.6,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pg/ml)', Lean controls column",
+        "quote": "Fasting glucagon (pg/ml) | 32.6 ± 3.4"
+      }
+    },
+    {
+      "id": "fasting_glucagon_obese",
+      "description": "Fasting plasma glucagon, obese group (Table 1). Two fasting samples were drawn on each test day (t = -10 and -1 min); the table does not say which day, which sample or whether it is their mean, so the mean over the run-in is entered once per group on the 10 g arm (the model's run-in is the same on every arm).",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 66.7,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pg/ml)', Obese column",
+        "quote": "Fasting glucagon (pg/ml) | 66.7 ± 4.2"
+      }
+    },
+    {
+      "id": "cmax_glucose_lean_10g",
+      "description": "Peak (Cmax) plasma glucose after 10 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 6.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 10 g glucose row, Lean controls column",
+        "quote": "10 g glucose | 6.6 ± 0.1"
+      }
+    },
+    {
+      "id": "cmax_glucose_obese_10g",
+      "description": "Peak (Cmax) plasma glucose after 10 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 6.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 10 g glucose row, Obese column",
+        "quote": "10 g glucose | 6.6 ± 0.2"
+      }
+    },
+    {
+      "id": "cmax_glucose_lean_25g",
+      "description": "Peak (Cmax) plasma glucose after 25 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_25g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 7.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 25 g glucose row, Lean controls column",
+        "quote": "25 g glucose | 7.4 ± 0.3"
+      }
+    },
+    {
+      "id": "cmax_glucose_obese_25g",
+      "description": "Peak (Cmax) plasma glucose after 25 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_25g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 7.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 25 g glucose row, Obese column",
+        "quote": "25 g glucose | 7.7 ± 0.2"
+      }
+    },
+    {
+      "id": "cmax_glucose_lean_75g",
+      "description": "Peak (Cmax) plasma glucose after 75 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_75g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 7.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 75 g glucose row, Lean controls column",
+        "quote": "75 g glucose | 7.8 ± 0.2"
+      }
+    },
+    {
+      "id": "cmax_glucose_obese_75g",
+      "description": "Peak (Cmax) plasma glucose after 75 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_75g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 9.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (mmol/l), 75 g glucose row, Obese column",
+        "quote": "75 g glucose | 9.0 ± 0.3"
+      }
+    },
+    {
+      "id": "cmax_insulin_lean_10g",
+      "description": "Peak (Cmax) plasma insulin after 10 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 15.6,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 10 g glucose row, Lean controls column",
+        "quote": "10 g glucose | 15.6 ± 2.5"
+      }
+    },
+    {
+      "id": "cmax_insulin_obese_10g",
+      "description": "Peak (Cmax) plasma insulin after 10 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 45.6,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 10 g glucose row, Obese column",
+        "quote": "10 g glucose | 45.6 ± 4.0"
+      }
+    },
+    {
+      "id": "cmax_insulin_lean_25g",
+      "description": "Peak (Cmax) plasma insulin after 25 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_25g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 24.5,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 25 g glucose row, Lean controls column",
+        "quote": "25 g glucose | 24.5 ± 3.3"
+      }
+    },
+    {
+      "id": "cmax_insulin_obese_25g",
+      "description": "Peak (Cmax) plasma insulin after 25 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_25g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 82.3,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 25 g glucose row, Obese column",
+        "quote": "25 g glucose | 82.3 ± 9.9"
+      }
+    },
+    {
+      "id": "cmax_insulin_lean_75g",
+      "description": "Peak (Cmax) plasma insulin after 75 g intragastric glucose, lean group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "lean_75g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 39.9,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 75 g glucose row, Lean controls column",
+        "quote": "75 g glucose | 39.9 ± 5.9"
+      }
+    },
+    {
+      "id": "cmax_insulin_obese_75g",
+      "description": "Peak (Cmax) plasma insulin after 75 g intragastric glucose, obese group (Cmax = 'maximum plasma concentration', mean +/- SEM over 12 people, compared between groups by t-test; the paper does not state the Cmax window, AUC is 0-180 min)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "obese_75g"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 191
+      },
+      "value": 101.5,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 10.6,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Cmax (μU/ml), 75 g glucose row, Obese column",
+        "quote": "75 g glucose | 101.5 ± 10.6"
+      }
+    },
+    {
+      "id": "fasting_gip_lean",
+      "description": "Fasting total GIP, lean group (text, pg/mL; Methods: assay reads total GIP). The paper does not say which day or sample; entered as the run-in mean on the 10 g arm.",
+      "marker": "gip",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 143.8,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 15.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, 'Fasting and postprandial GI peptide levels'",
+        "quote": "GIP (lean: 143.8 ± 15.5 pg/mL"
+      }
+    },
+    {
+      "id": "fasting_gip_obese",
+      "description": "Fasting total GIP, obese group (text, pg/mL; Methods: assay reads total GIP). The paper does not say which day or sample; entered as the run-in mean on the 10 g arm.",
+      "marker": "gip",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_10g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 127.9,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, 'Fasting and postprandial GI peptide levels'",
+        "quote": "obese: 127.9 ± 3.2 pg/mL, P = 0.337"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "incremental AUC 0-180 min of glucose and insulin per load and group (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_incremental_auc"
+      }
+    },
+    {
+      "what": "HOMA-IR per group (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "insulin:C-peptide clearance ratio R by load and group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_clearance"
+      }
+    },
+    {
+      "what": "C-peptide time courses (Fig 3); fasting C-peptide is only described as higher in obese, no number printed",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "fasting active GLP-1 (text) and GLP-1 time courses (Fig 4); the assay reads active GLP-1",
+      "missing": {
+        "kind": "marker",
+        "name": "active_glp1"
+      }
+    },
+    {
+      "what": "fasting PYY and PYY time courses (text, Fig 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "13C-acetate breath-test gastric emptying rates (Fig 6, text)",
+      "missing": {
+        "kind": "marker",
+        "name": "gastric_emptying_breath_test"
+      }
+    },
+    {
+      "what": "time courses of glucose, insulin, C-peptide, GLP-1, PYY, GIP after each load (Figs 2-5); no per-time values are printed",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
