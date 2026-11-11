@@ -1,0 +1,40 @@
+{
+  "paper": "cade-2016",
+  "citation": {
+    "authors": "Cade WT, Khoury N, Nelson S, et al.",
+    "title": "Hypoglycemia during moderate intensity exercise reduces counterregulatory responses to subsequent hypoglycemia",
+    "journal": "Physiological Reports",
+    "year": 2016,
+    "doi": "10.14814/phy2.12848",
+    "pmid": "27597762",
+    "pmcid": "PMC5027337"
+  },
+  "reported": [
+    {
+      "what": "mean plasma glucose during the first 90-min cycling bout without dextrose infusion (Arm 2, n=9, mean +/- SE), at about 68% of VO2 peak; no VO2 peak or bout uptake is printed",
+      "location": {
+        "where": "Results, Day 1 exercise and rest, paragraph 2",
+        "quote": "the subjects remained euglycemic (85 ± 1 mg/dL) during the first bout of exercise with no dextrose infusion"
+      }
+    },
+    {
+      "what": "percentage of VO2 peak achieved in the first bout, Arm 2",
+      "location": {
+        "where": "Results, exercise intensity paragraph",
+        "quote": "in Arm 2 when dextrose was not infused during rest or cycle exercise, subjects exercised at 68 ± 2% VO2 peak during the first bout of exercise"
+      }
+    },
+    {
+      "what": "mean plasma glucose during the second bout without dextrose, Arm 2 (mean +/- SE)",
+      "location": {
+        "where": "Results, Day 1 exercise and rest, paragraph 2",
+        "quote": "The mean plasma glucose during this exercise period was 67 ± 3 mg/dL"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_intensity_without_printed_vo2_peak"
+  },
+  "detail": "The paper gives the bout only as a percentage of each subject's measured VO2 peak and prints neither that peak (mL/kg/min, or absolute with a body weight) nor a work rate nor a measured uptake, so the activity level cannot be derived."
+}
