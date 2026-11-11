@@ -20,6 +20,9 @@ COPY pyproject.toml uv.lock ./
 RUN if [ "$TORCH" = "gpu" ]; then G="--no-default-groups --group gpu"; fi; \
     uv sync --frozen --no-install-project $G
 COPY pulse/ pulse/
+# The literature corpus (findings and refusals as files). The registry loads it at import, so
+# it has to be where the loader looks: beside pulse/ (or $PULSE_CORPUS_DIR).
+COPY corpus/ corpus/
 RUN if [ "$TORCH" = "gpu" ]; then G="--no-default-groups --group gpu"; fi; \
     uv sync --frozen $G
 
@@ -36,10 +39,12 @@ WORKDIR /app
 # time during long-running training jobs. Otherwise Python line-buffers when
 # stdout is a pipe and a 9h run looks silent until the very end.
 ENV PYTHONUNBUFFERED=1 \
+    PULSE_CORPUS_DIR=/app/corpus \
     PATH="/app/.venv/bin:$PATH"
 
 COPY --from=deps /app/.venv /app/.venv
 COPY --from=deps /app/pulse /app/pulse
+COPY --from=deps /app/corpus /app/corpus
 # Iter recipes (committed training flag sets). The trainer loads one via
 # `--spec train/spec.json`, so the recipe must ship in the image; copied from
 # the build context (not the deps stage, which only carries pulse/).

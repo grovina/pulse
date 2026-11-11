@@ -18,6 +18,27 @@ optimization landscape so the model converges to a physiology-
 respecting fixed point. Each of the surfaces below is the place to
 put a particular *granularity* of knowledge.
 
+## New findings go in files
+
+A quantitative finding from a paper (a mean, a peak, a curve, a spread, a
+correlation, a ratio) is **not** written as Python. It is a file,
+`corpus/findings/<paper>.json`, one per paper, admitted by
+`python -m pulse.admit`; a paper the model cannot express is a file in
+`corpus/refusals/`. `corpus/README.md` is the guide: the format, the unit table,
+how to state uncertainty, and when to refuse. A file states the paper's number in
+the paper's unit and an uncertainty of a stated kind with its n; the loader
+(`knowledge/corpus.py`) converts the unit and derives `sigma` and `n_arm`, so a
+new finding cannot carry a sigma tighter than its study supports or an `n_arm`
+left unset. The loaded specs join the registry in `cohort_statistics.py` and are
+sealed like every authored item.
+
+The Python registries in `knowledge/cohorts/` are the existing corpus, which is
+moving into files. Do not add to them. A paper is a file or it is in a Python
+registry, never both (the registry refuses a paper that is); the sections below
+that describe `CohortStatisticSpec` are for reading the existing items and for the
+operators the file format does not cover. Physiology rules, coupling priors and
+the other surfaces are still written in Python.
+
 ## Decision tree: where does this piece of knowledge go?
 
 Start with the smallest, cheapest unit that captures the finding.
@@ -30,8 +51,9 @@ Is the finding "X causes Y to go up/down by some plausible amount"?
 
 Is the finding "in cohort C, marker M had statistic S over window W
 (with reported sigma)"?
-└─ Yes → CohortStatisticSpec (knowledge/cohorts/*.py)
-   It is also an EvidenceItem (authority=literature).
+└─ Yes → a finding file, corpus/findings/<paper>.json (corpus/README.md).
+   It becomes a CohortStatisticSpec, and so an EvidenceItem
+   (authority=literature). Not new Python in knowledge/cohorts/*.py.
 
 Is the finding a direction, floor, ceiling, or timing hinge on one
 trajectory?
@@ -112,15 +134,18 @@ edge in the coupling graph. Use lots of these.
 
 ## Surface 2 — CohortStatisticSpec
 
+*New findings are files (above). This section describes the type the files compile
+to, and the existing Python items.*
+
 **Use for:** quantitative findings of the form "in N people doing
 protocol P, marker M had statistic S (mean / peak / AUC / late) over
 window W, with sigma σ". This is the primary surface for absorbing
 RCTs, observational cohorts, and standard textbook tables.
 
-**Where:** `pulse/knowledge/cohorts/<topic>.py`. Add to an existing
-topic or create a new file and register it in `cohort_statistics.py`.
+**Where:** existing items live in `pulse/knowledge/cohorts/<topic>.py`. New
+ones are files in `corpus/findings/`.
 
-**Template:** copy `cohorts/glucose_handling.py` and adapt.
+**Template (reading existing items):** `cohorts/glucose_handling.py`.
 
 ```python
 from ..cohort_types import (
@@ -128,7 +153,7 @@ from ..cohort_types import (
     StatisticKind, StatisticWindow,
 )
 
-_OGTT_75G_MEALS = ((0.0, 75.0, 0.0, 0.0),)  # (t_min, carbs_g, protein_g, fat_g)
+_OGTT_75G_MEALS = ((0.0, 75.0, 0.0, 0.0),)  # (t_min, carbs_g, fat_g, protein_g)
 
 OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
     name="ogtt_75g_glucose_peak",
@@ -150,13 +175,17 @@ OGTT_GLUCOSE_PEAK = CohortStatisticSpec(
 COHORT_STATISTICS: list[CohortStatisticSpec] = [OGTT_GLUCOSE_PEAK, ...]
 ```
 
-**Choosing `sigma`:** the literature-reported SD if you have it,
-otherwise estimate. `sigma` controls how hard the gradient pulls
-when the model is off — too small and one spec dominates the cohort
-signal; too large and the spec contributes essentially nothing.
-Aim for `sigma` ≈ 10–20% of `target` as a first cut, then look at
-per-spec z-residual via `pulse.diagnostics cohort-ablation` after
-training and adjust.
+**Choosing `sigma`:** the meal tuple above is `(t_min, carbs_g, fat_g, protein_g)`,
+the order `cohort_loss._meals_from_spec` reads (this guide used to say protein
+before fat; some older items were written that way and have the two swapped).
+For a mean-type statistic `sigma` is the **between-person SD** and `n_arm` the
+paper's n; the loss divides by `sqrt(n_arm)`, or by `sqrt(draws)` if `n_arm` is
+`None`, so a `sigma` that is already a standard error needs `n_arm=1`. For
+spread, correlation and ratio-of-increments `sigma` is the standard error of the
+published number and is not divided. A number with no reported uncertainty is not
+a cohort target (PLAN §3): it is a rule or a prior. `corpus_uncertainty.py`
+derives all of this from what a paper reports; read it before hand-writing a
+sigma, and prefer a file, which cannot get it wrong.
 
 **Choosing `init_mode`:** `COLD` for fasted protocols (OGTT, mixed-
 meal, overnight fast → challenge); `NORM_CENTER` for protocols that
