@@ -709,16 +709,441 @@
         "where": "Results, 'Fasting and postprandial GI peptide levels'",
         "quote": "obese: 127.9 ± 3.2 pg/mL, P = 0.337"
       }
+    },
+    {
+      "id": "iauc_glucose_lean_10g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 10 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_10g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 21.9,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 10 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "10 g glucose | 21.9 ± 18.4"
+      }
+    },
+    {
+      "id": "iauc_glucose_obese_10g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 10 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_10g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": -3.3,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.7,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 10 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "10 g glucose | -3.3 ± 7.7"
+      }
+    },
+    {
+      "id": "iauc_glucose_lean_25g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 25 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_25g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 75.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 26.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 25 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "25 g glucose | 75.0 ± 26.2"
+      }
+    },
+    {
+      "id": "iauc_glucose_obese_25g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 25 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_25g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 59.8,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 13.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 25 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "25 g glucose | 59.8 ± 13.2"
+      }
+    },
+    {
+      "id": "iauc_glucose_lean_75g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 75 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_75g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 108.3,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 36.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 75 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "75 g glucose | 108.3 ± 36.9"
+      }
+    },
+    {
+      "id": "iauc_glucose_obese_75g",
+      "description": "Incremental area under the glucose curve, 0-180 min after the 75 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_75g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 251.6,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 31.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, mmol x min/l)', 75 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "75 g glucose | 251.6 ± 31.4"
+      }
+    },
+    {
+      "id": "iauc_insulin_lean_10g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 10 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_10g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 99.8,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 64.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 10 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "10 g glucose | 99.8 ± 64.3"
+      }
+    },
+    {
+      "id": "iauc_insulin_obese_10g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 10 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_10g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 280.7,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 176.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 10 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "10 g glucose | 280.7 ± 176.2"
+      }
+    },
+    {
+      "id": "iauc_insulin_lean_25g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 25 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_25g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 656.5,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 128.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 25 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "25 g glucose | 656.5 ± 128.4"
+      }
+    },
+    {
+      "id": "iauc_insulin_obese_25g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 25 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_25g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 2959.7,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 322.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 25 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "25 g glucose | 2959.7 ± 322.3"
+      }
+    },
+    {
+      "id": "iauc_insulin_lean_75g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 75 g intragastric glucose load, lean group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "lean_75g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 2791.8,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 380.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 75 g glucose, Lean controls column; Methods, Statistical analysis",
+        "quote": "75 g glucose | 2791.8 ± 380.0"
+      }
+    },
+    {
+      "id": "iauc_insulin_obese_75g",
+      "description": "Incremental area under the insulin curve, 0-180 min after the 75 g intragastric glucose load, obese group (Table 1, iAUC; mean +/- SEM of the 12 people's areas). Paper t = 0 is arm minute 10, so the paper's samples at 0, 15, 30, 45, 60, 90, 120 and 180 min are arm minutes 10, 25, 40, 55, 70, 100, 130, 190. The paper calls the area 'AUC above baseline' and does not say which fasting sample is the baseline (t = -10, t = -1 or their mean); the arm takes the mean of the two fasting samples (arm minutes 0-9, baseline_window 0-10) as the baseline. Below baseline: subtracted, because Table 1 prints a negative mean iAUC (glucose, obese, 10 g: -3.3), which only a net area can have; the Methods sentence describing the computation covers glucose and insulin alike.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "obese_75g"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        100,
+        130,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "below_baseline": "subtracted",
+      "value": 7747.2,
+      "unit": "μU/ml",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1246.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, rows 'iAUC (0–180 min, μU x min/ml)', 75 g glucose, Obese column; Methods, Statistical analysis",
+        "quote": "75 g glucose | 7747.2 ± 1246.3"
+      }
     }
   ],
   "left_out": [
-    {
-      "what": "incremental AUC 0-180 min of glucose and insulin per load and group (Table 1)",
-      "missing": {
-        "kind": "operator",
-        "name": "single_arm_incremental_auc"
-      }
-    },
     {
       "what": "HOMA-IR per group (Table 1)",
       "missing": {
