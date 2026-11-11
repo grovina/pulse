@@ -1,0 +1,594 @@
+{
+  "paper": "lindgren-2020",
+  "citation": {
+    "authors": "Lindgren O, Ahren B",
+    "title": "Consequences on islet and incretin hormone responses to dinner by omission of lunch in healthy men",
+    "journal": "Endocrinology, Diabetes & Metabolism",
+    "year": 2020,
+    "doi": "10.1002/edm2.141",
+    "pmid": "32704562",
+    "pmcid": "PMC7375076"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 22.9,
+      "sd": 1.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.5,
+      "sd": 1.5,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve lean healthy male volunteers aged 20-30 years (22.9 +/- 1.9 SD) with BMI 20-25 kg/m2 (22.5 +/- 1.5); the ranges are enrolment criteria. No personal history of diabetes or gastrointestinal disease, no medication."
+  },
+  "protocols": [
+    {
+      "name": "dinner_after_lunch",
+      "description": "Breakfast 08:00, lunch 13:00, dinner 17:00, sampled for 300 min after dinner. Grams derived as kcal x fraction / 4 (carbohydrate, protein) or / 9 (fat) from the printed energy and percentages: breakfast 524 kcal (19% protein, 18% fat, 63% carbohydrate) at 08:00; lunch 606 kcal (25% protein, 38% fat, 37% carbohydrate) at 13:00; dinner 690 kcal (25% protein, 35% fat, 40% carbohydrate) at 17:00. Overnight fast with no food after 22:00 to the 08:00 breakfast, 10 h.",
+      "duration_min": 841,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "assumed": [
+        "meals"
+      ],
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 82.53,
+          "fat_g": 10.48,
+          "protein_g": 24.89
+        },
+        {
+          "t_min": 300,
+          "carbs_g": 56.05,
+          "fat_g": 25.59,
+          "protein_g": 37.88
+        },
+        {
+          "t_min": 540,
+          "carbs_g": 69.0,
+          "fat_g": 26.83,
+          "protein_g": 43.12
+        }
+      ]
+    },
+    {
+      "name": "dinner_no_lunch",
+      "description": "Breakfast 08:00, no lunch, dinner 17:00, sampled for 300 min after dinner. Grams derived as kcal x fraction / 4 (carbohydrate, protein) or / 9 (fat) from the printed energy and percentages: breakfast 524 kcal (19% protein, 18% fat, 63% carbohydrate) at 08:00; dinner 690 kcal (25% protein, 35% fat, 40% carbohydrate) at 17:00. Overnight fast with no food after 22:00 to the 08:00 breakfast, 10 h.",
+      "duration_min": 841,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "assumed": [
+        "meals"
+      ],
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 82.53,
+          "fat_g": 10.48,
+          "protein_g": 24.89
+        },
+        {
+          "t_min": 540,
+          "carbs_g": 69.0,
+          "fat_g": 26.83,
+          "protein_g": 43.12
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_early_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the glucose curve after dinner, early 0-30 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. The early and the late area add to 241.8 against a printed total of 243 ± 35 for this arm: a unit in the last digit, entered as printed.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 37.8,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCglucose (mmol/L min), Early row, column 'Breakfast and lunch'",
+        "quote": "Early | 37.8 ± 4.9 | 30.2 ± 2.9 | .31"
+      }
+    },
+    {
+      "id": "glucose_early_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the glucose curve after dinner, early 0-30 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 30.2,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCglucose (mmol/L min), Early row, column 'Breakfast only, no lunch'",
+        "quote": "Early | 37.8 ± 4.9 | 30.2 ± 2.9 | .31"
+      }
+    },
+    {
+      "id": "glucose_late_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the glucose curve after dinner, late 30-300 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. The early and the late area add to 241.8 against a printed total of 243 ± 35 for this arm: a unit in the last digit, entered as printed.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 204.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 35.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCglucose (mmol/L min), Late row, column 'Breakfast and lunch'",
+        "quote": "Late | 204 ± 35 | 185 ± 42 | .62"
+      }
+    },
+    {
+      "id": "glucose_late_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the glucose curve after dinner, late 30-300 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 185.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 42.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCglucose (mmol/L min), Late row, column 'Breakfast only, no lunch'",
+        "quote": "Late | 204 ± 35 | 185 ± 42 | .62"
+      }
+    },
+    {
+      "id": "insulin_early_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the insulin curve after dinner, early 0-30 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 4.2,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.6,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCinsulin (nmol/L min), Early row, column 'Breakfast and lunch'",
+        "quote": "Early | 4.2 ± 0.6 | 4.7 ± 0.7 | .19"
+      }
+    },
+    {
+      "id": "insulin_early_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the insulin curve after dinner, early 0-30 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 4.7,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.7,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCinsulin (nmol/L min), Early row, column 'Breakfast only, no lunch'",
+        "quote": "Early | 4.2 ± 0.6 | 4.7 ± 0.7 | .19"
+      }
+    },
+    {
+      "id": "insulin_late_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the insulin curve after dinner, late 30-300 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 33.9,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCinsulin (nmol/L min), Late row, column 'Breakfast and lunch'",
+        "quote": "Late | 33.9 ± 3.0 | 34.1 ± 2.3 | .76"
+      }
+    },
+    {
+      "id": "insulin_late_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the insulin curve after dinner, late 30-300 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 34.1,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCinsulin (nmol/L min), Late row, column 'Breakfast only, no lunch'",
+        "quote": "Late | 33.9 ± 3.0 | 34.1 ± 2.3 | .76"
+      }
+    },
+    {
+      "id": "gip_early_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the total GIP curve after dinner, early 0-30 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "gip",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 0.86,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.15,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGIP (nmol/L min), Early row, column 'Breakfast and lunch'",
+        "quote": "Early | 0.86 ± 0.15 | 1.13 ± 0.19 | .13"
+      }
+    },
+    {
+      "id": "gip_late_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the total GIP curve after dinner, late 30-300 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "gip",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 10.6,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.8,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGIP (nmol/L min), Late row, column 'Breakfast and lunch'",
+        "quote": "Late | 10.6 ± 1.8 | 13.4 ± 2.4 | .32"
+      }
+    },
+    {
+      "id": "glp1_early_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the total GLP-1 curve after dinner, early 0-30 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 0.18,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.042,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGLP‐1 (nmol/L min), Early row, column 'Breakfast and lunch'",
+        "quote": "Early | 0.18 ± 0.042 | 0.14 ± 0.039 | .48"
+      }
+    },
+    {
+      "id": "glp1_early_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the total GLP-1 curve after dinner, early 0-30 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        540,
+        545,
+        550,
+        560,
+        570
+      ],
+      "below_baseline": "unstated",
+      "value": 0.14,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.039,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGLP‐1 (nmol/L min), Early row, column 'Breakfast only, no lunch'",
+        "quote": "Early | 0.18 ± 0.042 | 0.14 ± 0.039 | .48"
+      }
+    },
+    {
+      "id": "glp1_late_iauc_lunch",
+      "description": "Suprabasal (incremental) area under the total GLP-1 curve after dinner, late 30-300 min, breakfast and lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_after_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 0.64,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.32,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGLP‐1 (nmol/L min), Late row, column 'Breakfast and lunch'",
+        "quote": "Late | 0.64 ± 0.32 | 0.87 ± 0.41 | .31"
+      }
+    },
+    {
+      "id": "glp1_late_iauc_nolunch",
+      "description": "Suprabasal (incremental) area under the total GLP-1 curve after dinner, late 30-300 min, breakfast only, no lunch before the dinner. Table 1, mean of 12 men, SEM. The paper does not print when its two baseline samples were drawn, nor what lies under baseline; baseline taken as the value at the minute the dinner is given. Methods: \"The assays of GIP and GLP‐1 are based on antibodies directed to different parts of the molecules and cross‐react to 100% with GIP (1‐42) and GIP (3‐42), and GLP‐1 (7‐36) and GLP‐1 (9‐36), respectively, and therefore reflect the total values of the incretin hormones.\"",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dinner_no_lunch"
+      ],
+      "times": [
+        570,
+        585,
+        600,
+        615,
+        630,
+        645,
+        660,
+        690,
+        720,
+        780,
+        840
+      ],
+      "baseline_window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "below_baseline": "unstated",
+      "value": 0.87,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.41,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, AUCGLP‐1 (nmol/L min), Late row, column 'Breakfast only, no lunch'",
+        "quote": "Late | 0.64 ± 0.32 | 0.87 ± 0.41 | .31"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "suprabasal AUC of glucagon after dinner, early and late, both arms (Table 1): each arm's early and late areas add up to the other arm's printed total (175 + 650 = 825 and 190 + 615 = 805, against totals of 805 ± 317 and 824 ± 425), so one row is printed in the wrong columns and the paper does not show which",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "suprabasal AUC of total GIP after dinner, early and late, in the arm without lunch (Table 1): 1.13 + 13.4 = 14.53 against a printed total of 13.7 ± 2.3, so one of the three cells is a misprint and the paper does not show which",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "suprabasal AUC of C-peptide after dinner, early and late, both arms (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "insulin clearance, OGIS, GSIS and adaptation index (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
