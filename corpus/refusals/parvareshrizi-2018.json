@@ -1,0 +1,47 @@
+{
+  "paper": "parvareshrizi-2018",
+  "citation": {
+    "authors": "Parvaresh Rizi E, Loh TP, Baig S, et al.",
+    "title": "A high carbohydrate, but not fat or protein meal attenuates postprandial ghrelin, PYY and GLP-1 responses in Chinese men",
+    "journal": "PLoS ONE",
+    "year": 2018,
+    "doi": "10.1371/journal.pone.0191609",
+    "pmid": "29385178",
+    "pmcid": "PMC5792004"
+  },
+  "reported": [
+    {
+      "what": "the three test meals are given as total energy and the percentage of energy from their dominant macronutrient only; the S1 Table caption in the text gives the per-gram composition of the two products used (Ensure Plus as 'a benchmark for HC meal', Beneprotein), but not the grams or the three shares of the HP, HF and HC meals as served",
+      "location": {
+        "where": "Methods, Study protocol; S1 Table caption",
+        "quote": "An isocaloric (≈600 kcal) isovolumic (≈400 ml) liquid meal was then given to the subjects to be ingested within 5 minutes."
+      }
+    },
+    {
+      "what": "the dominant-macronutrient shares of the HP, HF and HC meals",
+      "location": {
+        "where": "Methods, Study protocol",
+        "quote": "51.4% energy from protein, 56.5% energy from fat (with a 1:1:1 ratio of saturated, mono- and poly-unsaturated fatty acids), and 56.4% energy from carbohydrate, respectively"
+      }
+    },
+    {
+      "what": "fasting total PYY of the lean group (n=9, mean ± SEM, 10-hour overnight fast); a meal-free value, but the model has no PYY series",
+      "location": {
+        "where": "Table 1, column Lean",
+        "quote": "PYY, pg/ml | 135.5±25.2"
+      }
+    },
+    {
+      "what": "fasting plasma glucose and insulin of the lean group (n=9, mean ± SEM); the group was enrolled by HOMA-IR, which is computed from these two values",
+      "location": {
+        "where": "Table 1, column Lean",
+        "quote": "Insulin, mU/l | 4.31 ± 0.52"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "marker",
+    "name": "pyy"
+  },
+  "detail": "The only meal-free values that are not selected by HOMA-IR are the fasting total PYY (and acyl-ghrelin and active GLP-1, whose assays the model cannot take), and the model has no PYY series; the postprandial glucose and insulin are iAUCs of single arms (Table 2) or percent-change figures, and the HP and HF meals are not fully printed, so a meal would not by itself make anything enterable."
+}
