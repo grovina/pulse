@@ -301,10 +301,12 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   people. Enter the pooled group if the paper reports it, or the one group that
   is plainly the healthy reference, and leave the other out.
 * A group chosen by a measurement cannot give a finding about that measurement.
-  The two-hour glucose of people enrolled for a two-hour glucose below
-  140 mg/dL says who was let in, not what the body does: leave it out
-  (`population`, `group_split_by_measurement`). The ordinary screening of a
-  healthy cohort (no diabetes, no medication) does not count.
+  The clamp glucose uptake of people enrolled for an uptake above
+  5 mg/kg/min, or the fasting insulin of people enrolled for a low HOMA-IR,
+  says who was let in, not what the body does: leave it out (`population`,
+  `group_split_by_measurement`). Screening at a diagnostic threshold does not
+  count: a cohort from which diabetes or impaired glucose tolerance was
+  excluded is what `healthy` means, and its two-hour glucose can be entered.
 
 ### `protocols`
 
@@ -536,8 +538,8 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `acth` | ACTH | pg/mL | 5 to 120 | pg/ml (x1), ng/l (x1), pmol/l (x4.541) |
 | `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), /min (x1), 1/min (x1) |
 | `hrv` | HRV (RMSSD) | ms | 0 to 300 | ms (x1), s (x1000) |
-| `sbp` | Systolic BP | mmHg | 60 to 250 | mmhg (x1), kpa (x7.50062) |
-| `dbp` | Diastolic BP | mmHg | 30 to 150 | mmhg (x1), kpa (x7.50062) |
+| `sbp` | Systolic BP | mmHg | 60 to 250 | mmhg (x1), mm/hg (x1), kpa (x7.50062) |
+| `dbp` | Diastolic BP | mmHg | 30 to 150 | mmhg (x1), mm/hg (x1), kpa (x7.50062) |
 | `temp` | Core Temperature | °C | 35 to 42 | °c (x1), degc (x1), °f (x0.555556 -17.7778), degf (x0.555556 -17.7778), k (x1 -273.15) |
 | `rr` | Respiratory Rate | /min | 4 to 40 | /min (x1), 1/min (x1), breaths/min (x1) |
 | `spo2` | SpO₂ | % | 70 to 100 | % (x1), fraction (x100) |
