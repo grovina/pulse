@@ -31,33 +31,25 @@ shape must match what the state physically IS:
                     at the structural ejection rate.
   intestinal_bile   a transit compartment. Receives what the gallbladder ejects plus
                     the export that bypasses a full/contracting gallbladder; drains at
-                    the ileal-uptake rate. ConstantFluxHead — pure transport.
+                    the ileal-uptake rate — pure transport.
   bile_acids        serum concentration. Spillover of unextracted portal return is the
-                    source; clearance returns to hepatic secretion. ConstantFluxHead.
+                    source; clearance returns to hepatic secretion.
                     Lowering canalicular extraction raises serum (cholestasis).
 
 Portal return is partitioned: extraction·portal is re-secreted, (1−extraction)·portal
 spills to serum, serum clearance returns to bile. Conservation:
 d(GB + INT) + dBA/spill_gain = synthesis − faecal loss.
 
-ITER 97 — TWO FIXES FROM THE 2026-09-04 REVIEW (items 3.6 and 2.5):
+Hepatic export is extracted portal return + the serum clearance that returns to bile +
+synthesis, so the loop is closed and the mmol pool is conserved by construction. CCK and
+bile acids relax as `prod·prod_scale + source − cons·cons_scale·raw`, so a below-typical
+fasting level is representable.
 
-  1. cck and bile_acids relaxed toward GLOBAL constants with a non-negative source
-     (`− k·(x − typical) + source`), so their equilibrium was ≥ typical ALWAYS: cck
-     min = 1.000 and bile_acids min = 6.000 exactly in every fast and fed run, while
-     the fasting reference is 4.4-14.1 µmol/L. This was the iter-95 "absorbing floor
-     at typical" reproduced in the module that was built to fix it. Both are now
-     `prod·prod_scale + source − cons·cons_scale·raw`: the head's basal production is
-     per patient (it reads the embedding), so a below-typical fasting level is
-     representable, and the relaxation rate is the learned clearance.
-  2. The loop was not closed: `gb_fill` came from nothing (`k_fill·capacity·headroom`)
-     and the 95 % portal return fed only the serum readout. Hepatic export is now
-     extracted portal + returned serum clearance + synthesis. Conservation of the
-     mmol pool holds by construction:
-     d(gallbladder + intestine)/dt + dBA/spill_gain = synthesis − faecal loss.
-
-So the two heads whose outputs were unreachable by any loss (intestinal_bile and
-bile_acids) are ConstantFluxHead.
+ALL FOUR HEADS ARE ConstantFluxHead. They take their slot in the (prod, cons) protocol
+and carry no parameters: production and clearance are the population constants
+(`prod_scale`, `cons_scale`), the same for every person. What a loss can move is the
+structural rates declared below (`log_cck_*_gain`, `log_k_eject`, `log_k_ileal`,
+`log_k_ba`, `log_ba_spill_gain`, `log_k_canalicular`, `log_k_gb_basal`).
 
 THE CCK REFERENCE IS A CONSTANT, NOT A HEAD. ``cck_b`` is the level the gallbladder
 gate (``relu(cck − cck_b)``) is measured from: the marker's typical, 1.0 pmol/L, for

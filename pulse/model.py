@@ -843,8 +843,9 @@ def _assemble_decay(
 class _HeadBank:
     """Every MLP head of every module, evaluated as ONE three-layer network per step.
 
-    The model has ten small Linear-Tanh-Linear-Tanh-Linear heads; called one by one
-    they cost ~70 matmuls and ~200 dispatches per simulated minute. Here their
+    The model has eight small Linear-Tanh-Linear-Tanh-Linear heads (four metabolic, one
+    appetite, and one driver each for cardiovascular, thermoregulation and respiratory);
+    called one by one they cost ~70 matmuls and ~200 dispatches per simulated minute. Here their
     weights are stacked once per rollout (from the CURRENT parameters, so edits and
     optimizer steps between rollouts are always seen): the hidden layers become one
     block-diagonal matmul, and the first layer is split by where each input column

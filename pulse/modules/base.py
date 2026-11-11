@@ -103,13 +103,10 @@ class ConstantFluxHead(nn.Module):
 
     Iter 97. Several species have STRUCTURAL rates assembled in their module's
     ``forward`` (glucose, insulin_action, intestinal_bile) and never read their
-    head's output. Through iter 96 those species still constructed a full
-    ``SpeciesHead`` — 4,514 parameters each at hidden 48 — that no loss could
-    reach: 12,555 of 75,914 parameters (16.5 %) had no gradient path (review
-    2026-09-04, end of section 3). A parameter that cannot move is not
-    "learned"; it is dead weight in every optimizer step and every checkpoint.
-    This head takes the species' slot in the ``(prod, cons)`` protocol and costs
-    nothing.
+    head's output. A full ``SpeciesHead`` there would be a network no loss could
+    reach, and a parameter that cannot move is not "learned": it is dead weight in
+    every optimizer step and every checkpoint. This head takes the species' slot in
+    the ``(prod, cons)`` protocol and costs nothing.
     """
 
     def forward(self, x: torch.Tensor, state_self: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
