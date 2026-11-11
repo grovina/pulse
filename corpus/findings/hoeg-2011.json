@@ -1,0 +1,676 @@
+{
+  "paper": "hoeg-2011",
+  "citation": {
+    "authors": "Høeg LD, Sjøberg KA, Jeppesen J, et al.",
+    "title": "Lipid-Induced Insulin Resistance Affects Women Less Than Men and Is Not Accompanied by Inflammation or Impaired Proximal Insulin Signaling",
+    "journal": "Diabetes",
+    "year": 2011,
+    "doi": "10.2337/db10-0698",
+    "pmid": "20956497",
+    "pmcid": "PMC3012198"
+  },
+  "population": {
+    "n": 16,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 25.0,
+      "sd": 2.83,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Eight women and eight men, 'young well-matched healthy' (abstract), moderately fit, eumenorrheic women not on oral contraceptives and studied in the midfollicular phase (days 7-11); informed consent, Copenhagen ethics. Table 1 (means +/- SE, n = 8 per sex): age 25 +/- 1 in both sexes; sd = SE x sqrt(8) = 1 x 2.83 = 2.83, computed here (the SE is printed as a whole number, so this is coarse). BMI is printed per sex only (women 21.5 +/- 0.5, men 23.5 +/- 0.5), so it is null here and stated on each arm."
+  },
+  "protocols": [
+    {
+      "name": "w_preclamp",
+      "description": "Women, saline (control) trial, n = 8: 5 h of saline infusion (1.15 ml/kg/h) to the preclamp sample at 300 min; breakfast (20% of daily energy, size not printed, so not entered) was given at 05:00, 3 h before the experiment started, so 08:00 and 3 h fasted at minute 0, 8 h at the sample. Age 25 +/- 1 SE, BMI 21.5 +/- 0.5 SE (Table 1); sd = SE x sqrt(8) = 2.83 and 1.41.",
+      "duration_min": 301,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 3,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 25.0,
+          "sd": 2.83,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.5,
+          "sd": 1.41,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": []
+    },
+    {
+      "name": "m_preclamp",
+      "description": "Men, saline (control) trial, n = 8: 5 h of saline infusion (1.15 ml/kg/h) to the preclamp sample at 300 min; breakfast (20% of daily energy, size not printed, so not entered) was given at 05:00, 3 h before the experiment started, so 08:00 and 3 h fasted at minute 0, 8 h at the sample. Age 25 +/- 1 SE, BMI 23.5 +/- 0.5 SE (Table 1); sd = SE x sqrt(8) = 2.83 and 1.41.",
+      "duration_min": 301,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 3,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 25.0,
+          "sd": 2.83,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 1.41,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": []
+    },
+    {
+      "name": "w_clamp",
+      "description": "Women, saline (control) trial, n = 8: 5 h of saline infusion (1.15 ml/kg/h) ; as the preclamp arm, then a 120-min euglycaemic hyperinsulinaemic clamp from 300 to 420 min (insulin bolus 9.0 mU/kg then 1.42 mU/kg/min). Clamp levels are the end-of-clamp (420 min) control-trial values measured in women (Table 2): arterial blood glucose 5.4 mmol/l, plasma insulin 87.7 uU/ml (text: arterial insulin about 90 uU/ml in both sexes). Breakfast at 05:00, size not printed, not entered; 3 h fasted at minute 0 (08:00). Age 25 +/- 1 SE, BMI 21.5 +/- 0.5 SE (Table 1); sd = SE x sqrt(8) = 2.83 and 1.41.",
+      "duration_min": 421,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 3,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 25.0,
+          "sd": 2.83,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.5,
+          "sd": 1.41,
+          "min": null,
+          "max": null
+        }
+      },
+      "glucose_clamp": {
+        "unit": "mmol/L",
+        "segments": [
+          {
+            "from_min": 300,
+            "to_min": 421,
+            "level": 5.4
+          }
+        ]
+      },
+      "insulin_clamp": {
+        "unit": "uU/mL",
+        "segments": [
+          {
+            "from_min": 300,
+            "to_min": 421,
+            "level": 87.7
+          }
+        ]
+      },
+      "assumed": []
+    },
+    {
+      "name": "m_clamp",
+      "description": "Men, saline (control) trial, n = 8: 5 h of saline infusion (1.15 ml/kg/h) ; as the preclamp arm, then a 120-min euglycaemic hyperinsulinaemic clamp from 300 to 420 min (insulin bolus 9.0 mU/kg then 1.42 mU/kg/min). Clamp levels are the end-of-clamp (420 min) control-trial values measured in men (Table 2): arterial blood glucose 5.1 mmol/l, plasma insulin 94.3 uU/ml (text: arterial insulin about 90 uU/ml in both sexes). Breakfast at 05:00, size not printed, not entered; 3 h fasted at minute 0 (08:00). Age 25 +/- 1 SE, BMI 23.5 +/- 0.5 SE (Table 1); sd = SE x sqrt(8) = 2.83 and 1.41.",
+      "duration_min": 421,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 3,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 25.0,
+          "sd": 2.83,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 1.41,
+          "min": null,
+          "max": null
+        }
+      },
+      "glucose_clamp": {
+        "unit": "mmol/L",
+        "segments": [
+          {
+            "from_min": 300,
+            "to_min": 421,
+            "level": 5.1
+          }
+        ]
+      },
+      "insulin_clamp": {
+        "unit": "uU/mL",
+        "segments": [
+          {
+            "from_min": 300,
+            "to_min": 421,
+            "level": 94.3
+          }
+        ]
+      },
+      "assumed": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "w_glucose_preclamp",
+      "description": "Women, control trial: glucose at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Arterial blood glucose (mmol/l)', Women, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Women | 5.4 ± 0.1"
+      }
+    },
+    {
+      "id": "m_glucose_preclamp",
+      "description": "Men, control trial: glucose at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Arterial blood glucose (mmol/l)', Men, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Men | 5.2 ± 0.1"
+      }
+    },
+    {
+      "id": "w_insulin_preclamp",
+      "description": "Women, control trial: insulin at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 8.0,
+      "unit": "uU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.8,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma insulin (μU/ml)', Women, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Women | 8.0 ± 0.8"
+      }
+    },
+    {
+      "id": "m_insulin_preclamp",
+      "description": "Men, control trial: insulin at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 7.8,
+      "unit": "uU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma insulin (μU/ml)', Men, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Men | 7.8 ± 0.5"
+      }
+    },
+    {
+      "id": "w_ffa_preclamp",
+      "description": "Women, control trial: plasma long-chain fatty acids (LCFA, entered as ffa) at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 541,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 50,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma LCFA (μmol/l)', Women, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Women | 541 ± 50§"
+      }
+    },
+    {
+      "id": "m_ffa_preclamp",
+      "description": "Men, control trial: plasma long-chain fatty acids (LCFA, entered as ffa) at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 519,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 92,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma LCFA (μmol/l)', Men, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Men | 519 ± 92‖"
+      }
+    },
+    {
+      "id": "w_ffa_endclamp",
+      "description": "Women, control trial: plasma long-chain fatty acids (LCFA, entered as ffa) at the end of the clamp, 420 min",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 9,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma LCFA (μmol/l)', Women, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Women | 9 ± 4‖"
+      }
+    },
+    {
+      "id": "m_ffa_endclamp",
+      "description": "Men, control trial: plasma long-chain fatty acids (LCFA, entered as ffa) at the end of the clamp, 420 min",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 15,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma LCFA (μmol/l)', Men, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Men | 15 ± 6‖"
+      }
+    },
+    {
+      "id": "w_epinephrine_preclamp",
+      "description": "Women, control trial: epinephrine at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 0.36,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma epinephrine (nmol/l)', Women, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Women | 0.36 ± 0.06"
+      }
+    },
+    {
+      "id": "m_epinephrine_preclamp",
+      "description": "Men, control trial: epinephrine at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 0.34,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.07,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma epinephrine (nmol/l)', Men, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Men | 0.34 ± 0.07"
+      }
+    },
+    {
+      "id": "w_epinephrine_endclamp",
+      "description": "Women, control trial: epinephrine at the end of the clamp, 420 min",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 0.4,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma epinephrine (nmol/l)', Women, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Women | 0.40 ± 0.09"
+      }
+    },
+    {
+      "id": "m_epinephrine_endclamp",
+      "description": "Men, control trial: epinephrine at the end of the clamp, 420 min",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 0.45,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'Plasma epinephrine (nmol/l)', Men, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Men | 0.45 ± 0.09"
+      }
+    },
+    {
+      "id": "w_rq_preclamp",
+      "description": "Women, control trial: respiratory exchange ratio (RER, entered as rq) at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 0.8,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.02,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'RER', Women, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Women | 0.80 ± 0.02"
+      }
+    },
+    {
+      "id": "m_rq_preclamp",
+      "description": "Men, control trial: respiratory exchange ratio (RER, entered as rq) at the preclamp sample, 300 min (after 5 h saline)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_preclamp"
+      ],
+      "window": {
+        "start_min": 300,
+        "end_min": 301
+      },
+      "value": 0.78,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.02,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'RER', Men, column Control, Preclamp (300 min); data are means ± SE of eight",
+        "quote": "Men | 0.78 ± 0.02"
+      }
+    },
+    {
+      "id": "w_rq_endclamp",
+      "description": "Women, control trial: respiratory exchange ratio (RER, entered as rq) at the end of the clamp, 420 min",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 0.89,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.01,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'RER', Women, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Women | 0.89 ± 0.01‖"
+      }
+    },
+    {
+      "id": "m_rq_endclamp",
+      "description": "Men, control trial: respiratory exchange ratio (RER, entered as rq) at the end of the clamp, 420 min",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_clamp"
+      ],
+      "window": {
+        "start_min": 420,
+        "end_min": 421
+      },
+      "value": 0.87,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.01,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, row 'RER', Men, column Control, End of clamp (420 min); data are means ± SE of eight",
+        "quote": "Men | 0.87 ± 0.01‖"
+      }
+    },
+    {
+      "id": "w_gir_control",
+      "description": "Women, control trial: glucose infusion rate per kg body mass over the last 30 min of the clamp (window from the Fig. 1A caption, which gives the last 30 min for the per-LBM version of the same number; the text gives no window for the per-body-mass figure)",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "w_clamp"
+      ],
+      "window": {
+        "start_min": 390,
+        "end_min": 420
+      },
+      "value": 42,
+      "unit": "umol/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 8
+      },
+      "location": {
+        "where": "Results, glucose infusion rate paragraph (per kg body mass); Fig. 1A caption: last 30 min of the clamp; data are means ± SE",
+        "quote": "Glucose infusion rate expressed per kilogram body mass was 42 ± 4 and 47 ± 4 μmol · min−1 · kg−1 body mass in women and men, respectively, in the control trial"
+      }
+    },
+    {
+      "id": "m_gir_control",
+      "description": "Men, control trial: glucose infusion rate per kg body mass over the last 30 min of the clamp (window from the Fig. 1A caption, which gives the last 30 min for the per-LBM version of the same number; the text gives no window for the per-body-mass figure)",
+      "marker": "glucose_infusion_rate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "m_clamp"
+      ],
+      "window": {
+        "start_min": 390,
+        "end_min": 420
+      },
+      "value": 47,
+      "unit": "umol/kg/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 8
+      },
+      "location": {
+        "where": "Results, glucose infusion rate paragraph (per kg body mass); Fig. 1A caption: last 30 min of the clamp; data are means ± SE",
+        "quote": "Glucose infusion rate expressed per kilogram body mass was 42 ± 4 and 47 ± 4 μmol · min−1 · kg−1 body mass in women and men, respectively, in the control trial"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "the whole intralipid plus heparin trial: glucose infusion rate, percent reductions (26%/24% W, 38% M), leg glucose uptake, RER, lactate, LCFA, hormones, in the intralipid arm (Table 2, Fig. 1, text)",
+      "missing": {
+        "kind": "input",
+        "name": "intralipid_heparin_infusion"
+      }
+    },
+    {
+      "what": "glucose infusion rate per kg lean body mass (54 +/- 5 W, 56 +/- 5 M umol/min/kg LBM; text, Fig. 1A)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "hepatic glucose production preclamp (text, umol/min/kg; the kg is not said to be body mass or LBM, and the sample time is not printed beyond 'preclamp')",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "basal and clamp oxygen uptake per kg LBM (text)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "norepinephrine (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "femoral venous blood flow, leg glucose uptake, leg lactate release (Table 2, Fig. 1C-F)",
+      "missing": {
+        "kind": "marker",
+        "name": "leg_glucose_uptake"
+      }
+    },
+    {
+      "what": "plasma triacylglycerol (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "serum TNF-alpha, adiponectin, resistin (Table 2, text)",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "serum estradiol and progesterone (text)",
+      "missing": {
+        "kind": "marker",
+        "name": "estradiol"
+      }
+    },
+    {
+      "what": "muscle glycogen in mmol/kg dry weight (text)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_dry_weight"
+      }
+    },
+    {
+      "what": "women-minus-men differences and sex-by-trial contrasts of the control values (P values only)",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    }
+  ]
+}
