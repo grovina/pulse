@@ -1,0 +1,223 @@
+{
+  "paper": "munsters-2012",
+  "citation": {
+    "authors": "Munsters MJM, Saris WHM",
+    "title": "Effects of Meal Frequency on Metabolic Profiles and Substrate Partitioning in Lean Healthy Males",
+    "journal": "PLoS ONE",
+    "year": 2012,
+    "doi": "10.1371/journal.pone.0038632",
+    "pmid": "22719910",
+    "pmcid": "PMC3374835"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.0,
+      "sd": 4.157,
+      "min": 18.0,
+      "max": 31.0
+    },
+    "bmi": {
+      "mean": 21.6,
+      "sd": 2.078,
+      "min": 19.1,
+      "max": 24.6
+    },
+    "status": "healthy",
+    "description": "Twelve healthy non-smoking European men, weight stable, BMI up to 25, max age 40, healthy by questionnaire, blood pressure and OGTT (Table 1 age 23±1.2 y and BMI 21.6±0.6 kg/m2, mean±SEM, ranges 18-31 and 19.1-24.6). SD computed as SEM x sqrt(12): age 1.2 x 3.4641 = 4.157; BMI 0.6 x 3.4641 = 2.078."
+  },
+  "protocols": [
+    {
+      "name": "fasted_baseline",
+      "description": "Fasting blood sample of the 12 men (Table 1 baseline; Table 1 does not say when it was drawn: the screening OGTT section says a fasting sample was taken after an overnight fast, and chamber mornings also had a fasting sample, but the table does not name either), modelled as a short fasted morning arm with water only",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "screening_ogtt",
+      "description": "Screening OGTT: after an overnight fast (hours and clock time not stated; the paper says they came to university in the morning), a bolus of 75 g glucose dissolved in 250 ml water at t = 0, blood sampled every 30 min until t = 120 min",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose, Table 1 baseline (Table 1 does not name the draw or its assay)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose level (mmol/L)', column Group (n = 12); footnote: values are mean±SEM",
+        "quote": "Fasting glucose level (mmol/L) | 5.2±0.1 (4.8–5.7)"
+      }
+    },
+    {
+      "id": "fasting_insulin",
+      "description": "Fasting plasma insulin, Table 1 baseline (Table 1 does not name the draw or its assay)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 13.4,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin level (mU/L)', column Group (n = 12); footnote: values are mean±SEM",
+        "quote": "Fasting insulin level (mU/L) | 13.4±2.9 (5.9–44.6)"
+      }
+    },
+    {
+      "id": "ogtt_2h_glucose",
+      "description": "Plasma glucose 2 h after the 75 g screening OGTT (the sample at t = 120 min); the paper states no cut-off for the screening",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 4.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row '2 h glucose level after OGTT (mmol/L)', column Group (n = 12); footnote: values are mean±SEM",
+        "quote": "2 h glucose level after OGTT (mmol/L) | 4.1±0.3 (3.2–7.1)"
+      }
+    },
+    {
+      "id": "systolic_bp",
+      "description": "Systolic blood pressure at baseline. Table 1 states neither the time nor the posture of the measurement.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 114.0,
+      "unit": "mm/Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Systolic blood pressure (mm/Hg)', column Group (n = 12); footnote: values are mean±SEM",
+        "quote": "Systolic blood pressure (mm/Hg) | 114±2.9 (98–133)"
+      }
+    },
+    {
+      "id": "diastolic_bp",
+      "description": "Diastolic blood pressure at baseline. Table 1 states neither the time nor the posture of the measurement.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 69.0,
+      "unit": "mm/Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Diastolic blood pressure (mm/Hg)', column Group (n = 12); footnote: values are mean±SEM",
+        "quote": "Diastolic blood pressure (mm/Hg) | 69±2.3 (59–83)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Plasma glucose, insulin, FFA, TG, GLP-1 active, ghrelin active, adiponectin 24 h profiles, LFr vs HFr (Figures 1-2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Energy expenditure, RMR, SMR, DIT, protein/carbohydrate/fat oxidation per 24 h on 3 vs 14 meals (Table 2): the day's energy is given only as an individually set mean intake of 12.0 MJ/d (SMR x 1.55) and an example diet of 2400 kcal, 15/30/55 En%, with meals at 08:00, 12:00, 17:00 (3x) or hourly 08:00-21:00 (14x); the split of energy over the eating occasions is not stated. RMR and SMR in Table 2 are per diet, from the chamber day (RMR a regression intercept including DIT), not a fasted morning value",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "24 h plasma glucose AUC per diet (Results text, 7276.1 vs 7664.6, unit printed as mmol/L)",
+      "missing": {
+        "kind": "operator",
+        "name": "single_arm_auc"
+      }
+    },
+    {
+      "what": "CGMS glucose mean, min, max, AUC, CONGA, CV (Table 3): interstitial sensor glucose",
+      "missing": {
+        "kind": "marker",
+        "name": "interstitial_glucose"
+      }
+    },
+    {
+      "what": "HOMA-IR and OGIS (Table 1): derived indices",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
