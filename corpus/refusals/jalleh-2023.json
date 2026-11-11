@@ -1,0 +1,40 @@
+{
+  "paper": "jalleh-2023",
+  "citation": {
+    "authors": "Jalleh RJ, Marathe CS, Trahair LG, et al.",
+    "title": "A Biphasic Glucose Response during an Oral Glucose Tolerance Test Is Associated with Greater Plasma Insulin and GLP-1 Responses and a Reduction in 1-Hour Glucose but Does Not Relate to the Rate of Gastric Emptying in Healthy, Older Adults",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15183889",
+    "pmid": "37764673",
+    "pmcid": "PMC10534830"
+  },
+  "reported": [
+    {
+      "what": "1 h plasma glucose after 75 g OGTT, monophasic (n=22) vs biphasic (n=14) glucose-curve group, initial study; means with SEM",
+      "location": {
+        "where": "Results 3.2 Plasma Glucose",
+        "quote": "the 1 h post-OGTT plasma glucose response was greater in the monophasic vs. biphasic group 9.5 ± 0.5 mmol/L vs. 8.0 ± 0.5 mmol/L (p = 0.04)"
+      }
+    },
+    {
+      "what": "gastric emptying (kcal/min and T50) by glucose-curve group, initial study",
+      "location": {
+        "where": "Results 3.5 Gastric Emptying",
+        "quote": "monophasic 1.15 ± 0.04 vs. biphasic 1.10 ± 0.05 kcal/min, p = 0.45"
+      }
+    },
+    {
+      "what": "insulin secretion (insulinogenic index) by glucose-curve group, initial study",
+      "location": {
+        "where": "Results 3.3 Insulin Secretion and Sensitivity",
+        "quote": "10.4 ± 1.1 vs. 20.9 ± 4.3, p = 0.03"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "group_split_by_measurement"
+  },
+  "detail": "Every number is reported only for two groups defined by the shape of their own OGTT glucose curve (monophasic against biphasic, a responder split that differs in age but is not told apart by sex, age or BMI alone), no pooled cohort value is printed, and neither group is a healthy reference (the cohort includes impaired glucose tolerance), so no arm can be written without asking the model for two different numbers from the same people."
+}
