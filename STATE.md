@@ -40,8 +40,8 @@ retries (8 vCPU and 32 GiB until 2026-11-11).
 A step now spins up all of its people in one rollout and rolls its items in
 groups of similar horizon (`pulse/training/evidence_step.py`). A run writes a
 board at the end of each phase, and `--deadline-hours` stops it cleanly
-before the job's timeout. Iter 116 is the first run on this loop; it is
-running (Runs, below). It was launched without the open-direction pass and
+before the job's timeout. Iter 116 is the first run on this loop; it
+finished in 23 h (Runs, below). It was launched without the open-direction pass and
 without the CGMacros ruler, whose memory on the smaller job has not been
 measured; both are owed on its checkpoint.
 
@@ -101,7 +101,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
-| `trainer-jt2n9` | 116 | 2026-11-11 | running from commit `b30be0a` at 4 vCPU / 16 GiB; training stops itself by 26 h and the execution is cut at 28 h |
+| `trainer-jt2n9` | 116 | 2026-11-11 | finished in 23 h from commit `b30be0a` at 4 vCPU / 16 GiB; boards at each phase, no open-direction pass or ruler |
 | `trainer-ppqff` | 116, cut down | 2026-11-11 | cancelled after 10 min: two epochs at 4 vCPU, to time them |
 | `trainer-rkxxs` | 116 | 2026-11-11 | cancelled in epoch 5: at 2 vCPU / 8 GiB an epoch took 1.7 times as long |
 | `trainer-qvcvj` | 116 | 2026-11-11 | cancelled in epoch 27 of 58: 8 vCPU / 32 GiB, twice the price for the same speed |
@@ -121,7 +121,26 @@ the untrained student beside them (`pulse/scoreboard.py`). It scores an item
 as a training step does: on people drawn from each arm's own population, each
 started from their own fed day and pre-fast.
 
-Iter 114 is the last checkpoint. It was scored on this commit on 2026-11-11,
+Iter 116 is the last checkpoint. Its own boards, written by the run
+(`training/jobs/iter116/`), median |z| at the end of each phase:
+
+| Points | n | Phase 1 | Phase 2 | Final | Untrained |
+|---|---|---|---|---|---|
+| Sealed papers | 117 | 1.36 | 1.19 | 1.21 (90%: 0.81 to 1.40) | 1.19 |
+| File papers that train | 202 | 1.21 | 0.55 | 0.62 | 0.85 |
+| Registry points that train | 73 | 0.68 | 0.34 | 0.33 | 0.65 |
+| Held-out items of registry papers | 12 | 0.49 | 0.76 | 0.84 | 0.48 |
+
+- On the sealed papers iter 116 is level with the untrained student, where
+  iter 114 was further (1.32). It fits what it trained on, including the 18
+  papers read into files.
+- Phase 1 (the teacher tape alone) moves the sealed papers away (1.36); the
+  literature of phase 2 brings them back to where the untrained student
+  stands, not past it.
+- The untrained column is from the scoring of 2026-11-11 below, on the same
+  items and people. Iter 116 has not been scored with `--baseline` itself.
+
+Iter 114 was scored on commit `0f4da88` on 2026-11-11,
 with the untrained student on the same items and people (`python -m
 pulse.diagnostics scoreboard --no-identifiability --baseline`, 4 people per
 population, 8 minutes on 2 CPUs). |z| is the miss of the predicted mean in

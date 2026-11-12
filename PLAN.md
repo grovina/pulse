@@ -172,7 +172,14 @@ measured.
 Written while iter 116 runs. Measurements cited here are in `STATE.md`.
 Rewrite this section when iter 116's board is read.
 
-**1. Read iter 116** (`trainer-jt2n9`, ends about 17:30 UTC on 2026-11-12)
+**1. Read iter 116** (`trainer-jt2n9`, finished 2026-11-12)
+
+Read on 2026-11-12 from the run's own boards (`STATE.md`, The board): sealed
+papers 1.21 against the untrained student's 1.19, so branch 2b applies. The
+file papers it trained on fell to 0.62 from 0.85. Still to do from this
+step: the `--baseline` scoring of the checkpoint itself, the open-direction
+pass and the ruler.
+
 
 - Score `training/jobs/iter116/model.pt` beside the untrained student
   (`python -m pulse.diagnostics scoreboard --no-identifiability --baseline`)
