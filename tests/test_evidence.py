@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import numpy as np
 
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
@@ -87,3 +88,63 @@ def test_long_only_markers_skip_rate_and_short_level() -> None:
     assert not sig._score_level("mitochondrial_capacity", 60, 60, False)
     assert sig._score_level("crh", 60, 60, False)
     assert sig._score_level("crh", 60, 60, True)
+
+
+# --- How a step's items are drawn, by paper -------------------------------------------------
+
+
+class _Item:
+    def __init__(self, paper: str) -> None:
+        self.paper = paper
+
+
+def test_item_weighting_is_the_uniform_draw_it_always_was():
+    import numpy as np
+
+    from pulse.training.evidence_step import evidence_probabilities, sample_evidence
+
+    pool = [_Item("a")] * 3 + [_Item("b")]
+    assert evidence_probabilities(pool, "item") is None
+    drawn = sample_evidence(pool, 2, np.random.default_rng(7))
+    again = sample_evidence(pool, 2, np.random.default_rng(7), None)
+    assert drawn == again
+
+
+def test_a_paper_weighs_the_square_root_of_its_items_or_one():
+    import numpy as np
+
+    from pulse.training.evidence_step import evidence_probabilities
+
+    # Paper a printed 4 items, b 1, and one item names no paper.
+    pool = [_Item("a")] * 4 + [_Item("b"), _Item("")]
+    sqrt = evidence_probabilities(pool, "sqrt")
+    # Each a-item weighs 1/2, so paper a weighs 2 against b's 1 and the orphan's 1.
+    assert np.allclose(sqrt, np.array([0.5, 0.5, 0.5, 0.5, 1.0, 1.0]) / 4.0)
+    paper = evidence_probabilities(pool, "paper")
+    assert np.allclose(paper, np.array([0.25, 0.25, 0.25, 0.25, 1.0, 1.0]) / 3.0)
+    with pytest.raises(ValueError):
+        evidence_probabilities(pool, "papers")
+
+
+def test_a_weighted_draw_follows_its_probabilities():
+    import numpy as np
+
+    from pulse.training.evidence_step import evidence_probabilities, sample_evidence
+
+    pool = [_Item("a")] * 9 + [_Item("b")]
+    p = evidence_probabilities(pool, "paper")
+    rng = np.random.default_rng(0)
+    hits = sum(
+        item.paper == "b" for _ in range(2000) for item in sample_evidence(pool, 1, rng, p)
+    )
+    assert 900 < hits < 1100  # half the draws, against a tenth uniformly
+
+
+def test_the_trainer_takes_the_weighting_as_a_flag():
+    from pulse.train import build_arg_parser
+
+    parser = build_arg_parser()
+    assert parser.parse_args([]).evidence_paper_weighting == "item"
+    assert parser.parse_args(["--evidence-paper-weighting", "sqrt"]).evidence_paper_weighting == "sqrt"
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--evidence-paper-weighting", "nope"])

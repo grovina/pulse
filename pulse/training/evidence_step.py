@@ -38,13 +38,49 @@ from .signals import SignalContext
 from ..types import NORM_CENTER, is_observable
 
 
-def sample_evidence(pool: Sequence, batch_size: int, rng: np.random.Generator) -> list:
-    """``batch_size`` items from ``pool``. A batch larger than the pool
-    samples with replacement, so every slot still contributes a term."""
+# How a step's items are drawn from the pool, as weights over papers.
+#   item:  every item equally, so a paper weighs as many items as it printed.
+#   sqrt:  an item of a paper with k items is drawn 1/sqrt(k) as often, so the
+#          paper weighs sqrt(k): a paper's points are mostly one cohort, one
+#          protocol and one assay, closer to one finding than to k independent ones.
+#   paper: every paper equally, whatever it printed.
+PAPER_WEIGHTINGS = ("item", "sqrt", "paper")
+
+
+def evidence_probabilities(pool: Sequence, weighting: str = "item") -> np.ndarray | None:
+    """Draw probabilities over ``pool`` for ``weighting`` (None: uniform).
+
+    An item's paper is its ``paper`` slug; an item without one counts as a paper of
+    its own.
+    """
+    if weighting not in PAPER_WEIGHTINGS:
+        raise ValueError(f"unknown evidence weighting {weighting!r}; expected one of {PAPER_WEIGHTINGS}")
+    if weighting == "item" or not pool:
+        return None
+    papers = [getattr(item, "paper", "") or f"#{i}" for i, item in enumerate(pool)]
+    counts: dict[str, int] = {}
+    for p in papers:
+        counts[p] = counts.get(p, 0) + 1
+    power = 0.5 if weighting == "sqrt" else 1.0
+    w = np.array([counts[p] ** -power for p in papers], dtype=np.float64)
+    return w / w.sum()
+
+
+def sample_evidence(
+    pool: Sequence,
+    batch_size: int,
+    rng: np.random.Generator,
+    probabilities: np.ndarray | None = None,
+) -> list:
+    """``batch_size`` items from ``pool``, drawn by ``probabilities`` (uniform when
+    None; see ``evidence_probabilities``). A batch larger than the pool samples with
+    replacement, so every slot still contributes a term."""
     if batch_size <= 0 or not pool:
         return []
     replace = batch_size > len(pool)
-    chosen = rng.choice(len(pool), size=batch_size, replace=replace)
+    if probabilities is not None and not replace:
+        replace = batch_size > int(np.count_nonzero(probabilities))
+    chosen = rng.choice(len(pool), size=batch_size, replace=replace, p=probabilities)
     return [pool[int(i)] for i in chosen]
 
 
@@ -362,7 +398,9 @@ __all__ = [
     "EvidenceTerm",
     "StepReport",
     "accumulate_evidence_step",
+    "PAPER_WEIGHTINGS",
     "evidence_batch_nll",
+    "evidence_probabilities",
     "item_nll",
     "rule_nll",
     "sample_evidence",

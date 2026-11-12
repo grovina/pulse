@@ -126,7 +126,9 @@ from .training import (
 )
 from .training.embedding_prior_signal import DEFAULT_CENTER_WEIGHT
 from .correction import shrinkage_of
-from .training.evidence_step import EvidenceTerm, accumulate_evidence_step, sample_evidence
+from .training.evidence_step import (
+    PAPER_WEIGHTINGS, EvidenceTerm, accumulate_evidence_step, evidence_probabilities, sample_evidence,
+)
 from .training.factors import reference_prior_stats, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
@@ -449,6 +451,7 @@ def train(
     phase3_meal_dropout: float = 0.0,
     # A step samples this many evidence items. 0 samples none.
     evidence_batch_size: int = 4,
+    evidence_paper_weighting: str = "item",
     # Optimizer steps per epoch. 0 means one step per ``n_patients``.
     steps_per_epoch: int = 0,
     # Teacher-tape term at epoch 0. It decays to 0 on the last epoch.
@@ -600,7 +603,7 @@ def train(
     )
     n_steps_default = steps_per_epoch if steps_per_epoch > 0 else max(int(n_patients), 1)
     print(
-        f"Evidence step: batch={evidence_batch_size} item(s), "
+        f"Evidence step: batch={evidence_batch_size} item(s) weighted by {evidence_paper_weighting}, "
         f"{cohort_sample_patients} draw(s) each, {n_steps_default} step(s)/epoch, "
         f"teacher-tape base={tape_base}",
         flush=True,
@@ -724,6 +727,7 @@ def train(
         _arm_phase(start_epoch, announce=start_epoch > 0)
     aux_steps_by_signal: dict[str, int] = {}
     evidence_pool = list(ALL_COHORT_STATISTICS)
+    evidence_p = evidence_probabilities(evidence_pool, evidence_paper_weighting)
     try:
         for epoch in range(start_epoch, total_epochs):
             entering = epoch != start_epoch and (
@@ -801,7 +805,7 @@ def train(
                     item_terms = [
                         EvidenceTerm(spec, w_cohort * float(spec.weight), cohort_sample_patients)
                         for spec in (
-                            sample_evidence(evidence_pool, evidence_batch_size, rng)
+                            sample_evidence(evidence_pool, evidence_batch_size, rng, evidence_p)
                             if evidence_on else []
                         )
                     ]
@@ -1115,6 +1119,7 @@ def train(
         },
         "meal_window_bias": meal_window_bias,
         "evidence_batch_size": evidence_batch_size,
+        "evidence_paper_weighting": evidence_paper_weighting,
         "steps_per_epoch": n_steps_default,
         "teacher_tape_weight": tape_base,
         "trajectory_windows_per_step": trajectory_windows_per_step,
@@ -2156,6 +2161,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Evidence items sampled per step. Their Gaussian likelihoods are summed.",
     )
     parser.add_argument(
+        "--evidence-paper-weighting", choices=PAPER_WEIGHTINGS, default="item",
+        help="How often a paper's items are drawn: item (each item equally, so a paper weighs "
+             "its item count), sqrt (a paper weighs the square root of its item count), or "
+             "paper (each paper equally).",
+    )
+    parser.add_argument(
         "--steps-per-epoch", type=int, default=0,
         help="Optimizer steps per epoch. 0 means one step per --n-patients.",
     )
@@ -2405,6 +2416,7 @@ def main():
         phase3_input_dropout=args.phase3_input_dropout,
         phase3_meal_dropout=args.phase3_meal_dropout,
         evidence_batch_size=args.evidence_batch_size,
+        evidence_paper_weighting=args.evidence_paper_weighting,
         steps_per_epoch=args.steps_per_epoch,
         teacher_tape_weight=args.teacher_tape_weight,
         trajectory_windows_per_step=args.trajectory_windows_per_step,

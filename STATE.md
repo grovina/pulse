@@ -45,6 +45,12 @@ finished in 23 h (Runs, below). It was launched without the open-direction pass 
 without the CGMacros ruler, whose memory on the smaller job has not been
 measured; both are owed on its checkpoint.
 
+A step draws its items uniformly, so a paper weighs as many items as it
+printed: three papers are 36% of the draws, and `atkinson-2020` alone 13%.
+`--evidence-paper-weighting sqrt` weighs a paper by the square root of its
+item count (the three: 17%) and `paper` weighs every paper alike. The
+recipe keeps `item`; no run has used the others.
+
 An arm's pre-fast now begins with a meal and its nights are slept
 (`pulse/training/arm_init.py`); before, the last meal was the fed day's 19:00
 dinner whatever the pre-fast, and the pre-fast was spent awake. Iter 116
@@ -139,6 +145,19 @@ Iter 116 is the last checkpoint. Its own boards, written by the run
   stands, not past it.
 - The untrained column is from the scoring of 2026-11-11 below, on the same
   items and people. Iter 116 has not been scored with `--baseline` itself.
+- Insulin is what holds the sealed line back. Iter 116 is under the measured
+  value on 84% of the 31 sealed insulin points (median z -1.53, against
+  +0.06 on the 60 it trained on). Fasting insulin sits near 4 µU/mL whatever
+  the cohort (`battezzati-2023` 4.1 against 6.7 and 7.3, `vislocky-2008` 3.3
+  and 3.5 against 9.2 and 6.4), and after a mixed meal it predicts 32% of
+  the measured insulin in `battezzati-2023` and 6% of the incremental area
+  in `lindgren-2020`. The insulin it trained on is mostly glucose drinks,
+  and 42 of its 46 trained insulin points come from three papers
+  (`atkinson-2020` 18, `meyergerspach-2016` 14, `horie-2018` 10). Glucose
+  moves the other way: nearer than the untrained student on 23 of 35 sealed
+  points.
+- Fasting GLP-1 in `zilstorff-2024` is 33 pmol/L against a measured 4 (z
+  19); the warm start from iter 113 had 54.
 
 Iter 114 was scored on commit `0f4da88` on 2026-11-11,
 with the untrained student on the same items and people (`python -m
