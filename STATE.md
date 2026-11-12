@@ -107,6 +107,8 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
+| `trainer-gqtrs` | 116, no teacher | 2026-11-12 | running from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/`; cut at 28 h |
+| `trainer-rh7j2` | 116, cold start | 2026-11-12 | running from `b30be0a`: `--init-from=` (no warm start); output `training/jobs/iter116-cold/`; cut at 28 h |
 | `trainer-jt2n9` | 116 | 2026-11-11 | finished in 23 h from commit `b30be0a` at 4 vCPU / 16 GiB; boards at each phase, no open-direction pass or ruler |
 | `trainer-ppqff` | 116, cut down | 2026-11-11 | cancelled after 10 min: two epochs at 4 vCPU, to time them |
 | `trainer-rkxxs` | 116 | 2026-11-11 | cancelled in epoch 5: at 2 vCPU / 8 GiB an epoch took 1.7 times as long |
