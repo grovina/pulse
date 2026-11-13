@@ -196,6 +196,12 @@ pass and the ruler.
   114 they took 3 h 11 min; at 4 vCPU that is about $1.20. Their memory at
   16 GiB is unmeasured, so watch the first run.
 
+**Done on 2026-11-13: the two split runs of 2b.** Dropping the teacher
+gave 1.09 on the sealed papers; a cold start gave 1.20. Neither moved the
+insulin bias, which the literature itself causes (`STATE.md`, The board).
+Next: no teacher with `--evidence-paper-weighting sqrt`, to test whether
+the three papers that hold 42 of 46 trained insulin points set it.
+
 **2a. If the sealed papers come in under the untrained student**
 
 Training on papers read as files generalises, and the corpus is the lever

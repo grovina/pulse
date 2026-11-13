@@ -107,8 +107,8 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
-| `trainer-gqtrs` | 116, no teacher | 2026-11-12 | running from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/`; cut at 28 h |
-| `trainer-rh7j2` | 116, cold start | 2026-11-12 | running from `b30be0a`: `--init-from=` (no warm start); output `training/jobs/iter116-cold/`; cut at 28 h |
+| `trainer-gqtrs` | 116, no teacher | 2026-11-12 | finished in 19 h 40 min from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/` |
+| `trainer-rh7j2` | 116, cold start | 2026-11-12 | stopped by its 26 h deadline after epoch 51, the end of phase 2 (no phase 3), from `b30be0a`: `--init-from=`; output `training/jobs/iter116-cold/` |
 | `trainer-jt2n9` | 116 | 2026-11-11 | finished in 23 h from commit `b30be0a` at 4 vCPU / 16 GiB; boards at each phase, no open-direction pass or ruler |
 | `trainer-ppqff` | 116, cut down | 2026-11-11 | cancelled after 10 min: two epochs at 4 vCPU, to time them |
 | `trainer-rkxxs` | 116 | 2026-11-11 | cancelled in epoch 5: at 2 vCPU / 8 GiB an epoch took 1.7 times as long |
@@ -160,6 +160,25 @@ Iter 116 is the last checkpoint. Its own boards, written by the run
   points.
 - Fasting GLP-1 in `zilstorff-2024` is 33 pmol/L against a measured 4 (z
   19); the warm start from iter 113 had 54.
+
+Two runs split iter 116, each changing one thing (their own final boards;
+the untrained student as above):
+
+| Run | Sealed papers | File papers that train | Sealed insulin under target | Fasting GLP-1, `zilstorff-2024` (measured 4) |
+|---|---|---|---|---|
+| Iter 116 | 1.21 (0.81 to 1.40) | 0.62 | 26 of 31 | 33 |
+| No teacher (`trainer-gqtrs`) | 1.09 (0.82 to 1.44) | 0.56 | 25 of 31 | 29 |
+| Cold start (`trainer-rh7j2`) | 1.20 (0.74 to 1.47) | 0.53 | 24 of 31 | 23 |
+
+- Without the teacher the sealed papers come in under the untrained
+  student (1.09 against 1.19), the first run that does; the interval is too
+  wide to call it.
+- Neither the teacher nor iter 113's laws make insulin low. After the
+  teacher alone, fasting insulin on the sealed arms is about 7.3 µU/mL
+  (iter 116) or 8.8 (cold start); the literature takes it to 5.2 to 6.0 in
+  all three runs.
+- The cold start stopped at the end of phase 2: its epochs with the
+  literature took about 59 minutes, against 49 for the warm start.
 
 Iter 114 was scored on commit `0f4da88` on 2026-11-11,
 with the untrained student on the same items and people (`python -m
