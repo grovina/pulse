@@ -49,7 +49,7 @@ A step draws its items uniformly, so a paper weighs as many items as it
 printed: three papers are 36% of the draws, and `atkinson-2020` alone 13%.
 `--evidence-paper-weighting sqrt` weighs a paper by the square root of its
 item count (the three: 17%) and `paper` weighs every paper alike. The
-recipe keeps `item`; no run has used the others.
+recipe keeps `item`; `trainer-lxsdb` is the first run with `sqrt`.
 
 An arm's pre-fast now begins with a meal and its nights are slept
 (`pulse/training/arm_init.py`); before, the last meal was the fed day's 19:00
@@ -107,6 +107,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
+| `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | running from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`, warm start from iter 113; output `training/jobs/iter116-sqrt/`; cut at 26 h |
 | `trainer-gqtrs` | 116, no teacher | 2026-11-12 | finished in 19 h 40 min from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/` |
 | `trainer-rh7j2` | 116, cold start | 2026-11-12 | stopped by its 26 h deadline after epoch 51, the end of phase 2 (no phase 3), from `b30be0a`: `--init-from=`; output `training/jobs/iter116-cold/` |
 | `trainer-jt2n9` | 116 | 2026-11-11 | finished in 23 h from commit `b30be0a` at 4 vCPU / 16 GiB; boards at each phase, no open-direction pass or ruler |
