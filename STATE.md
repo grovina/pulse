@@ -185,6 +185,12 @@ the untrained student as above):
   measured value (85% without it), mixed-meal insulin 32% (33%). The three
   papers that hold most of the trained insulin points are not the cause.
   Its epochs took about 63 minutes, against 49 drawing items uniformly.
+- Training barely teaches insulin after a mixed meal. Of the 60 trained
+  insulin points, 19 follow a mixed meal and 18 of those are one meal of one
+  paper (`atkinson-2020`); 22 of the 31 sealed insulin points follow a mixed
+  meal. The islet's amino-acid gain (`metabolic.islet.log_amino_ins_gain`)
+  starts at 0 and ends between -0.04 and +0.10 in all four runs, and its
+  incretin gain (`log_k_incretin`) moves by at most 0.09 from 2.30.
 - The cold start stopped at the end of phase 2: its epochs with the
   literature took about 59 minutes, against 49 for the warm start.
 

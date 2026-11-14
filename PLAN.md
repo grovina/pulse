@@ -206,6 +206,13 @@ any training finding reaches, and whether the mixed-meal ones still sit at
 their initial values. Almost no trained finding measures insulin after a
 mixed meal.
 
+Checked on 2026-11-14: 18 of the 19 trained mixed-meal insulin points are
+one meal of `atkinson-2020`, and the islet's amino-acid and incretin gains
+barely move in any run. Next: read papers that measure insulin (and
+C-peptide, once the format has it) after mixed or protein meals in healthy
+people, enough that several meals train and some are sealed; then one run
+without the teacher.
+
 **2a. If the sealed papers come in under the untrained student**
 
 Training on papers read as files generalises, and the corpus is the lever
