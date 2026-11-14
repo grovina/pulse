@@ -107,7 +107,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
-| `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | running from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`, warm start from iter 113; output `training/jobs/iter116-sqrt/`; cut at 26 h |
+| `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
 | `trainer-gqtrs` | 116, no teacher | 2026-11-12 | finished in 19 h 40 min from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/` |
 | `trainer-rh7j2` | 116, cold start | 2026-11-12 | stopped by its 26 h deadline after epoch 51, the end of phase 2 (no phase 3), from `b30be0a`: `--init-from=`; output `training/jobs/iter116-cold/` |
 | `trainer-jt2n9` | 116 | 2026-11-11 | finished in 23 h from commit `b30be0a` at 4 vCPU / 16 GiB; boards at each phase, no open-direction pass or ruler |
@@ -170,6 +170,7 @@ the untrained student as above):
 | Iter 116 | 1.21 (0.81 to 1.40) | 0.62 | 26 of 31 | 33 |
 | No teacher (`trainer-gqtrs`) | 1.09 (0.82 to 1.44) | 0.56 | 25 of 31 | 29 |
 | Cold start (`trainer-rh7j2`) | 1.20 (0.74 to 1.47) | 0.53 | 24 of 31 | 23 |
+| No teacher, papers by square root (`trainer-lxsdb`) | 1.29 (0.79 to 1.56) | 0.58 | 26 of 31 | 24 |
 
 - Without the teacher the sealed papers come in under the untrained
   student (1.09 against 1.19), the first run that does; the interval is too
@@ -178,6 +179,12 @@ the untrained student as above):
   teacher alone, fasting insulin on the sealed arms is about 7.3 µU/mL
   (iter 116) or 8.8 (cold start); the literature takes it to 5.2 to 6.0 in
   all three runs.
+- Weighing papers by the square root of their items changes nothing that
+  matters: at the end of phase 2 it is 1.29 against the no-teacher run's
+  1.22 at the same point, and the sealed arms' fasting insulin is 79% of the
+  measured value (85% without it), mixed-meal insulin 32% (33%). The three
+  papers that hold most of the trained insulin points are not the cause.
+  Its epochs took about 63 minutes, against 49 drawing items uniformly.
 - The cold start stopped at the end of phase 2: its epochs with the
   literature took about 59 minutes, against 49 for the warm start.
 

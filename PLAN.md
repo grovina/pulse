@@ -199,8 +199,12 @@ pass and the ruler.
 **Done on 2026-11-13: the two split runs of 2b.** Dropping the teacher
 gave 1.09 on the sealed papers; a cold start gave 1.20. Neither moved the
 insulin bias, which the literature itself causes (`STATE.md`, The board).
-Next: no teacher with `--evidence-paper-weighting sqrt`, to test whether
-the three papers that hold 42 of 46 trained insulin points set it.
+Then no teacher with `--evidence-paper-weighting sqrt` (2026-11-14): no
+change, so those three papers do not set it. Next, at no cost: which insulin
+parameters (the amino-acid and incretin gains of the islet, among others)
+any training finding reaches, and whether the mixed-meal ones still sit at
+their initial values. Almost no trained finding measures insulin after a
+mixed meal.
 
 **2a. If the sealed papers come in under the untrained student**
 
