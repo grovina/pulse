@@ -86,7 +86,7 @@
     },
     {
       "name": "women_meal",
-      "description": "Women (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (866 kcal, carbohydrate 134 g, protein 35 g, lipids 25 g); venous samples 0-180 min",
+      "description": "Women (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (866 kcal, carbohydrate 134 g, protein 35 g, lipids 25 g, fiber 8 g); venous samples 0-180 min",
       "duration_min": 181,
       "start_hour": 8.5,
       "prefast_hours": 10,
@@ -95,7 +95,11 @@
           "t_min": 0,
           "carbs_g": 134.0,
           "fat_g": 25.0,
-          "protein_g": 35.0
+          "protein_g": 35.0,
+          "fibre_g": 8.0,
+          "fat_source": "extra virgin olive oil",
+          "form": "solid",
+          "food": "sandwich of white bread, ham, extra virgin olive oil and tomato"
         }
       ],
       "assumed": [
@@ -120,7 +124,7 @@
     },
     {
       "name": "men_meal",
-      "description": "Men (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (1078 kcal, carbohydrate 167 g, protein 42 g, lipids 31 g); venous samples 0-180 min",
+      "description": "Men (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (1078 kcal, carbohydrate 167 g, protein 42 g, lipids 31 g, fiber 9 g); venous samples 0-180 min",
       "duration_min": 181,
       "start_hour": 8.5,
       "prefast_hours": 10,
@@ -129,7 +133,11 @@
           "t_min": 0,
           "carbs_g": 167.0,
           "fat_g": 31.0,
-          "protein_g": 42.0
+          "protein_g": 42.0,
+          "fibre_g": 9.0,
+          "fat_source": "extra virgin olive oil",
+          "form": "solid",
+          "food": "sandwich of white bread, ham, extra virgin olive oil and tomato"
         }
       ],
       "assumed": [
