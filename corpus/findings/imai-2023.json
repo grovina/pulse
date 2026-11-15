@@ -1,0 +1,711 @@
+{
+  "paper": "imai-2023",
+  "citation": {
+    "authors": "Imai S, Kajiyama S, Kitta K, Miyawaki T, Matsumoto S, Ozasa N, Kajiyama S, Hashimoto Y, Fukui M",
+    "title": "Eating Vegetables First Regardless of Eating Speed Has a Significant Reducing Effect on Postprandial Blood Glucose and Insulin in Young Healthy Women: Randomized Controlled Cross-Over Study",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15051174",
+    "pmid": "36904173",
+    "pmcid": "PMC10005673"
+  },
+  "population": {
+    "n": 18,
+    "sex": "female",
+    "age_years": {
+      "mean": 21.3,
+      "sd": 0.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 19.6,
+      "sd": 1.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "18 young, healthy Japanese women (Kyoto Women's University volunteers) who completed all three days of 21 registered; free of metabolic disease, eating disorders and relevant medication, no family history of T2DM; not screened by a glucose tolerance test; age and BMI as printed, mean ± SD."
+  },
+  "protocols": [
+    {
+      "name": "slow_carb_first",
+      "description": "Slow eating (20 min) with carbohydrate first: rice 0-6 min, fish 6-13 min, vegetables 13-20 min. Breakfast of Table 1 (671 kcal; total 105.4 g carbohydrate, 24.5 g protein, 16.3 g fat) at 09:00 after a 12 h overnight fast (arrival 08:30); blood at 0, 30, 60, 120 min, minute 0 = 09:00, when the paper says the meal was consumed and the IAUC baseline was taken ('baseline concentration at 9:00'); the samples, 'at 0, 30, 60, and 120 min after test meal consumption', are read as counted from 09:00. Each food is entered as one meal at the minute its stated eating segment began (the paper's segments last several minutes; the model takes a bolus): rice = Table 1 row 'Boiled while rice' (74.2 g C, 5 g P, 0.6 g F); fish = row 'Frozen box of fried fish' (21.1 g C, 15.9 g P, 5.2 g F); vegetables = tomato + broccoli + sesame oil rows added (C 7.1+3+0 = 10.1 g, P 1.1+2.5+0 = 3.6 g, F 0.2+0.3+10 = 10.5 g). Dietary fibre (7.1 g, listed separately from carbohydrate in Table 1) cannot be entered. Segment start minutes are sums of the stated segment lengths.",
+      "duration_min": 121,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 74.2,
+          "fat_g": 0.6,
+          "protein_g": 5.0
+        },
+        {
+          "t_min": 6,
+          "carbs_g": 21.1,
+          "fat_g": 5.2,
+          "protein_g": 15.9
+        },
+        {
+          "t_min": 13,
+          "carbs_g": 10.1,
+          "fat_g": 10.5,
+          "protein_g": 3.6
+        }
+      ],
+      "assumed": [
+        "meals"
+      ]
+    },
+    {
+      "name": "slow_veg_first",
+      "description": "Slow eating (20 min) with vegetables first: vegetables 0-7 min, fish 7-14 min, rice 14-20 min. Breakfast of Table 1 (671 kcal; total 105.4 g carbohydrate, 24.5 g protein, 16.3 g fat) at 09:00 after a 12 h overnight fast (arrival 08:30); blood at 0, 30, 60, 120 min, minute 0 = 09:00, when the paper says the meal was consumed and the IAUC baseline was taken ('baseline concentration at 9:00'); the samples, 'at 0, 30, 60, and 120 min after test meal consumption', are read as counted from 09:00. Each food is entered as one meal at the minute its stated eating segment began (the paper's segments last several minutes; the model takes a bolus): rice = Table 1 row 'Boiled while rice' (74.2 g C, 5 g P, 0.6 g F); fish = row 'Frozen box of fried fish' (21.1 g C, 15.9 g P, 5.2 g F); vegetables = tomato + broccoli + sesame oil rows added (C 7.1+3+0 = 10.1 g, P 1.1+2.5+0 = 3.6 g, F 0.2+0.3+10 = 10.5 g). Dietary fibre (7.1 g, listed separately from carbohydrate in Table 1) cannot be entered. Segment start minutes are sums of the stated segment lengths.",
+      "duration_min": 121,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 10.1,
+          "fat_g": 10.5,
+          "protein_g": 3.6
+        },
+        {
+          "t_min": 7,
+          "carbs_g": 21.1,
+          "fat_g": 5.2,
+          "protein_g": 15.9
+        },
+        {
+          "t_min": 14,
+          "carbs_g": 74.2,
+          "fat_g": 0.6,
+          "protein_g": 5.0
+        }
+      ],
+      "assumed": [
+        "meals"
+      ]
+    },
+    {
+      "name": "fast_veg_first",
+      "description": "Fast eating (10 min) with vegetables first: vegetables 0-4 min, fish 4-7 min, rice 7-10 min. Breakfast of Table 1 (671 kcal; total 105.4 g carbohydrate, 24.5 g protein, 16.3 g fat) at 09:00 after a 12 h overnight fast (arrival 08:30); blood at 0, 30, 60, 120 min, minute 0 = 09:00, when the paper says the meal was consumed and the IAUC baseline was taken ('baseline concentration at 9:00'); the samples, 'at 0, 30, 60, and 120 min after test meal consumption', are read as counted from 09:00. Each food is entered as one meal at the minute its stated eating segment began (the paper's segments last several minutes; the model takes a bolus): rice = Table 1 row 'Boiled while rice' (74.2 g C, 5 g P, 0.6 g F); fish = row 'Frozen box of fried fish' (21.1 g C, 15.9 g P, 5.2 g F); vegetables = tomato + broccoli + sesame oil rows added (C 7.1+3+0 = 10.1 g, P 1.1+2.5+0 = 3.6 g, F 0.2+0.3+10 = 10.5 g). Dietary fibre (7.1 g, listed separately from carbohydrate in Table 1) cannot be entered. Segment start minutes are sums of the stated segment lengths.",
+      "duration_min": 121,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 10.1,
+          "fat_g": 10.5,
+          "protein_g": 3.6
+        },
+        {
+          "t_min": 4,
+          "carbs_g": 21.1,
+          "fat_g": 5.2,
+          "protein_g": 15.9
+        },
+        {
+          "t_min": 7,
+          "carbs_g": 74.2,
+          "fat_g": 0.6,
+          "protein_g": 5.0
+        }
+      ],
+      "assumed": [
+        "meals"
+      ]
+    },
+    {
+      "name": "fasting_baseline",
+      "description": "Fasting plasma glucose of the 18 analysed women (Results, characteristics); the paper does not say on which morning or at what clock time it was drawn (study mornings were after a 12 h overnight fast, sampled at 09:00); a 30-minute fasted run-in stands for the single sample.",
+      "duration_min": 30,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "slow_carb_first_glucose_curve",
+      "description": "Plasma glucose at 30 and 60 min, slow eating with carbohydrate first, mean ± SEM",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 30,
+          "value": 7.09,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.34,
+            "n": 18
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 5.88,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.34,
+            "n": 18
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood glucose at 30 min (slow eating with carb. first vs. fast eating with veg. first; 7.09 ± 0.34 vs. 5.94 ± 0.24 mmol/L, p < 0.05. vs. slow eating with veg. first; 5.53 ± 0.25 mmol/L, p < 0.01, mean ± SEM) and 60 min (slow eating with carb. first vs. fast eating with veg. first; 5.88 ± 0.34 vs. 4.95 ± 0.18 mmol/L, vs. slow eating with veg. first; 4.97 ± 0.16 mmol/L, both p < 0.05)"
+      }
+    },
+    {
+      "id": "slow_veg_first_glucose_curve",
+      "description": "Plasma glucose at 30 and 60 min, slow eating with vegetables first, mean ± SEM",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 30,
+          "value": 5.53,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.25,
+            "n": 18
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 4.97,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.16,
+            "n": 18
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood glucose at 30 min (slow eating with carb. first vs. fast eating with veg. first; 7.09 ± 0.34 vs. 5.94 ± 0.24 mmol/L, p < 0.05. vs. slow eating with veg. first; 5.53 ± 0.25 mmol/L, p < 0.01, mean ± SEM) and 60 min (slow eating with carb. first vs. fast eating with veg. first; 5.88 ± 0.34 vs. 4.95 ± 0.18 mmol/L, vs. slow eating with veg. first; 4.97 ± 0.16 mmol/L, both p < 0.05)"
+      }
+    },
+    {
+      "id": "fast_veg_first_glucose_curve",
+      "description": "Plasma glucose at 30 and 60 min, fast eating with vegetables first, mean ± SEM",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 30,
+          "value": 5.94,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.24,
+            "n": 18
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 4.95,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.18,
+            "n": 18
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood glucose at 30 min (slow eating with carb. first vs. fast eating with veg. first; 7.09 ± 0.34 vs. 5.94 ± 0.24 mmol/L, p < 0.05. vs. slow eating with veg. first; 5.53 ± 0.25 mmol/L, p < 0.01, mean ± SEM) and 60 min (slow eating with carb. first vs. fast eating with veg. first; 5.88 ± 0.34 vs. 4.95 ± 0.18 mmol/L, vs. slow eating with veg. first; 4.97 ± 0.16 mmol/L, both p < 0.05)"
+      }
+    },
+    {
+      "id": "slow_carb_first_insulin_curve",
+      "description": "Serum insulin at 30 and 60 min, slow eating with carbohydrate first, mean ± SEM",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "unit": "μIU/mL",
+      "points": [
+        {
+          "t_min": 30,
+          "value": 83.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.5,
+            "n": 18
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 58.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.4,
+            "n": 18
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood insulin concentrations at 30 min (slow eating with carb. first vs. fast eating with veg. first; 83.6 ± 7.5 vs. 63.5 ± 7.5 μIU/mL, vs. slow eating with veg. first; 55.8 ± 6.5μIU/mL, both p < 0.01) and 60 min (slow eating with carb. first vs. slow eating with veg. first; 58.2 ± 6.4 vs. 39.4 ± 5.2 μIU/mL, p < 0.01)"
+      }
+    },
+    {
+      "id": "slow_veg_first_insulin_curve",
+      "description": "Serum insulin at 30 and 60 min, slow eating with vegetables first, mean ± SEM",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "unit": "μIU/mL",
+      "points": [
+        {
+          "t_min": 30,
+          "value": 55.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.5,
+            "n": 18
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 39.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.2,
+            "n": 18
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood insulin concentrations at 30 min (slow eating with carb. first vs. fast eating with veg. first; 83.6 ± 7.5 vs. 63.5 ± 7.5 μIU/mL, vs. slow eating with veg. first; 55.8 ± 6.5μIU/mL, both p < 0.01) and 60 min (slow eating with carb. first vs. slow eating with veg. first; 58.2 ± 6.4 vs. 39.4 ± 5.2 μIU/mL, p < 0.01)"
+      }
+    },
+    {
+      "id": "fast_veg_first_insulin_30",
+      "description": "Serum insulin at 30 min, fast eating with vegetables first, mean ± SEM (its 60 min value is not printed)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 63.5,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.5,
+        "n": 18
+      },
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "postprandial blood insulin concentrations at 30 min (slow eating with carb. first vs. fast eating with veg. first; 83.6 ± 7.5 vs. 63.5 ± 7.5 μIU/mL, vs. slow eating with veg. first; 55.8 ± 6.5μIU/mL, both p < 0.01) and 60 min (slow eating with carb. first vs. slow eating with veg. first; 58.2 ± 6.4 vs. 39.4 ± 5.2 μIU/mL, p < 0.01)"
+      }
+    },
+    {
+      "id": "slow_carb_first_max_glucose",
+      "description": "Mean of each woman's highest glucose over the 0, 30, 60, 120 min samples ('MAX'), slow eating with carbohydrate first; the paper takes it from four samples",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 7.13,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.33,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Carb. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX BG (mmoll/L) | 7.13 ± 0.33"
+      }
+    },
+    {
+      "id": "slow_carb_first_max_insulin",
+      "description": "Mean of each woman's highest insulin over the 0, 30, 60, 120 min samples ('MAX'), slow eating with carbohydrate first; the paper takes it from four samples",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 85.6,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.7,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Carb. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX insulin (μIU/mL) | 85.6 ± 7.7 **†"
+      }
+    },
+    {
+      "id": "slow_carb_first_glucose_iauc",
+      "description": "Incremental area under the glucose curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, slow eating with carbohydrate first; the paper does not say how stretches below baseline were treated",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 140,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 27,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Carb. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for BG (mmoll/L × min) | 140 ± 27 *†"
+      }
+    },
+    {
+      "id": "slow_carb_first_insulin_iauc",
+      "description": "Incremental area under the insulin curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, slow eating with carbohydrate first; the paper does not say how stretches below baseline were treated",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "slow_carb_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 5702,
+      "unit": "μU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 486,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Carb. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for insulin (μU/mL × min) | 5702 ± 486 *††"
+      }
+    },
+    {
+      "id": "slow_veg_first_max_glucose",
+      "description": "Mean of each woman's highest glucose over the 0, 30, 60, 120 min samples ('MAX'), slow eating with vegetables first; the paper takes it from four samples",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 5.92,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.19,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX BG (mmoll/L) | 5.92 ± 0.19"
+      }
+    },
+    {
+      "id": "slow_veg_first_max_insulin",
+      "description": "Mean of each woman's highest insulin over the 0, 30, 60, 120 min samples ('MAX'), slow eating with vegetables first; the paper takes it from four samples",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 61.8,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.7,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX insulin (μIU/mL) | 61.8 ± 5.7"
+      }
+    },
+    {
+      "id": "slow_veg_first_glucose_iauc",
+      "description": "Incremental area under the glucose curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, slow eating with vegetables first; the paper does not say how stretches below baseline were treated",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 68,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for BG (mmoll/L × min) | 68 ± 12"
+      }
+    },
+    {
+      "id": "slow_veg_first_insulin_iauc",
+      "description": "Incremental area under the insulin curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, slow eating with vegetables first; the paper does not say how stretches below baseline were treated",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "slow_veg_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 4222,
+      "unit": "μU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 458,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Slow Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for insulin (μU/mL × min) | 4222 ± 458"
+      }
+    },
+    {
+      "id": "fast_veg_first_max_glucose",
+      "description": "Mean of each woman's highest glucose over the 0, 30, 60, 120 min samples ('MAX'), fast eating with vegetables first; the paper takes it from four samples",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 6.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.19,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Fast Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX BG (mmoll/L) | 6.10 ± 0.19"
+      }
+    },
+    {
+      "id": "fast_veg_first_max_insulin",
+      "description": "Mean of each woman's highest insulin over the 0, 30, 60, 120 min samples ('MAX'), fast eating with vegetables first; the paper takes it from four samples",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 65.8,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.9,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Fast Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "MAX insulin (μIU/mL) | 65.8 ± 6.9"
+      }
+    },
+    {
+      "id": "fast_veg_first_glucose_iauc",
+      "description": "Incremental area under the glucose curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, fast eating with vegetables first; the paper does not say how stretches below baseline were treated",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 67,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Fast Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for BG (mmoll/L × min) | 67 ± 12"
+      }
+    },
+    {
+      "id": "fast_veg_first_insulin_iauc",
+      "description": "Incremental area under the insulin curve 0-120 min, trapezoid over the 0, 30, 60, 120 min samples above the 09:00 (minute 0) baseline, fast eating with vegetables first; the paper does not say how stretches below baseline were treated",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "fast_veg_first"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 4113,
+      "unit": "μU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 402,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, column 'Fast Eating with Veg. First (n = 18)'; footnote 'Data are mean ± SEM'",
+        "quote": "IAUC 120 min for insulin (μU/mL × min) | 4113 ± 402"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose (FPG) of the 18 analysed women, mean ± SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_baseline"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 18
+      },
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "18 young, healthy women [age 21.3 ± 0.4 years, BMI 19.6 ± 1.6 kg/m2, FPG 4.7 ± 0.3 mmol/L, HbA1c 33 ± 2 mmol/mol (5.2 ± 0.3%), mean ± standard deviation (SD), Figure 2]"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "mean blood glucose (MBG) and mean insulin per condition (Table 2): each person's mean of the four samples at 0, 30, 60, 120 min, not a time-weighted mean over the window",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_over_separate_windows"
+      }
+    },
+    {
+      "what": "glucose and insulin variability over each person's four samples per condition: SD for BG, SD for insulin, LAGE and large amplitude of insulin excursion (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "glucose and insulin at 0 and 120 min in all conditions, and insulin at 60 min in fast eating with vegetables first (Figure 3A,B)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "triglyceride time courses per condition (Figure 3C; text gives no values)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "free fatty acid time courses per condition (Figure 3D; text gives no values)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "HbA1c of the participants (Results, paragraph 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    }
+  ]
+}
