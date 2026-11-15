@@ -1,0 +1,551 @@
+{
+  "paper": "mishra-2026",
+  "citation": {
+    "authors": "Mishra SS, Stoklosinski H, Hedderley D, Dinnan H, Martell S, McKenzie M, Monro J",
+    "title": "Effect of Lamb and Soy Protein on Postprandial Glycaemic, Insulin and Appetite Responses to Potato, Pasta and Rice in Macronutrient-Equalised Meals—A Randomised Pilot Human Intervention Study",
+    "journal": "Nutrients",
+    "year": 2026,
+    "doi": "10.3390/nu18142351",
+    "pmid": "42514420",
+    "pmcid": "PMC13415058"
+  },
+  "population": {
+    "n": 15,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 42.4,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.0,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fifteen healthy volunteers, 8 men and 7 women (Table 2; 12 Caucasian, 2 Asian, 1 Persian), New Zealand; recruited aged 18-65 y (an enrolment criterion, not an observed range, so not entered as min/max); glucose intolerance excluded by history and a screening fasting blood glucose and HbA1c, plus pregnancy, vegan/vegetarian diet, antacids/laxatives/supplements and recent ill health. Table 2 prints age 42.4 ± 3.7 y and BMI 25.0 ± 1.2 kg/m2 with the ± not labelled SD or SE anywhere, so only the means are entered."
+  },
+  "protocols": [
+    {
+      "name": "potato",
+      "description": "Test meal 'Potato' (Table 1, meal composition): 44.1 g carbohydrate, 5.0 g protein, 12.8 g fat (1247 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.1,
+          "fat_g": 12.8,
+          "protein_g": 5.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "pasta",
+      "description": "Test meal 'Pasta' (Table 1, meal composition): 44.1 g carbohydrate, 7.0 g protein, 13.1 g fat (1406 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.1,
+          "fat_g": 13.1,
+          "protein_g": 7.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "rice",
+      "description": "Test meal 'Rice' (Table 1, meal composition): 44.2 g carbohydrate, 4.9 g protein, 12.9 g fat (1265 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.2,
+          "fat_g": 12.9,
+          "protein_g": 4.9
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "potato_lamb",
+      "description": "Test meal 'Potato + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 33.8 g protein, 12.2 g fat (1714 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.1,
+          "fat_g": 12.2,
+          "protein_g": 33.8
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "pasta_lamb",
+      "description": "Test meal 'Pasta + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 35.8 g protein, 12.5 g fat (1874 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.1,
+          "fat_g": 12.5,
+          "protein_g": 35.8
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "rice_lamb",
+      "description": "Test meal 'Rice + Lamb' (Table 1, meal composition): 44.2 g carbohydrate, 33.7 g protein, 12.3 g fat (1733 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.2,
+          "fat_g": 12.3,
+          "protein_g": 33.7
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "potato_soy",
+      "description": "Test meal 'Potato + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 35.1 g protein, 13.8 g fat (1801 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.4,
+          "fat_g": 13.8,
+          "protein_g": 35.1
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "pasta_soy",
+      "description": "Test meal 'Pasta + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 37.1 g protein, 14.1 g fat (1961 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.4,
+          "fat_g": 14.1,
+          "protein_g": 37.1
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "rice_soy",
+      "description": "Test meal 'Rice + Soy' (Table 1, meal composition): 44.6 g carbohydrate, 35.0 g protein, 13.9 g fat (1820 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 44.6,
+          "fat_g": 13.9,
+          "protein_g": 35.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "potato_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Potato' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "potato"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 162.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein None, Carbohydrate Potato",
+        "quote": "Potato | 15 | 162 | 17"
+      }
+    },
+    {
+      "id": "pasta_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Pasta' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pasta"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 144.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 21.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein None, Carbohydrate Pasta",
+        "quote": "Pasta | 15 | 144 | 21"
+      }
+    },
+    {
+      "id": "rice_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Rice' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rice"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 130.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein None, Carbohydrate Rice",
+        "quote": "Rice | 15 | 130 | 16"
+      }
+    },
+    {
+      "id": "potato_lamb_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Potato + Lamb' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "potato_lamb"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 144.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 13.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Lamb, Carbohydrate Potato",
+        "quote": "Potato | 15 | 144 | 13"
+      }
+    },
+    {
+      "id": "pasta_lamb_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Pasta + Lamb' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pasta_lamb"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 123.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 19.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Lamb, Carbohydrate Pasta",
+        "quote": "Pasta | 15 | 123 | 19"
+      }
+    },
+    {
+      "id": "rice_lamb_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Rice + Lamb' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rice_lamb"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 130.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Lamb, Carbohydrate Rice",
+        "quote": "Rice | 15 | 130 | 17"
+      }
+    },
+    {
+      "id": "potato_soy_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Potato + Soy' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "potato_soy"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 132.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Soy, Carbohydrate Potato",
+        "quote": "Potato | 15 | 132 | 18"
+      }
+    },
+    {
+      "id": "pasta_soy_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Pasta + Soy' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pasta_soy"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 103.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Soy, Carbohydrate Pasta",
+        "quote": "Pasta | 15 | 103 | 16"
+      }
+    },
+    {
+      "id": "rice_soy_glucose_iauc",
+      "description": "Positive incremental area under the capillary blood glucose curve (HemoCue meter, finger prick) after the 'Rice + Soy' meal, 0 to 150 min over the individual's baseline (pre-meal baseline taken in duplicate, at minute 0); samples at 0, 15, 30, 45, 60, 90, 120, 150 min; only area above baseline counted (Methods 2.2.5: 'positive incremental area under the curve')",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rice_soy"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150
+      ],
+      "below_baseline": "ignored",
+      "value": 112.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 3, BGR iAUC (mmol/L.min) columns Mean and s.e., row Protein Soy, Carbohydrate Rice",
+        "quote": "Rice | 15 | 112 | 12"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "insulin area (Table 3, 'Insulin (μU/mL.min)', mean and s.e. for each of the nine meals, n = 15): the minutes at which capillary insulin was sampled are not printed (the mixed model's 5 time df for iIR imply six insulin times against eight for glucose), and the table does not say whether the area is total or incremental (Figure 4 legend: 'insulin (AUC)'; Results: 'iIR')",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "amplitude (peak height) of the incremental glucose and insulin responses for each of the nine meals (Table 4, mean and s.e.): a per-person peak minus baseline, which no statistic expresses; the rice + lamb insulin s.e. is printed 65.8 beside a mean of 65.2",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "percentage increases in insulin response with added protein (Results: pasta, rice, potato with soy and lamb), derived from the insulin areas",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "incremental blood glucose at 60 min for potato, pasta and rice alone (Results, 2.16, 1.21, 1.45 mmol/L): only an LSD is printed, no uncertainty of each mean",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "glucose and insulin time courses for the nine meals (Figure 3) and the diet effect on incremental insulin (Figure 4)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "screening fasting plasma glucose 4.4 ± 0.1 mmol/L (Table 2): ± not labelled SD or SE",
+      "missing": {
+        "kind": "source",
+        "name": "unlabelled_uncertainty"
+      }
+    },
+    {
+      "what": "screening HbA1c (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "appetite visual analogue scales (hunger, fullness, desire, quantity, composite) at 0, 60 and 150 min (Figures 5 and 6, Tables 5 and 6)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    }
+  ]
+}
