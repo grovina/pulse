@@ -41,7 +41,7 @@
     },
     {
       "name": "hgi_breakfast",
-      "description": "High-GI breakfast (grape juice, white bread, jam, 350 mL water; Table 1: 72.0 g carbohydrate, 3.9 g protein, 0.9 g fat) eaten within 10 min after a 12 h overnight fast, seated, observed 120 min. start_hour 8.92 (08:55) derived: visits ran 08:15 to 10:55 and lasted 2 h 40 min; taking the last sample at 120 min as the end of the visit puts the meal 40 min after 08:15",
+      "description": "High-GI breakfast (200 mL grape juice, 40 g white bread, 29 g strawberry jam, 350 mL water; Table 1: 72.0 g carbohydrate, 3.9 g protein, 0.9 g fat, 0.29 g saturated fat, 1.6 g fiber; the carbohydrate excludes fibre, its energy share 91.4% being 72.0 x 4 of 315 kcal; protein plant: every item is a plant food, white bread the only cereal) eaten within 10 min after a 12 h overnight fast, seated, observed 120 min. start_hour 8.92 (08:55) derived: visits ran 08:15 to 10:55 and lasted 2 h 40 min; taking the last sample at 120 min as the end of the visit puts the meal 40 min after 08:15",
       "duration_min": 121,
       "start_hour": 8.92,
       "meals": [
@@ -49,7 +49,14 @@
           "t_min": 0,
           "carbs_g": 72.0,
           "fat_g": 0.9,
-          "protein_g": 3.9
+          "protein_g": 3.9,
+          "fibre_g": 1.6,
+          "fat_g_by_type": {
+            "saturated": 0.29
+          },
+          "protein_source": "plant",
+          "form": "mixed",
+          "food": "grape juice, white bread and strawberry jam"
         }
       ],
       "prefast_hours": 12,
@@ -59,7 +66,7 @@
     },
     {
       "name": "lgi_breakfast",
-      "description": "Low-GI breakfast (apple, low-fat yogurt, walnuts, dark chocolate, 350 mL water; Table 1: 31.5 g carbohydrate, 9.7 g protein, 19.9 g fat) eaten within 10 min after a 12 h overnight fast, seated, observed 120 min. start_hour 8.92 (08:55) derived: visits ran 08:15 to 10:55 and lasted 2 h 40 min; taking the last sample at 120 min as the end of the visit puts the meal 40 min after 08:15",
+      "description": "Low-GI breakfast (150 g apple, 125 g low-fat natural yogurt, 3 shelled walnuts, 17.5 g 72% dark chocolate, 350 mL water; Table 1: 31.5 g carbohydrate, 9.7 g protein, 19.9 g fat, 1.54 g saturated fat, 6.0 g fiber; the carbohydrate excludes fibre, its energy share 35.4% being 31.5 x 4 of 356 kcal; protein_source not entered: dairy and plant items, and no split printed) eaten within 10 min after a 12 h overnight fast, seated, observed 120 min. start_hour 8.92 (08:55) derived: visits ran 08:15 to 10:55 and lasted 2 h 40 min; taking the last sample at 120 min as the end of the visit puts the meal 40 min after 08:15",
       "duration_min": 121,
       "start_hour": 8.92,
       "meals": [
@@ -67,7 +74,13 @@
           "t_min": 0,
           "carbs_g": 31.5,
           "fat_g": 19.9,
-          "protein_g": 9.7
+          "protein_g": 9.7,
+          "fibre_g": 6.0,
+          "fat_g_by_type": {
+            "saturated": 1.54
+          },
+          "form": "solid",
+          "food": "apple, low-fat natural yogurt, walnuts and 72% dark chocolate"
         }
       ],
       "prefast_hours": 12,
