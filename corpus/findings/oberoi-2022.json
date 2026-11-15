@@ -48,7 +48,7 @@
     },
     {
       "name": "young_p",
-      "description": "younger men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "description": "younger men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat. Meal details (Section 2.2): '30 g whey protein (P, 120 kcal) (Bulk Nutrients, Tasmania, Australia)', protein_source whey; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -57,7 +57,10 @@
           "t_min": 0,
           "carbs_g": 0.0,
           "fat_g": 0.0,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "whey protein drink in flavored water"
         }
       ],
       "assumed": [
@@ -84,7 +87,7 @@
     },
     {
       "name": "young_g",
-      "description": "younger men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00.",
+      "description": "younger men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Meal details (Section 2.2): '30 g glucose (G, 120 kcal) (glucose monohydrate, Sigma-Aldrich...)', sugars 30 g as the printed glucose; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -93,7 +96,10 @@
           "t_min": 0,
           "carbs_g": 30.0,
           "fat_g": 0.0,
-          "protein_g": 0.0
+          "protein_g": 0.0,
+          "sugars_g": 30.0,
+          "form": "liquid",
+          "food": "glucose drink in flavored water"
         }
       ],
       "assumed": [
@@ -119,7 +125,7 @@
     },
     {
       "name": "young_gp",
-      "description": "younger men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "description": "younger men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat. Meal details (Section 2.2): '30 g whey protein plus 30 g glucose (GP, 240 kcal)', whey from Bulk Nutrients, glucose monohydrate from Sigma-Aldrich; protein_source whey, sugars 30 g as the printed glucose; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -128,7 +134,11 @@
           "t_min": 0,
           "carbs_g": 30.0,
           "fat_g": 0.0,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "protein_source": "whey",
+          "sugars_g": 30.0,
+          "form": "liquid",
+          "food": "whey protein plus glucose drink in flavored water"
         }
       ],
       "assumed": [
@@ -183,7 +193,7 @@
     },
     {
       "name": "old_p",
-      "description": "older men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "description": "older men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat. Meal details (Section 2.2): '30 g whey protein (P, 120 kcal) (Bulk Nutrients, Tasmania, Australia)', protein_source whey; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -192,7 +202,10 @@
           "t_min": 0,
           "carbs_g": 0.0,
           "fat_g": 0.0,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "whey protein drink in flavored water"
         }
       ],
       "assumed": [
@@ -219,7 +232,7 @@
     },
     {
       "name": "old_g",
-      "description": "older men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00.",
+      "description": "older men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Meal details (Section 2.2): '30 g glucose (G, 120 kcal) (glucose monohydrate, Sigma-Aldrich...)', sugars 30 g as the printed glucose; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -228,7 +241,10 @@
           "t_min": 0,
           "carbs_g": 30.0,
           "fat_g": 0.0,
-          "protein_g": 0.0
+          "protein_g": 0.0,
+          "sugars_g": 30.0,
+          "form": "liquid",
+          "food": "glucose drink in flavored water"
         }
       ],
       "assumed": [
@@ -254,7 +270,7 @@
     },
     {
       "name": "old_gp",
-      "description": "older men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "description": "older men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat. Meal details (Section 2.2): '30 g whey protein plus 30 g glucose (GP, 240 kcal)', whey from Bulk Nutrients, glucose monohydrate from Sigma-Aldrich; protein_source whey, sugars 30 g as the printed glucose; liquid: 'The drinks were equivolemic (~250 mL)', 'flavored with varying amounts of distilled water, sodium chloride and light lime cordial'.",
       "duration_min": 181,
       "start_hour": 9.0,
       "prefast_hours": 14,
@@ -263,7 +279,11 @@
           "t_min": 0,
           "carbs_g": 30.0,
           "fat_g": 0.0,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "protein_source": "whey",
+          "sugars_g": 30.0,
+          "form": "liquid",
+          "food": "whey protein plus glucose drink in flavored water"
         }
       ],
       "assumed": [
