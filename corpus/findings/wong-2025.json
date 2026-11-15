@@ -30,7 +30,7 @@
   "protocols": [
     {
       "name": "veg_oil_day",
-      "description": "Vegetable-oil (50:50 safflower and olive oil) visit of the crossover: arm minute 0 is the paper's -30 min fasting sample, after a low-fat evening meal and fasting from 20:00, arrival ~08:00; breakfast at paper 0 min (arm 30: toasted white bread, jam and a chocolate drink with 50 g test oil; Table 2 total 98.0 g carbohydrate, 53.6 g fat, 19.2 g protein) and lunch at paper 330 min (arm 360: the same with 30 g test oil; 98.0 g carbohydrate, 33.6 g fat, 19.2 g protein); last sample at paper 480 min (arm 510). Arm start taken as 08:00 and the fast as 12 h (20:00 to the ~08:00 arrival); the paper gives neither the clock time of the first sample nor of breakfast.",
+      "description": "Vegetable-oil (50:50 safflower and olive oil) visit of the crossover: arm minute 0 is the paper's -30 min fasting sample, after a low-fat evening meal and fasting from 20:00, arrival ~08:00; breakfast at paper 0 min (arm 30: toasted white bread, jam and a chocolate drink with 50 g test oil; Table 2 total 98.0 g carbohydrate, 53.6 g fat, 19.2 g protein) and lunch at paper 330 min (arm 360: the same with 30 g test oil; 98.0 g carbohydrate, 33.6 g fat, 19.2 g protein); last sample at paper 480 min (arm 510). Arm start taken as 08:00 and the fast as 12 h (20:00 to the ~08:00 arrival); the paper gives neither the clock time of the first sample nor of breakfast. Meal details from Methods and Table 2: the test fat is 'vegetable oil blend (safflower and olive oil)', a 50:50 mixture of safflower oil (organic refined) and olive oil (refined virgin), taken in 'a warm chocolate drink' (skimmed milk 150 g, Nesquik 15 g, skimmed milk powder 15 g) with 'toasted white bread with jam' (white bread 105 g, jam 30 g); protein entered as mixed: Table 2 gives 5.0 g from skimmed milk, 5.0 g from skimmed milk powder, 0.6 g from Nesquik, 8.5 g from white bread and 0.1 g from jam; form mixed, the drink carrying the test fat. Table 1 gives single fatty acids per 80 g of the day's test fat (McCance and Widdowson's tables), no saturated, mono- or polyunsaturated totals per meal, so fat_g_by_type is not entered; no fibre or sugars are printed.",
       "duration_min": 511,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -39,13 +39,87 @@
           "t_min": 30,
           "carbs_g": 98.0,
           "fat_g": 53.6,
-          "protein_g": 19.2
+          "protein_g": 19.2,
+          "fat_source": "safflower and olive oil",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
         },
         {
           "t_min": 360,
           "carbs_g": 98.0,
           "fat_g": 33.6,
-          "protein_g": 19.2
+          "protein_g": 19.2,
+          "fat_source": "safflower and olive oil",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "butter_day",
+      "description": "Butter visit of the crossover: arm minute 0 is the paper's -30 min fasting sample, after a low-fat evening meal and fasting from 20:00, arrival ~08:00; breakfast at paper 0 min (arm 30: toasted white bread, jam and a chocolate drink with 50 g test fat; Table 2 total 98.0 g carbohydrate, 53.6 g fat, 19.2 g protein) and lunch at paper 330 min (arm 360: the same with 30 g test fat; 98.0 g carbohydrate, 33.6 g fat, 19.2 g protein); last sample at paper 480 min (arm 510). Arm start taken as 08:00 and the fast as 12 h (20:00 to the ~08:00 arrival); the paper gives neither the clock time of the first sample nor of breakfast. Meal details from Methods and Table 2: the test fat is 'butter' (farmhouse salted butter, Wyke), taken in 'a warm chocolate drink' (skimmed milk 150 g, Nesquik 15 g, skimmed milk powder 15 g) with 'toasted white bread with jam' (white bread 105 g, jam 30 g); protein entered as mixed: Table 2 gives 5.0 g from skimmed milk, 5.0 g from skimmed milk powder, 0.6 g from Nesquik, 8.5 g from white bread and 0.1 g from jam; form mixed, the drink carrying the test fat. Table 1 gives single fatty acids per 80 g of the day's test fat (McCance and Widdowson's tables), no saturated, mono- or polyunsaturated totals per meal, so fat_g_by_type is not entered; no fibre or sugars are printed.",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 98.0,
+          "fat_g": 53.6,
+          "protein_g": 19.2,
+          "fat_source": "butter",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
+        },
+        {
+          "t_min": 360,
+          "carbs_g": 98.0,
+          "fat_g": 33.6,
+          "protein_g": 19.2,
+          "fat_source": "butter",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "coconut_day",
+      "description": "Coconut-oil visit of the crossover: arm minute 0 is the paper's -30 min fasting sample, after a low-fat evening meal and fasting from 20:00, arrival ~08:00; breakfast at paper 0 min (arm 30: toasted white bread, jam and a chocolate drink with 50 g test fat; Table 2 total 98.0 g carbohydrate, 53.6 g fat, 19.2 g protein) and lunch at paper 330 min (arm 360: the same with 30 g test fat; 98.0 g carbohydrate, 33.6 g fat, 19.2 g protein); last sample at paper 480 min (arm 510). Arm start taken as 08:00 and the fast as 12 h (20:00 to the ~08:00 arrival); the paper gives neither the clock time of the first sample nor of breakfast. Meal details from Methods and Table 2: the test fat is 'coconut oil' (organic refined odorless coconut oil, TIVI, Friends of Health), taken in 'a warm chocolate drink' (skimmed milk 150 g, Nesquik 15 g, skimmed milk powder 15 g) with 'toasted white bread with jam' (white bread 105 g, jam 30 g); protein entered as mixed: Table 2 gives 5.0 g from skimmed milk, 5.0 g from skimmed milk powder, 0.6 g from Nesquik, 8.5 g from white bread and 0.1 g from jam; form mixed, the drink carrying the test fat. Table 1 gives single fatty acids per 80 g of the day's test fat (McCance and Widdowson's tables), no saturated, mono- or polyunsaturated totals per meal, so fat_g_by_type is not entered; no fibre or sugars are printed.",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 98.0,
+          "fat_g": 53.6,
+          "protein_g": 19.2,
+          "fat_source": "coconut oil",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
+        },
+        {
+          "t_min": 360,
+          "carbs_g": 98.0,
+          "fat_g": 33.6,
+          "protein_g": 19.2,
+          "fat_source": "coconut oil",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white bread with jam and a warm chocolate drink"
         }
       ],
       "assumed": [
@@ -280,14 +354,233 @@
         "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), NEFA (mmol/L × 480 min), row AUC",
         "quote": "AUC | 120 ± 9 | 130 ± 12 | 132 ± 7 | 0.345"
       }
+    },
+    {
+      "id": "butter_glucose_auc_0_480",
+      "description": "Total area under the serum glucose curve, paper 0 to 480 min (trapezoid, Methods), over the 13 glucose samples from the 0-min fasting sample on; both meals",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "butter_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 2519.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 83.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 2519 ± 83 | 2580 ± 71 | 2663 ± 60 | 0.890"
+      }
+    },
+    {
+      "id": "butter_glucose_iauc_0_480",
+      "description": "Incremental area under the serum glucose curve, paper 0 to 480 min, defined in Methods as AUC minus the fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, the only fasting glucose sample the Methods list",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "butter_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "below_baseline": "subtracted",
+      "value": 140.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 72.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row iAUC",
+        "quote": "iAUC | 140 ± 72 | 194 ± 79 | 166 ± 57 | 0.871"
+      }
+    },
+    {
+      "id": "butter_nefa_auc_90_480",
+      "description": "Total area under the serum NEFA curve from paper 90 to 480 min (Methods: NEFA areas start at 90 min, the average postprandial minimum), trapezoid over the ten samples 90-480 min; the table header prints 'mmol/L × 480 min' for all rows",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "butter_day"
+      ],
+      "times": [
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 120.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), NEFA (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 120 ± 9 | 130 ± 12 | 132 ± 7 | 0.345"
+      }
+    },
+    {
+      "id": "coconut_glucose_auc_0_480",
+      "description": "Total area under the serum glucose curve, paper 0 to 480 min (trapezoid, Methods), over the 13 glucose samples from the 0-min fasting sample on; both meals",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "coconut_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 2663.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 60.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 2519 ± 83 | 2580 ± 71 | 2663 ± 60 | 0.890"
+      }
+    },
+    {
+      "id": "coconut_glucose_iauc_0_480",
+      "description": "Incremental area under the serum glucose curve, paper 0 to 480 min, defined in Methods as AUC minus the fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, the only fasting glucose sample the Methods list",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "coconut_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "below_baseline": "subtracted",
+      "value": 166.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 57.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row iAUC",
+        "quote": "iAUC | 140 ± 72 | 194 ± 79 | 166 ± 57 | 0.871"
+      }
+    },
+    {
+      "id": "coconut_nefa_auc_90_480",
+      "description": "Total area under the serum NEFA curve from paper 90 to 480 min (Methods: NEFA areas start at 90 min, the average postprandial minimum), trapezoid over the ten samples 90-480 min; the table header prints 'mmol/L × 480 min' for all rows",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "coconut_day"
+      ],
+      "times": [
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 132.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), NEFA (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 120 ± 9 | 130 ± 12 | 132 ± 7 | 0.345"
+      }
     }
   ],
   "left_out": [
     {
-      "what": "every postprandial finding of the butter and coconut-oil visits (Table 4, Figures 2 and 3): their meals have the same grams of carbohydrate, fat and protein as the vegetable-oil visit (Table 2) and differ only in the fatty-acid composition of the 50 g and 30 g test fat (Table 1), which the model cannot be told, so they would be the same protocol asked for different numbers (GIP and GLP-1 areas differ by fat)",
+      "what": "comparisons between the butter, coconut-oil and vegetable-oil visits (Table 4 P values and superscript letters, Results: GIP, GLP-1 and PYY areas differ by fat): the three meals differ only in the test fat, a detail the model does not read yet",
       "missing": {
         "kind": "input",
-        "name": "meal_fat_composition"
+        "name": "meal_details_not_read"
+      }
+    },
+    {
+      "what": "fatty-acid composition of the three test fats (Table 1: single fatty acids, C4:0 to C22:5, g per 80 g of the day's test fat, from McCance and Widdowson's tables), beyond fat_source; no saturated, mono- or polyunsaturated totals per meal are printed",
+      "missing": {
+        "kind": "input",
+        "name": "fatty_acid_detail"
       }
     },
     {
@@ -319,7 +612,7 @@
       }
     },
     {
-      "what": "NEFA iAUC 90-480 min (Table 4): the printed value (54.6) does not follow from the Methods' rule AUC - mean fasting concentration × duration (130 - 0.540 × 390 is -80.6); 130 - 54.6 implies a baseline of 0.193 mmol/L over 390 min, which the paper does not print or define",
+      "what": "NEFA iAUC 90-480 min, all three visits (Table 4): the printed vegetable-oil value (54.6) does not follow from the Methods' rule AUC - mean fasting concentration × duration (130 - 0.540 × 390 is -80.6); 130 - 54.6 implies a baseline of 0.193 mmol/L over 390 min, which the paper does not print or define; the butter (46.6; 120 - 0.412 × 390 is -40.7) and coconut-oil (48.8; 132 - 0.468 × 390 is -50.5) values fail the same way",
       "missing": {
         "kind": "source",
         "name": "table_ambiguous"
