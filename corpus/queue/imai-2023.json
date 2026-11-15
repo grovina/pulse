@@ -1,0 +1,30 @@
+{
+  "paper": "imai-2023",
+  "citation": "Imai S, Kajiyama S, Kitta K, et al. Eating Vegetables First Regardless of Eating Speed Has a Significant Reducing Effect on Postprandial Blood Glucose and Insulin in Young Healthy Women: Randomized Controlled Cross-Over Study. Nutrients. 2023;15(5):1174.",
+  "doi": "10.3390/nu15051174",
+  "pmid": "36904173",
+  "pmcid": "PMC10005673",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "671 kcal breakfast (tomato, broccoli, fried fish, boiled white rice) eaten three ways: slow (20 min) carbohydrate first, slow vegetables first, fast (10 min) vegetables first. Blood at 0, 30, 60, 120 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "18 young healthy women; Japan (Kyoto).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2: mean, peak, amplitude and iAUC 0-120 for each condition",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Japanese women and a real breakfast with fixed foods; meal grams per item are in the methods. Insulin is in µIU/mL. TG and FFA appear to be in figures only. Only in figures: insulin, triglyceride and FFA time courses. Meal kinds: mixed meal."
+}

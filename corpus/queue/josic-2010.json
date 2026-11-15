@@ -1,0 +1,30 @@
+{
+  "paper": "josic-2010",
+  "citation": "Josic J, Olsson AT, Wickeberg J, et al. Does green tea affect postprandial glucose, insulin and satiety in healthy subjects: a randomized controlled trial. Nutrition Journal. 2010;9:63.",
+  "doi": "10.1186/1475-2891-9-63",
+  "pmid": "21118565",
+  "pmcid": "PMC3002911",
+  "licence": "CC BY 2.0",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "Meal of 100 g white bread (50 g carbohydrate, 8 g protein, 3 g fat) plus 25 g smoked turkey (4.5 g protein, 0.75 g fat), with 300 mL water (reference) or 300 mL green tea, eaten within 10 min; crossover. Blood at 0, 15, 30, 45, 60, 90, 120 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "14 healthy volunteers (insulin n = 13); Sweden (Malmö).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 1: cumulative insulin AUC at 0-15, 0-30, 0-45, 0-60, 0-90, 0-120 min per arm",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "A small carbohydrate-rich meal with exact grams; its cumulative AUC windows let a reader recover the shape of the early insulin curve. Use the water (reference) arm. Insulin is in mU·min/l. Only in figures: incremental insulin curve (Fig. 1). Meal kinds: mixed meal."
+}

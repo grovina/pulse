@@ -1,0 +1,45 @@
+{
+  "paper": "haldar-2020",
+  "citation": "Haldar S, Egli L, De Castro CA, et al. High or low glycemic index (GI) meals at dinner results in greater postprandial glycemia compared with breakfast: a randomized controlled trial. BMJ Open Diabetes Research & Care. 2020;8(1):e001099.",
+  "doi": "10.1136/bmjdrc-2019-001099",
+  "pmid": "32327444",
+  "pmcid": "PMC7202752",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "Test meal of ~75 g available carbohydrate as high-GI (GI 92) or low-GI (GI 55) rice with chicken seasoning and 20 g vegetables, eaten at breakfast (~09:00) or dinner, each followed by a subsequent standardised meal; 2x2 crossover. Blood every 15 min for 1 h, then every 30 min for 2 h after each meal.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "34 per-protocol (48 enrolled) healthy Chinese older adults, men and postmenopausal women; mean age ~56+ y; BMI 22.3 kg/m2; Singapore.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2: iAUC after the test meal and after the subsequent meal, with n, mean and SD, by GI and time of day; Table 3: combined tAUC",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Tables 2 and 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Tables 2 and 3",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "Tables 2 and 3",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Tables 2 and 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Asian older adults, and the same carbohydrate meal at breakfast and at dinner, which bears on circadian modulation of insulin. The standardised meal's composition must be taken from the methods or supplement. Only in figures: time courses. Meal kinds: mixed meal."
+}

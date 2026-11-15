@@ -1,0 +1,36 @@
+{
+  "paper": "oberoi-2022",
+  "citation": "Oberoi A, Giezenaar C, Rigda RS, et al. Comparative Effects of Co-Ingesting Whey Protein and Glucose Alone and Combined on Blood Glucose, Plasma Insulin and Glucagon Concentrations in Younger and Older Men. Nutrients. 2022;14(15):3111.",
+  "doi": "10.3390/nu14153111",
+  "pmid": "35956288",
+  "pmcid": "PMC9370714",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Drinks after an overnight fast: control (~2 kcal), 30 g whey protein (120 kcal), 30 g glucose (120 kcal), 30 g whey + 30 g glucose (240 kcal); crossover; buffet meal at 180 min. Blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min.",
+  "protocol_kinds": [
+    "other",
+    "mixed meal"
+  ],
+  "population": "10 healthy younger men (18-35 y, 29 ± 2 y, BMI 26.1 ± 0.4) and 10 healthy older men (68-87 y, 78 ± 2 y); Australia (Adelaide).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 1: fasting, peak, time to peak, return to baseline, net iAUC 0-60 and 0-180 per drink and age group",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Separates protein alone, glucose alone and both together, in young and old men, with glucagon. Insulin is in mU/L. It is a drink rather than a food meal, but the protein-only arm is exactly what the model lacks. Only in figures: time courses. Meal kinds: protein load, liquid meal."
+}

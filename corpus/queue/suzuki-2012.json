@@ -1,0 +1,31 @@
+{
+  "paper": "suzuki-2012",
+  "citation": "Suzuki K, Watanabe K, Futami-Suda S, et al. The effects of postprandial glucose and insulin levels on postprandial endothelial function in subjects with normal glucose tolerance. Cardiovascular Diabetology. 2012;11:98.",
+  "doi": "10.1186/1475-2840-11-98",
+  "pmid": "22891922",
+  "pmcid": "PMC3471039",
+  "licence": "CC BY 2.0",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "Test meal 400 kcal (40.7 g carbohydrate, 22.2 g fat) with 500 mL water within 10 min, versus a 75 g glucose OGTT in a separate group, versus no load (control). Blood at 0, 30, 60, 120 min.",
+  "protocol_kinds": [
+    "mixed meal",
+    "OGTT"
+  ],
+  "population": "37 non-diabetic adults with normal glucose tolerance in 3 groups: control n=11, test meal n=12 (6 men; 28.5 ± 5.1 y; BMI 22.5), OGTT n=14; Japan.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2: IRI at 0, 30, 60, 120 min and AUC for the meal and OGTT groups",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Short and clean: a set meal and an OGTT side by side, with the full insulin time course as SD in one table. The meal and OGTT were given to different people, not as a crossover. Insulin (IRI) is in pmol/L. Meal kinds: mixed meal, OGTT."
+}

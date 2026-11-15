@@ -1,0 +1,40 @@
+{
+  "paper": "almoraie-2026",
+  "citation": "Almoraie MM, Spencer JP, Wagstaff C, et al. Acute Effects of a High-Fat Meal Enriched with Pomegranate Seed Oil on Postprandial Lipemia and Endothelial Function in Postmenopausal Women: a Randomized Controlled Crossover Trial. The Journal of Nutrition. 2026;156(3):101374.",
+  "doi": "10.1016/j.tjnut.2026.101374",
+  "pmid": "41580088",
+  "pmcid": "PMC13014500",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "High-fat breakfast (toasted white-bread sandwich, 100 g bread, plus test fat; pomegranate seed oil or control oil; energy and macros in Table 1), crossover. Blood at -30, 0, 30, 60, 90, 120, 180, 240, 300, 360, 420, 480 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "16 postmenopausal women, aged ≤65 y, BMI 18-35 kg/m2 (Table 2 gives means); UK (Reading).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 3: fasting, MaxC, TMax, AUC and iAUC over 8 h for both meals",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "NEFA",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Older women after a fat-rich meal over 8 h, a group and meal type that are otherwise rare here. Use the control-meal arm. BMI goes up to 35, so not all are lean. Only in figures: time courses. Meal kinds: fat load, mixed meal."
+}

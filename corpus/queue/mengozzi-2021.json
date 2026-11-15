@@ -1,0 +1,40 @@
+{
+  "paper": "mengozzi-2021",
+  "citation": "Mengozzi A, Biancalana E, Parolini F, et al. Normal Versus Slowly Processed Pasta and Post-Prandial Glucose Homeostasis in Healthy Subjects: A Pilot Study. Nutrients. 2021;13(2):678.",
+  "doi": "10.3390/nu13020678",
+  "pmid": "33672666",
+  "pmcid": "PMC7924401",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Mixed-meal test with normally processed or slowly processed pasta (composition in methods), crossover. Blood at 0, 15, 30, 60, 90, 120, 150, 180 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "14 healthy male volunteers; Italy (Pisa).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2: fasting, 2-h and iAUC",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "GIP",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "GLP-1",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Pasta-based Mediterranean mixed meal with insulin, GIP and GLP-1 together in pmol units. The statistics section says mean ± SD (or median [IQR] where stated). Read the meal grams from the methods. Only in figures: full time courses. Meal kinds: mixed meal."
+}

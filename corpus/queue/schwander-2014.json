@@ -1,0 +1,40 @@
+{
+  "paper": "schwander-2014",
+  "citation": "Schwander F, Kopf-Bolanz KA, Buri C, et al. A Dose-Response Strategy Reveals Differences between Normal-Weight and Obese Men in Their Metabolic and Inflammatory Responses to a High-Fat Meal123. The Journal of Nutrition. 2014;144(10):1517-1523.",
+  "doi": "10.3945/jn.114.193565",
+  "pmid": "24812072",
+  "pmcid": "PMC4162475",
+  "licence": "publisher open-access licence (license-type: open-access)",
+  "licence_url": "http://www.nutrition.org/publications/guidelines-and-policies/license/",
+  "protocol": "High-fat meal (60.5% energy from fat; bread, palm fat and other items, grams in Table 1) at 500, 1000 and 1500 kcal on three occasions, crossover; meals differ only in size. Blood at 0, 1, 2, 4, 6 h.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "19 normal-weight (BMI 20-25) and 18 obese (BMI >30) men; Switzerland. Table 3 lists normal-weight n = 19 and obese n = 17.",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 3: net iAUC over 6 h for each dose and group",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "GLP-1",
+      "where": "Table 3 (check row)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "The only dose-response here: one fat-rich meal at three sizes in the same men, so it tests how the model's insulin output scales with meal size. Licence element is the ASN/J Nutr open-access licence, not CC. The AUCs are net incremental over 6 h with sparse sampling. Only in figures: insulin concentration time course. Meal kinds: fat load, mixed meal."
+}

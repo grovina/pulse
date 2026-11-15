@@ -1,0 +1,50 @@
+{
+  "paper": "wong-2025",
+  "citation": "Wong G, Clegg ME, Ross D, et al. Sequential Meals Containing Animal and Plant-Based Saturated Fats Have Differential Effects on Postprandial Gut Hormones but No Impact on Satiety Compared with Unsaturated Fats in Generally Healthy Males: Findings from the Randomized Controlled Crossover CocoHeart Study☆. The Journal of Nutrition. 2025;155(9):3020-3029.",
+  "doi": "10.1016/j.tjnut.2025.06.027",
+  "pmid": "40609691",
+  "pmcid": "PMC12799432",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Sequential high-fat meals: breakfast at 0 min (toasted white bread, jam, chocolate drink; 50 g test fat, 53.6 g total fat) and lunch at 330 min (30 g test fat, 33.6 g total fat); test fat butter, coconut oil or a vegetable-oil blend; crossover. Blood at -30, 0, 30, 60, 90, 120, 180, 240, 300, 330, 360, 390, 420, 480 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "13 generally healthy Caucasian men; age 53 ± 3 y; BMI 24.4 ± 0.8 kg/m2; UK (Reading).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 4: AUC over 480 min and other summary measures per fat",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "GLP-1",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "GIP",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "NEFA",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Middle-aged men over two consecutive fat-rich meals, with incretins in the same table. Same lab and design family as almoraie-2026 but a different population. Insulin units look odd (ng/L and µg/L × 480 min), so the reader must check them. Only in figures: time courses. Meal kinds: fat load, mixed meal."
+}

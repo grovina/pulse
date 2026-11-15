@@ -1,0 +1,35 @@
+{
+  "paper": "demoraisjunior-2020",
+  "citation": "de Morais Junior AC, Schincaglia RM, Passarelli M, et al. Acute Epigallocatechin-3-Gallate Supplementation Alters Postprandial Lipids after a Fast-Food Meal in Healthy Young Women: A Randomized, Double-Blind, Placebo-Controlled Crossover Study. Nutrients. 2020;12(9):2533.",
+  "doi": "10.3390/nu12092533",
+  "pmid": "32825556",
+  "pmcid": "PMC7551107",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Fast-food meal (McDonald's fries 80 g, bacon 130 g and other items; 1027 kcal: 20.57 g carbohydrate, 47.41 g protein, 83.90 g fat of which 37.17 g saturated) taken after capsules of 800 mg EGCG or placebo; crossover. Blood at 0, 90, 120 min after the end of the meal.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "14 healthy young women, 21 ± 1 y, BMI 21.4 ± 0.41 kg/m2; Brazil (Goiás).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 2: response (time points/AUC) for placebo and EGCG",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "A very fat- and protein-rich, low-carbohydrate real meal in lean young women; use the placebo arm. Sampling is sparse (90 and 120 min only), so the peak is missed. Meal kinds: fat load, mixed meal."
+}

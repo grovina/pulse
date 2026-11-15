@@ -1,0 +1,30 @@
+{
+  "paper": "sanchezaguadero-2017",
+  "citation": "Sanchez-Aguadero N, Patino-Alonso MC, Mora-Simon S, et al. Postprandial Effects of Breakfast Glycemic Index on Vascular Function among Young Healthy Adults: A Crossover Clinical Trial. Nutrients. 2017;9(7):712.",
+  "doi": "10.3390/nu9070712",
+  "pmid": "28686199",
+  "pmcid": "PMC5537827",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Three conditions, crossover: water; high-GI breakfast (200 mL grape juice, 40 g white bread, 29 g jam, with 350 mL water); low-GI breakfast (composition in methods). Blood at 0, 60, 120 min.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "40 young healthy adults, 50% women, aged 20-40; Spain (Salamanca).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 3: 0, 60, 120 min mean and SD per breakfast",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "A small carbohydrate breakfast in a larger mixed-sex group, with SD at each time. The insulin row is labelled 'mg/dL', which must be a typo for µU/mL. The low-GI breakfast's grams need to be read from the methods. Meal kinds: mixed meal."
+}

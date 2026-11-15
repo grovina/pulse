@@ -1,0 +1,30 @@
+{
+  "paper": "mishra-2026",
+  "citation": "Mishra SS, Stoklosinski H, Hedderley D, et al. Effect of Lamb and Soy Protein on Postprandial Glycaemic, Insulin and Appetite Responses to Potato, Pasta and Rice in Macronutrient-Equalised Meals—A Randomised Pilot Human Intervention Study. Nutrients. 2026;18(14):2351.",
+  "doi": "10.3390/nu18142351",
+  "pmid": "42514420",
+  "pmcid": "PMC13415058",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Nine meals, crossover: potato, pasta or rice (40 g available carbohydrate) alone, with lamb (30 g protein), or with soy protein; pasta sauce and lamb fat (12.6 g added where no lamb) equalised; Table 1 gives composition (protein meals ~34-37 g protein). Capillary samples at 0, 15, 30, 45, 60, 90, 120, 150 min (check which times were used for insulin).",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "15 healthy participants, no sign of glucose intolerance (Table 2 gives sex, age and BMI); New Zealand.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 3: insulin iAUC mean and s.e. for each of 9 meals; Table 4: amplitude/peak",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Tables 3 and 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Shows how much protein (animal versus plant) raises insulin when added to the same carbohydrate dose, across three starches. Insulin is from capillary plasma by ELISA, in µU/mL·min. Only in figures: insulin time course (Figure 3). Meal kinds: mixed meal."
+}
