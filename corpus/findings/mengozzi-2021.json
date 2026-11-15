@@ -1,0 +1,136 @@
+{
+  "paper": "mengozzi-2021",
+  "citation": {
+    "authors": "Mengozzi A, Biancalana E, Parolini F, Baldi S, Raggi F, Solini A",
+    "title": "Normal Versus Slowly Processed Pasta and Post-Prandial Glucose Homeostasis in Healthy Subjects: A Pilot Study",
+    "journal": "Nutrients",
+    "year": 2021,
+    "doi": "10.3390/nu13020678",
+    "pmid": "33672666",
+    "pmcid": "PMC7924401"
+  },
+  "population": {
+    "n": 14,
+    "sex": "male",
+    "age_years": {
+      "mean": 31.0,
+      "sd": 9.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.3,
+      "sd": 1.9,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fourteen healthy male volunteers from Pisa University Hospital personnel; inclusion age 18-60 y, BMI 18.5-25.0 kg/m2, normal fasting plasma glucose and HbA1c; no acute complications, chronic comorbidity or drugs. Age 31 ± 9 y and BMI 21.3 ± 1.9 kg/m2 (Results 3.1, Table 1; mean ± SD per Methods 2.6). Randomized crossover, both meals in all 14."
+  },
+  "protocols": [
+    {
+      "name": "screening_fasted",
+      "description": "Screening-visit blood draw (Methods 2.1; Table 1, row Fasting plasma glucose); the paper does not say at what hour or after how long a fast it was drawn, so a morning after a 10 h overnight fast is assumed; no meal; 30-minute run-in stands for the single sample",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "screening_glucose_fasting",
+      "description": "Fasting plasma glucose at the screening visit, all 14 men (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Baseline (n = 14), row Fasting plasma glucose (mmol∙L−1); mean ± standard deviation per Methods 2.6",
+        "quote": "Fasting plasma glucose (mmol∙L−1) | 4.7 ± 0.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all of Table 2 (fasting, 2-h and iAUC of glucose, insulin, GIP and GLP-1, NP and SP): Methods 2.6 labels every ± as SD, but the paper's own numbers contradict it (the study-day fasting glucose spread is a sixth of the screening spread in Table 1 in the same 14 men, and the NP-SP 2-h insulin difference printed 'ns' would be significant as SDs at any within-person correlation); the kind of uncertainty cannot be established, and is not relabelled by inference",
+      "missing": {
+        "kind": "source",
+        "name": "unlabelled_uncertainty"
+      }
+    },
+    {
+      "what": "post-meal values of both mixed-meal tests (Table 2 2-h values and iAUCs, Figure 1): the meal's 10 g olive oil and 10 g parmesan have no composition printed (Methods 2.3, 2.4 give only the pasta's), so its fat and protein grams cannot be written",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "2-h plasma glucose, NP and SP (Table 2): unit printed as mmol∙min∙L−1, an area unit for a concentration",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "plasma glucose iAUC, NP and SP (Table 2): unit printed as mmol∙L−1, with no time unit",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "absolute insulin peak, NP and SP (Results 3.2): no uncertainty printed",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "glucose, insulin, GIP and GLP-1 time courses 0-180 min after the meal, NP and SP (Figure 1 only); also the 30-min glucose peak difference described in Results 3.2",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "screening triglycerides (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "screening total, LDL and HDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "screening HbA1c (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    }
+  ]
+}
