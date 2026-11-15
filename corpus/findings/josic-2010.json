@@ -30,7 +30,7 @@
   "protocols": [
     {
       "name": "reference_meal",
-      "description": "Reference meal after an overnight fast (minimum 10 h): 100 g white bread (50 g carbohydrate, 8 g protein, 3 g fat) plus 25 g smoked turkey (4.5 g protein, 0.75 g fat, 0.25 g carbohydrate) with 300 ml hot water, eaten within 10 min from t = 0 (entered as one meal at minute 0); blood at 0 (before the meal), 15, 30, 45, 60, 90, 120 min. Carbohydrate is the paper's stated total for the meal, 50 g (bread 50 + turkey 0.25 = 50.25 g); protein 8 + 4.5 = 12.5 g and fat 3 + 0.75 = 3.75 g are summed from the two foods. Clock hour not stated; 'minimum 10-h' fast is a lower bound.",
+      "description": "Reference meal after an overnight fast (minimum 10 h): 100 g white bread (50 g carbohydrate, 8 g protein, 3 g fat) plus 25 g smoked turkey (4.5 g protein, 0.75 g fat, 0.25 g carbohydrate) with 300 ml hot water, eaten within 10 min from t = 0 (entered as one meal at minute 0); blood at 0 (before the meal), 15, 30, 45, 60, 90, 120 min. Carbohydrate is the paper's stated total for the meal, 50 g (bread 50 + turkey 0.25 = 50.25 g); protein 8 + 4.5 = 12.5 g and fat 3 + 0.75 = 3.75 g are summed from the two foods. Fibre 2.5 g is the bread's printed dietary fiber (the turkey's printed contents list none); carbohydrate is kept as printed, the Swedish label's carbohydrate beside a separate fibre figure. Protein source mixed: white bread (plant, 8 g) and smoked turkey (meat, 4.5 g). Form solid: the 300 ml hot water carries no grams. Clock hour not stated; 'minimum 10-h' fast is a lower bound.",
       "duration_min": 121,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -39,7 +39,11 @@
           "t_min": 0,
           "carbs_g": 50.0,
           "fat_g": 3.75,
-          "protein_g": 12.5
+          "protein_g": 12.5,
+          "fibre_g": 2.5,
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "white bread and smoked turkey with hot water"
         }
       ],
       "assumed": [
