@@ -1,0 +1,860 @@
+{
+  "paper": "ostrowska-2022",
+  "citation": {
+    "authors": "Ostrowska L, Smarkusz-Zarzecka J, Muszyńska A, Adamska-Patruno E, Górska M, Krętowski A",
+    "title": "High-Fat or High-Carbohydrate Meal—Does It Affect the Metabolism of Men with Excess Body Weight?",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14142876",
+    "pmid": "35889836",
+    "pmcid": "PMC9323987"
+  },
+  "population": {
+    "n": 26,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "26 men aged 19-60 (enrolment range) without carbohydrate metabolism disorders, excluded by a 75 g OGTT; no endocrine, GI, renal/hepatic disease, no drugs, no recent weight change; Bialystok, Poland. Split by BMI only: GC (control, BMI < 25, n=13) and GS (overweight/obese, BMI >= 25, n=13). Age and BMI are given per group in Table 1 as mean ± SE and entered on each arm with sd = SE x sqrt(13) computed here: GC age 32.10 ± 3.12 -> 11.25, BMI 23.81 ± 0.21 -> 0.76; GS age 37.42 ± 3.15 -> 11.36, BMI 32.36 ± 2.03 -> 7.32. Both groups are OGTT-screened, so both are 'healthy'. Crossover: each man had both meals, two weeks apart, in random order."
+  },
+  "protocols": [
+    {
+      "name": "hf_gc",
+      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 4.0,
+          "fat_g": 47.5,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 32.1,
+          "sd": 11.25,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.81,
+          "sd": 0.76,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "hc_gc",
+      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 100.5,
+          "fat_g": 0.0,
+          "protein_g": 12.0
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 32.1,
+          "sd": 11.25,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.81,
+          "sd": 0.76,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "hf_gs",
+      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 4.0,
+          "fat_g": 47.5,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 37.42,
+          "sd": 11.36,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 32.36,
+          "sd": 7.32,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "hc_gs",
+      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 100.5,
+          "fat_g": 0.0,
+          "protein_g": 12.0
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 37.42,
+          "sd": 11.36,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 32.36,
+          "sd": 7.32,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hf_gc_glucose_curve_early",
+      "description": "Serum glucose at 0' (fasting), 30 and 60 min after the high-fat drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gc"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 94.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.98,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 92.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.29,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 89.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.92,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Fat Meal (HF) block, Glucose (mg/dL), column GC, rows 0′-60′",
+        "quote": "0′ | 94.5 ± 8.98 ; 30′ | 92.7 ± 9.29 ; 60′ | 89.9 ± 7.92"
+      }
+    },
+    {
+      "id": "hf_gc_glucose_curve_late",
+      "description": "Serum glucose at 120, 180 and 240 min after the high-fat drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gc"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 150,
+          "value": 89.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.4,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 210,
+          "value": 88.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.78,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 89.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.77,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Fat Meal (HF) block, Glucose (mg/dL), column GC, rows 120′-240′",
+        "quote": "120′ | 89.7 ± 6.40 ; 180′ | 88.0 ± 5.78 ; 240′ | 89.3 ± 6.77"
+      }
+    },
+    {
+      "id": "hc_gc_glucose_curve_early",
+      "description": "Serum glucose at 0' (fasting), 30 and 60 min after the high-carbohydrate drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gc"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 91.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 18.31,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 152.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 30.28,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 149.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 31.33,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Carbohydrate Meal (HC) block, Glucose (mg/dL), column GC, rows 0′-60′",
+        "quote": "0′ | 91.6 ± 18.31 ; 30′ | 152.3 ± 30.28 ; 60′ | 149.3 ± 31.33"
+      }
+    },
+    {
+      "id": "hc_gc_glucose_curve_late",
+      "description": "Serum glucose at 120, 180 and 240 min after the high-carbohydrate drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gc"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 150,
+          "value": 127.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 26.94,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 210,
+          "value": 104.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 25.86,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 77.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 18.98,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Carbohydrate Meal (HC) block, Glucose (mg/dL), column GC, rows 120′-240′",
+        "quote": "120′ | 127.0 ± 26.94 ; 180′ | 104.6 ± 25.86 ; 240′ | 77.1 ± 18.98"
+      }
+    },
+    {
+      "id": "hf_gs_glucose_curve_early",
+      "description": "Serum glucose at 0' (fasting), 30 and 60 min after the high-fat drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gs"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 98.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.58,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 95.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.37,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 88.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.44,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Fat Meal (HF) block, Glucose (mg/dL), column GS, rows 0′-60′",
+        "quote": "0′ | 98.4 ± 10.58 ; 30′ | 95.3 ± 10.37 ; 60′ | 88.6 ± 12.44"
+      }
+    },
+    {
+      "id": "hf_gs_glucose_curve_late",
+      "description": "Serum glucose at 120, 180 and 240 min after the high-fat drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gs"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 150,
+          "value": 89.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.9,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 210,
+          "value": 91.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.26,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 90.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.18,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Fat Meal (HF) block, Glucose (mg/dL), column GS, rows 120′-240′",
+        "quote": "120′ | 89.7 ± 9.90 ; 180′ | 91.6 ± 9.26 ; 240′ | 90.9 ± 7.18"
+      }
+    },
+    {
+      "id": "hc_gs_glucose_curve_early",
+      "description": "Serum glucose at 0' (fasting), 30 and 60 min after the high-carbohydrate drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gs"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 96.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.18,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 158.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 25.65,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 169.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 46.81,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Carbohydrate Meal (HC) block, Glucose (mg/dL), column GS, rows 0′-60′",
+        "quote": "0′ | 96.2 ± 9.18 ; 30′ | 158.0 ± 25.65 ; 60′ | 169.3 ± 46.81"
+      }
+    },
+    {
+      "id": "hc_gs_glucose_curve_late",
+      "description": "Serum glucose at 120, 180 and 240 min after the high-carbohydrate drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gs"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 150,
+          "value": 140.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 51.61,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 210,
+          "value": 105.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 19.81,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 78.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 19.0,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, High-Carbohydrate Meal (HC) block, Glucose (mg/dL), column GS, rows 120′-240′",
+        "quote": "120′ | 140.6 ± 51.61 ; 180′ | 105.3 ± 19.81 ; 240′ | 78.7 ± 19.00"
+      }
+    },
+    {
+      "id": "hf_gc_energy_expenditure_curve_early",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) fasting and at 60 and 120 min after the high-fat drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gc"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 1.267,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.24,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.263,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.19,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 1.269,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.22,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Fat Meal (HF) block, Energy Expenditure (kcal/min), column GC, rows 0′-120′",
+        "quote": "0′ | 1.267 ± 0.24 ; 60′ | 1.263 ± 0.19 ; 120′ | 1.269 ± 0.22"
+      }
+    },
+    {
+      "id": "hf_gc_energy_expenditure_curve_late",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) at 180 and 240 min after the high-fat drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gc"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 210,
+          "value": 1.217,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.1,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 1.327,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.2,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Fat Meal (HF) block, Energy Expenditure (kcal/min), column GC, rows 180′-240′",
+        "quote": "180′ | 1.217 ± 0.10 ; 240′ | 1.327 ± 0.20"
+      }
+    },
+    {
+      "id": "hc_gc_energy_expenditure_curve_early",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) fasting and at 60 and 120 min after the high-carbohydrate drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gc"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 1.222,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.15,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.338,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.09,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 1.311,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.1,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Carbohydrate Meal (HC) block, Energy Expenditure (kcal/min), column GC, rows 0′-120′",
+        "quote": "0′ | 1.222 ± 0.15 ; 60′ | 1.338 ± 0.09 ; 120′ | 1.311 ± 0.10"
+      }
+    },
+    {
+      "id": "hc_gc_energy_expenditure_curve_late",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) at 180 and 240 min after the high-carbohydrate drink, normal-weight GC group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gc"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 210,
+          "value": 1.22,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.14,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 1.24,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.12,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Carbohydrate Meal (HC) block, Energy Expenditure (kcal/min), column GC, rows 180′-240′",
+        "quote": "180′ | 1.220 ± 0.14 ; 240′ | 1.240 ± 0.12"
+      }
+    },
+    {
+      "id": "hf_gs_energy_expenditure_curve_early",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) fasting and at 60 and 120 min after the high-fat drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gs"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 1.332,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.25,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.333,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.27,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 1.335,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.23,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Fat Meal (HF) block, Energy Expenditure (kcal/min), column GS, rows 0′-120′",
+        "quote": "0′ | 1.332 ± 0.25 ; 60′ | 1.333 ± 0.27 ; 120′ | 1.335 ± 0.23"
+      }
+    },
+    {
+      "id": "hf_gs_energy_expenditure_curve_late",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) at 180 and 240 min after the high-fat drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hf_gs"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 210,
+          "value": 1.336,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.26,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 1.339,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.24,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Fat Meal (HF) block, Energy Expenditure (kcal/min), column GS, rows 180′-240′",
+        "quote": "180′ | 1.336 ± 0.26 ; 240′ | 1.339 ± 0.24"
+      }
+    },
+    {
+      "id": "hc_gs_energy_expenditure_curve_early",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) fasting and at 60 and 120 min after the high-carbohydrate drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gs"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 1.329,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.22,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.447,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.3,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 1.395,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.29,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Carbohydrate Meal (HC) block, Energy Expenditure (kcal/min), column GS, rows 0′-120′",
+        "quote": "0′ | 1.329 ± 0.22 ; 60′ | 1.447 ± 0.30 ; 120′ | 1.395 ± 0.29"
+      }
+    },
+    {
+      "id": "hc_gs_energy_expenditure_curve_late",
+      "description": "Energy expenditure by indirect calorimetry (supine, ~30-min recordings) at 180 and 240 min after the high-carbohydrate drink, overweight/obese GS group, mean ± SD (the label is the Statistical Analysis section's 'Descriptive statistics were prepared by designating mean and standard deviation values for quantitative features'; Tables 3 and 4 carry no footnote of their own, and Table 1's 'mean values ± SE' footnote is Table 1's). Each value is a ~30-min recording; the paper does not say whether the recording starts or is centred at the named time, so the points are placed at the named times (fasting at minute 0, the recording between the fasting draw and the meal). One column of the table is entered as two consecutive curves on the same arm only because the full column spans more of the wide table than the quote check accepts; together they are the whole time course, each point once.",
+      "marker": "energy_expenditure",
+      "statistic": "curve",
+      "protocols": [
+        "hc_gs"
+      ],
+      "unit": "kcal/min",
+      "points": [
+        {
+          "t_min": 210,
+          "value": 1.325,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.26,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 270,
+          "value": 1.316,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.29,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, High-Carbohydrate Meal (HC) block, Energy Expenditure (kcal/min), column GS, rows 180′-240′",
+        "quote": "180′ | 1.325 ± 0.26 ; 240′ | 1.316 ± 0.29"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "serum insulin at 0-240 min and its AUC after both meals, both groups (Table 3), and its Spearman correlations with BMI (Results 3.2): the unit is printed only as 'IU/mL' (Table 3 column header, Supplementary Figure S2 caption; the XML has no lost micro sign or superscript there, and the Methods name the assay, INS-IRMA kits from DiaSource, but no unit), which taken as printed is a million-fold impossible level (fasting 8.2 IU/mL)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "serum triglycerides at 0-240 min and AUC after both meals, both groups (Table 3; AUC also in Results 3.3), and their Spearman correlations with BMI",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "serum homocysteine at 0-240 min and AUC after both meals, both groups (Table 3), and its Spearman correlations with BMI (Results 3.4)",
+      "missing": {
+        "kind": "marker",
+        "name": "homocysteine"
+      }
+    },
+    {
+      "what": "glucose (carbohydrate) oxidation (mg/min) fasting and 60-240 min and AUC after both meals, both groups (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "fat oxidation (mg/min) fasting and 60-240 min and AUC after both meals, both groups (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "glucose AUC (Table 3) and energy-expenditure AUC (Table 4) after both meals, both groups: trapezoidal over the sampling times, but the area's time unit is not printed (Results 3.3 gives a triglyceride AUC as '39,867 mg/dL'); their ± values are labelled SD only by the Methods' general sentence and are an order of magnitude below what the point SDs imply, so their label is doubtful as well",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    }
+  ]
+}
