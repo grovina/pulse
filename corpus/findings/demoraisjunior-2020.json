@@ -1,0 +1,310 @@
+{
+  "paper": "demoraisjunior-2020",
+  "citation": {
+    "authors": "de Morais Junior AC, Schincaglia RM, Passarelli M, Pimentel GD, Mota JF",
+    "title": "Acute Epigallocatechin-3-Gallate Supplementation Alters Postprandial Lipids after a Fast-Food Meal in Healthy Young Women: A Randomized, Double-Blind, Placebo-Controlled Crossover Study",
+    "journal": "Nutrients",
+    "year": 2020,
+    "doi": "10.3390/nu12092533",
+    "pmid": "32825556",
+    "pmcid": "PMC7551107"
+  },
+  "population": {
+    "n": 14,
+    "sex": "female",
+    "age_years": {
+      "mean": 21.0,
+      "sd": 3.74,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.4,
+      "sd": 1.53,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fourteen healthy young women (enrolment 18 to 25 years; underweight, overweight, hypertension, diabetes, dyslipidemia excluded; healthy by medical history screening), Goiânia, Brazil. Age 21 ± 1 and BMI 21.4 ± 0.41 kg/m2 printed as mean ± standard error (Methods: values are presented as mean and standard error; Table 1 BMI is mean ± SEM); sd computed as SE x sqrt(14): 1 x 3.742 = 3.74 years, 0.41 x 3.742 = 1.53 kg/m2. Two randomized women were excluded for hypertriglyceridemia (not a model marker)."
+  },
+  "protocols": [
+    {
+      "name": "placebo_meal",
+      "description": "Placebo visit: after a 12 h overnight fast, a fasting (baseline) sample, then two 400 mg placebo capsules (800 mg corn starch in total) taken right before a fast-food meal (80 g McDonald's french fries, 130 g bacon, 60 g grated Parmesan; 20.57 g carbohydrate, 47.41 g protein, 83.90 g fat, 1027 kcal); samples 90 and 120 min after the end of the meal. Entered with a 30 min fasted run-in standing for the baseline sample (its time before the meal is not printed), the meal at minute 30 and treated as eaten at once (its duration is not printed, so minute 30 stands for the end of the meal), samples at minutes 120 and 150. Meal macronutrients as printed; the 0.8 g corn starch of the capsules is not added (the paper prints no carbohydrate content for it, and the guide allows no other derivation). prefast_hours 11.5 = the printed 12 h fast at the meal minus the 30 min run-in. Clock hour not printed: 08:00.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 11.5,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 20.57,
+          "fat_g": 83.9,
+          "protein_g": 47.41
+        }
+      ],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "dxa_fasted",
+      "description": "Fat mass by DXA from the participants' table (Table 1); when it was measured is not printed, so entered as a short fasted morning: 30 min from 08:00 after an overnight (10 h) fast",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "placebo_glucose_baseline",
+      "description": "Fasting serum glucose before the meal on the placebo visit (baseline sample, entered as the mean over the 30 min run-in)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 88.4,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.19,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Blood glucose at baseline (mg/dL)'",
+        "quote": "Blood glucose at baseline (mg/dL) | 88.4 ± 1.19"
+      }
+    },
+    {
+      "id": "placebo_insulin_baseline",
+      "description": "Fasting serum insulin before the meal on the placebo visit (baseline sample, entered as the mean over the 30 min run-in)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 6.59,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.77,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Insulin at baseline (µU/mL)'",
+        "quote": "Insulin at baseline (µU/mL) | 6.59 ± 0.77"
+      }
+    },
+    {
+      "id": "placebo_glucose_delta_90",
+      "description": "Serum glucose 90 min after the end of the meal minus the baseline sample, placebo visit",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": -0.86,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.31,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Blood glucose ... Δ 90'",
+        "quote": "Δ 90 | −0.86 ± 1.31"
+      }
+    },
+    {
+      "id": "placebo_glucose_delta_120",
+      "description": "Serum glucose 120 min after the end of the meal minus the baseline sample, placebo visit",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 2.57,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.59,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Blood glucose ... Δ 120'",
+        "quote": "Δ 120 | 2.57 ± 1.59"
+      }
+    },
+    {
+      "id": "placebo_insulin_delta_90",
+      "description": "Serum insulin 90 min after the end of the meal minus the baseline sample, placebo visit",
+      "marker": "insulin",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 15.4,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.83,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Insulin ... Δ 90'",
+        "quote": "Δ 90 | 15.4 ± 2.83"
+      }
+    },
+    {
+      "id": "placebo_insulin_delta_120",
+      "description": "Serum insulin 120 min after the end of the meal minus the baseline sample, placebo visit",
+      "marker": "insulin",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "placebo_meal"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 17.9,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.45,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column Placebo; values are means ± SEM (table footnote), n = 14 (crossover, Table 1 n = 14), row 'Insulin ... Δ 120'",
+        "quote": "Δ 120 | 17.9 ± 3.45"
+      }
+    },
+    {
+      "id": "fat_mass_dxa",
+      "description": "Fat mass by DXA, participants' characteristics",
+      "marker": "fat_mass",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "dxa_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 16.8,
+      "unit": "kg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.87,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row 'Fat mass (kg)', column 'Mean ± SEM n = 14'",
+        "quote": "Fat mass (kg) | 16.8 ± 0.87"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "incremental areas under the curve for glucose and insulin (Table 2, rows 'iAUC'), trapezoidal over baseline, 90 and 120 min: no unit, and so no time unit, is printed for the areas (nor the baseline sample's time before the meal)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "all EGCG-arm values (800 mg epigallocatechin-3-gallate before the meal; Table 2, column EGCG)",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "triglycerides at baseline, Δ 90, Δ 120 and iAUC (Table 2) and fasting triglycerides (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "total, HDL, LDL and VLDL cholesterol at baseline, Δ 90, Δ 120 and iAUC (Table 2) and fasting (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "fasting glucose and insulin of the participants (Table 1, 'Baseline characteristics'): the paper drew a baseline sample at each of two visits and Table 1 does not say which visit (or both) it prints; its values differ from both Table 2 baselines",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "HOMA-IR of the participants (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "lean mass and fat mass percentage by DXA, waist circumference (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "habitual dietary intake by three-day 24 h recall (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "energy_intake"
+      }
+    }
+  ]
+}
