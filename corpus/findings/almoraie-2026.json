@@ -1,0 +1,667 @@
+{
+  "paper": "almoraie-2026",
+  "citation": {
+    "authors": "Almoraie MM, Spencer JPE, Wagstaff C, Jackson KG",
+    "title": "Acute Effects of a High-Fat Meal Enriched with Pomegranate Seed Oil on Postprandial Lipemia and Endothelial Function in Postmenopausal Women: a Randomized Controlled Crossover Trial",
+    "journal": "The Journal of Nutrition",
+    "year": 2026,
+    "doi": "10.1016/j.tjnut.2026.101374",
+    "pmid": "41580088",
+    "pmcid": "PMC13014500"
+  },
+  "population": {
+    "n": 16,
+    "sex": "female",
+    "age_years": {
+      "mean": 59.0,
+      "sd": 4.0,
+      "min": 49.0,
+      "max": 64.0
+    },
+    "bmi": {
+      "mean": 24.7,
+      "sd": 3.6,
+      "min": 20.7,
+      "max": 29.7
+    },
+    "status": "unselected",
+    "description": "Sixteen postmenopausal women (no menstruation for >=1 y, no HRT), UK; enrolment aged <=65 y, BMI 18-35 kg/m2, BP <=140/90, fasting glucose <7.0 mmol/L, no CVD, no lipid/BP medication. Age 59 +/- 1 (SEM) y, range 49-64 (Results text); BMI 24.7 +/- 0.9 (SEM), range 20.7-29.7 (Table 2, mean of both visits; the Results text prints 24.8 +/- 0.9); 9 normal weight, 7 overweight. SDs computed as SEM x sqrt(16): 1 x 4 = 4.0 and 0.9 x 4 = 3.6. Status unselected: glucose tolerance was not screened by a test and 7 of 16 are overweight."
+  },
+  "protocols": [
+    {
+      "name": "control_visit_fasting",
+      "description": "Fasted morning of the control-meal visit: arrival after a 12-h fast (water only), then body composition and cannulation (duration not stated), fasting samples at -30 and 0 min (arm minutes 0 and 30) with 30 min supine rest between; no food. Clock hour not stated; prefast_hours 12 is the fast at arrival, the time from arrival to the -30 min sample is not stated.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "control_meal",
+      "description": "Control high-fat breakfast at 0 min (toasted white-bread sandwich with jam and a chocolate milk drink with 50 g control oil, palm:rapeseed:safflower 4:0.5:0.5; Table 1: 90.4 g carbohydrate, 52.3 g fat, 21.3 g protein, 4.07 MJ, manufacturers' data), eaten within 20 min; blood at 0, 30, 60, 90, 120 and hourly to 480 min, nothing but water after. prefast_hours = the 12-h fast at arrival + 0.5 h from the -30 min sample to the meal (time from arrival to the -30 min sample not stated).",
+      "duration_min": 481,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 90.4,
+          "fat_g": 52.3,
+          "protein_g": 21.3
+        }
+      ],
+      "prefast_hours": 12.5,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_fasting_glucose",
+      "description": "Fasting serum glucose on the morning of the control-meal visit (Table 3 'Fasting'; the table does not say whether this is the -30 min sample, the 0 min sample or their mean, so the window spans both)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_visit_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 4.74,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.13,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Glucose row 'Fasting (mmol/L)'",
+        "quote": "Fasting (mmol/L) | 4.74 ± 0.13"
+      }
+    },
+    {
+      "id": "control_fasting_insulin",
+      "description": "Fasting serum insulin on the morning of the control-meal visit (Table 3 'Fasting'; -30 min, 0 min or their mean is not said, so the window spans both)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_visit_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 38.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.7,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Insulin row 'Fasting (pmol/L)'",
+        "quote": "Fasting (pmol/L) | 38.1 ± 3.7"
+      }
+    },
+    {
+      "id": "control_fasting_nefa",
+      "description": "Fasting serum non-esterified fatty acids on the morning of the control-meal visit (Table 3 'Fasting'; -30 min, 0 min or their mean is not said, so the window spans both)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_visit_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 0.51,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.04,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', NEFA row 'Fasting (mmol/L)'",
+        "quote": "Fasting (mmol/L) | 0.51 ± 0.04"
+      }
+    },
+    {
+      "id": "control_fasting_sbp",
+      "description": "Fasting systolic blood pressure before the control meal, measured 'at baseline' (Methods); the minute is not stated, placed at the end of the run-in (paper's 0 min) because BP was measured with the vascular assessments, which followed the 30 min supine rest",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_visit_fasting"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 119,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'Control meal', SBP row 'Fasting (mmHg)'",
+        "quote": "SBP Fasting (mmHg) | 122 ± 3 | 119 ± 3"
+      }
+    },
+    {
+      "id": "control_fasting_dbp",
+      "description": "Fasting diastolic blood pressure before the control meal, measured 'at baseline' (Methods); the minute is not stated, placed at the end of the run-in (paper's 0 min) because BP was measured with the vascular assessments, which followed the 30 min supine rest",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_visit_fasting"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 80,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'Control meal', DBP row 'Fasting (mmHg)'",
+        "quote": "DBP Fasting (mmHg) | 79 ± 2 | 80 ± 2"
+      }
+    },
+    {
+      "id": "control_insulin_peak",
+      "description": "Maximum serum insulin concentration (MaxC, per-person maximum of the samples) over 0-480 min after the control meal",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 432,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 60,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Insulin row 'MaxC (pmol/L)'",
+        "quote": "MaxC (pmol/L) | 432 ± 60"
+      }
+    },
+    {
+      "id": "control_insulin_time_to_peak",
+      "description": "Time to maximum serum insulin (TMax) after the control meal, minutes from the meal",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 105,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Insulin row 'TMax (min)'",
+        "quote": "TMax (min) | 105 ± 7"
+      }
+    },
+    {
+      "id": "control_insulin_auc",
+      "description": "Area under the serum insulin curve 0-480 min after the control meal over the eleven samples; the paper names no rule and no baseline, read as the trapezoid, total area",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 65.0,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.7,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Insulin row 'AUC (nmol/L × min)'",
+        "quote": "AUC (nmol/L × min) | 65.0 ± 6.7"
+      }
+    },
+    {
+      "id": "control_insulin_iauc",
+      "description": "Incremental area under the serum insulin curve 0-480 min after the control meal over the eleven samples, baseline the 0 min (fasted) state. Net area: the paper does not say how it treats values under baseline, but it prints negative iAUC means computed by the same method in the same table (apoB, PSO meal: -0.78 g/L x min; NEFA), which only a net area can have",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "below_baseline": "subtracted",
+      "value": 46.7,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.2,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Insulin row 'iAUC (nmol/L × min)'",
+        "quote": "iAUC (nmol/L × min) | 46.7 ± 5.2"
+      }
+    },
+    {
+      "id": "control_glucose_peak",
+      "description": "Maximum serum glucose concentration (MaxC) over 0-480 min after the control meal",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 6.53,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.28,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Glucose row 'MaxC (mmol/L)'",
+        "quote": "MaxC (mmol/L) | 6.53 ± 0.28"
+      }
+    },
+    {
+      "id": "control_glucose_time_to_peak",
+      "description": "Time to maximum serum glucose (TMax) after the control meal, minutes from the meal",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 143,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 24,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Glucose row 'TMax (min)'",
+        "quote": "TMax (min) | 143 ± 24"
+      }
+    },
+    {
+      "id": "control_glucose_auc",
+      "description": "Area under the serum glucose curve 0-480 min after the control meal over the eleven samples; the paper names no rule and no baseline, read as the trapezoid, total area",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 2363,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 67,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Glucose row 'AUC (mmol/L × min)'",
+        "quote": "AUC (mmol/L × min) | 2363 ± 67"
+      }
+    },
+    {
+      "id": "control_glucose_iauc",
+      "description": "Incremental area under the serum glucose curve 0-480 min after the control meal over the eleven samples, baseline the 0 min (fasted) state. Net area: the paper does not say how it treats values under baseline, but it prints negative iAUC means computed by the same method in the same table (apoB, PSO meal: -0.78 g/L x min; NEFA), which only a net area can have",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "below_baseline": "subtracted",
+      "value": 89,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 49,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', Glucose row 'iAUC (mmol/L × min)'",
+        "quote": "iAUC (mmol/L × min) | 89 ± 49"
+      }
+    },
+    {
+      "id": "control_nefa_peak",
+      "description": "Maximum serum NEFA concentration (MaxC) after the control meal (the late rebound); the paper does not say which samples it was taken over, read as all 0-480 min",
+      "marker": "ffa",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 0.86,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.05,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', NEFA row 'MaxC (mmol/L)'",
+        "quote": "MaxC (mmol/L) | 0.86 ± 0.05"
+      }
+    },
+    {
+      "id": "control_nefa_time_to_peak",
+      "description": "Time to maximum serum NEFA (TMax) after the control meal, minutes from the meal",
+      "marker": "ffa",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "control_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 364,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 37,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', NEFA row 'TMax (min)'",
+        "quote": "TMax (min) | 364 ± 37"
+      }
+    },
+    {
+      "id": "control_nefa_auc_180_480",
+      "description": "Area under the serum NEFA curve 180-480 min after the control meal over the six samples (the paper limits NEFA areas to 180-480 min 'to account for the drop in NEFA concentrations' and says they 'were calculated from the mean minimum NEFA concentration', read as starting at the mean time of the minimum, TMin 169 min); no rule named, read as the trapezoid, total area",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 153,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'Control meal', NEFA row 'AUC180–480 (mmol/L × min)'",
+        "quote": "AUC180–480 (mmol/L × min) | 142 ± 13 | 153 ± 12"
+      }
+    },
+    {
+      "id": "control_sbp_auc",
+      "description": "Area under the systolic blood pressure curve 0-480 min after the control meal over the five measurements (baseline, 120, 240, 360, 480 min); no rule named, read as the trapezoid, total area; printed in mmHg x min x 10^3, entered multiplied out (59 x 1000 = 59000, SEM 1.5 x 1000 = 1500)",
+      "marker": "sbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        120,
+        240,
+        360,
+        480
+      ],
+      "value": 59000,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1500,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'Control meal', SBP row 'AUC (mmHg × min × 10^3)'",
+        "quote": "AUC (mmHg × min × 103) | 56.9 ± 1.4 | 59 ± 1.5"
+      }
+    },
+    {
+      "id": "control_dbp_auc",
+      "description": "Area under the diastolic blood pressure curve 0-480 min after the control meal over the five measurements (baseline, 120, 240, 360, 480 min); no rule named, read as the trapezoid, total area; printed in mmHg x min x 10^3, entered multiplied out (38.4 x 1000 = 38400, SEM 1.1 x 1000 = 1100)",
+      "marker": "dbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_meal"
+      ],
+      "times": [
+        0,
+        120,
+        240,
+        360,
+        480
+      ],
+      "value": 38400,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1100,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'Control meal', DBP row 'AUC (mmHg × min × 10^3)'",
+        "quote": "AUC (mmHg × min × 103) | 36.9 ± 1.1 | 38.4 ± 1.1"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Serum triacylglycerol fasting (Tables 2 and 3), MaxC, TMax, AUC, iAUC (Table 3) and time course (Figure 2), both meals",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Serum apoB fasting (Tables 2 and 3), MaxC, TMax, AUC, iAUC (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "apolipoprotein_b"
+      }
+    },
+    {
+      "what": "Fasting total, LDL and HDL cholesterol and TC:HDL ratio (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Every value after the PSO-rich meal (Tables 3 and 4): same macronutrients as the control meal (Table 1), differing only in fatty-acid composition (40 g control oil + 10 g pomegranate seed oil, punicic acid), which the model cannot be told",
+      "missing": {
+        "kind": "input",
+        "name": "meal_fat_composition"
+      }
+    },
+    {
+      "what": "NEFA minimum concentration and time to minimum (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "NEFA suppression in % (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "NEFA iAUC 180-480 min (Table 3): the methods say the NEFA areas 'were calculated from the mean minimum NEFA concentration' and define no baseline for the incremental area",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "SBP and DBP iAUC (Table 4, mmHg x min x 10^3): small differences for which both readings of the x 10^3 header pass the range check",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Glucose, insulin, NEFA and apoB values at each sampling time: not printed in a table or text, and not even in a figure",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "SBP and DBP at 120-480 min (Figure 3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Pulse wave velocity fasting, AUC, iAUC (Tables 2 and 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Laser Doppler skin perfusion responses to acetylcholine and sodium nitroprusside (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "skin_microvascular_reactivity"
+      }
+    },
+    {
+      "what": "Plasma nitrite and nitrate fasting, AUC, iAUC (Table 4; nitrite time course Figure 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "nitric_oxide_metabolites"
+      }
+    },
+    {
+      "what": "sVCAM-1, sICAM-1, E-selectin, P-selectin fasting, AUC, iAUC (Table 4; sICAM-1 Figure 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "endothelial_adhesion_molecules"
+      }
+    },
+    {
+      "what": "HOMA-IR, revised QUICKI, QRISK3 score (Results text)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Body weight, waist and hip circumference, body fat % (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
