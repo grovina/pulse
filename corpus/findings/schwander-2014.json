@@ -48,7 +48,7 @@
     },
     {
       "name": "meal_500_nw",
-      "description": "Normal-weight men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Normal-weight men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1): the foods are bread (58 g), palm fat (13 g), sausage (52 g; 'salami' in Methods) and boiled eggs (26 g); the added fat is palm fat; protein from bread 5.8 g, sausage 13.5 g and boiled eggs 3.4 g, entered as mixed; 200 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -56,7 +56,11 @@
           "t_min": 0,
           "carbs_g": 26.3,
           "fat_g": 34.0,
-          "protein_g": 22.7
+          "protein_g": 22.7,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
@@ -82,7 +86,7 @@
     },
     {
       "name": "meal_1000_nw",
-      "description": "Normal-weight men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Normal-weight men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1 and footnote): the same foods as meal A, bread, palm fat, sausage ('salami' in Methods) and boiled eggs; the added fat is palm fat; protein from bread, sausage and boiled eggs, entered as mixed; 400 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -90,7 +94,11 @@
           "t_min": 0,
           "carbs_g": 53.25,
           "fat_g": 67.22,
-          "protein_g": 45.5
+          "protein_g": 45.5,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
@@ -117,7 +125,7 @@
     },
     {
       "name": "meal_1500_nw",
-      "description": "Normal-weight men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Normal-weight men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1 and footnote): the same foods as meal A, bread, palm fat, sausage ('salami' in Methods) and boiled eggs; the added fat is palm fat; protein from bread, sausage and boiled eggs, entered as mixed; 600 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -125,7 +133,11 @@
           "t_min": 0,
           "carbs_g": 79.88,
           "fat_g": 100.83,
-          "protein_g": 68.25
+          "protein_g": 68.25,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
@@ -180,7 +192,7 @@
     },
     {
       "name": "meal_500_ob",
-      "description": "Obese men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Obese men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1): the foods are bread (58 g), palm fat (13 g), sausage (52 g; 'salami' in Methods) and boiled eggs (26 g); the added fat is palm fat; protein from bread 5.8 g, sausage 13.5 g and boiled eggs 3.4 g, entered as mixed; 200 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -188,7 +200,11 @@
           "t_min": 0,
           "carbs_g": 26.3,
           "fat_g": 34.0,
-          "protein_g": 22.7
+          "protein_g": 22.7,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
@@ -214,7 +230,7 @@
     },
     {
       "name": "meal_1000_ob",
-      "description": "Obese men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Obese men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1 and footnote): the same foods as meal A, bread, palm fat, sausage ('salami' in Methods) and boiled eggs; the added fat is palm fat; protein from bread, sausage and boiled eggs, entered as mixed; 400 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -222,7 +238,11 @@
           "t_min": 0,
           "carbs_g": 53.25,
           "fat_g": 67.22,
-          "protein_g": 45.5
+          "protein_g": 45.5,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
@@ -249,7 +269,7 @@
     },
     {
       "name": "meal_1500_ob",
-      "description": "Obese men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "description": "Obese men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00. Meal details (Methods, Table 1 and footnote): the same foods as meal A, bread, palm fat, sausage ('salami' in Methods) and boiled eggs; the added fat is palm fat; protein from bread, sausage and boiled eggs, entered as mixed; 600 mL Vittel water drunk with the meal carries no grams, so the form is solid",
       "duration_min": 361,
       "start_hour": 8.5,
       "meals": [
@@ -257,7 +277,11 @@
           "t_min": 0,
           "carbs_g": 79.88,
           "fat_g": 100.83,
-          "protein_g": 68.25
+          "protein_g": 68.25,
+          "fat_source": "palm fat",
+          "protein_source": "mixed",
+          "form": "solid",
+          "food": "bread, palm fat, salami and boiled eggs"
         }
       ],
       "prefast_hours": 10,
