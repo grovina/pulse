@@ -1,0 +1,1012 @@
+{
+  "paper": "schwander-2014",
+  "citation": {
+    "authors": "Schwander F, Kopf-Bolanz KA, Buri C, Portmann R, Egger L, Chollet M, McTernan PG, Piya MK, Gijs MAM, Vionnet N, Pralong F, Laederach K, Vergères G",
+    "title": "A Dose-Response Strategy Reveals Differences between Normal-Weight and Obese Men in Their Metabolic and Inflammatory Responses to a High-Fat Meal",
+    "journal": "The Journal of Nutrition",
+    "year": 2014,
+    "doi": "10.3945/jn.114.193565",
+    "pmid": "24812072",
+    "pmcid": "PMC4162475"
+  },
+  "population": {
+    "n": 36,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "unselected",
+    "description": "Men aged 25-55 y (enrolment criterion) from the region of Berne: 19 normal-weight (BMI 20-25 kg/m2, waist <94 cm) and 18 obese (BMI >30, waist >102 cm) were enrolled; one obese man was excluded from the analyses because his baseline glucose, insulin and TGs rose during the study, so Tables 2 and 3 give n = 19 and n = 17 (36 analysed). Exclusions: cardiovascular disease, diagnosed diabetes, inflammatory condition, relevant medication, smoking, food allergy, impaired kidney or liver function. No glucose tolerance test was reported, so both groups are unselected; the paper reports all obese men but one had HOMA-IR above 2.6. Age and BMI are given per group (Table 2, means ± SD) in each protocol's override; no pooled values are printed, so the top level carries none."
+  },
+  "protocols": [
+    {
+      "name": "fasted_nw",
+      "description": "Fasting blood sample of the normal-weight men, drawn between 08:00 and 09:00 after a 10-h overnight fast before a test meal (Table 2 does not say which of the 3 study mornings it prints, or whether it averages them; each was this same 10-h-fasted 08:00-09:00 t = 0 sample, and the paper says the baseline values remained stable throughout the study); a 30-min fasted run-in, no food (start_hour 8.5 is the midpoint of the printed 08:00-09:00 interval)",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 40.6,
+          "sd": 9.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_500_nw",
+      "description": "Normal-weight men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 26.3,
+          "fat_g": 34.0,
+          "protein_g": 22.7
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 40.6,
+          "sd": 9.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_1000_nw",
+      "description": "Normal-weight men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 53.25,
+          "fat_g": 67.22,
+          "protein_g": 45.5
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 40.6,
+          "sd": 9.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_1500_nw",
+      "description": "Normal-weight men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 79.88,
+          "fat_g": 100.83,
+          "protein_g": 68.25
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 40.6,
+          "sd": 9.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "fasted_ob",
+      "description": "Fasting blood sample of the obese men, drawn between 08:00 and 09:00 after a 10-h overnight fast before a test meal (Table 2 does not say which of the 3 study mornings it prints, or whether it averages them; each was this same 10-h-fasted 08:00-09:00 t = 0 sample, and the paper says the baseline values remained stable throughout the study); a 30-min fasted run-in, no food (start_hour 8.5 is the midpoint of the printed 08:00-09:00 interval)",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 44.1,
+          "sd": 8.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 4.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_500_ob",
+      "description": "Obese men, high-fat test meal A (500 kcal: bread, palm fat, sausage, boiled eggs; Table 1: 26.3 g carbohydrate, 34.0 g fat, 22.7 g protein) after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 26.3,
+          "fat_g": 34.0,
+          "protein_g": 22.7
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 44.1,
+          "sd": 8.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 4.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_1000_ob",
+      "description": "Obese men, high-fat test meal B (1000 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 2 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1000 x 0.213 / 4 = 53.25 g, fat 1000 x 0.605 / 9 = 67.22 g, protein 1000 x 0.182 / 4 = 45.5 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 53.25,
+          "fat_g": 67.22,
+          "protein_g": 45.5
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 44.1,
+          "sd": 8.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 4.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "meal_1500_ob",
+      "description": "Obese men, high-fat test meal C (1500 kcal), after a 10-h overnight fast, blood between 08:00 and 09:00 at t = 0 (start of the meal) and 1, 2, 4, 6 h. Grams derived from energy and percentages of energy: the paper says the 3 meals had the same macronutrient composition (Table 1 footnote: same composition, 3 times the calories of meal A; Table 1: 21.3% carbohydrate, 60.5% fat, 18.2% protein), so carbohydrate 1500 x 0.213 / 4 = 79.88 g, fat 1500 x 0.605 / 9 = 100.83 g, protein 1500 x 0.182 / 4 = 68.25 g; meal entered at minute 0, its eating time not printed; start_hour 8.5 is the midpoint of 08:00-09:00",
+      "duration_min": 361,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 79.88,
+          "fat_g": 100.83,
+          "protein_g": 68.25
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 44.1,
+          "sd": 8.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 38.8,
+          "sd": 4.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_nw",
+      "description": "Fasting plasma glucose, normal-weight men, baseline characteristics (mean and SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_nw"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, column 'Normal-weight (n = 19)'; footnote: values are means ± SDs",
+        "quote": "Glucose (normal range: 3.3–5.5), mmol/L | 4.9 ± 0.5*"
+      }
+    },
+    {
+      "id": "fasting_glucose_ob",
+      "description": "Fasting plasma glucose, obese men, baseline characteristics (mean and SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 2, column 'Obese (n = 17)'; footnote: values are means ± SDs",
+        "quote": "Glucose (normal range: 3.3–5.5), mmol/L | 5.3 ± 0.5*"
+      }
+    },
+    {
+      "id": "fasting_insulin_nw",
+      "description": "Fasting serum insulin (electro-chemiluminescent immunoassay), normal-weight men, baseline characteristics (mean and SD)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_nw"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 6.0,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.9,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, column 'Normal-weight (n = 19)'; footnote: values are means ± SDs",
+        "quote": "Insulin (normal range: 2.6–24.9), mU/L | 6.0 ± 2.9*"
+      }
+    },
+    {
+      "id": "fasting_insulin_ob",
+      "description": "Fasting serum insulin (electro-chemiluminescent immunoassay), obese men, baseline characteristics (mean and SD)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 19.1,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.4,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 2, column 'Obese (n = 17)'; footnote: values are means ± SDs",
+        "quote": "Insulin (normal range: 2.6–24.9), mU/L | 19.1 ± 7.4*"
+      }
+    },
+    {
+      "id": "fasting_glp1_nw",
+      "description": "Fasting serum total GLP-1 (Multi Species GLP-1 Total ELISA), normal-weight men, baseline characteristics (mean and SD)",
+      "marker": "glp1",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_nw"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 31.8,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15.8,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, column 'Normal-weight (n = 19)'; footnote: values are means ± SDs",
+        "quote": "GLP-1, pmol/L | 31.8 ± 15.8*"
+      }
+    },
+    {
+      "id": "fasting_glp1_ob",
+      "description": "Fasting serum total GLP-1 (Multi Species GLP-1 Total ELISA), obese men, baseline characteristics (mean and SD)",
+      "marker": "glp1",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 48.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20.6,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 2, column 'Obese (n = 17)'; footnote: values are means ± SDs",
+        "quote": "GLP-1, pmol/L | 48.0 ± 20.6*"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_500_nw",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 12.9,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.2,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Normal-weight (n = 19) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 12.9 ± 3.2c,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_1000_nw",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 1000-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 39.0,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.3,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Normal-weight (n = 19) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 39.0 ± 5.3b,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_1500_nw",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 1500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 63.9,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.3,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Normal-weight (n = 19) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 63.9 ± 9.3a,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_500_ob",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 67.0,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.0,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Obese (n = 17) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 67 ± 11c,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_1000_ob",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 1000-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 186.0,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 26.0,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Obese (n = 17) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 186 ± 26b,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_insulin_1500_ob",
+      "description": "Net incremental AUC of serum insulin over 0-6 h after the 1500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 321.0,
+      "unit": "mU/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 45.0,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin, mU/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "Insulin, mU/L × 6 h | 321 ± 45a,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_500_nw",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": -2.6,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.4,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Normal-weight (n = 19) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | −2.6 ± 0.4a,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_1000_nw",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 1000-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": -1.8,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.6,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Normal-weight (n = 19) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | −1.8 ± 0.6a,b,†"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_1500_nw",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 1500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": -1.1,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Normal-weight (n = 19) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | −1.1 ± 0.5b,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_500_ob",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": -1.2,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.5,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Obese (n = 17) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | −1.2 ± 0.5b,*,†"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_1000_ob",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 1000-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": -0.4,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.6,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Obese (n = 17) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | −0.4 ± 0.6b"
+      }
+    },
+    {
+      "id": "net_iauc_glucose_1500_ob",
+      "description": "Net incremental AUC of plasma glucose over 0-6 h after the 1500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 1.8,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.0,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "Glucose, mmol/L × 6 h | 1.8 ± 1.0a,*"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_500_nw",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 46.6,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 46.6 ± 11.5†"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_1000_nw",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1000-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 63.8,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 15.7,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 63.8 ± 15.7†"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_1500_nw",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_nw"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 88.1,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 25.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 88.1 ± 25.5†"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_500_ob",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 47.6,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8.2,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 47.6 ± 8.2b,†"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_1000_ob",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1000-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1000_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 70.6,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.5,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 70.6 ± 9.5a,†"
+      }
+    },
+    {
+      "id": "net_iauc_glp1_1500_ob",
+      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
+      "marker": "glp1",
+      "statistic": "incremental_area",
+      "protocols": [
+        "meal_1500_ob"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        240,
+        360
+      ],
+      "below_baseline": "subtracted",
+      "value": 76.1,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12.8,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 76.1 ± 12.8a,†"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Triglyceride net iAUC at the three doses in both groups (Table 3) and fasting TGs (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Total cholesterol, HDL cholesterol and total:HDL ratio, fasting (Table 2) and net iAUC (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "IL-6, fasting (Table 2) and net iAUC at the three doses (Table 3, abstract)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_6"
+      }
+    },
+    {
+      "what": "CRP, fasting (Table 2) and net iAUC (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "Serum endotoxin, fasting (Table 2) and net iAUC (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "endotoxin"
+      }
+    },
+    {
+      "what": "HOMA-IR and visceral adiposity index (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Concentrations at 0, 1, 2, 4 and 6 h of every variable (Supplemental Table 1, not in the full text available)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Spearman rank correlations among baseline values, and between fasting values and net iAUC per dose, pooled over both groups (Results, Figure 1, Supplemental Figures 1-2)",
+      "missing": {
+        "kind": "operator",
+        "name": "spearman_correlation"
+      }
+    }
+  ]
+}
