@@ -30,7 +30,7 @@
   "protocols": [
     {
       "name": "hf_lgi",
-      "description": "High-Fiber, Low-GI (HF-LGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 36 g, enriched white bread 20 g, margarine spread 19 g, eggs 44 g, nonfat milk 290 g, apple slices 175 g, apple juice 260 g. Table 1 gives total carbohydrate 108.3 g, total fiber 20.4 g, protein 20.0 g, fat 15.7 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 108.3 - 20.4 = 87.9 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "description": "High-Fiber, Low-GI (HF-LGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 36 g, enriched white bread 20 g, margarine spread 19 g, eggs 44 g, nonfat milk 290 g, apple slices 175 g, apple juice 260 g. Table 1 gives total carbohydrate 108.3 g, total fiber 20.4 g, protein 20.0 g, fat 15.7 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 108.3 - 20.4 = 87.9 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used). Meal details from Table 1: fibre_g 20.4 is the total fiber; fat_g_by_type is saturated 3.6, monounsaturated 5.2, polyunsaturated 5.4 g (trans fat 0.9 g, glycemic index 44, ~600 kcal and sodium not entered); fat_source is the added margarine spread. Sugars are not printed; protein comes from eggs, nonfat milk and cereal/bread with no split printed, so protein_source is not entered. form is mixed: the meal includes apple juice and nonfat milk.",
       "duration_min": 241,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -39,7 +39,16 @@
           "t_min": 0,
           "carbs_g": 87.9,
           "fat_g": 15.7,
-          "protein_g": 20.0
+          "protein_g": 20.0,
+          "fibre_g": 20.4,
+          "fat_g_by_type": {
+            "saturated": 3.6,
+            "monounsaturated": 5.2,
+            "polyunsaturated": 5.4
+          },
+          "fat_source": "margarine spread",
+          "form": "mixed",
+          "food": "All-Bran Buds, white bread, margarine, eggs, nonfat milk, apple, apple juice"
         }
       ],
       "assumed": [
@@ -50,7 +59,7 @@
     },
     {
       "name": "lf_lgi",
-      "description": "Low-Fiber, Low-GI (LF-LGI) breakfast, crossover visit: oatmeal cereal 40 g, enriched white bread 35 g, margarine spread 16 g, eggs 44 g, nonfat milk 275 g, apple juice 285 g. Table 1 gives total carbohydrate 96.3 g, total fiber 4.3 g, protein 20.9 g, fat 15.6 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 96.3 - 4.3 = 92.0 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "description": "Low-Fiber, Low-GI (LF-LGI) breakfast, crossover visit: oatmeal cereal 40 g, enriched white bread 35 g, margarine spread 16 g, eggs 44 g, nonfat milk 275 g, apple juice 285 g. Table 1 gives total carbohydrate 96.3 g, total fiber 4.3 g, protein 20.9 g, fat 15.6 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 96.3 - 4.3 = 92.0 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used). Meal details from Table 1: fibre_g 4.3 is the total fiber; fat_g_by_type is saturated 3.6, monounsaturated 5.3, polyunsaturated 5.0 g (trans fat 0.7 g, glycemic index 43, ~600 kcal and sodium not entered); fat_source is the added margarine spread. Sugars are not printed; protein comes from eggs, nonfat milk and cereal/bread with no split printed, so protein_source is not entered. form is mixed: the meal includes apple juice and nonfat milk.",
       "duration_min": 241,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -59,7 +68,16 @@
           "t_min": 0,
           "carbs_g": 92.0,
           "fat_g": 15.6,
-          "protein_g": 20.9
+          "protein_g": 20.9,
+          "fibre_g": 4.3,
+          "fat_g_by_type": {
+            "saturated": 3.6,
+            "monounsaturated": 5.3,
+            "polyunsaturated": 5.0
+          },
+          "fat_source": "margarine spread",
+          "form": "mixed",
+          "food": "oatmeal, white bread, margarine, eggs, nonfat milk, apple juice"
         }
       ],
       "assumed": [
@@ -70,7 +88,7 @@
     },
     {
       "name": "lf_hgi",
-      "description": "Low-Fiber, High-GI (LF-HGI) breakfast, crossover visit: low-fiber cereal (General Mills Golden Grahams) 36 g, plain bagel 110 g, margarine spread 18 g, eggs 44 g, nonfat milk 75 g. Table 1 gives total carbohydrate 92.8 g, total fiber 3.6 g, protein 21.5 g, fat 15.8 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 92.8 - 3.6 = 89.2 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "description": "Low-Fiber, High-GI (LF-HGI) breakfast, crossover visit: low-fiber cereal (General Mills Golden Grahams) 36 g, plain bagel 110 g, margarine spread 18 g, eggs 44 g, nonfat milk 75 g. Table 1 gives total carbohydrate 92.8 g, total fiber 3.6 g, protein 21.5 g, fat 15.8 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 92.8 - 3.6 = 89.2 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used). Meal details from Table 1: fibre_g 3.6 is the total fiber; fat_g_by_type is saturated 3.6, monounsaturated 5.2, polyunsaturated 5.4 g (trans fat 0.8 g, glycemic index 70, ~600 kcal and sodium not entered); fat_source is the added margarine spread. Sugars are not printed; protein comes from eggs, nonfat milk and cereal/bread with no split printed, so protein_source is not entered. form not entered: nonfat milk is the only liquid and the paper does not say whether it was drunk or eaten on the cereal.",
       "duration_min": 241,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -79,7 +97,15 @@
           "t_min": 0,
           "carbs_g": 89.2,
           "fat_g": 15.8,
-          "protein_g": 21.5
+          "protein_g": 21.5,
+          "fibre_g": 3.6,
+          "fat_g_by_type": {
+            "saturated": 3.6,
+            "monounsaturated": 5.2,
+            "polyunsaturated": 5.4
+          },
+          "fat_source": "margarine spread",
+          "food": "Golden Grahams, plain bagel, margarine, eggs, nonfat milk"
         }
       ],
       "assumed": [
@@ -90,7 +116,7 @@
     },
     {
       "name": "hf_hgi",
-      "description": "High-Fiber, High-GI (HF-HGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 42 g, high-GI cereal (General Mills Rice Chex) 30 g, plain bagel 60 g, margarine spread 17 g, eggs 44 g, nonfat milk 120 g, seedless raisins 15 g. Table 1 gives total carbohydrate 109.8 g, total fiber 20.3 g, protein 21.1 g, fat 14.9 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 109.8 - 20.3 = 89.5 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "description": "High-Fiber, High-GI (HF-HGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 42 g, high-GI cereal (General Mills Rice Chex) 30 g, plain bagel 60 g, margarine spread 17 g, eggs 44 g, nonfat milk 120 g, seedless raisins 15 g. Table 1 gives total carbohydrate 109.8 g, total fiber 20.3 g, protein 21.1 g, fat 14.9 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 109.8 - 20.3 = 89.5 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used). Meal details from Table 1: fibre_g 20.3 is the total fiber; fat_g_by_type is saturated 3.4, monounsaturated 4.9, polyunsaturated 5.1 g (trans fat 0.8 g, glycemic index 71, ~600 kcal and sodium not entered); fat_source is the added margarine spread. Sugars are not printed; protein comes from eggs, nonfat milk and cereal/bread with no split printed, so protein_source is not entered. form not entered: nonfat milk is the only liquid and the paper does not say whether it was drunk or eaten on the cereal.",
       "duration_min": 241,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -99,7 +125,15 @@
           "t_min": 0,
           "carbs_g": 89.5,
           "fat_g": 14.9,
-          "protein_g": 21.1
+          "protein_g": 21.1,
+          "fibre_g": 20.3,
+          "fat_g_by_type": {
+            "saturated": 3.4,
+            "monounsaturated": 4.9,
+            "polyunsaturated": 5.1
+          },
+          "fat_source": "margarine spread",
+          "food": "All-Bran Buds, Rice Chex, plain bagel, margarine, eggs, nonfat milk, raisins"
         }
       ],
       "assumed": [
