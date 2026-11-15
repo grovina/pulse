@@ -1,0 +1,401 @@
+{
+  "paper": "leone-2022",
+  "citation": {
+    "authors": "Leone A, De Amicis R, Bertoli S, Spadafranca A, De Carlo G, Battezzati A",
+    "title": "Absence of a sexual dimorphism in postprandial glucose metabolism after administration of a balanced mixed meal in healthy young volunteers",
+    "journal": "Nutrition & Diabetes",
+    "year": 2022,
+    "doi": "10.1038/s41387-022-00184-5",
+    "pmid": "35105852",
+    "pmcid": "PMC8807706"
+  },
+  "population": {
+    "n": 36,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 23.9,
+      "sd": 2.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.9,
+      "sd": 1.7,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "18 women and 18 men, healthy normal-weight non-smoking University of Milan students (enrolment 18-35 y), screened to exclude fasting glucose >= 100 mg/dl and HOMA > 2.5, no oral contraceptives, women studied in the follicular phase; age and BMI mean and SD from Table 2 (total and by sex)."
+  },
+  "protocols": [
+    {
+      "name": "women_fasting",
+      "description": "Women (n = 18): the fasting baseline sample, drawn after arrival at 08:30 and catheter placement, before the test meal; entered as a 30 min fasted run-in from 08:00 ending at the sample, 10 h of overnight fast by 08:30 (clock, run-in and fast length assumed)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 9.5,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 24.4,
+          "sd": 3.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.8,
+          "sd": 1.9,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "men_fasting",
+      "description": "Men (n = 18): the fasting baseline sample, drawn after arrival at 08:30 and catheter placement, before the test meal; entered as a 30 min fasted run-in from 08:00 ending at the sample, 10 h of overnight fast by 08:30 (clock, run-in and fast length assumed)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 9.5,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 23.4,
+          "sd": 2.5,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.9,
+          "sd": 1.5,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "women_meal",
+      "description": "Women (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (866 kcal, carbohydrate 134 g, protein 35 g, lipids 25 g); venous samples 0-180 min",
+      "duration_min": 181,
+      "start_hour": 8.5,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 134.0,
+          "fat_g": 25.0,
+          "protein_g": 35.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 24.4,
+          "sd": 3.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.8,
+          "sd": 1.9,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "men_meal",
+      "description": "Men (n = 18): balanced mixed meal (white-bread sandwich with ham, extra virgin olive oil and tomato) eaten within 15 min after an overnight fast, arrival at the lab 08:30; each meal was sized to 40% of the person's estimated daily energy expenditure, and the arm uses the group's mean meal as printed in Table 1 (1078 kcal, carbohydrate 167 g, protein 42 g, lipids 31 g); venous samples 0-180 min",
+      "duration_min": 181,
+      "start_hour": 8.5,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 167.0,
+          "fat_g": 31.0,
+          "protein_g": 42.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 23.4,
+          "sd": 2.5,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.9,
+          "sd": 1.5,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "women_fasting_glucose",
+      "description": "Women: fasting serum glucose, the baseline sample before the test meal",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 83.0,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Fasting glucose (mg/dl)', columns 'Women' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Fasting glucose (mg/dl) | 86 | 7 | 83 | 7 | 89 | 5 | 0.007"
+      }
+    },
+    {
+      "id": "women_glucose_peak",
+      "description": "Women: maximum serum glucose after the mixed meal (Table 4 'max peak', per-person maximum over the samples 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 120.0,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose max peak (mg/dl)', columns 'Women' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Glucose max peak (mg/dl) | 124 | 19 | 120 | 20 | 128 | 18 | 0.242"
+      }
+    },
+    {
+      "id": "women_glucose_time_to_peak",
+      "description": "Women: time to the glucose peak after the mixed meal, minutes from the meal",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 21.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose time to peak (min)', columns 'Women' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Glucose time to peak (min) | 20 | 10 | 21 | 11 | 19 | 8 | 0.621"
+      }
+    },
+    {
+      "id": "women_insulin_time_to_peak",
+      "description": "Women: time to the insulin peak after the mixed meal, minutes from the meal (a time, so unaffected by the paper's insulin unit 'U/l')",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 58.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 41.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Insulin time to peak (min)', columns 'Women' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Insulin time to peak (min) | 44 | 35 | 58 | 41 | 29 | 20 | 0.068"
+      }
+    },
+    {
+      "id": "men_fasting_glucose",
+      "description": "Men: fasting serum glucose, the baseline sample before the test meal",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 89.0,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Fasting glucose (mg/dl)', columns 'Men' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Fasting glucose (mg/dl) | 86 | 7 | 83 | 7 | 89 | 5 | 0.007"
+      }
+    },
+    {
+      "id": "men_glucose_peak",
+      "description": "Men: maximum serum glucose after the mixed meal (Table 4 'max peak', per-person maximum over the samples 0-180 min)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 128.0,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose max peak (mg/dl)', columns 'Men' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Glucose max peak (mg/dl) | 124 | 19 | 120 | 20 | 128 | 18 | 0.242"
+      }
+    },
+    {
+      "id": "men_glucose_time_to_peak",
+      "description": "Men: time to the glucose peak after the mixed meal, minutes from the meal",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 19.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose time to peak (min)', columns 'Men' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Glucose time to peak (min) | 20 | 10 | 21 | 11 | 19 | 8 | 0.621"
+      }
+    },
+    {
+      "id": "men_insulin_time_to_peak",
+      "description": "Men: time to the insulin peak after the mixed meal, minutes from the meal (a time, so unaffected by the paper's insulin unit 'U/l')",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 29.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, row 'Insulin time to peak (min)', columns 'Men' Mean and sd (footnote: sd standard deviation)",
+        "quote": "Insulin time to peak (min) | 44 | 35 | 58 | 41 | 29 | 20 | 0.068"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all insulin concentrations: fasting insulin and insulin max peak by sex (Table 4), fasting insulin by sex (Results text), the insulin columns of the mixed model (Table 3: change from baseline at each time, sex and interaction terms, constant): printed in 'U/l', which read as printed is a fasting insulin of about 6600 µU/mL; the paper's unit cannot be corrected here",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "glucose, insulin and C-peptide AUC (0-180 min) by sex (Table 4): no unit or time unit printed and no rule (total or incremental) stated; the glucose AUC (10718 in women) is below the fasting level times 180 min (about 14900), so it cannot be a total area either",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "C-peptide fasting, time to peak, max peak and AUC (Table 4), changes from baseline (Table 3), Results text",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "body fat percentage by sex (Table 2, skinfold estimate): a percentage, and the paper prints no body weight to turn it into the model's fat mass in kg",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "glucose 'Time' coefficients of the mixed model (Table 3), i.e. the women's (and, with 'Male # Time', the men's) change from baseline at each time: the 95% CIs are model-based (patient random intercept, residual variance pooled over both sexes and all nine times; the same width at every time point), not the change's own between-person spread in the arm, which the paper does not print",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "glucose 'Sex (Men)' and 'Male # Time' coefficients (Table 3): differences between the sexes in the baseline and in the change from baseline, not a statistic the format has (men-minus-women of a change)",
+      "missing": {
+        "kind": "operator",
+        "name": "delta_change_from_baseline"
+      }
+    },
+    {
+      "what": "absolute glucose, insulin and C-peptide time courses by sex (Fig. 1) and their percentage changes from baseline (Fig. 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
