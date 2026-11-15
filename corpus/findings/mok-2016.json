@@ -1,0 +1,1173 @@
+{
+  "paper": "mok-2016",
+  "citation": {
+    "authors": "Mok A, Haldar S, Lee JCY, Leow MKS, Henry CJ",
+    "title": "Postprandial changes in cardiometabolic disease risk in young Chinese men following isocaloric high or low protein diets, stratified by either high or low meal frequency - a randomized controlled crossover trial",
+    "journal": "Nutrition Journal",
+    "year": 2016,
+    "doi": "10.1186/s12937-016-0141-5",
+    "pmid": "26979583",
+    "pmcid": "PMC4793530"
+  },
+  "population": {
+    "n": 10,
+    "sex": "male",
+    "age_years": {
+      "mean": 28.8,
+      "sd": 6.6,
+      "min": 22.0,
+      "max": 40.0
+    },
+    "bmi": {
+      "mean": 21.9,
+      "sd": 1.7,
+      "min": 19.5,
+      "max": 24.5
+    },
+    "status": "healthy",
+    "description": "Ten healthy Chinese men in Singapore (Table 1: age 28.8 (SD 6.6) y, range 22-40; BMI 21.9 (1.7) kg/m2, range 19.5-24.5; body mass 68.2 (7.8) kg); recruited aged 21-40, non-smokers, BMI <= 25, fasting glucose <= 5.5 mmol/l, no endocrine or metabolic disorder; each did all four diets in random order, >= 3 days apart"
+  },
+  "protocols": [
+    {
+      "name": "con2",
+      "description": "CON-2: two large low-protein meals, breakfast at 08:00 (Table 2: 130 g carbohydrate, 32 g fat, 23 g protein; white bread, margarine, malted cocoa drink) and lunch at 12:30 (134 g carbohydrate, 53 g fat, 26 g protein; chicken soup noodles, cashew nuts). Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); each meal eaten within 15 min, modelled at its serving minute",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 130.0,
+          "fat_g": 32.0,
+          "protein_g": 23.0
+        },
+        {
+          "t_min": 270,
+          "carbs_g": 134.0,
+          "fat_g": 53.0,
+          "protein_g": 26.0
+        }
+      ],
+      "assumed": []
+    },
+    {
+      "name": "con6",
+      "description": "CON-6: the CON-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: the first three portions are taken to be the breakfast thirds and the last three the lunch thirds (the paper says breakfast and lunch were each divided into 3 equal portions and that 08:00 and 12:30 coincide with the 2-meal times), each = Table 2 grams / 3: breakfast 130/3 = 43.333 g carbohydrate, 32/3 = 10.667 g fat, 23/3 = 7.667 g protein; lunch 134/3 = 44.667 g carbohydrate, 53/3 = 17.667 g fat, 26/3 = 8.667 g protein",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 43.333,
+          "fat_g": 10.667,
+          "protein_g": 7.667
+        },
+        {
+          "t_min": 90,
+          "carbs_g": 43.333,
+          "fat_g": 10.667,
+          "protein_g": 7.667
+        },
+        {
+          "t_min": 180,
+          "carbs_g": 43.333,
+          "fat_g": 10.667,
+          "protein_g": 7.667
+        },
+        {
+          "t_min": 270,
+          "carbs_g": 44.667,
+          "fat_g": 17.667,
+          "protein_g": 8.667
+        },
+        {
+          "t_min": 360,
+          "carbs_g": 44.667,
+          "fat_g": 17.667,
+          "protein_g": 8.667
+        },
+        {
+          "t_min": 450,
+          "carbs_g": 44.667,
+          "fat_g": 17.667,
+          "protein_g": 8.667
+        }
+      ],
+      "assumed": [
+        "meals"
+      ]
+    },
+    {
+      "name": "pro2",
+      "description": "PRO-2: two large high-protein meals, breakfast at 08:00 (Table 2: 66 g carbohydrate, 31 g fat, 89 g protein; milk, ice cream, whey powder, cashew nuts) and lunch at 12:30 (75 g carbohydrate, 37 g fat, 90 g protein; braised chicken, prawn dumplings, malted cocoa drink). Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); each meal eaten within 15 min, modelled at its serving minute",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 66.0,
+          "fat_g": 31.0,
+          "protein_g": 89.0
+        },
+        {
+          "t_min": 270,
+          "carbs_g": 75.0,
+          "fat_g": 37.0,
+          "protein_g": 90.0
+        }
+      ],
+      "assumed": []
+    },
+    {
+      "name": "pro6",
+      "description": "PRO-6: the PRO-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: first three portions = breakfast thirds, last three = lunch thirds, each = Table 2 grams / 3: breakfast 66/3 = 22.0 g carbohydrate, 31/3 = 10.333 g fat, 89/3 = 29.667 g protein; lunch 75/3 = 25.0 g carbohydrate, 37/3 = 12.333 g fat, 90/3 = 30.0 g protein",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 22.0,
+          "fat_g": 10.333,
+          "protein_g": 29.667
+        },
+        {
+          "t_min": 90,
+          "carbs_g": 22.0,
+          "fat_g": 10.333,
+          "protein_g": 29.667
+        },
+        {
+          "t_min": 180,
+          "carbs_g": 22.0,
+          "fat_g": 10.333,
+          "protein_g": 29.667
+        },
+        {
+          "t_min": 270,
+          "carbs_g": 25.0,
+          "fat_g": 12.333,
+          "protein_g": 30.0
+        },
+        {
+          "t_min": 360,
+          "carbs_g": 25.0,
+          "fat_g": 12.333,
+          "protein_g": 30.0
+        },
+        {
+          "t_min": 450,
+          "carbs_g": 25.0,
+          "fat_g": 12.333,
+          "protein_g": 30.0
+        }
+      ],
+      "assumed": [
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "con2_insulin_curve",
+      "description": "Plasma insulin (COBAS e411 immunoassay) in CON-2 at 0 (fasting) to 8.5 h, mean ± SD, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "con2"
+      ],
+      "unit": "μU/ml",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 6.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 3.3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 84.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 45.3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 74.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 43.6,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 21.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.8,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 105.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 61.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 62.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 46.4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 28.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 17.9,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), row CON-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Insulin (μU/ml) CON-2 | 6.1 ± 3.3 | 84.3 ± 45.3a | 74.0 ± 43.6a | 21.6 ± 16.8 | 105.6 ± 61.0a | 62.0 ± 46.4 | 28.6 ± 17.9"
+      }
+    },
+    {
+      "id": "con6_insulin_curve",
+      "description": "Plasma insulin (COBAS e411 immunoassay) in CON-6 at 0 (fasting) to 8.5 h, mean ± SD, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "con6"
+      ],
+      "unit": "μU/ml",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 8.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 49.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 19.5,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 60.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 31.9,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 45.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 29.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 53.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 33.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 39.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 22.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 44.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 24.9,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), row CON-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Insulin (μU/ml) CON-6 | 8.1 ± 5.0 | 49.7 ± 19.5 | 60.1 ± 31.9 | 45.6 ± 29.2a | 53.7 ± 33.2 | 39.5 ± 22.0 | 44.8 ± 24.9"
+      }
+    },
+    {
+      "id": "pro2_insulin_curve",
+      "description": "Plasma insulin (COBAS e411 immunoassay) in PRO-2 at 0 (fasting) to 8.5 h, mean ± SD, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "pro2"
+      ],
+      "unit": "μU/ml",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 6.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 4.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 63.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 41.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 58.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 36.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 25.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 18.5,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 46.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 22.5,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 34.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 24.9,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 27.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 25.9,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), row PRO-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Insulin (μU/ml) PRO-2 | 6.0 ± 4.2 | 63.3 ± 41.2 | 58.7 ± 36.2 | 25.6 ± 18.5b | 46.6 ± 22.5 | 34.4 ± 24.9 | 27.8 ± 25.9"
+      }
+    },
+    {
+      "id": "pro6_insulin_curve",
+      "description": "Plasma insulin (COBAS e411 immunoassay) in PRO-6 at 0 (fasting) to 8.5 h, mean ± SD, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "pro6"
+      ],
+      "unit": "μU/ml",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 7.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 3.6,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 47.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 28.4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 39.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 21.3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 30.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 34.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.6,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 28.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 15.4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 36.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 25.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), row PRO-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Insulin (μU/ml) PRO-6 | 7.1 ± 3.6 | 47.6 ± 28.4b | 39.4 ± 21.3b | 30.8 ± 16.3 | 34.6 ± 12.6b | 28.3 ± 15.4 | 36.0 ± 25.0"
+      }
+    },
+    {
+      "id": "con2_sbp_curve",
+      "description": "Systolic blood pressure in CON-2 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "con2"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 122.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 121.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 123.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 122.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Systolic BP (mmHg), row CON-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Systolic BP (mmHg) CON-2 | 120 ± 10 | 122 ± 10 | 121 ± 11 | 120 ± 7 | 118 ± 8 | 123 ± 9 | 122 ± 9"
+      }
+    },
+    {
+      "id": "con6_sbp_curve",
+      "description": "Systolic blood pressure in CON-6 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "con6"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 116.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 121.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Systolic BP (mmHg), row CON-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Systolic BP (mmHg) CON-6 | 118 ± 6 | 120 ± 6 | 118 ± 9 | 116 ± 6 | 121 ± 8 | 120 ± 6 | 120 ± 6"
+      }
+    },
+    {
+      "id": "pro2_sbp_curve",
+      "description": "Systolic blood pressure in PRO-2 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "pro2"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 116.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 123.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 116.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 119.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Systolic BP (mmHg), row PRO-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Systolic BP (mmHg) PRO-2 | 116 ± 8 | 123 ± 8 | 118 ± 11 | 118 ± 12 | 120 ± 13 | 116 ± 6 | 119 ± 8"
+      }
+    },
+    {
+      "id": "pro6_sbp_curve",
+      "description": "Systolic blood pressure in PRO-6 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "sbp",
+      "statistic": "curve",
+      "protocols": [
+        "pro6"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 119.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 119.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 120.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 118.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 123.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Systolic BP (mmHg), row PRO-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Systolic BP (mmHg) PRO-6 | 119 ± 8 | 119 ± 7 | 118 ± 12 | 120 ± 9 | 120 ± 7 | 118 ± 11 | 123 ± 9"
+      }
+    },
+    {
+      "id": "con2_dbp_curve",
+      "description": "Diastolic blood pressure in CON-2 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "con2"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 78.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 73.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 78.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 71.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 73.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 77.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Diastolic BP (mmHg), row CON-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Diastolic BP (mmHg) CON-2 | 78 ± 8 | 73 ± 8 | 76 ± 9 | 78 ± 7 | 71 ± 8 | 73 ± 8 | 77 ± 5"
+      }
+    },
+    {
+      "id": "con6_dbp_curve",
+      "description": "Diastolic blood pressure in CON-6 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "con6"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 74.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 73.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 73.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 4.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 75.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Diastolic BP (mmHg), row CON-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Diastolic BP (mmHg) CON-6 | 76 ± 6 | 76 ± 9 | 74 ± 7 | 73 ± 6 | 73 ± 4 | 76 ± 7 | 75 ± 6"
+      }
+    },
+    {
+      "id": "pro2_dbp_curve",
+      "description": "Diastolic blood pressure in PRO-2 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "pro2"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 78.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 75.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 74.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 75.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 77.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 14.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 72.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 77.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Diastolic BP (mmHg), row PRO-2, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Diastolic BP (mmHg) PRO-2 | 78 ± 9 | 75 ± 5 | 74 ± 7 | 75 ± 9 | 77 ± 14 | 72 ± 8 | 77 ± 8"
+      }
+    },
+    {
+      "id": "pro6_dbp_curve",
+      "description": "Diastolic blood pressure in PRO-6 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
+      "marker": "dbp",
+      "statistic": "curve",
+      "protocols": [
+        "pro6"
+      ],
+      "unit": "mmHg",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 79.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 77.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 150,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 330,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 420,
+          "value": 76.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 510,
+          "value": 77.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Diastolic BP (mmHg), row PRO-6, columns 0, 1, 2.5, 4, 5.5, 7, 8.5 h (footnote: mean ± standard deviation, n = 10)",
+        "quote": "Diastolic BP (mmHg) PRO-6 | 79 ± 6 | 77 ± 10 | 76 ± 6 | 76 ± 6 | 76 ± 8 | 76 ± 8 | 77 ± 6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Insulin 8.5 h iAUC per diet (Table 3 iAUC column, mean ± SD, n = 10; unit printed only in the abstract, 28.4 ± 15.6 and 13.7 ± 7.1 U.min.L−1): trapezoid over the seven samples above the 0 h value (the table means reproduce it), but in U·min/L, a unit the loader does not list for insulin",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_in_u_per_l"
+      }
+    },
+    {
+      "what": "Glucose at 0-8.5 h and its 8.5 h iAUC per diet (Table 3, Glucose rows; abstract; Results): CGM (subcutaneous interstitial) glucose. The row's iAUC is the one the Results call the 'CGMS glucose' iAUC, the plasma assays named are insulin, TAG and hs-CRP only, and the Discussion contrasts the CGM data with venous sampling",
+      "missing": {
+        "kind": "marker",
+        "name": "interstitial_glucose"
+      }
+    },
+    {
+      "what": "Plasma triacylglycerol at 0-8.5 h and 8.5 h iAUC per diet (Table 3, TAG rows)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Plasma hs-CRP at 0, 1, 4, 5.5, 8.5 h and its iAUC per diet (Table 3, hs-CRP rows)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "Systolic and diastolic BP 8.5 h iAUC per diet (Table 3 iAUC column): no unit printed for the area",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Participants' systolic and diastolic blood pressure (Table 1): BP was measured on several occasions and the table does not say which",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Effect sizes (Cohen's d with Glass's delta) of each diet against CON-2 (Table 3, column D) and percent differences in iAUC (Results, Discussion)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    }
+  ]
+}
