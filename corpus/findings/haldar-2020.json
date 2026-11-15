@@ -1,0 +1,180 @@
+{
+  "paper": "haldar-2020",
+  "citation": {
+    "authors": "Haldar S, Egli L, De Castro CA, et al.",
+    "title": "High or low glycemic index (GI) meals at dinner results in greater postprandial glycemia compared with breakfast: a randomized controlled trial",
+    "journal": "BMJ Open Diabetes Research & Care",
+    "year": 2020,
+    "doi": "10.1136/bmjdrc-2019-001099",
+    "pmid": "32327444",
+    "pmcid": "PMC7202752"
+  },
+  "population": {
+    "n": 34,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 56.8,
+      "sd": 4.84,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.3,
+      "sd": 1.69,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "34 per-protocol completers (48 enrolled) of a crossover trial in 'healthy, Chinese, elderly volunteers', Singapore: 21 men and 13 postmenopausal women (Table 1). Enrolment: Chinese ethnic origin, 50-70 y, BMI 18.5-24.9 kg/m2; excluded smoking, waist >90 cm (men) / >85 cm (women), BP >=150/90 mm Hg, fasting glucose >=7 mmol/L, any medical condition that may affect results, interfering medication, HRT. Age 56.8 +/- 0.83 y and BMI 22.3 +/- 0.29 kg/m2 are printed as mean +/- SEM (Table 1); SD computed here as SEM x sqrt(34): 0.83 x 5.831 = 4.84 y and 0.29 x 5.831 = 1.69 kg/m2. Observed min/max not printed."
+  },
+  "protocols": [
+    {
+      "name": "screening_fasted",
+      "description": "Screening and consent visit 'following an overnight fast' (Methods, Study population and recruitment): seated resting blood pressure (Omron HEM907) and fasting glucose (HemoCue 201) measured there; Table 1 ('Subjects' baseline characteristics') does not itself say when its values were taken, and the method and time of the heart-rate reading are not described. Entered as a fasted morning with water only: clock hour (08:00), fast length (10 h, 'overnight') and a 30-minute run-in standing for the single measurement are the guide's defaults.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting glucose at screening, HemoCue 201 (the paper does not say capillary or venous blood), per-protocol population, mean +/- SEM",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 34
+      },
+      "location": {
+        "where": "Table 1, column 'Per-protocol population' (footnote: 'Data are expressed as mean±SEM')",
+        "quote": "Fasting glucose (mmol/L) | 4.6±0.10"
+      }
+    },
+    {
+      "id": "sbp",
+      "description": "Seated resting systolic blood pressure at the fasted screening visit (automated Omron HEM907), per-protocol population, mean +/- SEM",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 122.6,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.09,
+        "n": 34
+      },
+      "location": {
+        "where": "Table 1, column 'Per-protocol population' (footnote: 'Data are expressed as mean±SEM')",
+        "quote": "SBP (mm Hg) | 122.6±2.09"
+      }
+    },
+    {
+      "id": "dbp",
+      "description": "Seated resting diastolic blood pressure at the fasted screening visit (automated Omron HEM907), per-protocol population, mean +/- SEM",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 78.7,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.4,
+        "n": 34
+      },
+      "location": {
+        "where": "Table 1, column 'Per-protocol population' (footnote: 'Data are expressed as mean±SEM')",
+        "quote": "DBP (mm Hg) | 78.7±1.40"
+      }
+    },
+    {
+      "id": "heart_rate",
+      "description": "Heart rate from Table 1, per-protocol population, mean +/- SEM; the paper does not describe how or when it was measured (entered on the fasted screening morning with the other Table 1 values)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "screening_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 62.2,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 34
+      },
+      "location": {
+        "where": "Table 1, column 'Per-protocol population' (footnote: 'Data are expressed as mean±SEM')",
+        "quote": "Heart rate (bpm) | 62.2±2.00"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Test-meal and subsequent-standardized-meal iAUCs (mean, SD, n) of glucose, insulin, triglycerides, FFA and glucagon by GI and meal time, and their contrasts (Table 2): no unit is printed for any area in the table, caption, footnotes or methods (the meals' fat and protein, and the whole SSM composition, are also only in online supplementary table 1, not in the XML)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Combined total AUCs of TM + SSM (mean, SD, n) of glucose, insulin, triglycerides, FFA and glucagon by GI and meal time, and contrasts (Table 3): no unit printed; also a sum of two separate 3-h areas over different meals",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "The four test meals themselves (~75 g available carbohydrate as high- or low-GI rice with chicken seasoning and 20 g vegetables), the standard meal before and the subsequent standardized lunch/breakfast: fat and protein grams, and all SSM grams, are only in online supplementary table 1 (a PDF not in the full text), so no meal arm can be written",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Time courses of serum glucose, insulin, TG, plasma FFA and glucagon after each TM and SSM, mean +/- SEM (Figure 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Baseline (pre-TM and pre-SSM) glucose, insulin, glucagon, TG and FFA concentrations by session (online supplementary table 2, not in the full text; described only qualitatively in Results)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
