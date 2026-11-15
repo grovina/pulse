@@ -1,0 +1,40 @@
+{
+  "paper": "reed-2025",
+  "citation": {
+    "authors": "Reed KS, Crew MR, Frescoln AM, Romanowski SM, Valentine RJ, Lefferts WK",
+    "title": "Effects of a high-sugar mixed meal on cerebrovascular haemodynamics in young, healthy versus middle-aged adults with cardiometabolic risk factors",
+    "journal": "Experimental Physiology",
+    "year": 2025,
+    "doi": "10.1113/EP093238",
+    "pmid": "41273335",
+    "pmcid": "PMC13140483"
+  },
+  "reported": [
+    {
+      "what": "plasma glucose at baseline, 30 and 60 min after the 930 kcal high-sugar mixed meal (129 g carbohydrate, 35.5 g fat, 14 g protein), young healthy group (n = 21) and middle-aged group, as mean ± an unlabelled spread (Table 2; its footnote gives only abbreviations and time-effect symbols)",
+      "location": {
+        "where": "Table 2, row 'Glucose, mg/dL', YA, columns BL, 30 min, 60 min",
+        "quote": "Glucose, mg/dL | YA | 73.8 ± 25.2 | 100.9 ± 16.0 | 81.1 ± 13.2"
+      }
+    },
+    {
+      "what": "plasma insulin at the same times and groups, printed in pg/mL (a unit the loader does not accept; the paper gives no conversion), same unlabelled ± (Table 2)",
+      "location": {
+        "where": "Table 2, row 'Insulin, pg/mL', YA, columns BL, 30 min, 60 min",
+        "quote": "Insulin, pg/mL | YA | 302.6 ± 379.4 | 1997.6 ± 1154.1 | 1169.6 ± 409.7"
+      }
+    },
+    {
+      "what": "heart rate at baseline, 30 and 60 min, both groups, same unlabelled ± (Table 3; footnote gives only abbreviations and significance symbols)",
+      "location": {
+        "where": "Table 3, row 'Heart rate, beats/min', YA, columns BL, 30 min, 60 min",
+        "quote": "Heart rate, beats/min | YA | 56 ± 9 | 63 ± 11 | 65 ± 11"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unlabelled_uncertainty"
+  },
+  "detail": "Every value of a model marker (glucose, insulin, heart rate in Tables 2 and 3) is printed as mean ± a spread that no footnote, caption or methods sentence labels as SD or SEM (only Table 1 and the supplementary Table S1 are said to be mean ± SD); beyond that, the paper never states that subjects fasted before the morning meal, insulin is in pg/mL, and the middle-aged group (hypertension, dyslipidaemia, obesity, antihypertensive and statin use) cannot be represented."
+}
