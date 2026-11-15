@@ -11,6 +11,7 @@ from the start so a late query still sees what was swallowed earlier.
 """
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
 
 import torch
 import torch.nn as nn
@@ -19,6 +20,9 @@ from .base import GutModuleBase
 from ..gastric import FLAG_GATE_SCALE_G, EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals
 from ..types import GUT_OUTPUT_DIM
 
+if TYPE_CHECKING:
+    from ..knowledge.cohort_types import MealDetails
+
 
 @dataclass
 class MealEvent:
@@ -26,6 +30,9 @@ class MealEvent:
     carbs: float
     fats: float
     proteins: float
+    # What the paper says beyond the grams (``knowledge.cohort_types.MealDetails``), or
+    # None. Read only by a model built with ``meal_details=True`` (``modules/food.py``).
+    details: Optional["MealDetails"] = None
 
 
 # How far back a protocol keeps a meal. 720 min at 2.13 kcal/min is about
@@ -151,3 +158,26 @@ class GutModule(nn.Module):
         flag = 1.0 - torch.exp(-present / FLAG_GATE_SCALE_G)
         out = torch.cat([appearance, flag.unsqueeze(-1).expand(B, T, 1)], dim=-1)
         return out.squeeze(0) if squeeze else out
+
+    def appearance_by_meal(
+        self,
+        grams: torch.Tensor,
+        present: torch.Tensor,
+        embedding: torch.Tensor,
+        logit_shift: torch.Tensor,
+    ) -> torch.Tensor:
+        """``appearance`` with each meal's outflow kept apart and its own absorbed share.
+
+        ``grams`` is ``[M, K, T, 3]`` (``gastric.simulate_by_meal``, carbohydrate,
+        protein, fat), ``present`` ``[M, T]`` and ``logit_shift`` ``[M, K, 3]`` in the same
+        macro order (``food.MealReader``): meal ``k`` is absorbed at
+        ``σ(person's logit + shift)``. Returns ``[B, T, GUT_OUTPUT_DIM]``.
+        """
+        B, T = int(embedding.shape[0]), int(grams.shape[2])
+        logit = self.kernel.bioavailable_logit(embedding)               # [B, 3] glucose, lipid, amino
+        shift = torch.stack([logit_shift[..., 0], logit_shift[..., 2], logit_shift[..., 1]], dim=-1)
+        f_bio = self.kernel.appearance_units_per_g * torch.sigmoid(logit.unsqueeze(1) + shift)  # [B, K, 3]
+        ordered = torch.stack([grams[..., 0], grams[..., 2], grams[..., 1]], dim=-1)          # [M, K, T, 3]
+        appearance = (ordered * f_bio.unsqueeze(2)).sum(dim=1)                                 # [B, T, 3]
+        flag = 1.0 - torch.exp(-present / FLAG_GATE_SCALE_G)
+        return torch.cat([appearance, flag.unsqueeze(-1).expand(B, T, 1)], dim=-1)

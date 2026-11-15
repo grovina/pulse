@@ -19,7 +19,7 @@ The meal tuple of a ``CohortArmSpec`` is ``(t_min, carbs_g, fat_g, protein_g)``
 ``AUTHORING.md`` used to say. A file names the three fields; this module writes
 the tuple. What a meal states beyond them (fibre, sugars, fat by type, the fat and
 protein sources, form, food) goes to ``CohortArmSpec.meal_details``, beside the
-tuple, which the rollout does not read.
+tuple; only a model built with ``meal_details=True`` reads it.
 """
 
 from __future__ import annotations
@@ -594,7 +594,7 @@ def _series_input(
     return tuple(series) if ok else None
 
 
-# What a meal may state beyond its grams (``MealDetails``). The model does not read it.
+# What a meal may state beyond its grams (``MealDetails``). Read only by a model built with ``meal_details=True``.
 _MEAL_DETAIL_KEYS = frozenset({
     "fibre_g", "sugars_g", "fat_g_by_type", "fat_source", "protein_source", "form", "food",
 })

@@ -31,6 +31,24 @@ minute for every state. A person is a 32-number embedding; the median person
 is the zero embedding. The checkpoints of iters 113–115 have 35,551
 parameters (`--hidden-dim=48`).
 
+`--meal-details` (off in the recipe; `pulse/modules/food.py`) adds a meal
+reader of 262 parameters. It reads a meal's fibre, sugars, fat by type,
+protein source and form (25 features: shares of the macronutrient, one-hot
+source and form, and a stated-or-not mask for each field) and gives the meal
+two modifiers per macronutrient. Speed, between 1/3 and 3, scales the meal's
+share of the stomach's 2.13 kcal/min, so it changes when the meal reaches
+the duodenum and the blood. Share is a shift of the logit of the person's
+absorbed fraction, at most ln 3 either way, so it changes how much reaches
+the blood. Its last layer starts at zero. Without the flag there is no
+reader and the model is the one before it, bit for bit, and so is a meal
+that states none of these details. `fat_source` and `food` are free text
+and are not read, so `wong-2025`'s butter, coconut-oil and vegetable-oil
+days, which name only the fat, are one meal to the reader. No run has
+trained with it.
+An evidence step of items with meal details costs the same with it as
+without (24.5 s against 26.5 s batched, mean of three steps on the lab box,
+2026-11-15, `python -m pulse.diagnostics step-time --only-meal-details`).
+
 ## Training
 
 The recipe is `train/spec.json` (iter 116, the flags of iter 115: 58 epochs,
@@ -272,11 +290,17 @@ Not rescored, from the board of 2026-10-29:
   `fibre_g`, `sugars_g`, `fat_g_by_type`, `fat_source`, `protein_source`,
   `form`, `food` (`corpus/README.md`, "What a meal says"); `carbs_g` is
   available carbohydrate. They are carried beside the meal tuple
-  (`CohortArmSpec.meal_details`) and **the model does not read them**: every
-  registry and file loads to the same specs as before. Their one use is the
-  gate's check 5, where equal grams with a detail both arms state differently
-  are two protocols. No committed file uses them yet; `wong-2025`,
-  `almoraie-2026` and `lecerf-2015` left arms out for want of them.
+  (`CohortArmSpec.meal_details`), and on each `MealEvent` of the arm's
+  rollout. 54 meal arms in 16 papers carry them; 53 state something the
+  meal reader reads (`suzuki-2012`'s glucose load names only its food), and
+  300 of the 634 training points are on such arms. The recipe's model does
+  not read them; a model trained with `--meal-details` does (The model,
+  above). The gate's
+  check 5 treats equal grams with a detail both arms state differently as two
+  protocols. The gate still probes the model without the reader, so a
+  finding that differs only through a detail stays out
+  (`meal_details_not_read`), and `corpus/README.md` still says the model does
+  not read them.
 - One item is a spread across people and none is a correlation. Every
   population is healthy adults, except the groups three papers read from
   files enter as `unselected` (`meyergerspach-2016`'s obese group,
@@ -308,7 +332,7 @@ Not rescored, from the board of 2026-10-29:
   receive no gradient from any loss.
 - The stomach's split correction acts on the three gastric pools and never
   reaches absorption: no module reads a gastric state. It is exactly zero in
-  iter 114.
+  iter 114. The meal reader's speeds do not reach those pools either.
 - The cortisol gain on glucose production is centred on the population's
   12 µg/dL, not the person's own basal cortisol, which the stress module
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%

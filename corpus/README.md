@@ -466,9 +466,11 @@ gram per part; more than that is refused as a slip. A value, not a range: "about
 5 g fibre" is stated, "less than 1 g" is not. Never fill a detail from a food
 table or from what a food usually contains: the same rule as for the grams.
 
-**The model does not read these keys yet.** An arm with them rolls exactly as
-the same arm without them. Enter them for the record, and for the change to the
-model that will read them; the second reader checks them as closely as the grams.
+**The model reads these keys only when it is trained with `--meal-details`**
+(`pulse/modules/food.py`: fibre, sugars, fat types, protein source and form; not
+`food` or `fat_source`, which are free text). Without the flag an arm with them
+rolls exactly as the same arm without them. Enter them whenever the paper states
+them; the second reader checks them as closely as the grams.
 They do one thing now: two arms with equal grams whose meals differ in a detail
 **both** state are two protocols, and the gate does not hold them against each
 other (check 5). A detail only one of them states does not separate them, and

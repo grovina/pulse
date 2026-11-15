@@ -30,6 +30,7 @@ from .knowledge.cohort_types import (
     BelowBaseline,
     CohortArmSpec,
     CohortStatisticSpec,
+    MealDetails,
     StatisticKind,
     StatisticWindow,
     TargetShape,
@@ -74,11 +75,23 @@ def norm_center_initial_state(
     return lambda _spec: state
 
 
-def _meals_from_spec(tuples: tuple[tuple[float, float, float, float], ...]) -> list[MealEvent]:
+def _meals_from_spec(
+    tuples: tuple[tuple[float, float, float, float], ...],
+    details: tuple[MealDetails, ...] = (),
+) -> list[MealEvent]:
+    """An arm's meals; ``details`` is its ``meal_details`` (one per meal, or ``()``),
+    carried on each meal for a model that reads them (``modules/food.py``)."""
+    if details and len(details) != len(tuples):
+        raise ValueError(f"{len(details)} meal details for {len(tuples)} meals")
     return [
-        MealEvent(time=float(t), carbs=float(c), fats=float(f), proteins=float(p))
-        for t, c, f, p in tuples
+        MealEvent(time=float(t), carbs=float(c), fats=float(f), proteins=float(p),
+                  details=details[i] if details and not details[i].is_empty() else None)
+        for i, (t, c, f, p) in enumerate(tuples)
     ]
+
+
+def _arm_meals(arm: CohortArmSpec) -> list[MealEvent]:
+    return _meals_from_spec(arm.meals, arm.meal_details)
 
 
 # Iter 97 (review 1.7 / 4.9): the frame an arm runs in when it declares no
@@ -160,7 +173,7 @@ def _rollout_arm_states(
     """
     n_steps = arm.duration_min
     t0 = float(arm.start_hour * 60.0)
-    meals = _meals_from_spec(arm.meals)
+    meals = _arm_meals(arm)
     device = state_batch.device
     sw = _optional_series_tensor(
         f"{arm.label}.sleep_wake", arm.sleep_wake, n_steps, device, fill=ARM_DEFAULT_SLEEP_WAKE,
@@ -243,7 +256,7 @@ def rollout_arms(
     for arm, emb_i, state_i in arm_rows:
         n_i = int(emb_i.shape[0])
         dur = int(arm.duration_min)
-        arm_meals = _meals_from_spec(arm.meals)
+        arm_meals = _arm_meals(arm)
         sw = _optional_series_tensor(
             f"{arm.label}.sleep_wake", arm.sleep_wake, dur, device, fill=ARM_DEFAULT_SLEEP_WAKE,
         )

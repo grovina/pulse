@@ -29,13 +29,17 @@ from .types import (
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE, OBSERVABLE_IDS,
 )
-from .gastric import EMPTY_KCAL_PER_MIN, simulate, swallow_from_meals, swallow_from_member_meals
+from .gastric import (
+    EMPTY_KCAL_PER_MIN, simulate, simulate_by_meal, swallow_by_meal, swallow_from_meals,
+    swallow_from_member_meals,
+)
 from .modules import (
     GutModule, MetabolicModule, AppetiteModule, StressModule,
     CardiovascularModule, ThermoregModule, RespiratoryModule,
     HepatobiliaryModule, DuodenalDeliveryKernel, GastricModule, CircadianModule,
 )
 from .modules.base import PhysiologyModule, compute_time_features
+from .modules.food import MealReader, meal_feature_table
 from .modules.gut import MealEvent
 
 # Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
@@ -270,6 +274,7 @@ class ModularPhysiologyNetwork(nn.Module):
         respiratory_hidden: int = 24,
         gut_hidden: int = 32,
         hepatobiliary_hidden: int = 32,
+        meal_details: bool = False,
     ):
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -341,6 +346,9 @@ class ModularPhysiologyNetwork(nn.Module):
             "gut_hidden": int(gut_hidden),
             "hepatobiliary_hidden": int(hepatobiliary_hidden),
         }
+        if meal_details:
+            # Recorded only when on, so a checkpoint without it is the model of before.
+            self.constructor_kwargs["meal_details"] = True
 
         # Learned defaults for missing external inputs (iter 97; review item 1.7 and
         # student-review item 13). Through iter 96 these were two GLOBAL scalars,
@@ -390,6 +398,12 @@ class ModularPhysiologyNetwork(nn.Module):
             "_marker_from_module_order", torch.tensor(inverse, dtype=torch.long), persistent=False)
         # Static index maps for planned rollouts, per (purpose, module, device).
         self._index_cache: dict[tuple[str, str, str], object] = {}
+
+        # What a meal is made of, read into its speed through the stomach and its
+        # absorbed share (``modules/food.py``). Off by default: then there is no reader,
+        # no parameter and no change. Built last, so switching it on leaves every other
+        # module's initial weights where the same seed puts them without it.
+        self.meal_reader: Optional[MealReader] = MealReader() if meal_details else None
 
     @classmethod
     def from_checkpoint(cls, checkpoint: dict, strict: bool = True) -> "ModularPhysiologyNetwork":
@@ -1297,16 +1311,43 @@ def _swallow_window(
     return swallow_from_meals(n_steps, meals or [], device).unsqueeze(0).expand(batch, n_steps, 3)
 
 
+def _stomach_by_meal(
+    model, meal_lists: list[list], n_steps: int, device: torch.device,
+) -> Optional[tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
+    """The stomach with each meal apart, at the speeds its details give, for ``M`` meal
+    lists: ``(outflow[M, K, T, 3], filled[M, T, 3], logit_shift[M, K, 3], read[M])``,
+    ``read`` saying which lists have a meal with features. ``None`` when the model has
+    no meal reader or no meal of any list states a detail it reads: then nothing about
+    the meals differs from a model without one, and the caller takes the shared stomach.
+    """
+    reader = getattr(model, "meal_reader", None)
+    if reader is None:
+        return None
+    table = meal_feature_table(meal_lists, device)
+    if table is None:
+        return None
+    features, stated = table
+    speed, shift = reader.modifiers(features, stated)
+    swallow = swallow_by_meal(n_steps, meal_lists, int(features.shape[1]), device)
+    left, filled = simulate_by_meal(swallow, model.gastric.empty_kcal(), speed)
+    return left, filled, shift, stated.any(dim=1)
+
+
 def _meal_outputs(
     model: "ModularPhysiologyNetwork",
     embedding: torch.Tensor,
     swallow: torch.Tensor,
     has_meals: bool,
+    meal_lists: Optional[list[list[MealEvent]]] = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Gut appearance ``[B, T, GUT_OUTPUT_DIM]`` and duodenal delivery ``[M, T, 3]`` from
     one run of the stomach over ``swallow`` (``[M, T, 3]``, with ``M`` 1 for a protocol
     shared by the batch or ``B`` for one per member). The two are different readings of
     the same outflow, so the compartment is stepped once, for every member together.
+
+    ``meal_lists`` are the ``M`` meal lists behind ``swallow``. A model with a meal reader
+    steps the stomach meal by meal for them too (``_stomach_by_meal``), and a list with no
+    meal it reads keeps the shared stomach's outputs exactly.
     """
     if not has_meals:
         B, T = int(embedding.shape[0]), int(swallow.shape[1])
@@ -1314,10 +1355,18 @@ def _meal_outputs(
             model.gut._zero_output.expand(B, T, -1).clone(),
             torch.zeros(swallow.shape[0], T, DUODENAL_DIM, dtype=torch.float32, device=swallow.device),
         )
+    emb_gut = model.embedding_projections["gut"](embedding)
     left, filled = simulate(swallow, model.gastric.empty_kcal())
-    gut = model.gut.appearance(
-        left, filled.sum(dim=-1), model.embedding_projections["gut"](embedding))
-    return gut, model.duodenal.delivery(left)
+    gut = model.gut.appearance(left, filled.sum(dim=-1), emb_gut)
+    duo = model.duodenal.delivery(left)
+    by_meal = None if meal_lists is None else _stomach_by_meal(
+        model, meal_lists, int(swallow.shape[1]), swallow.device)
+    if by_meal is not None:
+        left_k, filled_k, shift, read = by_meal
+        gut_k = model.gut.appearance_by_meal(left_k, filled_k.sum(dim=-1), emb_gut, shift)
+        gut = torch.where(read.view(-1, 1, 1), gut_k, gut)
+        duo = torch.where(read.view(-1, 1, 1), model.duodenal.delivery(left_k.sum(dim=1)), duo)
+    return gut, duo
 
 
 def _per_member_meals(meals, batch: int) -> Optional[list[list[MealEvent]]]:
@@ -1454,6 +1503,7 @@ def integrate(
             gut_window, duo_window = _meal_outputs(
                 model, embedding, swallow if member_meals is not None else swallow[:1],
                 has_meals=any(member_meals) if member_meals is not None else bool(meals),
+                meal_lists=member_meals if member_meals is not None else [meals],
             )
             gut_outputs = gut_window if gut_outputs is None else gut_outputs
             duodenal_outputs = duo_window if duodenal_outputs is None else duodenal_outputs
@@ -1633,6 +1683,10 @@ def precompute_duodenal_outputs(
     if meals is None:
         meals = []
     device = model.duodenal._anchor.device
+    if meals and dt == 1.0:
+        by_meal = _stomach_by_meal(model, [meals], n_steps, device)
+        if by_meal is not None:
+            return model.duodenal.delivery(by_meal[0].sum(dim=1))[0]
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     rate = model.gastric.empty_kcal() if hasattr(model, "gastric") else EMPTY_KCAL_PER_MIN
     return model.duodenal.forward_window(times, meals, rate)
@@ -1684,6 +1738,16 @@ def precompute_gut_outputs(
     # part of the absorption timebase.
     times = torch.arange(n_steps, dtype=torch.float32, device=device) * dt
     emb_gut = model.embedding_projections["gut"](embedding)
+    if meals and dt == 1.0:
+        # A meal reader steps the stomach meal by meal (``_stomach_by_meal``); without
+        # one, or with no meal it reads, this is the shared stomach below, unchanged.
+        by_meal = _stomach_by_meal(model, [meals], n_steps, device)
+        if by_meal is not None:
+            left, filled, shift, _read = by_meal
+            unbatched = emb_gut.dim() == 1
+            out = model.gut.appearance_by_meal(
+                left, filled.sum(dim=-1), emb_gut.unsqueeze(0) if unbatched else emb_gut, shift)
+            return out.squeeze(0) if unbatched else out
     rate = model.gastric.empty_kcal() if hasattr(model, "gastric") else EMPTY_KCAL_PER_MIN
     return model.gut.forward_window(times, meals, emb_gut, kcal_per_min=rate)
 

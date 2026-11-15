@@ -396,6 +396,16 @@ GUT_OUTPUT_DIM = 4  # glucose_appearance, lipid_appearance, amino_appearance, nu
 # Duodenal delivery (gastric emptying), g/min: fat, protein, carbohydrate.
 DUODENAL_DIM = 3
 
+# What a meal can say beyond its three grams (``corpus/README.md``, "What a meal says"):
+# the controlled vocabularies of ``knowledge.cohort_types.MealDetails``. Defined here so
+# the gut's meal reader (``modules/food.py``) can lay out its features without importing
+# knowledge code.
+FAT_TYPES: tuple[str, ...] = ("saturated", "monounsaturated", "polyunsaturated")
+PROTEIN_SOURCES: tuple[str, ...] = (
+    "whey", "casein", "dairy", "soy", "plant", "egg", "meat", "fish", "mixed", "other",
+)
+MEAL_FORMS: tuple[str, ...] = ("liquid", "solid", "mixed")
+
 GUT_CHANNEL_IDS: tuple[str, ...] = (
     "gut.glucose_appearance",
     "gut.lipid_appearance",

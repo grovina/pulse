@@ -143,11 +143,12 @@ def _cmd_step_time(args: argparse.Namespace) -> int:
     if args.checkpoint:
         model, _ = load_model_from_checkpoint(args.checkpoint)
     else:
-        model = ModularPhysiologyNetwork()
+        model = ModularPhysiologyNetwork(meal_details=args.meal_details)
     result = step_time(
         model, batch_size=args.evidence_batch_size, n_draws=args.draws,
         max_arm_minutes=args.max_arm_minutes, n_steps=args.steps,
         fed_day_minutes=args.fed_day_minutes, seed=args.seed,
+        only_meal_details=args.only_meal_details,
     )
     print(render_step_time(result))
     if args.out:
@@ -303,6 +304,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="Keep only items and rules whose arms are at most this long (0 = all)")
     st.add_argument("--fed-day-minutes", type=int, default=1440)
     st.add_argument("--steps", type=int, default=2)
+    st.add_argument("--meal-details", action="store_true",
+                    help="An untrained model whose gut reads meal details (the trainer's --meal-details)")
+    st.add_argument("--only-meal-details", action="store_true",
+                    help="Keep only the items whose arms state meal details, so every item pays for them")
     st.add_argument("--seed", type=int, default=0)
     st.add_argument("--out", default=None, help="Optional path to write JSON")
     st.set_defaults(func=_cmd_step_time)

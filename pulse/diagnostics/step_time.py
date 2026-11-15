@@ -76,10 +76,14 @@ def step_time(
     n_steps: int = 2,
     fed_day_minutes: int = FED_DAY_MINUTES,
     seed: int = 0,
+    only_meal_details: bool = False,
 ) -> StepTime:
-    """Mean CPU seconds per step, serial and batched, over ``n_steps`` sampled steps."""
+    """Mean CPU seconds per step, serial and batched, over ``n_steps`` sampled steps.
+    ``only_meal_details`` keeps only the items with an arm whose meals state details."""
     torch.set_num_threads(1)
     items = [s for s in ALL_COHORT_STATISTICS if _within(s.arms, max_arm_minutes)]
+    if only_meal_details:
+        items = [s for s in items if any(a.meal_details for a in s.arms)]
     rules = [r for r in PHYSIOLOGY_RULES if _within(r.arms, max_arm_minutes)]
     ctx = _context(model)
     device = torch.device("cpu")

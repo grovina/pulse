@@ -468,6 +468,8 @@ def train(
     # Iter 97 (review 4.7 / 4.10).
     cold_distill_level_band: float = 0.0,
     perturb_protocols: bool = False,
+    # The gut reads what a meal is made of (``modules/food.py``). Off is the model without it.
+    meal_details: bool = False,
     # Iter 97 (review 1.5): the resolved configuration, recorded verbatim in
     # the checkpoint so a run can be checked against its recipe.
     train_config: dict[str, Any] | None = None,
@@ -621,7 +623,14 @@ def train(
         cardiovascular_hidden=hidden_dim,
         thermoreg_hidden=max(16, hidden_dim // 3),
         respiratory_hidden=max(16, hidden_dim // 3),
+        meal_details=meal_details,
     ).to(device)
+    if meal_details:
+        print(
+            f"[MEAL-DETAILS] the gut reads meal details: {sum(p.numel() for p in model.meal_reader.parameters())} "
+            "parameters, starting at no effect",
+            flush=True,
+        )
 
     if compile_steps:
         enable_compiled_steps(model)
@@ -1131,6 +1140,7 @@ def train(
         "trajectory_shape_markers": list(trajectory_shape_markers),
         "cold_distill_level_band": cold_distill_level_band,
         "perturb_protocols": perturb_protocols,
+        "meal_details": meal_details,
         "grad_clip": grad_clip,
         "seed": seed,
         "stopped_for_deadline": stopped_for_deadline,
@@ -2213,6 +2223,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "the fixed protocol as one sample in four.",
     )
     parser.add_argument(
+        "--meal-details", action="store_true",
+        help="The gut reads what a meal is made of beyond its grams (fibre, sugars, fat by "
+             "type, protein source, form; corpus/README.md, 'What a meal says'): a small "
+             "network gives each meal a speed through the stomach and an absorbed share per "
+             "macronutrient (pulse/modules/food.py). It starts at no effect. Off is the model "
+             "without it, exactly.",
+    )
+    parser.add_argument(
         "--allow-spec-override", action="store_true",
         help="Iter 97 (review 1.5): permit CLI flags that change a value the --spec sets. "
              "Without it a divergence between the recipe and the run is an error.",
@@ -2427,6 +2445,7 @@ def main():
         trajectory_shape_markers=_split_markers(args.trajectory_shape_markers),
         cold_distill_level_band=args.cold_distill_level_band,
         perturb_protocols=args.perturb_protocols,
+        meal_details=args.meal_details,
         train_config=train_config,
         spec_path=args.spec,
         init_from=args.init_from,

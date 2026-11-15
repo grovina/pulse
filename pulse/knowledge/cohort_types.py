@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from ..types import SERIES_INDEX
+from ..types import FAT_TYPES, MEAL_FORMS, PROTEIN_SOURCES, SERIES_INDEX
 
 
 class StatisticKind(str, Enum):
@@ -184,11 +184,9 @@ class Population:
 
 
 # What a meal can say beyond its three grams (``corpus/README.md``, "What a meal says").
-# The model does not read any of it yet: it is carried for the record and for the
-# change that will (a learned description of food), and for the gate's conflict check.
-FAT_TYPES = ("saturated", "monounsaturated", "polyunsaturated")
-PROTEIN_SOURCES = ("whey", "casein", "dairy", "soy", "plant", "egg", "meat", "fish", "mixed", "other")
-MEAL_FORMS = ("liquid", "solid", "mixed")
+# The vocabularies live in ``types`` so the model's meal reader shares them. The model
+# reads the details only when built with ``meal_details=True`` (``modules/food.py``); they
+# are also what the gate's conflict check compares.
 
 
 def _same_text(a: str, b: str) -> bool:
@@ -308,8 +306,10 @@ class CohortArmSpec:
 
     ``meal_details`` is what the paper says about each meal beyond its grams, one
     ``MealDetails`` per entry of ``meals`` in the same order, or ``()`` when no meal
-    states any. The rollout does not read it: two arms that differ only here are
-    the same arm to the model, and different protocols to the gate's conflict check.
+    states any. Only a model built with ``meal_details=True`` reads it (the
+    trainer's ``--meal-details``, ``modules/food.py``); to any other model two arms that
+    differ only here are the same arm. To the gate's conflict check they are different
+    protocols.
     """
 
     label: str

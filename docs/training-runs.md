@@ -193,6 +193,24 @@ growing to ~1e-4 NORM_SCALE units over a 48 h rollout.
   balance every 4th aux step) was set by what Cloud Run could afford at iter 97. It
   can now afford several times more literature steps per epoch.
 
+## Model switches
+
+- `--meal-details` (default off) builds the model with a meal reader
+  (`pulse/modules/food.py`, 262 parameters): the gut reads what a meal is made of
+  beyond its grams (fibre, sugars, fat by type, protein source, form; free-text
+  `fat_source` and `food` are not read) and gives each meal its own speed through the
+  stomach and its own absorbed share, per macronutrient. It starts at no effect. Off,
+  there is no reader and the model is the model without it, bit for bit; on, a meal
+  stating none of those details is delivered exactly as without it. The flag is in
+  the run's `[CONFIG]` line and its checkpoint (`meal_details`, and in `model_config`
+  so `from_checkpoint` rebuilds the reader). With `--init-from` a checkpoint without a
+  reader warm-starts everything else and the reader starts fresh.
+  `python -m pulse.diagnostics step-time --meal-details --only-meal-details` times a
+  step whose every item pays for it. On the lab box on 2026-11-15 (untrained model, 4 items
+  and 1 rule, uncapped, mean of 3 steps, CPU seconds) it was 24.5 s batched with the
+  reader against 26.5 s without (spin-up 12.5 / 13.2, rollout and score 4.0 / 4.5,
+  backward 7.8 / 8.7), peak memory 3.4 GB both: the cost is below the noise.
+
 ## Commit before you launch
 
 Commit the code you intend to train before deploying — the trainer image is

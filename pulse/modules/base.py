@@ -928,6 +928,12 @@ class GutModuleBase(nn.Module):
         frac = torch.sigmoid(raw[..., n_logit:]).reshape(*raw.shape[:-1], self.N_MACROS)
         return weights, self.appearance_units_per_g * frac
 
+    def bioavailable_logit(self, embedding: torch.Tensor) -> torch.Tensor:
+        """``[..., 3]`` — the logit of ``bioavailable_fraction``, so a meal can shift it
+        (``modules/food.py``) and stay inside (0, 1)."""
+        raw = self.kernel(embedding)
+        return raw[..., self.N_MACROS * self.n_basis:]
+
     def bioavailable_fraction(self, embedding: torch.Tensor) -> torch.Tensor:
         """``[..., 3]`` — the absorbed SHARE of each ingested macro, in (0, 1).
 

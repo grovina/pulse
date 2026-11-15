@@ -138,6 +138,59 @@ def swallow_from_meals(n_steps: int, meals: list, device: torch.device) -> torch
     return swallow_from_member_meals(n_steps, [meals], device)[0]
 
 
+def swallow_by_meal(
+    n_steps: int, meal_lists: list[list], n_meals: int, device: torch.device,
+) -> torch.Tensor:
+    """Grams each meal adds at each window-offset minute: ``[M, n_meals, T, 3]``
+    carbohydrate, protein, fat, meal ``k`` of list ``m`` in slot ``k`` (padding slots
+    are empty). The minute is ``swallow_from_member_meals``' minute."""
+    where: list[tuple[int, int, int]] = []
+    grams: list[tuple[float, float, float]] = []
+    for member, meals in enumerate(meal_lists):
+        for k, meal in enumerate(meals):
+            minute = int(math.ceil(float(meal.time) - 1e-9))
+            if 0 <= minute < n_steps:
+                where.append((member, k, minute))
+                grams.append((float(meal.carbs), float(meal.proteins), float(meal.fats)))
+    out = torch.zeros(len(meal_lists), n_meals, n_steps, 3, dtype=torch.float32)
+    if where:
+        at = torch.tensor(where, dtype=torch.long)
+        out.index_put_((at[:, 0], at[:, 1], at[:, 2]), torch.tensor(grams, dtype=torch.float32), accumulate=True)
+    return out.to(device)
+
+
+def simulate_by_meal(
+    swallow: torch.Tensor,
+    kcal_per_min: torch.Tensor | float,
+    speed: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """``simulate`` with each meal's grams kept apart, and each meal's own speed.
+
+    ``swallow`` is ``[M, K, T, 3]`` (``swallow_by_meal``) and ``speed`` ``[M, K, 3]``. A
+    part (one macro of one meal) holding ``kcal_i`` of the pool's ``K`` calories leaves
+    ``kcal_i · min(1, R · speed_i / K)`` a minute. At speed 1 that is the shared law
+    (each part leaves ``min(R, K) / K`` of itself), so the summed outflow is
+    ``simulate``'s to float rounding; a faster part takes a larger share of the minute.
+    Returns ``(outflow[M, K, T, 3], filled[M, T, 3])``, ``filled`` summed over meals.
+    """
+    m, k, steps, _ = swallow.shape
+    pool = swallow.new_zeros(m, k, 3)
+    kcal_g = pool.new_tensor(KCAL_PER_G)
+    rate = torch.as_tensor(kcal_per_min, dtype=pool.dtype, device=pool.device)
+    outs = []
+    filled = []
+    for t in range(steps):
+        pool = pool + swallow[:, :, t]
+        filled.append(pool.sum(dim=1))
+        held = pool.clamp(min=0)
+        total = (held * kcal_g).sum(dim=(1, 2))
+        per_kcal = torch.where(total > 0, rate / total.clamp(min=1e-12), 0.0)
+        left = held * (speed * per_kcal[:, None, None]).clamp(max=1.0)
+        outs.append(left)
+        pool = pool - left
+    return torch.stack(outs, dim=2), torch.stack(filled, dim=1)
+
+
 def step_grams(
     carb: float, protein: float, fat: float, kcal_per_min: float = EMPTY_KCAL_PER_MIN,
 ) -> tuple[float, float, float]:
