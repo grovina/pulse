@@ -1,0 +1,136 @@
+{
+  "paper": "gunnerud-2012",
+  "citation": {
+    "authors": "Gunnerud UJ, Heinzle C, Holst JJ, Östman EM, Björck IME",
+    "title": "Effects of Pre-Meal Drinks with Protein and Amino Acids on Glycemic and Metabolic Responses at a Subsequent Composite Meal",
+    "journal": "PLoS ONE",
+    "year": 2012,
+    "doi": "10.1371/journal.pone.0044731",
+    "pmid": "23028596",
+    "pmcid": "PMC3446992"
+  },
+  "population": {
+    "n": 14,
+    "sex": "mixed",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 20.0,
+      "max": 28.0
+    },
+    "bmi": {
+      "mean": 21.9,
+      "sd": 2.245,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "14 healthy non-smoking volunteers (5 men, 9 women), aged 20 to 28 y, normal BMI, no drug treatment, normal fasting plasma glucose; Lund, Sweden. BMI is printed as 21.9 ± 0.6 kg/m2 (mean ± SEM); sd computed as 0.6 x sqrt(14) = 2.245."
+  },
+  "protocols": [
+    {
+      "name": "fasting_morning",
+      "description": "Overnight-fasted morning (each test followed a standardised white-bread evening meal between 21.00 and 22.00, then nothing but small amounts of water); the paper gives no arrival clock time and no fast length, and does not say whether the printed fasting glucose comes from screening or the test mornings, so a 30 min fasted window is assumed",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose of the 14 subjects, mean ± SEM, as printed in the subject description. The paper does not say on which occasion (screening or a test-morning t = 0 sample) or by which method this value was measured; its only stated glucose method is capillary plasma glucose on a HemoCue Glucose 201+",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 14
+      },
+      "location": {
+        "where": "Subjects and Methods, Test Subjects and Study Design",
+        "quote": "All subjects had normal fasting plasma glucose concentrations (5.5±0.1 mmol/L; mean ± SEM)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose and insulin iAUC 0-30, 0-45 and 0-60 min (glucose) and 0-30 min (insulin) for all seven meals (Table 4): the table prints no unit for the areas",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Insulin incremental peak per meal (Table 3, 'iPeak insulin'): printed in 'Δ mmol/L' (also in the Serum Insulin Responses text), which is impossible for serum insulin",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Glucose incremental peak per meal (Table 3, 'iPeak glucose', Δ mmol/L): each person's maximum rise above the fasting sample at any time, which no statistic expresses (peak_value is a level, change_from_baseline a window mean)",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "Glycaemic and insulinaemic indices (GI, II; Table 3, %): each subject's 0-120 min iAUC as a percentage of the reference meal, averaged over subjects; also the pooled whey/soy GI means in the Results text",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Glycaemic profile (GP) and insulinogenic index (IGI) per meal (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses as changes from baseline, and the GIP and GLP-1 time courses and iAUCs (Figures 1-3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Spearman partial correlations between amino acid, incretin and insulin iAUC 0-15 min and glucose GI, GP and iPeak (Table 6), pooled over meals and controlled for subject and baseline: not a Pearson correlation across people of a window mean",
+      "missing": {
+        "kind": "operator",
+        "name": "spearman_partial_correlation"
+      }
+    },
+    {
+      "what": "Plasma amino acid iAUC 0-60 min per meal (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "Time of the ghrelin nadir, pooled over all seven meals (99.5 ± 3.0 min, Results text): a time of a minimum, which no statistic expresses, and a mean over different arms; ghrelin levels themselves are not printed",
+      "missing": {
+        "kind": "operator",
+        "name": "time_to_nadir"
+      }
+    }
+  ]
+}
