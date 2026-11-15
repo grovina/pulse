@@ -39,20 +39,25 @@
           "t_min": 0,
           "carbs_g": 130.0,
           "fat_g": 32.0,
-          "protein_g": 23.0
+          "protein_g": 23.0,
+          "fat_source": "margarine",
+          "form": "mixed",
+          "food": "white bread 171 g, margarine 30 g, malted cocoa drink 375 g"
         },
         {
           "t_min": 270,
           "carbs_g": 134.0,
           "fat_g": 53.0,
-          "protein_g": 26.0
+          "protein_g": 26.0,
+          "form": "solid",
+          "food": "chicken soup noodles 225 g, cashew nuts 30 g"
         }
       ],
       "assumed": []
     },
     {
       "name": "con6",
-      "description": "CON-6: the CON-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: the first three portions are taken to be the breakfast thirds and the last three the lunch thirds (the paper says breakfast and lunch were each divided into 3 equal portions and that 08:00 and 12:30 coincide with the 2-meal times), each = Table 2 grams / 3: breakfast 130/3 = 43.333 g carbohydrate, 32/3 = 10.667 g fat, 23/3 = 7.667 g protein; lunch 134/3 = 44.667 g carbohydrate, 53/3 = 17.667 g fat, 26/3 = 8.667 g protein",
+      "description": "CON-6: the CON-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: the first three portions are taken to be the breakfast thirds and the last three the lunch thirds (the paper says breakfast and lunch were each divided into 3 equal portions and that 08:00 and 12:30 coincide with the 2-meal times), each = Table 2 grams / 3: breakfast 130/3 = 43.333 g carbohydrate, 32/3 = 10.667 g fat, 23/3 = 7.667 g protein; lunch 134/3 = 44.667 g carbohydrate, 53/3 = 17.667 g fat, 26/3 = 8.667 g protein; meal details: each portion taken to hold a third of each of its meal's foods (Table 2 constituents), as the paper says only that breakfast and lunch were 'each divided into 3 equal, isocaloric portions'",
       "duration_min": 511,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -61,37 +66,52 @@
           "t_min": 0,
           "carbs_g": 43.333,
           "fat_g": 10.667,
-          "protein_g": 7.667
+          "protein_g": 7.667,
+          "fat_source": "margarine",
+          "form": "mixed",
+          "food": "a third of the breakfast: white bread, margarine, malted cocoa drink"
         },
         {
           "t_min": 90,
           "carbs_g": 43.333,
           "fat_g": 10.667,
-          "protein_g": 7.667
+          "protein_g": 7.667,
+          "fat_source": "margarine",
+          "form": "mixed",
+          "food": "a third of the breakfast: white bread, margarine, malted cocoa drink"
         },
         {
           "t_min": 180,
           "carbs_g": 43.333,
           "fat_g": 10.667,
-          "protein_g": 7.667
+          "protein_g": 7.667,
+          "fat_source": "margarine",
+          "form": "mixed",
+          "food": "a third of the breakfast: white bread, margarine, malted cocoa drink"
         },
         {
           "t_min": 270,
           "carbs_g": 44.667,
           "fat_g": 17.667,
-          "protein_g": 8.667
+          "protein_g": 8.667,
+          "form": "solid",
+          "food": "a third of the lunch: chicken soup noodles, cashew nuts"
         },
         {
           "t_min": 360,
           "carbs_g": 44.667,
           "fat_g": 17.667,
-          "protein_g": 8.667
+          "protein_g": 8.667,
+          "form": "solid",
+          "food": "a third of the lunch: chicken soup noodles, cashew nuts"
         },
         {
           "t_min": 450,
           "carbs_g": 44.667,
           "fat_g": 17.667,
-          "protein_g": 8.667
+          "protein_g": 8.667,
+          "form": "solid",
+          "food": "a third of the lunch: chicken soup noodles, cashew nuts"
         }
       ],
       "assumed": [
@@ -109,20 +129,24 @@
           "t_min": 0,
           "carbs_g": 66.0,
           "fat_g": 31.0,
-          "protein_g": 89.0
+          "protein_g": 89.0,
+          "form": "mixed",
+          "food": "milk 300 g, ice cream 150 g, whey powder 91.2 g, cashew nuts 30 g"
         },
         {
           "t_min": 270,
           "carbs_g": 75.0,
           "fat_g": 37.0,
-          "protein_g": 90.0
+          "protein_g": 90.0,
+          "form": "mixed",
+          "food": "braised chicken 330 g, prawn dumplings 120 g, malted cocoa drink 375 g"
         }
       ],
       "assumed": []
     },
     {
       "name": "pro6",
-      "description": "PRO-6: the PRO-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: first three portions = breakfast thirds, last three = lunch thirds, each = Table 2 grams / 3: breakfast 66/3 = 22.0 g carbohydrate, 31/3 = 10.333 g fat, 89/3 = 29.667 g protein; lunch 75/3 = 25.0 g carbohydrate, 37/3 = 12.333 g fat, 90/3 = 30.0 g protein",
+      "description": "PRO-6: the PRO-2 breakfast and lunch each divided into 3 equal isocaloric portions, served at 08:00, 09:30, 11:00, 12:30, 14:00, 15:30. Test day 08:00-16:30 after a 12 h fast from a standardized evening meal, seated passive work in a 22-24 degC suite; fasting venous sample at 0 h (08:00) then samples at 1, 2.5, 4, 5.5, 7 and 8.5 h after the first meal (Table 3); derived: first three portions = breakfast thirds, last three = lunch thirds, each = Table 2 grams / 3: breakfast 66/3 = 22.0 g carbohydrate, 31/3 = 10.333 g fat, 89/3 = 29.667 g protein; lunch 75/3 = 25.0 g carbohydrate, 37/3 = 12.333 g fat, 90/3 = 30.0 g protein; meal details: each portion taken to hold a third of each of its meal's foods (Table 2 constituents), as the paper says only that breakfast and lunch were 'each divided into 3 equal, isocaloric portions'",
       "duration_min": 511,
       "start_hour": 8.0,
       "prefast_hours": 12,
@@ -131,37 +155,49 @@
           "t_min": 0,
           "carbs_g": 22.0,
           "fat_g": 10.333,
-          "protein_g": 29.667
+          "protein_g": 29.667,
+          "form": "mixed",
+          "food": "a third of the breakfast: milk, ice cream, whey powder, cashew nuts"
         },
         {
           "t_min": 90,
           "carbs_g": 22.0,
           "fat_g": 10.333,
-          "protein_g": 29.667
+          "protein_g": 29.667,
+          "form": "mixed",
+          "food": "a third of the breakfast: milk, ice cream, whey powder, cashew nuts"
         },
         {
           "t_min": 180,
           "carbs_g": 22.0,
           "fat_g": 10.333,
-          "protein_g": 29.667
+          "protein_g": 29.667,
+          "form": "mixed",
+          "food": "a third of the breakfast: milk, ice cream, whey powder, cashew nuts"
         },
         {
           "t_min": 270,
           "carbs_g": 25.0,
           "fat_g": 12.333,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "form": "mixed",
+          "food": "a third of the lunch: braised chicken, prawn dumplings, malted cocoa drink"
         },
         {
           "t_min": 360,
           "carbs_g": 25.0,
           "fat_g": 12.333,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "form": "mixed",
+          "food": "a third of the lunch: braised chicken, prawn dumplings, malted cocoa drink"
         },
         {
           "t_min": 450,
           "carbs_g": 25.0,
           "fat_g": 12.333,
-          "protein_g": 30.0
+          "protein_g": 30.0,
+          "form": "mixed",
+          "food": "a third of the lunch: braised chicken, prawn dumplings, malted cocoa drink"
         }
       ],
       "assumed": [
