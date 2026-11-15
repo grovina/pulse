@@ -43,7 +43,7 @@
     },
     {
       "name": "control_meal",
-      "description": "Control high-fat breakfast at 0 min (toasted white-bread sandwich with jam and a chocolate milk drink with 50 g control oil, palm:rapeseed:safflower 4:0.5:0.5; Table 1: 90.4 g carbohydrate, 52.3 g fat, 21.3 g protein, 4.07 MJ, manufacturers' data), eaten within 20 min; blood at 0, 30, 60, 90, 120 and hourly to 480 min, nothing but water after. prefast_hours = the 12-h fast at arrival + 0.5 h from the -30 min sample to the meal (time from arrival to the -30 min sample not stated).",
+      "description": "Control high-fat breakfast at 0 min (toasted white-bread sandwich with jam and a chocolate milk drink with 50 g control oil, palm:rapeseed:safflower 4:0.5:0.5; Table 1: 90.4 g carbohydrate, 52.3 g fat, 21.3 g protein, 4.07 MJ, manufacturers' data; Table 1 also prints sugars 43.9 g and SFAs 22.0, MUFAs 18.8, PUFAs 9.3 under fat), eaten within 20 min; protein from the white bread (100 g) and the drink's skimmed milk (150 g) and skimmed milk powder (15 g), no split printed, so mixed; blood at 0, 30, 60, 90, 120 and hourly to 480 min, nothing but water after. prefast_hours = the 12-h fast at arrival + 0.5 h from the -30 min sample to the meal (time from arrival to the -30 min sample not stated).",
       "duration_min": 481,
       "start_hour": 8.5,
       "meals": [
@@ -51,7 +51,46 @@
           "t_min": 0,
           "carbs_g": 90.4,
           "fat_g": 52.3,
-          "protein_g": 21.3
+          "protein_g": 21.3,
+          "sugars_g": 43.9,
+          "fat_g_by_type": {
+            "saturated": 22.0,
+            "monounsaturated": 18.8,
+            "polyunsaturated": 9.3
+          },
+          "fat_source": "palm, rapeseed and safflower oil (4:0.5:0.5)",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white-bread sandwich with strawberry jam; warm chocolate milk drink"
+        }
+      ],
+      "prefast_hours": 12.5,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "pso_meal",
+      "description": "PSO-rich high-fat breakfast at 0 min, the same breakfast as the control meal with 40 g of the control oil mixture and 10 g pomegranate seed oil in the chocolate milk drink (Table 1: 90.4 g carbohydrate, 52.3 g fat, 21.3 g protein, 4.07 MJ, sugars 43.9 g, SFAs 18.2, MUFAs 15.7, PUFAs 16.3 including 8.3 punicic acid, manufacturers' data), eaten within 20 min; protein from the white bread (100 g) and the drink's skimmed milk (150 g) and skimmed milk powder (15 g), no split printed, so mixed; blood at 0, 30, 60, 90, 120 and hourly to 480 min, nothing but water after. prefast_hours = the 12-h fast at arrival + 0.5 h from the -30 min sample to the meal (time from arrival to the -30 min sample not stated).",
+      "duration_min": 481,
+      "start_hour": 8.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 90.4,
+          "fat_g": 52.3,
+          "protein_g": 21.3,
+          "sugars_g": 43.9,
+          "fat_g_by_type": {
+            "saturated": 18.2,
+            "monounsaturated": 15.7,
+            "polyunsaturated": 16.3
+          },
+          "fat_source": "pomegranate seed oil (10 g) with palm, rapeseed and safflower oil (40 g)",
+          "protein_source": "mixed",
+          "form": "mixed",
+          "food": "toasted white-bread sandwich with strawberry jam; warm chocolate milk drink"
         }
       ],
       "prefast_hours": 12.5,
@@ -548,6 +587,373 @@
         "where": "Table 4, column 'Control meal', DBP row 'AUC (mmHg × min × 10^3)'",
         "quote": "AUC (mmHg × min × 103) | 36.9 ± 1.1 | 38.4 ± 1.1"
       }
+    },
+    {
+      "id": "pso_insulin_peak",
+      "description": "Maximum serum insulin concentration (MaxC, per-person maximum of the samples) over 0-480 min after the PSO-rich meal",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 427,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 48,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Insulin row 'MaxC (pmol/L)'",
+        "quote": "MaxC (pmol/L) | 427 ± 48"
+      }
+    },
+    {
+      "id": "pso_insulin_time_to_peak",
+      "description": "Time to maximum serum insulin (TMax) after the PSO-rich meal, minutes from the meal",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 113,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Insulin row 'TMax (min)'",
+        "quote": "TMax (min) | 113 ± 12"
+      }
+    },
+    {
+      "id": "pso_insulin_auc",
+      "description": "Area under the serum insulin curve 0-480 min after the PSO-rich meal over the eleven samples; the paper names no rule and no baseline, read as the trapezoid, total area",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 66.0,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.3,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Insulin row 'AUC (nmol/L × min)'",
+        "quote": "AUC (nmol/L × min) | 66.0 ± 6.3"
+      }
+    },
+    {
+      "id": "pso_insulin_iauc",
+      "description": "Incremental area under the serum insulin curve 0-480 min after the PSO-rich meal over the eleven samples, baseline the 0 min (fasted) state. Net area: the paper does not say how it treats values under baseline, but it prints negative iAUC means computed by the same method in the same table (apoB, PSO meal: -0.78 g/L x min; NEFA), which only a net area can have",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "below_baseline": "subtracted",
+      "value": 48.2,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.3,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Insulin row 'iAUC (nmol/L × min)'",
+        "quote": "iAUC (nmol/L × min) | 48.2 ± 5.3"
+      }
+    },
+    {
+      "id": "pso_glucose_peak",
+      "description": "Maximum serum glucose concentration (MaxC) over 0-480 min after the PSO-rich meal",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 6.07,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.23,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Glucose row 'MaxC (mmol/L)'",
+        "quote": "MaxC (mmol/L) | 6.07 ± 0.23"
+      }
+    },
+    {
+      "id": "pso_glucose_time_to_peak",
+      "description": "Time to maximum serum glucose (TMax) after the PSO-rich meal, minutes from the meal",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 124,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 15,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Glucose row 'TMax (min)'",
+        "quote": "TMax (min) | 124 ± 15"
+      }
+    },
+    {
+      "id": "pso_glucose_auc",
+      "description": "Area under the serum glucose curve 0-480 min after the PSO-rich meal over the eleven samples; the paper names no rule and no baseline, read as the trapezoid, total area",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 2333,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 46,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Glucose row 'AUC (mmol/L × min)'",
+        "quote": "AUC (mmol/L × min) | 2333 ± 46"
+      }
+    },
+    {
+      "id": "pso_glucose_iauc",
+      "description": "Incremental area under the serum glucose curve 0-480 min after the PSO-rich meal over the eleven samples, baseline the 0 min (fasted) state. Net area: the paper does not say how it treats values under baseline, but it prints negative iAUC means computed by the same method in the same table (apoB, PSO meal: -0.78 g/L x min; NEFA), which only a net area can have",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "below_baseline": "subtracted",
+      "value": 104,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 52,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', Glucose row 'iAUC (mmol/L × min)'",
+        "quote": "iAUC (mmol/L × min) | 104 ± 52"
+      }
+    },
+    {
+      "id": "pso_nefa_peak",
+      "description": "Maximum serum NEFA concentration (MaxC) after the PSO-rich meal (the late rebound); the paper does not say which samples it was taken over, read as all 0-480 min",
+      "marker": "ffa",
+      "statistic": "peak_value",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 0.83,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', NEFA row 'MaxC (mmol/L)'",
+        "quote": "MaxC (mmol/L) | 0.83 ± 0.06"
+      }
+    },
+    {
+      "id": "pso_nefa_time_to_peak",
+      "description": "Time to maximum serum NEFA (TMax) after the PSO-rich meal, minutes from the meal",
+      "marker": "ffa",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "pso_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 481
+      },
+      "value": 345,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 44,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', NEFA row 'TMax (min)'",
+        "quote": "TMax (min) | 345 ± 44"
+      }
+    },
+    {
+      "id": "pso_nefa_auc_180_480",
+      "description": "Area under the serum NEFA curve 180-480 min after the PSO-rich meal over the six samples (the paper limits NEFA areas to 180-480 min 'to account for the drop in NEFA concentrations' and says they 'were calculated from the mean minimum NEFA concentration'; this meal's mean time of the minimum, TMin 187 min, falls between samples, so read as the stated 180-480 min); no rule named, read as the trapezoid, total area",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        180,
+        240,
+        300,
+        360,
+        420,
+        480
+      ],
+      "value": 142,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 13,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, column 'PSO-rich meal', NEFA row 'AUC180–480 (mmol/L × min)'",
+        "quote": "AUC180–480 (mmol/L × min) | 142 ± 13 | 153 ± 12"
+      }
+    },
+    {
+      "id": "pso_sbp_auc",
+      "description": "Area under the systolic blood pressure curve 0-480 min after the PSO-rich meal over the five measurements (baseline, 120, 240, 360, 480 min); no rule named, read as the trapezoid, total area; printed in mmHg x min x 10^3, entered multiplied out (56.9 x 1000 = 56900, SEM 1.4 x 1000 = 1400)",
+      "marker": "sbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        120,
+        240,
+        360,
+        480
+      ],
+      "value": 56900,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1400,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'PSO-rich meal', SBP row 'AUC (mmHg × min × 10^3)'",
+        "quote": "AUC (mmHg × min × 103) | 56.9 ± 1.4 | 59 ± 1.5"
+      }
+    },
+    {
+      "id": "pso_dbp_auc",
+      "description": "Area under the diastolic blood pressure curve 0-480 min after the PSO-rich meal over the five measurements (baseline, 120, 240, 360, 480 min); no rule named, read as the trapezoid, total area; printed in mmHg x min x 10^3, entered multiplied out (36.9 x 1000 = 36900, SEM 1.1 x 1000 = 1100)",
+      "marker": "dbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "pso_meal"
+      ],
+      "times": [
+        0,
+        120,
+        240,
+        360,
+        480
+      ],
+      "value": 36900,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1100,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, column 'PSO-rich meal', DBP row 'AUC (mmHg × min × 10^3)'",
+        "quote": "AUC (mmHg × min × 103) | 36.9 ± 1.1 | 38.4 ± 1.1"
+      }
     }
   ],
   "left_out": [
@@ -573,10 +979,10 @@
       }
     },
     {
-      "what": "Every value after the PSO-rich meal (Tables 3 and 4): same macronutrients as the control meal (Table 1), differing only in fatty-acid composition (40 g control oil + 10 g pomegranate seed oil, punicic acid), which the model cannot be told",
+      "what": "The PSO-rich meal's punicic acid and n-6/n-3 PUFA split (Table 1) and the oils' fatty-acid composition (Supplemental Table 1), beyond the three fat types the meal carries",
       "missing": {
         "kind": "input",
-        "name": "meal_fat_composition"
+        "name": "fatty_acid_detail"
       }
     },
     {
