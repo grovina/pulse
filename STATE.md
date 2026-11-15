@@ -125,6 +125,8 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
+| `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | running from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/`; cut at 26 h |
+| `trainer-kn8wz` | 117, no teacher | 2026-11-15 | running from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/`; cut at 26 h |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
 | `trainer-gqtrs` | 116, no teacher | 2026-11-12 | finished in 19 h 40 min from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/` |
 | `trainer-rh7j2` | 116, cold start | 2026-11-12 | stopped by its 26 h deadline after epoch 51, the end of phase 2 (no phase 3), from `b30be0a`: `--init-from=`; output `training/jobs/iter116-cold/` |
