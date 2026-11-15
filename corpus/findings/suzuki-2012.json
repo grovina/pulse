@@ -1,0 +1,572 @@
+{
+  "paper": "suzuki-2012",
+  "citation": {
+    "authors": "Suzuki K, Watanabe K, Futami-Suda S, Yano H, Motoyama M, Matsumura N, Igari Y, Suzuki T, Nakano H, Oba K",
+    "title": "The effects of postprandial glucose and insulin levels on postprandial endothelial function in subjects with normal glucose tolerance",
+    "journal": "Cardiovascular Diabetology",
+    "year": 2012,
+    "doi": "10.1186/1475-2840-11-98",
+    "pmid": "22891922",
+    "pmcid": "PMC3471039"
+  },
+  "population": {
+    "n": 37,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.8,
+      "sd": 9.2,
+      "min": 22.0,
+      "max": 61.0
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "37 healthy Japanese volunteers aged 22 to 61 years (19 men, 18 women; mean age 31.8 ± 9.2 y), no family history of diabetes, no dyslipidaemia, diabetes, hypertension or other chronic disease, normal glucose tolerance on a 75-g OGTT (fasting PG < 6.1 mmol/L, 2-h < 7.8 mmol/L), normal blood pressure and lipids. Three separate groups, not a crossover: control (overnight fast only, n = 11), test meal (n = 12), 75-g oral glucose (n = 14); each arm carries its group's sex, age and BMI from Table 1. Pooled BMI is not printed. Some subjects were current smokers (abstained at least 8 h before the study)."
+  },
+  "protocols": [
+    {
+      "name": "fasted_control",
+      "description": "Control group (overnight-fasting group, n = 11): a 30-minute fasted run-in standing for the single fasting draw, which was made at 9 a.m. after at least 12 h of overnight fasting (Methods, Study design); the arm ends at the draw, so start_hour = 9.0 - 0.5 = 8.5 and prefast_hours = 12 - 0.5 = 11.5 (12 h is the stated lower bound). No meal, water only. Group's sex, age and BMI from Table 1 (7 of 11 men; age 33.4 ± 8.4 y; BMI 21.94 ± 1.88 kg/m2, mean ± SD).",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 33.4,
+          "sd": 8.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.94,
+          "sd": 1.88,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasted_tm",
+      "description": "Test-meal (TM) group before its meal (n = 12): a 30-minute fasted run-in standing for the single fasting draw, which was made at 9 a.m. after at least 12 h of overnight fasting (Methods, Study design); the arm ends at the draw, so start_hour = 9.0 - 0.5 = 8.5 and prefast_hours = 12 - 0.5 = 11.5 (12 h is the stated lower bound). No meal, water only. Group's sex, age and BMI from Table 1 (6 of 12 men; age 28.5 ± 5.1 y; BMI 22.53 ± 2.46 kg/m2, mean ± SD).",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 28.5,
+          "sd": 5.1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.53,
+          "sd": 2.46,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasted_og",
+      "description": "75-g oral glucose (OG) group before its load (n = 14): a 30-minute fasted run-in standing for the single fasting draw, which was made at 9 a.m. after at least 12 h of overnight fasting (Methods, Study design); the arm ends at the draw, so start_hour = 9.0 - 0.5 = 8.5 and prefast_hours = 12 - 0.5 = 11.5 (12 h is the stated lower bound). No meal, water only. Group's sex, age and BMI from Table 1 (6 of 14 men; age 33.4 ± 11.9 y; BMI 20.71 ± 2.28 kg/m2, mean ± SD).",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 33.4,
+          "sd": 11.9,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.71,
+          "sd": 2.28,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "ogtt",
+      "description": "OG group (n = 14): 75 g glucose (Table 2: carbohydrate 75 g, lipid 0 g, 300 kcal) after the fasting draw at 9 a.m. following at least 12 h of overnight fasting; blood at 0 (fasting), 30, 60 and 120 min after loading. The load is put at minute 0 with the fasting draw; 9 a.m. is the stated time of the fasting evaluation, the load followed it at a clock time not printed, so start_hour is assumed; prefast_hours 12 is the stated lower bound. Protein is not listed for the glucose load and is 0. Group's sex, age and BMI from Table 1 (6 of 14 men; age 33.4 ± 11.9 y; BMI 20.71 ± 2.28 kg/m2, mean ± SD).",
+      "duration_min": 121,
+      "start_hour": 9.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 33.4,
+          "sd": 11.9,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.71,
+          "sd": 2.28,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_fasting_glucose",
+      "description": "Fasting plasma glucose (glucose oxidase) of the control group at 0 min, mean ± SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_control"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.16,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.42,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, column 'Control group (N = 11)', row 'Plasma glucose (mmol/L), 0 min.'",
+        "quote": "0 min. | 5.16 ± 0.42"
+      }
+    },
+    {
+      "id": "tm_fasting_glucose",
+      "description": "Fasting plasma glucose of the test-meal group at 0 min, before the meal, mean ± SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_tm"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.71,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.37,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, column 'TM group (N = 12)', row 'Plasma glucose (mmol/L), 0 min.'",
+        "quote": "0 min. | 4.71 ± 0.37*"
+      }
+    },
+    {
+      "id": "tm_fasting_insulin",
+      "description": "Fasting plasma immunoreactive insulin of the test-meal group at 0 min, before the meal, mean ± SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_tm"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 34.16,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.6,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, column 'TM group (N = 12)', row 'Plasma IRI (pmol/L), 0 min.'",
+        "quote": "0 min. | 34.16 ± 18.6"
+      }
+    },
+    {
+      "id": "control_fasting_sbp",
+      "description": "Systolic blood pressure of the control group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_control"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 104.8,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.2,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, column 'Control group (n = 11)', row 'Blood pressure (mm Hg), Systolic'",
+        "quote": "Systolic | 104.8 ± 5.2"
+      }
+    },
+    {
+      "id": "control_fasting_dbp",
+      "description": "Diastolic blood pressure of the control group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_control"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 61.5,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, column 'Control group (n = 11)', row 'Blood pressure (mm Hg), Diastolic'",
+        "quote": "Diastolic | 61.5 ± 7.0"
+      }
+    },
+    {
+      "id": "tm_fasting_sbp",
+      "description": "Systolic blood pressure of the TM group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_tm"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 115.9,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, column 'TM group (n = 12)', row 'Blood pressure (mm Hg), Systolic'",
+        "quote": "Systolic | 115.9 ± 11.5*"
+      }
+    },
+    {
+      "id": "tm_fasting_dbp",
+      "description": "Diastolic blood pressure of the TM group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_tm"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 71.2,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, column 'TM group (n = 12)', row 'Blood pressure (mm Hg), Diastolic'",
+        "quote": "Diastolic | 71.2 ± 9.1*"
+      }
+    },
+    {
+      "id": "og_fasting_sbp",
+      "description": "Systolic blood pressure of the OG group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_og"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 105.5,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.5,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column 'OG group (n = 14)', row 'Blood pressure (mm Hg), Systolic'",
+        "quote": "Systolic | 105.5 ± 8.5"
+      }
+    },
+    {
+      "id": "og_fasting_dbp",
+      "description": "Diastolic blood pressure of the OG group, evaluated after overnight fasting with the other clinical characteristics (Methods, Clinical characteristics), mean ± SD",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_og"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 64.3,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.4,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column 'OG group (n = 14)', row 'Blood pressure (mm Hg), Diastolic'",
+        "quote": "Diastolic | 64.3 ± 6.4"
+      }
+    },
+    {
+      "id": "ogtt_glucose_curve",
+      "description": "Plasma glucose at 0, 30, 60 and 120 min of the 75 g OGTT, OG group, mean ± SD",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.65,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.43,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 6.83,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.84,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 6.07,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.61,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 5.05,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.13,
+            "n": 14
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, column 'OG group (N = 14)', rows 'Plasma glucose (mmol/L)' 0, 30, 60, 120 min.",
+        "quote": "0 min. | 4.65 ± 0.43* ; 30 min. | 6.83 ± 1.84# ; 60 min. | 6.07 ± 1.61 ; 120 min. | 5.05 ± 1.13"
+      }
+    },
+    {
+      "id": "ogtt_insulin_curve",
+      "description": "Plasma immunoreactive insulin (RIA) at 0, 30, 60 and 120 min of the 75 g OGTT, OG group, mean ± SD",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 29.67,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.95,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 278.08,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 109.28,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 281.11,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 155.48,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 138.53,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 62.33,
+            "n": 14
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, column 'OG group (N = 14)', rows 'Plasma IRI (pmol/L)' 0, 30, 60, 120 min.",
+        "quote": "0 min. | 29.67 ± 11.95 ; 30 min. | 278.08 ± 109.28# ; 60 min. | 281.11 ± 155.48## ; 120 min. | 138.53 ± 62.33#"
+      }
+    },
+    {
+      "id": "ogtt_glucose_auc",
+      "description": "Area under the plasma glucose curve of the OGTT from the 4 measurement points (0, 30, 60, 120 min; Methods: 'determined from 4 measurement points'); no rule is named, read as the trapezoid, and no baseline is mentioned, so a total area (it equals the trapezoid of the Table 2 means to the printed digits)",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 11.66,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.21,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column 'OG group (N = 14)', row 'AUC of PG [(mmol/L)·hr]'",
+        "quote": "AUC of PG [(mmol/L)·hr] | 11.66 ± 2.21"
+      }
+    },
+    {
+      "id": "ogtt_insulin_auc",
+      "description": "Area under the plasma insulin (IRI) curve of the OGTT from the 4 measurement points (0, 30, 60, 120 min); no rule is named, read as the trapezoid, and no baseline is mentioned, so a total area (it equals the trapezoid of the Table 2 means within 0.01)",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 426.55,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 126.73,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 2, column 'OG group (N = 14)', row 'AUC of IRI [(pmol/L)·hr]'",
+        "quote": "AUC of IRI [(pmol/L)·hr] | 426.55 ± 126.73##"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Test-meal (TM) group after the meal: plasma glucose and IRI at 30, 60, 120 min and their AUCs (Table 2); the meal (CalorieMate, 400 kcal) is printed as carbohydrate 40.7 g and lipid 22.2 g with no protein figure (40.7 x 4 + 22.2 x 9 = 362.6 of the 400 kcal)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Coefficient of variation of PG and of IRI over the 4 samples, TM and OG groups (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "within_person_cv"
+      }
+    },
+    {
+      "what": "Fasting PG and IRI by group in Table 1 (all three groups, including the control group's IRI, which Table 2 prints as n/a): the paper measured fasting glucose on more than one occasion (the screening 75-g OGTT at medical checkups and the study-morning preload draw, PG0/IRI0) and Table 1's values differ from Table 2's 0-min values for the same groups, so Table 1 does not show which draw it prints; Table 2's 0-min values are entered where printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "HOMA-IR by group (Table 1) and its correlations with FMD (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c by group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "Fasting serum triglyceride by group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Brachial flow-mediated dilation at 0, 60, 120 min in all three groups and its percentage changes (Table 2, Results, abstract), and the correlations of FMD with PG and IRI variables pooled over the TM and OG groups (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "flow_mediated_dilation"
+      }
+    }
+  ]
+}
