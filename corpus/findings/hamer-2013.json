@@ -84,7 +84,7 @@
     },
     {
       "name": "pro_drink",
-      "description": "PRO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled casein and no carbohydrate, after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink, nor carbohydrate other than the absence of the added 40 g (carbs 0 and fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.2, BMI 0.4)",
+      "description": "PRO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled micellar casein and no carbohydrate, after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink, nor carbohydrate other than the absence of the added 40 g (carbs 0 and fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.2, BMI 0.4)",
       "duration_min": 361,
       "start_hour": 8.0,
       "meals": [
@@ -92,7 +92,10 @@
           "t_min": 0,
           "carbs_g": 0.0,
           "fat_g": 0.0,
-          "protein_g": 20.0
+          "protein_g": 20.0,
+          "protein_source": "casein",
+          "form": "liquid",
+          "food": "vanilla-flavoured micellar casein drink"
         }
       ],
       "prefast_hours": 10,
@@ -118,7 +121,7 @@
     },
     {
       "name": "pro_cho_drink",
-      "description": "PRO-CHO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled casein plus 40 g carbohydrate (50% dextrose monohydrate, 50% maltodextrin), after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink (fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.0, BMI 0.7)",
+      "description": "PRO-CHO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled micellar casein plus 40 g carbohydrate (50% dextrose monohydrate, 50% maltodextrin), after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink (fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.0, BMI 0.7)",
       "duration_min": 361,
       "start_hour": 8.0,
       "meals": [
@@ -126,7 +129,10 @@
           "t_min": 0,
           "carbs_g": 40.0,
           "fat_g": 0.0,
-          "protein_g": 20.0
+          "protein_g": 20.0,
+          "protein_source": "casein",
+          "form": "liquid",
+          "food": "vanilla-flavoured micellar casein drink with dextrose and maltodextrin"
         }
       ],
       "prefast_hours": 10,
