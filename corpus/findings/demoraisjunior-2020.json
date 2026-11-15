@@ -30,7 +30,7 @@
   "protocols": [
     {
       "name": "placebo_meal",
-      "description": "Placebo visit: after a 12 h overnight fast, a fasting (baseline) sample, then two 400 mg placebo capsules (800 mg corn starch in total) taken right before a fast-food meal (80 g McDonald's french fries, 130 g bacon, 60 g grated Parmesan; 20.57 g carbohydrate, 47.41 g protein, 83.90 g fat, 1027 kcal); samples 90 and 120 min after the end of the meal. Entered with a 30 min fasted run-in standing for the baseline sample (its time before the meal is not printed), the meal at minute 30 and treated as eaten at once (its duration is not printed, so minute 30 stands for the end of the meal), samples at minutes 120 and 150. Meal macronutrients as printed; the 0.8 g corn starch of the capsules is not added (the paper prints no carbohydrate content for it, and the guide allows no other derivation). prefast_hours 11.5 = the printed 12 h fast at the meal minus the 30 min run-in. Clock hour not printed: 08:00.",
+      "description": "Placebo visit: after a 12 h overnight fast, a fasting (baseline) sample, then two 400 mg placebo capsules (800 mg corn starch in total) taken right before a fast-food meal (80 g McDonald's french fries, 130 g bacon, 60 g grated Parmesan; 20.57 g carbohydrate, 47.41 g protein, 83.90 g fat, 1027 kcal); samples 90 and 120 min after the end of the meal. Entered with a 30 min fasted run-in standing for the baseline sample (its time before the meal is not printed), the meal at minute 30 and treated as eaten at once (its duration is not printed, so minute 30 stands for the end of the meal), samples at minutes 120 and 150. Meal macronutrients as printed; the 0.8 g corn starch of the capsules is not added (the paper prints no carbohydrate content for it, and the guide allows no other derivation). prefast_hours 11.5 = the printed 12 h fast at the meal minus the 30 min run-in. Clock hour not printed: 08:00. Meal details as printed: 37.17 g of the fat saturated; 80 g McDonald's french fries, 130 g bacon (cooked 5 min without added oil), 60 g grated Parmesan cheese, no drink described. No protein source is entered: the protein comes from bacon (meat), Parmesan (dairy) and french fries, and the paper does not print how much from each.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 11.5,
@@ -39,7 +39,12 @@
           "t_min": 30,
           "carbs_g": 20.57,
           "fat_g": 83.9,
-          "protein_g": 47.41
+          "protein_g": 47.41,
+          "fat_g_by_type": {
+            "saturated": 37.17
+          },
+          "form": "solid",
+          "food": "McDonald's french fries, bacon and grated Parmesan cheese"
         }
       ],
       "assumed": [
