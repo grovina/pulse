@@ -1,0 +1,640 @@
+{
+  "paper": "gaesser-2019",
+  "citation": {
+    "authors": "Gaesser GA, Rodriguez J, Patrie JT, Whisner CM, Angadi SS",
+    "title": "Effects of Glycemic Index and Cereal Fiber on Postprandial Endothelial Function, Glycemia, and Insulinemia in Healthy Adults",
+    "journal": "Nutrients",
+    "year": 2019,
+    "doi": "10.3390/nu11102387",
+    "pmid": "31590437",
+    "pmcid": "PMC6835298"
+  },
+  "population": {
+    "n": 11,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 42.4,
+      "sd": 16.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.5,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eleven healthy adults (5 men, 6 women), University of Virginia; mean ± SD age 42.4 ± 16.1 y, weight 70.5 ± 10.7 kg, BMI 23.5 ± 3.1 kg/m2, body fat 26.0% ± 8.9%. Enrolment excluded age <18 or >64, smoking, dieting, pregnancy, oral contraceptives, known cardiovascular or metabolic disease, and antihypertensive, lipid- or glucose-lowering drugs; glucose tolerance was not tested. Each subject ate all four breakfasts (randomized crossover)."
+  },
+  "protocols": [
+    {
+      "name": "hf_lgi",
+      "description": "High-Fiber, Low-GI (HF-LGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 36 g, enriched white bread 20 g, margarine spread 19 g, eggs 44 g, nonfat milk 290 g, apple slices 175 g, apple juice 260 g. Table 1 gives total carbohydrate 108.3 g, total fiber 20.4 g, protein 20.0 g, fat 15.7 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 108.3 - 20.4 = 87.9 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 87.9,
+          "fat_g": 15.7,
+          "protein_g": 20.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "lf_lgi",
+      "description": "Low-Fiber, Low-GI (LF-LGI) breakfast, crossover visit: oatmeal cereal 40 g, enriched white bread 35 g, margarine spread 16 g, eggs 44 g, nonfat milk 275 g, apple juice 285 g. Table 1 gives total carbohydrate 96.3 g, total fiber 4.3 g, protein 20.9 g, fat 15.6 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 96.3 - 4.3 = 92.0 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 92.0,
+          "fat_g": 15.6,
+          "protein_g": 20.9
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "lf_hgi",
+      "description": "Low-Fiber, High-GI (LF-HGI) breakfast, crossover visit: low-fiber cereal (General Mills Golden Grahams) 36 g, plain bagel 110 g, margarine spread 18 g, eggs 44 g, nonfat milk 75 g. Table 1 gives total carbohydrate 92.8 g, total fiber 3.6 g, protein 21.5 g, fat 15.8 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 92.8 - 3.6 = 89.2 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 89.2,
+          "fat_g": 15.8,
+          "protein_g": 21.5
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "hf_hgi",
+      "description": "High-Fiber, High-GI (HF-HGI) breakfast, crossover visit: high-fiber cereal (Kellogg's All-Bran Buds) 42 g, high-GI cereal (General Mills Rice Chex) 30 g, plain bagel 60 g, margarine spread 17 g, eggs 44 g, nonfat milk 120 g, seedless raisins 15 g. Table 1 gives total carbohydrate 109.8 g, total fiber 20.3 g, protein 21.1 g, fat 14.9 g. meals carbs_g is digestible carbohydrate = total carbohydrate - total fiber = 109.8 - 20.3 = 89.5 g (the paper states digestible carbohydrate was approximately 90 g per meal). Blood drawn before the meal (minute 0) and hourly for 4 h (60, 120, 180, 240 min), so duration_min = 240 + 1 = 241. Arrival 7-9 AM in a 12-h postabsorptive state (water only after ~7 PM), then 30 min supine rest and baseline FMD before the meal: the clock hour of the meal and the exact hours of fast at minute 0 are not stated (8.0 and 12 used).",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 89.5,
+          "fat_g": 14.9,
+          "protein_g": 21.1
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hf_lgi_glucose_curve",
+      "description": "Blood glucose (YSI) before (High-Fiber, Low-GI (HF-LGI)) breakfast and at 1 h, mean and SD",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_lgi"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 91.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.4,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 104.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 23.9,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'High-FiberLow-GI', columns 'Baseline' and '1-h' (mg/dL, mean ± SD)",
+        "quote": "High-FiberLow-GI | 91.6 ± 6.4 | 104.5 ± 23.9"
+      }
+    },
+    {
+      "id": "hf_lgi_insulin_curve",
+      "description": "Plasma insulin (Immulite 2000) before (High-Fiber, Low-GI (HF-LGI)) breakfast and at 1 h, mean and SD",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "hf_lgi"
+      ],
+      "unit": "µU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 5.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.5,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 35.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.2,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, row 'High-FiberLow-GI', columns 'Baseline' and '1-h' (µU/mL, mean ± SD)",
+        "quote": "High-FiberLow-GI | 5.5 ± 6.5 | 35.8 ± 16.2"
+      }
+    },
+    {
+      "id": "hf_lgi_glucose_auc",
+      "description": "Total blood glucose area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), High-Fiber, Low-GI (HF-LGI); no baseline subtraction is described",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "hf_lgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 380.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 28.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, row 'High-FiberLow-GI', column 'Glucose AUC mg/dL × hour (mean ± SD)'",
+        "quote": "High-FiberLow-GI | 380 ± 28"
+      }
+    },
+    {
+      "id": "hf_lgi_insulin_auc",
+      "description": "Total plasma insulin area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), High-Fiber, Low-GI (HF-LGI); no baseline subtraction is described",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "hf_lgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 76.0,
+      "unit": "µU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 46.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 5, row 'High-FiberLow-GI', column 'Insulin AUC µU/mL × hour (mean ± SD)'",
+        "quote": "High-FiberLow-GI | 76 ± 46"
+      }
+    },
+    {
+      "id": "lf_lgi_glucose_curve",
+      "description": "Blood glucose (YSI) before (Low-Fiber, Low-GI (LF-LGI)) breakfast and at 1 h, mean and SD",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "lf_lgi"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 88.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.5,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 115.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 23.3,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'Low-FiberLow-GI', columns 'Baseline' and '1-h' (mg/dL, mean ± SD)",
+        "quote": "Low-FiberLow-GI | 88.4 ± 8.5 | 115.3 ± 23.3 *"
+      }
+    },
+    {
+      "id": "lf_lgi_insulin_curve",
+      "description": "Plasma insulin (Immulite 2000) before (Low-Fiber, Low-GI (LF-LGI)) breakfast and at 1 h, mean and SD",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "lf_lgi"
+      ],
+      "unit": "µU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.1,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 48.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 17.2,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, row 'Low-FiberLow-GI', columns 'Baseline' and '1-h' (µU/mL, mean ± SD)",
+        "quote": "Low-FiberLow-GI | 4.2 ± 5.1 | 48.3 ± 17.2 *"
+      }
+    },
+    {
+      "id": "lf_lgi_glucose_auc",
+      "description": "Total blood glucose area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), Low-Fiber, Low-GI (LF-LGI); no baseline subtraction is described",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "lf_lgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 383.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 46.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, row 'Low-FiberLow-GI', column 'Glucose AUC mg/dL × hour (mean ± SD)'",
+        "quote": "Low-FiberLow-GI | 383 ± 46"
+      }
+    },
+    {
+      "id": "lf_lgi_insulin_auc",
+      "description": "Total plasma insulin area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), Low-Fiber, Low-GI (LF-LGI); no baseline subtraction is described",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "lf_lgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 106.0,
+      "unit": "µU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 45.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 5, row 'Low-FiberLow-GI', column 'Insulin AUC µU/mL × hour (mean ± SD)'",
+        "quote": "Low-FiberLow-GI | 106 ± 45"
+      }
+    },
+    {
+      "id": "lf_hgi_glucose_curve",
+      "description": "Blood glucose (YSI) before (Low-Fiber, High-GI (LF-HGI)) breakfast and at 1 h, mean and SD",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "lf_hgi"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 92.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.5,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 119.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 30.5,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'Low-FiberHigh-GI', columns 'Baseline' and '1-h' (mg/dL, mean ± SD)",
+        "quote": "Low-FiberHigh-GI | 92.3 ± 8.5 | 119.4 ± 30.5 *"
+      }
+    },
+    {
+      "id": "lf_hgi_insulin_curve",
+      "description": "Plasma insulin (Immulite 2000) before (Low-Fiber, High-GI (LF-HGI)) breakfast and at 1 h, mean and SD",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "lf_hgi"
+      ],
+      "unit": "µU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 6.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.2,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 51.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 27.9,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, row 'Low-FiberHigh-GI', columns 'Baseline' and '1-h' (µU/mL, mean ± SD)",
+        "quote": "Low-FiberHigh-GI | 6.3 ± 6.2 | 51.2 ± 27.9 *"
+      }
+    },
+    {
+      "id": "lf_hgi_glucose_auc",
+      "description": "Total blood glucose area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), Low-Fiber, High-GI (LF-HGI); no baseline subtraction is described",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "lf_hgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 419.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 64.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, row 'Low-FiberHigh-GI', column 'Glucose AUC mg/dL × hour (mean ± SD)'",
+        "quote": "Low-FiberHigh-GI | 419 ± 64"
+      }
+    },
+    {
+      "id": "lf_hgi_insulin_auc",
+      "description": "Total plasma insulin area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), Low-Fiber, High-GI (LF-HGI); no baseline subtraction is described",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "lf_hgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 130.0,
+      "unit": "µU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 71.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 5, row 'Low-FiberHigh-GI', column 'Insulin AUC µU/mL × hour (mean ± SD)'",
+        "quote": "Low-FiberHigh-GI | 130 ± 71"
+      }
+    },
+    {
+      "id": "hf_hgi_glucose_curve",
+      "description": "Blood glucose (YSI) before (High-Fiber, High-GI (HF-HGI)) breakfast and at 1 h, mean and SD",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "hf_hgi"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 91.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.3,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 125.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 40.2,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, row 'High-FiberHigh-GI', columns 'Baseline' and '1-h' (mg/dL, mean ± SD)",
+        "quote": "High-FiberHigh-GI | 91.1 ± 9.3 | 125.0 ± 40.2 *"
+      }
+    },
+    {
+      "id": "hf_hgi_insulin_curve",
+      "description": "Plasma insulin (Immulite 2000) before (High-Fiber, High-GI (HF-HGI)) breakfast and at 1 h, mean and SD",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "hf_hgi"
+      ],
+      "unit": "µU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 10.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.9,
+            "n": 11
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 60.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 38.5,
+            "n": 11
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, row 'High-FiberHigh-GI', columns 'Baseline' and '1-h' (µU/mL, mean ± SD)",
+        "quote": "High-FiberHigh-GI | 10.2 ± 13.9 | 60.1 ± 38.5 *"
+      }
+    },
+    {
+      "id": "hf_hgi_glucose_auc",
+      "description": "Total blood glucose area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), High-Fiber, High-GI (HF-HGI); no baseline subtraction is described",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "hf_hgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 420.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 65.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, row 'High-FiberHigh-GI', column 'Glucose AUC mg/dL × hour (mean ± SD)'",
+        "quote": "High-FiberHigh-GI | 420 ± 65"
+      }
+    },
+    {
+      "id": "hf_hgi_insulin_auc",
+      "description": "Total plasma insulin area under the curve over the 4-h postprandial period, trapezoidal rule over the pre-meal and hourly samples (0-240 min), High-Fiber, High-GI (HF-HGI); no baseline subtraction is described",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "hf_hgi"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180,
+        240
+      ],
+      "value": 135.0,
+      "unit": "µU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 70.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 5, row 'High-FiberHigh-GI', column 'Insulin AUC µU/mL × hour (mean ± SD)'",
+        "quote": "High-FiberHigh-GI | 135 ± 70"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "brachial artery flow-mediated dilation before and at 2 h and 4 h after each meal, overall and by sex (Results 3.1, Figure 1, Strengths and Limitations)",
+      "missing": {
+        "kind": "marker",
+        "name": "flow_mediated_dilation"
+      }
+    },
+    {
+      "what": "blood glucose and plasma insulin at 2, 3 and 4 h after each meal (Figures 2 and 4 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "glucose and insulin AUC medians and interquartile ranges by meal (box plots, Figures 3 and 5 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "percent body fat by air-displacement plethysmography, 26.0% ± 8.9% (Participants, 2.1): a percentage, and the model's fat_mass is in kg",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
