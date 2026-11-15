@@ -30,7 +30,7 @@
   "protocols": [
     {
       "name": "potato",
-      "description": "Test meal 'Potato' (Table 1, meal composition): 44.1 g carbohydrate, 5.0 g protein, 12.8 g fat (1247 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Potato' (Table 1, meal composition): 44.1 g carbohydrate, 5.0 g protein, 12.8 g fat (1247 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Potato 205 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 146 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); no protein source is named for this meal, so protein_source is not entered; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -39,7 +39,10 @@
           "t_min": 0,
           "carbs_g": 44.1,
           "fat_g": 12.8,
-          "protein_g": 5.0
+          "protein_g": 5.0,
+          "fat_source": "rendered lamb fat",
+          "form": "solid",
+          "food": "potato 205 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -49,7 +52,7 @@
     },
     {
       "name": "pasta",
-      "description": "Test meal 'Pasta' (Table 1, meal composition): 44.1 g carbohydrate, 7.0 g protein, 13.1 g fat (1406 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Pasta' (Table 1, meal composition): 44.1 g carbohydrate, 7.0 g protein, 13.1 g fat (1406 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Pasta 137 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 214 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); no protein source is named for this meal, so protein_source is not entered; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -58,7 +61,10 @@
           "t_min": 0,
           "carbs_g": 44.1,
           "fat_g": 13.1,
-          "protein_g": 7.0
+          "protein_g": 7.0,
+          "fat_source": "rendered lamb fat",
+          "form": "solid",
+          "food": "pasta 137 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -68,7 +74,7 @@
     },
     {
       "name": "rice",
-      "description": "Test meal 'Rice' (Table 1, meal composition): 44.2 g carbohydrate, 4.9 g protein, 12.9 g fat (1265 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Rice' (Table 1, meal composition): 44.2 g carbohydrate, 4.9 g protein, 12.9 g fat (1265 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Rice 144 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 207 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); no protein source is named for this meal, so protein_source is not entered; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -77,7 +83,10 @@
           "t_min": 0,
           "carbs_g": 44.2,
           "fat_g": 12.9,
-          "protein_g": 4.9
+          "protein_g": 4.9,
+          "fat_source": "rendered lamb fat",
+          "form": "solid",
+          "food": "rice 144 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -87,7 +96,7 @@
     },
     {
       "name": "potato_lamb",
-      "description": "Test meal 'Potato + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 33.8 g protein, 12.2 g fat (1714 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Potato + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 33.8 g protein, 12.2 g fat (1714 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Potato 205 g, 'Lamb' 158 g (lamb mince, 'minced hindquarter of New Zealand lamb', gently fried, the amount 'required to provide 30 g of protein'), pasta sauce 44 g (Wattie's garlic-flavoured), water 0 g; no lamb fat is added, the meals being equalised so that 'all meals contained the same quantity of pasta sauce and lamb fat', so the fat source is the lamb mince's own fat; protein_source meat for the lamb; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -96,7 +105,11 @@
           "t_min": 0,
           "carbs_g": 44.1,
           "fat_g": 12.2,
-          "protein_g": 33.8
+          "protein_g": 33.8,
+          "fat_source": "lamb fat (in the lamb mince)",
+          "protein_source": "meat",
+          "form": "solid",
+          "food": "potato 205 g, lamb mince 158 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -106,7 +119,7 @@
     },
     {
       "name": "pasta_lamb",
-      "description": "Test meal 'Pasta + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 35.8 g protein, 12.5 g fat (1874 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Pasta + Lamb' (Table 1, meal composition): 44.1 g carbohydrate, 35.8 g protein, 12.5 g fat (1874 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Pasta 137 g, 'Lamb' 158 g (lamb mince, 'minced hindquarter of New Zealand lamb', gently fried, the amount 'required to provide 30 g of protein'), pasta sauce 44 g (Wattie's garlic-flavoured), water 68 g; no lamb fat is added, the meals being equalised so that 'all meals contained the same quantity of pasta sauce and lamb fat', so the fat source is the lamb mince's own fat; protein_source meat for the lamb; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -115,7 +128,11 @@
           "t_min": 0,
           "carbs_g": 44.1,
           "fat_g": 12.5,
-          "protein_g": 35.8
+          "protein_g": 35.8,
+          "fat_source": "lamb fat (in the lamb mince)",
+          "protein_source": "meat",
+          "form": "solid",
+          "food": "pasta 137 g, lamb mince 158 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -125,7 +142,7 @@
     },
     {
       "name": "rice_lamb",
-      "description": "Test meal 'Rice + Lamb' (Table 1, meal composition): 44.2 g carbohydrate, 33.7 g protein, 12.3 g fat (1733 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Rice + Lamb' (Table 1, meal composition): 44.2 g carbohydrate, 33.7 g protein, 12.3 g fat (1733 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Rice 144 g, 'Lamb' 158 g (lamb mince, 'minced hindquarter of New Zealand lamb', gently fried, the amount 'required to provide 30 g of protein'), pasta sauce 44 g (Wattie's garlic-flavoured), water 61 g; no lamb fat is added, the meals being equalised so that 'all meals contained the same quantity of pasta sauce and lamb fat', so the fat source is the lamb mince's own fat; protein_source meat for the lamb; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -134,7 +151,11 @@
           "t_min": 0,
           "carbs_g": 44.2,
           "fat_g": 12.3,
-          "protein_g": 33.7
+          "protein_g": 33.7,
+          "fat_source": "lamb fat (in the lamb mince)",
+          "protein_source": "meat",
+          "form": "solid",
+          "food": "rice 144 g, lamb mince 158 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -144,7 +165,7 @@
     },
     {
       "name": "potato_soy",
-      "description": "Test meal 'Potato + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 35.1 g protein, 13.8 g fat (1801 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Potato + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 35.1 g protein, 13.8 g fat (1801 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Potato 205 g, 'Soy protein' 33 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 113 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); protein_source soy for the 'Soy protein'; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -153,7 +174,11 @@
           "t_min": 0,
           "carbs_g": 44.4,
           "fat_g": 13.8,
-          "protein_g": 35.1
+          "protein_g": 35.1,
+          "fat_source": "rendered lamb fat",
+          "protein_source": "soy",
+          "form": "solid",
+          "food": "potato 205 g, soy protein 33 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -163,7 +188,7 @@
     },
     {
       "name": "pasta_soy",
-      "description": "Test meal 'Pasta + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 37.1 g protein, 14.1 g fat (1961 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Pasta + Soy' (Table 1, meal composition): 44.4 g carbohydrate, 37.1 g protein, 14.1 g fat (1961 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Pasta 137 g, 'Soy protein' 33 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 181 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); protein_source soy for the 'Soy protein'; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -172,7 +197,11 @@
           "t_min": 0,
           "carbs_g": 44.4,
           "fat_g": 14.1,
-          "protein_g": 37.1
+          "protein_g": 37.1,
+          "fat_source": "rendered lamb fat",
+          "protein_source": "soy",
+          "form": "solid",
+          "food": "pasta 137 g, soy protein 33 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
@@ -182,7 +211,7 @@
     },
     {
       "name": "rice_soy",
-      "description": "Test meal 'Rice + Soy' (Table 1, meal composition): 44.6 g carbohydrate, 35.0 g protein, 13.9 g fat (1820 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed.",
+      "description": "Test meal 'Rice + Soy' (Table 1, meal composition): 44.6 g carbohydrate, 35.0 g protein, 13.9 g fat (1820 kJ) per Table 1B (the whole meal's composition; the 40 g of Methods 2.1.3 is the in vitro available carbohydrate each staple was portioned to give, not the meal total), eaten within 10 min from minute 0 after fasting from 22:00 the night before; seated; capillary samples to 150 min. Clock hour of the test and so the fast length are not printed. Meal details (Table 1A, Methods 2.1): cooked Rice 144 g, 'Soy protein' 33 g, lamb fat 12.3 g, pasta sauce 44 g (Wattie's garlic-flavoured), water 174 g 'consumed separately with meal'; the fat is 'rendered lamb fat' added 'to each of the meals not containing lamb' (Methods 2.1.3 prints 12.6 g, Table 1A 12.3 g); protein_source soy for the 'Soy protein'; no fibre, sugars or fat types are printed.",
       "duration_min": 151,
       "start_hour": 8.0,
       "prefast_hours": 10,
@@ -191,7 +220,11 @@
           "t_min": 0,
           "carbs_g": 44.6,
           "fat_g": 13.9,
-          "protein_g": 35.0
+          "protein_g": 35.0,
+          "fat_source": "rendered lamb fat",
+          "protein_source": "soy",
+          "form": "solid",
+          "food": "rice 144 g, soy protein 33 g, lamb fat 12.3 g, pasta sauce 44 g"
         }
       ],
       "assumed": [
