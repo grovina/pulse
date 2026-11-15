@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from ..types import (
-    BODY_MASS_KG, MG_DL_PER_G, SERIES_INDEX, VG_DL_PER_KG,
+    BODY_MASS_KG, MARKER_INDEX, MG_DL_PER_G, NORM_SCALE, SERIES_INDEX, VG_DL_PER_KG,
 )
 from .cohort_types import (
     FACTORS,
@@ -1209,11 +1209,30 @@ def _finding_item(
             sample_times=sample_times,
             below_baseline=below_baseline,
             paper=paper,
+            **({"softargmax_beta": _peak_time_beta(marker)} if kind is StatisticKind.TIME_TO_PEAK else {}),
         )
     except ValueError as err:
         r.add("parse", str(err))
         return None, used
     return FindingItem(fid, spec, location, acknowledged), used
+
+
+# A peak time is a softmax-weighted mean of the window's minutes
+# (``cohort_loss._arm_statistic_batched``), with weights ``exp(beta * level)`` on the
+# marker's own scale. Unless beta times the marker's rise is large, the mean sits near
+# the window's centre whatever the curve does: the spec default of 0.05 per unit puts a
+# 40 mg/dL glucose rise at a weight ratio of e^2, and a 180 min window's centroid at 90.
+# A file's peak time therefore gets beta = this over the marker's meal-time scale
+# (``types.NORM_SCALE``: 30 mg/dL glucose, 10 uU/mL insulin, 0.2 mmol/L FFA), so a rise of
+# one scale weighs e^20 against the baseline.
+PEAK_TIME_SHARPNESS = 20.0
+
+
+def _peak_time_beta(marker: str) -> float:
+    """``softargmax_beta`` for a file's ``time_to_peak`` on ``marker``."""
+    if marker in MARKER_INDEX:
+        return PEAK_TIME_SHARPNESS / float(NORM_SCALE[MARKER_INDEX[marker]])
+    return PEAK_TIME_SHARPNESS
 
 
 def _missing(r: _Reader, data: Any, where: str, kinds: tuple[str, ...]) -> tuple[str, str] | None:

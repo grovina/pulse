@@ -784,3 +784,29 @@ def test_no_paper_full_text_is_committed():
         if path.suffix == ".json":
             longest = max(map(len, _strings(json.loads(path.read_text(encoding="utf-8")))), default=0)
             assert longest < 1_500, (path, longest)
+
+def test_a_files_peak_time_is_sharp_enough_to_find_the_peak():
+    """A file's ``time_to_peak`` gets a beta sized to its marker, so a curve that peaks at
+    minute 20 of a 180 min window reads near 20, not near the window's centre."""
+    import torch
+
+    from pulse.cohort_loss import _arm_statistic_batched
+    from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
+    from pulse.knowledge.cohort_types import StatisticKind, StatisticWindow
+    from pulse.knowledge.corpus import _peak_time_beta
+    from pulse.types import SERIES_INDEX
+
+    peak_times = [s for s in ALL_COHORT_STATISTICS if s.kind is StatisticKind.TIME_TO_PEAK and s.paper
+                  and s.name.split(".")[0] == s.paper]
+    assert peak_times and all(s.softargmax_beta == _peak_time_beta(s.marker_id) for s in peak_times)
+    minutes = torch.arange(180, dtype=torch.float32)
+    for marker, base, rise in (("glucose", 85.0, 35.0), ("insulin", 6.0, 50.0), ("ffa", 0.4, 0.3)):
+        curve = base + rise * torch.exp(-((minutes - 20.0) / 15.0) ** 2)
+        traj = torch.zeros(1, 180, max(SERIES_INDEX.values()) + 1)
+        traj[0, :, SERIES_INDEX[marker]] = curve
+        window = StatisticWindow(0, 180)
+        sharp = float(_arm_statistic_batched(traj, SERIES_INDEX[marker], window, StatisticKind.TIME_TO_PEAK,
+                                             _peak_time_beta(marker)))
+        blunt = float(_arm_statistic_batched(traj, SERIES_INDEX[marker], window, StatisticKind.TIME_TO_PEAK, 0.05))
+        assert abs(sharp - 20.0) < 5.0, (marker, sharp)
+        assert blunt > 40.0, (marker, blunt)  # what the default gave
