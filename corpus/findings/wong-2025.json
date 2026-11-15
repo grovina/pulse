@@ -1,0 +1,378 @@
+{
+  "paper": "wong-2025",
+  "citation": {
+    "authors": "Wong G, Clegg ME, Ross D, Lovegrove JA, Jackson KG",
+    "title": "Sequential Meals Containing Animal and Plant-Based Saturated Fats Have Differential Effects on Postprandial Gut Hormones but No Impact on Satiety Compared with Unsaturated Fats in Generally Healthy Males: Findings from the Randomized Controlled Crossover CocoHeart Study",
+    "journal": "The Journal of Nutrition",
+    "year": 2025,
+    "doi": "10.1016/j.tjnut.2025.06.027",
+    "pmid": "40609691",
+    "pmcid": "PMC12799432"
+  },
+  "population": {
+    "n": 13,
+    "sex": "male",
+    "age_years": {
+      "mean": 53.0,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.4,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "13 generally healthy Caucasian men (Reading, UK) who completed all three visits; enrolled aged 30-70 y with BMI 19-32 kg/m2, non-smokers, fasting cholesterol <7.5, TAG <2.3 and glucose <7.0 mmol/L, no hypertension, no lipid or blood-pressure medication; 'considered generally healthy' (self-reported disease-free, screening within reference ranges). Age is printed as 53 ± 3 y in the abstract and the Results, unlabelled. BMI is printed as 24.4 ± 3.0 (abstract) and 24.4 ± 0.8 (Results), both unlabelled, and per visit in Table 3 as 24.4 ± 2.8, 24.5 ± 2.6, 24.3 ± 2.6 under a footnote calling them SEMs, which cannot be SEMs for 13 men within BMI 19-32 (0.8 × √13 ≈ 2.9 suggests the Results figure is the SEM and the others SDs, but nothing says so). No SD is entered for either."
+  },
+  "protocols": [
+    {
+      "name": "veg_oil_day",
+      "description": "Vegetable-oil (50:50 safflower and olive oil) visit of the crossover: arm minute 0 is the paper's -30 min fasting sample, after a low-fat evening meal and fasting from 20:00, arrival ~08:00; breakfast at paper 0 min (arm 30: toasted white bread, jam and a chocolate drink with 50 g test oil; Table 2 total 98.0 g carbohydrate, 53.6 g fat, 19.2 g protein) and lunch at paper 330 min (arm 360: the same with 30 g test oil; 98.0 g carbohydrate, 33.6 g fat, 19.2 g protein); last sample at paper 480 min (arm 510). Arm start taken as 08:00 and the fast as 12 h (20:00 to the ~08:00 arrival); the paper gives neither the clock time of the first sample nor of breakfast.",
+      "duration_min": 511,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 98.0,
+          "fat_g": 53.6,
+          "protein_g": 19.2
+        },
+        {
+          "t_min": 360,
+          "carbs_g": 98.0,
+          "fat_g": 33.6,
+          "protein_g": 19.2
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting serum glucose (0 min sample) at the start of the vegetable-oil visit, entered as the mean over the 30-min run-in before breakfast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 4.97,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
+        "quote": "Glucose (mmol/L)3 | 4.96 ± 0.10 | 4.97 ± 0.11 | 5.20 ± 0.09 | 0.954"
+      }
+    },
+    {
+      "id": "fasting_nefa",
+      "description": "Fasting serum non-esterified fatty acids (0 min sample) at the start of the vegetable-oil visit, over the run-in",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 540.0,
+      "unit": "μmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 77.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
+        "quote": "NEFA (μmol/L)3 | 412 ± 31 | 540 ± 77 | 468 ± 54 | 0.407"
+      }
+    },
+    {
+      "id": "fasting_glp1",
+      "description": "Fasting plasma GLP-1 (0 min sample, MILLIPLEX MAP Human Metabolic Hormone panel, EDTA plasma 'pretreated with 50 mmol of dipeptidyl peptidase-IV' as printed) at the start of the vegetable-oil visit, over the run-in; the paper does not say whether the assay reads total or active GLP-1",
+      "marker": "glp1",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 137.0,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
+        "quote": "GLP-1 (ng/L) | 140 ± 9.0 | 137 ± 9 | 129 ± 9 | 0.776"
+      }
+    },
+    {
+      "id": "fasting_sbp",
+      "description": "Supine systolic blood pressure at baseline (0 min, Mobil-O-Graph) at the start of the vegetable-oil visit, over the run-in",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 120.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
+        "quote": "Systolic (mm Hg) | 121 ± 2 | 120 ± 3 | 123 ± 3 | 0.501"
+      }
+    },
+    {
+      "id": "fasting_dbp",
+      "description": "Supine diastolic blood pressure at baseline (0 min, Mobil-O-Graph) at the start of the vegetable-oil visit, over the run-in",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 81.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
+        "quote": "Diastolic (mm Hg) | 84 ± 2 | 81 ± 3 | 84 ± 2 | 0.469"
+      }
+    },
+    {
+      "id": "glucose_auc_0_480",
+      "description": "Total area under the serum glucose curve, paper 0 to 480 min (trapezoid, Methods), over the 13 glucose samples from the 0-min fasting sample on; both meals",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 2580.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 71.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 2519 ± 83 | 2580 ± 71 | 2663 ± 60 | 0.890"
+      }
+    },
+    {
+      "id": "glucose_iauc_0_480",
+      "description": "Incremental area under the serum glucose curve, paper 0 to 480 min, defined in Methods as AUC minus the fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, the only fasting glucose sample the Methods list",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "times": [
+        30,
+        60,
+        90,
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "below_baseline": "subtracted",
+      "value": 194.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 79.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), Glucose (mmol/L × 480 min), row iAUC",
+        "quote": "iAUC | 140 ± 72 | 194 ± 79 | 166 ± 57 | 0.871"
+      }
+    },
+    {
+      "id": "nefa_auc_90_480",
+      "description": "Total area under the serum NEFA curve from paper 90 to 480 min (Methods: NEFA areas start at 90 min, the average postprandial minimum), trapezoid over the ten samples 90-480 min; the table header prints 'mmol/L × 480 min' for all rows",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "veg_oil_day"
+      ],
+      "times": [
+        120,
+        150,
+        210,
+        270,
+        330,
+        360,
+        390,
+        420,
+        450,
+        510
+      ],
+      "value": 130.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 12.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), NEFA (mmol/L × 480 min), row AUC",
+        "quote": "AUC | 120 ± 9 | 130 ± 12 | 132 ± 7 | 0.345"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "every postprandial finding of the butter and coconut-oil visits (Table 4, Figures 2 and 3): their meals have the same grams of carbohydrate, fat and protein as the vegetable-oil visit (Table 2) and differ only in the fatty-acid composition of the 50 g and 30 g test fat (Table 1), which the model cannot be told, so they would be the same protocol asked for different numbers (GIP and GLP-1 areas differ by fat)",
+      "missing": {
+        "kind": "input",
+        "name": "meal_fat_composition"
+      }
+    },
+    {
+      "what": "insulin fasting (Table 3, printed 'ng/L') and AUC and iAUC over 480 min (Table 4, printed 'μg/L × 480 min'): AUC minus iAUC over 480 min gives a fasting insulin 5.79 times the Table 3 value in every arm (vegetable oil (937 - 234)/480 = 1.465 μg/L against 253 ng/L; butter 1.542 against 266; coconut 1.494 against 258), close to the 5.81 pg per pmol of insulin, while the same check reproduces Table 3 for glucose, GIP, GLP-1, ghrelin and PYY; one of the two insulin tables is off by a molar conversion and the paper does not show which (were it not, both units would still be outside the loader's insulin units)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "GIP fasting, all three visits (Table 3, printed 'GIP (ng/L)'): ng/L is not a GIP unit the loader takes",
+      "missing": {
+        "kind": "input",
+        "name": "gip_in_ng_per_l"
+      }
+    },
+    {
+      "what": "GIP AUC and iAUC over 480 min (Table 4, printed 'GIP (μg/L × 480 min)'): μg/L is not a GIP unit the loader takes",
+      "missing": {
+        "kind": "input",
+        "name": "gip_in_ug_per_l"
+      }
+    },
+    {
+      "what": "GLP-1 AUC and iAUC over 480 min (Table 4, printed 'GLP-1 (μg/L × 480 min)'): μg/L is not a GLP-1 unit the loader takes (its ng/L fasting value is entered)",
+      "missing": {
+        "kind": "input",
+        "name": "glp1_in_ug_per_l"
+      }
+    },
+    {
+      "what": "NEFA iAUC 90-480 min (Table 4): the printed value (54.6) does not follow from the Methods' rule AUC - mean fasting concentration × duration (130 - 0.540 × 390 is -80.6); 130 - 54.6 implies a baseline of 0.193 mmol/L over 390 min, which the paper does not print or define",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "serum triacylglycerol fasting, AUC and iAUC (Tables 3 and 4, Figure 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "PYY fasting, AUC and iAUC (Tables 3 and 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "ghrelin fasting (Table 3, ng/L), AUC and iAUC (Table 4, μg/L × 480 min); absolute ghrelin, assay form (active or total) not stated",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "glucose, NEFA, TAG, GIP, GLP-1, insulin, ghrelin and PYY time courses (Figures 2 and 3 and not otherwise printed)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "postprandial blood pressure, heart rate and arterial stiffness at 150, 300 and 480 min (Supplemental Table 1, not in the full text)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "fasting pulse pressure, mean arterial pressure, reflection magnitude, augmentation index and pulse wave velocity (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "hunger, satisfaction, fullness, desire to eat and prospective consumption areas (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    }
+  ]
+}
