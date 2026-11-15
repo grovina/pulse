@@ -1,0 +1,153 @@
+{
+  "paper": "josic-2010",
+  "citation": {
+    "authors": "Josic J, Olsson AT, Wickeberg J, Lindstedt S, Hlebowicz J",
+    "title": "Does green tea affect postprandial glucose, insulin and satiety in healthy subjects: a randomized controlled trial",
+    "journal": "Nutrition Journal",
+    "year": 2010,
+    "doi": "10.1186/1475-2891-9-63",
+    "pmid": "21118565",
+    "pmcid": "PMC3002911"
+  },
+  "population": {
+    "n": 14,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 27.0,
+      "sd": 3.0,
+      "min": 22.0,
+      "max": 35.0
+    },
+    "bmi": {
+      "mean": 22.3,
+      "sd": 3.4,
+      "min": 17.0,
+      "max": 30.8
+    },
+    "status": "unselected",
+    "description": "Seven male and seven female volunteers from the student population in southern Sweden (15 enrolled, one excluded for not eating the meal in time), called healthy by the paper; age and BMI mean +/- SD and range as printed for the 14. Entered as unselected: no screening (no glucose tolerance test, no exclusion criteria) is reported, and the BMI range reaches 30.8 kg/m2 although the Discussion calls the subjects of normal weight. One smoker, one snuff user, one using asthma inhalers (smoking, snuff and medication withheld on the test mornings). Insulin was measured in 13 (one failed cannulation); the age and BMI are those of all 14."
+  },
+  "protocols": [
+    {
+      "name": "reference_meal",
+      "description": "Reference meal after an overnight fast (minimum 10 h): 100 g white bread (50 g carbohydrate, 8 g protein, 3 g fat) plus 25 g smoked turkey (4.5 g protein, 0.75 g fat, 0.25 g carbohydrate) with 300 ml hot water, eaten within 10 min from t = 0 (entered as one meal at minute 0); blood at 0 (before the meal), 15, 30, 45, 60, 90, 120 min. Carbohydrate is the paper's stated total for the meal, 50 g (bread 50 + turkey 0.25 = 50.25 g); protein 8 + 4.5 = 12.5 g and fat 3 + 0.75 = 3.75 g are summed from the two foods. Clock hour not stated; 'minimum 10-h' fast is a lower bound.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 3.75,
+          "protein_g": 12.5
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "reference_insulin_iauc_0_120",
+      "description": "Serum insulin incremental area 0-120 min after the start of the reference meal (white bread and turkey with 300 ml hot water); trapezoidal (GraphPad Prism) over the samples at 0, 15, 30, 45, 60, 90, 120 min, baseline the 0 min (pre-meal) sample; the paper says areas below baseline were excluded. Table 1 prints cumulative areas 0-15 to 0-120 min from the same curve; only the whole 0-120 min observation period is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "reference_meal"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 2902.2,
+      "unit": "mU/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 224.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, row '0-120 min', column 'Insulin AUC (mU·min/l), Reference'",
+        "quote": "0-120 min | 2902.2 ± 224.0"
+      }
+    },
+    {
+      "id": "reference_glucose_iauc_0_120",
+      "description": "Capillary plasma(-equivalent, HemoCue) glucose incremental area 0-120 min after the start of the reference meal (white bread and turkey with 300 ml hot water); trapezoidal (GraphPad Prism) over the samples at 0, 15, 30, 45, 60, 90, 120 min, baseline the 0 min (pre-meal) sample; the paper says areas below baseline were excluded. Table 1 prints cumulative areas 0-15 to 0-120 min from the same curve; only the whole 0-120 min observation period is entered.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "reference_meal"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 177.8,
+      "unit": "mmol/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 24.7,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row '0-120 min', column 'Glucose AUC (mmol·min/l), Reference'",
+        "quote": "0-120 min | 177.8 ± 24.7"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "green tea meal arm: glucose and insulin AUCs (Table 1), 120 min glucose difference (Results, Figure 1); the 300 ml green tea carries caffeine (26.5 mg/100 ml) and catechins",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "reference meal glucose and insulin incremental areas over the shorter cumulative windows 0-15, 0-30, 0-45, 0-60 and 0-90 min (Table 1): each is a leading part of the 0-120 min area entered, from the same samples of the same people, and the format scores findings as independent, so entering them would count the early curve up to six times over",
+      "missing": {
+        "kind": "operator",
+        "name": "nested_area_windows"
+      }
+    },
+    {
+      "what": "glycaemic index of the green tea meal, 134.2 +/- 16.3 (Results): a per-person ratio of the two arms' glucose incremental areas, and the tea arm cannot be run",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "incremental glucose and insulin concentration time courses for both meals (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "satiety, fullness, hunger, desire, pleasantness, sickness, enough-to-consume VAS scores and AUCs (Table 2, Figures 2-4)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    }
+  ]
+}
