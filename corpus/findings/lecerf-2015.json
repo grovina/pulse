@@ -1,0 +1,326 @@
+{
+  "paper": "lecerf-2015",
+  "citation": {
+    "authors": "Lecerf JM, Clerc E, Jaruga A, Wagner A, Respondek F",
+    "title": "Postprandial glycaemic and insulinaemic responses in adults after consumption of dairy desserts and pound cakes containing short-chain fructo-oligosaccharides used to replace sugars",
+    "journal": "Journal of Nutritional Science",
+    "year": 2015,
+    "doi": "10.1017/jns.2015.22",
+    "pmid": "26495125",
+    "pmcid": "PMC4611083"
+  },
+  "population": {
+    "n": 57,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 32.3,
+      "sd": 8.7,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.3,
+      "sd": 1.9,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Two separate groups of healthy adults, one per study (crossover within each): dairy-dessert study mITT n 24 (= PP; 32.3 (sd 8.7) years, BMI 22.3 (sd 1.9) kg/m2, 28 % male), pound-cake study mITT n 33 of 35 randomised. The top-level age and BMI are the dairy-dessert group's; the pound-cake arm overrides them with the randomised population's 31.9 (sd 8.1) years and BMI 21.9 (sd 1.9) kg/m2 (29 % male), the only figures printed for that study (35 randomised, findings on 33). Inclusion: age 18-50 years, BMI 18.0-25.0 kg/m2, breakfast eaters, non-smokers, no medication affecting nutrient absorption, lipid or carbohydrate metabolism; screened for fasting glucose <= 1.1 g/l, cholesterol <= 6.35 mmol/l, TAG <= 1.70 mmol/l, fasting insulin <= 20 mU/l, HbA1c <= 7 %. Lille, France. n = 24 + 33 mITT subjects."
+  },
+  "protocols": [
+    {
+      "name": "dessert_control",
+      "description": "Control dairy dessert (210 g portion; Table 1: 48.1 g carbohydrate, 2.2 g lipid, 6.1 g protein, 218.9 kcal; also 2.7 g fibre, which the model cannot be given), eaten in the morning after a 10-h fast; dessert study group. Arm clock starts at the paper's T-5 min (first fasting sample), so the T-1 sample is arm minute 4, the food is at arm minute 5 (paper T0) and the paper's T15, T30, T45, T60, T90 and T120 samples are arm minutes 20, 35, 50, 65, 95 and 125 (duration 126). The food was eaten 'within 5 to 10 min' with 150 ml water; it is entered as one meal at paper T0, read as the start of eating (the paper does not say whether T0 is the start or the end of the meal). Stated: morning arrival 'after a 10-h fast' (prefast_hours 10), the grams. Not stated: the clock hour ('in the morning').",
+      "duration_min": 126,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 48.1,
+          "fat_g": 2.2,
+          "protein_g": 6.1
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "cake_control",
+      "description": "Control pound cake (100 g portion; Table 1: 58.3 g carbohydrate, 22.1 g lipid, 6.4 g protein, 461 kcal; also 1.0 g fibre, which the model cannot be given), eaten in the morning after a 10-h fast; pound-cake study group (age and BMI of its 35 randomised subjects). Arm clock starts at the paper's T-5 min (first fasting sample), so the T-1 sample is arm minute 4, the food is at arm minute 5 (paper T0) and the paper's T15, T30, T45, T60, T90 and T120 samples are arm minutes 20, 35, 50, 65, 95 and 125 (duration 126). The food was eaten 'within 5 to 10 min' with 150 ml water; it is entered as one meal at paper T0, read as the start of eating (the paper does not say whether T0 is the start or the end of the meal). Stated: morning arrival 'after a 10-h fast' (prefast_hours 10), the grams. Not stated: the clock hour ('in the morning').",
+      "duration_min": 126,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 58.3,
+          "fat_g": 22.1,
+          "protein_g": 6.4
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ],
+      "population": {
+        "age_years": {
+          "mean": 31.9,
+          "sd": 8.1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.9,
+          "sd": 1.9,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "dessert_control_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after the dairy dessert control product (Table 2, mITT, mean and SD of the per-person areas). The Methods say 'The incremental AUC between 0 and 120 min (AUC0-120 min) for blood glucose and insulin concentrations was computed following the FAO recommendation'; Table 2 labels it 'AUC0-120 min'. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0 itself, so the first of times is the minute of the food (arm minute 5), where the model is still fasted. The paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline: the mean of both (baseline_window arm minutes 0-5) is used. Below baseline: unstated (the FAO method is only cited, not described in the paper's words).",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dessert_control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "value": 2867.0,
+      "unit": "mU/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1190.0,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin AUC (mU × min/l)', Dairy dessert (n 24), Control, Mean and sd; Methods, statistical analysis",
+        "quote": "Insulin AUC (mU × min/l)* | 2867 | 1190"
+      }
+    },
+    {
+      "id": "dessert_control_insulin_cmax",
+      "description": "Maximum insulin concentration (Cmax) over the 2 h after the dairy dessert control product (Table 2, mITT, mean and SD). Window is paper T0 to T120 (arm minutes 5-125 inclusive).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "dessert_control"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 64.8,
+      "unit": "mU/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 25.4,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin Cmax (mU/l)', Dairy dessert (n 24), Control, Mean and sd",
+        "quote": "Insulin Cmax (mU/l)* | 64·8 | 25·4"
+      }
+    },
+    {
+      "id": "dessert_control_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after the dairy dessert control product (Table 2, mITT, mean and SD of the per-person areas). The Methods say 'The incremental AUC between 0 and 120 min (AUC0-120 min) for blood glucose and insulin concentrations was computed following the FAO recommendation'; Table 2 labels it 'AUC0-120 min'. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0 itself, so the first of times is the minute of the food (arm minute 5), where the model is still fasted. The paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline: the mean of both (baseline_window arm minutes 0-5) is used. Below baseline: unstated (the FAO method is only cited, not described in the paper's words).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dessert_control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "value": 92.8,
+      "unit": "mmol/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 90.6,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose AUC (mmol × min/l)', Dairy dessert (n 24), Control, Mean and sd; Methods, statistical analysis",
+        "quote": "Glucose AUC (mmol × min/l) | 92·8 | 90·6"
+      }
+    },
+    {
+      "id": "dessert_control_glucose_cmax",
+      "description": "Maximum glucose concentration (Cmax) over the 2 h after the dairy dessert control product (Table 2, mITT, mean and SD). Window is paper T0 to T120 (arm minutes 5-125 inclusive).",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "dessert_control"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 7.3,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.4,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose Cmax (mmol/l)', Dairy dessert (n 24), Control, Mean and sd",
+        "quote": "Glucose Cmax (mmol/l) | 7·3 | 1·4"
+      }
+    },
+    {
+      "id": "cake_control_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min after the pound cake control product (Table 2, mITT, mean and SD of the per-person areas). The Methods say 'The incremental AUC between 0 and 120 min (AUC0-120 min) for blood glucose and insulin concentrations was computed following the FAO recommendation'; Table 2 labels it 'AUC0-120 min'. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0 itself, so the first of times is the minute of the food (arm minute 5), where the model is still fasted. The paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline: the mean of both (baseline_window arm minutes 0-5) is used. Below baseline: unstated (the FAO method is only cited, not described in the paper's words).",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cake_control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "value": 1885.5,
+      "unit": "mU/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1000.0,
+        "n": 33
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin AUC (mU × min/l)', Pound cake (n 33), Control, Mean and sd; Methods, statistical analysis",
+        "quote": "Insulin AUC (mU × min/l)* | 1885·5 | 1000"
+      }
+    },
+    {
+      "id": "cake_control_insulin_cmax",
+      "description": "Maximum insulin concentration (Cmax) over the 2 h after the pound cake control product (Table 2, mITT, mean and SD). Window is paper T0 to T120 (arm minutes 5-125 inclusive).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "cake_control"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 35.0,
+      "unit": "mU/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.9,
+        "n": 33
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin Cmax (mU/l)', Pound cake (n 33), Control, Mean and sd",
+        "quote": "Insulin Cmax (mU/l)* | 35·0 | 16·9"
+      }
+    },
+    {
+      "id": "cake_control_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min after the pound cake control product (Table 2, mITT, mean and SD of the per-person areas). The Methods say 'The incremental AUC between 0 and 120 min (AUC0-120 min) for blood glucose and insulin concentrations was computed following the FAO recommendation'; Table 2 labels it 'AUC0-120 min'. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0 itself, so the first of times is the minute of the food (arm minute 5), where the model is still fasted. The paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline: the mean of both (baseline_window arm minutes 0-5) is used. Below baseline: unstated (the FAO method is only cited, not described in the paper's words).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cake_control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "value": 69.0,
+      "unit": "mmol/l",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 69.8,
+        "n": 33
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose AUC (mmol × min/l)', Pound cake (n 33), Control, Mean and sd; Methods, statistical analysis",
+        "quote": "Glucose AUC (mmol × min/l) | 69·0 | 69·8"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Reduced-sugar dairy dessert and pound cake arms: glucose and insulin AUC0-120 and Cmax (Table 2); the products replace sugars with 11.2 g and 9.1 g scFOS (14.8 g and 10.1 g fibre, Table 1), a non-digestible carbohydrate the meal format cannot carry",
+      "missing": {
+        "kind": "input",
+        "name": "dietary_fibre"
+      }
+    },
+    {
+      "what": "Pound cake control glucose Cmax 6.3 (sd 0.1) mmol/l (Table 2; also reduced-sugar 6.1 (sd 0.1)): an SD of 0.1 mmol/l between 33 people's peaks is implausible beside the same group's fasting SD of 0.37 and its glucose AUC SD near the mean, so the label or the value looks misprinted and the paper does not show which",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Fasting glucose and insulin of each study's ITT population, means and SD averaged over the two visits (Results, Study 1 and Study 2 paragraphs): the ITT n is not printed (Fig. 1 only; it is at least the mITT n of 24 and 33, and the pound-cake ITT may include the two who left before eating)",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses at -5 to 120 min for both products (Figs 2 and 3, means and SEM)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
