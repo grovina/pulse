@@ -1,0 +1,1038 @@
+{
+  "paper": "oberoi-2022",
+  "citation": {
+    "authors": "Oberoi A, Giezenaar C, Rigda RS, et al.",
+    "title": "Comparative Effects of Co-Ingesting Whey Protein and Glucose Alone and Combined on Blood Glucose, Plasma Insulin and Glucagon Concentrations in Younger and Older Men",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14153111",
+    "pmid": "35956288",
+    "pmcid": "PMC9370714"
+  },
+  "population": {
+    "n": 20,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "10 healthy younger men (age range 18-35 y, mean ± SEM 29 ± 2 y, BMI 26.1 ± 0.4 kg/m2) and 10 healthy older men (68-87 y, 78 ± 2 y, BMI 27.3 ± 1.4 kg/m2), Adelaide; known diabetes or fasting glucose > 6.9 mmol/L excluded. No pooled age or BMI is printed, so each protocol carries its group. SDs computed as SEM x sqrt(10): age 6.32 y both groups, BMI 1.26 (younger) and 4.43 (older) kg/m2. The younger group's 18-35 y reads as the enrolment range, so its min and max are null; the older group's 68-87 y is taken as observed (Discussion: 'all older men in this study were 68 years or older')."
+  },
+  "protocols": [
+    {
+      "name": "young_fasted",
+      "description": "Fasted baseline sample, younger men: last meal the evening before 'at around 1900 h', arrival at 08:30, cannulation, then the baseline blood sample just before the drink (its clock time is not printed). Arm starts 08:30 with a 30-min fasted run-in and the sample read at minute 30 (about 09:00); prefast 13.5 h = 19:00 to 08:30. Start 08:30 is the stated arrival time. Used for the C-day fasted values only.",
+      "duration_min": 31,
+      "start_hour": 8.5,
+      "prefast_hours": 13.5,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 29.0,
+          "sd": 6.32,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 26.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "young_p",
+      "description": "younger men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 0.0,
+          "fat_g": 0.0,
+          "protein_g": 30.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 29.0,
+          "sd": 6.32,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 26.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "young_g",
+      "description": "younger men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 30.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 29.0,
+          "sd": 6.32,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 26.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "young_gp",
+      "description": "younger men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 30.0,
+          "fat_g": 0.0,
+          "protein_g": 30.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 29.0,
+          "sd": 6.32,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 26.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "old_fasted",
+      "description": "Fasted baseline sample, older men: last meal the evening before 'at around 1900 h', arrival at 08:30, cannulation, then the baseline blood sample just before the drink (its clock time is not printed). Arm starts 08:30 with a 30-min fasted run-in and the sample read at minute 30 (about 09:00); prefast 13.5 h = 19:00 to 08:30. Start 08:30 is the stated arrival time. Used for the C-day fasted values only.",
+      "duration_min": 31,
+      "start_hour": 8.5,
+      "prefast_hours": 13.5,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 78.0,
+          "sd": 6.32,
+          "min": 68.0,
+          "max": 87.0
+        },
+        "bmi": {
+          "mean": 27.3,
+          "sd": 4.43,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "old_p",
+      "description": "older men: ~250 mL drink of 30 g whey protein (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 0.0,
+          "fat_g": 0.0,
+          "protein_g": 30.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 78.0,
+          "sd": 6.32,
+          "min": 68.0,
+          "max": 87.0
+        },
+        "bmi": {
+          "mean": 27.3,
+          "sd": 4.43,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "old_g",
+      "description": "older men: ~250 mL drink of 30 g glucose (120 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 30.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 78.0,
+          "sd": 6.32,
+          "min": 68.0,
+          "max": 87.0
+        },
+        "bmi": {
+          "mean": 27.3,
+          "sd": 4.43,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "old_gp",
+      "description": "older men: ~250 mL drink of 30 g whey protein plus 30 g glucose (240 kcal), drunk within 2 min after the baseline sample at t = 0; blood at 0, 15, 30, 45, 60, 90, 120, 150, 180 min; buffet at 180 min is after the arm ends. Drink clock time not printed: start 09:00 assumed (arrival 08:30, then cannulation and baseline); prefast 14 h = 19:00 to 09:00. Whey entered as 30 g protein, 0 g carbohydrate, 0 g fat: the paper gives 30 g whey protein = 120 kcal, and 120 kcal / 4 kcal/g = 30 g, leaving no energy for carbohydrate or fat.",
+      "duration_min": 181,
+      "start_hour": 9.0,
+      "prefast_hours": 14,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 30.0,
+          "fat_g": 0.0,
+          "protein_g": 30.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 78.0,
+          "sd": 6.32,
+          "min": 68.0,
+          "max": 87.0
+        },
+        "bmi": {
+          "mean": 27.3,
+          "sd": 4.43,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "young_c_day_fasted_glucose",
+      "description": "Fasted (baseline) glucose, younger men, before the drink on the C study day; the same men's fasted values on the P, G and GP days (Table 1) are repeat samples of this one state and are not entered again Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "young_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 4.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Fasted', column Younger Men C (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Fasted | 4.3 ± 0.1"
+      }
+    },
+    {
+      "id": "old_c_day_fasted_glucose",
+      "description": "Fasted (baseline) glucose, older men, before the drink on the C study day; the same men's fasted values on the P, G and GP days (Table 1) are repeat samples of this one state and are not entered again Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "old_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 4.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Fasted', column Older Men C (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Fasted | 4.5 ± 0.1"
+      }
+    },
+    {
+      "id": "young_g_glucose_peak",
+      "description": "Peak glucose over 0-180 min after the G drink, younger men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "young_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 7.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Peak', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 7.8 ± 0.3"
+      }
+    },
+    {
+      "id": "young_gp_glucose_peak",
+      "description": "Peak glucose over 0-180 min after the GP drink, younger men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "young_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 6.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Peak', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 6.3 ± 0.3"
+      }
+    },
+    {
+      "id": "old_g_glucose_peak",
+      "description": "Peak glucose over 0-180 min after the G drink, older men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "old_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 8.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Peak', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 8.1 ± 0.3"
+      }
+    },
+    {
+      "id": "old_gp_glucose_peak",
+      "description": "Peak glucose over 0-180 min after the GP drink, older men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "old_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 6.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Peak', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 6.9 ± 0.3"
+      }
+    },
+    {
+      "id": "young_g_glucose_time_to_peak",
+      "description": "Time to peak glucose after the G drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 34.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Time to peak (min)', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 34 ± 3"
+      }
+    },
+    {
+      "id": "young_gp_glucose_time_to_peak",
+      "description": "Time to peak glucose after the GP drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 30.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Time to peak (min)', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 30 ± 3"
+      }
+    },
+    {
+      "id": "old_g_glucose_time_to_peak",
+      "description": "Time to peak glucose after the G drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 51.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Time to peak (min)', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 51 ± 3"
+      }
+    },
+    {
+      "id": "old_gp_glucose_time_to_peak",
+      "description": "Time to peak glucose after the GP drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 36.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Time to peak (min)', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 36 ± 3"
+      }
+    },
+    {
+      "id": "young_c_day_fasted_insulin",
+      "description": "Fasted (baseline) insulin, younger men, before the drink on the C study day; the same men's fasted values on the P, G and GP days (Table 1) are repeat samples of this one state and are not entered again Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "young_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 5.3,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Fasted', column Younger Men C (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Fasted | 5.3 ± 1.0"
+      }
+    },
+    {
+      "id": "old_c_day_fasted_insulin",
+      "description": "Fasted (baseline) insulin, older men, before the drink on the C study day; the same men's fasted values on the P, G and GP days (Table 1) are repeat samples of this one state and are not entered again Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "old_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 4.1,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Fasted', column Older Men C (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Fasted | 4.1 ± 1.0"
+      }
+    },
+    {
+      "id": "young_p_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the P drink, younger men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "young_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 33.2,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Younger Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 33.2 ± 6.9"
+      }
+    },
+    {
+      "id": "young_g_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the G drink, younger men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "young_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 55.9,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 55.9 ± 7.3"
+      }
+    },
+    {
+      "id": "young_gp_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the GP drink, younger men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "young_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 93.3,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16.8,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 93.3 ± 16.8"
+      }
+    },
+    {
+      "id": "old_p_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the P drink, older men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "old_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 31.7,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Older Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 31.7 ± 6.9"
+      }
+    },
+    {
+      "id": "old_g_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the G drink, older men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "old_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 36.5,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 36.5 ± 7.3"
+      }
+    },
+    {
+      "id": "old_gp_insulin_peak",
+      "description": "Peak insulin over 0-180 min after the GP drink, older men (mean of per-subject peaks, as the paper's 'Peak') Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "old_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 72.7,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Peak', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Peak | 72.7 ± 16.9"
+      }
+    },
+    {
+      "id": "young_p_insulin_time_to_peak",
+      "description": "Time to peak insulin after the P drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 32.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Younger Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 32 ± 3"
+      }
+    },
+    {
+      "id": "young_g_insulin_time_to_peak",
+      "description": "Time to peak insulin after the G drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 33.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 33 ± 2"
+      }
+    },
+    {
+      "id": "young_gp_insulin_time_to_peak",
+      "description": "Time to peak insulin after the GP drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 36.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 36 ± 3"
+      }
+    },
+    {
+      "id": "old_p_insulin_time_to_peak",
+      "description": "Time to peak insulin after the P drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 48.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Older Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 48 ± 3"
+      }
+    },
+    {
+      "id": "old_g_insulin_time_to_peak",
+      "description": "Time to peak insulin after the G drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 46.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 46 ± 2"
+      }
+    },
+    {
+      "id": "old_gp_insulin_time_to_peak",
+      "description": "Time to peak insulin after the GP drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 42.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Time to peak (min)', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 42 ± 3"
+      }
+    },
+    {
+      "id": "young_p_glucagon_time_to_peak",
+      "description": "Time to peak glucagon after the P drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucagon",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 57.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma glucagon (pg/mL)', row 'Time to peak (min)', column Younger Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 57 ± 17"
+      }
+    },
+    {
+      "id": "young_gp_glucagon_time_to_peak",
+      "description": "Time to peak glucagon after the GP drink (t = 0), younger men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucagon",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "young_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 54.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma glucagon (pg/mL)', row 'Time to peak (min)', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 54 ± 9"
+      }
+    },
+    {
+      "id": "old_p_glucagon_time_to_peak",
+      "description": "Time to peak glucagon after the P drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucagon",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_p"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 51.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma glucagon (pg/mL)', row 'Time to peak (min)', column Older Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 51 ± 17"
+      }
+    },
+    {
+      "id": "old_gp_glucagon_time_to_peak",
+      "description": "Time to peak glucagon after the GP drink (t = 0), older men Table 1 prints mean ± SEM (Methods 2.4); the SEM is the same in the two age groups for every drink, so it is the analysis model's pooled standard error, not each group's own.",
+      "marker": "glucagon",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "old_gp"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 48.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma glucagon (pg/mL)', row 'Time to peak (min)', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Time to peak (min) | 48 ± 9"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucagon levels, fasted (all four days) and peak after P and GP (Table 1, block 'Plasma glucagon (pg/mL)'): the table, its footnote and Figure 1 print pg/mL, but Methods 2.3.1 gives the assay's limits in pmol/L (LLOQ 1.5 pmol/L, detection 0.75 pmol/L), and the paper does not say which unit the cells are in (about 3.5-fold apart)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Net iAUC0-60min and Net iAUC0-180min of glucose, insulin and glucagon per drink and age group (Table 1), and insulin Net iAUC0-180 in Results 3.2.2-3.2.3: Methods 2.4 says 'The Net iAUC0-180/min was calculated from baseline using the trapezoidal rule and then divided by time (min)', so each cell is the net (below-baseline subtracted) incremental area divided by its span: 60 min over samples at 0, 15, 30, 45, 60 min, and 180 min over samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min (Section 2.2), printed in mmol/L, mU/L or pg/mL (the text prints the insulin values as 'mU/L*min'); the areas come from the mixed model with baseline as covariate (Methods 2.4), and several glucagon cells are '± 0.0'",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_area_per_minute"
+      }
+    },
+    {
+      "what": "time to return to baseline of glucose, insulin and glucagon (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "threshold_crossing"
+      }
+    },
+    {
+      "what": "glucagon nadir after the G drink and its time (Table 1 'Peak/Nadir' and 'Time to peak' rows, G columns); the printed nadir (10.7, 9.1) is above or equal to that day's fasted value, so which statistic the cell holds is unclear",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "peaks and times to peak on the control day (glucose, insulin, glucagon) and of glucose after P (Table 1): Methods 2.4 says peaks were determined only for drinks that changed the marker from baseline, so these cells are per-person maxima of unchanged curves",
+      "missing": {
+        "kind": "operator",
+        "name": "peak_of_unchanged_curve"
+      }
+    },
+    {
+      "what": "insulin Net iAUC0-180 of GP against the sum of G and P, pooled and by age (Results 3.2.2 and 3.2.3), and the percent inhibitions/increases of glucose, insulin and glucagon areas (Results 3.1.2, 3.1.3, 3.2.3, 3.3.2)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "gastric emptying by 13C-acetate breath test (retention AUC and T50, subset of 5 younger and 10 older men; Results 3.4)",
+      "missing": {
+        "kind": "marker",
+        "name": "gastric_emptying_breath_test"
+      }
+    },
+    {
+      "what": "ad libitum energy intake at the buffet at 180-210 min (Results 3.5)",
+      "missing": {
+        "kind": "marker",
+        "name": "energy_intake"
+      }
+    },
+    {
+      "what": "hunger and fullness visual analogue scale ratings, baseline and AUC (Results 3.6)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "time courses of glucose, insulin and glucagon (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
