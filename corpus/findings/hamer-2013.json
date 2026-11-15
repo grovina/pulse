@@ -1,0 +1,454 @@
+{
+  "paper": "hamer-2013",
+  "citation": {
+    "authors": "Hamer HM, Wall BT, Kiskini A, de Lange A, Groen BBL, Bakker JA, Gijsen AP, Verdijk LB, van Loon LJC",
+    "title": "Carbohydrate co-ingestion with protein does not further augment post-prandial muscle protein accretion in older men",
+    "journal": "Nutrition & Metabolism",
+    "year": 2013,
+    "doi": "10.1186/1743-7075-10-15",
+    "pmid": "23351781",
+    "pmcid": "PMC3585863"
+  },
+  "population": {
+    "n": 24,
+    "sex": "male",
+    "age_years": {
+      "mean": 75.0,
+      "sd": 4.899,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.8,
+      "sd": 1.96,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "24 healthy older men (Maastricht), 12 per arm, randomised to PRO or PRO-CHO; screened by OGTT for type 2 diabetes (WHO criteria); excluded BMI >30, diabetes, regular exercise. Age 75±1 y and BMI 25.8±0.4 kg/m2 are mean±SEM of all 24 (Subjects); SD computed as SEM x sqrt(24). Group values are in each protocol's override."
+  },
+  "protocols": [
+    {
+      "name": "pro_fasted",
+      "description": "Fasting baseline of the PRO group (n=12), Table 1 'Basal' values and resting blood pressure; Table 1 does not say when they were drawn; it prints them beside the screening OGTT's 120-min values and the HOMA and OGIS that Pretesting says were computed from the OGTT's venous glucose and insulin (5.4 x 21 / 22.5 = 5.0, against HOMA 5.1), so most likely the OGTT's basal sample, though the test day also had a basal sample after an overnight fast; either is a basal morning sample, so a short fasted morning arm with water only stands for it; blood pressure has no described measurement; group age and BMI SD computed as SEM x sqrt(12) from Table 1 (age 1.2, BMI 0.4)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "age_years": {
+          "mean": 74.3,
+          "sd": 4.157,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.7,
+          "sd": 1.386,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "pro_cho_fasted",
+      "description": "Fasting baseline of the PRO-CHO group (n=12), Table 1 'Basal' values and resting blood pressure; Table 1 does not say when they were drawn; it prints them beside the screening OGTT's 120-min values and the HOMA and OGIS that Pretesting says were computed from the OGTT's venous glucose and insulin (5.4 x 21 / 22.5 = 5.0, against HOMA 5.1), so most likely the OGTT's basal sample, though the test day also had a basal sample after an overnight fast; either is a basal morning sample, so a short fasted morning arm with water only stands for it; blood pressure has no described measurement; group age and BMI SD computed as SEM x sqrt(12) from Table 1 (age 1.0, BMI 0.7)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "age_years": {
+          "mean": 74.8,
+          "sd": 3.464,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.8,
+          "sd": 2.425,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "pro_drink",
+      "description": "PRO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled casein and no carbohydrate, after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink, nor carbohydrate other than the absence of the added 40 g (carbs 0 and fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.2, BMI 0.4)",
+      "duration_min": 361,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 0.0,
+          "fat_g": 0.0,
+          "protein_g": 20.0
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "age_years": {
+          "mean": 74.3,
+          "sd": 4.157,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.7,
+          "sd": 1.386,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "pro_cho_drink",
+      "description": "PRO-CHO group (n=12): at t=0 a 450 mL drink with 20 g intrinsically labelled casein plus 40 g carbohydrate (50% dextrose monohydrate, 50% maltodextrin), after an overnight fast; arterialised samples at 0, 15, 30, 45, 60, 90 ... 360 min. Subjects arrived at 08:00 and drank after cannulation, the basal sample and a biopsy, at a clock time not printed; fat is not stated for either drink (fat 0 entered); the standardized evening meal of the day before (33 kJ/kg, 44/22/34 En%) has no printed time and is not entered. Group age and BMI SD = SEM x sqrt(12) from Table 1 (age 1.0, BMI 0.7)",
+      "duration_min": 361,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 40.0,
+          "fat_g": 0.0,
+          "protein_g": 20.0
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ],
+      "population": {
+        "age_years": {
+          "mean": 74.8,
+          "sd": 3.464,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.8,
+          "sd": 2.425,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "pro_basal_glucose",
+      "description": "Basal plasma glucose of the PRO group (Table 1; time of draw not stated)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Basal plasma glucose (mmol.L-1)', column PRO; footnote: Values represent means±SEM",
+        "quote": "Basal plasma glucose (mmol.L-1) | 5.4 ± 0.1"
+      }
+    },
+    {
+      "id": "pro_basal_insulin",
+      "description": "Basal plasma insulin of the PRO group (Table 1; time of draw not stated)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 21,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Basal plasma insulin (mU.L-1)', column PRO; footnote: Values represent means±SEM",
+        "quote": "Basal plasma insulin (mU.L-1) | 21 ± 2"
+      }
+    },
+    {
+      "id": "pro_sbp",
+      "description": "Systolic blood pressure of the PRO group (Table 1; when and how measured not stated)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 140,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Systolic blood pressure (mmHg)', column PRO; footnote: Values represent means±SEM",
+        "quote": "Systolic blood pressure (mmHg) | 140 ± 5"
+      }
+    },
+    {
+      "id": "pro_dbp",
+      "description": "Diastolic blood pressure of the PRO group (Table 1; when and how measured not stated)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 74,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Diastolic blood pressure (mmHg)', column PRO; footnote: Values represent means±SEM",
+        "quote": "Diastolic blood pressure (mmHg) | 74 ± 3"
+      }
+    },
+    {
+      "id": "pro_cho_basal_glucose",
+      "description": "Basal plasma glucose of the PRO-CHO group (Table 1; time of draw not stated)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_cho_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Basal plasma glucose (mmol.L-1)', column PRO-CHO; footnote: Values represent means±SEM",
+        "quote": "Basal plasma glucose (mmol.L-1) | 5.4 ± 0.1"
+      }
+    },
+    {
+      "id": "pro_cho_basal_insulin",
+      "description": "Basal plasma insulin of the PRO-CHO group (Table 1; time of draw not stated)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_cho_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 21,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Basal plasma insulin (mU.L-1)', column PRO-CHO; footnote: Values represent means±SEM",
+        "quote": "Basal plasma insulin (mU.L-1) | 21 ± 2"
+      }
+    },
+    {
+      "id": "pro_cho_sbp",
+      "description": "Systolic blood pressure of the PRO-CHO group (Table 1; when and how measured not stated)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_cho_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 145,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Systolic blood pressure (mmHg)', column PRO-CHO; footnote: Values represent means±SEM",
+        "quote": "Systolic blood pressure (mmHg) | 145 ± 5"
+      }
+    },
+    {
+      "id": "pro_cho_dbp",
+      "description": "Diastolic blood pressure of the PRO-CHO group (Table 1; when and how measured not stated)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pro_cho_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 71,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Diastolic blood pressure (mmHg)', column PRO-CHO; footnote: Values represent means±SEM",
+        "quote": "Diastolic blood pressure (mmHg) | 71 ± 4"
+      }
+    },
+    {
+      "id": "pro_cho_insulin_peak",
+      "description": "Peak plasma insulin after the PRO-CHO drink over the 6 h sampled (0-360 min); the paper does not say whether this is the mean of each subject's peak or the top of the mean curve, read here as the mean of individual peaks; insulin by RIA (Millipore HI-14K); data means±SEM (Statistics)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "pro_cho_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "value": 138,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18,
+        "n": 12
+      },
+      "location": {
+        "where": "Discussion, paragraph 2; Methods 'Statistics': All data are expressed as means±SEMs",
+        "quote": "Carbohydrate co-ingestion strongly elevated plasma insulin concentrations with peak values of 138±18 vs. 34±5 mU . L-1, in the PRO-CHO and PRO experiment, respectively."
+      }
+    },
+    {
+      "id": "pro_insulin_peak",
+      "description": "Peak plasma insulin after the PRO drink over the 6 h sampled (0-360 min); the paper does not say whether this is the mean of each subject's peak or the top of the mean curve, read here as the mean of individual peaks; insulin by RIA (Millipore HI-14K); data means±SEM (Statistics)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "pro_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "value": 34,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5,
+        "n": 12
+      },
+      "location": {
+        "where": "Discussion, paragraph 2; Methods 'Statistics': All data are expressed as means±SEMs",
+        "quote": "Carbohydrate co-ingestion strongly elevated plasma insulin concentrations with peak values of 138±18 vs. 34±5 mU . L-1, in the PRO-CHO and PRO experiment, respectively."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "plasma glucose and insulin time courses 0-360 min, both groups (Figure 1 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "glucose and insulin positive iAUC per group (Results 'Plasma glucose and insulin', 288±34 vs 13±5 and 8421±1054 vs 1058±234): unit printed as 'mmol.L-1.6 h-1' and 'mU.L-1.6 h-1'; read in hours the areas are impossible (a mean increment of 48 mmol/L glucose), and taking them as minutes would be correcting the paper",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "plasma glucose and insulin 120 min into the screening OGTT (Table 1): the glucose dose of the OGTT is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "HOMA and OGIS indices (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "body fat percentage and lean body mass (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "plasma amino acid concentrations and plasma L-[1-13C]phenylalanine enrichment over time (Figures 2 and 3 only; peak enrichment in text)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "muscle free and protein-bound L-[1-13C]phenylalanine enrichment at 2 and 6 h and mixed muscle protein FSR (Results 'Muscle tracer analysis', Figures 3 and 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_protein_synthesis"
+      }
+    }
+  ]
+}
