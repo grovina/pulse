@@ -183,6 +183,85 @@ class Population:
                 raise ValueError(f"{self.name}: {label} range {span} is not lo <= hi")
 
 
+# What a meal can say beyond its three grams (``corpus/README.md``, "What a meal says").
+# The model does not read any of it yet: it is carried for the record and for the
+# change that will (a learned description of food), and for the gate's conflict check.
+FAT_TYPES = ("saturated", "monounsaturated", "polyunsaturated")
+PROTEIN_SOURCES = ("whey", "casein", "dairy", "soy", "plant", "egg", "meat", "fish", "mixed", "other")
+MEAL_FORMS = ("liquid", "solid", "mixed")
+
+
+def _same_text(a: str, b: str) -> bool:
+    return " ".join(a.casefold().split()) == " ".join(b.casefold().split())
+
+
+@dataclass(frozen=True)
+class MealDetails:
+    """One meal's details beyond ``(t_min, carbs_g, fat_g, protein_g)``, each
+    ``None`` (or empty) where the paper does not state it.
+
+    ``fibre_g`` is dietary fibre, not part of the meal's carbohydrate grams (which
+    are available carbohydrate); ``sugars_g`` is total sugars, part of them.
+    ``fat_g_by_type`` is ``((type, g), ...)`` over ``FAT_TYPES`` in that order, each
+    part of the fat grams. ``fat_source`` and ``food`` are short names as printed;
+    ``protein_source`` is one of ``PROTEIN_SOURCES``, ``form`` one of ``MEAL_FORMS``.
+    """
+
+    fibre_g: float | None = None
+    sugars_g: float | None = None
+    fat_g_by_type: tuple[tuple[str, float], ...] = ()
+    fat_source: str | None = None
+    protein_source: str | None = None
+    form: str | None = None
+    food: str | None = None
+
+    def __post_init__(self) -> None:
+        names = [k for k, _ in self.fat_g_by_type]
+        if names != [t for t in FAT_TYPES if t in names]:
+            raise ValueError(f"fat_g_by_type {self.fat_g_by_type} is not over {FAT_TYPES} in that order")
+        if self.protein_source not in (None, *PROTEIN_SOURCES):
+            raise ValueError(f"protein_source {self.protein_source!r} is not one of {PROTEIN_SOURCES}")
+        if self.form not in (None, *MEAL_FORMS):
+            raise ValueError(f"form {self.form!r} is not one of {MEAL_FORMS}")
+
+    def is_empty(self) -> bool:
+        return self == MealDetails()
+
+    def sort_key(self) -> tuple:
+        return tuple("" if v is None else repr(v) for v in (
+            self.fibre_g, self.sugars_g, self.fat_g_by_type, self.fat_source,
+            self.protein_source, self.form, self.food,
+        ))
+
+    def differs_from(self, other: "MealDetails") -> bool:
+        """Do the two meals differ in something both of them state?
+
+        A detail one side leaves unstated could be the other's, so it never
+        separates two meals. ``food`` is not compared: it is a free-text name, and
+        two readers who word one meal differently must not hide a conflict.
+        ``fat_source`` is compared without case or spacing.
+        """
+        for a, b in ((self.fibre_g, other.fibre_g), (self.sugars_g, other.sugars_g),
+                     (self.protein_source, other.protein_source), (self.form, other.form)):
+            if a is not None and b is not None and a != b:
+                return True
+        if self.fat_source is not None and other.fat_source is not None:
+            if not _same_text(self.fat_source, other.fat_source):
+                return True
+        mine, theirs = dict(self.fat_g_by_type), dict(other.fat_g_by_type)
+        return any(mine[t] != theirs[t] for t in mine.keys() & theirs.keys())
+
+
+def arms_differ_in_meal_details(a: "tuple[CohortArmSpec, ...]", b: "tuple[CohortArmSpec, ...]") -> bool:
+    """Two arm lists with the same grams: does any meal differ in a stated detail?"""
+    for x, y in zip(a, b):
+        if not x.meal_details or not y.meal_details:
+            continue
+        if any(m.differs_from(n) for m, n in zip(x.meal_details, y.meal_details)):
+            return True
+    return False
+
+
 @dataclass(frozen=True)
 class CurvePoint:
     """One (time, mean, sigma) sample of a published trajectory.
@@ -226,6 +305,11 @@ class CohortArmSpec:
     through a fed day and then this fast, not by copying a teacher row.
 
     ``population`` names who was measured. Unset is the reference prior.
+
+    ``meal_details`` is what the paper says about each meal beyond its grams, one
+    ``MealDetails`` per entry of ``meals`` in the same order, or ``()`` when no meal
+    states any. The rollout does not read it: two arms that differ only here are
+    the same arm to the model, and different protocols to the gate's conflict check.
     """
 
     label: str
@@ -242,6 +326,13 @@ class CohortArmSpec:
     bile_fistula: tuple[float, ...] | None = None  # 1 drains the intestine of bile
     prefast_hours: float = 0.0
     population: Population | None = None
+    meal_details: tuple[MealDetails, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.meal_details and len(self.meal_details) != len(self.meals):
+            raise ValueError(
+                f"{self.label}: {len(self.meal_details)} meal_details for {len(self.meals)} meals",
+            )
 
 
 def held(level: float, duration_min: int, start_min: int = 0) -> tuple[float, ...]:

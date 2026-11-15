@@ -268,6 +268,15 @@ Not rescored, from the board of 2026-10-29:
   `left_out` entry names one of the three as missing any more: an area that is
   still out lacks its sampling minutes, its time unit or a writable arm in the
   paper itself.
+- A meal in a file may state what the paper prints beyond its grams:
+  `fibre_g`, `sugars_g`, `fat_g_by_type`, `fat_source`, `protein_source`,
+  `form`, `food` (`corpus/README.md`, "What a meal says"); `carbs_g` is
+  available carbohydrate. They are carried beside the meal tuple
+  (`CohortArmSpec.meal_details`) and **the model does not read them**: every
+  registry and file loads to the same specs as before. Their one use is the
+  gate's check 5, where equal grams with a detail both arms state differently
+  are two protocols. No committed file uses them yet; `wong-2025`,
+  `almoraie-2026` and `lecerf-2015` left arms out for want of them.
 - One item is a spread across people and none is a correlation. Every
   population is healthy adults, except the groups three papers read from
   files enter as `unselected` (`meyergerspach-2016`'s obese group,

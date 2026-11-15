@@ -36,7 +36,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from statistics import median
 from typing import Any, Sequence
@@ -50,7 +50,9 @@ from .diagnostics.identifiability import (
     InitialState, identifiability_report, training_initial_states,
 )
 from .knowledge.cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
-from .knowledge.cohort_types import CohortArmSpec, CohortStatisticSpec, InitMode, TargetShape
+from .knowledge.cohort_types import (
+    CohortArmSpec, CohortStatisticSpec, InitMode, TargetShape, arms_differ_in_meal_details,
+)
 from .knowledge.evidence import OPERATOR_OF_STATISTIC, OperatorKind
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES, SEALED_PHYSIOLOGY_RULES, PhysiologyRule
 from .knowledge.protocol_family import protocol_family
@@ -377,15 +379,21 @@ def target_conflicts(specs: Sequence[CohortStatisticSpec]) -> list[dict[str, Any
     for spec in specs:
         # Two areas over different sample times, or from different baselines, or one that
         # counts what is under baseline and one that does not, are different numbers.
+        # Arms are grouped on everything the model is given; what a meal says beyond
+        # its grams is compared pair by pair below.
         key = (
-            spec.arms, spec.marker_id, spec.kind, spec.window, spec.per_arm_windows,
-            spec.baseline, spec.sample_times, spec.below_baseline,
+            tuple(replace(a, meal_details=()) for a in spec.arms), spec.marker_id, spec.kind,
+            spec.window, spec.per_arm_windows, spec.baseline, spec.sample_times, spec.below_baseline,
         )
         groups.setdefault(key, []).append(spec)
     out: list[dict[str, Any]] = []
     for group in groups.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
+                # Equal grams, but butter against coconut oil (a detail both state, and
+                # differently): two protocols, not two readings of one.
+                if arms_differ_in_meal_details(a.arms, b.arms):
+                    continue
                 lo_a, hi_a = _allowed(a)
                 lo_b, hi_b = _allowed(b)
                 gap = max(lo_a - hi_b, lo_b - hi_a)

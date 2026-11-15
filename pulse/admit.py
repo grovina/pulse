@@ -13,7 +13,9 @@ and says which check failed:
    protocol rolled from the same start state as training rolls it;
 5. no finding silently contradicts an item already admitted (the scoreboard's
    ``target_conflicts``, over the likelihood's own standard error); a conflict
-   the file names in ``acknowledged_conflicts`` is recorded, not silent.
+   the file names in ``acknowledged_conflicts`` is recorded, not silent. Two arms
+   with equal grams whose meals differ in a detail both state (``fat_source``,
+   fibre, ...) are two protocols and are not compared.
 
 It also says whether the paper is sealed (held out of training). Exit 0 when
 admitted, 1 otherwise.

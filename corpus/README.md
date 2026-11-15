@@ -395,7 +395,7 @@ protocol must be used by at least one finding.
 | `description` | one line |
 | `duration_min` | minutes simulated: the arm has a state at minutes 0 to `duration_min - 1`. A test sampled at 0 and 120 minutes needs 121. |
 | `start_hour` | clock hour at minute 0 (8.0 is 08:00); the model has a circadian clock |
-| `meals` | list of `{"t_min", "carbs_g", "fat_g", "protein_g"}`; `[]` for none. An oral glucose load is carbs only. |
+| `meals` | list of `{"t_min", "carbs_g", "fat_g", "protein_g"}`, each with the optional details of "What a meal says" below; `[]` for none. `carbs_g` is available (digestible) carbohydrate. An oral glucose load is carbs only. |
 | `assumed` | the keys of this protocol whose values **the paper does not state**; `[]` if it states them all. Below. |
 | `prefast_hours` | optional: hours since the last meal when the arm starts (overnight is about 10); the nights in it are slept, 23:00 to 07:00 |
 | `init` | optional: `cold` (default; the person is spun up through a normal fed day, then fasted `prefast_hours`) or `norm_center` (start from typical values; use when the paper's subjects were not in a clean fasted state) |
@@ -428,6 +428,11 @@ with the printed numbers it used, so that the second reader can redo it.
   `kcal x fraction / 4` for carbohydrate and protein and `/ 9` for fat.
 * **A meal or a load given per kilogram**: times the group's mean body weight, if
   the paper prints it.
+* **Total carbohydrate and fibre**: a paper that prints total carbohydrate and
+  dietary fibre (as food labels outside Europe do) gives `carbs_g` = total minus
+  fibre, and `fibre_g` is the printed fibre. A paper that prints available
+  carbohydrate (or "carbohydrate" in a European nutrient table, which excludes
+  fibre) gives `carbs_g` as printed; no arithmetic, nothing assumed.
 * **Exercise.** `activity` is the model's own scale, defined by oxygen uptake:
   `level = (VO2 - 3.7) / 31.7`, with VO2 in mL/kg/min. (Rest is 3.7; level 0.7
   is 25.9 mL/kg/min, which is 130 W on a cycle ergometer for a 70 kg man.) Use
@@ -437,6 +442,74 @@ with the printed numbers it used, so that the second reader can redo it.
   `level = watts / 186`. "70% of VO2max" with no VO2max printed, a heart-rate
   target, or a perceived exertion is not an intensity the model can be given:
   leave the bout out.
+
+### What a meal says
+
+The model is given a meal as three numbers: grams of carbohydrate, fat and
+protein. Many papers say more, and some compare meals that the three numbers
+cannot tell apart (butter against coconut oil at the same grams). A meal may
+carry what the paper prints beyond its grams, in these optional keys, **each
+entered only when the paper states it**:
+
+| key | what it is | rule |
+|---|---|---|
+| `fibre_g` | dietary fibre, g | not part of `carbs_g` (see the derivation above) |
+| `sugars_g` | total sugars, g | part of `carbs_g`, so not above it |
+| `fat_g_by_type` | `{"saturated": g, "monounsaturated": g, "polyunsaturated": g}`, any of the three | each part of `fat_g`; together not above it |
+| `fat_source` | the added fat, as printed: `"butter"`, `"coconut oil"`, `"safflower and olive oil"` | text, 80 characters at most; only with `fat_g` above 0 |
+| `protein_source` | one of `whey`, `casein`, `dairy` (milk, yogurt, cheese: the whole milk protein), `soy`, `plant` (cereal, legume, nut, other than soy), `egg`, `meat`, `fish`, `mixed` (several of these, none dominant), `other` | only with `protein_g` above 0; the printed name goes in the protocol's `description` |
+| `form` | `liquid` (a drink), `solid`, or `mixed` (a solid meal with a drink that carries a real part of its grams) | |
+| `food` | the meal as printed, briefly: `"white bread and turkey"` | text, 80 characters at most |
+
+Printed parts are rounded, so a sum of parts may pass the printed total by half a
+gram per part; more than that is refused as a slip. A value, not a range: "about
+5 g fibre" is stated, "less than 1 g" is not. Never fill a detail from a food
+table or from what a food usually contains: the same rule as for the grams.
+
+**The model does not read these keys yet.** An arm with them rolls exactly as
+the same arm without them. Enter them for the record, and for the change to the
+model that will read them; the second reader checks them as closely as the grams.
+They do one thing now: two arms with equal grams whose meals differ in a detail
+**both** state are two protocols, and the gate does not hold them against each
+other (check 5). A detail only one of them states does not separate them, and
+`food` never does (it is a name, and two readers word one meal differently).
+
+So a paper that compares meals differing only in what the grams do not say can
+now be entered. Butter against coconut oil, at the printed 50 g of fat in each:
+
+```json
+{"protocols": [
+  {"name": "butter_meal", "description": "Breakfast with 50 g butter (Table 1: 60 g carbohydrate, 50 g fat, 20 g protein)",
+   "duration_min": 241, "start_hour": 8.0,
+   "meals": [{"t_min": 0, "carbs_g": 60.0, "fat_g": 50.0, "protein_g": 20.0,
+              "fat_g_by_type": {"saturated": 31.0, "monounsaturated": 13.0, "polyunsaturated": 2.0},
+              "fat_source": "butter", "form": "solid", "food": "toast, jam and butter"}],
+   "assumed": ["start_hour"]},
+  {"name": "coconut_meal", "description": "The same breakfast with 50 g coconut oil in place of the butter",
+   "duration_min": 241, "start_hour": 8.0,
+   "meals": [{"t_min": 0, "carbs_g": 60.0, "fat_g": 50.0, "protein_g": 20.0,
+              "fat_g_by_type": {"saturated": 43.0, "monounsaturated": 3.0, "polyunsaturated": 1.0},
+              "fat_source": "coconut oil", "form": "solid", "food": "toast, jam and coconut oil"}],
+   "assumed": ["start_hour"]}
+]}
+```
+
+The two arms are one arm to the model today, so a finding that compares them (a
+`delta_means` from butter to coconut oil) is a difference the model cannot yet
+move: it fails check 4 and stays out (`input`, `meal_details_not_read`). Each
+arm's own numbers can be entered.
+
+What a meal still cannot say, as `left_out` names (kind `input`):
+`fatty_acid_detail` (a single fatty acid or chain length, such as medium-chain
+or punicic acid, beyond the three types; the oil itself goes in `fat_source`),
+`fibre_type` (soluble against insoluble, an added fibre such as scFOS, beyond
+its grams), `sugar_type` (fructose, sucrose, lactose or glucose at equal grams),
+`starch_structure` (rice against pasta, a glycaemic index, cooking or particle
+size at equal grams), `amino_acid_composition` (beyond `protein_source`),
+`eating_rate`, and `meal_details_not_read` (a number that differs only through a
+detail the model does not read yet). `meal_fat_composition` and `dietary_fibre`,
+used before these keys, are now what the keys say: a paper left out for them can
+be read again.
 
 A protocol holds what its findings need and no more. For a sample drawn before
 the first meal of a study day, end the arm after the sample: do not enter the
@@ -849,7 +922,9 @@ used.
 
 ## Things that bite
 
-* A meal is `{"t_min", "carbs_g", "fat_g", "protein_g"}`. Name all three.
+* A meal is `{"t_min", "carbs_g", "fat_g", "protein_g"}`. Name all three. `carbs_g`
+  is available carbohydrate: a total that includes fibre is not it (subtract the
+  printed fibre).
 * A 75 g OGTT is `carbs_g: 75`. Sugar in a drink is carbohydrate.
 * Report the window the paper used. A "2-hour glucose" is a single time, not a mean
   of the second hour: use `mean_in_window` with a window of one minute

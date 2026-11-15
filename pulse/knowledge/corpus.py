@@ -17,7 +17,9 @@ uncertainty is stated as a kind and turned into ``sigma`` / ``n_arm`` by
 The meal tuple of a ``CohortArmSpec`` is ``(t_min, carbs_g, fat_g, protein_g)``
 (``cohort_loss._meals_from_spec`` unpacks it so), not the protein-then-fat order
 ``AUTHORING.md`` used to say. A file names the three fields; this module writes
-the tuple.
+the tuple. What a meal states beyond them (fibre, sugars, fat by type, the fat and
+protein sources, form, food) goes to ``CohortArmSpec.meal_details``, beside the
+tuple, which the rollout does not read.
 """
 
 from __future__ import annotations
@@ -35,6 +37,9 @@ from ..types import (
 )
 from .cohort_types import (
     FACTORS,
+    FAT_TYPES,
+    MEAL_FORMS,
+    PROTEIN_SOURCES,
     SAMPLED_KINDS,
     TWO_ARM_KINDS,
     BelowBaseline,
@@ -42,6 +47,7 @@ from .cohort_types import (
     CohortStatisticSpec,
     CurvePoint,
     InitMode,
+    MealDetails,
     Population,
     StatisticKind,
     StatisticWindow,
@@ -588,6 +594,60 @@ def _series_input(
     return tuple(series) if ok else None
 
 
+# What a meal may state beyond its grams (``MealDetails``). The model does not read it.
+_MEAL_DETAIL_KEYS = frozenset({
+    "fibre_g", "sugars_g", "fat_g_by_type", "fat_source", "protein_source", "form", "food",
+})
+# A free-text name is a name, not a description: the description is the protocol's.
+_MEAL_NAME_MAX = 80
+# Printed parts are rounded, so their sum may pass the printed total by half a gram each.
+_PART_ROUNDING_G = 0.5
+
+
+def _meal_details(
+    r: _Reader, md: dict, w: str, carbs: float | None, fat: float | None, protein: float | None,
+) -> MealDetails | None:
+    """The optional keys of one meal, validated; ``None`` if any is wrong."""
+    n0 = len(r.problems)
+    fibre = r.number(md, "fibre_g", w, "protocol", nonneg=True)
+    sugars = r.number(md, "sugars_g", w, "protocol", nonneg=True)
+    if sugars is not None and carbs is not None and sugars > carbs + _PART_ROUNDING_G:
+        r.add("protocol", f"{w} sugars_g {sugars:g} is more than carbs_g {carbs:g}: sugars are part of the carbohydrate")
+    parts: list[tuple[str, float]] = []
+    if "fat_g_by_type" in md:
+        fd = r.obj(md["fat_g_by_type"], f"{w} fat_g_by_type", set(), set(FAT_TYPES), check="protocol")
+        if fd is not None:
+            if not fd:
+                r.add("protocol", f"{w} fat_g_by_type is empty: leave it out")
+            for kind in FAT_TYPES:
+                g = r.number(fd, kind, f"{w} fat_g_by_type", "protocol", nonneg=True)
+                if g is not None:
+                    parts.append((kind, g))
+            total = sum(g for _k, g in parts)
+            if fat is not None and parts and total > fat + _PART_ROUNDING_G * len(parts):
+                r.add(
+                    "protocol",
+                    f"{w} fat_g_by_type adds up to {total:g} g, more than fat_g {fat:g}: each type is part of the fat",
+                )
+    names: dict[str, str | None] = {}
+    for key in ("fat_source", "food"):
+        names[key] = r.string(md, key, w, "protocol")
+        if names[key] is not None and len(names[key]) > _MEAL_NAME_MAX:
+            r.add("protocol", f"{w} {key} is longer than {_MEAL_NAME_MAX} characters: name it as printed, briefly")
+    if names["fat_source"] is not None and fat == 0.0:
+        r.add("protocol", f"{w} has a fat_source and no fat")
+    protein_source = r.choice(md, "protein_source", w, PROTEIN_SOURCES, "protocol")
+    if protein_source is not None and protein == 0.0:
+        r.add("protocol", f"{w} has a protein_source and no protein")
+    form = r.choice(md, "form", w, MEAL_FORMS, "protocol")
+    if len(r.problems) > n0:
+        return None
+    return MealDetails(
+        fibre_g=fibre, sugars_g=sugars, fat_g_by_type=tuple(parts), fat_source=names["fat_source"],
+        protein_source=protein_source, form=form, food=names["food"],
+    )
+
+
 # Keys of a protocol that say nothing about what the subjects did, so cannot be assumed.
 _NOT_ASSUMABLE = frozenset({"name", "description", "population", "assumed"})
 
@@ -641,25 +701,30 @@ def _protocol(
         init = InitMode(mode) if mode else init
     assumed = _assumed(r, d, where) if "assumed" in d else None
 
-    meals: list[tuple[float, float, float, float]] = []
+    meals: list[tuple[tuple[float, float, float, float], MealDetails]] = []
     raw_meals = d.get("meals")
     if "meals" in d and not isinstance(raw_meals, list):
         r.add("protocol", f"{where} meals is not a list")
     for i, m in enumerate(raw_meals if isinstance(raw_meals, list) else []):
         w = f"{where} meal {i + 1}"
-        md = r.obj(m, w, {"t_min", "carbs_g", "fat_g", "protein_g"}, check="protocol")
+        md = r.obj(m, w, {"t_min", "carbs_g", "fat_g", "protein_g"}, _MEAL_DETAIL_KEYS, check="protocol")
         if md is None:
             continue
         t = r.number(md, "t_min", w, "protocol", nonneg=True)
         c = r.number(md, "carbs_g", w, "protocol", nonneg=True)
         f = r.number(md, "fat_g", w, "protocol", nonneg=True)
         p = r.number(md, "protein_g", w, "protocol", nonneg=True)
-        if None in (t, c, f, p):
+        details = _meal_details(r, md, w, c, f, p)
+        if None in (t, c, f, p) or details is None:
             continue
         assert t is not None and c is not None and f is not None and p is not None
         if duration is not None and t >= duration:
             r.add("protocol", f"{w} t_min {t:g} is not before the arm ends (duration_min {duration})")
-        meals.append((t, c, f, p))
+        meals.append(((t, c, f, p), details))
+    meals.sort(key=lambda m: (m[0], m[1].sort_key()))
+    meal_details = tuple(dt for _m, dt in meals)
+    if all(dt.is_empty() for dt in meal_details):
+        meal_details = ()
 
     series: dict[str, tuple[float, ...] | None] = {}
     if duration is not None:
@@ -723,12 +788,12 @@ def _protocol(
     if any(series.get(k, 0) is None for k in series):
         return None
     arm = CohortArmSpec(
-        label=name, duration_min=duration, start_hour=start, meals=tuple(sorted(meals)),
+        label=name, duration_min=duration, start_hour=start, meals=tuple(m for m, _dt in meals),
         sleep_wake=series.get("sleep_wake"), activity=series.get("activity"),
         glucose_infusion=series.get("glucose_infusion"), glucose_clamp=series.get("glucose_clamp"),
         insulin_clamp=series.get("insulin_clamp"), sglt2=series.get("sglt2"),
         bile_fistula=series.get("bile_fistula"), prefast_hours=prefast,
-        population=_arm_population(who, override),
+        population=_arm_population(who, override), meal_details=meal_details,
     )
     return name, arm, init, assumed
 
