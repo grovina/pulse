@@ -20,7 +20,7 @@
   "protocols": [
     {
       "name": "hf_gc",
-      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated. Table 2 details: fiber 0 g; mono- and disaccharides 3.8 g (all saccharose) entered as sugars; saturated 5 g, monounsaturated 28.9 g, polyunsaturated 13.6 g; the table also prints 'vegetable fat 42.5 g' and 'milk fat 0 g', which do not sum to the 47.5 g, so no fat_source is entered; a 95 mL portion, entered as liquid.",
       "duration_min": 271,
       "start_hour": 8.0,
       "meals": [
@@ -28,7 +28,16 @@
           "t_min": 30,
           "carbs_g": 4.0,
           "fat_g": 47.5,
-          "protein_g": 0.0
+          "protein_g": 0.0,
+          "fibre_g": 0.0,
+          "sugars_g": 3.8,
+          "fat_g_by_type": {
+            "saturated": 5.0,
+            "monounsaturated": 28.9,
+            "polyunsaturated": 13.6
+          },
+          "form": "liquid",
+          "food": "Calogen (Nutricia), 95 mL"
         }
       ],
       "prefast_hours": 10,
@@ -55,7 +64,7 @@
     },
     {
       "name": "hc_gc",
-      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the normal-weight control group GC (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated. Table 2 details: fiber 0 g; mono- and disaccharides 42.3 g (maltose 36.3, saccharose 5.0, glucose 1.0, lactose <0.0075 g) entered as sugars, polysaccharides 57.9 g; fat types all 0 g; the protein's source is not named, so none is entered; a 300 mL portion, entered as liquid.",
       "duration_min": 271,
       "start_hour": 8.0,
       "meals": [
@@ -63,7 +72,16 @@
           "t_min": 30,
           "carbs_g": 100.5,
           "fat_g": 0.0,
-          "protein_g": 12.0
+          "protein_g": 12.0,
+          "fibre_g": 0.0,
+          "sugars_g": 42.3,
+          "fat_g_by_type": {
+            "saturated": 0.0,
+            "monounsaturated": 0.0,
+            "polyunsaturated": 0.0
+          },
+          "form": "liquid",
+          "food": "Nutridrink Fat Free (Nutricia), 300 mL"
         }
       ],
       "prefast_hours": 10,
@@ -90,7 +108,7 @@
     },
     {
       "name": "hf_gs",
-      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "description": "High-fat drink (Calogen, 95 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated. Table 2 details: fiber 0 g; mono- and disaccharides 3.8 g (all saccharose) entered as sugars; saturated 5 g, monounsaturated 28.9 g, polyunsaturated 13.6 g; the table also prints 'vegetable fat 42.5 g' and 'milk fat 0 g', which do not sum to the 47.5 g, so no fat_source is entered; a 95 mL portion, entered as liquid.",
       "duration_min": 271,
       "start_hour": 8.0,
       "meals": [
@@ -98,7 +116,16 @@
           "t_min": 30,
           "carbs_g": 4.0,
           "fat_g": 47.5,
-          "protein_g": 0.0
+          "protein_g": 0.0,
+          "fibre_g": 0.0,
+          "sugars_g": 3.8,
+          "fat_g_by_type": {
+            "saturated": 5.0,
+            "monounsaturated": 28.9,
+            "polyunsaturated": 13.6
+          },
+          "form": "liquid",
+          "food": "Calogen (Nutricia), 95 mL"
         }
       ],
       "prefast_hours": 10,
@@ -125,7 +152,7 @@
     },
     {
       "name": "hc_gs",
-      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated.",
+      "description": "High-carbohydrate drink (Nutridrink Fat Free, 300 mL, 450 kcal) in the overweight/obese group GS (n=13), supine. Fasting blood at minute 0 (the paper's 0'), then the ~30-min fasting calorimetry recording, then the drink at minute 30 (to be taken within 10 min); blood at 30, 60, 120, 180, 240 min after the meal = minutes 60, 90, 150, 210, 270 (the paper's 'after HF or HC meal consumption' does not say whether it counts from the start or the end of the up-to-10-min drink; counted here from the start). The meal's grams are Table 2's; its minute (30 min after the fasting draw) rests on the 'approximately 30 min' recording, so 'meals' is assumed. Arrival fasted between 6 and 10 a.m.; clock hour and fast length not stated. Table 2 details: fiber 0 g; mono- and disaccharides 42.3 g (maltose 36.3, saccharose 5.0, glucose 1.0, lactose <0.0075 g) entered as sugars, polysaccharides 57.9 g; fat types all 0 g; the protein's source is not named, so none is entered; a 300 mL portion, entered as liquid.",
       "duration_min": 271,
       "start_hour": 8.0,
       "meals": [
@@ -133,7 +160,16 @@
           "t_min": 30,
           "carbs_g": 100.5,
           "fat_g": 0.0,
-          "protein_g": 12.0
+          "protein_g": 12.0,
+          "fibre_g": 0.0,
+          "sugars_g": 42.3,
+          "fat_g_by_type": {
+            "saturated": 0.0,
+            "monounsaturated": 0.0,
+            "polyunsaturated": 0.0
+          },
+          "form": "liquid",
+          "food": "Nutridrink Fat Free (Nutricia), 300 mL"
         }
       ],
       "prefast_hours": 10,
