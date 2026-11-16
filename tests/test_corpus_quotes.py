@@ -105,7 +105,7 @@ def test_a_file_whose_quotes_are_in_the_paper_is_admitted(root, stub_rollouts):
     result = admit(_put(root, data, "findings"), root=root, paper_file=paper)
     assert result.ok, format_admission(result)
     assert [c.name for c in result.checks] == [
-        "parse", "protocol", "units", "place", "uncertainty", "quotes", "filing", "runs", "gradient", "conflicts",
+        "parse", "protocol", "units", "place", "uncertainty", "quotes", "filing", "people", "runs", "gradient", "conflicts",
     ]
     assert "each quote is in the paper (2 word for word, 0 by their numbers)" in format_admission(result)
 

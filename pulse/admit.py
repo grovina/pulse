@@ -8,10 +8,12 @@ and says which check failed:
 2. it is filed once: named for its paper, no other file or Python registry holds
    the paper, no other slug carries the same DOI / PMID / PMCID, and it is not
    also a refusal;
-3. every protocol runs on the **untrained** student;
-4. each finding's predicted statistic moves when the parameters are nudged, the
+3. it shares no people with a sealed paper (a distinctive ``value +/- spread`` pair
+   printed by both, two or more, or a shared trial registration; see ``_people_check``);
+4. every protocol runs on the **untrained** student;
+5. each finding's predicted statistic moves when the parameters are nudged, the
    protocol rolled from the same start state as training rolls it;
-5. no finding silently contradicts an item already admitted (the scoreboard's
+6. no finding silently contradicts an item already admitted (the scoreboard's
    ``target_conflicts``, over the likelihood's own standard error); a conflict
    the file names in ``acknowledged_conflicts`` is recorded, not silent. Two arms
    with equal grams whose meals differ in a detail both state (``fat_source``,
@@ -40,6 +42,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -75,6 +78,7 @@ _LABELS = {
     "uncertainty": "each uncertainty is of a stated kind",
     "quotes": "each quote is in the paper",
     "filing": "the paper is filed once",
+    "people": "shares no people with a sealed paper",
     "runs": "each protocol runs on the untrained student",
     "gradient": "each finding moves when the parameters move",
     "conflicts": "no finding silently contradicts an admitted item",
@@ -182,6 +186,123 @@ def _sealed(paper: str) -> tuple[bool, str]:
     if paper_is_sealed(paper):
         return True, "drawn by the hash of its slug: held out of training, scored only on the board"
     return False, "not drawn: trains"
+
+
+# --------------------------------------------------------------------------------
+# People: a paper that prints a sealed paper's cohort
+# --------------------------------------------------------------------------------
+
+_PAIR = re.compile(r"(?<![\w.])(-?\d+(?:\.\d+)?) ?(?:\+/- ?|\(\+/- ?)(\d+(?:\.\d+)?)")
+_REGISTRATION = re.compile(
+    r"\b(NCT\d{8}|ISRCTN\d+|ACTRN\d{14}|DRKS\d+|NTR\d+|ChiCTR[-\w]+|UMIN\d+|CTRI/\d{4}/\d+/\d+"
+    r"|\d{4}-\d{6}-\d{2})\b", re.IGNORECASE,
+)
+_MIN_DIGITS = 5   # significant digits across a "value +/- spread" pair, and at least
+_MIN_EACH = 2     # this many in each number: 129.43 +/- 12.12 counts, 5.0 +/- 0.4 and 120 +/- 15 never
+_PAIRS_TO_FAIL = 2
+
+
+def _significant(x: float) -> int:
+    """Significant digits of ``x`` as written without trailing zeros (120 has two)."""
+    return len(re.sub(r"[-.]", "", f"{abs(x):.10g}").strip("0")) or 1
+
+
+def _distinctive(value: float, spread: float) -> bool:
+    a, b = _significant(value), _significant(spread)
+    return a + b >= _MIN_DIGITS and min(a, b) >= _MIN_EACH
+
+
+def _strings(node: Any):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for v in node.values():
+            yield from _strings(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _strings(v)
+
+
+def _number(x: Any) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
+def _structured_pairs(node: Any):
+    """Value and spread as a raw file carries them: a finding or curve point with its
+    uncertainty, and a population's mean and SD."""
+    if isinstance(node, dict):
+        u = node.get("uncertainty")
+        if _number(node.get("value")) and isinstance(u, dict) and _number(u.get("value")):
+            yield float(node["value"]), float(u["value"])
+        if _number(node.get("mean")) and _number(node.get("sd")):
+            yield float(node["mean"]), float(node["sd"])
+        for v in node.values():
+            yield from _structured_pairs(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _structured_pairs(v)
+
+
+def _text_pairs(text: str) -> set[tuple[float, float]]:
+    from .knowledge.corpus_quotes import normalise
+
+    return {(float(a), float(b)) for a, b in _PAIR.findall(normalise(text))}
+
+
+def _pairs(record: dict | None, text: str = "") -> set[tuple[float, float]]:
+    found = set(_structured_pairs(record)) if record else set()
+    for s in _strings(record) if record else ():
+        found |= _text_pairs(s)
+    found |= _text_pairs(text)
+    return {p for p in ((round(v, 6), round(s, 6)) for v, s in found) if _distinctive(*p)}
+
+
+def _registrations(record: dict | None, text: str = "") -> set[str]:
+    blob = " ".join([*(_strings(record) if record else ()), text])
+    return {re.sub(r"\s+", "", m).upper() for m in _REGISTRATION.findall(blob)}
+
+
+def _people_check(path: Path, data: dict, paper: str, sealed: bool, root: Path, paper_file: Path | None) -> Check:
+    """Refuse a paper that prints another paper's people when one of the two is sealed
+    and the other trains. A new training paper is compared with every sealed file, a new
+    sealed paper with every training file. The evidence is a distinctive ``value +/-
+    spread`` pair printed by both (two are enough) or a trial registration they share.
+    The new paper's pairs come from its full text with ``--paper``, else from its file."""
+    from .knowledge.corpus_quotes import read_paper
+
+    text = ""
+    if paper_file is not None:
+        try:
+            text = read_paper(paper_file)
+        except OSError:
+            pass  # the quotes check says so
+    mine, mine_reg = _pairs(data, text), _registrations(data, text)
+    reasons: list[str] = []
+    notes: list[str] = []
+    sealed_word = "sealed" if sealed else "training"
+    for other, record in _raw_records(root):
+        if other.parent.name != "findings" or other.resolve() == path.resolve() or record.get("paper") == paper:
+            continue
+        slug = str(record.get("paper") or other.stem)
+        if _sealed(slug)[0] == sealed:
+            continue
+        shared = sorted(mine & _pairs(record))
+        shared_reg = sorted(mine_reg & _registrations(record))
+        show = ", ".join(f"{v:g} +/- {s:g}" for v, s in shared)
+        if shared_reg:
+            reasons.append(f"{slug} ({'training' if sealed else 'sealed'}) is registered as {', '.join(shared_reg)}, as is this paper")
+        if len(shared) >= _PAIRS_TO_FAIL:
+            reasons.append(f"{slug} ({'training' if sealed else 'sealed'}) prints the same {len(shared)} mean +/- spread pairs: {show}")
+        elif shared:
+            notes.append(f"{slug}: {show}")
+    if reasons:
+        reasons.append(
+            f"this paper is {sealed_word} and its people are {'a training' if sealed else 'a sealed'} paper's: "
+            f"file it as a refusal with missing {{\"kind\": \"population\", \"name\": "
+            f"\"shares_people_with_sealed_paper\"}} (see refusals/garces-2020.json)",
+        )
+    note = ("one pair also in " + "; ".join(notes)) if notes else ""
+    return Check("people", not reasons, tuple(reasons), note=note)
 
 
 # --------------------------------------------------------------------------------
@@ -487,7 +608,7 @@ def admit(
             (f"cannot tell whether {path} is a finding, a refusal or a queue item: put it in "
              f"findings/, refusals/ or queue/, or pass --as finding|refusal|queue",),
         ),))
-    later = ("filing", "runs", "gradient", "conflicts") if kind == "finding" else ("filing",)
+    later = ("filing", "people", "runs", "gradient", "conflicts") if kind == "finding" else ("filing",)
     paper = ""
     reader = {"finding": read_finding, "refusal": read_refusal, "queue": read_queue_item}[kind]
     try:
@@ -513,15 +634,16 @@ def admit(
                          note if kind == "queue" else "")
     assert isinstance(parsed, Finding)
     assumed = tuple((name, keys) for name, keys in parsed.assumed.items() if keys)
-    if filing or not all(c.ok for c in base_checks):
+    people = _people_check(path, json.loads(path.read_text(encoding="utf-8")), paper, sealed, root, paper_file)
+    if filing or not people.ok or not all(c.ok for c in base_checks):
         return Admission(
-            kind, paper, (*base_checks, filing_check, *_skip(("runs", "gradient", "conflicts"))),
+            kind, paper, (*base_checks, filing_check, people, *_skip(("runs", "gradient", "conflicts"))),
             sealed, note, len(parsed.items), assumed,
         )
     runs, gradient = _on_one_thread(_run_checks, parsed, device, fed_day_minutes)
     conflicts = _conflict_check(parsed)
     return Admission(
-        kind, paper, (*base_checks, filing_check, runs, gradient, conflicts), sealed, note,
+        kind, paper, (*base_checks, filing_check, people, runs, gradient, conflicts), sealed, note,
         len(parsed.items), assumed,
     )
 

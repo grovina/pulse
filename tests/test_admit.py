@@ -71,7 +71,7 @@ def full_run(tmp_path_factory):
 def test_the_fixture_is_admitted_on_the_untrained_student(full_run):
     assert full_run.ok, format_admission(full_run)
     assert [c.name for c in full_run.checks] == [
-        "parse", "protocol", "units", "place", "uncertainty", "filing", "runs", "gradient", "conflicts",
+        "parse", "protocol", "units", "place", "uncertainty", "filing", "people", "runs", "gradient", "conflicts",
     ]
     assert full_run.items == 2 and full_run.sealed is False
 
@@ -102,7 +102,7 @@ def test_it_says_which_check_failed_and_skips_the_rest(root):
     result = admit(_put(root, data), root=root, fed_day_minutes=0)
     assert not result.ok
     assert set(_failed(result)) == {"parse", "place", "uncertainty"}
-    assert [c.name for c in result.checks if c.skipped] == ["filing", "runs", "gradient", "conflicts"]
+    assert [c.name for c in result.checks if c.skipped] == ["filing", "people", "runs", "gradient", "conflicts"]
     text = format_admission(result)
     assert "FAIL  each number has a place in the paper" in text and "not admitted" in text
 

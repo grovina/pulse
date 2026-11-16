@@ -938,6 +938,23 @@ prints is named, and the model is not run until the quotes pass. This catches th
 number nobody printed. It does not show that a number was taken from the right row or
 the right group: that is the second reader's work.
 
+It also checks that the paper **shares no people with a sealed paper** (a finding file
+only; refusals and queue items skip it). A paper that trains is compared with every
+sealed file, a sealed paper with every training file, never with itself. The evidence is
+a `value ± spread` pair printed by both: the committed files' finding values with their
+uncertainty, curve points, and population means and SDs, and the pairs written in their
+quotes and descriptions, against the new file's own, plus every `a ± b` or `a (±b)` in
+the paper's text with `--paper` (so a paper whose findings left out the shared rows is
+still caught). A pair counts only if distinctive: at least 5 significant digits across
+the pair and at least 2 in each (129.43 ± 12.12 counts; 5.0 ± 0.4 and 120 ± 15 never).
+Two shared pairs fail; one is printed as a note. A shared trial registration (NCT, ISRCTN,
+ACTRN, DRKS, NTR, ChiCTR, UMIN, CTRI, EudraCT number, found in the committed files'
+text and the paper's) fails too; a reference list that cites a sealed paper's trial can
+therefore trip it, and the reader judges. Authors are not compared: the citation's
+`authors` is usually "First A, et al.", too thin. A paper that fails is filed as a
+refusal with `missing: {"kind": "population", "name": "shares_people_with_sealed_paper"}`,
+as `refusals/garces-2020.json` is.
+
 It then lists what each protocol `assumed`, and says whether the paper is
 **sealed** (held out of training) or trains.
 

@@ -292,8 +292,12 @@ Not rescored, from the board of 2026-10-29:
   (what belongs, which group, which unit).
 - A paper whose people are a sealed paper's people is refused
   (`population`/`shares_people_with_sealed_paper`): garces-2020 prints the
-  same obese men as sealed sandovalalzate-2016. Nothing checks this
-  automatically; second readers look for it. The table counts the files. Given the paper's full text
+  same obese men as sealed sandovalalzate-2016. The gate checks this
+  (`pulse.admit`, "shares no people with a sealed paper"): two or more
+  distinctive `value ± spread` pairs, or a trial registration, shared between a
+  new paper and a paper on the other side of the seal fail it; one shared pair
+  is noted. Run over the 68 findings files on 2026-11-16 it found no match.
+  The table counts the files. Given the paper's full text
   (`admit --paper`), the gate checks that each quote is in it; the full texts
   are not in the repository. Run over the 35 files on 2026-11-11: 267 quotes,
   none missing.
