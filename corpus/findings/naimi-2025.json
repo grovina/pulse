@@ -1,0 +1,180 @@
+{
+  "paper": "naimi-2025",
+  "citation": {
+    "authors": "Naimi F, et al.",
+    "title": "Antilipolytic insulin sensitivity indices measured during an oral glucose challenge: associations with insulin-glucose clamp-derived indices",
+    "journal": "Endocrinol Metab",
+    "year": 2025,
+    "doi": "10.3803/EnM.2024.2129",
+    "pmid": "40101329",
+    "pmcid": "PMC12409164"
+  },
+  "population": {
+    "n": 15,
+    "sex": "female",
+    "age_years": {
+      "mean": 28.5,
+      "sd": 5.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.7,
+      "sd": 2.3,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "The 15 women without PCOS (a convenience sample of 'healthy volunteers' recruited by advertisement or personal contacts; non-Hispanic Caucasian; age 28.5±5.9 yr, BMI 22.7±2.3 kg/m2, Table 1). Enrolment was age 18 to 40 yr and BMI 18 to 40 kg/m2, with diabetes (fasting glucose >=7.0 or 2-h glucose >=11.1 mmol/L on an OGTT) excluded. Two of the 15 had impaired glucose tolerance, so glucose tolerance was not screened normal and the group is entered as unselected. Observed BMI and age ranges are printed only for all 29 women, so min and max are null. The 14 women with PCOS are not entered."
+  },
+  "protocols": [
+    {
+      "name": "fasting",
+      "description": "Fasting sample of the women without PCOS after the printed 12-hour fast, water only. Table 1 does not say on which visit (OGTT or clamp) the fasting values were drawn, so a short fasted arm is read at minutes 29-30.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt",
+      "description": "75 g oral glucose after a 12-hour fast; blood every 10 min from -20 to 0 min (baseline) and 0 to 120 min after the load. Arm starts at the first baseline sample (-20 min), so the load is at arm minute 20 and the 120-min sample at arm minute 140.",
+      "duration_min": 141,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 20,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose, women without PCOS",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 78.8,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.1,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, Non-PCOS women column, row 'Fasting glucose'",
+        "quote": "Fasting glucose, mg/dL | 78.8±6.1"
+      }
+    },
+    {
+      "id": "fasting_nefa",
+      "description": "Fasting plasma NEFA, women without PCOS (read as free fatty acids)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.37,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.13,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, Non-PCOS women column, row 'Fasting NEFA'",
+        "quote": "Fasting NEFA, mmol/L | 0.37±0.13"
+      }
+    },
+    {
+      "id": "ogtt_glucose_120",
+      "description": "Plasma glucose at 120 min of the 75 g OGTT, women without PCOS (arm minute 140)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 140,
+        "end_min": 141
+      },
+      "value": 113.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 19.6,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, Non-PCOS women column, row 'Glucose at 120 min'",
+        "quote": "Glucose at 120 min, mg/dL | 113.0±19.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Fasting insulin, insulin at 120 min, OGTT insulin AUC and NEFA AUC, HOMA-IR, Adipo-IR (Table 1) are medians with IQR",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "OGTT glucose AUC 803±111 mmol/min/L (Table 1): the paper does not say whether it spans 0-120 min or -20 to 120 min, nor whether baseline is subtracted",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Clamp M-value 57.3±16.1 µmol/kg/min (Table 1): per kg of lean mass",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "Two-step clamp (10 then 40 mU/m2/min): plasma insulin during the clamp is not printed in text or tables, only the insulin infusion rates; clamp-period NEFA and glucose values are not in tables",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "OGTT NEFA, glucose and insulin time courses (samples every 10 min) and NEFA suppression curves are drawn in figures only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "NEFA suppression indices (dAUCNEFA, SlopeLnNEFA, %NEFAsupp, T50NEFA, delta NEFA), Matsuda ISI, revised QUICKI, and their correlations with each other and with anthropometry (Tables 1-4)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
