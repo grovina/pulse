@@ -1,0 +1,209 @@
+{
+  "paper": "gronwald-2019",
+  "citation": {
+    "authors": "Gronwald T, Hoos O, Hottenrott K",
+    "title": "Effects of Acute Normobaric Hypoxia on Non-linear Dynamics of Cardiac Autonomic Activity During Constant Workload Cycling Exercise",
+    "journal": "Frontiers in Physiology",
+    "year": 2019,
+    "doi": "10.3389/fphys.2019.00999",
+    "pmid": "31427992",
+    "pmcid": "PMC6688521"
+  },
+  "population": {
+    "n": 9,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.4,
+      "sd": 4.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Nine endurance-trained male cyclists (at least 12 h of cycling training a week), non-smokers, free from cardiovascular, neurologic, pulmonary and orthopedic problems by a preliminary medical check-up with ECG. Age 26.4 ± 4.1 years; height 181.7 ± 5.3 cm; body mass 79.2 ± 9.3 kg; body fat 13.2 ± 3.6%; VO2peak 53.1 ± 4.7 mL/min/kg (Results). BMI is not printed and not computed."
+  },
+  "protocols": [
+    {
+      "name": "nc_warmup",
+      "description": "Healthy trained men on a cycle ergometer in normoxia (the paper's NC arm; the hypoxia arm is not entered). Only the warm-up of the paper's session is entered, because the constant-workload bout after it is above the model's activity scale (see left_out). Warm-up at 100 W for 10 min (minutes 0-10) then 150 W for 5 min (minutes 10-15) (Methods, Procedure). Intensities: cycle watts, no oxygen uptake printed for the warm-ups, level = watts/186: 100/186 = 0.5376 and 150/186 = 0.8065. Samples are 'during the end of the warm-up period' (Methods): the end of the 100 W warm-up is minute 9 and the end of the 150 W warm-up minute 14, the last minute of each segment. The paper does not say when the participants last ate or what they ate (a nutrition diary was kept) nor the clock time (the 'same daytime' in both conditions), so no meal is entered, the arm starts from typical values (norm_center) and the clock hour is assumed.",
+      "duration_min": 15,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 10,
+            "level": 0.5376
+          },
+          {
+            "from_min": 10,
+            "to_min": 15,
+            "level": 0.8065
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_nc_warmup",
+      "description": "Heart rate at the end of the 100 W and the 150 W warm-up, normoxia (mean, SD, n = 9).",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "nc_warmup"
+      ],
+      "unit": "1/min",
+      "points": [
+        {
+          "t_min": 9,
+          "value": 108.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.1,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 14,
+          "value": 120.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.6,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, row HR [1/min], condition NC, columns WU (1) and WU (2) (Mean ± SD)",
+        "quote": "HR [1/min] | NC | 108,4* ± 10.1 ; HR [1/min] | NC | 120,5* ± 13.6"
+      }
+    },
+    {
+      "id": "lactate_nc_warmup",
+      "description": "Earlobe blood lactate at the end of the 100 W and the 150 W warm-up, normoxia (mean, SD, n = 9).",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "nc_warmup"
+      ],
+      "unit": "mmol/l",
+      "points": [
+        {
+          "t_min": 9,
+          "value": 0.72,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.3,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 14,
+          "value": 0.94,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.62,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, row La [mmol/l], condition NC, columns WU (1) and WU (2) (Mean ± SD)",
+        "quote": "La [mmol/l] | NC | 0.72* ± 0.30 ; La [mmol/l] | NC | 0.94 ± 0.62"
+      }
+    },
+    {
+      "id": "spo2_nc_warmup",
+      "description": "Pulse-oximetry oxygen saturation at the end of the 100 W and the 150 W warm-up, normoxia (mean, SD, n = 9).",
+      "marker": "spo2",
+      "statistic": "curve",
+      "protocols": [
+        "nc_warmup"
+      ],
+      "unit": "%",
+      "points": [
+        {
+          "t_min": 9,
+          "value": 97.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.8,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 14,
+          "value": 97.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.6,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, row SpO2 [%], condition NC, columns WU (1) and WU (2) (Mean ± SD)",
+        "quote": "SpO2 [%] | NC | 97.1* ± 0.8 ; SpO2 [%] | NC | 97.1 ± 0.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate, lactate and SpO2 during the constant-workload bout at the individual anaerobic threshold, 10-100% of time to exhaustion (Table 1, NC): the bout is 266.2 W, 80.8% of VO2peak 53.1 mL/min/kg, level (0.808 x 53.1 - 3.7)/31.7 = 1.237 (watts/186 = 1.431), above the model's activity scale of 0 to 1; the 10% steps are also of each person's own duration (mean 41:18 min:sec)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    },
+    {
+      "what": "Heart rate, lactate and SpO2 at the end of the 10-min cool-down at 100 W (Table 1, NC, column CD): it follows the bout above the activity scale, whose length differs between people",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    },
+    {
+      "what": "Resting heart rate, lactate and SpO2 (Table 1, NC, column Rest): the paper prints no fasting state, last meal or clock time before the rest measurement",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "meanRR, SDNN and DFA-alpha1 (Table 1): not RMSSD, the model's hrv marker, and DFA-alpha1 has no series",
+      "missing": {
+        "kind": "marker",
+        "name": "hrv_nonlinear_measures"
+      }
+    },
+    {
+      "what": "Rating of perceived exertion, 6-20 Borg scale (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "Hypoxia arm (15% O2) of every Table 1 variable",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "Time to voluntary exhaustion, 41:18 ± 08:21 min:sec in normoxia (Results): the bout cannot be run",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    }
+  ]
+}
