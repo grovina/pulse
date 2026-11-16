@@ -286,7 +286,14 @@ Not rescored, from the board of 2026-10-29:
   and 2,436 of 4,056 hits found so far are screened. Screening runs on Haiku.
 - A paper is read by one agent and checked against the paper, number by
   number, by a second that sees only the file and the paper. Only then is it
-  committed. The table counts the files. Given the paper's full text
+  committed. First readers run on Haiku since 2026-11-16: re-reading three
+  checked papers, it matched all 54 of their numbers; the second reader
+  stays on the larger model, since its corrections are judgement calls
+  (what belongs, which group, which unit).
+- A paper whose people are a sealed paper's people is refused
+  (`population`/`shares_people_with_sealed_paper`): garces-2020 prints the
+  same obese men as sealed sandovalalzate-2016. Nothing checks this
+  automatically; second readers look for it. The table counts the files. Given the paper's full text
   (`admit --paper`), the gate checks that each quote is in it; the full texts
   are not in the repository. Run over the 35 files on 2026-11-11: 267 quotes,
   none missing.
