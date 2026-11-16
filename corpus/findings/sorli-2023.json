@@ -1,0 +1,144 @@
+{
+  "paper": "sorli-2023",
+  "citation": {
+    "authors": "Sorli et al.",
+    "title": "The Effect of Acute Hyperglycaemia Induced by Oral Glucose Load on Heart Rate Variability and Skin Microvascular Reactivity in Healthy Young Adults",
+    "journal": "Life",
+    "year": 2023,
+    "doi": "10.3390/life14010056",
+    "pmid": "38255671",
+    "pmcid": "PMC10817604"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 21.6,
+      "sd": 1.6,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty healthy young volunteers (15 males, 5 females, females in the follicular phase), non-smokers, all with a normal BMI (no BMI numbers printed), no medication. Age 21.6 +/- 1.6 y as printed (Methods 2.1; the +/- is taken as SD, Methods 2.6 says mean +/- SD)."
+  },
+  "protocols": [
+    {
+      "name": "fasted_arrival",
+      "description": "Capillary fasting sample taken on arrival, before any measurement, after 12 h with water only; a 30-minute fasted run-in stands for the single sample, read at minute 30",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ]
+    },
+    {
+      "name": "ogtt_75g",
+      "description": "75 g glucose in 250 mL water drunk over 5 min after 12 h with water only; capillary sample on arrival (minute 0), 30 min acclimatisation, 10 min baseline + 3 min occlusion + 10 min normalisation, then the drink: 30+10+3+10 = 53 min after the arrival sample (Methods 2.4); capillary sample 30 min after the drink = minute 83 (30 min counted from the start of drinking); the minute-53 load time and the minute-83 sample are derived by adding the printed durations, so duration_min and the meal time are assumed (the 75 g and the 12 h fast are printed)",
+      "duration_min": 84,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 53,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid"
+        }
+      ],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_capillary_glucose",
+      "description": "Fasting capillary glucose (HemoCue, the paper's cglc) on arrival before the OGTT trial; mean +/- SD (Methods 2.6)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_arrival"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 5.0,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Results 3.1, first paragraph",
+        "quote": "Fasting cglc (before any provocation) obtained from the capillary blood sample was 5.0 mM ± 0.4 mM pre-OGTT"
+      }
+    },
+    {
+      "id": "ogtt_capillary_glucose_rise_30",
+      "description": "Capillary glucose 30 min after the 75 g drink minus the arrival fasting sample (minute 0 to minute 83); mean +/- SD (Methods 2.6)",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "ogtt_75g"
+      ],
+      "window": {
+        "start_min": 83,
+        "end_min": 84
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 2.2,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 20
+      },
+      "location": {
+        "where": "Results 3.1, first paragraph",
+        "quote": "cglc increased for 2.2 mM ± 0.5 mM after OGTT"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "venous glucose and serum insulin changes from fasting at 30, 50, 90 min after the 75 g OGTT, and fasting venous glucose 4.3 +/- 0.3 mM and insulin 2.6 +/- 1.9 uU/mL (Table 4, Results 3.3): the separate kinetics trial never states how many participants it had",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    },
+    {
+      "what": "capillary glucose at the end of the haemodynamic measurements (50 min) and the post-OGTT absolute value (Figure 1 only); water-control glucose is not shown",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "resting haemodynamics before and the changes after OGTT or water: R-R interval, blood pressures, laser Doppler flux, LF, HF, LF/HF, PORH parameters (Tables 1 and 2) are medians with interquartile ranges",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "low-glucose (rise <2.3 mM) and high-glucose (>=2.3 mM) groups, and correlations of HRV and PORH changes with the glucose rise (Table 3, Figures 2-3): groups are formed from the glucose measurement itself",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    }
+  ]
+}
