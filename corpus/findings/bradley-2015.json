@@ -1,0 +1,422 @@
+{
+  "paper": "bradley-2015",
+  "citation": {
+    "authors": "Bradley H, et al.",
+    "title": "Visualization and quantitation of GLUT4 translocation in human skeletal muscle following glucose ingestion and exercise",
+    "journal": "Physiological Reports",
+    "year": 2015,
+    "doi": "10.14814/phy2.12375",
+    "pmid": "25969463",
+    "pmcid": "PMC4463815"
+  },
+  "population": {
+    "n": 10,
+    "sex": "male",
+    "age_years": {
+      "mean": 25.0,
+      "sd": 6.32,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.6,
+      "sd": 1.58,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Experiment 2: ten healthy, lean, recreationally active men (abstract: 'a second cohort of ten age-, BMI- and VO2 max-matched insulin-sensitive men'; heights 1.83 m, body mass 75.3 kg). All insulin sensitive by fasting plasma glucose below 5.6 mmol/L and 2 h OGTT glucose below 7.8 mmol/L. Age 25 +/- 2 and BMI 22.6 +/- 0.5 are mean +/- SE (Table 1; Methods print SEM); SD computed as SE x sqrt(10) (6.32, 1.58). Experiment 1 (a different ten men) is entered as a per-protocol override."
+  },
+  "protocols": [
+    {
+      "name": "exp2_ogtt",
+      "description": "Experiment 2: 75 g glucose as a 25% solution ingested after an overnight fast (arrived 7 am; basal biopsy and blood sample, then the drink); blood at 0, 30, 60, 90 and 120 min after ingestion; biopsies at baseline, 30 and 60 min. Start hour 8.0 and 10 h fast assumed (arrival 7 am and a biopsy before the drink are stated, the clock at the drink is not).",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "exp1_ogtt",
+      "description": "Experiment 1, visit 1: 75 g glucose as a 25% solution ingested after an overnight fast (arrived 7 am); blood before and 30, 60, 90 and 120 min after ingestion. Different ten participants from experiment 2. Start hour 8.0 and 10 h fast assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 21.0,
+          "sd": 3.16,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "exp1_exercise",
+      "description": "Experiment 1, visit 2: overnight fasted (arrived 7 am), blood sample then basal biopsy (lidocaine), then 30 min cycling at a workload equivalent to 65% VO2 max; blood at baseline, after 15 and after 30 min of exercise. Intensity derived: group mean VO2 max 52.5 mL/min/kg (Table 1, experiment 1) x 0.65 = 34.125 mL/kg/min; level = (34.125 - 3.7)/31.7 = 0.960. Bout entered as minutes 0 to 31 so that the sample drawn after 30 min of exercise falls with the input on (the paper gives the bout as 30 min). Baseline blood sample drawn before the biopsy and the bout; the gap to the bout is not stated. Start hour 8.0 and 10 h fast assumed.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 31,
+            "level": 0.96
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "activity"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 21.0,
+          "sd": 3.16,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.1,
+          "sd": 1.26,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "exp2_ogtt_glucose_curve",
+      "description": "Plasma glucose at 0, 30 and 60 min of the 75 g OGTT in experiment 2, mean +/- SE, n = 10",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "exp2_ogtt"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 5.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 8.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.6,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 6.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.5,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, Experiment 2 (Fig. 3 legend gives mean ± SE, N = 10)",
+        "quote": "baseline 5.1 ± 0.2 mmolL−1, 30 min 8.1 ± 0.6 mmol L−1, P < 0.05) and returned to baseline by 60 min (6.5 ± 0.5 mmol L−1"
+      }
+    },
+    {
+      "id": "exp2_ogtt_glucose_2h",
+      "description": "Plasma glucose at 2 h of the 75 g OGTT in experiment 2 (Table 1 column Experiment 2, second value), mean +/- SE, n = 10",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exp2_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, Experiment 2 column; footnote Mean ± SE",
+        "quote": "2 h OGTT plasma glucose (mmol L−1) | 5.0 ± 0.3 | 5.4 ± 0.4"
+      }
+    },
+    {
+      "id": "exp2_ogtt_insulin_curve",
+      "description": "Plasma insulin through the 75 g OGTT in experiment 2, mean +/- SE, n = 10 (no 60 or 90 min value printed)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "exp2_ogtt"
+      ],
+      "unit": "uIU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 12.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 61.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 41.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.3,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, Experiment 2 (0, 30, 120 min); Fig. 3 legend gives mean ± SE, N = 10",
+        "quote": "baseline 12.7 ± 1.7 μIU mL−1, 30 min 61.3 ± 7.2 μIUmL−1 ; at 120 min (41.4 ± 7.3 μIU mL−1"
+      }
+    },
+    {
+      "id": "exp1_ogtt_glucose_curve",
+      "description": "Plasma glucose fasting and 2 h of the 75 g OGTT in experiment 1 (visit 1), mean +/- SE, n = 10",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "exp1_ogtt"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 5.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 5.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Experiment 1 column (rows fasting and 2 h OGTT plasma glucose); footnote Mean ± SE",
+        "quote": "Fasting plasma glucose (mmol L−1) | 5.3 ± 0.1 ; 2 h OGTT plasma glucose (mmol L−1) | 5.0 ± 0.3"
+      }
+    },
+    {
+      "id": "exp1_ogtt_insulin_curve",
+      "description": "Plasma insulin fasting and 2 h of the 75 g OGTT in experiment 1 (visit 1), mean +/- SE, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "exp1_ogtt"
+      ],
+      "unit": "uIU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 14.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 31.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.2,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Experiment 1 column (rows fasting and 2 h OGTT plasma insulin); footnote Mean ± SE",
+        "quote": "Fasting plasma insulin (μIU mL−1) | 14.3 ± 1.4 ; 2 h OGTT plasma insulin (μIU mL−1) | 31.4 ± 4.2"
+      }
+    },
+    {
+      "id": "exp1_exercise_glucose_curve",
+      "description": "Plasma glucose at baseline and after 15 and 30 min of cycling at 65% VO2 max (experiment 1, visit 2), mean +/- SE, n = 10",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "exp1_exercise"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 5.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 15,
+          "value": 5.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 5.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, Experiment 1 (Methods, Statistical analysis: 'Data are displayed as mean ± SE'; Table 1 footnote Mean ± SE)",
+        "quote": "baseline 5.4 ± 0.1 mmol L−1, 15 min 5.0 ± 0.1 mmol L−1, 30 min 5.2 ± 0.2 mmol L−1"
+      }
+    },
+    {
+      "id": "exp1_exercise_insulin_curve",
+      "description": "Plasma insulin at baseline and after 15 and 30 min of cycling at 65% VO2 max (experiment 1, visit 2), mean +/- SE, n = 10",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "exp1_exercise"
+      ],
+      "unit": "uIU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 14.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 15,
+          "value": 13.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 11.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.0,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Results, Experiment 1 (Methods, Statistical analysis: 'Data are displayed as mean ± SE'; Table 1 footnote Mean ± SE)",
+        "quote": "baseline 14.5 ± 2.2 μIU mL−1, 15 min 13.9 ±2.4 μIU mL−1, 30 min 11.0 ± 2.0 μIU mL−1"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and insulin at 90 min of the experiment 2 OGTT and insulin at 60 min (drawn, shown in Figure 3 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "glucose and insulin at 30, 60 and 90 min of the experiment 1 OGTT (drawn, not printed)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "ISI-Matsuda, Table 1 (3.1 and 4.4)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "GLUT4 plasma-membrane colocalisation (Pearson r) and large/small GLUT4 spot number and size, Figures 1-5 and Results",
+      "missing": {
+        "kind": "marker",
+        "name": "glut4_localisation"
+      }
+    }
+  ]
+}
