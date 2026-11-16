@@ -1,0 +1,139 @@
+{
+  "paper": "takahashi-2018",
+  "citation": {
+    "authors": "Takahashi M, et al.",
+    "title": "Four Plasma Glucose and Insulin Responses to a 75 g OGTT in Healthy Young Japanese Women",
+    "journal": "Journal of Diabetes Research",
+    "year": 2018,
+    "doi": "10.1155/2018/5742497",
+    "pmid": "29629377",
+    "pmcid": "PMC5831567"
+  },
+  "population": {
+    "n": 60,
+    "sex": "female",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Sixty of 62 apparently healthy, nonobese Japanese female college students; the two subjects with impaired glucose tolerance (120 min glucose 160 and 187 mg/dL, fasting below 110) are excluded in the paper's own pooled Discussion numbers. Enrolment criterion: age 19 to 23 years (not observed min/max). The paper prints age and BMI only by response-type subgroup (Table 1: group mean ages 19.9 to 20.7, mean BMI 20.1 to 21.4), none for the 60 pooled, so none is entered."
+  },
+  "protocols": [
+    {
+      "name": "ogtt_75g",
+      "description": "75 g oral glucose tolerance test (WHO recommendation); venous blood at 0, 30, 60 and 120 min. The OGTT's fast duration and clock time are not printed (only the other blood tests are said to follow an overnight fast); overnight fast and 08:00 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ogtt_glucose_curve_60",
+      "description": "Plasma glucose at 0, 30, 60, 120 min of the 75 g OGTT, the 60 women without IGT pooled (printed in the Discussion), mean and SD. The 120 min mean (90.8) is about 2 mg/dL above what Table 2 and the two IGT values (160, 187) imply for the same 60 (about 88.8); the 0, 30 and 60 min means are consistent with Table 2.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt_75g"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 83.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.6,
+            "n": 60
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 123.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 21.3,
+            "n": 60
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 100.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 27.0,
+            "n": 60
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 90.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 15.2,
+            "n": 60
+          }
+        }
+      ],
+      "location": {
+        "where": "Discussion, paragraph 'In our study, about 37%...' (60 subjects excluding two IGT); SD per Methods 'Values are expressed as means ± SD'",
+        "quote": "In our 60 subjects, excluding two IGT subjects, the average plasma glucose levels were 83.6 ± 5.6, 123.3 ± 21.3, 100.8 ± 27.0, and 90.8 ± 15.2 mg/dL at 0, 30, 60, and 120 min post-glucose administration, respectively."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and insulin at 0, 30, 60, 120 min, AUC-glucose and AUC-insulin, printed per response-type subgroup (Table 2); subgroups are defined by the timing of each person's own insulin and glucose peaks",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "insulin at 0, 30, 60, 120 min for the 60 women without IGT (Discussion): the printed 30, 60 and 120 min means (68.1, 52.4, 41.6 uU/mL) and the 30 min SD (42.4) cannot be right for a subset of the 62 in Table 2, whose group means (n = 39, 11, 7, 5) give a 62-person mean of about 62.9, 48.0 and 39.4, lower than the printed 60-person means; the paper does not show which is the slip",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-beta, QUICKI, insulinogenic index (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c by response-type subgroup (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "triglyceride, LDL-C and HDL-C by response-type subgroup (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "percent body fat, lean and bone mass by response-type subgroup (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
