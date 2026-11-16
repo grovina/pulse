@@ -1,0 +1,278 @@
+{
+  "paper": "monro-2022",
+  "citation": {
+    "authors": "Monro J, Mishra S, Stoklosinski H, et al.",
+    "title": "Dietary Fibre and Organic Acids in Kiwifruit Suppress Glycaemic Response Equally by Delaying Absorption—A Randomised Crossover Human Trial with Parallel Analysis of 13C-Acetate Uptake",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14153189",
+    "pmid": "35956366",
+    "pmcid": "PMC9370659"
+  },
+  "population": {
+    "n": 9,
+    "sex": "mixed",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 18.0,
+      "max": 40.0
+    },
+    "bmi": {
+      "mean": 25.9,
+      "sd": 4.5,
+      "min": 20.6,
+      "max": 32.9
+    },
+    "status": "healthy",
+    "description": "Nine healthy volunteers who completed the crossover (6 women, 3 men; 11 randomised, 2 withdrew), aged 18-40 y: the paper prints only this enrolment range (Table A1 'Age (y) 18–40'), used here as min and max because nothing else about age is given. BMI 25.9 ± 4.5 (SD) kg/m2, range 20.6-32.9 (Table A1). 'Healthy'; screened by history of diabetes and by fasting blood glucose and HbA1c (no glucose tolerance test); fasting glucose 4.7 ± 0.45 mmol/L, HbA1c 32.7 ± 3.5 mmol/mol."
+  },
+  "protocols": [
+    {
+      "name": "wb_kfsug",
+      "description": "Meal 1 (control, no non-sugar kiwifruit components): 30 g Weet-Bix giving 20.1 g available carbohydrate (Section 2.3) plus 20.4 g glucose:fructose:sucrose (2:2:1) dissolved in 200 mL water, 100 mg sodium [1-13C] acetate, water to 252 mL; eaten within 10 min (entered as one meal at minute 0). carbs_g 40.5 = 20.1 + 20.4 (both printed). protein_g 3.6 = 30 g x 12% and fat_g 0.42 = 30 g x 1.4% (Weet-Bix composition by mass, Section 2.1; derived by percent of mass, which is not one of the guide's listed derivations; no other protein or fat in this meal). Fasted from 22:00 the night before (Section 2.4); clock hour of the test not printed (08:00 assumed, so 10 h fast assumed). Samples at -5, 0, 15, 30, 45, 60, 90, 120, 150, 180 min; arm run to 181 min.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 40.5,
+          "fat_g": 0.42,
+          "protein_g": 3.6,
+          "protein_source": "plant",
+          "food": "Weet-Bix and glucose:fructose:sucrose sugars in water"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "fasting_screen",
+      "description": "Fasting blood glucose of the nine participants (Table A1); the paper says only that a fasting blood sample was taken at the screening visit, not the occasion, clock hour or fast length; a 30-minute run-in stands for the single sample, 08:00 and a 10 h fast are the guide's defaults.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "wb_kfsug_glucose_iauc30",
+      "description": "Positive incremental area under the capillary blood glucose curve, 0 to 30 min, after WB+KFsug (baseline is the 0 min sample; positive iAUC, Section 2.6)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "wb_kfsug"
+      ],
+      "times": [
+        0,
+        15,
+        30
+      ],
+      "below_baseline": "ignored",
+      "value": 46.9,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.3,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column ∑iAUC30 (Mean, SEM)",
+        "quote": "WB+KFsug | 46.9 | 5.3"
+      }
+    },
+    {
+      "id": "wb_kfsug_glucose_iauc180",
+      "description": "Positive incremental area under the capillary blood glucose curve, 0 to 180 min, after WB+KFsug (baseline is the 0 min sample; positive iAUC, Section 2.6)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "wb_kfsug"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "ignored",
+      "value": 109.6,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.6,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column ∑iAUC180 (Mean, SEM)",
+        "quote": "WB+KFsug | 109.6 | 11.6"
+      }
+    },
+    {
+      "id": "wb_kfsug_insulin_iauc30",
+      "description": "Incremental area under the plasma insulin curve (finger-prick plasma, ELISA), 0 to 30 min, after WB+KFsug (treatment of values under baseline not stated)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "wb_kfsug"
+      ],
+      "times": [
+        0,
+        15,
+        30
+      ],
+      "below_baseline": "unstated",
+      "value": 1804,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 224,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column iAUC30 (Mean, SEM)",
+        "quote": "WB+KFsug | 1804 | 224"
+      }
+    },
+    {
+      "id": "wb_kfsug_insulin_iauc180",
+      "description": "Incremental area under the plasma insulin curve (finger-prick plasma, ELISA), 0 to 180 min, after WB+KFsug (treatment of values under baseline not stated)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "wb_kfsug"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 4745,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 670,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column iAUC180 (Mean, SEM)",
+        "quote": "WB+KFsug | 4745 | 670"
+      }
+    },
+    {
+      "id": "fasting_glucose_screen",
+      "description": "Fasting blood glucose of the nine participants at screening (Table A1, mean and SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_screen"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 30
+      },
+      "value": 4.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.45,
+        "n": 9
+      },
+      "location": {
+        "where": "Table A1, row 'Fasting blood glucose, mean ± SD (range) (mmol/L)'",
+        "quote": "Fasting blood glucose, mean ± SD (range) (mmol/L) | 4.7 ± 0.45 (4.1–5.4)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Incremental blood glucose peak height iBGRmax per meal (Table 2, mmol/L, mean and SEM): the mean of each person's own highest rise over baseline",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "Incremental insulin peak height per meal (Table 3, µU/mL, mean and SEM): the mean of each person's own highest rise over baseline",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "Percent change versus WB+KFsug columns of Tables 2 and 3 ('Change in Mean (%)') and the ANOVA F, p and letter groupings, Tables 2-6 and A2-A8",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "Dietary fibre content of the kiwifruit pulp and of the juice (Appendix Figure A1; text gives only 'about 75%' removed in the juice): fibre_g cannot be stated for the kiwifruit arms",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Glucose and insulin iAUC at 30 and 180 min (Tables 2 and 3, mean and SEM) of the four meals other than the control: WB+KF (whole pulp, pH 3.3), WB+KFneut (pulp neutralised to pH 7), WB+KFjuice (194 mL low-fibre juice) and WB+KFsug+OA (sugars plus 50 mL organic-acid solution: citric 2.35 g, malic 0.63 g, ascorbic 0.17 g). All five meals have the same carbohydrate, protein and fat grams, and the model can be told neither the cell-wall fibre (amount not printed in text), the organic acids nor the pH, so each would be the control's meal with a different target (iAUC30 23.4 to 34.0 against 46.9); the control arm alone is entered",
+      "missing": {
+        "kind": "input",
+        "name": "meal_details_not_read"
+      }
+    },
+    {
+      "what": "Time-courses of incremental blood glucose and insulin at -5 to 180 min (Figure 1A and 1B; error bars on two curves only); glycaemic fluctuation / hypoglycaemic overshoot at about 75 min (Figure 5)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Breath 13CO2 time to peak, 13C iAUC (Tables 4, 5, A7) and the sodium [1-13C] acetate absorption marker",
+      "missing": {
+        "kind": "marker",
+        "name": "gastric_emptying_breath_test"
+      }
+    },
+    {
+      "what": "Visual analogue scale appetite areas (hunger, fullness, satisfaction, quantity; Table 6)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "HbA1c of the nine participants, 32.7 +/- 3.5 mmol/mol (Table A1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    }
+  ]
+}
