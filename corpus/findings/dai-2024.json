@@ -1,0 +1,139 @@
+{
+  "paper": "dai-2024",
+  "citation": {
+    "authors": "Dai Y, et al.",
+    "title": "Analysis of physiological and biochemical changes and metabolic shifts during 21-Day fasting hypometabolism",
+    "journal": "Scientific Reports",
+    "year": 2024,
+    "doi": "10.1038/s41598-024-80049-2",
+    "pmid": "39557965",
+    "pmcid": "PMC11574170"
+  },
+  "population": {
+    "n": 13,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 40.5,
+      "sd": 9.7,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.5,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirteen volunteers (8 men, 5 women) recruited publicly, screened by physical examination at a hospital; exclusion of ongoing medical treatment and medical conditions; inclusion criteria age 25-55 and BMI 18.5-32 (enrolment limits, not observed extremes, so min and max are null)."
+  },
+  "protocols": [
+    {
+      "name": "baseline_morning",
+      "description": "Morning sample on the days before the 21-day water-only fast (usual diet), as the average of the baseline days (Figs 1 and 2 define BF as 'the average of the three days before fasting'; Fig. 6 does not define it). Short arm: 30 minutes ending at the sample, clock 07:00 at minute 30. Printed: blood pressure and pulse 'measured immediately after getting up (about 6:30-7:30 am) without eating, drinking, and exercising every day'; glucose and BHB 'every morning' by strip meter, venous sampling on BF 'about 7 am'. Not printed: the clock time of the strip readings, the time of the last meal (10 h overnight is the guide's default), and that the strip readings were taken before breakfast. Three baseline days are three mornings of one state, entered as one sample.",
+      "duration_min": 30,
+      "start_hour": 6.5,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "baseline_morning_bhb",
+      "description": "Blood BHB at baseline by strip meter (FreeStyle Optium; the paper does not print the sample site), the abstract's 'blood ketones' from baseline; mean and SD over the 13 volunteers; the baseline is the average of the three days before fasting (Fig. 2 legend)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 13
+      },
+      "location": {
+        "where": "Abstract, and Methods ('Blood glucose and beta-hydroxybutyrate (BHB) were measured with the test strip'; 'Data was presented as mean ± SD'); Fig. 2 legend defines BF as the average of the three days before fasting",
+        "quote": "an increase in blood ketones (from baseline 0.1 ± 0.04 mmol/L"
+      }
+    },
+    {
+      "id": "baseline_morning_sbp",
+      "description": "Resting systolic blood pressure at baseline (BF), measured on rising without eating, drinking or exercise (OMRON HEM-7121), mean and SD, n=13; the text prints it as the BF value against CF8",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 116.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.1,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, Alterations of cardiac function indexes; Methods ('Data was presented as mean ± SD'); Fig. 6 n = 13",
+        "quote": "BF 116.9 ± 14.1 VS. CF8 97.7 ± 9.0"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and BHB means over day ranges of the fast (glucose CF5-CF21 3.86 ± 0.64 mmol/L; BHB CF5-CF9, CF10-CF15, CF15-CF21), Results: each averages samples taken after very different numbers of fasting hours, so it is not one sample after H hours",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_over_separate_windows"
+      }
+    },
+    {
+      "what": "mean systolic 110 ± 10.5 and diastolic 71.2 ± 7.7 mmHg in the volunteers' baseline characteristics (Methods, Volunteers): not the morning BF series (BF systolic is 116.9 ± 14.1), and the occasion (physical examination or the baseline days) is not printed; diastolic and pulse at BF are not printed in the text",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "BHB at the end of the fast (abstract '6.61 ± 1.25 mmol/L'): the day it belongs to is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "baseline glucose (only given as a percentage change, -21.63%) and the daily glucose and BHB curves (Fig. 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "day values of fasting: glucose at CF4 3.27 ± 0.70 mmol/L (the lowest day of the mean curve), pulse 96.0 ± 13.8 and systolic 97.7 ± 9.0 mmHg at CF8, energy expenditure 1305.59 ± 334.60 kcal/day at CF15 (Results, Discussion): each is a morning sample on a numbered fasting day, and the paper prints neither the last meal before CF1 nor the clock time of the strip readings, so the hours since the last meal cannot be worked out",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "fat mass (DEXA) at CF10, CF21 and FR3 and resting energy expenditure at CF3-CF20 are printed only as percentage changes from baseline (Results); respiratory exchange ratio only as 'closer to 0.7' (text) and in Fig. 3",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    }
+  ]
+}
