@@ -1,0 +1,390 @@
+{
+  "paper": "hjorth-2022",
+  "citation": {
+    "authors": "Hjorth M, Galigniana NM, Ween O et al.",
+    "title": "Postprandial Effects of Salmon Fishmeal and Whey on Metabolic Markers in Serum and Gene Expression in Liver Cells",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14081593",
+    "pmid": "35458155",
+    "pmcid": "PMC9027870"
+  },
+  "population": {
+    "n": 5,
+    "sex": "male",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 33.0,
+      "max": 45.0
+    },
+    "bmi": {
+      "mean": null,
+      "sd": null,
+      "min": 21.5,
+      "max": 24.0
+    },
+    "status": "healthy",
+    "description": "Five healthy men; 'between 33 and 45 years old and had a BMI of 21.5 to 24.0 kg/m2' (observed). Inclusion age >= 20 y, BMI 18.5-24.9; exclusion high blood pressure, known diabetes, dairy or fish intolerance; ferritin, AST, ALT, GGT within reference ranges."
+  },
+  "protocols": [
+    {
+      "name": "fishmeal_capsules",
+      "description": "30 capsules of salmon fishmeal (7.50 g fishmeal, 5.2 g protein as printed) with 0.5 L water after an 8-12 h fast; samples at 0, 30, 60 min. Fat derived: 7.50 g x 13.2 g/100 g (Table 1) = 0.99 g. Carbohydrate: Table 1 prints '-' for fishmeal, entered as 0.0 (not a printed number). Capsules also held cellulose and excipients, not entered. Paper gives the fast as 8-12 h and no clock hour (both assumed); capsule cellulose is a 2.7-7.2 g range, not a value, so not entered.",
+      "duration_min": 61,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 0.0,
+          "fat_g": 0.99,
+          "protein_g": 5.2,
+          "protein_source": "fish",
+          "form": "solid",
+          "food": "salmon fishmeal capsules with 0.5 L water"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "whey_capsules",
+      "description": "30 capsules of whey protein powder WPC 80 (6.75 g whey, 5.2 g protein as printed) with 0.5 L water after an 8-12 h fast; samples at 0, 30, 60 min. Derived from Table 1 per 100 g: fat 6.75 x 6.5/100 = 0.43875 -> 0.44 g; carbohydrate and sugar 6.75 x 8.0/100 = 0.54 g. Capsules also held cellulose and excipients, not entered. Paper gives the fast as 8-12 h and no clock hour (both assumed); capsule cellulose is a 2.7-7.2 g range, not a value, so not entered.",
+      "duration_min": 61,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 0.54,
+          "fat_g": 0.44,
+          "protein_g": 5.2,
+          "sugars_g": 0.54,
+          "protein_source": "whey",
+          "form": "solid",
+          "food": "whey protein (WPC 80) capsules with 0.5 L water"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_curve_fishmeal",
+      "description": "Serum glucose at 0, 30 and 60 min after fishmeal capsules, mean (SD), n=5.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "fishmeal_capsules"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.82,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.49,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 4.58,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.4,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 4.52,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.44,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Fishmeal columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "s-Glucose, mmol/L | 4.82 (0.49) | 4.58 (0.40) | 4.52 (0.44)"
+      }
+    },
+    {
+      "id": "glucose_curve_whey",
+      "description": "Serum glucose at 0, 30 and 60 min after whey capsules, mean (SD), n=5.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "whey_capsules"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.62,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 4.38,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.56,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 4.42,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.69,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Whey columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "s-Glucose, mmol/L | 4.70 (0.62) | 4.38 (0.56) | 4.42 (0.69)"
+      }
+    },
+    {
+      "id": "insulin_curve_fishmeal",
+      "description": "Serum insulin at 0, 30 and 60 min after fishmeal capsules, mean (SD), n=5.",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "fishmeal_capsules"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 36.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.6,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 57.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 32.4,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 37.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 18.8,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Fishmeal columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "s-Insulin, pmol/L | 36.0 (13.6) | 57.6 (32.4) | 37.4 (18.8)"
+      }
+    },
+    {
+      "id": "insulin_curve_whey",
+      "description": "Serum insulin at 0, 30 and 60 min after whey capsules, mean (SD), n=5.",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "whey_capsules"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 39.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 24.3,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 37.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 17.0,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 46.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 32.2,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Whey columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "s-Insulin, pmol/L | 39.4 (24.3) | 37.8 (17.0) | 46.8 (32.2)"
+      }
+    },
+    {
+      "id": "glp1_curve_fishmeal",
+      "description": "Plasma GLP-1 (K2EDTA tubes with DPP-IV inhibitor) at 0, 30 and 60 min after fishmeal capsules, mean (SD), n=5. Assay form (total or active) not stated in the paper.",
+      "marker": "glp1",
+      "statistic": "curve",
+      "protocols": [
+        "fishmeal_capsules"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 3.37,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.58,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 4.07,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.02,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 3.67,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.71,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Fishmeal columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "p-GLP-1, pmol/L | 3.37 (1.58) | 4.07 (1.02) | 3.67 (0.71)"
+      }
+    },
+    {
+      "id": "glp1_curve_whey",
+      "description": "Plasma GLP-1 (K2EDTA tubes with DPP-IV inhibitor) at 0, 30 and 60 min after whey capsules, mean (SD), n=5. Assay form (total or active) not stated in the paper.",
+      "marker": "glp1",
+      "statistic": "curve",
+      "protocols": [
+        "whey_capsules"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 3.63,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.58,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 3.36,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.48,
+            "n": 5
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 3.68,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.79,
+            "n": 5
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Whey columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "p-GLP-1, pmol/L | 3.63 (1.58) | 3.36 (1.48) | 3.68 (1.79)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "serum triglycerides at 0, 30, 60 min, both arms (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "serum cholesterol at 0, 30, 60 min, both arms (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "serum microCRP at 0, 30, 60 min, both arms (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "serum amino acids at 30 and 60 min, total and individual (Figure 2, Figure S1, text of 3.2)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "fishmeal against whey comparison of responses (Table 3 last column): only p-values printed, no difference with uncertainty",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "amino acid composition of the two proteins (Table 2): fishmeal richer in glycine and arginine, whey in leucine and isoleucine",
+      "missing": {
+        "kind": "input",
+        "name": "amino_acid_composition"
+      }
+    },
+    {
+      "what": "HepG2 gene expression after postprandial serum (Sections 3.4, Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "hepatic_gene_expression"
+      }
+    }
+  ]
+}
