@@ -1,0 +1,244 @@
+{
+  "paper": "cesaremarincola-2025",
+  "citation": {
+    "authors": "Cesare Marincola F, et al.",
+    "title": "Metabolomic and hemodynamic responses to a single session of mild dynamic exercise in normobaric hypoxia and normoxia in healthy young adults",
+    "journal": "PLoS One",
+    "year": 2025,
+    "doi": "10.1371/journal.pone.0325447",
+    "pmid": "40591549",
+    "pmcid": "PMC12212504"
+  },
+  "population": {
+    "n": 13,
+    "sex": "male",
+    "age_years": {
+      "mean": 29.7,
+      "sd": 4.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.5,
+      "sd": 1.4,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirteen healthy, non-smoking, leisure-time-active men (Methods: healthy, aged 20-40 y, no cardiovascular, metabolic or respiratory disease, no medication; preliminary medical examination); age 29.7 +/- 4.5 y and BMI 23.5 +/- 1.4 kg/m2 from Table 1 (mean +/- SD). Enrolment age range is a criterion, so min and max are null. Only the normoxia (NORMO) test of the crossover is entered."
+  },
+  "protocols": [
+    {
+      "name": "normo_bout",
+      "description": "NORMO test (FiO2 21%): seated 4 min rest (minutes 0-3), 3 min constant-load cycling at 30% of Wmax (minutes 4-6), 6 min recovery (minutes 7-12); 13 min in all (Methods, Experimental trials). Sampling minutes by the end-of-minute convention: Pre = last minute of rest = 3; Exe3 (after three minutes of exercise) = last exercise minute = 6; Rec3 = minute 9; Rec6 = minute 12. Intensity derived, not printed: no VO2 is printed for the bout, so level = watts/186 with watts = 30% x mean Wmax 255.4 W (Table 1) = 76.62 W; 76.62/186 = 0.4119. Activity segment 4 to 7 so the sample at minute 6 falls with the input on. Test done in the morning about 2 h 30 min after a light breakfast whose content is not printed: no meal is entered and the arm starts from typical values (norm_center, assumed); the clock hour is not printed (8.0 assumed). Mask on a hypoxic gas generator delivering 21% O2 (normal air), so no hypoxia input.",
+      "duration_min": 13,
+      "start_hour": 8.0,
+      "init": "norm_center",
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 4,
+            "to_min": 7,
+            "level": 0.4119
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    },
+    {
+      "name": "rest_table1",
+      "description": "Resting heart rate and blood pressure of the participants' table (Table 1), which does not say when, or after what food, they were measured: entered as a short arm from typical values (norm_center, assumed) with no meal and no activity, sample at minute 15 of a 31-min arm (arm length, sample time and the 8.0 clock hour assumed).",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "init": "norm_center",
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "init",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "normo_hr_curve",
+      "description": "Heart rate at rest (Pre), after 3 min of exercise (Exe3) and at the 3rd and 6th minute of recovery (Rec3, Rec6), normoxia test, mean +/- SD",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "normo_bout"
+      ],
+      "unit": "bpm",
+      "points": [
+        {
+          "t_min": 3,
+          "value": 84.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.1,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 6,
+          "value": 123.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 18.1,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 9,
+          "value": 84.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.6,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 12,
+          "value": 85.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.1,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, HR (bpm), NORMO column",
+        "quote": "Pre | 84.0 ± 13.1 ; Exe3 | 123.2* ± 18.1 ; Rec3 | 84.4 ± 16.6 ; Rec6 | 85.4 ± 13.1"
+      }
+    },
+    {
+      "id": "rest_hr",
+      "description": "Resting heart rate, participants' table (Table 1; time and state of measurement not stated)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_table1"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 84.8,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.7,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, general characteristics, Value (N = 13)",
+        "quote": "Resting HR (min-1) | 84.8 ± 12.7"
+      }
+    },
+    {
+      "id": "rest_sbp",
+      "description": "Resting systolic blood pressure, participants' table (Table 1)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_table1"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 114.6,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15.9,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, general characteristics, Value (N = 13)",
+        "quote": "Resting SBP (mm Hg) | 114.6 ± 15.9"
+      }
+    },
+    {
+      "id": "rest_dbp",
+      "description": "Resting diastolic blood pressure, participants' table (Table 1)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_table1"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 69.5,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.7,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, general characteristics, Value (N = 13)",
+        "quote": "Resting DBP (mm Hg) | 69.5 ± 11.7"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Whole hypoxia (HYPO, FiO2 13.5%) arm: heart rate and every other value of Table 2, HYPO column",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "Cardiac output and stroke volume (Table 2, both tests)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Systemic vascular resistance (Table 2, both tests)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Mean arterial pressure at Pre, Exe3, Rec3, Rec6 (Table 2, both tests)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "Systolic and diastolic pressure during the tests (measured per Methods, but only MAP is printed)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Incremental-test values at VT1 and Wmax in Table 1 (HR, VO2, VCO2, VE, workload): taken on a ramp to exhaustion",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Plasma and urine NMR metabolites incl. lactate, 3-hydroxybutyrate, amino acids (relative peak areas; S1 and S2 Tables not in the full text)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    }
+  ]
+}
