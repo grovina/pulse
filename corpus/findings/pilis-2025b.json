@@ -1,0 +1,178 @@
+{
+  "paper": "pilis-2025b",
+  "citation": {
+    "authors": "Pilis K, Rojczyk E, Valach P, et al.",
+    "title": "Effect of 8 days of water-only fasting and exercise on liver, kidney and pancreas functions in middle-aged men",
+    "journal": "Scientific Reports",
+    "year": 2025,
+    "doi": "10.1038/s41598-025-32851-9",
+    "pmid": "41476191",
+    "pmcid": "PMC12830737"
+  },
+  "population": {
+    "n": 18,
+    "sex": "male",
+    "age_years": {
+      "mean": 60.78,
+      "sd": 10.6,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 27.42,
+      "sd": 4.06,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eighteen healthy middle-aged men (Methods: 'Eighteen healthy middle-aged male volunteers'; medical interview and examination, no chronic disease, no medication, non-smokers; inclusion over 40 years, so min and max are left null). Age and BMI are the values before the fast (Table 1); the same people are used for the after-fast arm, since the model spins them up through a normal fed day before the fast. Glucose tolerance was not tested. Not the cohort of pilis-2025 (13 men, 57.25 y, other ethics approval) or stec-2023: this paper's ethics document is KE-U/9/2024 (4 June 2024), 18 men aged 60.78 +/- 10.60."
+  },
+  "protocols": [
+    {
+      "name": "rest_after_12h_night_fast",
+      "description": "Rest blood sample in the laboratory in the morning before the 8-day fast, after 'a 12-hour long night break from meals' (stated). Clock hour not stated: 08:00 assumed. The sample has no stated moment within the run-in; a 30-minute run-in read at minute 29-30 stands for it.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "rest_after_192h_water_fast",
+      "description": "Rest blood sample in the laboratory after '8 days (192 h) of water-only fasting' (water ad libitum, about 3 L/day; no food), the procedure of the first visit repeated. prefast_hours = 192 is the paper's own '8 days (192 h)'. The paper prints no clock times: not when the fast began relative to the first-day sample (a fast begun at the first visit, itself after a 12 h break, would make 12 + 192 = 204 h at the second sample) nor when the second visit fell, so whether the 192 h run to the blood draw is assumed. Clock hour not stated (morning visit as before): 08:00 assumed; 30-minute run-in assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 192,
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "bhb_rest_12h",
+      "description": "Serum beta-hydroxybutyrate at rest, after the 12-h night fast, before the 8-day fast; mean +/- SD, n = 18 (Friedman design: same men in all four columns)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_after_12h_night_fast"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.29,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.18,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2 (caption 'Mean ± SD'; footnote '±SD - standard deviation'), column 'Rest before fasting (1)'",
+        "quote": "β-HB [mmol/l] | 0.29 ± 0.18"
+      }
+    },
+    {
+      "id": "bhb_rest_192h",
+      "description": "Serum beta-hydroxybutyrate at rest after 8 days (192 h) of water-only fasting; mean +/- SD, n = 18",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_after_192h_water_fast"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.65,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.61,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2 (caption 'Mean ± SD'; footnote '±SD - standard deviation'), column 'Rest after fasting (2)'",
+        "quote": "β-HB [mmol/l] | 0.29 ± 0.18 | 4.65 ± 0.61"
+      }
+    },
+    {
+      "id": "lactate_rest_12h",
+      "description": "Capillary (finger) blood lactate at rest, after the 12-h night fast, before the 8-day fast (epoc analyser); mean +/- SD, n = 18",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_after_12h_night_fast"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1.23,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.55,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 3 (caption 'Mean ± SD'; footnote '±SD – standard deviation'), column 'Rest before fasting (1)'",
+        "quote": "LA [mmol/L] | 1.23 ± 0.55"
+      }
+    },
+    {
+      "id": "lactate_rest_192h",
+      "description": "Capillary (finger) blood lactate at rest after 8 days (192 h) of water-only fasting; mean +/- SD, n = 18",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_after_192h_water_fast"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1.59,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.48,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 3 (caption 'Mean ± SD'; footnote '±SD – standard deviation'), column 'Restafterfasting (2)'",
+        "quote": "LA [mmol/L] | 1.23 ± 0.55 | 1.59 ± 0.48"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Serum cortisol, rest before and after the fast and after the exercise test (Table 2, row C): printed as 309.19 +/- 92.70 and 479.33 +/- 123.54 ng/ml at rest; read as ng/ml these are 30.9 and 47.9 ug/dL, outside the plausible range, so the printed unit contradicts the numbers (probably nmol/L). Same assay and laboratory as pilis-2025, whose cortisol was left out for the same reason.",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Serum and capillary values 3 min after a maximal incremental cycle test to exhaustion (starting 30 W, +30 W every 3 min), before and after the fast: beta-hydroxybutyrate, cortisol (Table 2, columns 3 and 4), lactate (Table 3, columns 3 and 4)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Body weight, body composition, BMI before and after the fast (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
