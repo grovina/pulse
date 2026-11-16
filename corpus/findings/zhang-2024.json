@@ -1,0 +1,495 @@
+{
+  "paper": "zhang-2024",
+  "citation": {
+    "authors": "Zhang J, Wong H-S, et al.",
+    "title": "Dose-response effects of acute nitrate-rich beetroot juice supplementation on physiological and psychological responses during high-intensity interval cycling in women",
+    "journal": "Journal of the International Society of Sports Nutrition",
+    "year": 2024,
+    "doi": "10.1080/15502783.2024.2334680",
+    "pmid": "38535518",
+    "pmcid": "PMC10977014"
+  },
+  "population": {
+    "n": 13,
+    "sex": "female",
+    "age_years": {
+      "mean": 22.9,
+      "sd": 1.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.1,
+      "sd": 1.9,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirteen healthy, recreationally active women with a regular menstrual cycle, not on oral contraceptives (Methods 2.1; mean +/- SD). Enrolment: BMI 18.5 to 24.9 kg/m2, blood pressure below 130/80 mmHg, no cardiovascular disease or diabetes; these are criteria, not observed ranges, so min and max are null. Only the placebo trial of the crossover is entered."
+  },
+  "protocols": [
+    {
+      "name": "placebo_hiie_after_meal",
+      "description": "Placebo (2 x 70 mL placebo beverage, about 0.0068 mmol nitrate) taken with the standard meal (scrambled egg, chicken steak, toast; 42.2 g carbohydrate, 46 g fat, 42.2 g protein, 'including the beverage', as printed in Methods) after an 8-h overnight fast; rest 2.5 h (meal at minute 0, trial begins at minute 150); 5-min warm-up at 40 W (minutes 150-154), then 8 x [1 min at 85% PPO, 1 min at 20% PPO] (minutes 155-170: work interval k is minute 155+2(k-1), recovery k the next minute; the paper samples 'recovery period 8', so eight recoveries are taken, although its HR table lists recoveries 1 to 7 only and 'interspersed' could mean seven). The arm stops at minute 170, the last sample; the 5-min cool-down at 40 W that follows is not entered. Activity from watts, level = W/186 (no VO2 printed): PPO 123 W (mean, Methods 2.1); 40 W / 186 = 0.2151; 85% x 123 W = 104.55 W / 186 = 0.5621; 20% x 123 W = 24.6 W / 186 = 0.1323. Sampling minutes derived from the sequence: last 15 s of warm-up = minute 154, first 15 s of recovery 4 = minute 162, of recovery 8 = minute 170, end of work interval k = its last minute 155+2(k-1). Start hour 8.0 assumed (a morning, no clock printed).",
+      "duration_min": 171,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 42.2,
+          "fat_g": 46.0,
+          "protein_g": 42.2
+        }
+      ],
+      "prefast_hours": 8,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 150,
+            "to_min": 155,
+            "level": 0.2151
+          },
+          {
+            "from_min": 155,
+            "to_min": 156,
+            "level": 0.5621
+          },
+          {
+            "from_min": 156,
+            "to_min": 157,
+            "level": 0.1323
+          },
+          {
+            "from_min": 157,
+            "to_min": 158,
+            "level": 0.5621
+          },
+          {
+            "from_min": 158,
+            "to_min": 159,
+            "level": 0.1323
+          },
+          {
+            "from_min": 159,
+            "to_min": 160,
+            "level": 0.5621
+          },
+          {
+            "from_min": 160,
+            "to_min": 161,
+            "level": 0.1323
+          },
+          {
+            "from_min": 161,
+            "to_min": 162,
+            "level": 0.5621
+          },
+          {
+            "from_min": 162,
+            "to_min": 163,
+            "level": 0.1323
+          },
+          {
+            "from_min": 163,
+            "to_min": 164,
+            "level": 0.5621
+          },
+          {
+            "from_min": 164,
+            "to_min": 165,
+            "level": 0.1323
+          },
+          {
+            "from_min": 165,
+            "to_min": 166,
+            "level": 0.5621
+          },
+          {
+            "from_min": 166,
+            "to_min": 167,
+            "level": 0.1323
+          },
+          {
+            "from_min": 167,
+            "to_min": 168,
+            "level": 0.5621
+          },
+          {
+            "from_min": 168,
+            "to_min": 169,
+            "level": 0.1323
+          },
+          {
+            "from_min": 169,
+            "to_min": 170,
+            "level": 0.5621
+          },
+          {
+            "from_min": 170,
+            "to_min": 171,
+            "level": 0.1323
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "activity"
+      ]
+    },
+    {
+      "name": "placebo_arrival_fasted",
+      "description": "Resting blood pressure on arrival after an 8-h overnight fast, 15 min seated rest, before the juice and meal; short fasted arm, sample placed at minute 15 of a 31-min arm (arrival clock not printed)",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 8,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "placebo_hr_warmup_work1_4",
+      "description": "Heart rate at the end of the warm-up and at the end of work intervals 1 to 4 (paper: 'HR at the end of each work interval'), placebo",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_hiie_after_meal"
+      ],
+      "unit": "beats/min",
+      "points": [
+        {
+          "t_min": 154,
+          "value": 120,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 20,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 155,
+          "value": 150,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 14,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 157,
+          "value": 156,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 159,
+          "value": 161,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 161,
+          "value": 163,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Placebo column",
+        "quote": "End warm-up | 120 ± 20 ; Work interval 1 | 150 ± 14 ; Work interval 2 | 156 ± 13 ; Work interval 3 | 161 ± 13 ; Work interval 4 | 163 ± 12"
+      }
+    },
+    {
+      "id": "placebo_hr_work5_8",
+      "description": "Heart rate at the end of work intervals 5 to 8 (paper: 'HR at the end of each work interval'), placebo",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_hiie_after_meal"
+      ],
+      "unit": "beats/min",
+      "points": [
+        {
+          "t_min": 163,
+          "value": 164,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 166,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 167,
+          "value": 167,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 14,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 169,
+          "value": 168,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Placebo column",
+        "quote": "Work interval 5 | 164 ± 13 ; Work interval 6 | 166 ± 13 ; Work interval 7 | 167 ± 14 ; Work interval 8 | 168 ± 12"
+      }
+    },
+    {
+      "id": "placebo_glucose_session",
+      "description": "Capillary blood glucose (fingertip glucometer, Contour Plus; whole-blood strip meter, not plasma) at three points of the session, placebo (end of warm-up, recovery periods 4 and 8)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_hiie_after_meal"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 154,
+          "value": 4.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.7,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 162,
+          "value": 4.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.6,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 170,
+          "value": 4.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.6,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Placebo column",
+        "quote": "End warm-up | 4.4 ± 0.7 ; Recovery period 4 | 4.2 ± 0.6 ; Recovery period 8 | 4.5 ± 0.6"
+      }
+    },
+    {
+      "id": "placebo_lactate_session",
+      "description": "Capillary blood lactate at three points (end of warm-up, recovery periods 4 and 8) of the session, placebo",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_hiie_after_meal"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 154,
+          "value": 2.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.8,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 162,
+          "value": 5.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 170,
+          "value": 7.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.9,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Placebo column",
+        "quote": "End warm-up | 2.5 ± 0.8 ; Recovery period 4 | 5.7 ± 1.4 ; Recovery period 8 | 7.3 ± 1.9"
+      }
+    },
+    {
+      "id": "placebo_spo2_session",
+      "description": "Fingertip SpO2 at three points (end of warm-up, recovery periods 4 and 8) of the session, placebo",
+      "marker": "spo2",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_hiie_after_meal"
+      ],
+      "unit": "%",
+      "points": [
+        {
+          "t_min": 154,
+          "value": 98.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.6,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 162,
+          "value": 98.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.3,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 170,
+          "value": 97.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Placebo column",
+        "quote": "End warm-up | 98.2 ± 1.6 ; Recovery period 4 | 98.0 ± 1.3 ; Recovery period 8 | 97.8 ± 1.4"
+      }
+    },
+    {
+      "id": "placebo_resting_sbp",
+      "description": "Resting systolic blood pressure on arrival, seated after 15 min rest, fasted, placebo trial",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_arrival_fasted"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 91.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, Placebo column, row 'Resting SBP'",
+        "quote": "Resting SBP | 91 ± 7"
+      }
+    },
+    {
+      "id": "placebo_resting_dbp",
+      "description": "Resting diastolic blood pressure on arrival, seated after 15 min rest, fasted, placebo trial",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_arrival_fasted"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 67.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, Placebo column, row 'Resting DBP'",
+        "quote": "Resting DBP | 67 ± 5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "heart rate, glucose, lactate and SpO2 at the end of the cool-down (Table 2): the paper lists HR recoveries 1 to 7 yet samples 'recovery period 8', so whether the cool-down ends at minute 174 or 175 is not settled; the 'End cool-down' row is not entered",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "heart rate at each recovery period (Table 2): the paper does not say whether it is the end value or a mean of the minute",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "pre-exercise and post-exercise systolic and diastolic blood pressure (Table 2): the minute of measurement is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "mean heart rate during work intervals, recovery periods and overall protocol (Table 3): pooled over intervals and people, df imply per-observation SD",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_over_separate_windows"
+      }
+    },
+    {
+      "what": "rating of perceived exertion (Tables 1 to 3) and emotional arousal / SAM scores (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "preliminary ramp test to exhaustion, baseline and exhaustion HR, glucose, lactate (Table 1): ramp of rising work rate with no fixed level, baseline time not printed",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "single-dose and double-dose beetroot juice arms (6.45 and 12.9 mmol nitrate) in Tables 2 and 3",
+      "missing": {
+        "kind": "input",
+        "name": "nitrate_supplementation"
+      }
+    }
+  ]
+}
