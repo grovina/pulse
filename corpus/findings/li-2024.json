@@ -1,0 +1,497 @@
+{
+  "paper": "li-2024",
+  "citation": {
+    "authors": "Li Y, et al.",
+    "title": "Acute effects of exercise intensity on butyrylcholinesterase and ghrelin in young men: A randomized controlled study",
+    "journal": "Journal of Exercise Science and Fitness",
+    "year": 2024,
+    "doi": "10.1016/j.jesf.2023.11.001",
+    "pmid": "38033619",
+    "pmcid": "PMC10687701"
+  },
+  "population": {
+    "n": 15,
+    "sex": "male",
+    "age_years": {
+      "mean": 22.7,
+      "sd": 1.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.2,
+      "sd": 2.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fifteen healthy young Japanese men (Table 1: age 22.7 +/- 1.8 y, BMI 22.2 +/- 2.6 kg/m2, VO2max 56.3 +/- 4.2 mL/kg/min, mean +/- SD). Exclusion criteria included age <20 or >30 y, medication or supplements, major illness, smoking; these are enrolment limits, so min and max are left null. Ghrelin and BChE were analysed in 12 of them; glucose, insulin, heart rate and RER in all 15."
+  },
+  "protocols": [
+    {
+      "name": "run_low",
+      "description": "Plasma glucose and insulin: venous samples at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00. Arrival 08:45 after a 10-h overnight fast (water only; 200 mL on waking and 50 mL on arrival, then water ad libitum), arm starts at arrival (08:45 = minute 0), so the sample at 09:30 is minute 45 and 12:00 is minute 195. No food during the trial. 60-min treadmill run 09:30-10:30 (minutes 45 to 105) at a speed eliciting 40% of VO2max. Level derived, not printed: from the oxygen uptake measured during the bout, Table 2, 21.5 mL/kg/min (38.4% of VO2max); level = (21.5 - 3.7)/31.7 = 0.562. Convention: the activity segment runs from minute 45 to 106 (the bout is 60 min, 09:30-10:30) so that the 10:30 sample at minute 105 falls with the input on.",
+      "duration_min": 196,
+      "start_hour": 8.75,
+      "prefast_hours": 10,
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 45,
+            "to_min": 106,
+            "level": 0.562
+          }
+        ]
+      },
+      "assumed": [
+        "activity"
+      ]
+    },
+    {
+      "name": "rest_control",
+      "description": "Plasma glucose and insulin: venous samples at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00. Arrival 08:45 after a 10-h overnight fast (water only; 200 mL on waking and 50 mL on arrival, then water ad libitum), arm starts at arrival (08:45 = minute 0), so the sample at 09:30 is minute 45 and 12:00 is minute 195. No food during the trial. Control trial: seated on a chair, 09:30 to 12:00, no exercise.",
+      "duration_min": 196,
+      "start_hour": 8.75,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "insulin_curve_run_low",
+      "description": "Plasma insulin at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, 40% VO2max run, mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "run_low"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 22.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 20.1,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 13.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.3,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 13.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.2,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 19.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.5,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 17.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.3,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 17.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 8.0,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Insulin (pmol/L), row 'Low-intensity exercise', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "Low-intensity exercise | 22.3 ± 20.1 | 13.3 ± 9.3 | 13.3 ± 11.2 | 19.5 ± 13.5 | 17.5 ± 12.3 | 17.4 ± 8.0"
+      }
+    },
+    {
+      "id": "insulin_curve_rest_control",
+      "description": "Plasma insulin at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, seated control, mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "rest_control"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 21.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.1,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 20.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 15.5,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 21.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.2,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 18.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 14.0,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 17.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.8,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 17.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 15.2,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Insulin (pmol/L), row 'Control', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "Control | 21.1 ± 9.1 | 20.1 ± 15.5 | 21.2 ± 16.2 | 18.9 ± 14.0 | 17.6 ± 11.8 | 17.2 ± 15.2"
+      }
+    },
+    {
+      "id": "glucose_curve_run_low",
+      "description": "Plasma glucose at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, 40% VO2max run, mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "run_low"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 5.02,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.34,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 4.88,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.31,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 4.84,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.35,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 4.84,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.37,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 4.82,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.32,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 4.79,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.35,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Glucose (mmol/L), row 'Low-intensity exercise', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "Low-intensity exercise | 5.02 ± 0.34 | 4.88 ± 0.31 | 4.84 ± 0.35 | 4.84 ± 0.37 | 4.82 ± 0.32 | 4.79 ± 0.35"
+      }
+    },
+    {
+      "id": "glucose_curve_rest_control",
+      "description": "Plasma glucose at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, seated control, mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "rest_control"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 4.98,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.32,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 5.01,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.3,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 4.98,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.35,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 4.87,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.32,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 4.91,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.34,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 4.89,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.32,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Glucose (mmol/L), row 'Control', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "Control | 4.98 ± 0.32 | 5.01 ± 0.30 | 4.98 ± 0.35 | 4.87 ± 0.32 | 4.91 ± 0.34 | 4.89 ± 0.32"
+      }
+    },
+    {
+      "id": "hr_bout_run_low",
+      "description": "Heart rate (beats/min), 40% VO2max run, one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_low"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 106,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Heart rate (beats/min)', column Low-intensity exercise",
+        "quote": "Heart rate (beats/min) | 160 ± 17 | 106 ± 13 | 59 ± 20"
+      }
+    },
+    {
+      "id": "hr_bout_rest_control",
+      "description": "Heart rate (beats/min), seated control, one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_control"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 59,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Heart rate (beats/min)', column Control",
+        "quote": "Heart rate (beats/min) | 160 ± 17 | 106 ± 13 | 59 ± 20"
+      }
+    },
+    {
+      "id": "rer_bout_run_low",
+      "description": "Respiratory exchange ratio (entered as the model's respiratory quotient, rq), 40% VO2max run, one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_low"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 0.78,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.03,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Respiratory exchange ratio', column Low-intensity exercise",
+        "quote": "Respiratory exchange ratio | 0.87 ± 0.07 | 0.78 ± 0.03 | 0.80 ± 0.01"
+      }
+    },
+    {
+      "id": "rer_bout_rest_control",
+      "description": "Respiratory exchange ratio (entered as the model's respiratory quotient, rq), seated control, one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_control"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 0.8,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.01,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Respiratory exchange ratio', column Control",
+        "quote": "Respiratory exchange ratio | 0.87 ± 0.07 | 0.78 ± 0.03 | 0.80 ± 0.01"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "acylated and des-acylated ghrelin concentrations and AUC over 0-60 min, and the AG:DAG ratio (baseline in Table 3, curves Figure 4 only, AUC differences in Results); absolute ghrelin levels depend on the assay",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "plasma total PYY at each time (Table 4; baseline in Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "plasma butyrylcholinesterase (Table 3 baseline, Figure 3 curves)",
+      "missing": {
+        "kind": "marker",
+        "name": "butyrylcholinesterase"
+      }
+    },
+    {
+      "what": "gross energy expenditure over the 60-min trial, a total in MJ (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "total_over_own_duration"
+      }
+    },
+    {
+      "what": "oxygen uptake of the seated control over the trial in mL/kg/min (Table 2); the run's own oxygen uptake is the activity input, not a finding",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_body_mass"
+      }
+    },
+    {
+      "what": "fat and carbohydrate oxidation as % of energy expenditure (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_fraction"
+      }
+    },
+    {
+      "what": "subjective appetite visual analogue scales (satiety, fullness, hunger, prospective food intake) and their composite score at 09:30 to 12:00 (Figure 5; AUC differences in Results)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "everything in the 70% VO2max run: Table 4 glucose and insulin curves, Table 2 heart rate and RER, and the 0-60 min insulin AUC difference from control in Results. Measured bout VO2 36.2 mL/kg/min (Table 2) gives level (36.2 - 3.7)/31.7 = 1.025, above the activity scale's maximum of 1; the level is not capped",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    }
+  ]
+}
