@@ -1,0 +1,47 @@
+{
+  "paper": "violi-2015",
+  "citation": {
+    "authors": "Violi F, Loffredo L, Pignatelli P, et al.",
+    "title": "Extra virgin olive oil use is associated with improved post-prandial blood glucose and LDL cholesterol in healthy subjects",
+    "journal": "Nutrition & Diabetes",
+    "year": 2015,
+    "doi": "10.1038/nutd.2015.23",
+    "pmid": "26192450",
+    "pmcid": "PMC4521177"
+  },
+  "reported": [
+    {
+      "what": "glucose, before and 2 h after the lunch with 10 g EVOO vs 10 g corn oil, n=25; the +/- is not labelled in the table",
+      "location": {
+        "where": "Table 2, columns Before | After 2 h",
+        "quote": "Glucose (mg dl−1) | 77.0±7.8 | 98.2±9.1"
+      }
+    },
+    {
+      "what": "insulin, same arms",
+      "location": {
+        "where": "Table 2",
+        "quote": "Insulin (μIU ml−1) | 14.6±5.4 | 47.6±16.6"
+      }
+    },
+    {
+      "what": "GIP and GLP-1, same arms",
+      "location": {
+        "where": "Table 2",
+        "quote": "GLP1 (pmol l−1) | 1.5±0.4 | 10.6±1.2"
+      }
+    },
+    {
+      "what": "the pre-lunch (1300 h) values of the healthy group, same unlabelled +/-; not a fasting sample (the paper does not say what was eaten before)",
+      "location": {
+        "where": "Methods, Subjects and methods",
+        "quote": "a blood sample was taken before (at 1300 hours) and 2 h after the lunch"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unlabelled_uncertainty"
+  },
+  "detail": "The tables print mean±spread with no label, and the Methods contradict each other (\"means±s.d. unless otherwise indicated\" against \"results were expressed as means±s.e.\"), so SD or SEM cannot be told; in addition the lunch's carbohydrate, protein and fat grams are not in the text (only the foods and 894 calories, macros in the Supplementary Data) and the 1300 h pre-lunch sample is not a stated fasting state."
+}
