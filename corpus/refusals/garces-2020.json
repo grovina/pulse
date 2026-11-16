@@ -1,0 +1,33 @@
+{
+ "paper": "garces-2020",
+ "citation": {
+  "authors": "Garces MF, et al.",
+  "title": "Serum angiopoietin-like 3 levels are elevated in obese non diabetic men but are unaffected during an oral glucose tolerance test",
+  "journal": "Scientific Reports",
+  "year": 2020,
+  "doi": "10.1038/s41598-020-77961-8",
+  "pmid": "33273510",
+  "pmcid": "PMC7713064"
+ },
+ "reported": [
+  {
+   "what": "glucose at 0, 30, 60 and 120 min of a 75 g OGTT, lean (n=28) and obese (n=30) men, mean ± SD",
+   "location": {
+    "where": "Table 2, Glucose rows 0-120 min, Obese column",
+    "quote": "Glucose 0 min (mg/dL) | 88.53 ± 11.23 ; 30 min (mg/dL) | 129.43 ± 26.68 ; 60 min (mg/dL) | 116.83 ± 28.83 ; 120 min (mg/dL) | 94.97 ± 24.12"
+   }
+  },
+  {
+   "what": "insulin at 0, 30, 60 and 120 min, same groups",
+   "location": {
+    "where": "Table 2, Insulin rows 0, 60, 120 min, Obese column",
+    "quote": "Insulin 0 min (µUI/mL) | 26.80 ± 11.51 ; 60 min (µUI/mL) | 145.77 ± 74.07 ; 120 min (µUI/mL) | 89.10 ± 68.47"
+   }
+  }
+ ],
+ "missing": {
+  "kind": "population",
+  "name": "shares_people_with_sealed_paper"
+ },
+ "detail": "The obese men are the same 30 as the obese group of sandovalalzate-2016, a sealed paper from the same group and protocol: Table 1 of both prints systolic 129.43 ± 12.12 and diastolic 85.03 ± 10.45 mmHg for them, and the ages and recruitment match; the 28 lean men are very likely drawn from sandovalalzate's 30. Training on these people would show the model the sealed test's own cohort, so the paper waits until the scoreboard can express a held-out cohort shared across papers. Its glucose and insulin rows are mean ± SD (the 30-min insulin SDs look like SEMs) and would otherwise be enterable."
+}
