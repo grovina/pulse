@@ -10,6 +10,7 @@ and says which check failed:
    also a refusal;
 3. it shares no people with a sealed paper (a distinctive ``value +/- spread`` pair
    printed by both, two or more, or a shared trial registration; see ``_people_check``);
+   the same evidence against a paper on the same side of the seal is a warning;
 4. every protocol runs on the **untrained** student;
 5. each finding's predicted statistic moves when the parameters are nudged, the
    protocol rolled from the same start state as training rolls it;
@@ -279,16 +280,22 @@ def _people_check(path: Path, data: dict, paper: str, sealed: bool, root: Path, 
     mine, mine_reg = _pairs(data, text), _registrations(data, text)
     reasons: list[str] = []
     notes: list[str] = []
+    warnings: list[str] = []
     sealed_word = "sealed" if sealed else "training"
     for other, record in _raw_records(root):
         if other.parent.name != "findings" or other.resolve() == path.resolve() or record.get("paper") == paper:
             continue
         slug = str(record.get("paper") or other.stem)
-        if _sealed(slug)[0] == sealed:
-            continue
         shared = sorted(mine & _pairs(record))
         shared_reg = sorted(mine_reg & _registrations(record))
         show = ", ".join(f"{v:g} +/- {s:g}" for v, s in shared)
+        if _sealed(slug)[0] == sealed:
+            # Same side of the seal: nothing leaks, but the same people's numbers would
+            # count twice. Warn; the reader decides which paper keeps which measures.
+            if shared_reg or len(shared) >= _PAIRS_TO_FAIL:
+                what = f"registered as {', '.join(shared_reg)}" if shared_reg else f"{len(shared)} pairs: {show}"
+                warnings.append(f"{slug} may be the same people ({what}): enter each measure of theirs once")
+            continue
         if shared_reg:
             reasons.append(f"{slug} ({'training' if sealed else 'sealed'}) is registered as {', '.join(shared_reg)}, as is this paper")
         if len(shared) >= _PAIRS_TO_FAIL:
@@ -301,8 +308,8 @@ def _people_check(path: Path, data: dict, paper: str, sealed: bool, root: Path, 
             f"file it as a refusal with missing {{\"kind\": \"population\", \"name\": "
             f"\"shares_people_with_sealed_paper\"}} (see refusals/garces-2020.json)",
         )
-    note = ("one pair also in " + "; ".join(notes)) if notes else ""
-    return Check("people", not reasons, tuple(reasons), note=note)
+    said = (["one pair also in " + "; ".join(notes)] if notes else []) + [f"WARNING {w}" for w in warnings]
+    return Check("people", not reasons, tuple(reasons), note="; ".join(said))
 
 
 # --------------------------------------------------------------------------------

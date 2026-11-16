@@ -105,16 +105,23 @@ def test_a_paper_never_matches_itself(root):
     assert _check(root, _record("new-2020", SBP, DBP)).reasons  # but its twin does match
 
 
-def test_a_training_paper_is_not_compared_with_training_papers(root):
+def test_two_training_papers_sharing_people_pass_with_a_warning(root):
     _put(root, _record("train-2016", SBP, DBP))
-    assert _check(root, _record("new-2020", SBP, DBP)).ok
+    check = _check(root, _record("new-2020", SBP, DBP))
+    assert check.ok and "WARNING train-2016 may be the same people" in check.note
+
+
+def test_two_sealed_papers_sharing_people_pass_with_a_warning(root):
+    _put(root, _record("seal-2018", SBP, DBP))
+    check = _check(root, _record("seal-2020", SBP, DBP))
+    assert check.ok and "WARNING seal-2018" in check.note
 
 
 def test_a_new_sealed_paper_is_compared_with_the_training_files(root):
     _put(root, _record("train-2016", SBP, DBP))
     check = _check(root, _record("seal-2020", SBP, DBP))
     assert not check.ok and "train-2016" in " ".join(check.reasons)
-    # and not with the sealed ones
+    # a sealed twin only warns
     _put(root, _record("seal-2018", SBP, DBP))
     assert "seal-2018" not in " ".join(_check(root, _record("seal-2020", SBP, DBP)).reasons)
 

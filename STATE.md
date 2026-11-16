@@ -296,7 +296,11 @@ Not rescored, from the board of 2026-10-29:
   (`pulse.admit`, "shares no people with a sealed paper"): two or more
   distinctive `value ± spread` pairs, or a trial registration, shared between a
   new paper and a paper on the other side of the seal fail it; one shared pair
-  is noted. Run over the 68 findings files on 2026-11-16 it found no match.
+  is noted. The same evidence between two papers on the same side of the
+  seal is a warning: the reader enters each of those people's measures in one
+  paper only (pilis-2025 and stec-2023, one programme's men). Run over the 68
+  findings files and the 68 Python-registry papers on 2026-11-16 it found no
+  match across the seal.
   The table counts the files. Given the paper's full text
   (`admit --paper`), the gate checks that each quote is in it; the full texts
   are not in the repository. Run over the 35 files on 2026-11-11: 267 quotes,

@@ -947,7 +947,11 @@ quotes and descriptions, against the new file's own, plus every `a ± b` or `a (
 the paper's text with `--paper` (so a paper whose findings left out the shared rows is
 still caught). A pair counts only if distinctive: at least 5 significant digits across
 the pair and at least 2 in each (129.43 ± 12.12 counts; 5.0 ± 0.4 and 120 ± 15 never).
-Two shared pairs fail; one is printed as a note. A shared trial registration (NCT, ISRCTN,
+Two shared pairs fail; one is printed as a note. The same evidence against a paper on
+the **same** side of the seal (both train, or both sealed) is a warning, not a failure:
+nothing leaks, but the same people's numbers would count twice, so the reader enters
+each of their measures in one paper only and says which in `left_out` (`population`,
+`same_people_as_other_paper`). A shared trial registration (NCT, ISRCTN,
 ACTRN, DRKS, NTR, ChiCTR, UMIN, CTRI, EudraCT number, found in the committed files'
 text and the paper's) fails too; a reference list that cites a sealed paper's trial can
 therefore trip it, and the reader judges. Authors are not compared: the citation's
