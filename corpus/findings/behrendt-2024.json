@@ -1,0 +1,379 @@
+{
+  "paper": "behrendt-2024",
+  "citation": {
+    "authors": "Behrendt T, et al.",
+    "title": "Effects of intermittent hypoxia-hyperoxia vs hypoxia-normoxia vs sustained normoxia on psycho-physiological responses during submaximal constant-load cycling (normoxia arm entered)",
+    "journal": "PeerJ",
+    "year": 2024,
+    "doi": "10.7717/peerj.18027",
+    "pmid": "39376227",
+    "pmcid": "PMC11457877"
+  },
+  "population": {
+    "n": 15,
+    "sex": "male",
+    "age_years": {
+      "mean": 24.5,
+      "sd": 4.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.4,
+      "sd": 2.3,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Fifteen physically active healthy males aged 20 to 39 years (enrolment range, not observed min/max); body weight 80.3 +/- 9.6 kg; VO2peak 51.4 +/- 6.5 mL/min/kg. Heart-rate findings carry n 14 (Table 3 ANOVA dfs F20,260 and F2,26 imply 14); the paper reports no exclusion."
+  },
+  "protocols": [
+    {
+      "name": "nor_cycling_60pct",
+      "description": "Sustained-normoxia (NOR) trial only: 5-min warm-up at 40% VO2peak (minutes 0-5) and 40 min of cycling at 60% VO2peak, 80 rpm (minutes 5-45), then rest to 10 min after exercise (minute 55); duration 56 minutes (states 0 to 55). The paper says 'thereafter', so the bout is taken to follow the warm-up directly. Group VO2peak 51.4 mL/min/kg (Methods, participants). Bout: 0.60 x 51.4 = 30.84 mL/kg/min; level = (30.84 - 3.7)/31.7 = 0.856. Warm-up: 0.40 x 51.4 = 20.56 mL/kg/min; level = (20.56 - 3.7)/31.7 = 0.532. Last meal at least 2 h before each visit (no composition given; no drink during the bout stated), so no meal is entered and the arm is started from typical values. Time of day only 'a similar time of the day' across trials, so start hour assumed 10.0. Heart-rate period P4..P40 is the 4-min period of the bout that ends at that bout minute (Table 3: 'averaged over every 4-min period during exercise'), so P4 is bout minutes 0-4, i.e. arm minutes 5-9. Post 0 is taken as the first minute after the bout (minute 45) and Post 10 as minute 55.",
+      "duration_min": 56,
+      "start_hour": 10.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 5,
+            "level": 0.532
+          },
+          {
+            "from_min": 5,
+            "to_min": 45,
+            "level": 0.856
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_p4",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 4 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 9
+      },
+      "value": 127.6,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.4,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P4",
+        "quote": "NOR | 127.6# ± 10.4"
+      }
+    },
+    {
+      "id": "hr_p8",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 8 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 9,
+        "end_min": 13
+      },
+      "value": 133.5,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.3,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P8",
+        "quote": "NOR | 133.5# ± 11.3"
+      }
+    },
+    {
+      "id": "hr_p12",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 12 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 13,
+        "end_min": 17
+      },
+      "value": 136.8,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.9,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P12",
+        "quote": "NOR | 136.8# ± 12.9"
+      }
+    },
+    {
+      "id": "hr_p16",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 16 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 17,
+        "end_min": 21
+      },
+      "value": 138.7,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.7,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P16",
+        "quote": "NOR | 138.7# ± 11.7"
+      }
+    },
+    {
+      "id": "hr_p20",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 20 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 21,
+        "end_min": 25
+      },
+      "value": 141.5,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.1,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P20",
+        "quote": "NOR | 141.5# ± 12.1"
+      }
+    },
+    {
+      "id": "hr_p24",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 24 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 25,
+        "end_min": 29
+      },
+      "value": 142.1,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.6,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P24",
+        "quote": "NOR | 142.1# ± 11.6"
+      }
+    },
+    {
+      "id": "hr_p28",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 28 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 33
+      },
+      "value": 144.3,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.3,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P28",
+        "quote": "NOR | 144.3# ± 12.3"
+      }
+    },
+    {
+      "id": "hr_p32",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 32 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 33,
+        "end_min": 37
+      },
+      "value": 145.3,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.6,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P32",
+        "quote": "NOR | 145.3# ± 12.6"
+      }
+    },
+    {
+      "id": "hr_p36",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 36 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 37,
+        "end_min": 41
+      },
+      "value": 147.1,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.0,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P36",
+        "quote": "NOR | 147.1# ± 13.0"
+      }
+    },
+    {
+      "id": "hr_p40",
+      "description": "Heart rate, NOR condition, mean over the 4-min period ending at bout minute 40 (n 14: the ANOVA dfs of Table 3 imply 14 people for heart rate; paper states 15 enrolled)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "window": {
+        "start_min": 41,
+        "end_min": 45
+      },
+      "value": 146.9,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.3,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate [bpm], row NOR, column P40",
+        "quote": "NOR | 146.9# ± 13.3"
+      }
+    },
+    {
+      "id": "lactate_curve",
+      "description": "Capillary earlobe blood lactate, NOR condition, immediately after (Post 0, taken as minute 45, the first minute after the 40-min bout) and 10 min after exercise (Post 10, minute 55); the resting BSL value is not entered",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "unit": "mmol/l",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 0.74,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.37,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 55,
+          "value": 0.43,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.21,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, row NOR, columns Post 0, Post 10",
+        "quote": "NOR | 0.40 ± 0.25 | 0.74 ± 0.37 | 0.43 ± 0.21"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Both intermittent-hypoxia arms (IHHT, IHT) of Tables 3 and 4: heart rate, lactate and SpO2",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "Muscle oxygenation (%dSmO2, %dtHb; Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_oxygenation"
+      }
+    },
+    {
+      "what": "Perceptual ratings, mood, enjoyment, ambient temperature (Tables 1 and 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceptual_ratings"
+      }
+    },
+    {
+      "what": "Mean differences with 95% CI in heart rate versus baseline (supplementary table)",
+      "missing": {
+        "kind": "operator",
+        "name": "post_hoc_mean_difference"
+      }
+    },
+    {
+      "what": "Seated baseline heart rate, NOR (Table 3, BSL, 60 s 'immediately before exercise'): sits at the arm start, and the paper states no run-in or whether it precedes the warm-up",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Resting baseline blood lactate (Table 4, BSL, all arms): food before the visit is not described beyond 'last meal >= 2 h before'",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
