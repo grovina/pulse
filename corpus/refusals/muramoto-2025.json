@@ -1,0 +1,40 @@
+{
+  "paper": "muramoto-2025",
+  "citation": {
+    "authors": "Muramoto Y, et al.",
+    "title": "Effect of single-nanosized oxygen nanobubble water intake on lactate threshold during incremental exercise: a double-blind, randomized, placebo-controlled crossover trial",
+    "journal": "Current Research in Physiology",
+    "year": 2025,
+    "doi": "10.1016/j.crphys.2025.100159",
+    "pmid": "40809390",
+    "pmcid": "PMC12346110"
+  },
+  "reported": [
+    {
+      "what": "heart rate at peak exercise, placebo-water arm, mean (SD), n = 20 (Table 3, column Placebo water)",
+      "location": {
+        "where": "Table 3, Peak, row HR, bpm, placebo column",
+        "quote": "HR, bpm | 156.5 (21.2)"
+      }
+    },
+    {
+      "what": "blood lactate at the end of the incremental test and 2.5 and 5 min after it, placebo-water arm, mean (SD), n = 20 (Table 4, column Placebo water)",
+      "location": {
+        "where": "Table 4, Lactate (mM), placebo column, rows Post, After 2.5 min, After 5 min",
+        "quote": "Post | 6.08 (2.19) ; After 2.5 min | 6.25 (1.87) ; After 5 min | 6.75 (2.08)"
+      }
+    },
+    {
+      "what": "work rate at lactate threshold, placebo-water arm, mean (SD), n = 20 (Table 2)",
+      "location": {
+        "where": "Table 2, Work rate at LT, placebo column",
+        "quote": "Work rate at LT | 68.98 (23.46)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_to_exhaustion_ramp"
+  },
+  "detail": "The only arm the model can run is the placebo-water arm, but its bout is a ramp to symptom-limited exhaustion (20 W warm-up for 120 s, then 10, 15 or 20 W added every 60 s by each participant's fitness, 'approximately 10 min'), whose per-participant step, length and end minute are not printed, so no activity level or fixed post-exercise sampling minute can be written; the resting values (heart rate 70.4 (11.2) bpm, Table 3) were taken after at least 3 h without food of an undescribed last meal, after stretching and warm-up, so they are not a fasting sample either."
+}
