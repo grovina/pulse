@@ -1,0 +1,40 @@
+{
+  "paper": "swain-2026",
+  "citation": {
+    "authors": "Swain P, et al.",
+    "title": "Jumping in simulated lunar gravity with blood flow restriction as a potential exercise countermeasure: The acute physiological effects",
+    "journal": "Experimental Physiology",
+    "year": 2026,
+    "doi": "10.1113/EP093652",
+    "pmid": "42306931",
+    "pmcid": "PMC13394901"
+  },
+  "reported": [
+    {
+      "what": "heart rate, non-BFR visit, final 15-breath average of each of the six 2-min jumping sets and five 1-min rests (n = 11), Table 5",
+      "location": {
+        "where": "Table 5, row 'Non-BFR' under 'HR (b min-1)', columns Set 1 Exercise, Rest, ... Set 6 Exercise",
+        "quote": "Non‐BFR | 96 ± 9 | 71 ± 12 | 96 ± 9 | 74 ± 12 | 97 ± 9 | 74 ± 13 | 98 ± 9 | 75 ± 12 | 100 ± 12 | 77 ± 13 | 101 ± 12"
+      }
+    },
+    {
+      "what": "capillary blood lactate immediately after each of the six non-BFR jumping sets (n = 13), Table 6",
+      "location": {
+        "where": "Table 6, row 'Non-BFR', columns Set 1 to Set 6",
+        "quote": "Non‐BFR | 1.6 ± 0.4 | 1.8 ± 0.4 | 1.7 ± 0.4 | 1.6 ± 0.3 | 1.5 ± 0.5 | 1.5 ± 0.4 | 1.5 ± 0.4"
+      }
+    },
+    {
+      "what": "breathing frequency, non-BFR visit, same layout as heart rate (n = 14), Table 5",
+      "location": {
+        "where": "Table 5, row 'Non-BFR' under 'BF (n min-1)', columns Set 1 Exercise, Rest, ... Set 6 Exercise",
+        "quote": "Non‐BFR | 28 ± 4 | 26 ± 4 | 30 ± 4 | 27 ± 4 | 31 ± 5 | 27 ± 4 | 31 ± 5 | 27 ± 3 | 32 ± 4 | 26 ± 5 | 32 ± 5"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "posture"
+  },
+  "detail": "Every number is taken while the body hangs in a 9.5 degree head-up tilt suspension (nearly horizontal, about 17% of Earth's gravity along the body axis) that the model has no input for; the paper itself notes that body posture changes VO2peak (up to ~20% lower supine) and that exercise intensity was set relative to upright cycling. The load could be written as a measured VO2 on the activity input, but the README says a posture change is an input to refuse, not to approximate with something else. The paper's only other markers are resting heart rate, blood pressure and lactate (Tables 1 and 6), with no stated posture, setting, clock time or fed state, so none could be entered without a meal or a run-in the paper does not give."
+}
