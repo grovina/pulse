@@ -1,0 +1,207 @@
+{
+  "paper": "wiecek-2018",
+  "citation": {
+    "authors": "Wiecek M, et al.",
+    "title": "Acute Anaerobic Exercise Affects the Secretion of Asprosin, Irisin, and Other Cytokines – A Comparison Between Sexes",
+    "journal": "Front Physiol",
+    "year": 2018,
+    "doi": "10.3389/fphys.2018.01782"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "10 healthy non-smoking men and 10 healthy Caucasian women, physically active, medically examined, no chronic disease; age and BMI are printed by sex only (men 21.64 ± 1.22 y, BMI 23.71 ± 1.58; women 22.64 ± 1.49 y, BMI 21.50 ± 1.84), so each is given in its protocol's population and the pooled group is left null."
+  },
+  "protocols": [
+    {
+      "name": "men_fasting",
+      "description": "Men (n = 10): the fasting glucose of the medical examination (Table 1; sample type and method not printed), entered as a 30 min fasted run-in ending at the sample; clock, run-in and fast length not printed (08:00, 30 min and 10 h assumed)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 21.64,
+          "sd": 1.22,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.71,
+          "sd": 1.58,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "women_fasting",
+      "description": "Women (n = 10): the fasting glucose of the medical examination (Table 1; sample type and method not printed), entered as a 30 min fasted run-in ending at the sample; clock, run-in and fast length not printed (08:00, 30 min and 10 h assumed)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 22.64,
+          "sd": 1.49,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.5,
+          "sd": 1.84,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "men_fasting_glucose",
+      "description": "Men: fasting glucose at the medical examination (Table 1, sample type and method not printed; the sprint-day baseline in Table 2 is a different, post-breakfast value)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 74.21,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.73,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose (mg/dL)', column 'Men (n = 10)' (footnote: values are means ± SD)",
+        "quote": "Glucose (mg/dL) | 74.21 ± 6.73 | 79.92 ± 9.27 | 0.133"
+      }
+    },
+    {
+      "id": "women_fasting_glucose",
+      "description": "Women: fasting glucose at the medical examination (Table 1, sample type and method not printed; the sprint-day baseline in Table 2 is a different, post-breakfast value)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 79.92,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.27,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose (mg/dL)', column 'Women (n = 10)' (footnote: values are means ± SD)",
+        "quote": "Glucose (mg/dL) | 74.21 ± 6.73 | 79.92 ± 9.27 | 0.133"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and lactate at 0, 3, 15, 30, 60 min and 24 h around a single 20 s cycle sprint, men and women (Table 2): sprint 9-11 a.m., 2 h after a light breakfast whose content is not printed (the 0 min baseline is post-breakfast, not fasting); sprint intensity given only as mean power in W/kg",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "leptin (ng/mL) before and after the sprint, men and women (Table 3): same undescribed light breakfast",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "asprosin (nmol/L) around the sprint, men and women (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "asprosin"
+      }
+    },
+    {
+      "what": "irisin (ug/mL) around the sprint, men and women (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "irisin"
+      }
+    },
+    {
+      "what": "adiponectin (ug/mL) around the sprint, men and women (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "IL-6 (pg/mL) around the sprint, men and women (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_6"
+      }
+    },
+    {
+      "what": "IL-1beta (pg/mL) around the sprint, men and women (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_1beta"
+      }
+    },
+    {
+      "what": "IL-10 (pg/mL) around the sprint, men and women (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_10"
+      }
+    },
+    {
+      "what": "fasting total cholesterol, HDL, LDL (mg/dL) of the medical examination, men and women (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "fasting triglycerides (mg/dL) of the medical examination, men and women (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "HbA1c (%) of the medical examination, men and women (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    }
+  ]
+}
