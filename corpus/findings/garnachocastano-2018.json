@@ -30,8 +30,8 @@
   "protocols": [
     {
       "name": "placebo_vt1_vt2_cycling",
-      "description": "Placebo session: 70 mL placebo drink (1 g powdered beetroot juice in 1 L mineral water plus lemon juice; carbohydrate content not printed, so no meal entered) 3 h before the test, no food or fluid but water in those 3 h; subjects rested. Minute 0 here is the start of the constant-load cycling after the 5-min light warm-up (warm-up load self-selected, not printed, left out): 30 min at the VT1 workload (minutes 0 to 30). Food before the visit is not printed beyond the 48 h diet (~60% carbohydrate, 5.5 g/kg) and the 3 h of water only, so no fast is assumed: init norm_center, no prefast_hours, no meal. Duration 30 min is the printed VT1 stage ('30 min'); the VT2 time trial that follows without rest is not in this arm. Activity levels derived from Table 3 'VO2 (%)' placebo rows (percent of VO2max) times the group VO2max 54.8 mL/kg/min (Table 2): VT1 stage 60.5% x 54.8 = 33.154 mL/kg/min, level (33.154 - 3.7)/31.7 = 0.9291; the VT2 stage is not entered (level above 1).",
-      "duration_min": 30,
+      "description": "Placebo session: 70 mL placebo drink (1 g powdered beetroot juice in 1 L mineral water plus lemon juice; carbohydrate content not printed, so no meal entered) 3 h before the test, no food or fluid but water in those 3 h; subjects rested. Minute 0 here is the start of the constant-load cycling after the 5-min light warm-up (warm-up load self-selected, not printed, left out): 30 min at the VT1 workload (minutes 0 to 30). Food before the visit is not printed beyond the 48 h diet (~60% carbohydrate, 5.5 g/kg) and the 3 h of water only, so no fast is assumed: init norm_center, no prefast_hours, no meal. Duration 45 min: the printed VT1 stage ('30 min') followed without rest by the VT2 stage, a constant workload at the VT2 power (the paper's 'VT2 time trial', ~15 min; the load is fixed from the ramp test, not self-paced). The stage length is each athlete's own time to exhaustion, so the stage end is a group mean: the placebo mean is 14 min 42 s (printed in the Results, Fig. 1d), rounded to 15 whole minutes, so minutes 30 to 45. Activity levels derived from Table 3 'VO2 (%)' placebo rows (percent of VO2max) times the group VO2max 54.8 mL/kg/min (Table 2): VT1 stage 60.5% x 54.8 = 33.154 mL/kg/min, level (33.154 - 3.7)/31.7 = 0.9291; VT2 stage 83.9% x 54.8 = 45.977 mL/kg/min, level (45.977 - 3.7)/31.7 = 1.3337 (placebo Table 3 'VO2 (%)' VT2 cell, 83.9 (8.3)). Level above 1.0: the model extrapolates here.",
+      "duration_min": 45,
       "start_hour": 10.0,
       "meals": [],
       "init": "norm_center",
@@ -41,6 +41,11 @@
             "from_min": 0,
             "to_min": 30,
             "level": 0.9291
+          },
+          {
+            "from_min": 30,
+            "to_min": 45,
+            "level": 1.3337
           }
         ]
       },
@@ -73,6 +78,30 @@
       },
       "location": {
         "where": "Table 3, VCO2 (L·min−1), PL row, VT1 column",
+        "quote": "PL | 2.4 (0.5) | 3.5 (0.5) | 2.9 (0.4)"
+      }
+    },
+    {
+      "id": "pl_vco2_vt2",
+      "description": "CO2 output during the VT2 constant-load stage (placebo). As for VT1, Table 3 does not say whether the value is the stage mean or an end value; entered as the stage mean. The window is the group-mean stage (minutes 30 to 45); each athlete's own stage ended at his exhaustion. Level above 1.0: the model extrapolates here",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_vt1_vt2_cycling"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 45
+      },
+      "value": 3.5,
+      "unit": "L/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, VCO2 (L·min−1), PL row, VT2 column",
         "quote": "PL | 2.4 (0.5) | 3.5 (0.5) | 2.9 (0.4)"
       }
     }
@@ -121,7 +150,7 @@
       }
     },
     {
-      "what": "Total (VT1 + VT2) column of Table 3 (not a window of the arm; RER 1.0 (0.0) has a zero SD) and the placebo VT2 time-trial duration 14 min 42 s (no uncertainty)",
+      "what": "Total (VT1 + VT2) column of Table 3 (not a window of the arm; RER 1.0 (0.0) has a zero SD)",
       "missing": {
         "kind": "source",
         "name": "uncertainty_not_printed"
@@ -142,10 +171,10 @@
       }
     },
     {
-      "what": "VT2 time-trial stage VCO2 and RER (Table 3): the stage's activity level (VO2 83.9% of VO2max, level 1.33) is above the model's 0 to 1",
+      "what": "RER at the VT2 stage, placebo (Table 3, 1.1 (0.1)): VT2 stage is now entered at level 1.33 (VCO2 only); RER is left out because the fed state is not printed",
       "missing": {
-        "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "kind": "source",
+        "name": "input_not_printed"
       }
     }
   ]
