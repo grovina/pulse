@@ -1,0 +1,33 @@
+{
+  "paper": "santos-2024",
+  "citation": {
+    "authors": "Santos PMC, et al.",
+    "title": "Acute effects of elbow flexion and knee extension exercises on vascular and hemodynamic parameters and arterial stiffness indices in healthy young adults",
+    "journal": "BMC Sports Science, Medicine and Rehabilitation",
+    "year": 2024,
+    "doi": "10.1186/s13102-024-00977-4",
+    "pmid": "39289719",
+    "pmcid": "PMC11406758"
+  },
+  "reported": [
+    {
+      "what": "peripheral systolic blood pressure at baseline, T0 (immediately after) and T15 for elbow flexion and knee extension at 50% of 1RM, mean ± SD, n = 35 young men (Table 1); the bout is set by percent of a one-repetition maximum in kg, with no oxygen uptake or watts printed",
+      "location": {
+        "where": "Table 1, row pSBP, columns EFlex and KExt",
+        "quote": "Baseline | 119.44 ± 10.19 | 120.40 ± 9.14"
+      }
+    },
+    {
+      "what": "heart rate at baseline, T0 and T15 for the same two bouts, mean ± SD (Table 2); baseline is a seated value taken before the exercise with no stated rest or run-in duration, and no fasting or meal is described (morning visit, no caffeine, excess fat or alcohol)",
+      "location": {
+        "where": "Table 2, row Heart rate, columns EFlex and KExt",
+        "quote": "Baseline | 78.00 ± 10.04 | 77.28 ± 9.89"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The only intervention is a resistance bout at 50% of 1RM (3 sets to fatigue), whose oxygen uptake or watts the paper never prints, so no activity level can be given; the pre-exercise baselines have no printed run-in and no stated fast or meal (a morning visit with only caffeine, fat and alcohol avoided), and the model markers are limited to heart rate and blood pressure."
+}
