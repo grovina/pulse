@@ -1,0 +1,33 @@
+{
+  "paper": "chen-2023",
+  "citation": {
+    "authors": "Chen YC, et al.",
+    "title": "Effects of acute combined exercise on cognitive function in sedentary men (Stroop Color and Word Test after combined, resistance and sitting sessions)",
+    "journal": "PeerJ",
+    "year": 2023,
+    "doi": "10.7717/peerj.15768",
+    "pmid": "37637165",
+    "pmcid": "PMC10448877"
+  },
+  "reported": [
+    {
+      "what": "sitting control session blood lactate, pre-session and approximately 20 min after initiation, mean (SD), n=15 men; no food before the visit is stated, so a resting lactate has no meal or fast to be entered under",
+      "location": {
+        "where": "Table 3, SC rows 'Pre exercise' and 'During exercise', Lactate (mmol/L) column",
+        "quote": "Pre exercise | 1.40 (0.62) | 70.53 (11.03) | 6.27 (0.59) ; During exercise | 1.43 (0.51) | 70.16 (8.55) | 6.27 (0.46)"
+      }
+    },
+    {
+      "what": "sitting control session heart rate pre-session, during and post-session, mean (SD), n=15; HR was recorded continually but the pre value has no stated run-in and the during/post values have no stated window",
+      "location": {
+        "where": "Table 3, SC rows, Heart Rate (bpm) column",
+        "quote": "Post-exercise | 1.25 (0.33) | 68.67 (10.40) | 6.33 (0.49)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The only enterable-looking numbers are the sitting-control lactate (pre and about 20 min) and heart rate of 15 men. The paper says nothing about food before the sessions (only 8 am to 12 pm, no caffeine, alcohol, ergogenic aids or strenuous exercise for 24 h), so the fed state is unknown and resting lactate cannot be entered as fasted or as fed; the model could not be told which. Resting heart rate is meal-independent but the pre value sits at the arm start with no printed run-in (the 5 min seated rest in the Methods belongs to the ergometer set-up, not to the sessions), and the during/post values carry no printed minute or averaging window. The exercise sessions have no whole-body intensity for the upper-body resistance part and no printed minute for post-session samples."
+}
