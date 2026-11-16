@@ -28,8 +28,8 @@
   "protocols": [
     {
       "name": "placebo_bruce",
-      "description": "Placebo arm of a crossover: after an overnight fast (10-12 h) a calorie- and volume-matched fat-based placebo drink at minute 0 (4 g carbohydrate, 50 g fat, 4 g protein as printed for 'the placebo product', whey protein concentrate and canola oil; the paper says nothing of two placebo servings, while two BO-BD servings made the 50 g dose, so these grams are taken as the whole drink); 120 min of rest; then a Bruce-protocol treadmill test begins at minute 120, 3-min stages. Activity from the placebo's measured peak VO2 in each stage (Table 2, PL, L/min), divided by the body weight 76.4 kg (Table 1, 'Test visit 1'; the paper does not say which visit was the placebo visit, visit 2 is 76.5 kg): stage 1 (minutes 120-123) 1.36 L/min = 1360/76.4 = 17.80 mL/kg/min, level (17.80 - 3.7)/31.7 = 0.4448; stage 2 (minutes 123-126) 1.93 L/min = 1930/76.4 = 25.26 mL/kg/min, level (25.26 - 3.7)/31.7 = 0.6802. Stage 3 (2.87 L/min = 37.57 mL/kg/min, level 1.068) lies above the activity scale and the arm ends at minute 126 before it. The Table 2 stage VO2 is the peak rate in each stage (Methods) and Figure 7a shows it for n = 10, not 11. The stage VO2 values are therefore an input here and are not entered as findings.",
-      "duration_min": 126,
+      "description": "Placebo arm of a crossover: after an overnight fast (10-12 h) a calorie- and volume-matched fat-based placebo drink at minute 0 (4 g carbohydrate, 50 g fat, 4 g protein as printed for 'the placebo product', whey protein concentrate and canola oil; the paper says nothing of two placebo servings, while two BO-BD servings made the 50 g dose, so these grams are taken as the whole drink); 120 min of rest; then a Bruce-protocol treadmill test begins at minute 120, 3-min stages. Activity from the placebo's measured peak VO2 in each stage (Table 2, PL, L/min), divided by the body weight 76.4 kg (Table 1, 'Test visit 1'; the paper does not say which visit was the placebo visit, visit 2 is 76.5 kg): stage 1 (minutes 120-123) 1.36 L/min = 1360/76.4 = 17.80 mL/kg/min, level (17.80 - 3.7)/31.7 = 0.4448; stage 2 (minutes 123-126) 1.93 L/min = 1930/76.4 = 25.26 mL/kg/min, level (25.26 - 3.7)/31.7 = 0.6802. Stage 3 (minutes 126-129): 2.87 L/min = 2870/76.4 = 37.57 mL/kg/min, level (37.57 - 3.7)/31.7 = 1.0683; level above 1.0: the model extrapolates here. The arm ends at minute 129, after stage 3; stages beyond it run to each person's exhaustion and are not entered. All participants completed at least the first three stages (Results 3.3). The Table 2 stage VO2 is the peak rate in each stage (Methods) and Figure 7a shows it for n = 10, not 11. The stage VO2 values are therefore an input here and are not entered as findings.",
+      "duration_min": 129,
       "start_hour": 8.0,
       "prefast_hours": 10,
       "meals": [
@@ -54,6 +54,11 @@
             "from_min": 123,
             "to_min": 126,
             "level": 0.6802
+          },
+          {
+            "from_min": 126,
+            "to_min": 129,
+            "level": 1.0683
           }
         ]
       },
@@ -135,6 +140,30 @@
       "location": {
         "where": "Table 2, PL row, column 'Stage 2'",
         "quote": "Heart Rate (bpm) | PL | 132.8 ± 20.6"
+      }
+    },
+    {
+      "id": "pl_hr_bruce_stage3",
+      "description": "Heart rate in Bruce stage 3 (minutes 126-129; level 1.068, above 1.0: the model extrapolates)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 126,
+        "end_min": 129
+      },
+      "value": 160.3,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15.1,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 3'",
+        "quote": "Heart Rate (bpm) | PL | 160.3 ± 15.1"
       }
     },
     {
@@ -232,14 +261,38 @@
         "where": "Table 2, PL row, column 'Stage 2'",
         "quote": "RR (breaths/min) | PL | 21.5 ± 3.0"
       }
+    },
+    {
+      "id": "pl_rr_bruce_stage3",
+      "description": "Respiratory rate averaged over the 3 min of Bruce stage 3 (minutes 126-129; level 1.068, above 1.0: the model extrapolates)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 126,
+        "end_min": 129
+      },
+      "value": 26.5,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.7,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 3'",
+        "quote": "RR (breaths/min) | PL | 26.5 ± 4.7"
+      }
     }
   ],
   "left_out": [
     {
-      "what": "Heart rate and respiratory rate in Bruce stage 3 and at maximal exercise, and the maximal oxygen uptake (Table 2, PL); stage 3 (level 1.068) and the later stages are above the activity scale, and the stage 4 oxygen uptake is not printed",
+      "what": "Heart rate and respiratory rate at maximal exercise, and the maximal oxygen uptake (Table 2, PL, 'Exercise max'); the stages beyond stage 3 run to each person's exhaustion and stay out, and the stage 4 oxygen uptake is not printed",
       "missing": {
         "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "name": "exercise_to_exhaustion_ramp"
       }
     },
     {
