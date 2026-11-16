@@ -1,0 +1,160 @@
+{
+  "paper": "garciasuarez-2020",
+  "citation": {
+    "authors": "García-Suárez PC, Rentería I, Moncada-Jiménez J, Fry AC, Jiménez-Maldonado A",
+    "title": "Acute Systemic Response Of BDNF, Lactate and Cortisol to Strenuous Exercise Modalities in Healthy Untrained Women",
+    "journal": "Dose-Response",
+    "year": 2020,
+    "doi": "10.1177/1559325820970818",
+    "pmid": "33354170",
+    "pmcid": "PMC7734519"
+  },
+  "population": {
+    "n": 17,
+    "sex": "female",
+    "age_years": {
+      "mean": 20.0,
+      "sd": 0.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.0,
+      "sd": 2.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Seventeen physically active healthy female undergraduates (Table 1: age 20.0 +/- 0.9 yr, BMI 23.0 +/- 2.6 kg/m2, weight 58.1 +/- 8.0 kg, predicted VO2max 38.1 +/- 5.6 mL/kg/min, MAP 183.5 +/- 29.4 W); free of cardiac or respiratory problems; menstrual cycle phase varied between follicular and luteal. The paper calls them healthy; no glucose test."
+  },
+  "protocols": [
+    {
+      "name": "rest_before_gxt",
+      "description": "Seated rest before the graded cycle test, 11:00-13:00 (clock hour assumed). Minute 0 is the baseline antecubital blood draw (immediately after the body-composition assessment); resting blood pressure was recorded 5 min after it (minute 5). The paper says nothing of food before the visit except 'refrain from eating or drinking 2-h before' the body-composition test, with no contents: fed state unknown, so the arm starts from typical values with no meal. No exercise is entered.",
+      "duration_min": 10,
+      "start_hour": 12.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "start_hour",
+        "init",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "gxt_rest_sbp",
+      "description": "Resting systolic blood pressure before the GXT, 5 min after the baseline blood draw (minute 5, window one minute); fed state before the visit not described (mean of the GXT visit, n = 17, as printed)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_before_gxt"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 6
+      },
+      "value": 119.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 19.9,
+        "n": 17
+      },
+      "location": {
+        "where": "Results, first paragraph (baseline, GXT trial)",
+        "quote": "Mean baseline SBP (GXT = 119.9 ± 19.9 mmHg vs. HIIT = 116.6 ± 10.5 mmHg"
+      }
+    },
+    {
+      "id": "gxt_rest_dbp",
+      "description": "Resting diastolic blood pressure before the GXT, 5 min after the baseline blood draw (minute 5, window one minute); fed state before the visit not described (mean of the GXT visit, n = 17, as printed)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_before_gxt"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 6
+      },
+      "value": 73.6,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.6,
+        "n": 17
+      },
+      "location": {
+        "where": "Results, first paragraph (baseline, GXT trial)",
+        "quote": "DBP (GXT = 73.6 ± 8.6 mmHg vs. HIIT = 74.5 ± 9.3 mmHg"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Blood lactate before and after the GXT (Results: pre 1.8 +/- 0.9, post 12.6 +/- 3.1 mMol/l, finger capillary, 'final stage's immediate' value): the test ran 'until participants reached volitional exhaustion', so each rider ended at her own stage (MAP 183.5 +/- 29.4 W, Table 1) and the exercise cannot be written as one schedule; and 'two participants were considered outlier and were excluded from the analysis for BLa', a group chosen by the lactate itself (n = 15 is my arithmetic)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Resting lactate before the GXT (1.8 +/- 0.9) and before the HIIT (1.8 +/- 1.0 mMol/l): the state before the visit is not described (no fast stated, no meal contents), and the same two outliers were excluded",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "HIIT session (30-s bouts at 90% MAP with 90-120 s active recovery at 40% MAP; warm-up length and number of bouts not printed, so the schedule cannot be written; each rider's MAP differs) and its post-session lactate 16.3 +/- 2.8 mMol/l, baseline SBP 116.6 +/- 10.5 and DBP 74.5 +/- 9.3 mmHg (the same people, a second visit), distance and work",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Serum cortisol pre 13.2 +/- 1.2 and post 19.1 +/- 0.9 ug/dl, and heart rate pre 79.4 +/- 2.4, immediately post 190.5 +/- 1.6, 60-s recovery 165.3 +/- 2.0 bpm (Results): printed 'regardless of the trial', pooled over the GXT and HIIT sessions, not for the GXT alone",
+      "missing": {
+        "kind": "operator",
+        "name": "pooled_over_arms"
+      }
+    },
+    {
+      "what": "Per-trial cortisol, BDNF and cortisol:BDNF means and SDs (Supplemental Table 2, not in the full text)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Serum BDNF (pre/post, d effect sizes in text)",
+      "missing": {
+        "kind": "marker",
+        "name": "bdnf"
+      }
+    },
+    {
+      "what": "Cortisol:BDNF ratio",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Rating of perceived exertion, total distance and work, peak HR by trial (RPE, GXT 15.8 +/- 2.3; distance, kJ)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "Predicted VO2max from an indirect method (Table 1), MAP and body composition: descriptive, used only for population",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
