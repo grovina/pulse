@@ -1,0 +1,33 @@
+{
+  "paper": "roberts-2023",
+  "citation": {
+    "authors": "Roberts JD, Lillis JB, Pinto JM, Chichger H, López-Samanes Á, Del Coso J, Zacca R, Willmott AGB",
+    "title": "The Effect of a Hydroxytyrosol-Rich, Olive-Derived Phytocomplex on Aerobic Exercise and Acute Recovery",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15020421",
+    "pmid": "36678293",
+    "pmcid": "PMC9864860"
+  },
+  "reported": [
+    {
+      "what": "oxygen uptake of the 65 min treadmill session at visit 2 (pre-intervention) and 4, mL/kg/min, by group (Table 4); the pre-intervention values (36.6 OliP, 37.7 PL) give a level (V-3.7)/31.7 of 1.04 and 1.07, above the activity scale's maximum of 1, and the same holds for 76.6% x 48.3 and 75.0% x 51.0 mL/kg/min",
+      "location": {
+        "where": "Table 4, row V̇O2 (mL·kg−1·min−1), OliP Pre / PL Pre",
+        "quote": "36.6 ± 1.5"
+      }
+    },
+    {
+      "what": "RER, V̇CO2 and blood lactate during the same session (Table 4), not stated over which minutes; the lactate row repeats the LT1 row of Table 5A to the digit",
+      "location": {
+        "where": "Table 4, row RER",
+        "quote": "0.92 ± 0.01"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_above_activity_scale"
+  },
+  "detail": "Every printed value of the bout needs the session itself as an activity input, and its measured oxygen uptake (36.6 and 37.7 mL/kg/min, pre-intervention) lies above the 0 to 1 activity scale; no fasting or resting value of the group is printed (Table 1 has only characteristics, resting lactate and glucose are measured but not reported)."
+}
