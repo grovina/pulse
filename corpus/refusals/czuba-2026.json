@@ -1,0 +1,40 @@
+{
+  "paper": "czuba-2026",
+  "citation": {
+    "authors": "Czuba M, et al.",
+    "title": "Cardiac biomarker kinetics after exercise to exhaustion in normoxia and normobaric hypoxia in trained and untrained men",
+    "journal": "International Journal of Molecular Sciences",
+    "year": 2026,
+    "doi": "10.3390/ijms27125234",
+    "pmid": "42352960",
+    "pmcid": "PMC13300654"
+  },
+  "reported": [
+    {
+      "what": "Normoxia arm: graded cycle test to exhaustion (90 W, +30 W every 3 min), 10 min active rest, then a constant-workload test at the lactate-threshold workload to exhaustion; the workload in watts, the VO2 of the constant test and the durations of the tests are not printed (only the group VO2max, 64.2 and 44.1 mL/kg/min, and a total work of both tests in kJ)",
+      "location": {
+        "where": "Methods 4.3 Testing Protocol",
+        "quote": "Exercise began at a workload of 90 W, with increments of 30 W every three minutes until volitional exhaustion."
+      }
+    },
+    {
+      "what": "Heart rate at the end of exercise to exhaustion in normoxia, trained and untrained men (mean ± SD, n=12 each)",
+      "location": {
+        "where": "Table 3, row HRend, Normoxia column",
+        "quote": "HRend (bpm) | UT | 172.4 ± 8.7"
+      }
+    },
+    {
+      "what": "Change in blood lactate in response to the exercise in normoxia, trained and untrained men (mean ± SD, n=12 each)",
+      "location": {
+        "where": "Table 3, row ∆LA, Normoxia column",
+        "quote": "∆LA (mmol/L) | UT | 6.52 ± 1.90"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The bout that the post-exercise numbers follow is set at the group's lactate-threshold workload, which the paper does not print in watts or as oxygen uptake, so no activity level can be derived; the other numbers (cardiac biomarkers at rest, 2 h after a light meal and after 20 min in the chamber) are for markers the model does not carry, and the paper prints no resting heart rate, lactate or other model-marker values."
+}
