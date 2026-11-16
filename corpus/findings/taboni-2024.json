@@ -1,0 +1,319 @@
+{
+  "paper": "taboni-2024",
+  "citation": {
+    "authors": "Taboni A, Fagoni N, Fontolliet T, Vinetti G, Ferretti G",
+    "title": "Baroreflex dynamics during the rest to exercise transient in acute normobaric hypoxia in humans",
+    "journal": "European Journal of Applied Physiology",
+    "year": 2024,
+    "doi": "10.1007/s00421-024-05485-4",
+    "pmid": "38656378",
+    "pmcid": "PMC11365845"
+  },
+  "population": {
+    "n": 10,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 32.0,
+      "sd": 6.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Ten healthy, moderately active subjects (9 males, 1 female); age 32 +/- 6 years, height 176 +/- 9 cm, body mass 71 +/- 13 kg (BMI not printed); maximal aerobic capacity on the cycle ergometer 276 +/- 67 W. No history of cardiovascular, pulmonary or neurological disease, no medication; no coffee or smoking for 24 h."
+  },
+  "protocols": [
+    {
+      "name": "normoxia_rest_50w",
+      "description": "Normoxia (ambient air) arm: seated rest on the cycle ergometer, taken as 10 min (paper: at least 10 min, the last 5 min recorded; minutes 0 to 10), then a square-wave 50 W bout of 10 min (minutes 10 to 20; the paper's first exercise bout, steady state computed on its last 5 min). Visit at least 2 h after a light meal with no contents given, so no fast and no meal are assumed: arm starts from typical values (norm_center) with no meal. Intensity: no VO2 printed, cycle watts only, level = 50 / 186 = 0.2688.",
+      "duration_min": 20,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 10,
+            "to_min": 20,
+            "level": 0.2688
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_rest",
+      "description": "Heart rate, normoxia, steady state at rest (last 5 min of the first resting period, minutes 5 to 10 of the arm)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 77,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'HR', column Normoxia Rest, mean +/- SD",
+        "quote": "HR | 77 ± 9 | 94 ± 8"
+      }
+    },
+    {
+      "id": "hr_50w",
+      "description": "Heart rate, normoxia, steady state at 50 W (last 5 min of the 10 min bout, minutes 15 to 20 of the arm)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 20
+      },
+      "value": 94,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'HR', column Normoxia 50 W, mean +/- SD",
+        "quote": "HR | 77 ± 9 | 94 ± 8"
+      }
+    },
+    {
+      "id": "sbp_rest",
+      "description": "Systolic arterial pressure (finger photo-plethysmography), normoxia, steady state at rest (last 5 min of the first resting period, minutes 5 to 10 of the arm)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 120,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'SAP (mmHg)', column Normoxia Rest, mean +/- SD",
+        "quote": "SAP (mmHg) | 120 ± 9 | 145 ± 12"
+      }
+    },
+    {
+      "id": "sbp_50w",
+      "description": "Systolic arterial pressure, normoxia, steady state at 50 W (last 5 min of the 10 min bout, minutes 15 to 20 of the arm)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 20
+      },
+      "value": 145,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'SAP (mmHg)', column Normoxia 50 W, mean +/- SD",
+        "quote": "SAP (mmHg) | 120 ± 9 | 145 ± 12"
+      }
+    },
+    {
+      "id": "dbp_rest",
+      "description": "Diastolic arterial pressure, normoxia, steady state at rest (last 5 min of the first resting period, minutes 5 to 10 of the arm)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 68,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'DAP (mmHg)', column Normoxia Rest, mean +/- SD",
+        "quote": "DAP (mmHg) | 68 ± 13 | 68 ± 10"
+      }
+    },
+    {
+      "id": "dbp_50w",
+      "description": "Diastolic arterial pressure, normoxia, steady state at 50 W (last 5 min of the 10 min bout, minutes 15 to 20 of the arm)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 20
+      },
+      "value": 68,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'DAP (mmHg)', column Normoxia 50 W, mean +/- SD",
+        "quote": "DAP (mmHg) | 68 ± 13 | 68 ± 10"
+      }
+    },
+    {
+      "id": "spo2_rest",
+      "description": "Peripheral oxygen saturation, normoxia, steady state at rest (last 5 min of the first resting period, minutes 5 to 10 of the arm)",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 96,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'SpO 2 (%)', column Normoxia Rest, mean +/- SD",
+        "quote": "SpO | 96 ± 4 | 97 ± 1"
+      }
+    },
+    {
+      "id": "spo2_50w",
+      "description": "Peripheral oxygen saturation, normoxia, steady state at 50 W (last 5 min of the 10 min bout, minutes 15 to 20 of the arm)",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 20
+      },
+      "value": 97,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'SpO 2 (%)', column Normoxia 50 W, mean +/- SD",
+        "quote": "SpO | 96 ± 4 | 97 ± 1"
+      }
+    },
+    {
+      "id": "lactate_50w",
+      "description": "Capillary blood lactate (earlobe), normoxia, sample taken at the 9th minute of the 10 min first 50 W bout (minute 19 of the arm; one-minute window 19 to 20)",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "normoxia_rest_50w"
+      ],
+      "window": {
+        "start_min": 19,
+        "end_min": 20
+      },
+      "value": 1.29,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.75,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row '[La] (mmol l −1 )', column Normoxia 50 W, mean +/- SD",
+        "quote": "[La] | 1.26 ± 0.33 | 1.29 ± 0.75"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "All hypoxic (FiO2 0.11) columns of Table 1 and Table 2 (HR, SAP, DAP, MAP, SpO2, lactate and the rest), and the normoxia-vs-hypoxia contrasts",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "Resting blood lactate, normoxia (Table 1, 1.26 +/- 0.33 mmol/L): depends on the unstated meal before the visit (last meal 'at least 2 h' before, light, no contents)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Mean arterial pressure at rest and 50 W (Table 1) and the minimum MAP after exercise onset, 73 +/- 11 mmHg at 8.1 +/- 1.8 s (Results text)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "Stroke volume, cardiac output, total peripheral resistance at rest and 50 W (Table 1); CO and HR kinetics fit parameters (Table 2: baseline, amplitudes, time constants, delay)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Baroreflex sensitivity at rest, 50 W and during the transient (Table 1, Fig. 3, abstract)",
+      "missing": {
+        "kind": "marker",
+        "name": "baroreflex_sensitivity"
+      }
+    },
+    {
+      "what": "Capillary pO2, pCO2, pH and bicarbonate at rest and 50 W (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_acid_base"
+      }
+    },
+    {
+      "what": "Beat-by-beat time courses of HR, CO, SV, MAP, TPR, SpO2 in the transient (Fig. 1) and sub-minute kinetics (Table 2, time constants of seconds)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
