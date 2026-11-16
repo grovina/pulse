@@ -1,0 +1,239 @@
+{
+  "paper": "ozcan-2026",
+  "citation": {
+    "authors": "Özcan FÖ, Okudu C, Odabaş Hİ, Turan İT",
+    "title": "Acute effects of arabica and chicory coffee on exercise performance and post‐exercise biomarkers in young male adults: A controlled crossover study",
+    "journal": "Physiological Reports",
+    "year": 2026,
+    "doi": "10.14814/phy2.71200",
+    "pmid": "43000955",
+    "pmcid": "PMC13745994"
+  },
+  "population": {
+    "n": 22,
+    "sex": "male",
+    "age_years": {
+      "mean": 21.34,
+      "sd": 1.98,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.8,
+      "sd": 3.08,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty-two moderately active young men aged 18-25 years (enrolment range, not observed min/max) who completed all sessions; screened with the PAR-Q+ for exercise contraindications (cardiovascular disease, chest pain, syncope, musculoskeletal condition, type 2 diabetes with hypoglycaemia history, others excluded); called healthy in the paper's abstract and conclusions. Age and BMI are mean ± SD at the reference assessment (Results 3.1)."
+  },
+  "protocols": [
+    {
+      "name": "control_fasted",
+      "description": "No-coffee reference session (always the first session): participants attended each test after at least 8 h of fasting (a lower bound; 10 h is assumed), nothing drunk, with pre-exercise measurements taken before the 20-m shuttle-run test, which began at approximately 10:00. Only the pre-exercise values are entered; the paper does not say when in the morning, how long before the run, or after what rest they were taken, so a 31-minute fasted arm starting 09:30 and read at minute 30 (about 10:00) stands for them. No exercise input is written.",
+      "duration_min": 31,
+      "start_hour": 9.5,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_pre_glucose",
+      "description": "Capillary blood glucose (meter not named; capillary whole-blood reading, not plasma) before exercise, no-coffee reference session, mean and SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 99.55,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.79,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, row 'Blood glucose (mg/dL)', condition C, column 'Pre-exercise (mean ± SD)' (Table 1 prints 99.6 ± 8.8)",
+        "quote": "Blood glucose (mg/dL) | C | 99.55 ± 8.79"
+      }
+    },
+    {
+      "id": "control_pre_hr",
+      "description": "Heart rate before exercise, no-coffee reference session, mean and SD",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 83.7,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.9,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'Heart rate (beats/min)', condition C, column 'Pre-exercise'",
+        "quote": "Heart rate (beats/min) | C | 83.7 ± 11.9"
+      }
+    },
+    {
+      "id": "control_pre_sbp",
+      "description": "Systolic blood pressure before exercise, no-coffee reference session, mean and SD",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 117.91,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.72,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, row 'Systolic BP (mmHg)', condition C, column 'Pre-exercise (mean ± SD)' (Table 1 prints 117.9 ± 11.7)",
+        "quote": "Systolic BP (mmHg) | C | 117.91 ± 11.72"
+      }
+    },
+    {
+      "id": "control_pre_dbp",
+      "description": "Diastolic blood pressure before exercise, no-coffee reference session, mean and SD",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 64.91,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.9,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, row 'Diastolic BP (mmHg)', condition C, column 'Pre-exercise (mean ± SD)' (Table 1 prints 64.9 ± 10.9)",
+        "quote": "Diastolic BP (mmHg) | C | 64.91 ± 10.90"
+      }
+    },
+    {
+      "id": "control_pre_spo2",
+      "description": "Peripheral oxygen saturation before exercise, no-coffee reference session, mean and SD",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_fasted"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 97.5,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.96,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, row 'SpO2 (%)', condition C, column 'Pre-exercise (mean ± SD)' (Table 1 prints 97.5 ± 1.0)",
+        "quote": "SpO2 (%) | C | 97.50 ± 0.96"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate, systolic and diastolic pressure, lactate, SpO2 and glucose immediately after the 20-m shuttle-run test to exhaustion and at 5 min of recovery (Tables 1 and 3, all three conditions): progressive field test with no printed oxygen uptake for the bout, no printed duration and a variable running speed",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Blood lactate before exercise, control session (Lactate Scout 4; Tables 1 and 3, 3.20 +/- 2.54 mmol/L, n = 22): the paper does not say it was drawn at rest or after what rest, and a mean this high with an SD this wide (Arabica session 4.05 +/- 5.21) is not a resting value, so it cannot be placed at a state of the model",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "All values of the Arabica and chicory coffee sessions (Tables 1, 3, 4): 180 mL of coffee or chicory-root drink 45 min before the run; the beverages are not a meal or any input the model has, and their caffeine was not measured (estimated 80-100 mg for Arabica)",
+      "missing": {
+        "kind": "input",
+        "name": "coffee_beverage"
+      }
+    },
+    {
+      "what": "Post-exercise LPL (ng/mL), TNF-alpha, IL-6 (pg/mL) and adiponectin (ug/mL) by condition (Table 4): group values only, no SD or SEM printed, and measured only after the run",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "Post-exercise lipoprotein lipase protein concentration (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "lipoprotein_lipase"
+      }
+    },
+    {
+      "what": "Post-exercise TNF-alpha concentration (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "tumor_necrosis_factor_alpha"
+      }
+    },
+    {
+      "what": "Post-exercise IL-6 concentration (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_6"
+      }
+    },
+    {
+      "what": "Post-exercise adiponectin concentration (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "Borg perceived exertion score immediately after the run (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceived_exertion"
+      }
+    },
+    {
+      "what": "Shuttle-run laps and VO2max estimated from the final level and laps by a published formula (Table 2): performance outcomes of the bout, not a measured oxygen uptake of the bout",
+      "missing": {
+        "kind": "marker",
+        "name": "shuttle_run_performance"
+      }
+    }
+  ]
+}
