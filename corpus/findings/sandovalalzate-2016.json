@@ -1,0 +1,431 @@
+{
+  "paper": "sandovalalzate-2016",
+  "citation": {
+    "authors": "Sandoval-Alzate HF et al.",
+    "title": "Serum Galanin Levels in Young Healthy Lean and Obese Non-Diabetic Men during an Oral Glucose Tolerance Test",
+    "journal": "Scientific Reports",
+    "year": 2016,
+    "doi": "10.1038/srep31661",
+    "pmid": "27550417",
+    "pmcid": "PMC4994037"
+  },
+  "population": {
+    "n": 60,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "unselected",
+    "description": "Two groups of 30 young men in Colombia: healthy lean (BMI 22.18 ± 1.75 kg/m2, Table 1) and obese non-diabetic (BMI 37.83 ± 4.92, Table 1); diabetes, chronic disease, bariatric surgery and recent levothyroxine, metformin or steroids excluded; no glucose-tolerance screening is reported. Each arm carries its own group's status, age and BMI (override). Age mean ± SD is from the Methods (lean 24.68 ± 3.56, obese 24.12 ± 3.96 y; Table 1 prints medians 23 and 22). The Methods print a different BMI (lean 22.13 ± 1.85, obese 38.54 ± 4.57); Table 1's is used."
+  },
+  "protocols": [
+    {
+      "name": "ogtt_lean",
+      "description": "75 g glucose in 300 mL given at 07:00 after an overnight fast to the healthy lean men (n = 30), blood at 0, 30, 60 and 120 min (Methods); minute 0 is the load, so the arm runs to minute 120 (duration 121). Overnight fast length is not printed: prefast_hours 10 is the guide's default. Age and BMI as in the fasted arm of the same group.",
+      "duration_min": 121,
+      "start_hour": 7.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in 300 mL solution"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "status": "healthy",
+        "age_years": {
+          "mean": 24.68,
+          "sd": 3.56,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.18,
+          "sd": 1.75,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "ogtt_obese",
+      "description": "75 g glucose in 300 mL given at 07:00 after an overnight fast to the obese non-diabetic men (n = 30), blood at 0, 30, 60 and 120 min (Methods); minute 0 is the load, so the arm runs to minute 120 (duration 121). Overnight fast length is not printed: prefast_hours 10 is the guide's default. Age and BMI as in the fasted arm of the same group.",
+      "duration_min": 121,
+      "start_hour": 7.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in 300 mL solution"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "status": "unselected",
+        "age_years": {
+          "mean": 24.12,
+          "sd": 3.96,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 37.83,
+          "sd": 4.92,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "fasted_lean",
+      "description": "Healthy lean men (n = 30), the fasting sample before the 07:00 load: a 30-minute fasted run-in standing for the single fasting draw (the fasting sample was drawn at minute 0 of the OGTT, 07:00; Methods), no meal, read at minute 29-30. start_hour = 7.0 - 0.5 = 6.5; prefast_hours = 10 - 0.5 = 9.5 (the overnight fast's length is not printed, 10 h is the guide's default). The arithmetic and the run-in length are mine. The blood pressure of Table 1 has no stated time of day or fasting state; it is entered on this same fasted morning, as the guide directs.",
+      "duration_min": 30,
+      "start_hour": 6.5,
+      "meals": [],
+      "prefast_hours": 9.5,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "status": "healthy",
+        "age_years": {
+          "mean": 24.68,
+          "sd": 3.56,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.18,
+          "sd": 1.75,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "fasted_obese",
+      "description": "Obese non-diabetic men (n = 30), the fasting sample before the 07:00 load: a 30-minute fasted run-in standing for the single fasting draw (the fasting sample was drawn at minute 0 of the OGTT, 07:00; Methods), no meal, read at minute 29-30. start_hour = 7.0 - 0.5 = 6.5; prefast_hours = 10 - 0.5 = 9.5 (the overnight fast's length is not printed, 10 h is the guide's default). The arithmetic and the run-in length are mine. The blood pressure of Table 1 has no stated time of day or fasting state; it is entered on this same fasted morning, as the guide directs.",
+      "duration_min": 30,
+      "start_hour": 6.5,
+      "meals": [],
+      "prefast_hours": 9.5,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male",
+        "status": "unselected",
+        "age_years": {
+          "mean": 24.12,
+          "sd": 3.96,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 37.83,
+          "sd": 4.92,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "lean_ogtt_glucose_curve",
+      "description": "Serum glucose at 60 and 120 min of the 75 g OGTT, healthy lean men, mean ± SD (the 0 and 30 min values are medians and are left out)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt_lean"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 60,
+          "value": 86.87,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 19.36,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 75.17,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.75,
+            "n": 30
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, column 'Healthy lean men (n = 30)', rows 'Glucose 60 min' and 'Glucose 120 min'",
+        "quote": "Glucose 60 min, mg/dL (mean ± SD) | 86.87 (±19.36) ; Glucose 120 min, mg/dL (mean±SD) | 75.17 (±13.75)"
+      }
+    },
+    {
+      "id": "lean_fasting_insulin",
+      "description": "Fasting serum insulin (0 min of the OGTT), healthy lean men, mean ± SD; the paper prints the unit as μUI/mL (Spanish UI, international units), written μIU/mL",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.93,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.08,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Healthy lean men (n = 30)', row 'Fasting insulin'",
+        "quote": "Fasting insulin, μUI/mL (mean ± SD) | 7.93 (±3.08)"
+      }
+    },
+    {
+      "id": "lean_sbp",
+      "description": "Systolic blood pressure, healthy lean men, mean ± SD; time of measurement not printed, entered on the fasted morning arm",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 111.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.73,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Healthy lean men (n = 30)', row 'Systolic BP'",
+        "quote": "Systolic BP, mmHg (mean ± SD) | 111.90 (±10.73)"
+      }
+    },
+    {
+      "id": "lean_dbp",
+      "description": "Diastolic blood pressure, healthy lean men, mean ± SD; time of measurement not printed, entered on the fasted morning arm",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 70.27,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.9,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Healthy lean men (n = 30)', row 'Diastolic BP'",
+        "quote": "Diastolic BP, mmHg (mean ± SD) | 70.27 (±7.90)"
+      }
+    },
+    {
+      "id": "obese_ogtt_glucose_curve",
+      "description": "Serum glucose at 60 and 120 min of the 75 g OGTT, obese non-diabetic men, mean ± SD (the 0 and 30 min values are medians and are left out)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt_obese"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 60,
+          "value": 112.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 31.28,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 90.77,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 27.63,
+            "n": 30
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, column 'Obese men (n = 30)', rows 'Glucose 60 min' and 'Glucose 120 min'",
+        "quote": "Glucose 60 min, mg/dL (mean ± SD) | 112.40 (±31.28) ; Glucose 120 min, mg/dL (mean±SD) | 90.77 (±27.63)"
+      }
+    },
+    {
+      "id": "obese_fasting_insulin",
+      "description": "Fasting serum insulin (0 min of the OGTT), obese non-diabetic men, mean ± SD; the paper prints the unit as μUI/mL (Spanish UI, international units), written μIU/mL",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 28.06,
+      "unit": "μIU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.77,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Obese men (n = 30)', row 'Fasting insulin'",
+        "quote": "Fasting insulin, μUI/mL (mean ± SD) | 28.06 (±12.77)"
+      }
+    },
+    {
+      "id": "obese_sbp",
+      "description": "Systolic blood pressure, obese non-diabetic men, mean ± SD; time of measurement not printed, entered on the fasted morning arm",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 129.43,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.12,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Obese men (n = 30)', row 'Systolic BP'",
+        "quote": "Systolic BP, mmHg (mean ± SD) | 129.43 (±12.12)"
+      }
+    },
+    {
+      "id": "obese_dbp",
+      "description": "Diastolic blood pressure, obese non-diabetic men, mean ± SD; time of measurement not printed, entered on the fasted morning arm",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 85.03,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.45,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 1, column 'Obese men (n = 30)', row 'Diastolic BP'",
+        "quote": "Diastolic BP, mmHg (mean ± SD) | 85.03 (±10.45)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting and 30 min glucose, and insulin at 30, 60, 120 min, are medians with IQR (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "HOMA-IR as median with IQR (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "leptin as median with IQR, pg/mL (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "serum galanin at 0, 30, 60, 120 min and its correlations with glucose and insulin (Tables 1 and 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "galanin"
+      }
+    },
+    {
+      "what": "adiponectin, mean ± SD, μg/mL (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "total, LDL, HDL and VLDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "triglycerides, median with IQR (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "DXA total, android and gynoid fat percentages, waist circumference (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "mean blood pressure, derived from systolic and diastolic (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
