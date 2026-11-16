@@ -1,0 +1,156 @@
+{
+  "paper": "morris-2013",
+  "citation": {
+    "authors": "Morris C, et al.",
+    "title": "Identification of Differential Responses to an Oral Glucose Tolerance Test in Healthy Adults",
+    "journal": "PLoS ONE",
+    "year": 2013,
+    "doi": "10.1371/journal.pone.0072890",
+    "pmid": "23991163",
+    "pmcid": "PMC3749984"
+  },
+  "population": {
+    "n": 116,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 32.2,
+      "sd": 7.97,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.8,
+      "sd": 3.23,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "116 adults from the MECHE study (aged 18-60 at recruitment, screened on fasting glucose, triacylglycerols, HDL, LDL and haemoglobin) who had a complete OGTT glucose curve; title calls them healthy adults. Table 1 (n=116, mean +/- SEM): age 32.2 +/- 0.74 y, BMI 24.8 +/- 0.3. SDs computed as SEM x sqrt(116): age 7.97, BMI 3.23. Sex: Table 2 gives M/F by cluster only (57 M, 59 F by summing), so entered as mixed."
+  },
+  "protocols": [
+    {
+      "name": "fasting_12h",
+      "description": "Fasting blood sample at minute 0 of the OGTT visit, 'following a 12 hour overnight fast' (Methods, Sample Collection). Clock hour (08:00) is not printed and a 30-minute run-in stands for the single measurement (guide defaults); the 12 h fast is printed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting glucose (time 0 of the OGTT) of all 116 subjects, mean +/- SEM; the whole group, not a cluster",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 116
+      },
+      "location": {
+        "where": "Table 1, column 'Mean ± S.E.M' (footnote: 'Data are means ± SEM')",
+        "quote": "Glucose 0 (mmol/l) | 5.4 ± 0.1"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose at 0, 10, 20, 30, 60, 90, 120 min and the glucose AUC of the OGTT (Tables 3 and 5), given only for the four clusters, which the authors formed from the shape of the glucose curve; the whole-group curve is not printed and pooling clusters by n is not allowed",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "insulin AUC and fasting insulin of the OGTT by cluster (Tables 4 and 5); no whole-group value is printed",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "NEFA AUC of the OGTT and fasting NEFA by cluster (Tables 4 and 5)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "C-peptide fasting and AUC of the OGTT by cluster (Tables 4 and 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "oral lipid tolerance test: glucose, insulin, C-peptide, NEFA AUCs by cluster (Table 5)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "triacylglycerol fasting by cluster (Table 4) and its OLTT AUC (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "total cholesterol and HDL cholesterol by cluster (Table 4); no whole-group value is printed",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "hsCRP by cluster (Table 4); printed in mmol/l, no whole-group value",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "resistin by cluster (Table 4); no whole-group value is printed",
+      "missing": {
+        "kind": "marker",
+        "name": "resistin"
+      }
+    },
+    {
+      "what": "TNF-alpha by cluster (Table 4); no whole-group value is printed",
+      "missing": {
+        "kind": "marker",
+        "name": "tumor_necrosis_factor_alpha"
+      }
+    },
+    {
+      "what": "HOMA-IR, whole group (Table 1) and by cluster (Table 4); beta-cell function and oral disposition index (Figure 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "body fat percentage, weight and VO2max (ml/min/kg), whole group (Table 1); body fat is a percentage, the model's fat_mass is kg, and there is no weight or fitness series",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
