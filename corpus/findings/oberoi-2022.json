@@ -981,6 +981,402 @@
         "where": "Table 1, block 'Plasma glucagon (pg/mL)', row 'Time to peak (min)', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
         "quote": "Time to peak (min) | 48 ± 9"
       }
+    },
+    {
+      "id": "young_p_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the P drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_p"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 0.0,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Younger Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1"
+      }
+    },
+    {
+      "id": "young_g_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the G drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_g"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 0.7,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1 0.7 ± 0.2"
+      }
+    },
+    {
+      "id": "young_gp_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the GP drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_gp"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 0.3,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1 0.7 ± 0.2 0.3 ± 0.1"
+      }
+    },
+    {
+      "id": "old_p_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the P drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_p"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 0.1,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Older Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1 0.7 ± 0.2 0.3 ± 0.1 −0.1 ± 0.1 0.1 ± 0.1"
+      }
+    },
+    {
+      "id": "old_g_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the G drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_g"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 1.1,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1 0.7 ± 0.2 0.3 ± 0.1 −0.1 ± 0.1 0.1 ± 0.1 1.1 ± 0.2"
+      }
+    },
+    {
+      "id": "old_gp_glucose_net_iauc_0_180",
+      "description": "Net incremental area of glucose over 0-180 min after the GP drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mmol/L, not mmol/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_gp"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 0.7,
+      "unit": "mmol/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Blood glucose (mmol/L)', row 'Net iAUC 0–180min', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min −0.1 ± 0.1 0.0 ± 0.1 0.7 ± 0.2 0.3 ± 0.1 −0.1 ± 0.1 0.1 ± 0.1 1.1 ± 0.2 0.7 ± 0.2"
+      }
+    },
+    {
+      "id": "young_p_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the P drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_p"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 8.3,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Younger Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9"
+      }
+    },
+    {
+      "id": "young_g_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the G drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_g"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 10.7,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Younger Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9 10.7 ± 2.4"
+      }
+    },
+    {
+      "id": "young_gp_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the GP drink, younger men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "young_gp"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 25.8,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Younger Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9 10.7 ± 2.4 25.8 ± 6.2"
+      }
+    },
+    {
+      "id": "old_p_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the P drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_p"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 9.6,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Older Men P (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9 10.7 ± 2.4 25.8 ± 6.2 1.5 ± 0.6 9.6 ± 1.9"
+      }
+    },
+    {
+      "id": "old_g_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the G drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_g"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 11.6,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Older Men G (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9 10.7 ± 2.4 25.8 ± 6.2 1.5 ± 0.6 9.6 ± 1.9 11.6 ± 2.4"
+      }
+    },
+    {
+      "id": "old_gp_insulin_net_iauc_0_180",
+      "description": "Net incremental area of insulin over 0-180 min after the GP drink, older men, printed divided by its span: Methods 2.4 says 'The Net iAUC 0–180/min was calculated from baseline using the trapezoidal rule and then divided by time (min) to present a weighted average value over the time interval', so the cell is mU/L, not mU/L x min (the Results text labels insulin areas 'mU/L*min', but its numbers, 28.3, 27, 26 and 21, are of the size of the table's divided cells, not of areas in mU/L x min, which would be in the thousands against peaks of 30-93 mU/L). Samples at t = 0, 15, 30, 45, 60, 90, 120, 150 and 180 min (Section 2.2); baseline is the t = 0 sample, and the table prints negative nets, so stretches below baseline count negative. Table 1 prints mean ± SEM ('Data are presented as mean values ± SEM', Methods 2.4), n = 10 per group (10 younger and 10 older men, each on all four days: 80 study days). The SEMs are equal or nearly equal in the two age groups, which suggests the cells are estimates from the mixed model with baseline as covariate (Methods 2.4), but the paper does not say so.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "old_gp"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "subtracted",
+      "value": 26.6,
+      "unit": "mU/L",
+      "per_span": true,
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, block 'Plasma insulin (mU/L)', row 'Net iAUC 0–180min', column Older Men GP (mean ± SEM, n = 10 per group, Methods 2.4)",
+        "quote": "Net iAUC0–180min 0.2 ± 0.6 8.3 ± 1.9 10.7 ± 2.4 25.8 ± 6.2 1.5 ± 0.6 9.6 ± 1.9 11.6 ± 2.4 26.6 ± 6.2"
+      }
     }
   ],
   "left_out": [
@@ -992,10 +1388,10 @@
       }
     },
     {
-      "what": "Net iAUC0-60min and Net iAUC0-180min of glucose, insulin and glucagon per drink and age group (Table 1), and insulin Net iAUC0-180 in Results 3.2.2-3.2.3: Methods 2.4 says 'The Net iAUC0-180/min was calculated from baseline using the trapezoidal rule and then divided by time (min)', so each cell is the net (below-baseline subtracted) incremental area divided by its span: 60 min over samples at 0, 15, 30, 45, 60 min, and 180 min over samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min (Section 2.2), printed in mmol/L, mU/L or pg/mL (the text prints the insulin values as 'mU/L*min'); the areas come from the mixed model with baseline as covariate (Methods 2.4), and several glucagon cells are '± 0.0'",
+      "what": "Net iAUC0-60min of glucose, insulin and glucagon, and Net iAUC0-180min of glucagon (Table 1): Methods 2.4 states the division by time only for 'Net iAUC 0–180/min', and the Table 1 footnote describes the 0-60 min area only as 'change from baseline area under the curve during the first hour', so whether the 0-60 cells are divided by 60 is not stated (their size suggests it, but the paper does not say); glucagon is also out because the table's pg/mL against the Methods' pmol/L assay limits leaves its unit ambiguous (see the glucagon entry above)",
       "missing": {
-        "kind": "operator",
-        "name": "incremental_area_per_minute"
+        "kind": "source",
+        "name": "table_ambiguous"
       }
     },
     {
