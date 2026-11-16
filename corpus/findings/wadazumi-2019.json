@@ -1,0 +1,233 @@
+{
+  "paper": "wadazumi-2019",
+  "citation": {
+    "authors": "Wadazumi T, et al.",
+    "title": "Effects of trehalose ingestion on exercise performance and energy metabolism during prolonged exercise (Wingate test and 40% VO2peak constant-load exercise)",
+    "journal": "Sports (Basel)",
+    "year": 2019,
+    "doi": "10.3390/sports7050100",
+    "pmid": "31035710",
+    "pmcid": "PMC6572148"
+  },
+  "population": {
+    "n": 24,
+    "sex": "male",
+    "age_years": {
+      "mean": 21.9,
+      "sd": 1.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Part 2 participants: 24 healthy recreationally trained college men (age 21.9 ± 1.2 y, weight 66.2 ± 5.8 kg, height 173.4 ± 5.6 cm, VO2peak 2988.5 mL/min); BMI not printed. Separate people from Part 1."
+  },
+  "protocols": [
+    {
+      "name": "part2_water",
+      "description": "Part 2 (Methods 2.2.2): fasted from 21:00 the evening before, examinations from 09:00 (12 h by the clock, derived); 5 min rest, then constant-load cycling at 40% VO2peak for 30 min, then the test drink within 5 min, then the same exercise for 60 more min. Clock assumed: rest 0-5, drink at minute 35 (end of the 30 min), the 60 min after ingestion run to minute 95, exercise held continuously from 5 to 96 (the 5-min drinking period is not shown as a pause). Intensity: Table 2 VO2 at 40% VO2peak 1195.4 mL/min / body weight 66.2 kg = 18.06 mL/kg/min; level = (18.06 - 3.7) / 31.7 = 0.453. Drink: water (500 mL), entered as no meal. The paper's minutes after ingestion (30 and 60 min, points 7 and 10; 40 min, point 8) are printed in the text but counted from an unstated point of the 5-min drink (start or end); they are placed from the drink at minute 35, and Figure 2 is not in the text.",
+      "duration_min": 96,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 5,
+            "to_min": 96,
+            "level": 0.4529
+          }
+        ]
+      },
+      "assumed": [
+        "prefast_hours",
+        "duration_min",
+        "activity"
+      ]
+    },
+    {
+      "name": "part2_glucose",
+      "description": "Part 2 (Methods 2.2.2): fasted from 21:00 the evening before, examinations from 09:00 (12 h by the clock, derived); 5 min rest, then constant-load cycling at 40% VO2peak for 30 min, then the test drink within 5 min, then the same exercise for 60 more min. Clock assumed: rest 0-5, drink at minute 35 (end of the 30 min), the 60 min after ingestion run to minute 95, exercise held continuously from 5 to 96 (the 5-min drinking period is not shown as a pause). Intensity: Table 2 VO2 at 40% VO2peak 1195.4 mL/min / body weight 66.2 kg = 18.06 mL/kg/min; level = (18.06 - 3.7) / 31.7 = 0.453. Drink: 500 mL of an 8% glucose solution; carbohydrate = 500 mL x 0.08 = 40 g (the paper prints no unit for the 8%; read as g per 100 mL, derived, so the grams are not stated). The paper's minutes after ingestion (30 and 60 min, points 7 and 10; 40 min, point 8) are printed in the text but counted from an unstated point of the 5-min drink (start or end); they are placed from the drink at minute 35, and Figure 2 is not in the text.",
+      "duration_min": 96,
+      "start_hour": 9.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 35,
+          "carbs_g": 40.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "8% glucose solution, 500 mL"
+        }
+      ],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 5,
+            "to_min": 96,
+            "level": 0.4529
+          }
+        ]
+      },
+      "assumed": [
+        "prefast_hours",
+        "duration_min",
+        "activity",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "part2_water_rer_curve",
+      "description": "RER (respiratory exchange ratio, entered as rq) in the water trial of Part 2 at the points the text prints: 30 and 60 min after drink ingestion (points 7 and 10 in Figure 9), minutes 65 and 95 of the arm. Mean +/- SD (Methods 2.4).",
+      "marker": "rq",
+      "statistic": "curve",
+      "protocols": [
+        "part2_water"
+      ],
+      "unit": "ratio",
+      "points": [
+        {
+          "t_min": 65,
+          "value": 0.93,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.04,
+            "n": 24
+          }
+        },
+        {
+          "t_min": 95,
+          "value": 0.91,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.04,
+            "n": 24
+          }
+        }
+      ],
+      "location": {
+        "where": "Results 3.4, Part 2 RER paragraph (points 7 to 10 of Figure 9)",
+        "quote": "WAT (0.93 ± 0.04 to 0.91 ± 0.04)"
+      }
+    },
+    {
+      "id": "part2_water_rer_p8",
+      "description": "RER (entered as rq) in the water trial of Part 2 at point 8, 40 min after ingestion (minute 75 of the arm), single value. Mean +/- SD.",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "part2_water"
+      ],
+      "window": {
+        "start_min": 75,
+        "end_min": 76
+      },
+      "value": 0.92,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 24
+      },
+      "location": {
+        "where": "Results 3.4, Part 2 RER paragraph (point 8 of Figure 9)",
+        "quote": "it decreased markedly in the WAT trial (0.92 ± 0.04 to 0.91 ± 0.04)"
+      }
+    },
+    {
+      "id": "part2_glucose_rer_curve",
+      "description": "RER (entered as rq) in the glucose trial of Part 2 at 30 and 60 min after ingestion (points 7 and 10 of Figure 9; the text gives the range 0.97 to 0.96 for points 7 to 10), minutes 65 and 95. Mean +/- SD.",
+      "marker": "rq",
+      "statistic": "curve",
+      "protocols": [
+        "part2_glucose"
+      ],
+      "unit": "ratio",
+      "points": [
+        {
+          "t_min": 65,
+          "value": 0.97,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.04,
+            "n": 24
+          }
+        },
+        {
+          "t_min": 95,
+          "value": 0.96,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.04,
+            "n": 24
+          }
+        }
+      ],
+      "location": {
+        "where": "Results 3.4, Part 2 RER paragraph (points 7 to 10 of Figure 9)",
+        "quote": "GLU trial (0.97 ± 0.04 to 0.96 ± 0.04)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Part 2 blood glucose (water and glucose trials) at 15 to 60 min after the drink, text of Results 3.4: printed as mean ± 'SD' of 1 to 2.5 mg/dL with n = 24, against SDs of 11 to 26 mg/dL for Part 1 and an SD stated in Methods 2.4; the labelled kind is doubtful (looks like an SEM)",
+      "missing": {
+        "kind": "source",
+        "name": "unlabelled_uncertainty"
+      }
+    },
+    {
+      "what": "Part 2 and Part 1 resting (pre-exercise) blood glucose, lactate and RER: only in figures, not printed in the text or tables",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Part 1 (60 min at 40% VO2peak, then four sets of three 30-s Wingate bouts with 30-min constant-load exercise): glucose, lactate and RER at points 1 to 12 and I to V; sampling minutes and the order of Wingate sets and constant-load blocks are in Figure 1 only, and the Wingate power in watts (Figures 3a, 4a) is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Part 1 average and maximum Wingate power as a percentage of the first set (Results 3.1) and Wingate power in watts",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Part 1 blood lactate at point 12 (WAT and TRE): the figure is titled as the change (delta) in lactate and the text gives no baseline, so whether the printed number is a level or a change is not stated",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "trehalose trial of both parts (500 mL of an 8% trehalose solution): blood glucose, RER; the model cannot tell trehalose from glucose at equal grams",
+      "missing": {
+        "kind": "input",
+        "name": "sugar_type"
+      }
+    },
+    {
+      "what": "Part 2 total lipid oxidation over the 60 min (g/h, Figure 10; formula of Frayn 1.689 x (VO2 - VCO2) - 1.943 x N) in all three trials",
+      "missing": {
+        "kind": "marker",
+        "name": "lipid_oxidation"
+      }
+    },
+    {
+      "what": "Part 2 water-trial RER at points other than 7, 8 and 10, and glucose-trial RER at point 8 and 9: not printed in the text",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
