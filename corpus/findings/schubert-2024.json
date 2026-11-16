@@ -1,0 +1,347 @@
+{
+  "paper": "schubert-2024",
+  "citation": {
+    "authors": "Schubert MM, Terauds S, Plant M, Handler G, Atkins C, Mendez C",
+    "title": "Prior acute exercise restores postprandial fat oxidation in active cannabis users",
+    "journal": "Physiological Reports",
+    "year": 2024,
+    "doi": "10.14814/phy2.15968",
+    "pmid": "38453255",
+    "pmcid": "PMC10920057"
+  },
+  "population": {
+    "n": 11,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 25.4,
+      "sd": 5.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.1,
+      "sd": 2.4,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The nonuser group only (NU, n = 11, five males; Table 1): physically active (>= 150 min MVPA per week), aged 18-50, no history of cardiovascular or metabolic disease, no medication affecting metabolism aside from birth control. The paper calls the cohort 'otherwise healthy and active' in its Discussion and ran no glucose test, so 'healthy' rests on that history screening. Age and BMI are the NU column of Table 1. The cannabis-user group (n = 11) is not entered."
+  },
+  "protocols": [
+    {
+      "name": "fasted_rest_control",
+      "description": "Control trial, nonusers: morning arrival (0530-0930) after an overnight fast, no exercise the day before. The fasting samples (capillary blood on arrival, then 20 min supine gas exchange, BP after 10 min of rest, HR with no time given) are entered as a one-minute window at minute 29 of a 30-minute short fasted arm, the corpus convention for a fasting sample: the paper prints no clock for them and a value at minute 0 cannot be learned from. Fast length ('overnight'), clock hour and arm length are assumed (10 h, 08:00, 30 min). No meal, water only.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "evening_bout_60min",
+      "description": "Exercise trial, nonusers: 60 min of treadmill exercise at ~100% of ventilatory threshold, reported to the laboratory 1500-1800. Intensity from the measured exercise VO2 of Table 2, column NU: 29.4 mL/kg/min; level = (29.4 - 3.7) / 31.7 = 0.8107. Arm starts at the bout (minute 0) and the bout runs minutes 0 to 60. The paper says nothing about food before the visit, so the arm starts from typical values (norm_center) with no meal; the clock hour (1500-1800 is a range) is assumed.",
+      "duration_min": 60,
+      "start_hour": 16.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 60,
+            "level": 0.8107
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_hr",
+      "description": "Resting heart rate before the MTT, control trial, nonusers (Table 3 'Fasting heart rate'); the paper does not say when in the visit or how it was taken, so it is entered at minute 29 of the fasted arm.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 54.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting heart rate'",
+        "quote": "Fasting heart rate (bpm) | 54 ± 5"
+      }
+    },
+    {
+      "id": "fasting_sbp",
+      "description": "Fasting systolic blood pressure, supine after 10 min rest, control trial, nonusers.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 119.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting SBP'",
+        "quote": "Fasting SBP (mm Hg) | 119 ± 8"
+      }
+    },
+    {
+      "id": "fasting_dbp",
+      "description": "Fasting diastolic blood pressure, supine after 10 min rest, control trial, nonusers.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 71.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting DBP'",
+        "quote": "Fasting DBP (mm Hg) | 71 ± 6"
+      }
+    },
+    {
+      "id": "fasting_rer",
+      "description": "Fasting resting RER (final 5-10 min of 20 min gas exchange, supine), control trial, nonusers; entered as the respiratory quotient.",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.83,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting RER'",
+        "quote": "Fasting RER | 0.83 ± 0.04"
+      }
+    },
+    {
+      "id": "fasting_ee",
+      "description": "Fasting resting energy expenditure (final 5-10 min of 20 min gas exchange), control trial, nonusers.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1.25,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.31,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting energy expenditure'",
+        "quote": "Fasting energy expenditure (kcal⋅min−1) | 1.25 ± 0.31"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting capillary whole-blood glucose on arrival (Cholestech LDX point-of-care analyser; capillary whole blood, not venous plasma, so it may read differently from a plasma glucose), control trial, nonusers. n is 10: the Results say blood could not be obtained from one nonuser, so blood-sample data are n = 10 for nonusers (the Table 3 header says n = 11).",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_control"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.81,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.58,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, column NU CON (nonusers, control trial), mean +/- SD, row 'Fasting glucose'",
+        "quote": "Fasting glucose (mmol⋅L−1) | 4.81 ± 0.58"
+      }
+    },
+    {
+      "id": "bout_hr",
+      "description": "Exercise heart rate, nonusers (Table 2 'Exercise heart rate'); heart rate was monitored continuously through the bout, but the table does not say it is the whole-bout mean, so it is entered as the mean over the bout.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "evening_bout_60min"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 167.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, column NU, row 'Exercise heart rate', mean +/- SD",
+        "quote": "Exercise heart rate (bpm) | 167 ± 10"
+      }
+    },
+    {
+      "id": "post_bout_lactate",
+      "description": "Capillary blood lactate immediately after the 60 min bout (last bout minute, 59-60), nonusers.",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "evening_bout_60min"
+      ],
+      "window": {
+        "start_min": 59,
+        "end_min": 60
+      },
+      "value": 3.54,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.21,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, column NU, row 'Post-exercise blood lactate', mean +/- SD",
+        "quote": "Post-exercise blood lactate (mmol⋅L−1) | 3.54 ± 1.21"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Pre-exercise blood lactate (Table 2): a resting value at the start of an arm whose fed state is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Exercise RER (Table 2), which depends on the unreported pre-exercise meal",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Fasting values in the EX column of Table 3 (the morning after the evening bout): the evening meal and night between bout and test are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Carbohydrate and fat oxidation, in g over the bout (Table 2) and in g/min fasting (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "Fat oxidation, in g over the bout (Table 2) and fasting g/min (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "Total energy expenditure of the bout in kcal (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "total_over_own_duration"
+      }
+    },
+    {
+      "what": "Fasting triglycerides (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Fasting total, LDL and HDL cholesterol (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Fasting mean arterial pressure (Table 3), derived from SBP and DBP",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "Postprandial time courses and iAUC after the milkshake test meal at 30, 60, 120, 180 min, RER, EE, oxidation, TG, glucose, cholesterol, MAP (Figures 2-6; text gives only mixed-group F tests and mean differences)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Metabolic flexibility, NU Control 0.032 and NU Exercise values (Results text): baseline RER minus mean postprandial RER",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Cannabis-user group (n = 11) in Tables 1-3: cannabis use is a drug-exposure state the model cannot represent",
+      "missing": {
+        "kind": "population",
+        "name": "cannabis_use"
+      }
+    }
+  ]
+}
