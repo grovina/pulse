@@ -1,0 +1,413 @@
+{
+  "paper": "dai-2022",
+  "citation": {
+    "authors": "Dai Y, et al.",
+    "title": "Effects of 10-Day Complete Fasting on Physiological Homeostasis, Nutrition and Health Markers in Male Adults",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14183860"
+  },
+  "population": {
+    "n": 13,
+    "sex": "male",
+    "age_years": {
+      "mean": 39.6,
+      "sd": 7.9,
+      "min": 28.0,
+      "max": 55.0
+    },
+    "bmi": {
+      "mean": 24.6,
+      "sd": 3.5,
+      "min": 19.2,
+      "max": 31.9
+    },
+    "status": "unselected",
+    "description": "Thirteen Chinese men (mean weight 72.1 +/- 11.9 kg) with no history of eating disorders or chronic illness, including diabetes; screened by medical examination, no glucose test reported, hence unselected. Mean +/- SD printed; age and BMI ranges as observed."
+  },
+  "protocols": [
+    {
+      "name": "bf_strip",
+      "description": "Baseline (BF, before fasting) morning capillary strip sample (FreeStyle Optium), sampled 'everyday morning', hour not printed; overnight fast of 10 h assumed (not printed); 30-minute arm read at minutes 29-30, clock hour of the sample taken as 08:00",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "cf4_strip",
+      "description": "Water-only fast (Nongfu Spring water ad libitum, normal ambulatory activity). Day N of the complete fast (CF) is sampled in the morning; the paper does not print the time of the last meal or when CF day 1 began (phases: 3-day BL, 10-day CF, consecutive days; BF1 is the day before fasting), so hours since the last meal are assumed: 10 h (overnight) at the first fasting morning, CF1, plus 24 h per further day, H = 10 + 24*(N-1); this is a lower-end reading and could be about a day longer if the last meal was before the BF1 evening. Fast water-only (Nongfu Spring mineral water ad libitum), normal ambulatory activity within a 'mild-intensity lifestyle program' (no sessions described). CF4 capillary strip sample (everyday morning, hour not printed, 08:00 assumed): H = 10 + 24*3 = 82 h. 30-minute arm read at minutes 29-30",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 82,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "bf_venous",
+      "description": "Baseline (BF1, 1 day before fasting) venous blood at 07:00 (stated); overnight fast of 10 h assumed (not printed); 30-minute arm read at minutes 29-30",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "cf3_venous",
+      "description": "Water-only fast (Nongfu Spring water ad libitum, normal ambulatory activity). Day N of the complete fast (CF) is sampled in the morning; the paper does not print the time of the last meal or when CF day 1 began (phases: 3-day BL, 10-day CF, consecutive days; BF1 is the day before fasting), so hours since the last meal are assumed: 10 h (overnight) at the first fasting morning, CF1, plus 24 h per further day, H = 10 + 24*(N-1); this is a lower-end reading and could be about a day longer if the last meal was before the BF1 evening. Fast water-only (Nongfu Spring mineral water ad libitum), normal ambulatory activity within a 'mild-intensity lifestyle program' (no sessions described). CF3 venous blood at 07:00 (stated): H = 10 + 24*2 = 58 h. 30-minute arm read at minutes 29-30",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "meals": [],
+      "prefast_hours": 58,
+      "assumed": [
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "cf6_venous",
+      "description": "Water-only fast (Nongfu Spring water ad libitum, normal ambulatory activity). Day N of the complete fast (CF) is sampled in the morning; the paper does not print the time of the last meal or when CF day 1 began (phases: 3-day BL, 10-day CF, consecutive days; BF1 is the day before fasting), so hours since the last meal are assumed: 10 h (overnight) at the first fasting morning, CF1, plus 24 h per further day, H = 10 + 24*(N-1); this is a lower-end reading and could be about a day longer if the last meal was before the BF1 evening. Fast water-only (Nongfu Spring mineral water ad libitum), normal ambulatory activity within a 'mild-intensity lifestyle program' (no sessions described). CF6 venous blood at 07:00 (stated): H = 10 + 24*5 = 130 h. 30-minute arm read at minutes 29-30",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "meals": [],
+      "prefast_hours": 130,
+      "assumed": [
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "cf9_venous",
+      "description": "Water-only fast (Nongfu Spring water ad libitum, normal ambulatory activity). Day N of the complete fast (CF) is sampled in the morning; the paper does not print the time of the last meal or when CF day 1 began (phases: 3-day BL, 10-day CF, consecutive days; BF1 is the day before fasting), so hours since the last meal are assumed: 10 h (overnight) at the first fasting morning, CF1, plus 24 h per further day, H = 10 + 24*(N-1); this is a lower-end reading and could be about a day longer if the last meal was before the BF1 evening. Fast water-only (Nongfu Spring mineral water ad libitum), normal ambulatory activity within a 'mild-intensity lifestyle program' (no sessions described). CF9 venous blood at 07:00 (stated): H = 10 + 24*8 = 202 h. 30-minute arm read at minutes 29-30",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "meals": [],
+      "prefast_hours": 202,
+      "assumed": [
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "bf_glucose",
+      "description": "Capillary (strip) blood glucose in the morning before fasting (BF), mean +/- SD, n = 13; capillary whole-blood meter (FreeStyle Optium), not plasma",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bf_strip"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.96,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.44,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "from 4.96 ± 0.44 mmol/L of the BF"
+      }
+    },
+    {
+      "id": "cf4_glucose",
+      "description": "Capillary (strip) blood glucose on the 4th day of the complete fast (CF4, the lowest day), mean +/- SD, n = 13; capillary whole-blood meter (FreeStyle Optium), not plasma",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "cf4_strip"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 3.508,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.397,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "reached its lowest at 3.508 ± 0.397 mmol/L on the CF4"
+      }
+    },
+    {
+      "id": "bf_bhb",
+      "description": "Capillary (strip) blood beta-hydroxybutyrate in the morning before fasting (BF), mean +/- SD, n = 13; capillary meter (FreeStyle Optium), BHB itself",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bf_strip"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.177,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.044,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "0.177 ± 0.044 mmol/L of the BF"
+      }
+    },
+    {
+      "id": "cf3_insulin",
+      "description": "Insulin at CF3 (07:00 venous), mean +/- SD, n = 13 (the lowest value, per the Results and Discussion)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "cf3_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 18.64,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.67,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "achieved its lowest at 18.64 ± 11.67 pmol/L"
+      }
+    },
+    {
+      "id": "cf6_glucagon",
+      "description": "Glucagon at CF6 (07:00 venous), mean +/- SD, n = 13 (note: the Results percent change +15.96% and the implied baseline do not fully match this level)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "cf6_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 155.78,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 25.32,
+        "n": 13
+      },
+      "location": {
+        "where": "Discussion, metabolic switch paragraph",
+        "quote": "155.78 ± 25.32 pg/mL"
+      }
+    },
+    {
+      "id": "cf3_minus_bf_insulin",
+      "description": "Insulin at CF3 minus BF1 (07:00 venous), paired mean difference with 95% CI, n = 13; 'Mean diff.' is CF minus BF1 (sign checked against insulin falling), CI as printed (paired repeated-measures comparison, adjustment not stated)",
+      "marker": "insulin",
+      "statistic": "delta_means",
+      "protocols": [
+        "bf_venous",
+        "cf3_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": -36.09,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": -55.28,
+        "high": -16.9,
+        "level": 95,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "(Mean diff. −36.09 pmol/L, 95% CI (−55.28 to −16.90) on the CF3"
+      }
+    },
+    {
+      "id": "cf3_minus_bf_glucagon",
+      "description": "Glucagon at CF3 minus BF1 (07:00 venous), mean difference with 95% CI, n = 13; 'Mean diff.' is CF minus BF1 (sign checked against insulin falling), CI as printed (paired repeated-measures comparison, adjustment not stated)",
+      "marker": "glucagon",
+      "statistic": "delta_means",
+      "protocols": [
+        "bf_venous",
+        "cf3_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 16.21,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 0.98,
+        "high": 33.39,
+        "level": 95,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "Mean diff. 16.21 pg/mL, 95% CI (0.98 to 33.39) on the CF3"
+      }
+    },
+    {
+      "id": "cf6_minus_bf_glucagon",
+      "description": "Glucagon at CF6 minus BF1 (07:00 venous), mean difference with 95% CI, n = 13; 'Mean diff.' is CF minus BF1 (sign checked against insulin falling), CI as printed (paired repeated-measures comparison, adjustment not stated)",
+      "marker": "glucagon",
+      "statistic": "delta_means",
+      "protocols": [
+        "bf_venous",
+        "cf6_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 20.08,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 2.89,
+        "high": 37.26,
+        "level": 95,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "Mean diff. 20.08 pg/mL, 95% CI (2.89 to 37.26) on the CF6"
+      }
+    },
+    {
+      "id": "cf9_minus_bf_glucagon",
+      "description": "Glucagon at CF9 minus BF1 (07:00 venous), mean difference with 95% CI, n = 13; 'Mean diff.' is CF minus BF1 (sign checked against insulin falling), CI as printed (paired repeated-measures comparison, adjustment not stated)",
+      "marker": "glucagon",
+      "statistic": "delta_means",
+      "protocols": [
+        "bf_venous",
+        "cf9_venous"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 17.6,
+      "unit": "pg/mL",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 0.14,
+        "high": 34.79,
+        "level": 95,
+        "n": 13
+      },
+      "location": {
+        "where": "Results, blood glucose and BHB paragraph",
+        "quote": "Mean diff. 17.60 pg/mL, 95% CI (0.14 to 34.79) on the CF9"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose and BHB on the other fasting days, including CF1 (glucose 4.18 +/- 0.54 mmol/L; BHB 1.308 +/- 1.053 mmol/L, against 0.177 at BF): the paper does not print when the last meal was taken, and under the only available convention (10 h at the first fasting morning) CF1 would equal the baseline morning although its printed BHB is several-fold higher, so the day-to-hours mapping itself is doubtful",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "BHB peak: Results say the highest BHB was on CF5 (no value) and the Discussion gives 5.616 +/- 0.911 mmol/L on CF8; the two days disagree",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Daily glucose and BHB curves over the 10-day fast and refeeding (Figure 5a)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Insulin at BF1 and the other fasting days, and glucagon at BF1, CF3, CF9 (Figure 5c, 5e); only CF3 insulin and CF6 glucagon levels and the differences from BF1 are printed in the text; the percent changes (-65.45%, +13.56%, +15.96%, +14.51%) are percentages",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "HOMA-IR over the fast (Figure 5d, text only qualitative)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c over the fast (Figure 5b)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "Leptin (1.67 +/- 0.55 ng/mL BF; 2.27 +/- 0.86 CF3; 2.48 +/- 0.60 CF9) and adiponectin",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "Cholesterol, LDL-C, triglycerides, apolipoproteins (Figure 6; mean differences with CI)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "GLP-1: text says no change, no values (Figure 5f)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Respiratory quotient and resting metabolic rate (RQ 0.833 +/- 0.073 BF1/2 to 0.716 +/- 0.041 CF9/10), measured by indirect calorimetry over 20 min on two-day pairs",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Pulse, blood pressure, body weight, body composition, blood counts (Table 1), proteins, vitamins, electrolytes, renal markers: not in this batch's markers",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
