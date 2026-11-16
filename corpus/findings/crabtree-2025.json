@@ -1,0 +1,288 @@
+{
+  "paper": "crabtree-2025",
+  "citation": {
+    "authors": "Crabtree CD, Stoner J, Buga A, Robinson B, Decker D, Chebbi A, El-Shazly X, Murphy E, Jordan A, Bedell T, Kackley ML, McClure T, Han Y, Simonetti OP, Volek JS",
+    "title": "Cardiopulmonary responses to acute exogenous ketosis at rest, and during submaximal and maximal exercise",
+    "journal": "Physiological Reports",
+    "year": 2025,
+    "doi": "10.14814/phy2.70397"
+  },
+  "population": {
+    "n": 11,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 27.08,
+      "sd": 8.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.6,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Healthy, recreationally active, non-obese adults (BMI 18-30 enrolled, age 18-65 enrolled; no hypertension, smoking or ketogenic diet). 12 completed the study and 11 were analysed (Results); Table 1 gives 1 F : 10 M, age 27.08 +/- 8.8 y and BMI 25.6 +/- 2.0 (visit 1) as mean +/- SD, without stating its n. Table 2 values are taken as n = 11 (Results: 'the full analyzed cohort was n = 11'; sample size is mentioned only where different)."
+  },
+  "protocols": [
+    {
+      "name": "placebo_bruce",
+      "description": "Placebo arm of a crossover: after an overnight fast (10-12 h) a calorie- and volume-matched fat-based placebo drink at minute 0 (4 g carbohydrate, 50 g fat, 4 g protein as printed for 'the placebo product', whey protein concentrate and canola oil; the paper says nothing of two placebo servings, while two BO-BD servings made the 50 g dose, so these grams are taken as the whole drink); 120 min of rest; then a Bruce-protocol treadmill test begins at minute 120, 3-min stages. Activity from the placebo's measured peak VO2 in each stage (Table 2, PL, L/min), divided by the body weight 76.4 kg (Table 1, 'Test visit 1'; the paper does not say which visit was the placebo visit, visit 2 is 76.5 kg): stage 1 (minutes 120-123) 1.36 L/min = 1360/76.4 = 17.80 mL/kg/min, level (17.80 - 3.7)/31.7 = 0.4448; stage 2 (minutes 123-126) 1.93 L/min = 1930/76.4 = 25.26 mL/kg/min, level (25.26 - 3.7)/31.7 = 0.6802. Stage 3 (2.87 L/min = 37.57 mL/kg/min, level 1.068) lies above the activity scale and the arm ends at minute 126 before it. The Table 2 stage VO2 is the peak rate in each stage (Methods) and Figure 7a shows it for n = 10, not 11. The stage VO2 values are therefore an input here and are not entered as findings.",
+      "duration_min": 126,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 4.0,
+          "fat_g": 50.0,
+          "protein_g": 4.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "fat-based placebo drink"
+        }
+      ],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 120,
+            "to_min": 123,
+            "level": 0.4448
+          },
+          {
+            "from_min": 123,
+            "to_min": 126,
+            "level": 0.6802
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "pl_hr_pre_exercise",
+      "description": "Heart rate immediately before the treadmill test, 120 min after the placebo drink (minute 119, the last minute before exercise begins at 120)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 119,
+        "end_min": 120
+      },
+      "value": 74.1,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.9,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Pre-exercise'",
+        "quote": "Heart Rate (bpm) | PL | 74.1 ± 16.9"
+      }
+    },
+    {
+      "id": "pl_hr_bruce_stage1",
+      "description": "Heart rate in Bruce stage 1 (minutes 120-123 of the arm; the paper does not say how HR was averaged within a stage)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 123
+      },
+      "value": 109.3,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.9,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 1'",
+        "quote": "Heart Rate (bpm) | PL | 109.3 ± 16.9"
+      }
+    },
+    {
+      "id": "pl_hr_bruce_stage2",
+      "description": "Heart rate in Bruce stage 2 (minutes 123-126)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 123,
+        "end_min": 126
+      },
+      "value": 132.8,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20.6,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 2'",
+        "quote": "Heart Rate (bpm) | PL | 132.8 ± 20.6"
+      }
+    },
+    {
+      "id": "pl_vo2_pre_exercise",
+      "description": "Resting oxygen uptake before exercise, last 5 min of the 110-120 min gas collection (minutes 115-120)",
+      "marker": "vo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 115,
+        "end_min": 120
+      },
+      "value": 0.33,
+      "unit": "L/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.07,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Pre-exercise'",
+        "quote": "V̇O2 (L/min) | PL | 0.33 ± 0.07"
+      }
+    },
+    {
+      "id": "pl_rr_pre_exercise",
+      "description": "Respiratory rate before exercise, last 5 min of the 110-120 min gas collection (minutes 115-120)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 115,
+        "end_min": 120
+      },
+      "value": 17.0,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Pre-exercise'",
+        "quote": "RR (breaths/min) | PL | 17.0 ± 2.0"
+      }
+    },
+    {
+      "id": "pl_rr_bruce_stage1",
+      "description": "Respiratory rate averaged over the 3 min of Bruce stage 1 (minutes 120-123)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 123
+      },
+      "value": 20.9,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.4,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 1'",
+        "quote": "RR (breaths/min) | PL | 20.9 ± 2.4"
+      }
+    },
+    {
+      "id": "pl_rr_bruce_stage2",
+      "description": "Respiratory rate averaged over the 3 min of Bruce stage 2 (minutes 123-126)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_bruce"
+      ],
+      "window": {
+        "start_min": 123,
+        "end_min": 126
+      },
+      "value": 21.5,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, PL row, column 'Stage 2'",
+        "quote": "RR (breaths/min) | PL | 21.5 ± 3.0"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate and respiratory rate in Bruce stage 3 and at maximal exercise, and the maximal oxygen uptake (Table 2, PL); stage 3 (level 1.068) and the later stages are above the activity scale, and the stage 4 oxygen uptake is not printed",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    },
+    {
+      "what": "Ventilation and tidal volume at rest and in each stage (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "Carbon dioxide output at rest and in each stage (Table 2, V̇CO2 0.018 to 0.153 L/min in PL): against the same table's V̇O2 it gives an RER near 0.05 to 0.5, so the unit is not credible",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Capillary beta-hydroxybutyrate, glucose and lactate at rest and during exercise (Figures 2 and text; the numbers printed are the range of R-bHB after BO-BD only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Heart rate at rest at 15, 30, 60, 90 min after the drink (Figure 3)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "RER at 120 min (PL 0.76 +/- 0.05), peak RER 1.11 +/- 0.08, post-exercise lactate, exercise duration 832.9 +/- 129.0 s and peak VO2 55.0 +/- 9.2 mL/min/kg are printed in the running text with a plus-minus that no text, footnote or methods labels as SD or SEM for text values",
+      "missing": {
+        "kind": "source",
+        "name": "unlabelled_uncertainty"
+      }
+    },
+    {
+      "what": "Systolic and diastolic blood pressure, rating of perceived exertion during the test (text only, no group means for the placebo)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
