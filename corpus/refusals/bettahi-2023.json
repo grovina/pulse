@@ -1,0 +1,33 @@
+{
+  "paper": "bettahi-2023",
+  "citation": {
+    "authors": "Bettahi I, et al.",
+    "title": "Differences in protein expression, at the basal state and at 2 h of insulin infusion, in muscle biopsies from healthy Arab men with low or high insulin sensitivity",
+    "journal": "Frontiers in Endocrinology",
+    "year": 2023,
+    "doi": "10.3389/fendo.2022.1024832",
+    "pmid": "36876056",
+    "pmcid": "PMC9982120"
+  },
+  "reported": [
+    {
+      "what": "fasting and 2 h glucose of the high (n=8) and low (n=8) insulin sensitivity groups, mean ± SD (Table 1 footnote: Average ± SD)",
+      "location": {
+        "where": "Table 1, glucose rows",
+        "quote": "Fasting glucose (mmol/L) | 5.54 ± 0.39 | 5.25 ± 0.20 ; 2 h glucose (mmol/L) | 5.39 ± 1.08 | 5.10 ± 0.50"
+      }
+    },
+    {
+      "what": "M value of the two groups, mean ± SD (the selection variable)",
+      "location": {
+        "where": "Table 1, row M",
+        "quote": "M (mg/kg/min) | 17.0 ± 1.9 | 5.3 ± 1.0"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "group_split_by_measurement"
+  },
+  "detail": "The 16 men are the extreme M-value tails (M >13 and M <=6) of 60 healthy men and no pooled or unselected group is reported, so the two arms differ by a measurement the model cannot be told apart by; the clamp gives only an insulin infusion rate and no plasma insulin."
+}
