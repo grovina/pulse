@@ -1,0 +1,250 @@
+{
+  "paper": "roberts-2023",
+  "citation": {
+    "authors": "Roberts JD, Lillis JB, Pinto JM, Chichger H, López-Samanes Á, Del Coso J, Zacca R, Willmott AGB",
+    "title": "The Effect of a Hydroxytyrosol-Rich, Olive-Derived Phytocomplex on Aerobic Exercise and Acute Recovery",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15020421",
+    "pmid": "36678293",
+    "pmcid": "PMC9864860"
+  },
+  "population": {
+    "n": 29,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 42.0,
+      "sd": 10.77,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.9,
+      "sd": 2.15,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "29 recreationally active adults (20 men, 9 women) who completed the study, of 32 who volunteered (3 datasets removed for adherence or outliers); no known metabolic disorders; VO2max above 25 mL/kg/min was required. Table 1 prints mean +/- SE; SD computed as SE x sqrt(n) (age 2 x sqrt(29), BMI 0.4 x sqrt(29)). Two randomised groups, OliP (n = 15) and placebo PL (n = 14); the findings use the visit-2 values, before any supplement, and each arm carries its own group's Table 1 numbers."
+  },
+  "protocols": [
+    {
+      "name": "run65_pre_olip_group",
+      "description": "Demanding treadmill session at visit 2, before the 16-day supplement, OliP group (n = 15; Table 4 'Pre'). 65 min of running (Methods 2.5.4: 5 min warm-up at the speed of LT1, 50 min at 60% of the LT1-LT2 difference, then at most 5 x 1 min at 10% above LT2 with 1 min active recovery at 60% of the difference), flattened here into one steady stage at the session-mean intensity; the paper says the ~75% VO2max target was 'achieved and sustained'. Measured session VO2 36.6 mL/kg/min (Table 4, 76.6% of the group's measured VO2max of 48.3 mL/kg/min, Table 1: 76.6% x 48.3 = 37.0); level = (36.6 - 3.7) / 31.7 = 1.0379. level above 1.0: the model extrapolates here. The bout runs the whole arm, minutes 0 to 65; the 10 min seated rest on arrival and the time between it and the warm-up are not placed, so no run-in is added. All visits followed an 'overnight fast (~10 h)' (Methods 2.3), approximate, so prefast_hours 10 is assumed; the clock hour is not printed ('same time of day'), 08:00 assumed. No food or drink during the bout is described. Whether the Table 4 means cover the whole 65 min is not stated; the caption says 'during the demanding aerobic session', and that is taken as the whole bout.",
+      "duration_min": 65,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 65,
+            "level": 1.0379
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "activity"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 42.0,
+          "sd": 11.62,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 1.55,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    },
+    {
+      "name": "run65_pre_placebo_group",
+      "description": "Demanding treadmill session at visit 2, before the 16-day supplement, PL group (n = 14; Table 4 'Pre'). 65 min of running (Methods 2.5.4: 5 min warm-up at the speed of LT1, 50 min at 60% of the LT1-LT2 difference, then at most 5 x 1 min at 10% above LT2 with 1 min active recovery at 60% of the difference), flattened here into one steady stage at the session-mean intensity; the paper says the ~75% VO2max target was 'achieved and sustained'. Measured session VO2 37.7 mL/kg/min (Table 4, 75.0% of the group's measured VO2max of 51.0 mL/kg/min, Table 1: 75.0% x 51.0 = 38.2); level = (37.7 - 3.7) / 31.7 = 1.0726. level above 1.0: the model extrapolates here. The bout runs the whole arm, minutes 0 to 65; the 10 min seated rest on arrival and the time between it and the warm-up are not placed, so no run-in is added. All visits followed an 'overnight fast (~10 h)' (Methods 2.3), approximate, so prefast_hours 10 is assumed; the clock hour is not printed ('same time of day'), 08:00 assumed. No food or drink during the bout is described. Whether the Table 4 means cover the whole 65 min is not stated; the caption says 'during the demanding aerobic session', and that is taken as the whole bout.",
+      "duration_min": 65,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 65,
+            "level": 1.0726
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "activity"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 42.0,
+          "sd": 11.22,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.3,
+          "sd": 2.62,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "olip_pre_rer_run",
+      "description": "Respiratory exchange ratio over the 65 min treadmill session, OliP group before supplement; mean and SE",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run65_pre_olip_group"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 65
+      },
+      "value": 0.92,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.01,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 4, row 'RER', column OliP Pre (mean +/- SE; Methods 2.8 'Data are presented as mean +/- SE')",
+        "quote": "RER | 0.92 ± 0.01 | 0.92 ± 0.01 | 0.92 ± 0.01 | 0.92 ± 0.01"
+      }
+    },
+    {
+      "id": "pl_pre_rer_run",
+      "description": "Respiratory exchange ratio over the 65 min treadmill session, placebo group before supplement; mean and SE",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run65_pre_placebo_group"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 65
+      },
+      "value": 0.92,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.01,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 4, row 'RER', column PL Pre (mean +/- SE; Methods 2.8 'Data are presented as mean +/- SE')",
+        "quote": "RER | 0.92 ± 0.01 | 0.92 ± 0.01 | 0.92 ± 0.01 | 0.92 ± 0.01"
+      }
+    },
+    {
+      "id": "olip_pre_vco2_run",
+      "description": "CO2 output over the 65 min treadmill session, OliP group before supplement; mean and SE",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run65_pre_olip_group"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 65
+      },
+      "value": 2.49,
+      "unit": "L/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.14,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 4, row 'V˙CO2 (L·min−1)', column OliP Pre (mean +/- SE; Methods 2.8 'Data are presented as mean +/- SE')",
+        "quote": "V˙CO2 (L·min−1) | 2.49 ± 0.14 | 2.49 ± 0.13 | 2.36 ± 0.16 | 2.34 ± 0.15"
+      }
+    },
+    {
+      "id": "pl_pre_vco2_run",
+      "description": "CO2 output over the 65 min treadmill session, placebo group before supplement; mean and SE",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run65_pre_placebo_group"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 65
+      },
+      "value": 2.36,
+      "unit": "L/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.16,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 4, row 'V˙CO2 (L·min−1)', column PL Pre (mean +/- SE; Methods 2.8 'Data are presented as mean +/- SE')",
+        "quote": "V˙CO2 (L·min−1) | 2.49 ± 0.14 | 2.49 ± 0.13 | 2.36 ± 0.16 | 2.34 ± 0.15"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Session VO2 in mL/kg/min and as % of VO2max (Table 4, visit 2 and 4): used as the bout's intensity input, not an outcome",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "Session VO2 in L/min (Table 4): the same measurement as the intensity input, scaled by body mass",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "Blood lactate over the session (Table 4, 1.32 / 1.31 / 1.33 / 1.33 mmol/L): the four cells repeat the LT1 row of Table 5A to the digit, and the sampling minutes (rest, 10, 30, 48 min and after the last interval) are not the ones the mean covers",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Session minute ventilation (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "Visit 4 values of the same session after 16 days of OliP or placebo drink (Table 4, 'Post'), and the submaximal and maximal test outcomes (Tables 5 to 7)",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "Resting lactate and glucose are measured (Methods 2.5) but not reported; plasma hydroxytyrosol (6.3 +/- 1.6 ng/mL after OliP) is outside the model",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
