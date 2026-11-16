@@ -1,0 +1,47 @@
+{
+  "paper": "chang-2016",
+  "citation": {
+    "authors": "Chang C-K, Huang C-Y, Lin Y-H, et al.",
+    "title": "Acute mangosteen-based juice supplementation and exhaustive cycle ergometer exercise: placebo-controlled crossover trial",
+    "journal": "Journal of the International Society of Sports Nutrition",
+    "year": 2016,
+    "doi": "10.1186/s12970-016-0132-0",
+    "pmid": "27152103",
+    "pmcid": "PMC4857437"
+  },
+  "reported": [
+    {
+      "what": "Cycling bout set as a work rate of 60% of VO2max for 30 min, then 15 W steps every 2 min to exhaustion; the paper prints no VO2max, no watts and no VO2 for the group (VO2max was predicted per person by the Astrand protocol, no group value printed)",
+      "location": {
+        "where": "Methods, Cycle ergometer exercise protocol",
+        "quote": "each participant performed with a relative work rate of 60 % of VO2max on the same cycle ergometer for 30 min"
+      }
+    },
+    {
+      "what": "Placebo-arm blood glucose (mg/dL, mean (SD), n=12) before and during the bout: Pre-Ex, Ex-15, Ex-30, Post-Ex",
+      "location": {
+        "where": "Table 1, Control row, Glucose",
+        "quote": "Glucose (mg · dL−1) | Control | 88.0 (7.4) | 73.4** (11.6) | 72.3** (9.3) | 81.7 (13.9)"
+      }
+    },
+    {
+      "what": "Placebo-arm blood lactate (mmol/L, mean (SD), n=12) at the same times",
+      "location": {
+        "where": "Table 1, Control row, Lactate",
+        "quote": "Lactate (mmol · L−1) | Control | 1.03 (0.25) | 3.22** (1.22) | 3.20** (1.39) | 7.61** (1.65)"
+      }
+    },
+    {
+      "what": "Placebo-arm serum cortisol (ug/dL, mean (SD), n=12) at the same times",
+      "location": {
+        "where": "Table 1, Control row, Cortisol",
+        "quote": "Cortisol (μg · dL−1) | Control | 10.91 (3.32) | 7.33** (2.21) | 7.23** (2.29) | 7.57** (2.46)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The bout is only '60% of VO2max' with no group VO2max (or watts) printed and its duration to exhaustion is in a figure, and the placebo juice (fruit concentrates) is given 1 h before exercise with no carbohydrate grams, so even the Pre-Ex values are not a fasted sample the model can run."
+}
