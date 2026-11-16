@@ -157,17 +157,17 @@
   ],
   "left_out": [
     {
-      "what": "Heart rate, lactate and SpO2 during the constant-workload bout at the individual anaerobic threshold, 10-100% of time to exhaustion (Table 1, NC): the bout is 266.2 W, 80.8% of VO2peak 53.1 mL/min/kg, level (0.808 x 53.1 - 3.7)/31.7 = 1.237 (watts/186 = 1.431), above the model's activity scale of 0 to 1; the 10% steps are also of each person's own duration (mean 41:18 min:sec)",
+      "what": "Heart rate, lactate and SpO2 during the constant-workload bout at the individual anaerobic threshold, 10-100% of time to exhaustion (Table 1, NC): the bout is 266.2 W, 80.8% of VO2peak 53.1 mL/min/kg, level (0.808 x 53.1 - 3.7)/31.7 = 1.237 (watts/186 = 1.431), now within the activity scale of 0 to 2; it is left out because the load is held until each person's voluntary exhaustion (mean 41:18 min:sec) with no printed length, and the results are on a normalized 10-100% time axis, not minutes",
       "missing": {
         "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "name": "exercise_to_exhaustion_ramp"
       }
     },
     {
-      "what": "Heart rate, lactate and SpO2 at the end of the 10-min cool-down at 100 W (Table 1, NC, column CD): it follows the bout above the activity scale, whose length differs between people",
+      "what": "Heart rate, lactate and SpO2 at the end of the 10-min cool-down at 100 W (Table 1, NC, column CD): it follows the exhaustion bout (level 1.43, now within the scale), whose length differs between people and is not printed as a fixed time",
       "missing": {
         "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "name": "exercise_to_exhaustion_ramp"
       }
     },
     {
@@ -199,10 +199,10 @@
       }
     },
     {
-      "what": "Time to voluntary exhaustion, 41:18 ± 08:21 min:sec in normoxia (Results): the bout cannot be run",
+      "what": "Time to voluntary exhaustion, 41:18 ± 08:21 min:sec in normoxia (Results): a constant load (266.2 W, level 1.43, now within the activity scale) held until each person's exhaustion; the bout cannot be run for a fixed length",
       "missing": {
         "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "name": "exercise_to_exhaustion_ramp"
       }
     }
   ]
