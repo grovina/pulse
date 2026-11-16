@@ -1,0 +1,225 @@
+{
+  "paper": "broome-2022",
+  "citation": {
+    "authors": "Broome S, et al.",
+    "title": "MitoQ supplementation augments acute exercise-induced increases in muscle PGC1α mRNA and improves training-induced increases in peak power independent of mitochondrial content and function in untrained middle-aged men",
+    "journal": "Redox Biology",
+    "year": 2022,
+    "doi": "10.1016/j.redox.2022.102341",
+    "pmid": "35623315",
+    "pmcid": "PMC9142706"
+  },
+  "population": {
+    "n": 11,
+    "sex": "male",
+    "age_years": {
+      "mean": 44.0,
+      "sd": 8.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.7,
+      "sd": 3.3,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Placebo group of the parallel trial (Table 1, mean +/- SD, n = 11): untrained healthy middle-aged men, non-smokers, free of injury and chronic illness including cardiovascular and metabolic disease, doing under 2 h physical activity per week. Only the placebo group is entered; the MitoQ group (n = 12) is not. The paper does not print n beside Table 2; n = 11 is the placebo group size of Table 1 and Results say results are for the 23 who completed the acute trial."
+  },
+  "protocols": [
+    {
+      "name": "placebo_hiit_bout",
+      "description": "Placebo arm of the acute high-intensity interval bout, cycle ergometer, after a 10 h overnight fast ('arrived at the laboratory following a 10 h overnight fast'; cannulation and a biopsy come before minute 0, so the fast at minute 0 was a little longer, not printed). No meals: the placebo tablet (tapioca, silica, cellulose) was taken 30 min before breakfast daily, and the paper does not say breakfast was eaten before the bout. Bout: 10 x 60 s work intervals each followed by 75 s at 30 W, so interval k starts at 135 (k-1) s; starts are floored to whole minutes 0, 2, 4, 6, 9, 11, 13, 15, 18, 20 (the 5th, 540-600 s, is exactly minute 9-10), with 30 W filling the minutes between. The real bout lasts 21.25 min; minute 21-22 is the first minute after it (no cool-down printed), where the sample 'immediately after exercise' is placed. Work level from the placebo group's measured VO2 in the 5th interval, Table 2: (33.4 - 3.7) / 31.7 = 0.9369 (237 W / 186 = 1.27 is above the scale, so VO2 is used). Recovery level 30 / 186 = 0.1613. Clock hour not printed (8.0 assumed).",
+      "duration_min": 22,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 1,
+            "level": 0.9369
+          },
+          {
+            "from_min": 1,
+            "to_min": 2,
+            "level": 0.1613
+          },
+          {
+            "from_min": 2,
+            "to_min": 3,
+            "level": 0.9369
+          },
+          {
+            "from_min": 3,
+            "to_min": 4,
+            "level": 0.1613
+          },
+          {
+            "from_min": 4,
+            "to_min": 5,
+            "level": 0.9369
+          },
+          {
+            "from_min": 5,
+            "to_min": 6,
+            "level": 0.1613
+          },
+          {
+            "from_min": 6,
+            "to_min": 7,
+            "level": 0.9369
+          },
+          {
+            "from_min": 7,
+            "to_min": 9,
+            "level": 0.1613
+          },
+          {
+            "from_min": 9,
+            "to_min": 10,
+            "level": 0.9369
+          },
+          {
+            "from_min": 10,
+            "to_min": 11,
+            "level": 0.1613
+          },
+          {
+            "from_min": 11,
+            "to_min": 12,
+            "level": 0.9369
+          },
+          {
+            "from_min": 12,
+            "to_min": 13,
+            "level": 0.1613
+          },
+          {
+            "from_min": 13,
+            "to_min": 14,
+            "level": 0.9369
+          },
+          {
+            "from_min": 14,
+            "to_min": 15,
+            "level": 0.1613
+          },
+          {
+            "from_min": 15,
+            "to_min": 16,
+            "level": 0.9369
+          },
+          {
+            "from_min": 16,
+            "to_min": 18,
+            "level": 0.1613
+          },
+          {
+            "from_min": 18,
+            "to_min": 19,
+            "level": 0.9369
+          },
+          {
+            "from_min": 19,
+            "to_min": 20,
+            "level": 0.1613
+          },
+          {
+            "from_min": 20,
+            "to_min": 21,
+            "level": 0.9369
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "placebo_hr_fifth_interval",
+      "description": "Mean heart rate recorded during the fifth work interval (minutes 9 to 10 of the bout), placebo group",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_hiit_bout"
+      ],
+      "window": {
+        "start_min": 9,
+        "end_min": 10
+      },
+      "value": 155.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 23.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, Placebo column (mean +/- SD)",
+        "quote": "Heart rate (bpm) | 155 ± 23"
+      }
+    },
+    {
+      "id": "placebo_lactate_post_exercise",
+      "description": "Plasma lactate immediately after the bout (the first minute after the last work interval, minutes 21 to 22 of the arm), placebo group",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_hiit_bout"
+      ],
+      "window": {
+        "start_min": 21,
+        "end_min": 22
+      },
+      "value": 15.16,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.33,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 2, Placebo column (mean +/- SD); Results: 'plasma lactate measured immediately after exercise'",
+        "quote": "Post-exercise plasma lactate (mmol/l) | 15.16 ± 2.33"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "MitoQ-group heart rate, VO2 and post-exercise lactate (Table 2): a supplement arm, only the placebo is entered",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "Blood samples midway through exercise and 15 min, 1, 2 and 3 h after (Methods): lactate and other values at these times are not printed in a table or the text",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Rest (pre-exercise) lactate: the text says only an approximately 11-fold increase in plasma lactate from rest, no resting value is printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Training-phase results (20 km time trial, VO2peak, peak power, citrate synthase, respiration) after three weeks of HIIT",
+      "missing": {
+        "kind": "timescale",
+        "name": "weeks_of_training"
+      }
+    }
+  ]
+}
