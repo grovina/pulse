@@ -1,0 +1,40 @@
+{
+  "paper": "sobngwi-2014",
+  "citation": "Sobngwi E, et al. Fasting insulin sensitivity indices are not better than routine clinical variables at predicting insulin sensitivity among sub-Saharan Africans without diabetes. BMC Endocr Disord 2014;14:65.",
+  "doi": "10.1186/1472-6823-14-65",
+  "pmid": "25106496",
+  "pmcid": "PMC4130121",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0",
+  "protocol": "Euglycaemic-hyperinsulinaemic clamp after 12 h fast: insulin primed over 10 min then 80 mU/m2/min for 100 min; blood glucose clamped at 5.5 mmol/L (100 mg/dl), checked every 5 min with 20% glucose; M over the final 20 min; OGTT also done (2 h glucose).",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "87 non-diabetic Cameroonian volunteers (51 men, 36 women), age 21-61 y, screened healthy; table splits by sex and BMI category (lean to obese).",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "M value (mg/min/kg, unadjusted and per lean mass)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "2 h glucose (OGTT)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting insulin",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Sub-Saharan African data, rare among clamp papers. Only fasting values, 2 h glucose and M are printed, not clamp-state glucose or insulin; some obese subjects have 2 h glucose near 8 mmol/L, so read the lean/normal columns."
+}

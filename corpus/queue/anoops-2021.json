@@ -1,0 +1,40 @@
+{
+  "paper": "anoops-2021",
+  "citation": "Anoop S, et al. Lipid accumulation product (LAP) as a potential index to predict risk of insulin resistance in young, non-obese Asian Indian males from Southern India: observations from hyperinsulinemic-euglycemic clamp studies. BMJ Open Diabetes Res Care 2021;9:e002414.",
+  "doi": "10.1136/bmjdrc-2021-002414",
+  "pmid": "34531243",
+  "pmcid": "PMC8449941",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "Hyperinsulinaemic-euglycaemic clamp (2 h), insulin infusion printed as 40 mU/kg/min (elsewhere in the text cited as 40 mU/m2), dextrose varied to hold plasma glucose 90 mg/dl (5 mmol/L); M value from 60-120 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "108 young normoglycaemic non-obese Asian Indian men, age 19.7 +/- 1 y, BMI 19.1 +/- 2.5 (Vellore birth cohort).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "M value (mg/kg/min)",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "fasting and postprandial glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting and postprandial insulin (pmol/L)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting and postprandial C-peptide",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Largest clamp sample here and South Asian. The insulin infusion unit is inconsistent in the text (mU/kg/min versus mU/m2), and the postprandial point is a single undefined sample, so treat that cautiously; skewed variables are medians marked with an asterisk."
+}

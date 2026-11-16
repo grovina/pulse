@@ -1,0 +1,50 @@
+{
+  "paper": "grimnes-2011",
+  "citation": "Grimnes G, et al. Vitamin D, insulin secretion, sensitivity, and lipids: results from a case-control study and a randomized controlled trial using hyperglycemic clamp technique. Diabetes 2011;60:2748-2757.",
+  "doi": "10.2337/db11-0650",
+  "pmid": "21911741",
+  "pmcid": "PMC3198082",
+  "licence": "CC BY-NC-ND 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/3.0/",
+  "protocol": "Hyperglycaemic clamp: dextrose 200 mg/mL bolus 150 mg/kg i.v. then glucose infused to hold venous glucose at 10 mmol/L for about 3 h (glucose every 5 min); first-phase insulin AUC 0-10 min, AUC 120-180 min, M and ISI over the last hour.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "160 Norwegian adults aged 30-75 y without diabetes (108 low and 52 high serum 25(OH)D, mean age about 52-54, BMI about 26.5, 49% women); placebo arm of vitamin D RCT n=45.",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "fasting glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin AUC 0-10 min",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin AUC 120-180 min",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "M 120-180 min (umol/min/kg) and ISI",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose, insulin pre/post in placebo group",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "range",
+  "figure_only": false,
+  "note": "Hyperglycaemic clamp with first-phase and second-phase insulin areas in a population sample, not strictly healthy volunteers (people with diabetes excluded). Skewed values are median (5th-95th percentile), normal ones mean +/- SD; insulin in pmol/L."
+}

@@ -1,0 +1,55 @@
+{
+  "paper": "labonte-2017",
+  "citation": "Labonte CC, et al. Plasma amino acids vs conventional predictors of insulin resistance measured by the hyperinsulinemic clamp. J Endocr Soc 2017;1:861-873.",
+  "doi": "10.1210/js.2016-1108",
+  "pmid": "29264537",
+  "pmcid": "PMC5686697",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "Hyperinsulinaemic-euglycaemic isoaminoacidaemic clamp with isotope tracers: human insulin 40 mU/m2/min (about 1 mU/kg FFM/min) after a postabsorptive baseline, glucose clamped at 5.5 mmol/L (8.0 in some T2D), kinetics from last 30 min of each steady state.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "Healthy men n=29 (age 53, BMI 23.3) and healthy women n=22 (age 47, BMI 22.3), printed separately from overweight/obese and T2D groups (total 134, 98% Caucasian).",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "fasting glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting FFA",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting glucagon",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose Rd (mg/kg FFM/min)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "clamp steady-state insulin (560 pmol/L)",
+      "where": "Methods text",
+      "form": "text"
+    },
+    {
+      "marker": "plasma BCAA and amino acids",
+      "where": "Table 2 and text",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Take only the healthy columns; groups are separate. Clamp-state glucose, insulin, FFA and glucagon are not in the table, only fasting values and Rd; clamp insulin appears once in the text as a pooled 560 +/- 10 pmol/L (label unclear)."
+}

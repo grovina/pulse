@@ -51,12 +51,14 @@
     },
     {
       "name": "intravenous glucose and clamps",
-      "status": "later",
+      "status": "active",
       "why": "IVGTT and clamp studies the format already reads (infusion and clamp operators).",
       "query": "(\"intravenous glucose tolerance\"[Title] OR IVGTT[Title] OR clamp[Title] OR \"hyperglycemic clamp\"[Title] OR \"euglycemic\"[Title]) AND healthy[All Fields] AND insulin[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 137,
+      "queued": 7,
+      "batches": [
+        "2026-11-16"
+      ],
       "hits": 137
     },
     {

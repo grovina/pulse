@@ -1,0 +1,36 @@
+{
+  "paper": "naimi-2025",
+  "citation": "Naimi F, et al. Antilipolytic insulin sensitivity indices measured during an oral glucose challenge: associations with insulin-glucose clamp-derived indices. Endocrinol Metab 2025;40:561-.",
+  "doi": "10.3803/EnM.2024.2129",
+  "pmid": "40101329",
+  "pmcid": "PMC12409164",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "75 g OGTT sampled every 10 min from -20 to 120 min (glucose, insulin, NEFA) plus a two-step euglycaemic-hyperinsulinaemic clamp: 10 mU/m2/min for 120 min, then 40 mU/m2/min for 2 h; M over the last 20 min.",
+  "protocol_kinds": [
+    "OGTT",
+    "other"
+  ],
+  "population": "15 healthy non-PCOS women (age 28.5 +/- 5.9, BMI 22.7 +/- 2.3) printed separately from 14 women with PCOS; total 29.",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "fasting glucose, insulin, NEFA",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose and insulin at 120 min, AUC glucose, insulin, NEFA (OGTT)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "M value (umol/kg/min) from clamp",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Gives both an OGTT with NEFA and a two-step clamp in the same healthy women, a useful FFA link; read only the non-PCOS column. Insulin and AUCs are medians with IQR, glucose and M mean +/- SD; clamp-time NEFA values are mainly in figures."
+}
