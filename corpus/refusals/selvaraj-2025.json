@@ -1,0 +1,47 @@
+{
+  "paper": "selvaraj-2025",
+  "citation": {
+    "authors": "Selvaraj S, Petridis L, Majtényi H, Bartha H, Tóth Á, Utczás K, Szilágyi-Utczás M, Kimble R, Zare R, Akbari A, Heinrich KM",
+    "title": "Acute effects of combined supplementation of L-arginine and citrulline malate on aerobic, anaerobic, and CrossFit exercise performance",
+    "journal": "Scientific Reports",
+    "year": 2025,
+    "doi": "10.1038/s41598-025-16374-x",
+    "pmid": "41006371",
+    "pmcid": "PMC12475454"
+  },
+  "reported": [
+    {
+      "what": "placebo-arm resting heart rate, and systolic and diastolic blood pressure before exercise, in the three groups (CrossFit n=16, Wingate n=16, Harvard n=14), mean ± SD; the paper says they were recorded 'before' the exercise but not when relative to the one-hour rest after the carbohydrate-containing drink (150 mL orange juice, 150 mL raspberry syrup, grams not printed) and says nothing of food before the visit",
+      "location": {
+        "where": "Table 2, columns Cindy / Wingate / Harvard Placebo",
+        "quote": "Resting HR (bpm) | 66.4 ± 9.4 | 73.0 ± 9.6 | 67.6 ± 8.2"
+      }
+    },
+    {
+      "what": "placebo-arm mean heart rate during the 'Cindy' CrossFit workout (20 min of pull-ups, push-ups and squats, as many rounds as possible), a bodyweight circuit with no oxygen uptake, watts or METs printed",
+      "location": {
+        "where": "Table 2, column Cindy Placebo",
+        "quote": "Mean HR (bpm) | 160.8 ± 15.8"
+      }
+    },
+    {
+      "what": "placebo-arm heart rate and blood pressure after the Harvard step test (51 cm, 30 steps/min, up to 5 min), a stepping rate with no oxygen uptake or METs printed; recovery heart rates at 1-1.5, 2-2.5 and 3-3.5 min and mean heart rate",
+      "location": {
+        "where": "Table 3, Harvard rows, Placebo column",
+        "quote": "Harvard step test Heart rate (1–1:30) | bpm | 67.8 ± 8.9 | 68.9 ± 8.6"
+      }
+    },
+    {
+      "what": "placebo-arm blood pressure and heart rate two minutes after the Wingate test, and mean heart rate; the 30 s all-out bout is printed as a mean power of 675 W (placebo), which on watts/186 gives a level of about 3.6, above the model's 0 to 1 activity scale",
+      "location": {
+        "where": "Table 3, row 'Average power' W, Placebo column",
+        "quote": "Average power | W | 663 ± 86 | 675 ± 95"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every protocol is run after a placebo drink of 100 mL water, 150 mL orange juice and 150 mL raspberry syrup whose carbohydrate is not printed, the paper gives no food state before the visit, and the Cindy and step-test bouts have no oxygen uptake, METs or watts (the Wingate watts exceed the activity scale); the few values that need no bout (pre-exercise rest) are not placed in time relative to that drink, so none can be written."
+}
