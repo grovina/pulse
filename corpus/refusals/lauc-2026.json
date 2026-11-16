@@ -1,0 +1,40 @@
+{
+  "paper": "lauc-2026",
+  "citation": {
+    "authors": "Lauc G, et al.",
+    "title": "Metabolic, hormonal and glycan changes during a 72-hour water-only fast: a pilot study",
+    "journal": "Croatian Medical Journal",
+    "year": 2026,
+    "doi": "10.3325/cmj.2026.67.226",
+    "pmid": "42286908",
+    "pmcid": "PMC13247747"
+  },
+  "reported": [
+    {
+      "what": "fasting glucose at T0 (before), T1 (end of 72 h water-only fast) and T2 (11 days later), n=5, median (min-max)",
+      "location": {
+        "where": "Table 1, columns T0 | T1 | T2",
+        "quote": "Glucose (mmol/L) | 5.6 | 3.8 | 5.55*"
+      }
+    },
+    {
+      "what": "fasting insulin at T0, T1 and T2, n=5, median (min-max)",
+      "location": {
+        "where": "Table 1, columns T0 | T1 | T2",
+        "quote": "Insulin (pmol/L) | 62.4 | 34.8 | 42.5"
+      }
+    },
+    {
+      "what": "morning cortisol at T0, T1 and T2, n=5, median (min-max)",
+      "location": {
+        "where": "Table 1, columns T0 | T1 | T2",
+        "quote": "Morning cortisol (nmol/L) | 356 | 417 | 256"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "median_with_iqr"
+  },
+  "detail": "Every value in Table 1 is a median with min-max (footnote: 'Values are presented as median (min-max)') for five people; the paper prints no mean, SD or SEM for glucose, insulin or cortisol, and the statistic list has no median."
+}
