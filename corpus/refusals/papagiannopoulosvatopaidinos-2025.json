@@ -1,0 +1,40 @@
+{
+  "paper": "papagiannopoulosvatopaidinos-2025",
+  "citation": {
+    "authors": "Papagiannopoulos-Vatopaidinos I, Papagiannopoulou M, et al.",
+    "title": "Hypoglycemia compensation mechanisms in dry fasting",
+    "journal": "Metabolism Open",
+    "year": 2025,
+    "doi": "10.1016/j.metop.2025.100363",
+    "pmid": "40585323",
+    "pmcid": "PMC12206320"
+  },
+  "reported": [
+    {
+      "what": "serum glucose, serum insulin and plasma glucagon over 5 days of dry fasting (no food or water), mean +/- SE (SD in parentheses), n = 10, Days 0, 2, 3, 5 (Table 3; some later columns are changes from Day 0)",
+      "location": {
+        "where": "Table 3, row 'Glucose mg/dl'",
+        "quote": "Glucose mg/dl | 86 ± 3 (11)"
+      }
+    },
+    {
+      "what": "Day 0 fasting-free baseline insulin, habitual nutrition, sampled at the end of a 20:00-to-20:00 day interval, so not a timed fast",
+      "location": {
+        "where": "Table 3, row 'Insulin μU/ml'",
+        "quote": "Insulin μU/ml | 22 ± 3 (10)"
+      }
+    },
+    {
+      "what": "Day 0 plasma glucagon, same sampling",
+      "location": {
+        "where": "Table 3, row 'Glucagon pg/ml'",
+        "quote": "Glucagon pg/ml | 51 ± 5 (16)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "dry_fast"
+  },
+  "detail": "Every fasting sample is taken during a fast with no water for 1 to 5 days, which the protocol cannot express, and the only pre-fast values (Day 0) are drawn at the end of a day on habitual nutrition at an unstated clock time, so they are neither fasted nor timed fed samples."
+}
