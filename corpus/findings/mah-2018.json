@@ -1,0 +1,125 @@
+{
+  "paper": "mah-2018",
+  "citation": {
+    "authors": "Mah E, Garcia-Campayo V, Liska D",
+    "title": "Substitution of Corn Starch with Resistant Starch Type 4 in a Breakfast Bar Decreases Postprandial Glucose and Insulin Responses: A Randomized, Controlled, Crossover Study",
+    "journal": "Current Developments in Nutrition",
+    "year": 2018,
+    "doi": "10.1093/cdn/nzy066",
+    "pmid": "30338311",
+    "pmcid": "PMC6186909"
+  },
+  "population": {
+    "n": 21,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 34.14,
+      "sd": 8.62,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.5,
+      "sd": 2.32,
+      "min": 19.3,
+      "max": 27.0
+    },
+    "status": "healthy",
+    "description": "21 healthy adults (11 women, 10 men), Table 2 (n = 21, means ± SDs). Age 20-45 y was an enrolment criterion, so min and max are null; BMI range 19.3-27.0 kg/m2 is the observed range printed in Results and Abstract. Fasting glucose <=110 mg/dL, no diabetes, hypertension or cardiovascular disease by history and chemistry profile. Table 2 title says n = 21 while its footnote says it holds the per-protocol sample, which Table 3 gives as n = 20; n = 21 is kept because Table 2's percentages (11/21 = 52.4%, 15/21 = 71.4%, 5/21 = 23.8%) only fit 21."
+  },
+  "protocols": [
+    {
+      "name": "fasted_screening",
+      "description": "Participants' baseline blood pressure (Table 2: systolic and diastolic), modelled as a short fasted morning arm with water only. Table 2 does not say when, in what posture or on which visit the pressures were taken (Methods do not mention blood pressure measurement); the test visits were attended fasted 12-14 h (a range, not a value), entered as the guide's overnight 10 h.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "systolic_bp",
+      "description": "Systolic blood pressure of the 21 participants, Table 2 (Table 2 states neither posture, time nor visit; Methods do not describe the measurement)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_screening"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 109.9,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.05,
+        "n": 21
+      },
+      "location": {
+        "where": "Table 2, row 'Systolic blood pressure, mm Hg'; footnote: values are means ± SDs",
+        "quote": "Systolic blood pressure, mm Hg | 109.90 ± 11.05"
+      }
+    },
+    {
+      "id": "diastolic_bp",
+      "description": "Diastolic blood pressure of the 21 participants, Table 2 (Table 2 states neither posture, time nor visit; Methods do not describe the measurement)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_screening"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 66.57,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.37,
+        "n": 21
+      },
+      "location": {
+        "where": "Table 2, row 'Diastolic blood pressure, mm Hg'; footnote: values are means ± SDs",
+        "quote": "Diastolic blood pressure, mm Hg | 66.57 ± 9.37"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting glucose 94.00 +/- 10.19 mg/dL (Table 2): capillary finger-stick glucose was measured at screening and at both test visits (and at -15 and -5 min), and Table 2 does not say which occasion it prints",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "glucose iAUC0-120 min, Cmax and Tmax, and insulin iAUC0-120 min, Cmax and Tmax, control bar and RS4 bar, printed as medians (95% CIs) with asymmetric intervals, per-protocol n = 20 (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "percent reductions in median glucose and insulin iAUC (22%, 37%) and the P values (Results, Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "glucose and insulin time courses at -15 to 120 min for both bars (Figure 2A, B)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
