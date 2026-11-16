@@ -1,0 +1,1167 @@
+{
+  "paper": "sobngwi-2014",
+  "citation": {
+    "authors": "Sobngwi E, et al.",
+    "title": "Fasting insulin sensitivity indices are not better than routine clinical variables at predicting insulin sensitivity among sub-Saharan Africans without diabetes",
+    "journal": "BMC Endocrine Disorders",
+    "year": 2014,
+    "doi": "10.1186/1472-6823-14-65",
+    "pmid": "25106496",
+    "pmcid": "PMC4130121"
+  },
+  "population": {
+    "n": 87,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 34.6,
+      "sd": 11.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 27.6,
+      "sd": 6.5,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "87 non-diabetic Cameroonian volunteers (51 men, 36 women), recruited aged 21 to 61 y (enrolment range, not observed), screened by history, examination and biochemistry (fasting glucose >= 7 mmol/L indicated diabetes). Findings are by sex and BMI category (Table 1): lean (BMI < 25) groups are entered as healthy, overweight and obese groups as unselected. Each protocol overrides sex, age and BMI with that group's Table 1 values."
+  },
+  "protocols": [
+    {
+      "name": "fast_men_lean",
+      "description": "Single fasting sample, lean men (n = 23), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 33.1,
+          "sd": 11.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.1,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_men_lean",
+      "description": "75 g OGTT after a 12-h overnight fast, lean men (n = 23), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 33.1,
+          "sd": 11.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.1,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fast_men_over",
+      "description": "Single fasting sample, overweight men (n = 18), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 36.9,
+          "sd": 9.3,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 27.7,
+          "sd": 1.7,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_men_over",
+      "description": "75 g OGTT after a 12-h overnight fast, overweight men (n = 18), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 36.9,
+          "sd": 9.3,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 27.7,
+          "sd": 1.7,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fast_men_obese",
+      "description": "Single fasting sample, obese men (n = 10), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 38.3,
+          "sd": 9.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 35.3,
+          "sd": 7.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_men_obese",
+      "description": "75 g OGTT after a 12-h overnight fast, obese men (n = 10), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 38.3,
+          "sd": 9.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 35.3,
+          "sd": 7.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fast_women_lean",
+      "description": "Single fasting sample, lean women (n = 14), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 31.3,
+          "sd": 12.9,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.0,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_women_lean",
+      "description": "75 g OGTT after a 12-h overnight fast, lean women (n = 14), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 31.3,
+          "sd": 12.9,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.0,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fast_women_over",
+      "description": "Single fasting sample, overweight women (n = 9), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 35.3,
+          "sd": 16.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 27.7,
+          "sd": 1.5,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_women_over",
+      "description": "75 g OGTT after a 12-h overnight fast, overweight women (n = 9), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 35.3,
+          "sd": 16.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 27.7,
+          "sd": 1.5,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fast_women_obese",
+      "description": "Single fasting sample, obese women (n = 13), age and BMI from Table 1, after a 12-h overnight fast (Methods: 'After a 12 h overnight fast'). Arm of 30 min read at minutes 29-30; the clock hour of the fasting sample is not printed (the clamp started at 8 am, the OGTT day's hour is not given), so 8.0 is assumed, and the arm length is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 34.2,
+          "sd": 10.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 36.3,
+          "sd": 5.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_women_obese",
+      "description": "75 g OGTT after a 12-h overnight fast, obese women (n = 13), age and BMI from Table 1; blood sampled at 0, 30 and 120 min, only the 120-min value entered (arm of 121 min). Clock hour of the test not printed, 8.0 assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 34.2,
+          "sd": 10.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 36.3,
+          "sd": 5.9,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_men_lean",
+      "description": "Fasting blood glucose, lean men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.56,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.58,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 1, column Men, Lean",
+        "quote": "Fasting glucose (mmol/L) | 4.56 ± 0.58"
+      }
+    },
+    {
+      "id": "glucose_2h_men_lean",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, lean men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_men_lean"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 5.46,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.24,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 1, column Men, Lean",
+        "quote": "2 h glucose (mmol/L) | 5.46 ± 1.24"
+      }
+    },
+    {
+      "id": "fasting_insulin_men_lean",
+      "description": "Fasting serum insulin, lean men, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.66,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.56,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 1, column Men, Lean",
+        "quote": "Fasting insulin (mU/L) | 4.66 ± 2.56"
+      }
+    },
+    {
+      "id": "fasting_glucose_men_over",
+      "description": "Fasting blood glucose, overweight men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.42,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.55,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Men, Overweight",
+        "quote": "Fasting glucose (mmol/L) | 4.42 ± 0.55"
+      }
+    },
+    {
+      "id": "glucose_2h_men_over",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, overweight men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_men_over"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 5.26,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Men, Overweight",
+        "quote": "2 h glucose (mmol/L) | 5.26 ± 1.00"
+      }
+    },
+    {
+      "id": "fasting_insulin_men_over",
+      "description": "Fasting serum insulin, overweight men, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.71,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.39,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Men, Overweight",
+        "quote": "Fasting insulin (mU/L) | 5.71 ± 4.39"
+      }
+    },
+    {
+      "id": "fasting_glucose_men_obese",
+      "description": "Fasting blood glucose, obese men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.93,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.56,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column Men, Obese",
+        "quote": "Fasting glucose (mmol/L) | 4.93 ± 0.56"
+      }
+    },
+    {
+      "id": "glucose_2h_men_obese",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, obese men, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_men_obese"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 8.17,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column Men, Obese",
+        "quote": "2 h glucose (mmol/L) | 8.17 ± 3.40"
+      }
+    },
+    {
+      "id": "fasting_insulin_men_obese",
+      "description": "Fasting serum insulin, obese men, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 8.95,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.6,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column Men, Obese",
+        "quote": "Fasting insulin (mU/L) | 8.95 ± 3.60"
+      }
+    },
+    {
+      "id": "fasting_glucose_women_lean",
+      "description": "Fasting blood glucose, lean women, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.46,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Women, Lean",
+        "quote": "Fasting glucose (mmol/L) | 4.46 ± 0.50"
+      }
+    },
+    {
+      "id": "glucose_2h_women_lean",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, lean women, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_women_lean"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 6.36,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.21,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Women, Lean",
+        "quote": "2 h glucose (mmol/L) | 6.36 ± 1.21"
+      }
+    },
+    {
+      "id": "fasting_insulin_women_lean",
+      "description": "Fasting serum insulin, lean women, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 6.72,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.69,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Women, Lean",
+        "quote": "Fasting insulin (mU/L) | 6.72 ± 2.69"
+      }
+    },
+    {
+      "id": "fasting_glucose_women_over",
+      "description": "Fasting blood glucose, overweight women, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.85,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.7,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, column Women, Overweight",
+        "quote": "Fasting glucose (mmol/L) | 4.85 ± 0.70"
+      }
+    },
+    {
+      "id": "glucose_2h_women_over",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, overweight women, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_women_over"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 6.67,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.68,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, column Women, Overweight",
+        "quote": "2 h glucose (mmol/L) | 6.67 ± 1.68"
+      }
+    },
+    {
+      "id": "fasting_insulin_women_over",
+      "description": "Fasting serum insulin, overweight women, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 9.56,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.94,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, column Women, Overweight",
+        "quote": "Fasting insulin (mU/L) | 9.56 ± 5.94"
+      }
+    },
+    {
+      "id": "glucose_2h_women_obese",
+      "description": "Blood glucose at 120 min of the 75 g OGTT, obese women, mean and SD (Table 1). Whole-blood glucose (Methods: 'whole blood samples ... for the determination of blood glucose', glucose oxidase); Table 1 does not say plasma; entered as glucose.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_women_obese"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 7.02,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.14,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, column Women, Obese",
+        "quote": "2 h glucose (mmol/L) | 7.02 ± 1.14"
+      }
+    },
+    {
+      "id": "fasting_insulin_women_obese",
+      "description": "Fasting serum insulin, obese women, mean and SD (Table 1 row 'Fasting insulin')",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.38,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.26,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, column Women, Obese",
+        "quote": "Fasting insulin (mU/L) | 7.38 ± 3.26"
+      }
+    },
+    {
+      "id": "sbp_men_lean",
+      "description": "Systolic blood pressure, lean men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 122.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20.0,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 1, column Men, Lean",
+        "quote": "Systolic blood pressure (mmHg) | 122 ± 20"
+      }
+    },
+    {
+      "id": "dbp_men_lean",
+      "description": "Diastolic blood pressure, lean men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 72.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.0,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 1, column Men, Lean",
+        "quote": "Diastolic blood pressure (mmHg) | 72 ± 9"
+      }
+    },
+    {
+      "id": "sbp_men_over",
+      "description": "Systolic blood pressure, overweight men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 131.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 21.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Men, Overweight",
+        "quote": "Systolic blood pressure (mmHg) | 131 ± 21"
+      }
+    },
+    {
+      "id": "dbp_men_over",
+      "description": "Diastolic blood pressure, overweight men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 76.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Men, Overweight",
+        "quote": "Diastolic blood pressure (mmHg) | 76 ± 11"
+      }
+    },
+    {
+      "id": "sbp_men_obese",
+      "description": "Systolic blood pressure, obese men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 129.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column Men, Obese",
+        "quote": "Systolic blood pressure (mmHg) | 129 ± 10"
+      }
+    },
+    {
+      "id": "dbp_men_obese",
+      "description": "Diastolic blood pressure, obese men, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_men_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 84.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column Men, Obese",
+        "quote": "Diastolic blood pressure (mmHg) | 84 ± 6"
+      }
+    },
+    {
+      "id": "sbp_women_lean",
+      "description": "Systolic blood pressure, lean women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 123.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 22.0,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Women, Lean",
+        "quote": "Systolic blood pressure (mmHg) | 123 ± 22"
+      }
+    },
+    {
+      "id": "dbp_women_lean",
+      "description": "Diastolic blood pressure, lean women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_lean"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 75.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.0,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, column Women, Lean",
+        "quote": "Diastolic blood pressure (mmHg) | 75 ± 9"
+      }
+    },
+    {
+      "id": "sbp_women_over",
+      "description": "Systolic blood pressure, overweight women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 117.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 17.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, column Women, Overweight",
+        "quote": "Systolic blood pressure (mmHg) | 117 ± 17"
+      }
+    },
+    {
+      "id": "dbp_women_over",
+      "description": "Diastolic blood pressure, overweight women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_over"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 71.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, column Women, Overweight",
+        "quote": "Diastolic blood pressure (mmHg) | 71 ± 6"
+      }
+    },
+    {
+      "id": "sbp_women_obese",
+      "description": "Systolic blood pressure, obese women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 125.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, column Women, Obese",
+        "quote": "Systolic blood pressure (mmHg) | 125 ± 6"
+      }
+    },
+    {
+      "id": "dbp_women_obese",
+      "description": "Diastolic blood pressure, obese women, mean and SD (Table 1); mean of two seated readings after a 15-min rest, on the anthropometric day (day 1, the fasted OGTT morning); the clock time is not printed, entered on the fasting arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_women_obese"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 77.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, column Women, Obese",
+        "quote": "Diastolic blood pressure (mmHg) | 77 ± 5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "M value from the euglycaemic clamp, unadjusted and adjusted to lean mass, all six groups (Table 1); the paper prints the insulin infusion rate (80 mU/m2/min) but no measured plasma insulin plateau, and its Methods state M per kg of fat-free mass while the table has rows 'unadjusted' and 'adjusted to lean mass'",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "M adjusted to lean mass (Table 1), per kg of fat-free mass",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "clamp-state glucose and insulin (80, 90, 100 min samples) and glucose infusion rate: not printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "fasting glucose of obese women (Table 1 prints the SD as '043', a typographical error)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "glucose/insulin ratio, HOMA-IR, FIRI, QUICKI (Table 1) and the correlations, regressions, kappa agreement (Tables 2, 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "total, HDL and LDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "triglycerides (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "percent fat, waist and hip circumference, waist-to-hip and waist-to-height ratios (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "insulin and glucose at 30 min of the OGTT: collected (0, 30 and 120 min) but not printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
