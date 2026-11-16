@@ -1,0 +1,830 @@
+{
+  "paper": "rahatrozenbloom-2017",
+  "citation": {
+    "authors": "Rahat-Rozenbloom S, Fernandes J, Cheng J, Wolever TMS",
+    "title": "The acute effects of inulin and resistant-starch on postprandial serum short-chain fatty acids and second-meal glycaemic response in lean and overweight humans",
+    "journal": "European Journal of Clinical Nutrition",
+    "year": 2017,
+    "doi": "10.1038/ejcn.2016.248",
+    "pmid": "27966565",
+    "pmcid": "PMC5298923"
+  },
+  "population": {
+    "n": 25,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 39.8,
+      "sd": 14.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 27.5,
+      "sd": 5.0,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "25 non-diabetic adults (12 lean, BMI<25; 13 overweight/obese, BMI>=25), 12 men and 13 women, enrolled aged 18-65 with BMI at least 20 and at most 35 kg/m2 (printed garbled as '353kg/m2', read as 35); excluded for diabetes, cardiovascular, bowel, kidney or liver disease, glucose-affecting drugs, smoking, fasting glucose >=7.0 mmol/L. No glucose tolerance test was reported, so 'unselected'. Age and BMI SD computed as SEM x sqrt(25) from Table 1 (age 39.8 +/- 2.8 gives 14.0; BMI 27.5 +/- 1.0 gives 5.0)."
+  },
+  "protocols": [
+    {
+      "name": "glucose_drink",
+      "description": "Control: 75 g glucose in 300 mL water (Test drinks). Drink within 5 min after the fasting blood sample, 300 mL water; blood at 0, 0.5, 1, 1.5, 2, 3, 4 h (standard lunch at 4 h is not entered: its grams are in the supplementary information, not in the paper). Arrived 08:00 after a 12 h fast; the drink time is not printed, so 08:00 is assumed for start_hour.",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in 300 mL water"
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "inulin_drink",
+      "description": "75 g glucose plus 24 g inulin in 300 mL water (Test drinks). carbs_g 75 as printed. The paper writes 75 g glucose + 24 g inulin product (90% dietary fibre, 10% free fructose, glucose and saccharose), so by the label the fibre is 24 x 0.9 = 21.6 g and the free sugars 2.4 g; neither is printed in grams. fibre_g 24 follows the authors' own statement that the RS dose was chosen so its fibre 'equaled the dose of inulin' (24 g), and the 2.4 g of free sugars is not added to carbs_g. Drink within 5 min after the fasting blood sample, 300 mL water; blood at 0, 0.5, 1, 1.5, 2, 3, 4 h (standard lunch at 4 h is not entered: its grams are in the supplementary information, not in the paper). Arrived 08:00 after a 12 h fast; the drink time is not printed, so 08:00 is assumed for start_hour.",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "fibre_g": 24.0,
+          "form": "liquid",
+          "food": "75 g glucose and 24 g inulin in 300 mL water"
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    },
+    {
+      "name": "rs_drink",
+      "description": "75 g glucose plus 28 g Nutriose resistant starch in 300 mL water (Test drinks: 'total fibre content of 85%; 24g RS and 4.2g rapidly digestible starch'). Derived: carbs_g = 75 + 4.2 = 79.2 (the 4.2 g rapidly digestible starch counted as available carbohydrate); fibre_g 24 as printed ('24g RS'; also the dose 'equaled the dose of inulin'). Drink within 5 min after the fasting blood sample, 300 mL water; blood at 0, 0.5, 1, 1.5, 2, 3, 4 h (standard lunch at 4 h is not entered: its grams are in the supplementary information, not in the paper). Arrived 08:00 after a 12 h fast; the drink time is not printed, so 08:00 is assumed for start_hour.",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 79.2,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "fibre_g": 24.0,
+          "form": "liquid",
+          "food": "75 g glucose and 28 g Nutriose resistant starch in 300 mL water"
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    },
+    {
+      "name": "fasting_all",
+      "description": "Fasting value from Table 1 (characteristics at screening); the table does not say when the blood was drawn, so a short fasted morning arm with water only stands for it; duration, start hour and fast length assumed. Whole group, n=25.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_lean",
+      "description": "Fasting value from Table 1 (characteristics at screening); the table does not say when the blood was drawn, so a short fasted morning arm with water only stands for it; duration, start hour and fast length assumed. Lean group (BMI<25), n=12; age and BMI SD computed as SEM x sqrt(12) from Table 1 (age 33.4 +/- 3.7 gives 12.82; BMI 23.2 +/- 0.4 gives 1.39).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 33.4,
+          "sd": 12.82,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.2,
+          "sd": 1.386,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "fasting_overweight",
+      "description": "Fasting value from Table 1 (characteristics at screening); the table does not say when the blood was drawn, so a short fasted morning arm with water only stands for it; duration, start hour and fast length assumed. Overweight/obese group (BMI>=25), n=13; age and BMI SD computed as SEM x sqrt(13) from Table 1 (age 45.8 +/- 3.5 gives 12.62; BMI 31.5 +/- 1.0 gives 3.61).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 45.8,
+          "sd": 12.62,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 31.5,
+          "sd": 3.606,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "ctl_glucose_iauc_0_2h",
+      "description": "Incremental area under the serum glucose curve 0-2 h over the fasting concentration, Glucose control drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 3.73,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.49,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 0–2 h, column Glucose",
+        "quote": "iAUC 0–2 h | 3.73 ± 0.49"
+      }
+    },
+    {
+      "id": "inu_glucose_iauc_0_2h",
+      "description": "Incremental area under the serum glucose curve 0-2 h over the fasting concentration, Inulin drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "inulin_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 4.6,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.55,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 0–2 h, column Inulin",
+        "quote": "iAUC 0–2 h | 4.60 ± 0.55a"
+      }
+    },
+    {
+      "id": "rs_glucose_iauc_0_2h",
+      "description": "Incremental area under the serum glucose curve 0-2 h over the fasting concentration, Resistant starch drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rs_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 3.93,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.56,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 0–2 h, column Resistant Starch",
+        "quote": "iAUC 0–2 h | 3.93 ± 0.56"
+      }
+    },
+    {
+      "id": "ctl_glucose_iauc_2_4h",
+      "description": "Incremental area under the serum glucose curve 2-4 h over the fasting concentration (sample at minute 0), Glucose control drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": -1.13,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.23,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 2–4 h, column Glucose",
+        "quote": "iAUC 2–4 h | −1.13 ± 0.23"
+      }
+    },
+    {
+      "id": "inu_glucose_iauc_2_4h",
+      "description": "Incremental area under the serum glucose curve 2-4 h over the fasting concentration (sample at minute 0), Inulin drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "inulin_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": -0.89,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.25,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 2–4 h, column Inulin",
+        "quote": "iAUC 2–4 h | −0.89 ± 0.25"
+      }
+    },
+    {
+      "id": "rs_glucose_iauc_2_4h",
+      "description": "Incremental area under the serum glucose curve 2-4 h over the fasting concentration (sample at minute 0), Resistant starch drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rs_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": -0.66,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, glucose, iAUC 2–4 h, column Resistant Starch",
+        "quote": "iAUC 2–4 h | −0.66 ± 0.30"
+      }
+    },
+    {
+      "id": "ctl_insulin_iauc_0_2h",
+      "description": "Incremental area under the serum insulin curve 0-2 h over the fasting concentration, Glucose control drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 111.0,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18.8,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 0–2 h, column Glucose",
+        "quote": "iAUC 0–2 h | 111.0 ± 18.8"
+      }
+    },
+    {
+      "id": "inu_insulin_iauc_0_2h",
+      "description": "Incremental area under the serum insulin curve 0-2 h over the fasting concentration, Inulin drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "inulin_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 114.9,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 21.0,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 0–2 h, column Inulin",
+        "quote": "iAUC 0–2 h | 114.9 ± 21.0"
+      }
+    },
+    {
+      "id": "rs_insulin_iauc_0_2h",
+      "description": "Incremental area under the serum insulin curve 0-2 h over the fasting concentration, Resistant starch drink (samples 0, 0.5, 1, 1.5, 2 h; area below baseline subtracted, Statistical analysis)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rs_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "subtracted",
+      "value": 106.8,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16.8,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 0–2 h, column Resistant Starch",
+        "quote": "iAUC 0–2 h | 106.8 ± 16.8"
+      }
+    },
+    {
+      "id": "ctl_insulin_iauc_2_4h",
+      "description": "Incremental area under the serum insulin curve 2-4 h over the fasting concentration (sample at minute 0), Glucose control drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 23.7,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.2,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 2–4 h, column Glucose",
+        "quote": "iAUC 2–4 h | 23.7 ± 7.2"
+      }
+    },
+    {
+      "id": "inu_insulin_iauc_2_4h",
+      "description": "Incremental area under the serum insulin curve 2-4 h over the fasting concentration (sample at minute 0), Inulin drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "inulin_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 33.3,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.6,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 2–4 h, column Inulin",
+        "quote": "iAUC 2–4 h | 33.3 ± 11.6"
+      }
+    },
+    {
+      "id": "rs_insulin_iauc_2_4h",
+      "description": "Incremental area under the serum insulin curve 2-4 h over the fasting concentration (sample at minute 0), Resistant starch drink (samples 2, 3, 4 h; area below baseline subtracted, Statistical analysis); the paper does not list the samples used for this window, only the draw times 2, 3 and 4 h",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "rs_drink"
+      ],
+      "times": [
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 34.0,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 10.1,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, insulin, iAUC 2–4 h, column Resistant Starch",
+        "quote": "iAUC 2–4 h | 34.0 ± 10.1"
+      }
+    },
+    {
+      "id": "ctl_ffa_tauc_0_4h",
+      "description": "Total area under the serum ffa curve 0-4 h, Glucose control drink (trapezoid on the samples at 0, 0.5, 1, 1.5, 2, 3, 4 h; includes the fasting level)",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240
+      ],
+      "value": 1.05,
+      "unit": "mEq/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.07,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, FFA, tAUC 0–4 h, column Glucose",
+        "quote": "tAUC 0–4 h | 1.05 ± 0.07"
+      }
+    },
+    {
+      "id": "inu_ffa_tauc_0_4h",
+      "description": "Total area under the serum ffa curve 0-4 h, Inulin drink (trapezoid on the samples at 0, 0.5, 1, 1.5, 2, 3, 4 h; includes the fasting level)",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "inulin_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240
+      ],
+      "value": 1.06,
+      "unit": "mEq/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.08,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, FFA, tAUC 0–4 h, column Inulin",
+        "quote": "tAUC 0–4 h | 1.06 ± 0.08"
+      }
+    },
+    {
+      "id": "rs_ffa_tauc_0_4h",
+      "description": "Total area under the serum ffa curve 0-4 h, Resistant starch drink (trapezoid on the samples at 0, 0.5, 1, 1.5, 2, 3, 4 h; includes the fasting level)",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "rs_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240
+      ],
+      "value": 0.94,
+      "unit": "mEq/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, FFA, tAUC 0–4 h, column Resistant Starch",
+        "quote": "tAUC 0–4 h | 0.94 ± 0.06a"
+      }
+    },
+    {
+      "id": "all_fasting_insulin",
+      "description": "Fasting serum insulin, whole group",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_all"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 43.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.0,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 1, Fasting Insulin (pmol/L), Whole group column",
+        "quote": "Fasting Insulin (pmol/L) | 43.1 ± 5.0"
+      }
+    },
+    {
+      "id": "lean_fasting_glucose",
+      "description": "Fasting serum glucose, lean group",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_lean"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.76,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.12,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Fasting Glucose (mmol/L), Lean column",
+        "quote": "Fasting Glucose (mmol/L) | 4.76 ± 0.12"
+      }
+    },
+    {
+      "id": "overweight_fasting_glucose",
+      "description": "Fasting serum glucose, overweight/obese group",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_overweight"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.98,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, Fasting Glucose (mmol/L), Overweight/obese column",
+        "quote": "Fasting Glucose (mmol/L) | 4.98 ± 0.11"
+      }
+    },
+    {
+      "id": "lean_fasting_insulin",
+      "description": "Fasting serum insulin, lean group",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_lean"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 25.7,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Fasting Insulin (pmol/L), Lean column",
+        "quote": "Fasting Insulin (pmol/L) | 25.7 ± 3.0"
+      }
+    },
+    {
+      "id": "overweight_fasting_insulin",
+      "description": "Fasting serum insulin, overweight/obese group",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_overweight"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 57.77,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 6.5,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 1, Fasting Insulin (pmol/L), Overweight/obese column",
+        "quote": "Fasting Insulin (pmol/L) | 57.77 ± 6.5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose, insulin and FFA tAUC 4-6 h after the standard lunch (Table 3): the lunch (cheese and tomato sandwich, apple juice 200 mL, water, two chocolate cookies) is given without grams in the paper, only in the supplementary information",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "C-peptide iAUC 0-2 h, iAUC 2-4 h, tAUC 4-6 h per drink (Table 3) and by BMI group (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "FFA iAUC from the nadir to 4 h (iAUCmin4) per drink (Table 3): baseline is each person's own minimum over the first 4 h, not the fasting sample or a fixed window",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_area_from_nadir"
+      }
+    },
+    {
+      "what": "serum acetate per drink: tAUC 0-4 h, tAUC 4-6 h, iAUC nadir-6 h (Table 2), fasting acetate (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "acetate"
+      }
+    },
+    {
+      "what": "serum propionate and butyrate per drink (Table 2) and fasting values (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "propionate_butyrate"
+      }
+    },
+    {
+      "what": "breath hydrogen and methane (Results, Supplementary Figure 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "breath_hydrogen_methane"
+      }
+    },
+    {
+      "what": "lean against overweight/obese comparison of glucose, insulin, FFA, C-peptide and SCFA areas (Table 4): each number is the mean over a participant's three visits, i.e. over the glucose, inulin and RS drinks together, which is no single protocol",
+      "missing": {
+        "kind": "operator",
+        "name": "pooled_over_arms"
+      }
+    },
+    {
+      "what": "fasting glucose of the whole group (Table 1, 4.87 with a printed SEM of 0.84, against SEMs of 0.12 and 0.11 in its two subgroups): the SEM looks misprinted",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "time courses of glucose, insulin, C-peptide, FFA, SCFA (Figures 1 and 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "fasting triglycerides (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "fasting total, HDL and LDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "fasting C-reactive protein (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "inulin and resistant starch against glucose differences in glucose, insulin and FFA areas: the arms differ only in added fibre, which the model does not read yet",
+      "missing": {
+        "kind": "input",
+        "name": "meal_details_not_read"
+      }
+    }
+  ]
+}
