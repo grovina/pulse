@@ -389,6 +389,12 @@ Not rescored, from the board of 2026-10-29:
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
   for a person away from the median.
 
+- The activity input stops at 1.0 (`pulse/knowledge/corpus.py`), an oxygen
+  uptake of 35.4 mL/kg/min, so a hard bout cannot be given: li-2024's run at
+  65% of VO2max (36.2 mL/kg/min, level 1.025) is left out as
+  `exercise_above_activity_scale`, not capped. Fit people exercising hard sit
+  above the scale.
+
 Reported by the review of 2026-11-11 and not yet confirmed:
 
 - calibration fits interstitial glucose while evaluation reads plasma.
