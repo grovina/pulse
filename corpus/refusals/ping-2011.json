@@ -1,0 +1,39 @@
+{
+  "paper": "ping-2011",
+  "citation": {
+    "authors": "Ping FWC, et al.",
+    "title": "Effect of acute supplementation of Panax ginseng on endurance running in a hot and humid environment",
+    "journal": "Indian J Med Res",
+    "year": 2011,
+    "pmid": "21321426",
+    "pmcid": "PMC3100154"
+  },
+  "reported": [
+    {
+      "what": "placebo trial plasma lactate, glucose, insulin and free fatty acid, mean ± SD, n=9, at 0, 20, 40, 60 min of treadmill running at 70% VO2max in 31 C and 70% relative humidity and at exhaustion (84 min); the 0-min values follow a 10 h fast, then bread and 500 ml water 2 h before and a placebo capsule 1 h before",
+      "location": {
+        "where": "Table III, placebo (Pl) rows, 0 min column",
+        "quote": "Plasma Glucose (mmol/L) | Pl | 5.24 ± 0.7"
+      }
+    },
+    {
+      "what": "placebo trial free fatty acid at 0 min",
+      "location": {
+        "where": "Table III, placebo (Pl) rows, 0 min column",
+        "quote": "Plasma free fatty acid (mmol/l-1) | Pl | 0.36 ± 0.25"
+      }
+    },
+    {
+      "what": "bout intensity: measured oxygen uptake during the placebo trial (mL/kg/min, mean ± SD), so the bout level could be written",
+      "location": {
+        "where": "Table II, VO2 placebo row, 10 min column",
+        "quote": "VO2 (ml/kg/min) | Pl | 7.3 ± 1.3 | 34.02 ± 5.4**"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The meal 2 h before every sample is 'a piece of bread' with no grams (and the placebo capsule is not described), so not even the 0-min values can be written as a fasted or fed arm; the exercise samples additionally need a 31 C, 70% humidity heat exposure (core temperature 39.2 C at exhaustion), which the model has no input for."
+}
