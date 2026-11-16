@@ -1,0 +1,164 @@
+{
+  "paper": "hiratsu-2022",
+  "citation": {
+    "authors": "Hiratsu A, Tataka Y, Namura S, Nagayama C, Hamada Y, Miyashita M",
+    "title": "The effects of acute and chronic oral l-arginine supplementation on exercise-induced ammonia accumulation and exercise performance in healthy young men: A randomised, double-blind, cross-over, placebo-controlled trial",
+    "journal": "Journal of Exercise Science and Fitness",
+    "year": 2022,
+    "doi": "10.1016/j.jesf.2022.02.003",
+    "pmid": "35308069",
+    "pmcid": "PMC8904605"
+  },
+  "population": {
+    "n": 16,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.0,
+      "sd": 3.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.0,
+      "sd": 1.5,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Sixteen healthy young men (non-smokers, not overweight or obese, no supplements or medication); body mass 69.6 +/- 8.5 kg, VO2max 53.3 +/- 11.0 ml/kg/min."
+  },
+  "protocols": [
+    {
+      "name": "acute_placebo_pre_exercise",
+      "description": "Acute placebo trial, only the part before the exercise: 10-h overnight fast, fasting venous sample at 0900 h (minute 0 = paper's -60 min), then 200 mL water with 5.5 g dextrin (placebo) taken as 5.5 g carbohydrate (dextrin counted as digestible carbohydrate), 60 min seated rest, sample at the paper's 0 min (arm minute 60). The 60-min cycling at 75% of HR reserve and everything after it is not written (intensity not printed).",
+      "duration_min": 61,
+      "start_hour": 9.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 5.5,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "5.5 g dextrin in 200 mL water"
+        }
+      ],
+      "assumed": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "acute_placebo_glucose_pre_exercise",
+      "description": "Plasma glucose before the bout, acute placebo trial: fasting sample (paper -60 min = arm minute 0) and sample 60 min after the dextrin drink (paper 0 min = arm minute 60)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "acute_placebo_pre_exercise"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.85,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.26,
+            "n": 16
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 4.59,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.67,
+            "n": 16
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, rows Glucose, Placebo, Acute, columns -60 min and 0 min",
+        "quote": "Glucose∗(mmol/L) | Placebo | Acute | 4.85 | ± | 0.26 | 4.59 | ± | 0.67"
+      }
+    },
+    {
+      "id": "acute_placebo_nefa_pre_exercise",
+      "description": "Serum NEFA before the bout, acute placebo trial: fasting sample (arm minute 0) and 60 min after the dextrin drink (arm minute 60)",
+      "marker": "ffa",
+      "statistic": "curve",
+      "protocols": [
+        "acute_placebo_pre_exercise"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 0.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.17,
+            "n": 16
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 0.25,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.13,
+            "n": 16
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, rows NEFA, Placebo, Acute, columns -60 min and 0 min",
+        "quote": "NEFA∗∗(mmol/L) | Placebo | Acute | 0.40 | ± | 0.17 | 0.25 | ± | 0.13"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose and NEFA at 60, 105 and 165 min (during/after the 60-min cycling at 75% of heart-rate reserve and the 15-min test) and their whole-period time averages, Table 2; mean HR 159 +/- 10 bpm during the bout",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Serum triglycerides at all times, Table 2",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Plasma arginine, ornithine, citrulline, Table 1",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "Plasma ammonia and serum creatine kinase (Fig. 3, figure only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Chronic placebo trial (day 15, after 13 days of dextrin twice a day) and both arginine trials, Tables 1-2",
+      "missing": {
+        "kind": "timescale",
+        "name": "weeks_of_training"
+      }
+    },
+    {
+      "what": "Mean power output of the 15-min performance test (158.4 +/- 37.7 W, acute placebo), after the 60-min bout whose intensity is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
