@@ -1,0 +1,33 @@
+{
+  "paper": "dejesusgomes-2025",
+  "citation": {
+    "authors": "de Jesus Gomes G, et al.",
+    "title": "Multiple Shorter High-Intensity Interval Exercise Sessions During the Day Result in Greater Energy Expenditure With Less Exertion Than a Longer Single Session: A Randomized Crossover Clinical Trial",
+    "journal": "Eur J Sport Sci",
+    "year": 2025,
+    "doi": "10.1002/ejsc.12302",
+    "pmid": "40318185",
+    "pmcid": "PMC12046499"
+  },
+  "reported": [
+    {
+      "what": "mean oxygen uptake during the 21 min of HIIE, 1xHIIE and 3xHIIE (2.86 and 2.81 L/min), with body mass 79.19 kg (Table 1): 36.1 and 35.5 mL/kg/min, level (36.12 - 3.7)/31.7 = 1.023 and about 1.00, at or above the activity scale's maximum of 1; the bout is entered by no other route (90% of the printed VO2max of 48.24 mL/kg/min would be 1.25)",
+      "location": {
+        "where": "Results, first paragraph on VO2",
+        "quote": "1xHIIE: 2.86 ± 0.65 L/min vs. 0.30 ± 0.06 L/min"
+      }
+    },
+    {
+      "what": "heart rate during exercise, 1xHIIE and 3xHIIE (140 ± 12.3 and 139 ± 12.5 bpm), and blood lactate after the session (abstract: 7.7 ± 3.7 and 5.4 ± 1.8 mmol/L): all depend on the bout, which cannot be given",
+      "location": {
+        "where": "Results, heart rate paragraph",
+        "quote": "1xHIIE: from 64 ± 8.28 bpm to 140 ± 12.3 bpm"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_above_activity_scale"
+  },
+  "detail": "The bout's measured mean oxygen uptake (2.86 L/min over 79.19 kg) gives an activity level of 1.02, above the scale's maximum of 1, and the gate refuses a level above 1; the resting heart rate and VO2 (Table 3, Results) were taken after a pre-exercise meal 2 h earlier whose energy is not printed (65% carbohydrate, 15% protein, 20% fat only), so no fasting arm can be written either."
+}
