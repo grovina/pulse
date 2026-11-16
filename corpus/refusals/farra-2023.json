@@ -1,0 +1,40 @@
+{
+  "paper": "farra-2023",
+  "citation": {
+    "authors": "Farra SD, et al.",
+    "title": "Effects of a branched-chain amino acid sports drink on multiple sprint exercise performance, blood glucose and cognitive function (placebo arm read)",
+    "journal": "Frontiers in Nutrition",
+    "year": 2023,
+    "doi": "10.3389/fnut.2023.1266422",
+    "pmid": "38144425",
+    "pmcid": "PMC10740374"
+  },
+  "reported": [
+    {
+      "what": "placebo-arm heart rate after each of five 1 km sprints, mean ± SD (n=11)",
+      "location": {
+        "where": "Table 4, row Placebo",
+        "quote": "Placebo | 161 ± 10 | 168 ± 9 | 171 ± 8 | 172 ± 8 | 174 ± 7"
+      }
+    },
+    {
+      "what": "placebo-arm capillary blood lactate before and 2 min after the five-sprint protocol, mean ± SD",
+      "location": {
+        "where": "Table 6, row Placebo",
+        "quote": "Placebo | 1.0 ± 0.4 | 13.1 ± 1.9"
+      }
+    },
+    {
+      "what": "placebo-arm mean power output of each 1 km sprint, mean ± SD (W)",
+      "location": {
+        "where": "Table 2, row Placebo",
+        "quote": "Placebo | 643 ± 270 | 612 ± 276 | 562 ± 271 | 504 ± 264 | 482 ± 263"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Subjects were fed, not fasted (only 2 h without food or drink, no meal or its content printed), and the placebo (2.75 g of non-medicinal ingredients, composition only in Figure 2) is not shown to be carbohydrate-free, so no pre-exercise lactate can be entered as a fasting or meal-defined value; the sprints are 1 km efforts with no printed duration, so the minutes of the bout, of the post-sprint heart rates and of the post-trial lactate cannot be placed, and there is no printed intensity other than mean watts over an unknown span."
+}
