@@ -1,0 +1,99 @@
+{
+  "about": "The standing search list: one PubMed Central open-access query per topic. Scouts work a topic in batches until its hits are all screened (the topic runs dry), then the next. `hits` is the query's count when last run; `screened` the hits a scout has triaged; `queued` the papers sent to readers. Papers read are counted from corpus/findings and corpus/refusals. A topic's found count is the larger of its hits and its screened records (a worked topic was searched with several queries; its query here is the main one).",
+  "topics": [
+    {
+      "name": "insulin after a meal",
+      "status": "active",
+      "why": "Insulin after mixed, fat and protein meals in healthy adults; the model predicted it far too low.",
+      "query": "(postprandial[Title] OR meal[Title] OR breakfast[Title]) AND insulin[Title] AND healthy[All Fields] AND (crossover[All Fields] OR randomized[All Fields] OR randomised[All Fields])",
+      "screened": 890,
+      "queued": 20,
+      "batches": [
+        "2026-11-15"
+      ],
+      "hits": 171
+    },
+    {
+      "name": "meals equal in grams, different in kind",
+      "status": "active",
+      "why": "Fibre, fat type, protein source, sugars and food form at matched grams, for the meal reader.",
+      "query": "(fibre[Title] OR fiber[Title] OR whey[Title] OR casein[Title] OR \"olive oil\"[Title] OR saturated[Title] OR fructose[Title] OR sucrose[Title] OR liquid[Title] OR juice[Title] OR \"protein source\"[Title] OR \"resistant starch\"[Title]) AND (postprandial[Title] OR glycemic[Title] OR glycaemic[Title] OR insulin[Title]) AND healthy[All Fields] AND insulin[All Fields]",
+      "screened": 1289,
+      "queued": 17,
+      "batches": [
+        "2026-11-16"
+      ],
+      "hits": 330
+    },
+    {
+      "name": "oral glucose tolerance test",
+      "status": "next",
+      "why": "The canonical test the model's states already cover; glucose, insulin, C-peptide over 2-3 h in healthy adults.",
+      "query": "(\"oral glucose tolerance test\"[Title] OR OGTT[Title] OR \"glucose load\"[Title] OR \"glucose ingestion\"[Title]) AND healthy[All Fields] AND insulin[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 257
+    },
+    {
+      "name": "fasting, overnight to several days",
+      "status": "later",
+      "why": "Glucose, insulin, fatty acids, ketones and glucagon as a fast lengthens.",
+      "query": "(fasting[Title] OR fast[Title] OR \"time-restricted\"[Title]) AND (insulin[All Fields] AND glucose[All Fields]) AND healthy[All Fields] AND (\"36 h\"[All Fields] OR \"48 h\"[All Fields] OR \"72 h\"[All Fields] OR prolonged[Title] OR extended[Title])",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 529
+    },
+    {
+      "name": "intravenous glucose and clamps",
+      "status": "later",
+      "why": "IVGTT and clamp studies the format already reads (infusion and clamp operators).",
+      "query": "(\"intravenous glucose tolerance\"[Title] OR IVGTT[Title] OR clamp[Title] OR \"hyperglycemic clamp\"[Title] OR \"euglycemic\"[Title]) AND healthy[All Fields] AND insulin[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 137
+    },
+    {
+      "name": "a bout of exercise",
+      "status": "later",
+      "why": "Glucose, lactate, fatty acids, heart rate and cortisol during and after one session.",
+      "query": "(exercise[Title] OR cycling[Title] OR running[Title] OR \"physical activity\"[Title]) AND (acute[Title] OR single[Title] OR bout[Title]) AND (glucose[All Fields] AND lactate[All Fields]) AND healthy[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 363
+    },
+    {
+      "name": "sleep loss and timing",
+      "status": "later",
+      "why": "Sleep restriction or deprivation and meal timing against glucose, insulin and cortisol.",
+      "query": "(\"sleep restriction\"[Title] OR \"sleep deprivation\"[Title] OR \"sleep loss\"[Title] OR \"circadian misalignment\"[Title] OR \"night shift\"[Title]) AND (glucose[All Fields] AND insulin[All Fields]) AND healthy[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 274
+    },
+    {
+      "name": "heart and circulation",
+      "status": "later",
+      "why": "Heart rate and blood pressure responses to meals, posture, exercise and stress.",
+      "query": "(\"blood pressure\"[Title] OR \"heart rate\"[Title] OR haemodynamic[Title] OR hemodynamic[Title]) AND (postprandial[Title] OR meal[Title] OR \"head-up tilt\"[Title] OR \"orthostatic\"[Title]) AND healthy[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 129
+    },
+    {
+      "name": "stress and cortisol",
+      "status": "later",
+      "why": "Cortisol and its daily rhythm, and the response to a stressor.",
+      "query": "(cortisol[Title]) AND (\"diurnal\"[Title] OR awakening[Title] OR \"stress test\"[Title] OR TSST[Title] OR rhythm[Title]) AND healthy[All Fields]",
+      "screened": 0,
+      "queued": 0,
+      "batches": [],
+      "hits": 188
+    }
+  ]
+}

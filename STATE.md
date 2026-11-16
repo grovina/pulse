@@ -279,6 +279,11 @@ Not rescored, from the board of 2026-10-29:
   the gate; it takes 6 CPU-seconds on a ten-finding file. The file states
   what the paper printed, in the paper's unit, with the kind of its
   uncertainty and its n; the loader derives the sigma.
+- Papers are found by a standing search list, `corpus/searches.json`: one
+  PubMed Central open-access query per topic, worked in batches until its
+  hits are all screened. Two topics are worked (insulin after a meal; meals
+  equal in grams, different in kind), 2,179 of 4,056 hits found so far are
+  screened, and the oral glucose tolerance test is next.
 - A paper is read by one agent and checked against the paper, number by
   number, by a second that sees only the file and the paper. Only then is it
   committed. The table counts the files. Given the paper's full text
