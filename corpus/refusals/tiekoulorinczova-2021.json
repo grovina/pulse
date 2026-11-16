@@ -1,0 +1,40 @@
+{
+  "paper": "tiekoulorinczova-2021",
+  "citation": {
+    "authors": "Tiekou Lorinczova H, Deb S, Begum G, et al.",
+    "title": "Comparative Assessment of the Acute Effects of Whey, Rice and Potato Protein Isolate Intake on Markers of Glycaemic Regulation and Appetite in Healthy Males Using a Randomised Study Design",
+    "journal": "Nutrients",
+    "year": 2021,
+    "doi": "10.3390/nu13072157",
+    "pmid": "34201703",
+    "pmcid": "PMC8308460"
+  },
+  "reported": [
+    {
+      "what": "Total iAUC of glucose, insulin and GLP-1 per protein shake (whey, potato, rice), mean +/- SD, n=9; no unit, no sampling minutes stated for the areas, and no fat content for the shakes",
+      "location": {
+        "where": "Table 3, column Whey | Potato | Rice",
+        "quote": "Insulin | 20,290.71 ± 14,222.9 # | 3293.2 ± 2179.5 | 9002.8 ± 9564.8"
+      }
+    },
+    {
+      "what": "Whey arm plasma glucose at 60 min, mean +/- SD (descriptive data are mean +/- SD per the statistics section), n=9",
+      "location": {
+        "where": "Results 3.1, paragraph 1",
+        "quote": "significant reduction in glucose at 60 min to 4.5 ± 0.3 mmol/L"
+      }
+    },
+    {
+      "what": "Insulin at 30 min, potato minus rice and potato minus whey, difference +/- an uncertainty the paper does not label (SD, SEM or other), pmol/L",
+      "location": {
+        "where": "Results 3.1, paragraph 2",
+        "quote": "−64.4 ± 20.9 pmol/L; p = 0.046"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The shakes' carbohydrate (7.1-9.8 g from juice) and protein (45.3-45.5 g) are printed in Table 1 but their fat is printed nowhere, and the stated 233.5 kcal does not follow from carbohydrate and protein at 4 kcal/g, so the meal's fat_g cannot be written without assuming it; the time courses are in Figures 2 and 3 only and the iAUC units are not printed."
+}
