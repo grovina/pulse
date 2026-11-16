@@ -1,0 +1,199 @@
+{
+  "paper": "raz-2013",
+  "citation": {
+    "authors": "Raz O, Steinvil A, Berliner S, Rosenzweig T, Justo D, Sasson A, Shapira I",
+    "title": "The effect of two iso-caloric meals containing equal amounts of fats with a different fat composition on the inflammatory and metabolic markers in apparently healthy volunteers",
+    "journal": "Journal of Inflammation (London, England)",
+    "year": 2013,
+    "doi": "10.1186/1476-9255-10-3",
+    "pmid": "23369030",
+    "pmcid": "PMC3599567"
+  },
+  "population": {
+    "n": 54,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 41.7,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.9,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "54 apparently healthy non-obese staff members (38 women, 16 men) of a Tel-Aviv hospital, no recent acute or chronic inflammatory disease, no anti-inflammatory or immunosuppressive drugs or steroids; each served as their own control on two meal mornings 3 weeks apart. Screening was for inflammation and drugs only; no glucose-tolerance or metabolic screening was reported, and the group's fasting insulin (about 25 uU/mL, HOMA-R about 5) is not that of a metabolically screened group, so status is unselected although the authors call the volunteers 'apparently healthy'. Age 41.7 and BMI 25.9 are printed with '± 3.1' and '± 0.9', which the Statistical analysis section calls standard errors; SD left null because SE x sqrt(54) would give 22.8 y and 6.6 kg/m2, and the paper's own Table 2 (age 39.7±4.0 n=15, 44±2.2 n=39; BMI 24.8±1.0, 27.1±0.9) implies SDs of about 14 y and 4-6 kg/m2, so the whole-group age figure does not fit it. Age and BMI are for all 54, not by sex."
+  },
+  "protocols": [
+    {
+      "name": "women_fasted",
+      "description": "Women (n = 38): the fasting (0 h) sample of the SFA-meal morning of Table 3. Venous blood drawn at 8 A.M. after a 12-hour overnight fast (Methods, Study design and Laboratory methods), before the meal; the meal itself is not entered (its carbohydrate and protein grams are not printed). Entered as a 30-minute fasted run-in ending at the 08:00 draw: start_hour = 8.0 - 0.5 = 7.5, prefast_hours = 12 - 0.5 = 11.5, sample read at minute 29-30; run-in length and the arithmetic are mine.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "female"
+      }
+    },
+    {
+      "name": "men_fasted",
+      "description": "Men (n = 16): the fasting (0 h) sample of the SFA-meal morning of Table 3. Venous blood drawn at 8 A.M. after a 12-hour overnight fast (Methods, Study design and Laboratory methods), before the meal; the meal itself is not entered (its carbohydrate and protein grams are not printed). Entered as a 30-minute fasted run-in ending at the 08:00 draw: start_hour = 8.0 - 0.5 = 7.5, prefast_hours = 12 - 0.5 = 11.5, sample read at minute 29-30; run-in length and the arithmetic are mine.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "male"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "women_fasting_insulin",
+      "description": "Women: fasting plasma insulin, 0 h of the SFA-meal morning",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 24.7,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.8,
+        "n": 38
+      },
+      "location": {
+        "where": "Table 3, row 'SFA: Women, 0h', column Insulin (μ u/ml), mean ± SEM (Table 3 title); n = 38 women from Results",
+        "quote": "SFA: Women | 0h | 24.7±1.8 | 82.6±2.1"
+      }
+    },
+    {
+      "id": "women_fasting_glucose",
+      "description": "Women: fasting glucose, 0 h of the SFA-meal morning",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 82.6,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.1,
+        "n": 38
+      },
+      "location": {
+        "where": "Table 3, row 'SFA: Women, 0h', column Glucose (mg/dl), mean ± SEM; n = 38 women from Results",
+        "quote": "SFA: Women | 0h | 24.7±1.8 | 82.6±2.1"
+      }
+    },
+    {
+      "id": "men_fasting_insulin",
+      "description": "Men: fasting plasma insulin, 0 h of the SFA-meal morning",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 24.9,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.9,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, row 'SFA: Male, 0h', column Insulin (μ u/ml), mean ± SEM; n = 16 men from Results",
+        "quote": "SFA: Male | 0h | 24.9±2.9 | 90.2±7.5"
+      }
+    },
+    {
+      "id": "men_fasting_glucose",
+      "description": "Men: fasting glucose, 0 h of the SFA-meal morning",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 90.2,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.5,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 3, row 'SFA: Male, 0h', column Glucose (mg/dl), mean ± SEM; n = 16 men from Results",
+        "quote": "SFA: Male | 0h | 24.9±2.9 | 90.2±7.5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "insulin and glucose at 2 h and 4 h after the SFA and MUFA breakfasts, women and men (Table 3): the two breakfasts' carbohydrate and protein grams are not printed (only energy, % fat and fat grams by type), and the energy left after fat cannot be split between them",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "triglycerides at 0, 2, 4 h, women and men (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "hs-CRP at 0, 2, 4 h (Table 1; geometric mean, mg/l)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "HOMA-R and QUICKI at 0, 2, 4 h (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "IL-6 at 0, 2, 4 h, women and men (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "interleukin_6"
+      }
+    }
+  ]
+}
