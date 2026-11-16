@@ -1,0 +1,40 @@
+{
+  "paper": "stromberg-2025",
+  "citation": {
+    "authors": "Strömberg A, et al.",
+    "title": "Functional characterisation of CD8+ T cells mobilised with acute supramaximal high-intensity interval exercise: implications for immune surveillance",
+    "journal": "Clinical & Translational Immunology",
+    "year": 2025,
+    "doi": "10.1002/cti2.70037",
+    "pmid": "40547947",
+    "pmcid": "PMC12179809"
+  },
+  "reported": [
+    {
+      "what": "Venous lactate (mmol/L, mean (SD), n=7) pre, immediately post, 30 and 60 min after three 30 s all-out cycle sprints",
+      "location": {
+        "where": "Table 1, row 'Lactate'",
+        "quote": "Lactate (mmol L−1) | 0.8 (0.2) | 17.1 (3.0)**** | 10.5 (2.2)**** | 4.5 (1.0)**"
+      }
+    },
+    {
+      "what": "Venous glucose (mmol/L, mean (SD), n=7) at the same four times; the pre-exercise state is a light breakfast of unstated content",
+      "location": {
+        "where": "Table 1, row 'Glucose'",
+        "quote": "Glucose (mmol L−1) | 5.2 (0.3) | 7.3 (1.3)** | 6.4 (1.2) | 5.3 (0.4)"
+      }
+    },
+    {
+      "what": "Average power of the three sprints (the bout's only intensity), 595, 468 and 419 W, which is above 186 W (level 1) on the activity scale",
+      "location": {
+        "where": "Results, first paragraph",
+        "quote": "The average power (mean (SD)) for the three sprints was 595 (84) W, 468 (80) W and 419 (107) W for sprints 1, 2 and 3, respectively."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_above_activity_scale"
+  },
+  "detail": "The bout's printed mean powers (595, 468, 419 W; level = W/186 = 3.2, 2.5, 2.3) lie far above the activity scale's 0 to 1, the 2 min of low-intensity cycling between sprints has no printed power, and the pre-exercise state was a light breakfast of unstated content, so the pre-exercise glucose and lactate cannot be entered as a fasted value either."
+}
