@@ -1,0 +1,47 @@
+{
+  "paper": "pedroso-2026",
+  "citation": {
+    "authors": "Pedroso JAB, et al.",
+    "title": "Acute Effects of Different Melatonin Doses on Performance and Psychophysiological Responses During Exhaustive Cycling Exercise: A Double-Blind Crossover Study",
+    "journal": "Nutrients",
+    "year": 2026,
+    "doi": "10.3390/nu18050798",
+    "pmid": "41829968",
+    "pmcid": "PMC12987325"
+  },
+  "reported": [
+    {
+      "what": "placebo-session mean blood lactate over the exhaustive bout at 80% of AnT (15 men), Table 4; the bout's cycle watts are printable (80% of AnT 126.10 W) but the paper never says whether the men were fasted or what they last ate",
+      "location": {
+        "where": "Table 4, placebo column",
+        "quote": "[Lac]Mean (mM) | 4.35 ± 1.99(3.25–5.45)"
+      }
+    },
+    {
+      "what": "placebo-session mean heart rate over the bout, Table 4",
+      "location": {
+        "where": "Table 4, placebo column",
+        "quote": "HRMean (bpm) | 147 ± 12(140–153)"
+      }
+    },
+    {
+      "what": "placebo-session resting blood lactate before the bout, drawn about 30 min after the placebo capsule, no fasting state or clock time printed, Table 3",
+      "location": {
+        "where": "Table 3, placebo column",
+        "quote": "[Lac]Rest (mM) | 0.96 ± 0.64(0.55–1.25)"
+      }
+    },
+    {
+      "what": "placebo-session resting heart rate before the bout, Table 3",
+      "location": {
+        "where": "Table 3, placebo column",
+        "quote": "HRRest (bpm) | 92 ± 16(83–100)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Intensity can be written (0.8 x AnT 126.10 W / 186), but the paper says only that the 15 men kept their usual diet and were tested at the same time of day, with no fast, last meal or clock hour, so neither the bout's values nor the resting values (drawn after an undescribed meal state) can be given a fed or fasted state; Table 1 has no other marker the model carries."
+}
