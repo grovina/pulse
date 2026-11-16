@@ -521,7 +521,7 @@ def _arm_population(who: _Who, override: dict | None) -> Population | None:
 _SERIES_INPUTS = {
     # name: (baseline, top, unit table or None)
     "sleep_wake": (1.0, 1.0),
-    "activity": (0.0, 1.0),
+    "activity": (0.0, 2.0),  # 2.0 is VO2 67 mL/kg/min; 1.0 was too low for hard bouts
     "glucose_infusion": (0.0, None),
     "glucose_clamp": (0.0, None),
     "insulin_clamp": (0.0, None),

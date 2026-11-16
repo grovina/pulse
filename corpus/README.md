@@ -441,7 +441,10 @@ with the printed numbers it used, so that the second reader can redo it.
   times 3.5. For a cycle ergometer work rate with no oxygen uptake,
   `level = watts / 186`. "70% of VO2max" with no VO2max printed, a heart-rate
   target, or a perceived exertion is not an intensity the model can be given:
-  leave the bout out.
+  leave the bout out. The scale runs to 2.0 (VO2 67 mL/kg/min). An all-out
+  sprint (a Wingate, or any bout whose power in seconds-long efforts puts it
+  above 2.0) is left out as `exercise_above_activity_scale`; above 1.0 the
+  model is extrapolating, so say in the protocol description that it is.
 
 ### What a meal says
 
@@ -532,7 +535,7 @@ Outside the segments an input is at its baseline.
 | input | baseline | level |
 |---|---|---|
 | `sleep_wake` | 1 (awake) | 0 asleep to 1 awake |
-| `activity` | 0 (rest) | 0 to 1, intensity (0.7 is a hard cycling bout) |
+| `activity` | 0 (rest) | 0 to 2, intensity (0.7 is a hard cycling bout, 2.0 is VO2 67 mL/kg/min) |
 | `glucose_infusion` | 0 | `unit`: `mg/dL/min` or `mg/kg/min` |
 | `glucose_clamp` | 0 | target plasma glucose; `unit` is a glucose unit; 0 means no clamp that minute |
 | `insulin_clamp` | 0 | plasma insulin plateau; `unit` is an insulin unit |

@@ -389,11 +389,13 @@ Not rescored, from the board of 2026-10-29:
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
   for a person away from the median.
 
-- The activity input stops at 1.0 (`pulse/knowledge/corpus.py`), an oxygen
-  uptake of 35.4 mL/kg/min, so a hard bout cannot be given: li-2024's run at
-  65% of VO2max (36.2 mL/kg/min, level 1.025) is left out as
-  `exercise_above_activity_scale`, not capped. Fit people exercising hard sit
-  above the scale.
+- The activity input ran only to 1.0 (VO2 35.4 mL/kg/min), so hard bouts were
+  left out as `exercise_above_activity_scale`. It now runs to 2.0 (VO2 67;
+  `pulse/knowledge/corpus.py`, `tests/test_activity_above_one.py`), but above
+  1.0 the model extrapolates: RQ is clamped at 1.0, sympathetic tone at 1, and
+  the heart-rate driver has never been trained above 1. A cold test on the
+  hard-bout findings this unlocks decides whether that needs fixing. All-out
+  sprints stay out.
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 
