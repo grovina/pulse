@@ -1,0 +1,30 @@
+{
+  "paper": "wiecek-2018",
+  "citation": "Wiecek M, et al. Front Physiol 2018;9:1782",
+  "doi": "10.3389/fphys.2018.01782",
+  "pmid": "30618797",
+  "pmcid": "PMC6295572",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Single 20 s all-out cycle sprint (load 0.075 x body mass in men, 0.065 x BM in women), morning, 2 h after a light breakfast; blood at 0, 3, 15, 30, 60 min and 24 h",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 healthy men (21.6 +/- 1.2 y, BMI 23.7) and 10 healthy women (22.6 +/- 1.5 y, BMI 21.5)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Sex-split glucose and lactate at six times after one sprint; glucose changes are small and mostly not significant; table lists SD (some medians in the baseline table)."
+}

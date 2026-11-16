@@ -63,12 +63,14 @@
     },
     {
       "name": "a bout of exercise",
-      "status": "later",
+      "status": "active",
       "why": "Glucose, lactate, fatty acids, heart rate and cortisol during and after one session.",
       "query": "(exercise[Title] OR cycling[Title] OR running[Title] OR \"physical activity\"[Title]) AND (acute[Title] OR single[Title] OR bout[Title]) AND (glucose[All Fields] AND lactate[All Fields]) AND healthy[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 363,
+      "queued": 15,
+      "batches": [
+        "2026-11-16"
+      ],
       "hits": 363
     },
     {

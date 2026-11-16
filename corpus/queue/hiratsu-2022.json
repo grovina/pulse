@@ -1,0 +1,35 @@
+{
+  "paper": "hiratsu-2022",
+  "citation": "Hiratsu A, et al. J Exerc Sci Fit 2022;20:140",
+  "doi": "10.1016/j.jesf.2022.02.003",
+  "pmid": "35308069",
+  "pmcid": "PMC8904605",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "10-h overnight fast; cycle ergometer 60 min at 75% of heart-rate reserve followed by a 15-min performance test; blood at -60 (before drink), 0, 60, 105, 165 min; placebo (dextrin 5.5 g) arm of the acute arginine trial (the 14-day chronic arm is separate)",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "16 healthy young men, 23 +/- 3 y, BMI 23.0 +/- 1.5, VO2max 53.3 +/- 11.0 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "non-esterified fatty acids",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "triglycerides",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Placebo is a carbohydrate (dextrin) taken before exercise; acute and chronic rows sit side by side, read only Acute-Placebo; five times including 2 h recovery."
+}

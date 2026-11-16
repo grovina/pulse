@@ -1,0 +1,40 @@
+{
+  "paper": "ping-2011",
+  "citation": "Ping FWC, et al. Indian J Med Res 2011;133:96",
+  "doi": null,
+  "pmid": "21321426",
+  "pmcid": "PMC3100154",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0/",
+  "protocol": "Treadmill at 70% of VO2max (VO2max 51 +/- 8.3 mL/kg/min) in a 31 C, 70% RH room until exhaustion (about 84 min); blood at 0, 20, 40, 60 min and at exhaustion; placebo trial of a ginseng crossover; bread and water 2 h before, 3 mL/kg cool water during",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "9 healthy male recreational runners, 25.4 +/- 6.9 y, 57.6 +/- 8.4 kg",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table III",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table III",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table III",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "Table III",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Four markers at five times in one table; hot-humid environment shifts the response; the table headers label the second column caffeine though the text says ginseng (read placebo rows only)."
+}

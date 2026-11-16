@@ -1,0 +1,40 @@
+{
+  "paper": "engeroff-2022",
+  "citation": "Engeroff T, et al. Int J Environ Res Public Health 2022;19:4422",
+  "doi": "10.3390/ijerph19084422",
+  "pmid": "35457289",
+  "pmcid": "PMC9032798",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Fasted baseline then 30 min cycle ergometer at 70% VO2max (about 140 W at 70%) before 4 h sitting with one ad libitum meal (exercise-before-sitting arm), or exercise broken into 5 x 6 min, or sitting control; serial venous glucose and insulin",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "18 healthy active women, 25.6 +/- 2.6 y, BMI 21.5 +/- 2.0",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "respiratory quotient",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Table 2 gives baseline, max/min change and iAUC per arm rather than each minute; a meal is eaten after the bout, so the post-exercise values reflect meal plus exercise; control arm is sitting only."
+}

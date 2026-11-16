@@ -1,0 +1,40 @@
+{
+  "paper": "zhang-2024",
+  "citation": "Jiaqi, Zihan, Wong H-S, et al. J Int Soc Sports Nutr 2024;21:2334680",
+  "doi": "10.1080/15502783.2024.2334680",
+  "pmid": "38535518",
+  "pmcid": "PMC10977014",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cycle ergometer HIIE: warm-up, 8 x 1 min at 85% of peak power output (PPO 123 +/- 25 W) with 1 min at 20% PPO between, cool-down, 2.5 h after nitrate-depleted placebo juice (the 0 mmol arm is the one to read); HR, BP, glucose, lactate at stated points of the session",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "13 healthy recreationally active women, 22.9 +/- 1.8 y, BMI 21.1 +/- 1.9",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "blood pressure",
+      "where": "text/Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Placebo arm of a beetroot-juice crossover; HR given at every work and recovery interval; glucose and lactate at baseline and exhaustion in Table 1 (preliminary test) and across the session in Table 2. Read only the placebo column. Slug from the family name Zhang; the XML swaps given and family names."
+}

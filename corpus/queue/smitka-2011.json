@@ -1,0 +1,45 @@
+{
+  "paper": "smitka-2011",
+  "citation": "Smitka K, et al. Nutr Metab 2011;8:81",
+  "doi": "10.1186/1743-7075-8-81",
+  "pmid": "22093818",
+  "pmcid": "PMC3245450",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "Cycle ergometer 45 min at 2 W/kg lean body mass (60 rpm); blood at 0 min (basal), 45 min (exercise) and 90 min post-exercise; the Acipimox columns are a separate arm (read the placebo/exercise-alone columns)",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "8 healthy women (25.8 +/- 1.7 y, BMI 20.0 +/- 0.4) as controls, alongside 8 women with bulimia nervosa (24.3 +/- 1.4 y)",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glycerol",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "growth hormone",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Controls printed separately from the bulimia group; low-to-moderate bout; FFA rise at 45 min is clear; Acipimox arm should be ignored."
+}

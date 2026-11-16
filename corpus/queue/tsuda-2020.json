@@ -1,0 +1,45 @@
+{
+  "paper": "tsuda-2020",
+  "citation": "Tsuda Y, et al. J Int Soc Sports Nutr 2020;17:39",
+  "doi": "10.1186/s12970-020-00369-2",
+  "pmid": "32703216",
+  "pmcid": "PMC7376855",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cycle ergometer 80 min at 50% of VO2max after a standard breakfast; blood before and immediately after exercise; placebo arm of an amino-acid crossover (placebo 30 min before)",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "15 healthy recreationally active men analysed, 32.3 +/- 1.2 y, BMI 22.3 +/- 0.4, VO2max 39.8 +/- 1.7 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "cortisol",
+      "where": "text (Results)",
+      "form": "text"
+    },
+    {
+      "marker": "ketone bodies",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Only before/after values, but FFA, cortisol, lactate and glucose together for a long moderate bout; values are mean +/- SEM (flowchart shows 48 recruited, 15 analysed). Placebo column only."
+}

@@ -1,0 +1,35 @@
+{
+  "paper": "hecksteden-2013",
+  "citation": "Hecksteden A, et al. PLoS One 2013;8:e81181",
+  "doi": "10.1371/journal.pone.0081181",
+  "pmid": "24278393",
+  "pmcid": "PMC3836744",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Exhaustive treadmill test (stepwise lactate phase then ramp to VO2max); fasting blood before, 1 h and 24 h after; the later 4-week training phase is separate",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "12 healthy untrained adults (8 F, 4 M), 49 +/- 7 y, BMI 29 +/- 4, VO2max 34 +/- 7 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "non-esterified fatty acids",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Acute exhaustive-test effect is reported separately from the training effect; values 1 h after only (no during-exercise sampling); middle-aged, overweight, sedentary group."
+}

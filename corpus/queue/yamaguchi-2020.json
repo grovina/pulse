@@ -1,0 +1,35 @@
+{
+  "paper": "yamaguchi-2020",
+  "citation": "Yamaguchi K, et al. Physiol Rep 2020;8:e14466",
+  "doi": "10.14814/phy2.14466",
+  "pmid": "32592261",
+  "pmcid": "PMC7319945",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cycle sprints, 3 sets of 3 x 10 s all-out, 40 s passive recovery (control condition 20 C, sea level, is the one to read); capillary blood at baseline, after sets 1-3, and at 3, 5, 30, 60 min post-exercise (lactate, glucose)",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 healthy male college athletes, 19.6 +/- 0.3 y (SE), 71.6 +/- 1.8 kg",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "peak and mean power",
+      "where": "text",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Four-condition crossover (control, hypoxia, hot, hot+hypoxia); the control rows are a pure sprint-bout recovery curve; table prints SE with 95% CI in parentheses."
+}
