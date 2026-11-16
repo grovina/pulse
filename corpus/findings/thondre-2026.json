@@ -1,0 +1,1095 @@
+{
+  "paper": "thondre-2026",
+  "citation": {
+    "authors": "Thondre PS, Young E, Pledger S, et al.",
+    "title": "A randomized controlled trial in healthy participants to compare the insulinogenic effects of whey protein and pea protein co-ingested with glucose",
+    "journal": "PLOS One",
+    "year": 2026,
+    "doi": "10.1371/journal.pone.0340386",
+    "pmid": "41615946",
+    "pmcid": "PMC12857942"
+  },
+  "population": {
+    "n": 30,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.1,
+      "sd": 10.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.2,
+      "sd": 2.8,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirty healthy, moderately active, non-smoking adults who completed all five test sessions (13 male, 17 female; Table 2, mean ± SD). Forty-four were recruited (aged 19 to 57 y, BMI <= 30, fasting glucose < 6.1 mmol/L, no diabetes or impaired glucose tolerance by health questionnaire); the 19 to 57 range is for the 44 recruited, so min and max are left null."
+  },
+  "protocols": [
+    {
+      "name": "glu_50g",
+      "description": "Reference: 50 g glucose (Table 1: 50 g available carbohydrate, no protein, fat or fibre) dissolved in 250 ml water, drunk over 15 min from minute 0 (entered as one meal at minute 0). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary samples to 180 min, so 181 minutes are simulated. Minute 0 is the start of drinking.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "fibre_g": 0.0,
+          "form": "liquid",
+          "food": "50 g glucose drink"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_pea10",
+      "description": "Glucose drink with 10 g NUTRALYS S85 Plus pea protein (Table 1: 50 g available carbohydrate, 8 g protein, 0.9 g fat, 0.1 g dietary fibre) in 250 ml water, drunk over 15 min from minute 0 (entered as one meal at minute 0). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary samples to 180 min, so 181 minutes are simulated. Minute 0 is the start of drinking.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 0.9,
+          "protein_g": 8.0,
+          "fibre_g": 0.1,
+          "protein_source": "plant",
+          "form": "liquid",
+          "food": "glucose drink with 10 g pea protein"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_pea20",
+      "description": "Glucose drink with 20 g NUTRALYS S85 Plus pea protein (Table 1: 50 g available carbohydrate, 16 g protein, 1.8 g fat, 0.2 g dietary fibre) in 250 ml water, drunk over 15 min from minute 0 (entered as one meal at minute 0). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary samples to 180 min, so 181 minutes are simulated. Minute 0 is the start of drinking.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 1.8,
+          "protein_g": 16.0,
+          "fibre_g": 0.2,
+          "protein_source": "plant",
+          "form": "liquid",
+          "food": "glucose drink with 20 g pea protein"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_whey10",
+      "description": "Glucose drink with 10 g whey protein concentrate (Table 1: 50 g available carbohydrate, 8.1 g protein, 0.6 g fat, 0 g dietary fibre) in 250 ml water, drunk over 15 min from minute 0 (entered as one meal at minute 0). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary samples to 180 min, so 181 minutes are simulated. Minute 0 is the start of drinking.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 0.6,
+          "protein_g": 8.1,
+          "fibre_g": 0.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "glucose drink with 10 g whey protein concentrate"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_whey20",
+      "description": "Glucose drink with 20 g whey protein concentrate (Table 1: 50 g available carbohydrate, 16.2 g protein, 1.2 g fat, 0 g dietary fibre) in 250 ml water, drunk over 15 min from minute 0 (entered as one meal at minute 0). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary samples to 180 min, so 181 minutes are simulated. Minute 0 is the start of drinking.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 50.0,
+          "fat_g": 1.2,
+          "protein_g": 16.2,
+          "fibre_g": 0.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "glucose drink with 20 g whey protein concentrate"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_50g_runin",
+      "description": "Reference: 50 g glucose (Table 1: 50 g available carbohydrate, no protein, fat or fibre) dissolved in 250 ml water, drunk over 15 min from arm minute 5 (entered as one meal at minute 5). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary baseline samples at -5 and 0 min before drinking, then samples to 180 min after the start of drinking: arm minute 0 is the paper's -5 min, so the drink is at arm minute 5 and 186 minutes are simulated. Used only for the glucose incremental area, whose baseline the paper defines as the mean of the -5 and 0 min samples.",
+      "duration_min": 186,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 50.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "fibre_g": 0.0,
+          "form": "liquid",
+          "food": "50 g glucose drink"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_pea10_runin",
+      "description": "Glucose drink with 10 g NUTRALYS S85 Plus pea protein (Table 1: 50 g available carbohydrate, 8 g protein, 0.9 g fat, 0.1 g dietary fibre) in 250 ml water, drunk over 15 min from arm minute 5 (entered as one meal at minute 5). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary baseline samples at -5 and 0 min before drinking, then samples to 180 min after the start of drinking: arm minute 0 is the paper's -5 min, so the drink is at arm minute 5 and 186 minutes are simulated. Used only for the glucose incremental area, whose baseline the paper defines as the mean of the -5 and 0 min samples.",
+      "duration_min": 186,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 50.0,
+          "fat_g": 0.9,
+          "protein_g": 8.0,
+          "fibre_g": 0.1,
+          "protein_source": "plant",
+          "form": "liquid",
+          "food": "glucose drink with 10 g pea protein"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_pea20_runin",
+      "description": "Glucose drink with 20 g NUTRALYS S85 Plus pea protein (Table 1: 50 g available carbohydrate, 16 g protein, 1.8 g fat, 0.2 g dietary fibre) in 250 ml water, drunk over 15 min from arm minute 5 (entered as one meal at minute 5). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary baseline samples at -5 and 0 min before drinking, then samples to 180 min after the start of drinking: arm minute 0 is the paper's -5 min, so the drink is at arm minute 5 and 186 minutes are simulated. Used only for the glucose incremental area, whose baseline the paper defines as the mean of the -5 and 0 min samples.",
+      "duration_min": 186,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 50.0,
+          "fat_g": 1.8,
+          "protein_g": 16.0,
+          "fibre_g": 0.2,
+          "protein_source": "plant",
+          "form": "liquid",
+          "food": "glucose drink with 20 g pea protein"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_whey10_runin",
+      "description": "Glucose drink with 10 g whey protein concentrate (Table 1: 50 g available carbohydrate, 8.1 g protein, 0.6 g fat, 0 g dietary fibre) in 250 ml water, drunk over 15 min from arm minute 5 (entered as one meal at minute 5). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary baseline samples at -5 and 0 min before drinking, then samples to 180 min after the start of drinking: arm minute 0 is the paper's -5 min, so the drink is at arm minute 5 and 186 minutes are simulated. Used only for the glucose incremental area, whose baseline the paper defines as the mean of the -5 and 0 min samples.",
+      "duration_min": 186,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 50.0,
+          "fat_g": 0.6,
+          "protein_g": 8.1,
+          "fibre_g": 0.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "glucose drink with 10 g whey protein concentrate"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "glu_whey20_runin",
+      "description": "Glucose drink with 20 g whey protein concentrate (Table 1: 50 g available carbohydrate, 16.2 g protein, 1.2 g fat, 0 g dietary fibre) in 250 ml water, drunk over 15 min from arm minute 5 (entered as one meal at minute 5). After a 12-hour overnight fast; sessions started before 10:00 (clock hour not stated, 8.0 entered); capillary baseline samples at -5 and 0 min before drinking, then samples to 180 min after the start of drinking: arm minute 0 is the paper's -5 min, so the drink is at arm minute 5 and 186 minutes are simulated. Used only for the glucose incremental area, whose baseline the paper defines as the mean of the -5 and 0 min samples.",
+      "duration_min": 186,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 50.0,
+          "fat_g": 1.2,
+          "protein_g": 16.2,
+          "fibre_g": 0.0,
+          "protein_source": "whey",
+          "form": "liquid",
+          "food": "glucose drink with 20 g whey protein concentrate"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glu_glucose_iauc_180",
+      "description": "Capillary blood glucose incremental area 0-180 min after GLU; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min after the start of drinking (arm minutes 5 to 185). Baseline is the mean of the -5 and 0 min samples (Methods 2.5), the baseline window of the run-in. The paper does not say what happens below baseline. Only the whole 180 min area is entered (Table 3 also prints 60, 90, 120 min areas of the same curve).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_50g_runin"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125,
+        155,
+        185
+      ],
+      "below_baseline": "unstated",
+      "value": 143.2,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 74.0,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC 180', column 'GLU'",
+        "quote": "iAUC 180 | 143.2 ± 74.0"
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 6
+      }
+    },
+    {
+      "id": "glu_insulin_iauc_180",
+      "description": "Plasma insulin incremental area 0-180 min after GLU; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min. The paper states a baseline (mean of -5 and 0 min) only for blood glucose; insulin was also sampled at -5 min but its baseline is not defined, so the 0 min sample is used. The paper does not say what happens below baseline. Only the whole 180 min area is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_50g"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 3617.6,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1918.1,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'iAUC 180', column 'GLU'",
+        "quote": "iAUC 180 | 3617.6 ± 1918.1"
+      }
+    },
+    {
+      "id": "glu_glucose_peak",
+      "description": "Peak capillary blood glucose in the 180 min after GLU (mean of each person's highest sampled value, Table 3)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_50g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 7.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.2,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Peak blood glucose (mmol/l)', column 'GLU'",
+        "quote": "Peak blood glucose (mmol/l) | 7.6 ± 1.2"
+      }
+    },
+    {
+      "id": "glu_insulin_peak",
+      "description": "Peak plasma insulin in the 180 min after GLU (Table 4)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_50g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 73.43,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 31.16,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Peak plasma insulin (µU/ml)', column 'GLU'",
+        "quote": "Peak plasma insulin (µU/ml) | 73.43 ± 31.16"
+      }
+    },
+    {
+      "id": "glu_glucose_time_to_peak",
+      "description": "Time of the peak capillary blood glucose after GLU, minutes from the start of drinking (Table 3)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_50g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 34.5,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.5,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Time of peak blood glucose (min)', column 'GLU'",
+        "quote": "Time of peak blood glucose (min) | 34.5 ± 10.5"
+      }
+    },
+    {
+      "id": "glu_insulin_time_to_peak",
+      "description": "Time of the peak plasma insulin after GLU, minutes from the start of drinking (Table 4)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_50g"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 38.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.06,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Time of peak plasma insulin (min)', column 'GLU'",
+        "quote": "Time of peak plasma insulin (min) | 38.00 ± 14.06"
+      }
+    },
+    {
+      "id": "pp10_glucose_iauc_180",
+      "description": "Capillary blood glucose incremental area 0-180 min after GLU + 10g-PP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min after the start of drinking (arm minutes 5 to 185). Baseline is the mean of the -5 and 0 min samples (Methods 2.5), the baseline window of the run-in. The paper does not say what happens below baseline. Only the whole 180 min area is entered (Table 3 also prints 60, 90, 120 min areas of the same curve).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_pea10_runin"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125,
+        155,
+        185
+      ],
+      "below_baseline": "unstated",
+      "value": 131.3,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 68.4,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC 180', column 'GLU + 10g-PP'",
+        "quote": "iAUC 180 | 131.3 ± 68.4"
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 6
+      }
+    },
+    {
+      "id": "pp10_insulin_iauc_180",
+      "description": "Plasma insulin incremental area 0-180 min after GLU + 10g-PP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min. The paper states a baseline (mean of -5 and 0 min) only for blood glucose; insulin was also sampled at -5 min but its baseline is not defined, so the 0 min sample is used. The paper does not say what happens below baseline. Only the whole 180 min area is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_pea10"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 4195.2,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2317.1,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'iAUC 180', column 'GLU + 10g-PP'",
+        "quote": "iAUC 180 | 4195.2 ± 2317.1"
+      }
+    },
+    {
+      "id": "pp10_glucose_peak",
+      "description": "Peak capillary blood glucose in the 180 min after GLU + 10g-PP (mean of each person's highest sampled value, Table 3)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_pea10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 7.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.9,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Peak blood glucose (mmol/l)', column 'GLU + 10g-PP'",
+        "quote": "Peak blood glucose (mmol/l) | 7.6 ± 0.9"
+      }
+    },
+    {
+      "id": "pp10_insulin_peak",
+      "description": "Peak plasma insulin in the 180 min after GLU + 10g-PP (Table 4)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_pea10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 88.7,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 39.28,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Peak plasma insulin (µU/ml)', column 'GLU + 10g-PP'",
+        "quote": "Peak plasma insulin (µU/ml) | 88.70 ± 39.28"
+      }
+    },
+    {
+      "id": "pp10_insulin_time_to_peak",
+      "description": "Time of the peak plasma insulin after GLU + 10g-PP, minutes from the start of drinking (Table 4)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_pea10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 39.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.21,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Time of peak plasma insulin (min)', column 'GLU + 10g-PP'",
+        "quote": "Time of peak plasma insulin (min) | 39.00 ± 12.21"
+      }
+    },
+    {
+      "id": "pp20_glucose_iauc_180",
+      "description": "Capillary blood glucose incremental area 0-180 min after GLU + 20g-PP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min after the start of drinking (arm minutes 5 to 185). Baseline is the mean of the -5 and 0 min samples (Methods 2.5), the baseline window of the run-in. The paper does not say what happens below baseline. Only the whole 180 min area is entered (Table 3 also prints 60, 90, 120 min areas of the same curve).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_pea20_runin"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125,
+        155,
+        185
+      ],
+      "below_baseline": "unstated",
+      "value": 89.8,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 51.6,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC 180', column 'GLU + 20g-PP'",
+        "quote": "iAUC 180 | 89.8 ± 51.6"
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 6
+      }
+    },
+    {
+      "id": "pp20_insulin_iauc_180",
+      "description": "Plasma insulin incremental area 0-180 min after GLU + 20g-PP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min. The paper states a baseline (mean of -5 and 0 min) only for blood glucose; insulin was also sampled at -5 min but its baseline is not defined, so the 0 min sample is used. The paper does not say what happens below baseline. Only the whole 180 min area is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_pea20"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 4304.6,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1896.1,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'iAUC 180', column 'GLU + 20g-PP'",
+        "quote": "iAUC 180 | 4304.6 ± 1896.1"
+      }
+    },
+    {
+      "id": "pp20_glucose_peak",
+      "description": "Peak capillary blood glucose in the 180 min after GLU + 20g-PP (mean of each person's highest sampled value, Table 3)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_pea20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 6.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.7,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Peak blood glucose (mmol/l)', column 'GLU + 20g-PP'",
+        "quote": "Peak blood glucose (mmol/l) | 6.9 ± 0.7"
+      }
+    },
+    {
+      "id": "pp20_insulin_peak",
+      "description": "Peak plasma insulin in the 180 min after GLU + 20g-PP (Table 4)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_pea20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 90.17,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 35.84,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Peak plasma insulin (µU/ml)', column 'GLU + 20g-PP'",
+        "quote": "Peak plasma insulin (µU/ml) | 90.17 ± 35.84"
+      }
+    },
+    {
+      "id": "pp20_glucose_time_to_peak",
+      "description": "Time of the peak capillary blood glucose after GLU + 20g-PP, minutes from the start of drinking (Table 3)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_pea20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 32.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.0,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Time of peak blood glucose (min)', column 'GLU + 20g-PP'",
+        "quote": "Time of peak blood glucose (min) | 32.0 ± 11.0"
+      }
+    },
+    {
+      "id": "pp20_insulin_time_to_peak",
+      "description": "Time of the peak plasma insulin after GLU + 20g-PP, minutes from the start of drinking (Table 4)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_pea20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 35.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.37,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Time of peak plasma insulin (min)', column 'GLU + 20g-PP'",
+        "quote": "Time of peak plasma insulin (min) | 35.00 ± 11.37"
+      }
+    },
+    {
+      "id": "wp10_glucose_iauc_180",
+      "description": "Capillary blood glucose incremental area 0-180 min after GLU + 10g-WP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min after the start of drinking (arm minutes 5 to 185). Baseline is the mean of the -5 and 0 min samples (Methods 2.5), the baseline window of the run-in. The paper does not say what happens below baseline. Only the whole 180 min area is entered (Table 3 also prints 60, 90, 120 min areas of the same curve).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_whey10_runin"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125,
+        155,
+        185
+      ],
+      "below_baseline": "unstated",
+      "value": 120.3,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 53.4,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC 180', column 'GLU + 10g-WP'",
+        "quote": "iAUC 180 | 120.3 ± 53.4"
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 6
+      }
+    },
+    {
+      "id": "wp10_insulin_iauc_180",
+      "description": "Plasma insulin incremental area 0-180 min after GLU + 10g-WP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min. The paper states a baseline (mean of -5 and 0 min) only for blood glucose; insulin was also sampled at -5 min but its baseline is not defined, so the 0 min sample is used. The paper does not say what happens below baseline. Only the whole 180 min area is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_whey10"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 4362.2,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1929.0,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'iAUC 180', column 'GLU + 10g-WP'",
+        "quote": "iAUC 180 | 4362.2 ± 1929.0"
+      }
+    },
+    {
+      "id": "wp10_glucose_peak",
+      "description": "Peak capillary blood glucose in the 180 min after GLU + 10g-WP (mean of each person's highest sampled value, Table 3)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_whey10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 7.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.8,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Peak blood glucose (mmol/l)', column 'GLU + 10g-WP'",
+        "quote": "Peak blood glucose (mmol/l) | 7.3 ± 0.8"
+      }
+    },
+    {
+      "id": "wp10_insulin_peak",
+      "description": "Peak plasma insulin in the 180 min after GLU + 10g-WP (Table 4)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_whey10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 91.64,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 36.2,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Peak plasma insulin (µU/ml)', column 'GLU + 10g-WP'",
+        "quote": "Peak plasma insulin (µU/ml) | 91.64 ± 36.20"
+      }
+    },
+    {
+      "id": "wp10_glucose_time_to_peak",
+      "description": "Time of the peak capillary blood glucose after GLU + 10g-WP, minutes from the start of drinking (Table 3)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_whey10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 35.5,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.7,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Time of peak blood glucose (min)', column 'GLU + 10g-WP'",
+        "quote": "Time of peak blood glucose (min) | 35.5 ± 18.7"
+      }
+    },
+    {
+      "id": "wp10_insulin_time_to_peak",
+      "description": "Time of the peak plasma insulin after GLU + 10g-WP, minutes from the start of drinking (Table 4)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_whey10"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 38.5,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.88,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Time of peak plasma insulin (min)', column 'GLU + 10g-WP'",
+        "quote": "Time of peak plasma insulin (min) | 38.50 ± 12.88"
+      }
+    },
+    {
+      "id": "wp20_glucose_iauc_180",
+      "description": "Capillary blood glucose incremental area 0-180 min after GLU + 20g-WP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min after the start of drinking (arm minutes 5 to 185). Baseline is the mean of the -5 and 0 min samples (Methods 2.5), the baseline window of the run-in. The paper does not say what happens below baseline. Only the whole 180 min area is entered (Table 3 also prints 60, 90, 120 min areas of the same curve).",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_whey20_runin"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125,
+        155,
+        185
+      ],
+      "below_baseline": "unstated",
+      "value": 98.5,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 58.0,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'iAUC 180', column 'GLU + 20g-WP'",
+        "quote": "iAUC 180 | 98.5 ± 58.0"
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 6
+      }
+    },
+    {
+      "id": "wp20_insulin_iauc_180",
+      "description": "Plasma insulin incremental area 0-180 min after GLU + 20g-WP; trapezoid rule over the samples at 0, 15, 30, 45, 60, 90, 120, 150, 180 min. The paper states a baseline (mean of -5 and 0 min) only for blood glucose; insulin was also sampled at -5 min but its baseline is not defined, so the 0 min sample is used. The paper does not say what happens below baseline. Only the whole 180 min area is entered.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glu_whey20"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 6311.81,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3489.1,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'iAUC 180', column 'GLU + 20g-WP'",
+        "quote": "iAUC 180 | 6311.81 ± 3489.1"
+      }
+    },
+    {
+      "id": "wp20_glucose_peak",
+      "description": "Peak capillary blood glucose in the 180 min after GLU + 20g-WP (mean of each person's highest sampled value, Table 3)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_whey20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 7.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.8,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Peak blood glucose (mmol/l)', column 'GLU + 20g-WP'",
+        "quote": "Peak blood glucose (mmol/l) | 7.2 ± 0.8"
+      }
+    },
+    {
+      "id": "wp20_insulin_peak",
+      "description": "Peak plasma insulin in the 180 min after GLU + 20g-WP (Table 4)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "glu_whey20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 127.71,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 68.42,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Peak plasma insulin (µU/ml)', column 'GLU + 20g-WP'",
+        "quote": "Peak plasma insulin (µU/ml) | 127.71 ± 68.42"
+      }
+    },
+    {
+      "id": "wp20_glucose_time_to_peak",
+      "description": "Time of the peak capillary blood glucose after GLU + 20g-WP, minutes from the start of drinking (Table 3)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_whey20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 31.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.8,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 3, row 'Time of peak blood glucose (min)', column 'GLU + 20g-WP'",
+        "quote": "Time of peak blood glucose (min) | 31.0 ± 7.8"
+      }
+    },
+    {
+      "id": "wp20_insulin_time_to_peak",
+      "description": "Time of the peak plasma insulin after GLU + 20g-WP, minutes from the start of drinking (Table 4)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glu_whey20"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 38.5,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.26,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 4, row 'Time of peak plasma insulin (min)', column 'GLU + 20g-WP'",
+        "quote": "Time of peak plasma insulin (min) | 38.50 ± 12.26"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and insulin incremental areas at 60, 90 and 120 min (Tables 3 and 4, rows iAUC 60, 90, 120): each is a leading part of the 0-180 min area entered, from the same samples of the same people",
+      "missing": {
+        "kind": "operator",
+        "name": "nested_area_windows"
+      }
+    },
+    {
+      "what": "time of peak blood glucose after GLU + 10g-PP (Table 3), printed '34.0 + 10.4' with a plus sign where every other cell has ±",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "change-from-baseline glucose and insulin time courses for the five drinks (Figures 2 and 3, mean and SEM, n 30); no table of the plotted values",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "pairwise differences between drinks in change from baseline at single times (30, 45, 60 min) with 95% CI (Results 3.1 and 3.2, Sidak-adjusted)",
+      "missing": {
+        "kind": "operator",
+        "name": "delta_change_from_baseline"
+      }
+    },
+    {
+      "what": "percent differences between drinks (37% and 30% lower glucose iAUC, 29% lower peak insulin, 32% lower insulin iAUC; Discussion), derived from the entered means",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    }
+  ]
+}
