@@ -1,0 +1,30 @@
+{
+  "paper": "dai-2024",
+  "citation": "Dai Y, et al. Sci Rep 2024;14:28550",
+  "doi": "10.1038/s41598-024-80049-2",
+  "pmid": "39557965",
+  "pmcid": "PMC11574170",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "21-day water-only complete fast, then refeeding; capillary glucose and ketones every morning, venous blood at about 07:00 on days BF, CF5, CF10, CF15, CF21, CR4, FR5",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "13 volunteers (8 M, 5 F), 40.5 +/- 9.7 y, BMI 24.5 +/- 3.1, no ongoing medical treatment",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "text (Results, ranges of fasting days)",
+      "form": "text"
+    },
+    {
+      "marker": "ketones (BHB)",
+      "where": "text (Results, ranges of fasting days)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Very long fast; glucose and ketone means are given for day ranges in the text (daily curves are in a figure); strip-meter capillary values."
+}

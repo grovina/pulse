@@ -1,0 +1,35 @@
+{
+  "paper": "karol-2025",
+  "citation": "Karol E, et al. Sci Rep 2025;16:2987",
+  "doi": "10.1038/s41598-025-32851-9",
+  "pmid": "41476191",
+  "pmcid": "PMC12830737",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "8 days of water-only fasting; serum at rest and after exercise before and after the 8 days",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "18 healthy middle-aged men, 60.8 +/- 10.6 y, BMI 27.4",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "beta-hydroxybutyrate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "cortisol",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "No glucose or insulin; BHB, cortisol and lactate only. Same research programme as Pilis-2025/Stec-2023; different group size and age."
+}

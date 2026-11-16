@@ -1,0 +1,35 @@
+{
+  "paper": "papagiannopoulosvatopaidinos-2025",
+  "citation": "Papagiannopoulos-Vatopaidinos I, et al. Metabolism Open 2025;26:100363",
+  "doi": "10.1016/j.metop.2025.100363",
+  "pmid": "40585323",
+  "pmcid": "PMC12206320",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "5-day dry fast (no food or water), blood drawn daily at the end of each 20:00-to-20:00 day interval: days 0, 2, 3, 5 tabulated",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 participants (3 M, 7 F), mean age 49.5 (30-65), BMI 29.5 (20-39), normal glucose metabolism, recruited from a fasting-therapy practice",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Dry fasting (no water) so hydration stress differs from water fasts; table prints SE with SD in parentheses; some columns are changes from day 0, not absolute values."
+}

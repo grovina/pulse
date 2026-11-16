@@ -1,0 +1,30 @@
+{
+  "paper": "rhodes-2023",
+  "citation": "Rhodes CH, et al. Am J Clin Nutr 2023;117:286",
+  "doi": "10.1016/j.ajcnut.2022.10.015",
+  "pmid": "36811567",
+  "pmcid": "PMC10196604",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Single 36-h water-only fast; blood at about 08:00 after 12 h overnight fast (baseline), 2 h after a fed meal, at 36 h fasting, and 2 h after refeeding",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "20 young healthy adults, 20-40 y, BMI 19-27, men and women",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "ketone bodies",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Four metabolic states in the same people; glucose and total ketone bodies by NMR (umol/L); no insulin in the main text."
+}

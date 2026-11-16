@@ -1,0 +1,30 @@
+{
+  "paper": "dai-2022",
+  "citation": "Dai Y, et al. Nutrients 2022;14:3860",
+  "doi": "10.3390/nu14183860",
+  "pmid": "36145236",
+  "pmcid": "PMC9503095",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "10-day water-only complete fast, then refeeding; capillary glucose and BHB every morning, venous blood at 07:00 on BF1, CF3, CF6, CF9, CR3, FR5",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "13 men, 39.6 +/- 7.9 y, BMI 24.6 +/- 3.5, no chronic illness",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "text (Results, time effects)",
+      "form": "text"
+    },
+    {
+      "marker": "beta-hydroxybutyrate",
+      "where": "text (Results, time effects)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Glucose and BHB are quoted at selected days in the text; daily curves are in a figure; other tables are blood counts and nutrition markers."
+}

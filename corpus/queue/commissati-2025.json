@@ -1,0 +1,35 @@
+{
+  "paper": "commissati-2025",
+  "citation": "Commissati M, et al. Mol Metab 2025;96:102152",
+  "doi": "10.1016/j.molmet.2025.102152",
+  "pmid": "40268190",
+  "pmcid": "PMC12088818",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Medically supervised water-only fast, mean 9.8 +/- 3.1 d, then 5.3 d refeeding; blood 06:00-08:00 at baseline, end of fast and end of refeeding",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "20 volunteers (11 F, 9 M) from a fasting clinic, 52.2 +/- 11.8 y, BMI 28.8 +/- 6.4",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "beta-hydroxybutyrate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "HOMA-IR",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Fast length varies by person; insulin is only through HOMA-IR; middle-aged, overweight clinic volunteers rather than strictly healthy."
+}

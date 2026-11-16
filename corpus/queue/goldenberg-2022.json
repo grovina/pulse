@@ -1,0 +1,40 @@
+{
+  "paper": "goldenberg-2022",
+  "citation": "Goldenberg N, et al. Clin Diabetes Endocrinol 2022;8:1",
+  "doi": "10.1186/s40842-022-00137-y",
+  "pmid": "35101148",
+  "pmcid": "PMC8805297",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "59-h fast (several trials, with or without GH-releasing hormone antagonist) vs a 12-h fast; 24-h mean insulin and glucose from frequent sampling",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "15 healthy adults (11 M, 4 F), 18-46 y (26 +/- 2), BMI 20-24",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "growth hormone",
+      "where": "text (pulsatility, Results)",
+      "form": "text"
+    },
+    {
+      "marker": "glycerol",
+      "where": "text (Results)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Only 24-h mean values in the table; GH pulsatility and glycerol turnover are in text/figures; drug arms (GHRH antagonist) should be ignored."
+}

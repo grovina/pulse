@@ -1,0 +1,50 @@
+{
+  "paper": "vendelbo-2014",
+  "citation": "Vendelbo MH, et al. PLoS One 2014;9:e102031",
+  "doi": "10.1371/journal.pone.0102031",
+  "pmid": "25020061",
+  "pmcid": "PMC4096723",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "72-h fast vs 10-h overnight fast, randomized crossover; blood at t=30 min (basal) and t=270 min (clamp) after admission at 08:00",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "8 healthy men, 26 +/- 4 y, BMI 23.8 +/- 1.6",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "C-peptide",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucagon",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "cortisol",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Results are mean +/- SE per the methods. Clamp column is insulin-stimulated, not fasting."
+}

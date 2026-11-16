@@ -39,12 +39,14 @@
     },
     {
       "name": "fasting, overnight to several days",
-      "status": "later",
+      "status": "active",
       "why": "Glucose, insulin, fatty acids, ketones and glucagon as a fast lengthens.",
       "query": "(fasting[Title] OR fast[Title] OR \"time-restricted\"[Title]) AND (insulin[All Fields] AND glucose[All Fields]) AND healthy[All Fields] AND (\"36 h\"[All Fields] OR \"48 h\"[All Fields] OR \"72 h\"[All Fields] OR prolonged[Title] OR extended[Title])",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 529,
+      "queued": 20,
+      "batches": [
+        "2026-11-16"
+      ],
       "hits": 529
     },
     {

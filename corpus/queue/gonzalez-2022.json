@@ -1,0 +1,30 @@
+{
+  "paper": "gonzalez-2022",
+  "citation": "Gonzalez JT, et al. Am J Physiol Regul Integr Comp Physiol 2022;322:R542",
+  "doi": "10.1152/ajpregu.00283.2021",
+  "pmid": "35380473",
+  "pmcid": "PMC9512108",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "24-h fast vs fed condition, randomized crossover; blood biomarkers on the test day",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "25 healthy young adults (14 M, 11 F), 23 +/- 3 y, BMI 24 +/- 4",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "beta-hydroxybutyrate",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Single time point at about 24 h; only glucose and BHB. n=25 unless noted."
+}

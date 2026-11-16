@@ -1,0 +1,35 @@
+{
+  "paper": "gillberg-2019",
+  "citation": "Gillberg L, et al. EBioMedicine 2019;47:341",
+  "doi": "10.1016/j.ebiom.2019.08.017",
+  "pmid": "31439477",
+  "pmcid": "PMC6796584",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "36-h fast vs control 12-h overnight fast (standard meals); blood and biopsies at end of each",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "8 low-birth-weight and 8 normal-birth-weight healthy young Danish men, 22-27 y, BMI 22.7/23.5",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "free fatty acids",
+      "where": "text/Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Two groups by birth weight; the same participants as Hjort-2017 (not listed separately). Only end-of-fast values."
+}

@@ -1,0 +1,35 @@
+{
+  "paper": "stec-2023",
+  "citation": "Stec S, et al. Nutrients 2023;15:3444",
+  "doi": "10.3390/nu15153444",
+  "pmid": "37571381",
+  "pmcid": "PMC10421233",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "8 days of water-only fasting; blood in the fasting morning before and after the 8 days, at rest and after maximal exercise",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "14 men aged 35-60 with prior fasting experience, split younger/elder",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "cortisol",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "beta-hydroxybutyrate",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Glucose, cortisol and BHB by age group, rest and exercise; two time points only. Probable overlap in programme with Pilis-2025 (check whether participants differ)."
+}
