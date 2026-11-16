@@ -1,0 +1,438 @@
+{
+  "paper": "yamaguchi-2020",
+  "citation": {
+    "authors": "Yamaguchi K, et al.",
+    "title": "Effects of hot and hypoxic environments on repeated-sprint exercise (control condition read)",
+    "journal": "Physiological Reports",
+    "year": 2020,
+    "doi": "10.14814/phy2.14466",
+    "pmid": "32592261",
+    "pmcid": "PMC7319945"
+  },
+  "population": {
+    "n": 10,
+    "sex": "male",
+    "age_years": {
+      "mean": 19.6,
+      "sd": 0.95,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "unselected",
+    "description": "Ten male college students, all highly trained athletes (training experience >5 years, national and international level, 2 h/day on 6 days/week); age 19.6 ± 0.3 y (mean ± SE), height 173.3 ± 2.2 cm, weight 71.6 ± 1.8 kg. Age SD is the SE x sqrt(10) = 0.95, computed here. BMI is not printed. The paper does not call them healthy or report screening, so status is unselected; the whole group is athletes, so training state is not a split."
+  },
+  "protocols": [
+    {
+      "name": "con_repeated_sprints",
+      "description": "Control condition (20 C, 50% rH, sea level), morning, overnight fast, water only. Minute 0 = baseline sample before entering the chamber (gap to entry not printed, taken as 0). Seated 0-30; warm-up 60 W 30-35 (level 60/186 = 0.323); three 3-s sprints (no power printed, not counted); 8 min rest; sets of 3 x 10-s sprints with 40-s recoveries (110 s, entered as 2 min) at 43-45, 55-57, 67-69, 10 min apart. Samples: 0; after sets 1 and 2 at 45 and 57; Table 2 'Set 3' = 0 min post at 69; then 3, 5, 30, 60 min post = 72, 74, 99, 129. Set levels: measured control VO2 (Table 1, mL/min, averaged over sprints and recoveries) / printed mean mass 71.6 kg, level = (VO2 - 3.7)/31.7: 2266 -> 31.65 -> 0.882; 2301 -> 32.14 -> 0.897; 2260 -> 31.56 -> 0.879. Sprint power in watts is figure-only.",
+      "duration_min": 130,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 30,
+            "to_min": 35,
+            "level": 0.323
+          },
+          {
+            "from_min": 43,
+            "to_min": 45,
+            "level": 0.882
+          },
+          {
+            "from_min": 55,
+            "to_min": 57,
+            "level": 0.897
+          },
+          {
+            "from_min": 67,
+            "to_min": 69,
+            "level": 0.879
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "con_lactate_curve",
+      "description": "Blood lactate, control condition: baseline, immediately after sets 1 and 2, the Table 2 Set 3 column (0 min post), then 3, 5, 30, 60 min after the exercise; whole-blood lactate (Lactate Pro 2 analyser), samples after set 1 and set 2 capillary (fingertip), the rest venous; the paper states concentrations were corrected for plasma volume change (delta PV) to remove hemoconcentration",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 1.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 45,
+          "value": 10.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 57,
+          "value": 15.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.5,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 69,
+          "value": 17.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 72,
+          "value": 16.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 74,
+          "value": 16.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 99,
+          "value": 9.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.9,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 129,
+          "value": 4.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.5,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Lactate, row CON (columns Baseline, Set 1, Set 2, Set 3, 3, 5, 30, 60 min); values are means ± SE",
+        "quote": "CON | 1.1 ± 0.1 | 10.2 ± 1.0 | 15.5 ± 1.5 | 17.1 ± 1.2 | 16.1 ± 1.0 | 16.3 ± 1.0 | 9.9 ± 0.9 | 4.9 ± 0.5"
+      }
+    },
+    {
+      "id": "con_glucose_curve",
+      "description": "Blood glucose, control condition, same sampling times as the lactate curve (FreeStyle Freedom Lite meter on blood drawn at the sampling times); whole-blood glucose from a handheld meter, samples after set 1 and set 2 capillary (fingertip), the rest venous; the paper states concentrations were corrected for plasma volume change (delta PV) to remove hemoconcentration",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 83,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 45,
+          "value": 93,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 57,
+          "value": 96,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 69,
+          "value": 93,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 72,
+          "value": 101,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 74,
+          "value": 101,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 99,
+          "value": 89,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 129,
+          "value": 75,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, Glucose, row CON (columns Baseline, Set 1, Set 2, Set 3, 3, 5, 30, 60 min); values are means ± SE",
+        "quote": "CON | 83 ± 2 | 93 ± 3 | 96 ± 4 | 93 ± 3 | 101 ± 4 | 101 ± 5 | 89 ± 4 | 75 ± 3"
+      }
+    },
+    {
+      "id": "con_hr_set1",
+      "description": "Heart rate, control condition, mean over set 1 (sprints and recoveries; monitored every second)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 43,
+        "end_min": 45
+      },
+      "value": 147,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, HR (bpm), row CON, Set 1; values are means ± SE",
+        "quote": "CON | 147 ± 3"
+      }
+    },
+    {
+      "id": "con_hr_set2",
+      "description": "Heart rate, control condition, mean over set 2 (sprints and recoveries; monitored every second)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 55,
+        "end_min": 57
+      },
+      "value": 153,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, HR (bpm), row CON, Set 2; values are means ± SE",
+        "quote": "CON | 153 ± 3"
+      }
+    },
+    {
+      "id": "con_hr_set3",
+      "description": "Heart rate, control condition, mean over set 3 (sprints and recoveries; monitored every second)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 67,
+        "end_min": 69
+      },
+      "value": 154,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, HR (bpm), row CON, Set 3; values are means ± SE",
+        "quote": "CON | 154 ± 3"
+      }
+    },
+    {
+      "id": "con_vco2_set1",
+      "description": "CO2 output, control condition, mean over set 1 (sprints and 40-s recoveries, breath by breath)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 43,
+        "end_min": 45
+      },
+      "value": 2666,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 78,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, VCO2 (mL·min−1), row CON, Set 1; values are means ± SE",
+        "quote": "CON | 2,666 ± 78"
+      }
+    },
+    {
+      "id": "con_vco2_set2",
+      "description": "CO2 output, control condition, mean over set 2 (sprints and 40-s recoveries, breath by breath)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 55,
+        "end_min": 57
+      },
+      "value": 2302,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 68,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, VCO2 (mL·min−1), row CON, Set 2; values are means ± SE",
+        "quote": "CON | 2,302 ± 68"
+      }
+    },
+    {
+      "id": "con_vco2_set3",
+      "description": "CO2 output, control condition, mean over set 3 (sprints and 40-s recoveries, breath by breath)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 67,
+        "end_min": 69
+      },
+      "value": 2117,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 60,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, VCO2 (mL·min−1), row CON, Set 3; values are means ± SE",
+        "quote": "CON | 2,117 ± 60"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "hypoxia (FiO2 14.5%), heat (35 C) and hot+hypoxia conditions: every value of Tables 1-3 and the text in those three arms",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "heat exposure (35 C, 50% rH) condition, alone and with hypoxia",
+      "missing": {
+        "kind": "input",
+        "name": "heat_exposure"
+      }
+    },
+    {
+      "what": "plasma adrenaline, noradrenaline and glucagon before and after exercise (Figure 4 only); peak and mean power of each sprint in the control condition (Figure 2 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "blood pH, base excess, bicarbonate, PO2, PCO2 and plasma volume change (Tables 2 and 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_acid_base"
+      }
+    },
+    {
+      "what": "minute ventilation per set (Table 1) and RPE and thermal sensation scores",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "arterial oxygen saturation per set, control row (Table 1): 92.6 ± 1.2, 90.6 ± 2.2, 92.2 ± 4.3 printed, the last SE out of line with the others; not entered",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "the three 3-s warm-up sprints (no power printed) and the pre-set 1 timing of the baseline sample relative to chamber entry",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
