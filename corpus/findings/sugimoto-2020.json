@@ -1,0 +1,487 @@
+{
+  "paper": "sugimoto-2020",
+  "citation": {
+    "authors": "Sugimoto T, et al.",
+    "title": "Effects of repeated bouts versus a single bout of moderate-intensity exercise on postexercise cognitive inhibitory control",
+    "journal": "Physiological Reports",
+    "year": 2020,
+    "doi": "10.14814/phy2.14528",
+    "pmid": "32776468",
+    "pmcid": "PMC7415913"
+  },
+  "population": {
+    "n": 20,
+    "sex": "male",
+    "age_years": {
+      "mean": 21.0,
+      "sd": 1.79,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty healthy, recreationally active young men, age 21.0 ± 0.4 years (mean ± SEM; SD computed as 0.4 x sqrt(20) = 1.79), body weight 64.0 ± 2.0 kg, height 172.6 ± 0.7 cm, VO2peak 45.9 ± 1.0 mL/kg/min; BMI not printed. Crossover, same men in both arms."
+  },
+  "protocols": [
+    {
+      "name": "rex",
+      "description": "Cycle ergometer, two 20-min bouts at 60% VO2peak separated by a 20-min seated rest (R-EX): bouts at minutes 0 to 20 and 40 to 60. Activity level is derived, not stated: 60% of the group's mean VO2peak 45.9 mL/kg/min (Methods, Participants; ramp test on the cycle ergometer) = 27.54 mL/kg/min; level = (27.54 - 3.7) / 31.7 = 0.7521. Fasted: the men abstained from food, caffeine and alcohol for 12 h before each experiment (stated); nothing eaten or given during the session is reported, so no meals. Clock hour of day not printed (8.0 assumed). Time axis: minute 0 is the pre-exercise sample (taken after 5 min seated rest, immediately before the pre-exercise Stroop test, whose duration is not printed and is ignored), and both arms have the same 60 min from there to the end of exercise (the paper gives S-EX its 20 min rest so that the intervals between Stroop tests match). The immediate post-exercise sample is taken immediately before the first post-exercise Stroop test, with heart rate still at exercise level, so it is entered at minute 59, the last minute of exercise, so that the input is still on; the 10, 20 and 30 min post-exercise samples are minutes 70, 80, 90. ",
+      "duration_min": 91,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 20,
+            "level": 0.7521
+          },
+          {
+            "from_min": 40,
+            "to_min": 60,
+            "level": 0.7521
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "activity"
+      ]
+    },
+    {
+      "name": "sex",
+      "description": "Cycle ergometer, 20-min seated rest then one 40-min bout at 60% VO2peak (S-EX): bout at minutes 20 to 60. Activity level is derived, not stated: 60% of the group's mean VO2peak 45.9 mL/kg/min (Methods, Participants; ramp test on the cycle ergometer) = 27.54 mL/kg/min; level = (27.54 - 3.7) / 31.7 = 0.7521. Fasted: the men abstained from food, caffeine and alcohol for 12 h before each experiment (stated); nothing eaten or given during the session is reported, so no meals. Clock hour of day not printed (8.0 assumed). Time axis: minute 0 is the pre-exercise sample (taken after 5 min seated rest, immediately before the pre-exercise Stroop test, whose duration is not printed and is ignored), and both arms have the same 60 min from there to the end of exercise (the paper gives S-EX its 20 min rest so that the intervals between Stroop tests match). The immediate post-exercise sample is taken immediately before the first post-exercise Stroop test, with heart rate still at exercise level, so it is entered at minute 59, the last minute of exercise, so that the input is still on; the 10, 20 and 30 min post-exercise samples are minutes 70, 80, 90. ",
+      "duration_min": 91,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 20,
+            "to_min": 60,
+            "level": 0.7521
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rex_hr_curve",
+      "description": "Heart rate before and after the R-EX bout, mean and SEM (Table 1); the minute-59 point is the sample taken immediately after exercise",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "rex"
+      ],
+      "unit": "bpm",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 66.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.0,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 158.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.2,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 82.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.8,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 78.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.6,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 74.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Heart rate rows R-EX",
+        "quote": "Heart rate (bpm) R‐EX | 66.5 ± 1.0 | 158.2 ± 2.2 | 82.5 ± 1.8 | 78.1 ± 1.6 | 74.8 ± 1.7"
+      }
+    },
+    {
+      "id": "sex_hr_curve",
+      "description": "Heart rate before and after the S-EX bout, mean and SEM (Table 1); the minute-59 point is the sample taken immediately after exercise",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "sex"
+      ],
+      "unit": "bpm",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 66.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.0,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 159.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.9,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 88.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 80.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.4,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 76.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.1,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Heart rate rows S-EX",
+        "quote": "Heart rate (bpm) S‐EX | 66.8 ± 1.0 | 159.6 ± 2.9 | 88.5 ± 1.7 | 80.6 ± 1.4 | 76.4 ± 1.1"
+      }
+    },
+    {
+      "id": "rex_glucose_curve",
+      "description": "Blood glucose before and after the R-EX bout, mean and SEM (Table 1); measured with a Terumo Medisafe FIT handheld meter, sample site and whole blood against plasma not stated, so a meter value, not a laboratory plasma glucose",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "rex"
+      ],
+      "unit": "mg/dl",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 97.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 84.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.1,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 91.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.8,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 90.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 91.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.3,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Blood glucose rows R-EX",
+        "quote": "Blood glucose (mg/dl) R‐EX | 97.7 ± 1.7 | 84.4 ± 2.1 | 91.3 ± 1.8 | 90.4 ± 1.7 | 91.6 ± 1.3"
+      }
+    },
+    {
+      "id": "sex_glucose_curve",
+      "description": "Blood glucose before and after the S-EX bout, mean and SEM (Table 1); measured with a Terumo Medisafe FIT handheld meter, sample site and whole blood against plasma not stated, so a meter value, not a laboratory plasma glucose",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "sex"
+      ],
+      "unit": "mg/dl",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 96.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.9,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 88.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.4,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 92.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.3,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 91.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.9,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 89.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.8,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Blood glucose rows S-EX",
+        "quote": "Blood glucose (mg/dl) S‐EX | 96.5 ± 1.9 | 88.0 ± 2.4 | 92.3 ± 2.3 | 91.1 ± 1.9 | 89.7 ± 1.8"
+      }
+    },
+    {
+      "id": "rex_lactate_curve",
+      "description": "Blood lactate before and after the R-EX bout, mean and SEM (Table 1), measured with an Arkray Lactate Pro 2 handheld analyzer (sample site not stated; whole blood); the pre-exercise value 1.0 ± 0.0 has a printed zero SEM and is left out",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "rex"
+      ],
+      "unit": "mM",
+      "points": [
+        {
+          "t_min": 59,
+          "value": 2.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 1.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.2,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 1.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Blood lactate rows R-EX",
+        "quote": "Blood lactate (mM) R‐EX | 2.8 ± 0.3 | 1.7 ± 0.2 | 1.4 ± 0.1 | 1.3 ± 0.1"
+      }
+    },
+    {
+      "id": "sex_lactate_curve",
+      "description": "Blood lactate before and after the S-EX bout, mean and SEM (Table 1), measured with an Arkray Lactate Pro 2 handheld analyzer (sample site not stated; whole blood); the pre-exercise value 1.0 ± 0.0 has a printed zero SEM and is left out",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "sex"
+      ],
+      "unit": "mM",
+      "points": [
+        {
+          "t_min": 59,
+          "value": 3.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 70,
+          "value": 1.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 80,
+          "value": 1.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 20
+          }
+        },
+        {
+          "t_min": 90,
+          "value": 1.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.1,
+            "n": 20
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, Blood lactate rows S-EX",
+        "quote": "Blood lactate (mM) S‐EX | 3.2 ± 0.3 | 1.7 ± 0.1 | 1.4 ± 0.1 | 1.2 ± 0.1"
+      }
+    },
+    {
+      "id": "sex_hr_mean_during_exercise",
+      "description": "Mean heart rate throughout the 40-min single bout (S-EX), from eight readings every 5 min (5 to 40 min of the bout, minutes 25 to 60 of the arm); window 20 to 60. Text lists R-EX then S-EX (149.7 and 153.2): the S-EX value is the second",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sex"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 60
+      },
+      "value": 153.2,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.8,
+        "n": 20
+      },
+      "location": {
+        "where": "Results, first paragraph (R-EX then S-EX order)",
+        "quote": "Mean values of HR (149.7 ± 2.1 and 153.2 ± 2.8 bpm)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "mean arterial pressure before and after both bouts (Table 1) and mean during exercise (text)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "mean heart rate throughout exercise in R-EX (149.7 ± 2.1 bpm), averaged over two separate bouts",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_over_separate_windows"
+      }
+    },
+    {
+      "what": "pre-exercise blood lactate 1.0 ± 0.0 mM in both arms (Table 1)",
+      "missing": {
+        "kind": "source",
+        "name": "zero_uncertainty"
+      }
+    },
+    {
+      "what": "ratings of perceived exertion and leg discomfort during exercise (text)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceived_exertion"
+      }
+    },
+    {
+      "what": "Stroop reaction times, accuracies and interference score, arousal and visual analog scales (Tables 2 and 3, Figure 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cognitive_performance"
+      }
+    }
+  ]
+}
