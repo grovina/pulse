@@ -1,0 +1,528 @@
+{
+  "paper": "tripolt-2023",
+  "citation": {
+    "authors": "Tripolt NJ, Hofer SJ, Pferschy PN, Aziz F, Durand S, et al.",
+    "title": "Glucose Metabolism and Metabolomic Changes in Response to Prolonged Fasting in Individuals with Obesity, Type 2 Diabetes and Non-Obese People—A Cohort Trial",
+    "journal": "Nutrients",
+    "year": 2023,
+    "doi": "10.3390/nu15030511",
+    "pmid": "36771218",
+    "pmcid": "PMC9921960"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 32.0,
+      "sd": 10.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.6,
+      "sd": 1.7,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Non-obese cohort of 20 (BMI 20-27 kg/m2, fasting glucose < 110 mg/dL, no diabetes, cardiovascular disease or glucose/lipid/BP-lowering drugs; called healthy non-obese). Age and BMI from Table 1. Sex is not printed per cohort (62% women over all 60 participants), so mixed. The obese cohort (n = 20, BMI > 30, fasting glucose < 110 mg/dL, not screened by an OGTT) is entered as unselected on its arms, with Table 1 age 37 +/- 10 y and BMI 34.6 +/- 4.8. The type 2 diabetes cohort is not entered."
+  },
+  "protocols": [
+    {
+      "name": "healthy_f12_fasting",
+      "description": "Non-obese healthy cohort: fasting sample after the 12 h fast (calorie-free drinks only; last meal 20:00 the evening before, printed as '12 h'). Arm starts at the visit start, 7:30, so prefast_hours = 11.5 (20:00 to 7:30); the fasting blood sample came after the physical examination and its clock time is not printed, so it is read at minutes 29-30 (about 8:00, 12.0 h after the last meal). Arm length not printed; short run-in.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "healthy_f36_fasting",
+      "description": "Non-obese healthy cohort: fasting sample after the 36 h fast (calorie-free drinks only; last meal 20:00 two days before, printed as '36 h'). Arm starts at the visit start, 7:30, so prefast_hours = 35.5 (20:00 to 7:30, two days earlier, 35 h 30 min); the fasting blood sample came after the physical examination and its clock time is not printed, so it is read at minutes 29-30 (about 8:00, 36.0 h after the last meal). Arm length not printed; short run-in.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 35.5,
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "healthy_f12_ogtt",
+      "description": "Non-obese healthy cohort: 75 g glucose solution (Glucoral 75 citron) drunk within 2-4 min at minute 0 (printed) after the 12 h fast (last meal 20:00 the evening before); samples through 120 min. Visits began 7:30 with an examination, then the fasting sample (-5 min) and the drink; the clock hour of the drink is not printed, so start_hour 8.0 is assumed, and prefast_hours = 12 is 20:00 to that assumed 8:00 (12 h, as printed).",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose solution"
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "healthy_f36_ogtt",
+      "description": "Non-obese healthy cohort: 75 g glucose solution (Glucoral 75 citron) drunk within 2-4 min at minute 0 (printed) after the 36 h fast (last meal 20:00 two days before); samples through 120 min. Visits began 7:30 with an examination, then the fasting sample (-5 min) and the drink; the clock hour of the drink is not printed, so start_hour 8.0 is assumed, and prefast_hours = 36 is 20:00 to that assumed 8:00 (36 h, as printed).",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose solution"
+        }
+      ],
+      "prefast_hours": 36,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "obese_f12_fasting",
+      "description": "Obese cohort: fasting sample after the 12 h fast (calorie-free drinks only; last meal 20:00 the evening before, printed as '12 h'). Arm starts at the visit start, 7:30, so prefast_hours = 11.5 (20:00 to 7:30); the fasting blood sample came after the physical examination and its clock time is not printed, so it is read at minutes 29-30 (about 8:00, 12.0 h after the last meal). Arm length not printed; short run-in.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 37.0,
+          "sd": 10.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 34.6,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "obese_f36_fasting",
+      "description": "Obese cohort: fasting sample after the 36 h fast (calorie-free drinks only; last meal 20:00 two days before, printed as '36 h'). Arm starts at the visit start, 7:30, so prefast_hours = 35.5 (20:00 to 7:30, two days earlier, 35 h 30 min); the fasting blood sample came after the physical examination and its clock time is not printed, so it is read at minutes 29-30 (about 8:00, 36.0 h after the last meal). Arm length not printed; short run-in.",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 35.5,
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 37.0,
+          "sd": 10.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 34.6,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "obese_f12_ogtt",
+      "description": "Obese cohort: 75 g glucose solution (Glucoral 75 citron) drunk within 2-4 min at minute 0 (printed) after the 12 h fast (last meal 20:00 the evening before); samples through 120 min. Visits began 7:30 with an examination, then the fasting sample (-5 min) and the drink; the clock hour of the drink is not printed, so start_hour 8.0 is assumed, and prefast_hours = 12 is 20:00 to that assumed 8:00 (12 h, as printed).",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose solution"
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 37.0,
+          "sd": 10.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 34.6,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "obese_f36_ogtt",
+      "description": "Obese cohort: 75 g glucose solution (Glucoral 75 citron) drunk within 2-4 min at minute 0 (printed) after the 36 h fast (last meal 20:00 two days before); samples through 120 min. Visits began 7:30 with an examination, then the fasting sample (-5 min) and the drink; the clock hour of the drink is not printed, so start_hour 8.0 is assumed, and prefast_hours = 36 is 20:00 to that assumed 8:00 (36 h, as printed).",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose solution"
+        }
+      ],
+      "prefast_hours": 36,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "mixed",
+        "age_years": {
+          "mean": 37.0,
+          "sd": 10.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 34.6,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "healthy_fasting_glucose_12h",
+      "description": "Fasting plasma glucose after 12 h fast, non-obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f12_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 80.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Non-Obese after 12 h Fasting",
+        "quote": "Fasting glucose (mg/dL) | 80 ± 7"
+      }
+    },
+    {
+      "id": "healthy_fasting_glucose_36h",
+      "description": "Fasting plasma glucose after 36 h fast, non-obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f36_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 73.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Non-Obese after 36 h Fasting",
+        "quote": "Fasting glucose (mg/dL) | 73 ± 11"
+      }
+    },
+    {
+      "id": "healthy_ogtt_glucose_120_12h",
+      "description": "Plasma glucose at 120 min of the 75 g OGTT after 12 h fast, non-obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f12_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 79.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Non-Obese after 12 h Fasting",
+        "quote": "Plasma glucose 120 min (mg/dL) | 79 ± 18"
+      }
+    },
+    {
+      "id": "healthy_ogtt_glucose_120_36h",
+      "description": "Plasma glucose at 120 min of the 75 g OGTT after 36 h fast, non-obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f36_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 109.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 31.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Non-Obese after 36 h Fasting",
+        "quote": "Plasma glucose 120 min (mg/dL) | 109 ± 31"
+      }
+    },
+    {
+      "id": "obese_fasting_glucose_12h",
+      "description": "Fasting plasma glucose after 12 h fast, obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_f12_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 94.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Obese after 12 h Fasting",
+        "quote": "Fasting glucose (mg/dL) | 94 ± 10"
+      }
+    },
+    {
+      "id": "obese_fasting_glucose_36h",
+      "description": "Fasting plasma glucose after 36 h fast, obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_f36_fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 88.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Obese after 36 h Fasting",
+        "quote": "Fasting glucose (mg/dL) | 88 ± 13"
+      }
+    },
+    {
+      "id": "obese_ogtt_glucose_120_12h",
+      "description": "Plasma glucose at 120 min of the 75 g OGTT after 12 h fast, obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_f12_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 108.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 36.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Obese after 12 h Fasting",
+        "quote": "Plasma glucose 120 min (mg/dL) | 108 ± 36"
+      }
+    },
+    {
+      "id": "obese_ogtt_glucose_120_36h",
+      "description": "Plasma glucose at 120 min of the 75 g OGTT after 36 h fast, obese cohort (mean, SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_f36_ogtt"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 117.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 29.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, column Obese after 36 h Fasting",
+        "quote": "Plasma glucose 120 min (mg/dL) | 117 ± 29"
+      }
+    },
+    {
+      "id": "healthy_ogtt_insulin_30_12h",
+      "description": "Serum insulin at 30 min of the 75 g OGTT after 12 h fast, non-obese cohort (mean, SD; given in the text)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f12_ogtt"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 56.1,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 29.7,
+        "n": 20
+      },
+      "location": {
+        "where": "Results 3.2.1, paragraph 1",
+        "quote": "insulin levels at 30 min were lower after prolonged fasting (41.2 ± 34.1 mU/L vs. 56.1 ± 29.7 mU/L; p = 0.039)"
+      }
+    },
+    {
+      "id": "healthy_ogtt_insulin_30_36h",
+      "description": "Serum insulin at 30 min of the 75 g OGTT after 36 h fast, non-obese cohort (mean, SD; given in the text)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_f36_ogtt"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 41.2,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 34.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Results 3.2.1, paragraph 1",
+        "quote": "insulin levels at 30 min were lower after prolonged fasting (41.2 ± 34.1 mU/L vs. 56.1 ± 29.7 mU/L; p = 0.039)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Type 2 diabetes cohort (n = 20, age 60 +/- 9 y, on oral glucose-lowering drugs): all values, Table 2 and text",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "Fasting insulin at 12 h and 36 h for the non-obese and obese cohorts, fasting C-peptide and proinsulin, QUICKI, HOMA-IR, ISI, HOMA-beta (Table 2; printed as median (IQR))",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Fasting C-peptide (ng/mL), all cohorts, Table 2 and text",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "QUICKI, HOMA-IR, Matsuda ISI, Stumvoll 1st and 2nd phase insulin secretion, HOMA-beta, delta-Ins30/delta-Glc30 (Table 2) are derived indices",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Glucose AUC and insulin AUC over the OGTT (Table 2, 'in minutes'): the OGTT sampling minutes are not printed (only the -5 min and 120 min samples are named)",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses of the OGTT in each cohort (Figure 1) and of the IVGTT sub-study (n = 10 per cohort, Figures S1 and S2); insulin at 30 min of the obese cohort is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Baseline characteristics (Table 1: blood pressure, waist-to-hip ratio, HbA1c; age, BMI and weight are entered as population): the table does not say whether it is the 12 h or the 36 h visit",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Serum metabolomics (195 metabolites, ketone bodies among them) at 12 h and 36 h: fold changes shown in figures and supplementary tables only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
