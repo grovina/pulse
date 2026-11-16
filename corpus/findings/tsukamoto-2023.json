@@ -1,0 +1,390 @@
+{
+  "paper": "tsukamoto-2023",
+  "citation": {
+    "authors": "Tsukamoto H, et al.",
+    "title": "Blood lactate response to a second bout of moderate-intensity aerobic exercise and to concurrent exercise",
+    "journal": "Scientific Reports",
+    "year": 2023,
+    "doi": "10.1038/s41598-023-48670-9",
+    "pmid": "38049500",
+    "pmcid": "PMC10696069"
+  },
+  "population": {
+    "n": 43,
+    "sex": "male",
+    "age_years": {
+      "mean": 21.0,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Forty-three men the paper calls healthy, in three studies of different people (study 1 n=20, study 2 n=11, study 3 n=12; 20+11+12=43); free of neurologic, cardiovascular or pulmonary disease, no medication, nonsmokers. Top-level age is study 1 (21 +/- 2 y); studies 2 (22 +/- 1) and 3 (21 +/- 2) override it. Height and weight are printed (study 1: 173 cm, 64 kg) but not BMI."
+  },
+  "protocols": [
+    {
+      "name": "s1_two_bouts",
+      "description": "Study 1: after a 12 h fast and at least 10 min seated rest (taken as 10 min, minutes 0-10; baseline sample after it), two 20-min bouts of cycling at an estimated 60% VO2peak (148 +/- 16 W) with a 20-min seated rest between: bout 1 minutes 10-30, rest 30-50, bout 2 minutes 50-70. Level: group VO2peak 45.9 mL/kg/min x 0.60 = 27.54 mL/kg/min, (27.54 - 3.7) / 31.7 = 0.752. Blood and HR taken at the end of each bout. Water only; no meal.",
+      "duration_min": 70,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 10,
+            "to_min": 30,
+            "level": 0.752
+          },
+          {
+            "from_min": 50,
+            "to_min": 70,
+            "level": 0.752
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "activity"
+      ]
+    },
+    {
+      "name": "s2_re_rest",
+      "description": "Study 2, RE trial (the ARCE visit's rest baseline is the same state and is not entered): 12 h fasted, seated rest at least 10 min (taken as 10 min), baseline sample at its end. The knee-extension bout after it is not entered (no whole-body VO2 printed), so the arm ends after the baseline sample.",
+      "duration_min": 10,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 22.0,
+          "sd": 1.0,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "s3_arce_miae",
+      "description": "Study 3, ARCE trial (the RACE visit's rest baseline is the same state and is not entered): 12 h fasted, seated rest at least 10 min (taken as 10 min, baseline sample at its end), then a 20-min bout of cycling at an estimated 60% VO2peak (148 +/- 20 W), minutes 10-30; HR at the end of it. Level: group VO2peak 46.9 mL/kg/min x 0.60 = 28.14 mL/kg/min, (28.14 - 3.7) / 31.7 = 0.771. The knee-extension bout after a 20-min interval is not entered.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 21.0,
+          "sd": 2.0,
+          "min": null,
+          "max": null
+        }
+      },
+      "activity": {
+        "segments": [
+          {
+            "from_min": 10,
+            "to_min": 30,
+            "level": 0.771
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "s1_baseline_hr",
+      "description": "Study 1 baseline heart rate after the seated rest, window the last 2 min of the assumed 10-min rest",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s1_two_bouts"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 67.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Study 1 Results, first paragraph (baseline)",
+        "quote": "The baseline heart rate (HR), blood glucose, and blood lactate were 67 ± 4 bpm, 97.7 ± 7.7 mg/dL, and 1.0 ± 0.1 mM, respectively."
+      }
+    },
+    {
+      "id": "s1_baseline_glucose",
+      "description": "Study 1 baseline blood glucose after the seated rest Measured on a Terumo Medisafe FIT meter (whole blood, cannula sample), not plasma.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s1_two_bouts"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 97.7,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.7,
+        "n": 20
+      },
+      "location": {
+        "where": "Study 1 Results, first paragraph (baseline)",
+        "quote": "The baseline heart rate (HR), blood glucose, and blood lactate were 67 ± 4 bpm, 97.7 ± 7.7 mg/dL, and 1.0 ± 0.1 mM, respectively."
+      }
+    },
+    {
+      "id": "s1_baseline_lactate",
+      "description": "Study 1 baseline blood lactate after the seated rest",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s1_two_bouts"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 1.0,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Study 1 Results, first paragraph (baseline)",
+        "quote": "The baseline heart rate (HR), blood glucose, and blood lactate were 67 ± 4 bpm, 97.7 ± 7.7 mg/dL, and 1.0 ± 0.1 mM, respectively."
+      }
+    },
+    {
+      "id": "s1_hr_end_bout1",
+      "description": "Study 1 heart rate at the end of the first bout (Methods: HR collected before and at the end of each bout); the table caption says 'in response to', Methods says HR was collected at the end of each bout",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s1_two_bouts"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 153.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row HR, column First MIAE (mean +/- SD)",
+        "quote": "HR, bpm | 153 ± 12"
+      }
+    },
+    {
+      "id": "s1_hr_end_bout2",
+      "description": "Study 1 heart rate at the end of the second bout; the table caption says 'in response to', Methods says HR was collected at the end of each bout",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s1_two_bouts"
+      ],
+      "window": {
+        "start_min": 69,
+        "end_min": 70
+      },
+      "value": 158.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row HR, column Repeated MIAE (mean +/- SD)",
+        "quote": "HR, bpm | 158 ± 10"
+      }
+    },
+    {
+      "id": "s2_re_baseline_hr",
+      "description": "Study 2 baseline HR before the RE trial (the same men's ARCE-visit baseline, 67 +/- 8 bpm, is the same state and is not entered again)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s2_re_rest"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 64.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Study 2 Results, first paragraph (baseline, RE)",
+        "quote": "The baseline HR (RE 64 ± 7 bpm vs. ARCE 67 ± 8 bpm"
+      }
+    },
+    {
+      "id": "s2_re_baseline_lactate",
+      "description": "Study 2 baseline lactate before the RE trial (the ARCE-visit baseline is the same state and is not entered again)",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s2_re_rest"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 1.2,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.1,
+        "n": 11
+      },
+      "location": {
+        "where": "Study 2 Results, first paragraph (baseline, RE)",
+        "quote": "blood lactate (RE 1.2 ± 0.1 mM vs. ARCE 1.2 ± 0.3 mM"
+      }
+    },
+    {
+      "id": "s3_arce_baseline_hr",
+      "description": "Study 3 baseline HR before the ARCE trial (the same men's RACE-trial baseline, 67 +/- 6 bpm, is the same state and is not entered again)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s3_arce_miae"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 69.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Study 3 Results, first paragraph (baseline, ARCE)",
+        "quote": "The baseline HR (RACE 67 ± 6 bpm vs. ARCE 69 ± 5 bpm"
+      }
+    },
+    {
+      "id": "s3_arce_baseline_glucose",
+      "description": "Study 3 baseline blood glucose before the ARCE trial Measured on a Terumo Medisafe FIT meter (whole blood, cannula sample), not plasma. (the RACE-visit baseline is the same state and is not entered again)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s3_arce_miae"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 94.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Study 3 Results, first paragraph (baseline, ARCE)",
+        "quote": "blood glucose (RACE 91 ± 6 mg/dL vs. ARCE 94 ± 8 mg/dL"
+      }
+    },
+    {
+      "id": "s3_arce_hr_end_miae",
+      "description": "Study 3 ARCE trial heart rate at the end of the MIAE bout (the first bout of that trial); the table caption says 'in response to', Methods says HR was collected at the end of each bout",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "s3_arce_miae"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 159.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, row HR, bpm MIAE, column ARCE (mean +/- SD)",
+        "quote": "MIAE | 159 ± 16"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Blood lactate at the end of each bout, study 1 (text of Discussion: median (IQR)) and every blood lactate baseline or end value printed as median (IQR) in studies 2 and 3",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Study 2 baseline glucose (median (IQR)) and study 3 baseline lactate (median (IQR))",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Blood glucose and lactate at the end of the first and second bouts (Fig. 1) and the glucose and lactate time courses of studies 2 and 3 (Figs 2 and 3); the text gives only P values and, for lactate, medians",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Heart rate during and after the knee-extension resistance exercise (Tables 2 and 3, studies 2 and 3), and heart rate of the MIAE after RE in the RACE trial (Table 3): knee extensions have no printed VO2, and RACE puts a resistance bout first",
+      "missing": {
+        "kind": "input",
+        "name": "resistance_exercise"
+      }
+    },
+    {
+      "what": "Study 3 glucose and lactate AUC over the whole trial (text: min*mg/dL, min*mM) and study 2 AUC: the trials include the knee-extension bout and the sampling minutes are not printed in the text",
+      "missing": {
+        "kind": "input",
+        "name": "resistance_exercise"
+      }
+    },
+    {
+      "what": "Ratings of perceived exertion (Tables 1-3, median (IQR))",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    }
+  ]
+}
