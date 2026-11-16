@@ -49,6 +49,26 @@
       ]
     },
     {
+      "name": "run_high",
+      "description": "Plasma glucose and insulin: venous samples at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00. Arrival 08:45 after a 10-h overnight fast (water only; 200 mL on waking and 50 mL on arrival, then water ad libitum), arm starts at arrival (08:45 = minute 0), so the sample at 09:30 is minute 45 and 12:00 is minute 195. No food during the trial. 60-min treadmill run 09:30-10:30 (minutes 45 to 105) at a speed eliciting 70% of VO2max. Level derived, not printed: from the oxygen uptake measured during the bout, Table 2, 36.2 mL/kg/min (65.1% of VO2max); level = (36.2 - 3.7)/31.7 = 1.025; level above 1.0: the model extrapolates here. Convention: the activity segment runs from minute 45 to 106 (the bout is 60 min, 09:30-10:30) so that the 10:30 sample at minute 105 falls with the input on.",
+      "duration_min": 196,
+      "start_hour": 8.75,
+      "prefast_hours": 10,
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 45,
+            "to_min": 106,
+            "level": 1.025
+          }
+        ]
+      },
+      "assumed": [
+        "activity"
+      ]
+    },
+    {
       "name": "rest_control",
       "description": "Plasma glucose and insulin: venous samples at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00. Arrival 08:45 after a 10-h overnight fast (water only; 200 mL on waking and 50 mL on arrival, then water ad libitum), arm starts at arrival (08:45 = minute 0), so the sample at 09:30 is minute 45 and 12:00 is minute 195. No food during the trial. Control trial: seated on a chair, 09:30 to 12:00, no exercise.",
       "duration_min": 196,
@@ -434,6 +454,194 @@
         "where": "Table 2, row 'Respiratory exchange ratio', column Control",
         "quote": "Respiratory exchange ratio | 0.87 ± 0.07 | 0.78 ± 0.03 | 0.80 ± 0.01"
       }
+    },
+    {
+      "id": "insulin_curve_run_high",
+      "description": "Plasma insulin at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, 70% VO2max run (level 1.025, above 1.0: the model extrapolates), mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "run_high"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 22.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10.5,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 14.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 16.5,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 8.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.8,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 21.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9.8,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 12.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.3,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 16.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11.6,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Insulin (pmol/L), row 'High-intensity exercise', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "High-intensity exercise | 22.0 ±10.5 | 14.8 ± 16.5 | 8.1 ± 6.8 | 21.2 ± 9.8 | 12.3 ± 5.3 | 16.0 ± 11.6"
+      }
+    },
+    {
+      "id": "glucose_curve_run_high",
+      "description": "Plasma glucose at 09:30, 10:00, 10:30, 11:00, 11:30 and 12:00, 70% VO2max run (level 1.025, above 1.0: the model extrapolates), mean and SD, n = 15 (minutes 45, 75, 105, 135, 165, 195 of the arm)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "run_high"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 45,
+          "value": 5.01,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.28,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 5.11,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.61,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 105,
+          "value": 4.78,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.65,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 4.59,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.36,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 165,
+          "value": 4.66,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.43,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 4.59,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.33,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Glucose (mmol/L), row 'High-intensity exercise', columns 09:30 to 12:00 (mean ± SD, n = 15)",
+        "quote": "High-intensity exercise | 5.01 ± 0.28 | 5.11 ± 0.61 | 4.78 ± 0.65 | 4.59 ± 0.36 | 4.66 ± 0.43 | 4.59 ± 0.33"
+      }
+    },
+    {
+      "id": "hr_bout_run_high",
+      "description": "Heart rate (beats/min), 70% VO2max run (level 1.025, above 1.0: the model extrapolates), one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_high"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 160,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 17,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Heart rate (beats/min)', column High-intensity exercise",
+        "quote": "Heart rate (beats/min) | 160 ± 17 | 106 ± 13 | 59 ± 20"
+      }
+    },
+    {
+      "id": "rer_bout_run_high",
+      "description": "Respiratory exchange ratio (entered as the model's respiratory quotient, rq), 70% VO2max run (level 1.025, above 1.0: the model extrapolates), one value per group for the 60-min trial (09:30-10:30, minutes 45 to 105), Table 2 ('Physiological responses during a 60-min high-intensity exercise, low-intensity exercise and control trials', n = 15, mean +/- SD). The paper does not say the value is a mean over the bout; the table is scoped 'during a 60-min' trial, gas exchange was measured 'during the 60-min period' and heart rate continuously, so it is entered as the bout mean.",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_high"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 105
+      },
+      "value": 0.87,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.07,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 2, row 'Respiratory exchange ratio', column High-intensity exercise",
+        "quote": "Respiratory exchange ratio | 0.87 ± 0.07 | 0.78 ± 0.03 | 0.80 ± 0.01"
+      }
     }
   ],
   "left_out": [
@@ -487,10 +695,10 @@
       }
     },
     {
-      "what": "everything in the 70% VO2max run: Table 4 glucose and insulin curves, Table 2 heart rate and RER, and the 0-60 min insulin AUC difference from control in Results. Measured bout VO2 36.2 mL/kg/min (Table 2) gives level (36.2 - 3.7)/31.7 = 1.025, above the activity scale's maximum of 1; the level is not capped",
+      "what": "0-60 min (09:30 to 10:30) total insulin AUC, high-intensity minus control, mean difference with 95% CI (Results); the unit is printed as pmol/L with no time, and a difference of areas between two arms is not a statistic the model has",
       "missing": {
-        "kind": "input",
-        "name": "exercise_above_activity_scale"
+        "kind": "operator",
+        "name": "delta_area"
       }
     }
   ]
