@@ -1,0 +1,774 @@
+{
+  "paper": "labonte-2017",
+  "citation": {
+    "authors": "Labonte CC, et al.",
+    "title": "Plasma amino acids vs conventional predictors of insulin resistance measured by the hyperinsulinemic clamp",
+    "journal": "Journal of the Endocrine Society",
+    "year": 2017,
+    "doi": "10.1210/js.2016-1108",
+    "pmid": "29264537",
+    "pmcid": "PMC5686697"
+  },
+  "population": {
+    "n": 134,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "unselected",
+    "description": "Retrospective analysis of 134 men and women pooled from the lab's earlier published clamp studies (refs 11-18; none of them is in this corpus): 51 healthy (29 men, 22 women), 31 nondiabetic overweight/obese, 52 with type 2 diabetes. Only the healthy and Ow/Ob groups are entered, each sex separately with its own printed age and BMI (protocol overrides); no pooled age or BMI is printed. Healthy = BMI <=25 (age <65) or <=29 (age >=65); Ow/Ob = above those cutoffs."
+  },
+  "protocols": [
+    {
+      "name": "fasted_healthy_men",
+      "description": "Short postabsorptive arm for healthy men (Table 1, column Men, Healthy, n = 29): after an overnight fast (hours not stated, 10 assumed), values read at minutes 29-30 (drawn postabsorptive, in the steady state of the tracer infusion before the clamp, so the real fast was at least overnight and its length is not printed); age 53 ± 20 y and BMI 23.3 ± 2.3 kg/m2 as printed in Table 1 (means ± SD, as printed; the age SD is the paper's own, Table 1 footnote 'Data are means ± SD').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 53.0,
+          "sd": 20.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.3,
+          "sd": 2.3,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fasted_healthy_women",
+      "description": "Short postabsorptive arm for healthy women (Table 1, column Women, Healthy, n = 22): after an overnight fast (hours not stated, 10 assumed), values read at minutes 29-30 (drawn postabsorptive, in the steady state of the tracer infusion before the clamp, so the real fast was at least overnight and its length is not printed); age 47 ± 24 y and BMI 22.3 ± 2.4 kg/m2 as printed in Table 1 (means ± SD, as printed; the age SD is the paper's own, Table 1 footnote 'Data are means ± SD').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 47.0,
+          "sd": 24.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.3,
+          "sd": 2.4,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fasted_owob_men",
+      "description": "Short postabsorptive arm for overweight/obese nondiabetic men (Table 1, column Men, Ow/Ob, n = 11): after an overnight fast (hours not stated, 10 assumed), values read at minutes 29-30 (drawn postabsorptive, in the steady state of the tracer infusion before the clamp, so the real fast was at least overnight and its length is not printed); age 45 ± 18 y and BMI 32.2 ± 3.1 kg/m2 as printed in Table 1 (means ± SD, as printed; the age SD is the paper's own, Table 1 footnote 'Data are means ± SD').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 45.0,
+          "sd": 18.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 32.2,
+          "sd": 3.1,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fasted_owob_women",
+      "description": "Short postabsorptive arm for overweight/obese nondiabetic women (Table 1, column Women, Ow/Ob, n = 20): after an overnight fast (hours not stated, 10 assumed), values read at minutes 29-30 (drawn postabsorptive, in the steady state of the tracer infusion before the clamp, so the real fast was at least overnight and its length is not printed); age 56 ± 19 y and BMI 34.2 ± 4.8 kg/m2 as printed in Table 1 (means ± SD, as printed; the age SD is the paper's own, Table 1 footnote 'Data are means ± SD').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 56.0,
+          "sd": 19.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 34.2,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_healthy_men",
+      "description": "glucose in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29; the paper does not say plasma or serum (glucose oxidase assay)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column Men, Healthy",
+        "quote": "Fasting glucose (mmol/L) | 5.4 ± 0.4"
+      }
+    },
+    {
+      "id": "insulin_healthy_men",
+      "description": "insulin in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 58,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column Men, Healthy",
+        "quote": "Fasting insulin (pmol/L) | 58 ± 15"
+      }
+    },
+    {
+      "id": "ffa_healthy_men",
+      "description": "ffa in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 501,
+      "unit": "µmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 186,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'FFAs (µmol/L)', column Men, Healthy",
+        "quote": "FFAs (µmol/L) | 501 ± 186"
+      }
+    },
+    {
+      "id": "glucagon_healthy_men",
+      "description": "glucagon in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 20,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pmol/L)', column Men, Healthy",
+        "quote": "Fasting glucagon (pmol/L) | 20 ± 7"
+      }
+    },
+    {
+      "id": "rq_healthy_men",
+      "description": "rq in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.78,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.05,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column Men, Healthy",
+        "quote": "RQ | 0.78 ± 0.05"
+      }
+    },
+    {
+      "id": "ree_healthy_men",
+      "description": "resting energy expenditure (indirect calorimetry) in healthy men, Table 1 column Men, Healthy; mean ± SD, n = 29; the paper does not date the calorimetry within the visit, entered as the fasted resting value alongside the RQ it calls fasting",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1552,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 181,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 1, row 'REE (kcal/d)', column Men, Healthy",
+        "quote": "REE (kcal/d) | 1552 ± 181"
+      }
+    },
+    {
+      "id": "glucose_healthy_women",
+      "description": "glucose in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22; the paper does not say plasma or serum (glucose oxidase assay)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column Women, Healthy",
+        "quote": "Fasting glucose (mmol/L) | 5.1 ± 0.3"
+      }
+    },
+    {
+      "id": "insulin_healthy_women",
+      "description": "insulin in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 53,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column Women, Healthy",
+        "quote": "Fasting insulin (pmol/L) | 53 ± 13"
+      }
+    },
+    {
+      "id": "ffa_healthy_women",
+      "description": "ffa in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 744,
+      "unit": "µmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 194,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'FFAs (µmol/L)', column Women, Healthy",
+        "quote": "FFAs (µmol/L) | 744 ± 194"
+      }
+    },
+    {
+      "id": "glucagon_healthy_women",
+      "description": "glucagon in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 21,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pmol/L)', column Women, Healthy",
+        "quote": "Fasting glucagon (pmol/L) | 21 ± 7"
+      }
+    },
+    {
+      "id": "rq_healthy_women",
+      "description": "rq in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.8,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column Women, Healthy",
+        "quote": "RQ | 0.80 ± 0.04"
+      }
+    },
+    {
+      "id": "ree_healthy_women",
+      "description": "resting energy expenditure (indirect calorimetry) in healthy women, Table 1 column Women, Healthy; mean ± SD, n = 22; the paper does not date the calorimetry within the visit, entered as the fasted resting value alongside the RQ it calls fasting",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_healthy_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1270,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 129,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 1, row 'REE (kcal/d)', column Women, Healthy",
+        "quote": "REE (kcal/d) | 1270 ± 129"
+      }
+    },
+    {
+      "id": "glucose_owob_men",
+      "description": "glucose in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11; the paper does not say plasma or serum (glucose oxidase assay)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column Men, Ow/Ob",
+        "quote": "Fasting glucose (mmol/L) | 5.3 ± 0.3"
+      }
+    },
+    {
+      "id": "insulin_owob_men",
+      "description": "insulin in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 72,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 27,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column Men, Ow/Ob",
+        "quote": "Fasting insulin (pmol/L) | 72 ± 27"
+      }
+    },
+    {
+      "id": "ffa_owob_men",
+      "description": "ffa in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 491,
+      "unit": "µmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 67,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'FFAs (µmol/L)', column Men, Ow/Ob",
+        "quote": "FFAs (µmol/L) | 491 ± 67"
+      }
+    },
+    {
+      "id": "glucagon_owob_men",
+      "description": "glucagon in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 28,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pmol/L)', column Men, Ow/Ob",
+        "quote": "Fasting glucagon (pmol/L) | 28 ± 11"
+      }
+    },
+    {
+      "id": "rq_owob_men",
+      "description": "rq in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.83,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.06,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column Men, Ow/Ob",
+        "quote": "RQ | 0.83 ± 0.06"
+      }
+    },
+    {
+      "id": "ree_owob_men",
+      "description": "resting energy expenditure (indirect calorimetry) in overweight/obese nondiabetic men, Table 1 column Men, Ow/Ob; mean ± SD, n = 11; the paper does not date the calorimetry within the visit, entered as the fasted resting value alongside the RQ it calls fasting",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1916,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 237,
+        "n": 11
+      },
+      "location": {
+        "where": "Table 1, row 'REE (kcal/d)', column Men, Ow/Ob",
+        "quote": "REE (kcal/d) | 1916 ± 237"
+      }
+    },
+    {
+      "id": "glucose_owob_women",
+      "description": "glucose in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20; the paper does not say plasma or serum (glucose oxidase assay)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', column Women, Ow/Ob",
+        "quote": "Fasting glucose (mmol/L) | 5.4 ± 0.4"
+      }
+    },
+    {
+      "id": "insulin_owob_women",
+      "description": "insulin in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 95,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 36,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin (pmol/L)', column Women, Ow/Ob",
+        "quote": "Fasting insulin (pmol/L) | 95 ± 36"
+      }
+    },
+    {
+      "id": "ffa_owob_women",
+      "description": "ffa in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 681,
+      "unit": "µmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 174,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'FFAs (µmol/L)', column Women, Ow/Ob",
+        "quote": "FFAs (µmol/L) | 681 ± 174"
+      }
+    },
+    {
+      "id": "glucagon_owob_women",
+      "description": "glucagon in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 20,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucagon (pmol/L)', column Women, Ow/Ob",
+        "quote": "Fasting glucagon (pmol/L) | 20 ± 5"
+      }
+    },
+    {
+      "id": "rq_owob_women",
+      "description": "rq in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.77,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column Women, Ow/Ob",
+        "quote": "RQ | 0.77 ± 0.04"
+      }
+    },
+    {
+      "id": "ree_owob_women",
+      "description": "resting energy expenditure (indirect calorimetry) in overweight/obese nondiabetic women, Table 1 column Women, Ow/Ob; mean ± SD, n = 20; the paper does not date the calorimetry within the visit, entered as the fasted resting value alongside the RQ it calls fasting",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_owob_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1506,
+      "unit": "kcal/day",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 235,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row 'REE (kcal/d)', column Women, Ow/Ob",
+        "quote": "REE (kcal/d) | 1506 ± 235"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Clamp glucose disposal Rd in mg/kg FFM/min, all groups (Table 1)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "M/I index and hepatic IR index (Table 1), HOMA-IR (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Clamp plasma insulin 560 ± 10 pmol/L printed once in Methods for all participants pooled, with no per-group value; with no clamp-state glucose infusion rate, glucose or other value printed per group in a usable unit, no clamp arm has a finding",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Plasma amino acids, BCAA and totals, postabsorptive (Table 2) and clamp BCAA (Methods text)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "Whole-body protein turnover and oxidation from 13C-leucine (Table 3 correlates, Results text)",
+      "missing": {
+        "kind": "marker",
+        "name": "protein_turnover"
+      }
+    },
+    {
+      "what": "Body composition: body fat percentage, FFM index, waist, waist/hip ratio, FFM (Table 1); fat mass in kg is not printed",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "Correlations and multiple regressions of amino acids and predictors with M/I (Tables 3 and 4)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Participants with type 2 diabetes, both sexes (Tables 1 and 2)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    }
+  ]
+}
