@@ -1,0 +1,348 @@
+{
+  "paper": "mosqueralopez-2025",
+  "citation": {
+    "authors": "Mosquera-Lopez E, et al.",
+    "title": "Ketone monoester supplementation during early recovery from exercise and the skeletal muscle transcriptome (placebo arm used)",
+    "journal": "Eur J Appl Physiol",
+    "year": 2025,
+    "doi": "10.1007/s00421-025-05987-9",
+    "pmid": "40960642",
+    "pmcid": "PMC12948831"
+  },
+  "population": {
+    "n": 9,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.0,
+      "sd": 5.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Nine healthy, non-smoking, recreationally active men (>=3 endurance sessions per week, VO2max >= 40 mL/kg/min as enrolment criteria); age 26 ± 5 y (mean ± SD), height 1.80 ± 0.07 m, body mass 80 ± 9 kg, VO2max 47 ± 4 mL/kg/min. BMI not printed. Only the placebo (PLA) arm is entered; the ketone monoester (KME) arm is not."
+  },
+  "protocols": [
+    {
+      "name": "bout_60pct_pla",
+      "description": "Breakfast at arm minute 0 (30 min before exercise): 1 g/kg CHO, 0.1 g/kg PRO, 0.03 g/kg FAT x printed mean body mass 80 kg = 80 g carbohydrate, 8 g protein, 2.4 g fat. Cycling from minute 30 to 120 (90 min) at ~60% VO2max, placebo drink (water, bitter sucrose octaacetate, 5% w/v sucralose, strawberry flavour: no energy) at exercise min 45. Activity level from the measured placebo VO2, Table 1: mean of the six exercise values (2.31, 2.33, 2.37, 2.42, 2.41, 2.42 L/min) = 2.3767 L/min; / 80 kg (printed body mass) = 29.708 mL/kg/min; level = (29.708 - 3.7) / 31.7 = 0.8204. (The paper says participants exercised at ~63% of VO2max; 63% of the printed 47 mL/kg/min = 29.6, consistent.) The 30-min post-exercise recovery drink lies after the arm. The paper states no fast before the breakfast (participants 'arrived at the laboratory in the morning (0730 to 0830 h)'; the prepackaged diet is of the previous 24 h), so the arm starts from typical values (norm_center), not a fast; the clock hour 8.0 is assumed within the stated arrival window.",
+      "duration_min": 120,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 80.0,
+          "fat_g": 2.4,
+          "protein_g": 8.0
+        }
+      ],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 30,
+            "to_min": 120,
+            "level": 0.8204
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity",
+        "meals"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "pla_hr_curve",
+      "description": "Heart rate during the 90-min cycling bout at ~60% VO2max, placebo drink. Placebo arm. Each Table 1 value is the mean of the last 3 min of an exercise window (12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min of exercise); the curve point is put at the last minute of that window (arm minutes 44, 59, 74, 89, 104, 119), the bout starting at arm minute 30.",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "bout_60pct_pla"
+      ],
+      "unit": "bpm",
+      "points": [
+        {
+          "t_min": 44,
+          "value": 142,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 7,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 149,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 9,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 74,
+          "value": 151,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 89,
+          "value": 149,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 10,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 104,
+          "value": 151,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 11,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 119,
+          "value": 153,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, PLA row, columns 12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min; HR (bpm); mean ± SD",
+        "quote": "PLA | 142 ± 7 | 149 ± 9 | 151 ± 12 | 149 ± 10 | 151 ± 11 | 153 ± 13"
+      }
+    },
+    {
+      "id": "pla_lactate_curve",
+      "description": "Capillary (finger-prick) blood lactate during the 90-min cycling bout, placebo drink. Placebo arm. Each Table 1 value is the mean of the last 3 min of an exercise window (12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min of exercise); the curve point is put at the last minute of that window (arm minutes 44, 59, 74, 89, 104, 119), the bout starting at arm minute 30.",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "bout_60pct_pla"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 44,
+          "value": 3.69,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.89,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 3.04,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.09,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 74,
+          "value": 2.83,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.26,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 89,
+          "value": 2.58,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.21,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 104,
+          "value": 2.63,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.15,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 119,
+          "value": 2.66,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.04,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, PLA row, columns 12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min; Lactate (mmol·L−1); mean ± SD",
+        "quote": "PLA | 3.69 ± 0.89 | 3.04 ± 1.09 | 2.83 ± 1.26 | 2.58 ± 1.21 | 2.63 ± 1.15 | 2.66 ± 1.04"
+      }
+    },
+    {
+      "id": "pla_vco2_curve",
+      "description": "Carbon dioxide output during the 90-min cycling bout, placebo drink. Placebo arm. Each Table 1 value is the mean of the last 3 min of an exercise window (12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min of exercise); the curve point is put at the last minute of that window (arm minutes 44, 59, 74, 89, 104, 119), the bout starting at arm minute 30.",
+      "marker": "vco2",
+      "statistic": "curve",
+      "protocols": [
+        "bout_60pct_pla"
+      ],
+      "unit": "L/min",
+      "points": [
+        {
+          "t_min": 44,
+          "value": 2.15,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.24,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 59,
+          "value": 2.15,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.21,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 74,
+          "value": 2.15,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.22,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 89,
+          "value": 2.16,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.23,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 104,
+          "value": 2.13,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.21,
+            "n": 9
+          }
+        },
+        {
+          "t_min": 119,
+          "value": 2.14,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.3,
+            "n": 9
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, PLA row, columns 12-15, 27-30, 42-45, 57-60, 72-75, 87-90 min; V̇CO2 (L·min−1); mean ± SD",
+        "quote": "PLA | 2.15 ± 0.24 | 2.15 ± 0.21 | 2.15 ± 0.22 | 2.16 ± 0.23 | 2.13 ± 0.21 | 2.14 ± 0.30"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "serum glucose at the pre-exercise sample (PLA 4.8 ± 0.8 mM, n = 9, results text): whether the participants were fasted before the breakfast is not printed (and the sample is at arm minute 0)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "respiratory exchange ratio during the bout (Table 1, PLA 0.93, 0.92, 0.91, 0.89, 0.88, 0.88 AU) and at rest: depends on the fed state before the breakfast, which the paper does not print (no fast stated)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "ketone monoester (KME) arm of every table and figure",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "oxygen uptake during the bout (Table 1): used as the bout's intensity input, not entered as a finding",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "rest column of Table 1 (HR, lactate, RER, VCO2 at rest): the minute of the rest measurement relative to the breakfast is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "carbohydrate and fat oxidation in g/min (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "rating of perceived exertion (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "serum glucose, beta-hydroxybutyrate and erythropoietin during the 180-min recovery, and their total areas (Figure 2): numbers only in figures; PLA beta-hydroxybutyrate given only as '~ 0.1 mM'",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "muscle glycogen before and 180 min after exercise, in mmol/kg dry mass (Figure 3 and text)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_dry_weight"
+      }
+    },
+    {
+      "what": "serum erythropoietin",
+      "missing": {
+        "kind": "marker",
+        "name": "erythropoietin"
+      }
+    },
+    {
+      "what": "skeletal muscle transcriptome (Figure 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_gene_expression"
+      }
+    }
+  ]
+}
