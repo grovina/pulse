@@ -1,0 +1,152 @@
+{
+  "paper": "garnachocastano-2018",
+  "citation": {
+    "authors": "Garnacho-Castaño MV, Palau-Salvà G, Cuenca E, Muñoz-González A, García-Fernández P, del Carmen Lozano-Estevan M, Veiga-Herreros P, Maté-Muñoz JL, Domínguez R",
+    "title": "Effects of a single dose of beetroot juice on cycling time trial performance at ventilatory thresholds intensity in male triathletes",
+    "journal": "Journal of the International Society of Sports Nutrition",
+    "year": 2018,
+    "doi": "10.1186/s12970-018-0255-6",
+    "pmid": "30286760",
+    "pmcid": "PMC6172780"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 39.3,
+      "sd": 7.5,
+      "min": 21.0,
+      "max": 47.0
+    },
+    "bmi": {
+      "mean": 23.4,
+      "sd": 2.2,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve well-trained male triathletes (national n = 8, international n = 4), age 39.3 +/- 7.5 y (abstract: aged 21-47 yr), BMI 23.4 +/- 2.2, weight 72.8 +/- 6.9 kg, VO2max 54.8 +/- 3.1 mL/kg/min. Inclusion: no cardiovascular, respiratory, metabolic, neurological or orthopedic disorders, no drugs, no smoking. Crossover; only the placebo (nitrate-depleted) session is entered."
+  },
+  "protocols": [
+    {
+      "name": "placebo_vt1_vt2_cycling",
+      "description": "Placebo session: 70 mL placebo drink (1 g powdered beetroot juice in 1 L mineral water plus lemon juice; carbohydrate content not printed, so no meal entered) 3 h before the test, no food or fluid but water in those 3 h; subjects rested. Minute 0 here is the start of the constant-load cycling after the 5-min light warm-up (warm-up load self-selected, not printed, left out): 30 min at the VT1 workload (minutes 0 to 30). Food before the visit is not printed beyond the 48 h diet (~60% carbohydrate, 5.5 g/kg) and the 3 h of water only, so no fast is assumed: init norm_center, no prefast_hours, no meal. Duration 30 min is the printed VT1 stage ('30 min'); the VT2 time trial that follows without rest is not in this arm. Activity levels derived from Table 3 'VO2 (%)' placebo rows (percent of VO2max) times the group VO2max 54.8 mL/kg/min (Table 2): VT1 stage 60.5% x 54.8 = 33.154 mL/kg/min, level (33.154 - 3.7)/31.7 = 0.9291; the VT2 stage is not entered (level above 1).",
+      "duration_min": 30,
+      "start_hour": 10.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 30,
+            "level": 0.9291
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "pl_vco2_vt1",
+      "description": "CO2 output during the 30 min VT1 stage (placebo). The paper says only that Table 3 holds the values 'recorded at VT1 and VT2 in the constant load tests' (gas data in 30 s means); it does not say whether this is the stage mean or an end value, entered as the stage mean",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "placebo_vt1_vt2_cycling"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 2.4,
+      "unit": "L/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, VCO2 (L·min−1), PL row, VT1 column",
+        "quote": "PL | 2.4 (0.5) | 3.5 (0.5) | 2.9 (0.4)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate at VT1, VT2 and total (Table 3; also Table 2): unit printed as beats per second, contradicting the numbers",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "RER at the VT1 stage, placebo (Table 3): what the athletes ate before the visit is not printed (only the 48 h diet and 3 h of water), and RER depends on it",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Blood lactate at rest, end of VT1 stage and end of VT2 (Fig. 2c, 95% CI error bars)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Cycling efficiency and gross efficiency (Fig. 2a, 2b)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Energy expenditure, carbohydrate oxidation and fat oxidation at VT1, VT2 and total (Fig. 3, 95% CI error bars)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Minute ventilation, VE/VO2, VE/VCO2 (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "ventilation"
+      }
+    },
+    {
+      "what": "Total (VT1 + VT2) column of Table 3 (not a window of the arm; RER 1.0 (0.0) has a zero SD) and the placebo VT2 time-trial duration 14 min 42 s (no uncertainty)",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "Slow component of VO2 (text, Fig. 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Beetroot juice arm and its differences from placebo (Table 3, BJ rows)",
+      "missing": {
+        "kind": "input",
+        "name": "nitrate_supplementation"
+      }
+    },
+    {
+      "what": "VT2 time-trial stage VCO2 and RER (Table 3): the stage's activity level (VO2 83.9% of VO2max, level 1.33) is above the model's 0 to 1",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    }
+  ]
+}
