@@ -1,0 +1,31 @@
+{
+  "paper": "bradley-2015",
+  "citation": "Bradley et al. 2015. Visualization and quantitation of GLUT4 translocation in human skeletal muscle following glucose ingestion and exercise. Physiological Reports 3:e12375.",
+  "doi": "10.14814/phy2.12375",
+  "pmid": "25969463",
+  "pmcid": "PMC4463815",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g glucose as 25% solution after overnight fast; blood at baseline, 30, 60, 120 min (experiment 2)",
+  "protocol_kinds": [
+    "OGTT",
+    "other"
+  ],
+  "population": "10 healthy lean recreationally active participants per experiment; age 21-25, BMI about 23",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Results text (baseline, 30, 60 min)",
+      "form": "text"
+    },
+    {
+      "marker": "insulin",
+      "where": "Results text (baseline, 30, 120 min)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Values are in running text only, a few minutes each, and mixed with biopsy findings; check the two experiments separately (exercise experiment 1 is not an OGTT). Units mmol/L and uIU/mL."
+}

@@ -1,0 +1,30 @@
+{
+  "paper": "sorli-2023",
+  "citation": "Sorli et al. 2023. The Effect of Acute Hyperglycaemia Induced by Oral Glucose Load on Heart Rate Variability and Skin Microvascular Reactivity in Healthy Young Adults. Life 14:56.",
+  "doi": "10.3390/life14010056",
+  "pmid": "38255671",
+  "pmcid": "PMC10817604",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g glucose in 250 mL water in 5 min; separate kinetics trial with blood at 0, 30, 50, 90 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "20 healthy young volunteers (15 M, 5 F), age 21.6 +/- 1.6 y, normal BMI",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose (change from fasting)",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "insulin (change from fasting)",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Young healthy adults, venous glucose and insulin. Table 4 gives changes from fasting at 30/50/90 min, so the fasting level must be taken from the text; units are mM and uU/mL."
+}

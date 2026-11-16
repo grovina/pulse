@@ -1,0 +1,35 @@
+{
+  "paper": "yoshida-2022",
+  "citation": "Yoshida et al. 2022. Age-Related Sex Differences in Glucose Tolerance by 75 g Oral Glucose Tolerance Test in Japanese. Nutrients 14:4868.",
+  "doi": "10.3390/nu14224868",
+  "pmid": "36432554",
+  "pmcid": "PMC9698682",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g OGTT after 12 h fast; blood at 0, 30, 60, 120 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "505 young men (23.7 y), 280 young women (23.3 y), 127 middle-aged men, 244 middle-aged women (all comers, NGT to diabetes), Japan",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose AUC",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin AUC",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "fasting glucose and insulin",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Only AUCs (0-120 min) and fasting values are in the table. The young groups are mostly NGT (82-94%), middle-aged groups include IGT and diabetes, so use young groups as the healthy set."
+}

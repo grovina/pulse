@@ -1,0 +1,30 @@
+{
+  "paper": "fujita-2022",
+  "citation": "Fujita et al. 2022. Four features of temporal patterns characterize similarity among individuals and molecules by glucose ingestion. NPJ Systems Biology and Applications 8:6.",
+  "doi": "10.1038/s41540-022-00213-0",
+  "pmid": "35136093",
+  "pmcid": "PMC8826934",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g glucose (Trelan-G75) within a few minutes; blood at 0, 10, 20, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "20 healthy subjects (6 W, 14 M), age 29 +/- 9, BMI 20.8",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1 (fasting, 2-h)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1 (fasting, 2-h)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Very dense 13-point sampling out to 4 h with metabolites and 7 hormones, but the printed table gives only fasting and 2-h glucose/insulin; the rest is in figures and supplementary data."
+}

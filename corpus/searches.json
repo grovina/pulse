@@ -27,12 +27,14 @@
     },
     {
       "name": "oral glucose tolerance test",
-      "status": "next",
+      "status": "active",
       "why": "The canonical test the model's states already cover; glucose, insulin, C-peptide over 2-3 h in healthy adults.",
       "query": "(\"oral glucose tolerance test\"[Title] OR OGTT[Title] OR \"glucose load\"[Title] OR \"glucose ingestion\"[Title]) AND healthy[All Fields] AND insulin[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 257,
+      "queued": 12,
+      "batches": [
+        "2026-11-16"
+      ],
       "hits": 257
     },
     {

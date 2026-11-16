@@ -1,0 +1,30 @@
+{
+  "paper": "garces-2020",
+  "citation": "Garces et al. 2020. Serum angiopoietin-like 3 levels are elevated in obese non diabetic men but are unaffected during an oral glucose tolerance test. Scientific Reports 10:21118.",
+  "doi": "10.1038/s41598-020-77961-8",
+  "pmid": "33273510",
+  "pmcid": "PMC7713064",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "75 g anhydrous glucose in 200 mL water; blood at 0, 30, 60, 120 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "28 healthy lean men (age 24.6 +/- 3.5, BMI 22.1) and 30 obese non-diabetic men (age 23.9, BMI 37.9), Spain",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Lean healthy group printed separately with full 4-point glucose and insulin means. Insulin 30-min SD in the table looks implausibly small for the lean group (4.58 around 81.5); a reader should check. Units mg/dL and uIU/mL."
+}

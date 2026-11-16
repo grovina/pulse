@@ -1,0 +1,30 @@
+{
+  "paper": "nakanishi-2013",
+  "citation": "Nakanishi et al. 2013. Impact of glucose excursion and mean glucose concentration in oral glucose-tolerance test on oxidative stress. Diabetes, Metabolic Syndrome and Obesity 6:427.",
+  "doi": "10.2147/DMSO.S53760",
+  "pmid": "24285926",
+  "pmcid": "PMC3840774",
+  "licence": "CC BY-NC 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/3.0/",
+  "protocol": "75 g OGTT; glucose and insulin at fasting, 1 h, 2 h",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "558 NGT Japanese Americans (210 M, 348 F), age 63.1 +/- 0.6 (SEM); IGT (165) and DM (52) printed alongside",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Older community cohort, an NGT column printed separately. The SEM label is inferred from the +/- format; confirm in the footnote. Only 0, 60 and 120 min. NC licence."
+}

@@ -1,0 +1,30 @@
+{
+  "paper": "ishigaki-2019",
+  "citation": "Ishigaki et al. 2019. Prolonged plasma glucose elevation on oral glucose tolerance test in young healthy Japanese individuals. Endocrinology, Diabetes & Metabolism 3:e00098.",
+  "doi": "10.1002/edm2.98",
+  "pmid": "31922025",
+  "pmcid": "PMC6947704",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "75 g dextrose monohydrate in 250 mL; blood at 0, 30, 60, 120 min",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "575 normal-glucose-tolerance Japanese (359 M, 216 F), age 23.7 +/- 1.7, BMI 21.1",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2 (4 shape groups)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2 (4 shape groups)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Very large young cohort, but per-curve-shape group (n=28, 120, 143, 284). Overall means are not printed; pool by n. NC licence."
+}
