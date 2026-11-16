@@ -1,0 +1,40 @@
+{
+  "paper": "wouda-2023",
+  "citation": {
+    "authors": "Wouda MF, et al.",
+    "title": "Acute changes in antioxidants and oxidative stress to vigorous arm exercise: an intervention trial in persons with spinal cord injury and healthy controls",
+    "journal": "Spinal Cord Series and Cases",
+    "year": 2023,
+    "doi": "10.1038/s41394-023-00590-6",
+    "pmid": "37443310",
+    "pmcid": "PMC10345148"
+  },
+  "reported": [
+    {
+      "what": "Able-bodied controls (n = 6): high-intensity bouts of arm cranking set as 85-95% of peak heart rate; VO2, RER and lactate were not measured during them, and the load is in watts of arm cranking, which is not the cycle work rate the model converts",
+      "location": {
+        "where": "Methods and Results, high intensity interval exercise",
+        "quote": "3 bouts of 4 min at an intensity of 85–95% of the peak heart rate"
+      }
+    },
+    {
+      "what": "Able-bodied controls: peak heart rate, peak VO2 and blood lactate at maximal effort of a ramp arm-cranking test to exhaustion (Table 2, control columns, pre-test and maximal effort); the ramp's duration is not printed, the fed state is not described (only no food in the hour before), and the lactate sampling time of the pre-test is not printed",
+      "location": {
+        "where": "Table 2, control columns, pre-test",
+        "quote": "Peak HR (beats/min) | 170 (15)"
+      }
+    },
+    {
+      "what": "Able-bodied controls: peak oxygen uptake of the pre-test",
+      "location": {
+        "where": "Table 2, control column, pre-test",
+        "quote": "Peak VO2 (ml/kg/min) | 27.6 (5.4)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The only bouts are arm cranking at a percentage of peak heart rate with no oxygen uptake measured, and ramps to exhaustion whose duration is not printed, so no bout intensity and length can be written; the paper prints no resting heart rate, pressure, lactate or other value of the controls, and the participants' table holds only anthropometry."
+}
