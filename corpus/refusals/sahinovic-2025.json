@@ -1,0 +1,54 @@
+{
+  "paper": "sahinovic-2025",
+  "citation": {
+    "authors": "Sahinovic A, et al.",
+    "title": "Effects of Cannabidiol on Submaximal and Incremental Running in Trained Runners: A Randomised, Double-Blind, Placebo-Controlled, Crossover, Dose-Ranging Trial",
+    "journal": "Sports Medicine - Open",
+    "year": 2025,
+    "doi": "10.1186/s40798-025-00895-w",
+    "pmid": "40839290",
+    "pmcid": "PMC12370602"
+  },
+  "reported": [
+    {
+      "what": "Placebo-arm heart rate at 20, 40 and 60 min of the 60-min run (RUN 1), median [IQR]; the run's own VO2 (24, 37, 50 min) is also median [IQR]",
+      "location": {
+        "where": "Table 2, RUN 1, Placebo column",
+        "quote": "20EX | 147 [139–151] ; 40EX | 149 [145–156] ; 60EX | 152 [147–160]"
+      }
+    },
+    {
+      "what": "Placebo-arm capillary blood glucose at the end of RUN 1, mean ± SD (breakfast eaten before treatment is printed with carbohydrate and protein but no fat)",
+      "location": {
+        "where": "Table 2, RUN 1, Placebo column",
+        "quote": "Glucose (mmol·L−1) | 5.6 ± 0.7"
+      }
+    },
+    {
+      "what": "Placebo-arm capillary blood glucose at the end of RUN 2, mean ± SD",
+      "location": {
+        "where": "Table 2, RUN 2, Placebo column",
+        "quote": "Glucose (mmol·L−1) | 6.4 ± 1.3"
+      }
+    },
+    {
+      "what": "Peak heart rate at the end of the incremental run to exhaustion (RUN 2), placebo, mean ± SD",
+      "location": {
+        "where": "Table 2, RUN 2, Placebo column",
+        "quote": "Peak Heart Rate (bpm) | 182 ± 9"
+      }
+    },
+    {
+      "what": "Standardised breakfast eaten before treatment: energy, carbohydrate and protein printed, fat not",
+      "location": {
+        "where": "Results, Standardisation Procedures",
+        "quote": "2073 ± 320 kJ, 79 ± 12 g carbohydrate, 11 ± 1 g protein"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "median_with_iqr"
+  },
+  "detail": "Most of the placebo-arm numbers the model could take (heart rate and VO2 of the 60-min run, lactate) are printed as median [IQR], while the mean ± SD rows are blocked by a breakfast whose fat is not printed (glucose) or by a ramp to exhaustion beyond the activity scale (peak heart rate); no resting or fasting mean ± SD value is in the paper's text or tables."
+}
