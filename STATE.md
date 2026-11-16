@@ -393,9 +393,13 @@ Not rescored, from the board of 2026-10-29:
   left out as `exercise_above_activity_scale`. It now runs to 2.0 (VO2 67;
   `pulse/knowledge/corpus.py`, `tests/test_activity_above_one.py`), but above
   1.0 the model extrapolates: RQ is clamped at 1.0, sympathetic tone at 1, and
-  the heart-rate driver has never been trained above 1. A cold test on the
-  hard-bout findings this unlocks decides whether that needs fixing. All-out
-  sprints stay out.
+  the heart-rate driver has never been trained above 1. A cold test of iter
+  117 (no training, 2026-11-16) on the 21 findings this unlocked (li-2024,
+  crabtree-2025, garnachocastano-2018, roberts-2023) gave a median |z| of
+  about 0.7, against 1.05 on the sealed exercise items below 1.0, so no fix or
+  retrain was made for it. Heart rate runs low at every Bruce stage of
+  crabtree-2025 alike (-1.9 at level 0.45, -2.0 at 1.07): a bias of its own,
+  not of the extrapolation. All-out sprints stay out.
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 
