@@ -1,0 +1,258 @@
+{
+  "paper": "hoeks-2010",
+  "citation": {
+    "authors": "Hoeks J, et al.",
+    "title": "Prolonged fasting identifies skeletal muscle mitochondrial dysfunction as consequence rather than cause of human insulin resistance",
+    "journal": "Diabetes",
+    "year": 2010,
+    "doi": "10.2337/db10-0519",
+    "pmid": "20573749",
+    "pmcid": "PMC2927932"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.6,
+      "sd": 3.46,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.6,
+      "sd": 1.73,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve healthy, lean male volunteers with no family history of diabetes or other endocrine disorder (Table 1, mean ± SE). SDs computed as SE x sqrt(12): age 1.0 -> 3.46, BMI 0.5 -> 1.73. Crossover, all 12 in both conditions."
+  },
+  "protocols": [
+    {
+      "name": "fast_12h",
+      "description": "Single plasma sample after 12 h of fasting (calorie-free drinks only), Methods 'Experimental design' and Results 'Plasma parameters' (t = 12 h). Arm of 30 min read at minutes 29-30; the sample's clock hour is not printed: the fast follows a standardized evening meal and the 12 h sample is taken after the overnight fast, so the 12 h sample is put at 08:00, the 36 h sample at 08:00 + 24 h = 20:00 and the 60 h sample at 08:00 + 48 h = 08:00 (assumed); the paper's clinical day (leaving the chamber 'on the morning of the third day' at 60 h) agrees with the 60 h sample falling in the morning. H = 12 is the paper's t, counted from the start of the fast; the interval between the evening meal and the start of the fast is not printed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fast_36h",
+      "description": "Single plasma sample after 36 h of fasting (calorie-free drinks only), Methods 'Experimental design' and Results 'Plasma parameters' (t = 36 h). Arm of 30 min read at minutes 29-30; the sample's clock hour is not printed: the fast follows a standardized evening meal and the 12 h sample is taken after the overnight fast, so the 12 h sample is put at 08:00, the 36 h sample at 08:00 + 24 h = 20:00 and the 60 h sample at 08:00 + 48 h = 08:00 (assumed); the paper's clinical day (leaving the chamber 'on the morning of the third day' at 60 h) agrees with the 60 h sample falling in the morning. H = 36 is the paper's t, counted from the start of the fast; the interval between the evening meal and the start of the fast is not printed.",
+      "duration_min": 30,
+      "start_hour": 20.0,
+      "meals": [],
+      "prefast_hours": 36,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fast_60h",
+      "description": "Single plasma sample after 60 h of fasting (calorie-free drinks only), Methods 'Experimental design' and Results 'Plasma parameters' (t = 60 h). Arm of 30 min read at minutes 29-30; the sample's clock hour is not printed: the fast follows a standardized evening meal and the 12 h sample is taken after the overnight fast, so the 12 h sample is put at 08:00, the 36 h sample at 08:00 + 24 h = 20:00 and the 60 h sample at 08:00 + 48 h = 08:00 (assumed); the paper's clinical day (leaving the chamber 'on the morning of the third day' at 60 h) agrees with the 60 h sample falling in the morning. H = 60 is the paper's t, counted from the start of the fast; the interval between the evening meal and the start of the fast is not printed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 60,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_12h",
+      "description": "Plasma glucose at 12 h of the fasting condition (mean, SE)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.98,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 2",
+        "quote": "averaging 5.05 ± 0.09 and 4.98 ± 0.06 mmol/l in the fed and the fasted state, respectively"
+      }
+    },
+    {
+      "id": "glucose_60h",
+      "description": "Plasma glucose after 60 h of fasting (mean, SE)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_60h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 3.72,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.13,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 2",
+        "quote": "plasma glucose levels gradually decreased to 3.72 ± 0.13 mmol/l at t = 60 h"
+      }
+    },
+    {
+      "id": "insulin_12h",
+      "description": "Plasma insulin at 12 h of the fasting condition (mean, SE; the fed condition printed first, 12.9 ± 0.9, is not entered)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 11.9,
+      "unit": "μU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 3",
+        "quote": "12.9 ± 0.9 vs. 11.9 ± 1.2 μU/ml in fed versus fasted"
+      }
+    },
+    {
+      "id": "insulin_36h",
+      "description": "Plasma insulin after 36 h of fasting (mean, SE)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_36h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.1,
+      "unit": "μU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.6,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 3",
+        "quote": "markedly reduced to 7.1 ± 0.6 μU/ml at t = 36 h"
+      }
+    },
+    {
+      "id": "insulin_60h",
+      "description": "Plasma insulin after 60 h of fasting (mean, SE)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_60h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.0,
+      "unit": "μU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.74,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 3",
+        "quote": "(7.0 μU/ml ± 0.74) at t = 60 h"
+      }
+    },
+    {
+      "id": "ffa_60h",
+      "description": "Plasma FFA after 60 h of fasting (mean, SE)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_60h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1981,
+      "unit": "μmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 95,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, Plasma parameters, paragraph 1",
+        "quote": "plasma FFA increased dramatically, up to 1,981 ± 95 μmol/l vs. 387 ± 37 in the fed condition"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "plasma FFA at 12 h in the two conditions (221 ± 18 vs. 215 ± 27 μmol/l, Results); the text does not say which value belongs to which condition",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "plasma glucose at 36 h, FFA at 36 h (Figure 1 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "fed-condition values at 60 h (FFA 387 ± 37 μmol/l; glucose and insulin 'unchanged'): meals in energy balance given only as 50-35-15% of an energy that is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "basal glucose Rd, EGP, NOGD, lipid and CHO oxidation (Table 2): drawn in the basal period of the clamp visit after leaving the chamber; the hour since the start of the fast is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "clamp: Table 2 clamp-period Rd, EGP, oxidation and Figure 2 insulin sensitivity index; the insulin dose and plasma insulin level of the clamp are not printed in the text",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "24-h energy expenditure (10.88 ± 0.33 vs 10.30 ± 0.30 MJ/day) and 24-h RER (0.91 ± 0.009 vs 0.77 ± 0.003) over the last 24 h of the 60 h chamber stay",
+      "missing": {
+        "kind": "operator",
+        "name": "total_over_own_duration"
+      }
+    }
+  ]
+}
