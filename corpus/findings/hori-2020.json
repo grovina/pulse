@@ -1,0 +1,158 @@
+{
+  "paper": "hori-2020",
+  "citation": {
+    "authors": "Hori A, Sobue S, Kurokawa R, Hirano S, Ichihara M, Hotta N",
+    "title": "Two-week continuous supplementation of hydrogen-rich water increases peak oxygen uptake during an incremental cycling exercise test in healthy humans: a randomized, single-blinded, placebo-controlled study (rest values of the placebo trial read)",
+    "journal": "Medical Gas Research",
+    "year": 2020,
+    "doi": "10.4103/2045-9912.304223",
+    "pmid": "33380582",
+    "pmcid": "PMC8092150"
+  },
+  "population": {
+    "n": 9,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 19.9,
+      "sd": 1.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Nine healthy university students (6 men, 3 women), Experiment 1; age 19.9 ± 0.4 y (mean ± SE), height 169.6 ± 3.0 cm, weight 63.7 ± 4.1 kg (Table 1). Age SD = SE x sqrt(9) = 1.2, computed here. BMI is not printed."
+  },
+  "protocols": [
+    {
+      "name": "pw_rest",
+      "description": "Placebo-water (PW) trial of Experiment 1, pre-exercise rest only. The participants drank 500 mL of placebo water (entered as no meal), sat for 30 min, then (Methods) rested 5 min on the ergometer with a respiratory mask before a 3 min warm-up at 0 W; the paper does not say whether that 5 min is inside the 30 min of seated rest, so the Table 2 rest values are entered as the mean over minutes 25-30 of a 30-minute arm. The exercise itself (ramp +20 W per min to exhaustion) is not entered. The paper says nothing about food before the visit or the time of day, so no fast and no meal are assumed: the arm starts from typical values (norm_center) and the clock hour is assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "init"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "pw_rest_hr",
+      "description": "Heart rate at rest, placebo water trial",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pw_rest"
+      ],
+      "window": {
+        "start_min": 25,
+        "end_min": 30
+      },
+      "value": 84,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, Heart rate, row Rest, column Placebo water",
+        "quote": "Rest | 78±5 | 84±8 | 0.39"
+      }
+    },
+    {
+      "id": "pw_rest_vo2",
+      "description": "Oxygen uptake at rest, placebo water trial",
+      "marker": "vo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pw_rest"
+      ],
+      "window": {
+        "start_min": 25,
+        "end_min": 30
+      },
+      "value": 282,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, Oxygen uptake, row Rest, column Placebo water",
+        "quote": "Rest | 279±20 | 282±17 | 0.67"
+      }
+    },
+    {
+      "id": "pw_rest_vco2",
+      "description": "Carbon dioxide output at rest, placebo water trial",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pw_rest"
+      ],
+      "window": {
+        "start_min": 25,
+        "end_min": 30
+      },
+      "value": 249,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 16,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, Carbon dioxide output, row Rest, column Placebo water",
+        "quote": "Rest | 241±19 | 249±16 | 0.44"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Blood lactate at rest (Table 3, row PW, column Rest) and respiratory exchange ratio at rest (Table 2): resting values depend on the unstated food before the visit (nothing printed about fasting or the last meal)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Peak VO2, VCO2, RER, heart rate and VE of the ramp test, and lactate at 150 W and at the end (Tables 2 and 3): ramp +20 W/min to exhaustion; the duration and peak load are not printed in the text (Figure 3 only)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Minute ventilation at rest and peak (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "Rate of perceived exertion at peak (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "d-ROMs and BAP (oxidative stress, antioxidant potential) at rest, 150 W and end (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "oxidative_stress_markers"
+      }
+    },
+    {
+      "what": "Experiment 2 (two-week intake, two male groups, pre and post; Tables 4 and figures) and hydrogen-rich water trial values",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    }
+  ]
+}
