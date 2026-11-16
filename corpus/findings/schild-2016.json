@@ -1,0 +1,136 @@
+{
+  "paper": "schild-2016",
+  "citation": {
+    "authors": "Schild M, Eichner G, Beiter T, Zügel M, Krumholz-Wagner I, Hudemann J, Pilat C, Krüger K, Niess AM, Steinacker JM, Mooren FC",
+    "title": "Effects of Acute Endurance Exercise on Plasma Protein Profiles of Endurance-Trained and Untrained Individuals over Time",
+    "journal": "Mediators of Inflammation",
+    "year": 2016,
+    "doi": "10.1155/2016/4851935",
+    "pmid": "27239103",
+    "pmcid": "PMC4867072"
+  },
+  "population": {
+    "n": 17,
+    "sex": "male",
+    "age_years": {
+      "mean": 24.0,
+      "sd": 3.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.7,
+      "sd": 4.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The untrained/sedentary (SED) group of Table 1: 17 healthy men (less than 2 hours of unspecific sports per week, VO2max < 47 mL/min/kg; each underwent a medical screening). The endurance-trained group (n = 19) is not entered (see left_out). Age and BMI are the SED group's mean and SD in Table 1."
+  },
+  "protocols": [
+    {
+      "name": "sed_cycling_80pct_vo2max",
+      "description": "Untrained group: 10 min warm-up at 60% of individual VO2max then 50 min cycling at 80% of individual VO2max (minutes 0-10 and 10-60). Intensity is derived (a stated percentage of the group's measured maximum times that maximum, Table 1 VO2max 40.5 mL/min/kg): warm-up 0.6 x 40.5 = 24.3 mL/kg/min, level = (24.3 - 3.7) / 31.7 = 0.6498; main bout 0.8 x 40.5 = 32.4 mL/kg/min, level = (32.4 - 3.7) / 31.7 = 0.9054. The printed 156.4 W at 80% (a derived workload, not a measured VO2) would give 156.4 / 186 = 0.841; the VO2 route is used. The paper says only that after an overnight fast (21.00 to 08.00) a standardized breakfast and lunch were given on the day of exercise, with no contents or times and no clock time for the bout, so the fed state at exercise is unknown: the arm starts from typical values with no meal, and the clock hour is assumed. Water drunk during cycling is not a meal.",
+      "duration_min": 61,
+      "start_hour": 10.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 10,
+            "level": 0.6498
+          },
+          {
+            "from_min": 10,
+            "to_min": 60,
+            "level": 0.9054
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "sed_hr_end_of_exercise",
+      "description": "Heart rate at the end of the 50 min bout at 80% VO2max in the untrained group (last exercise minute, 59 to 60)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sed_cycling_80pct_vo2max"
+      ],
+      "window": {
+        "start_min": 59,
+        "end_min": 60
+      },
+      "value": 177.4,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.2,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, row 'HR at end', column SED (mean +/- SD; Methods: presented as mean +/- SD)",
+        "quote": "HR at end [beats/min] | 177.4 ± 8.2"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Average lactate during the exercise trial, SED (6.1 +/- 2.9) and EET (6.7 +/- 3.1), Table 1: the paper does not print when lactate was sampled during the hour (only that values rose after half of the main bout), so no window can be written",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Trained (EET, n = 19) group's HR at end (178.8 +/- 12.4), Table 1: a group split by training status and aerobic capacity (VO2max > 57 against < 47 mL/min/kg), which the model cannot hold as a second arm with the same sex, age and BMI",
+      "missing": {
+        "kind": "population",
+        "name": "aerobic_fitness_group"
+      }
+    },
+    {
+      "what": "Trained group's exercise intensity: 80% of VO2max 65.6 mL/min/kg is 52.5 mL/kg/min, level 1.54 (254.1 W / 186 = 1.37), above the activity scale's maximum of 1",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_above_activity_scale"
+      }
+    },
+    {
+      "what": "Maximum lactate and maximum HR of the incremental VO2max test to exhaustion (Table 1), lactate and power at the individual anaerobic threshold (Table 1)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Leukocyte, neutrophil, lymphocyte and monocyte counts pre, post and 3 h (Table 2): medians with quartiles",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "The 78 multiplex-immunoassay plasma proteins (cytokines, MMPs, apolipoproteins, leptin and others) and G-CSF (Tables 3, 4; relative treatment effects with 95% CI; mean +/- SD only in Supplemental Table S1, which is not in the full text)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_protein_panel"
+      }
+    },
+    {
+      "what": "Resting lactate, glucose and any other fed-state marker: no pre-exercise blood glucose or lactate is printed; breakfast and lunch contents and times are not stated",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
