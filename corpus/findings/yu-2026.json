@@ -1,0 +1,200 @@
+{
+  "paper": "yu-2026",
+  "citation": {
+    "authors": "Yu H, et al.",
+    "title": "Acute Cardiorespiratory and Metabolic Responses to Different Endurance Exercise Modalities in Sedentary College Students Based on Physiological and Perceptual Load Monitoring",
+    "journal": "Sports (Basel)",
+    "year": 2026,
+    "doi": "10.3390/sports14100428",
+    "pmid": "42931565",
+    "pmcid": "PMC13709807"
+  },
+  "population": {
+    "n": 45,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 23.37,
+      "sd": 1.87,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.47,
+      "sd": 2.58,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Forty-five sedentary college students (26 men, 19 women) in Beijing, aged 18-26 y, free of mental or cardiovascular disease, muscle injury and medication (self-confirmed; no glucose test, so entered as unselected rather than healthy). Age and BMI are printed only by sex (Table 1: men 23.71 ± 1.88 y, BMI 24.02 ± 1.95; women 22.91 ± 1.79 y, BMI 20.36 ± 1.68); the pooled means and SDs here are computed from those (pooled mean, with between-sex spread added to the within-sex variance), not printed. Completers in the THR condition, the only one entered: 43 (24 men, 19 women); Table 1 means are for all 45."
+  },
+  "protocols": [
+    {
+      "name": "thr_bout_fasted",
+      "description": "Threshold (THR) session of 30 min (Table 2: 5 min warm-up, 20 min continuous at 70-80% HRmax, 5 min cool-down), after a fast of at least 8 h (Methods 2.2: 'required to fast for at least 8 h before each formal exercise session'); n = 43 completers (Results 3: 24 men, 19 women). The bout runs the whole arm, minutes 0 to 30; no run-in is printed, so none is added. Intensity from the measured session-mean VO2 of Table 5 (1.69 L/min), taken as the mean over the whole session (Methods 2.3.2: recorded 'throughout the entire exercise session'; the span the Table 5 mean covers is not printed). Body mass is not printed pooled, so it is derived from Table 1 sex means and this arm's sex counts: (24 x 76.98 + 19 x 55.79) / 43 = 67.62 kg. VO2 = 1.69 x 1000 / 67.62 = 24.99 mL/kg/min; level = (24.99 - 3.7) / 31.7 = 0.6717. Warm-up and cool-down are flattened into the session-mean level. The paper's own Table 6 agrees with this VO2 for THR (TEE 258.52 kcal over 30 min is 8.6 kcal/min against about 8.3 kcal/min from VO2 1.69 L/min; METs 6.63 against 7.1 from VO2 and body mass), unlike its EMR (12.73 kcal/min). 'At least 8 h' is a lower bound, so prefast_hours 8 is assumed; clock hour not printed (08:00 assumed). No food or drink during the bout is mentioned.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 8,
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 30,
+            "level": 0.6717
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "thr_hr_mean",
+      "description": "Mean heart rate during the Threshold (THR) session (whole 30 min) (HRmean, 'Mean Heart Rate in Exercise'), mean of persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "thr_bout_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 160.14,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.41,
+        "n": 43
+      },
+      "location": {
+        "where": "Table 3, row THR, column HRmean (bpm), mean ± SD",
+        "quote": "THR | 160.14 ± 5.41 | 172.11 ± 4.92"
+      }
+    },
+    {
+      "id": "thr_rq_mean",
+      "description": "Mean respiratory quotient during the Threshold (THR) session (whole 30 min)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "thr_bout_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.89,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.02,
+        "n": 43
+      },
+      "location": {
+        "where": "Table 5, row THR, column RQ, mean ± SD",
+        "quote": "THR | 18.62 ± 3.75 | 3.87 ± 0.55 | 1.51 ± 0.59 | 1.69 ± 0.31 | 0.89 ± 0.02"
+      }
+    },
+    {
+      "id": "thr_rr_mean",
+      "description": "Mean respiratory rate during the Threshold (THR) session, mean of persons; the paper's unit 'cpm' (Table 4 column 'RR (cpm)', RR defined as Respiratory Rate) is read as breaths per minute",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "thr_bout_fasted"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 32.45,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.87,
+        "n": 43
+      },
+      "location": {
+        "where": "Table 4, row THR, column RR (cpm), mean ± SD",
+        "quote": "THR | 1288.92 ± 263.33 | 32.45 ± 4.87 | 41,486.59 ± 8472.29"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "HVT, PYT and HIIT bouts (all findings: HR mean and peak, VCO2, RQ). The measured session-mean VO2 (Table 5) that would set their intensity is contradicted by the same paper's Table 6 (TEE over duration, EMR, METs imply VO2 differing by 40 to 150% for HVT, PYT and HIIT), so the intensity is not established; PYT (nine 2-min stages) and HIIT (5 x 2 min sprints with 3 min recovery) are also not steady, and a flat level would misstate them",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Peak heart rate (HRpeak, Table 3) for every condition including THR: the mean of each person's highest value over a session with warm-up and cool-down cannot come from the flat session-mean level the model is given (THR mean 160.14, peak 172.11)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "VCO2 (Table 5) for THR: mean 1.51 L/min is consistent with VO2 x RQ, but its SD 0.59 cannot be (VO2 SD 0.31, RQ SD 0.02); same for PYT and HIIT",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Resting condition (REST) heart rate, VO2, VCO2, RQ, respiratory and energy values (Tables 3 to 6), and resting HR in Table 1 by sex: the paper describes no resting measurement (when, how long, before or after the bouts, n), so no run-in can be stated; REST VO2 0.62 L/min (about 2.6 METs) also contradicts REST METs 1 and EMR 1.54 kcal/min",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Energy metabolic rate (kcal/min), METs and total energy expenditure (kcal) per condition (Table 6): EMR for THR (12.73 kcal/min) contradicts the printed VO2 (about 8.3 kcal/min) and TEE/duration (8.6 kcal/min); TEE is cumulative kcal and METs a ratio",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Respiratory rate for HVT, PYT and HIIT (Table 4)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Minute ventilation (mL) and tidal volume (mL) per condition (Table 4), and end-tidal O2% and CO2% (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "HIIT high-intensity-zone and interval-zone heart rate, ventilation and respiratory values (Tables 3 and 4): the timing of the zones within the session is not printed, and no VO2 is printed by zone",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Heart rate in the warm-up and cool-down separately, and any time course within a session (Figures 1 to 3 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "RPE, Feeling Scale, session-RPE, TRIMP (Table 8) and regression/correlation coefficients (Table 7, Figures)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceived_exertion"
+      }
+    }
+  ]
+}
