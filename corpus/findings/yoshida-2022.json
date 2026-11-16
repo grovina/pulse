@@ -1,0 +1,413 @@
+{
+  "paper": "yoshida-2022",
+  "citation": {
+    "authors": "Yoshida et al.",
+    "title": "Age-Related Sex Differences in Glucose Tolerance by 75 g Oral Glucose Tolerance Test in Japanese",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14224868",
+    "pmid": "36432554",
+    "pmcid": "PMC9698682"
+  },
+  "population": {
+    "n": 505,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.7,
+      "sd": 1.7,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.9,
+      "sd": 2.7,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Young Japanese men of Table 1 (n = 505; 'aged 22-29 years' for the young group, Results; mean and SD of age and BMI from Table 1; the 22-29 range is the group definition, not printed as observed, so min and max are null). Recruitment setting is not described. No OGTT screening was applied: Table 2 classes 414 NGT, 77 high-normal FPG, 2 IFG, 10 IGT, 1 CGI, 1 diabetes; 'No participants were diagnosed with T2DM in the past or received antidiabetic medication'. So status is unselected. The young women (n = 280, Table 1, 264 NGT, 11 high-normal FPG, 5 IGT) are a protocol-level override; the middle-aged groups are not entered."
+  },
+  "protocols": [
+    {
+      "name": "ogtt_ym",
+      "description": "75 g oral glucose load after a 12 h fast ('We performed 75 g OGTT after 12 h fast'), young males; plasma glucose and insulin at 0, 30, 60 and 120 min. Clock hour not stated.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 23.7,
+          "sd": 1.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.9,
+          "sd": 2.7,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasted_ym",
+      "description": "Short fasted arm for the printed preload (fasting) values of young males, drawn after the 12 h fast of the OGTT; no food. Clock hour and arm length not stated.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 23.7,
+          "sd": 1.7,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.9,
+          "sd": 2.7,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ogtt_yf",
+      "description": "75 g oral glucose load after a 12 h fast ('We performed 75 g OGTT after 12 h fast'), young females; plasma glucose and insulin at 0, 30, 60 and 120 min. Clock hour not stated.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 23.3,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 19.9,
+          "sd": 1.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasted_yf",
+      "description": "Short fasted arm for the printed preload (fasting) values of young females, drawn after the 12 h fast of the OGTT; no food. Clock hour and arm length not stated.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 23.3,
+          "sd": 1.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 19.9,
+          "sd": 1.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_auc_ym",
+      "description": "Area under the plasma glucose curve, 0-120 min, young males; trapezoid rule on the samples at 0, 30, 60, 120 min (Methods: 'based on the trapezoid rule'); read as the total area: the paper names the trapezoid rule and no baseline subtraction. Mean and SD.",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_ym"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 768.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 130.0,
+        "n": 505
+      },
+      "location": {
+        "where": "Table 1, row AUCg, column Young Males(n = 505); footnote 'Data presented as means ± SD'",
+        "quote": "AUCg(mmol/L·min) | 768 ± 130"
+      }
+    },
+    {
+      "id": "insulin_auc_ym",
+      "description": "Area under the plasma insulin curve, 0-120 min, young males; trapezoid rule on the samples at 0, 30, 60, 120 min; read as the total area: the paper names the trapezoid rule and no baseline subtraction. Mean and SD. Unit pmol/L x min as printed.",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_ym"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 35588.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20485.0,
+        "n": 505
+      },
+      "location": {
+        "where": "Table 1, row AUCi, column Young Males(n = 505)",
+        "quote": "AUCi(pmol/L·min) | 35,588 ± 20,485"
+      }
+    },
+    {
+      "id": "fasting_glucose_ym",
+      "description": "Fasting (preload) plasma glucose PG0, young males; mean and SD; entered on a short fasted arm at minutes 29-30.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_ym"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 31
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 505
+      },
+      "location": {
+        "where": "Table 1, row PG0, column Young Males(n = 505)",
+        "quote": "PG0 (mmol/L) | 5.2 ± 0.4"
+      }
+    },
+    {
+      "id": "fasting_insulin_ym",
+      "description": "Fasting (preload) immunoreactive insulin IRI0, young males; mean and SD; entered on a short fasted arm at minutes 29-30.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_ym"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 31
+      },
+      "value": 49.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 29.0,
+        "n": 505
+      },
+      "location": {
+        "where": "Table 1, row IRI0, column Young Males(n = 505)",
+        "quote": "IRI0 (pmol/L) | 49 ± 29"
+      }
+    },
+    {
+      "id": "glucose_auc_yf",
+      "description": "Area under the plasma glucose curve, 0-120 min, young females; trapezoid rule on the samples at 0, 30, 60, 120 min (Methods: 'based on the trapezoid rule'); read as the total area: the paper names the trapezoid rule and no baseline subtraction. Mean and SD.",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_yf"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 713.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 137.0,
+        "n": 280
+      },
+      "location": {
+        "where": "Table 1, row AUCg, column Young Females(n = 280); footnote 'Data presented as means ± SD'",
+        "quote": "AUCg(mmol/L·min) | 713 ± 137"
+      }
+    },
+    {
+      "id": "insulin_auc_yf",
+      "description": "Area under the plasma insulin curve, 0-120 min, young females; trapezoid rule on the samples at 0, 30, 60, 120 min; read as the total area: the paper names the trapezoid rule and no baseline subtraction. Mean and SD. Unit pmol/L x min as printed.",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_yf"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120
+      ],
+      "value": 41019.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 20112.0,
+        "n": 280
+      },
+      "location": {
+        "where": "Table 1, row AUCi, column Young Females(n = 280)",
+        "quote": "AUCi(pmol/L·min) | 41,019 ± 20,112"
+      }
+    },
+    {
+      "id": "fasting_glucose_yf",
+      "description": "Fasting (preload) plasma glucose PG0, young females; mean and SD; entered on a short fasted arm at minutes 29-30.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_yf"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 31
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 280
+      },
+      "location": {
+        "where": "Table 1, row PG0, column Young Females(n = 280)",
+        "quote": "PG0 (mmol/L) | 4.9 ± 0.3"
+      }
+    },
+    {
+      "id": "fasting_insulin_yf",
+      "description": "Fasting (preload) immunoreactive insulin IRI0, young females; mean and SD; entered on a short fasted arm at minutes 29-30.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_yf"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 31
+      },
+      "value": 47.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 22.0,
+        "n": 280
+      },
+      "location": {
+        "where": "Table 1, row IRI0, column Young Females(n = 280)",
+        "quote": "IRI0 (pmol/L) | 47 ± 22"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all numbers of the middle-aged men (n = 127) and women (n = 244): Table 1 means, mixed NGT to diabetes (Table 2: diabetes 12.6% and 10.2%, CGI, IGT), not separable by sex, age and BMI",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "PG30, PG60, PG120 and IRI30, IRI60, IRI120 time courses (Results, Figure 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-beta, Matsuda index, insulinogenic index, disposition index (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c at the pre-load time, by group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "triglyceride at the pre-load time, by group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "HDL-C and LDL-C at the pre-load time, by group (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "TG/HDL-C and LDL-C/HDL-C ratios (Table 1); Spearman correlations of the indices with BMI and lipids (Supplement Table S1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
