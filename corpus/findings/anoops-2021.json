@@ -1,0 +1,176 @@
+{
+  "paper": "anoops-2021",
+  "citation": {
+    "authors": "Anoop S, et al.",
+    "title": "Lipid accumulation product (LAP) as a potential index to predict risk of insulin resistance in young, non-obese Asian Indian males from Southern India: observations from hyperinsulinemic-euglycemic clamp studies",
+    "journal": "BMJ Open Diabetes Research & Care",
+    "year": 2021,
+    "doi": "10.1136/bmjdrc-2021-002414",
+    "pmid": "34531243",
+    "pmcid": "PMC8449941"
+  },
+  "population": {
+    "n": 108,
+    "sex": "male",
+    "age_years": {
+      "mean": 19.7,
+      "sd": 1.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 19.1,
+      "sd": 2.5,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "108 non-obese young Asian Indian men from the Vellore birth registry (enrolled aged 18 to 22 years); individuals with prediabetes, impaired fasting glucose and dyslipidaemia were excluded and the paper calls the cohort normoglycaemic. Age and BMI are Table 1 mean±SD (Table 1: 'Values are presented as mean±SD or median'; these two rows carry no asterisk)."
+  },
+  "protocols": [
+    {
+      "name": "fasting_clamp_morning",
+      "description": "Baseline sample of the clamp morning (Table 1): participants reported at 07:00 after an overnight fast of 8 hours after supper, no beverages; baseline blood drawn before the clamp, at a time the paper does not give, so a 30-minute fasted arm read at minutes 29-30 stands for it. Blood pressure in Table 1 is from the baseline medical assessment; its time and state are not printed and it is read on the same short fasted arm.",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "prefast_hours": 8,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose (baseline sample of the clamp morning), mean (SD), n=108",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_clamp_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 87.6,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.5,
+        "n": 108
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mg/dL)', column Mean±SD/Median",
+        "quote": "Fasting glucose (mg/dL) | 87.6±6.5"
+      }
+    },
+    {
+      "id": "sbp",
+      "description": "Systolic blood pressure at baseline assessment, mean (SD), n=108; time of measurement not printed",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_clamp_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 118.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.5,
+        "n": 108
+      },
+      "location": {
+        "where": "Table 1, row 'Systolic blood pressure (mm Hg)'",
+        "quote": "Systolic blood pressure (mm Hg) | 118±8.5"
+      }
+    },
+    {
+      "id": "dbp",
+      "description": "Diastolic blood pressure at baseline assessment, mean (SD), n=108; time of measurement not printed",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_clamp_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 76.8,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.0,
+        "n": 108
+      },
+      "location": {
+        "where": "Table 1, row 'Diastolic blood pressure (mm Hg)'",
+        "quote": "Diastolic blood pressure (mm Hg) | 76.8±6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "M value 10.3±3.8 mg/kg/min over 60-120 min of the 2 h euglycaemic clamp (Table 2): the paper prints only the insulin infusion rate (40 mU/kg/min in Methods, 40 mU/m2 elsewhere in the text) and no plasma insulin during the clamp, although it says insulin was sampled at the end of the clamp",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "clamp-period plasma insulin and glucose (sampled in the last 30 min of the clamp per Methods) are not printed in any table",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "postprandial glucose 100.5±21.2 mg/dL and postprandial insulin 37±29 pmol/L (Table 1): a single sample after food the paper does not describe",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "fasting insulin (Table 1): marked with an asterisk as a median, with a spread whose kind the paper does not state",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "fasting and postprandial C-peptide in ng/mL (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "total, LDL and HDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "serum triglycerides (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "LAP index, HOMA-IR, QUICKI, fasting glucose-insulin ratio (Table 2) and Spearman correlations, ROC AUCs and cut-offs of these indices with the M value (Tables 3 and 5)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
