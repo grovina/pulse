@@ -1,0 +1,194 @@
+{
+  "paper": "commissati-2025",
+  "citation": {
+    "authors": "Commissati M, et al.",
+    "title": "Prolonged fasting promotes systemic and cardiometabolic adaptations with an acute inflammatory response (plasma proteomics of a medically supervised water-only fast)",
+    "journal": "Molecular Metabolism",
+    "year": 2025,
+    "doi": "10.1016/j.molmet.2025.102152",
+    "pmid": "40268190",
+    "pmcid": "PMC12088818"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 52.2,
+      "sd": 11.8,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 28.8,
+      "sd": 6.4,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "20 middle-aged volunteers (11 women, 9 men) approached at a fasting clinic (TrueNorth Health Center); no glucose-tolerance screening is reported in the text (inclusion and exclusion criteria are in a supplementary table not available here). Age 52.2 +/- 11.8 y and BMI 28.8 +/- 6.4 kg/m2 are the printed mean +/- SD. A supplementary table of medications exists (Supplementary Table 2; contents not available here), so the volunteers were not screened as drug-free."
+  },
+  "protocols": [
+    {
+      "name": "baseline_morning",
+      "description": "Baseline blood sample (Table 1 'Baseline'), drawn before the fast began. The paper says only that blood and urine samples were collected between 6 and 8 am; it does not say how long the volunteers had gone without food before the baseline draw, nor what they ate the day before, and the Methods text is not in the full text available. Entered per the corpus rule for a baseline of unstated state as a short fasted morning: start 07:00 (midpoint of 6-8 am), 10 h without food, 30-minute arm read at minutes 29-30. All three (start_hour, prefast_hours, duration_min) are assumed. Caution: the baseline BHB (0.6 +/- 0.9 mmol/L, SD above the mean) suggests some volunteers were not in a plain overnight-fast state. The end-of-fast and end-of-refeeding columns are not entered (see left_out).",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "baseline_glucose",
+      "description": "Serum glucose at the baseline sample (6-8 am draw, time since food not printed), mean (SD), n=20",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 85.7,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row Glucose, columns Baseline Mean, SD",
+        "quote": "Glucose (mg/dL) | 85.7 | 10.4"
+      }
+    },
+    {
+      "id": "baseline_bhb",
+      "description": "Serum beta-hydroxybutyrate at the baseline sample, mean (SD), n=20; SD larger than the mean (skewed, as printed), so some volunteers may already have been ketotic; the state of the baseline draw is not printed",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.9,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row beta-hydroxybutyrate, columns Baseline Mean, SD",
+        "quote": "β-hydroxybutyrate (mmol/L) | 0.6 | 0.9"
+      }
+    },
+    {
+      "id": "baseline_sbp",
+      "description": "Systolic blood pressure at baseline, mean (SD), n=20; conditions of measurement not printed",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 123.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.2,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row SBP, columns Baseline Mean, SD",
+        "quote": "SBP (mmHg) | 123.9 | 10.2"
+      }
+    },
+    {
+      "id": "baseline_dbp",
+      "description": "Diastolic blood pressure at baseline, mean (SD), n=20; the table labels the row 'DPB'; conditions of measurement not printed",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 72.1,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.7,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, row DPB (diastolic), columns Baseline Mean, SD",
+        "quote": "DPB (mmHg) | 72.1 | 8.7"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "end-of-fast values (glucose, BHB, SBP, DBP; Table 1 'Fasting'): the fast was water-only on paper, mean 9.8 +/- 3.1 d, but the supplement says six volunteers switched to juice and/or broth (five sampled before the switch, ID13 not), three took 1-2 juices or vegetable broths during the fast, and one took juice daily; Table 1 pools all 20 and the length of fast differs by person",
+      "missing": {
+        "kind": "input",
+        "name": "juice_or_broth_during_fast"
+      }
+    },
+    {
+      "what": "end-of-refeeding values (glucose, BHB, SBP, DBP; Table 1 'Refeeding'): plant-based diet, mean 5.3 +/- 2.4 d, with no grams or energy printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "HOMA-IR at baseline, fasting and refeeding (Table 1); insulin itself is not printed",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "C-reactive protein at the three times (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "total, HDL, LDL and non-HDL cholesterol and the total:HDL ratio at the three times (Table 1; N=19)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "triglycerides at the three times (Table 1; N=19)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "plasma adiponectin by ELISA at baseline and end of fasting (Results text, 5643 +/- 3282 to 4275 +/- 2519 ng/mL, n=20; Figure 1C); the label of the +/- is not stated in the text",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    }
+  ]
+}
