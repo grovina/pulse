@@ -1,0 +1,47 @@
+{
+  "paper": "schopen-2017",
+  "citation": {
+    "authors": "Schopen K, Ewald AC, Johannes BW, et al.",
+    "title": "Short-Term Effects of Lupin vs. Whey Supplementation on Glucose and Insulin Responses to a Standardized Meal in a Randomized Cross-Over Trial",
+    "journal": "Frontiers in Physiology",
+    "year": 2017,
+    "doi": "10.3389/fphys.2017.00198",
+    "pmid": "28443026",
+    "pmcid": "PMC5385353"
+  },
+  "reported": [
+    {
+      "what": "glucose AUC 0-60 and 0-180 min after a reference lunch, a whey meal and a lupin meal, n=12; Table 4 caption says mean ± SEM, Methods say the AUCs were expressed as means ±SDs",
+      "location": {
+        "where": "Table 4, GLUCOSE AUC [MG·MIN/DL], Reference column",
+        "quote": "0–60 min | 1984 ± 174"
+      }
+    },
+    {
+      "what": "insulin AUC 0-60 and 0-180 min after the same three meals, n=12; same SD/SEM contradiction",
+      "location": {
+        "where": "Table 4, INSULIN AUC [MU·MIN/L], Reference column",
+        "quote": "0–60 min | 1583 ± 202"
+      }
+    },
+    {
+      "what": "fasting (BL1) mean glucose per meal day, no SD or SEM printed",
+      "location": {
+        "where": "Results, Time point analysis",
+        "quote": "fasting blood glucose concentrations were within the normal range (reference: 86.88 mg/dl; whey: 87.79 mg/dl; 89.39 mg/dl)"
+      }
+    },
+    {
+      "what": "fasting (BL1) mean insulin per meal day, no SD or SEM printed",
+      "location": {
+        "where": "Results, Time point analysis",
+        "quote": "reference: 4.27 mU/l; whey: 4.39 mU/l; lupin: 5.69 mU/l"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unlabelled_uncertainty"
+  },
+  "detail": "The only numbers with an uncertainty are the Table 4 AUCs, which the Methods (Data processing) call 'means ±SDs' and the Table 4 caption calls '± SEM', so their kind cannot be told from the paper; the BL1 fasting means print no spread."
+}
