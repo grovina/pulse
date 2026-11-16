@@ -1,0 +1,146 @@
+{
+  "paper": "goldenberg-2022",
+  "citation": {
+    "authors": "Goldenberg N, et al.",
+    "title": "Pulsatile growth hormone secretion and lipolysis during a prolonged fast in healthy humans (GH-releasing hormone antagonist dose study)",
+    "journal": "Clin Diabetes Endocrinol",
+    "year": 2022,
+    "doi": "10.1186/s40842-022-00137-y",
+    "pmid": "35101148",
+    "pmcid": "PMC8805297"
+  },
+  "population": {
+    "n": 15,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 26.0,
+      "sd": 7.746,
+      "min": 18.0,
+      "max": 46.0
+    },
+    "bmi": {
+      "mean": null,
+      "sd": null,
+      "min": 20.0,
+      "max": 24.0
+    },
+    "status": "healthy",
+    "description": "15 healthy non-obese adults (11 men, 4 women), 'mean (SE) age 26 ± 2 years' with 'ages 18-46' and 'BMI 20-24' as printed for the subjects (read as the observed range; the paper does not say whether these are enrolment criteria); age SD computed as SE x sqrt(n) = 2 x sqrt(15) = 7.746. Weight 77.3 kg ± 3.0. Screened (no liver, renal, endocrine or cardiovascular disease, hyperlipidaemia, medication affecting glucose or lipid metabolism). The 15 are the n = 15 of the saline Control trial."
+  },
+  "protocols": [
+    {
+      "name": "fast_59h_final_24h",
+      "description": "Final 24 h of a 59 h water-only fast (saline-infusion Control trial). Methods: infusions 'started after consumption of the dinner meal (1800 h) on the first day of admission', subjects 'fasted with only water allowed ad lib for 59 h', blood 'every 20 min during the final 24 h of the fasting period'. Arithmetic: fast begins 18:00 on day 1 (the dinner/infusion-start time); 18:00 + 59 h = 05:00 on day 4; the final 24 h is therefore 05:00 on day 3 to 05:00 on day 4, which starts 59 - 24 = 35 h into the fast: start_hour 5.0, prefast_hours 35, duration 24 h = 1440 min. The paper does not state the dinner meal's grams or its time on the fasting-trial admission day (12 h trial dinner was at 1700 h), so the fast start at 18:00 is an assumption. No sleep hours printed: 23:00-07:00 entered, i.e. minutes 0-120 (05:00-07:00) and 1080-1440 (23:00-05:00).",
+      "duration_min": 1440,
+      "start_hour": 5.0,
+      "prefast_hours": 35,
+      "meals": [],
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 120,
+            "level": 0.0
+          },
+          {
+            "from_min": 1080,
+            "to_min": 1440,
+            "level": 0.0
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "sleep_wake"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fast59h_glucose_24h_mean",
+      "description": "Mean plasma glucose over the final 24 h of a 59 h water-only fast (Control, saline infusion); 24-h mean from samples every 20 min",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_59h_final_24h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 1440
+      },
+      "value": 77.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, column 'Control (No GHRHa) [n = 15]' (59 h Fast)",
+        "quote": "Glucose (mg/dL) | 77 ± 2*"
+      }
+    },
+    {
+      "id": "fast59h_insulin_24h_mean",
+      "description": "Mean plasma insulin over the final 24 h of a 59 h water-only fast (Control, saline infusion); 24-h mean from samples every 20 min",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_59h_final_24h"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 1440
+      },
+      "value": 1.5,
+      "unit": "μU/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, column 'Control (No GHRHa) [n = 15]' (59 h Fast)",
+        "quote": "Insulin (μU/ml) | 1.5 ± 0.1*"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "24-h mean insulin (15.5 ± 3.5 uU/ml) and glucose (97 ± 2 mg/dL) of the '12 h fast' trial (Table 1): the trial is a fed day (meals at 0700, 1200, 1700, 2100 h) with a 24-h profile whose timing is not printed, and the meals' grams are not printed ('standard isocaloric diet (energy intake relative to body mass)')",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "24-h mean insulin and glucose of the three GHRHa-infusion 59 h trials (Low n=6, Medium n=8, High n=15; Table 1): the model has no GH-releasing hormone antagonist input",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "plasma GH concentration and pulsatility (mean 24 h GH, pulse amplitude 3.5 ± 0.6 to 5.8 ± 0.9 ng/ml, peak frequency 4.5 ± 0.3 to 8.4 ± 0.7 per 24 h, pulse AUC, interpulse concentration; Results text and Figure 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "lipolytic rate by [d5]-glycerol Ra (12 h fast vs 59 h Control and GHRHa arms; Figure 2F, text '~80%' increase only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "correlations of lipolytic rate with GH parameters (R = 0.556, 0.49, 0.25, 0.044; Figure 3 and text), pooled over the GHRHa and Control trials",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
+      }
+    }
+  ]
+}
