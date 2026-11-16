@@ -1,0 +1,501 @@
+{
+  "paper": "mohr-2021",
+  "citation": {
+    "authors": "Mohr AE, Minicucci O, Long D et al.",
+    "title": "Resistant Starch Combined with Whey Protein Increases Postprandial Metabolism and Lowers Glucose and Insulin Responses in Healthy Adult Men",
+    "journal": "Foods",
+    "year": 2021,
+    "doi": "10.3390/foods10030537",
+    "pmid": "33807618",
+    "pmcid": "PMC8000721"
+  },
+  "population": {
+    "n": 8,
+    "sex": "male",
+    "age_years": {
+      "mean": 49.0,
+      "sd": 13.61,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 28.16,
+      "sd": 5.071,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eight generally healthy, non-smoking men from the Saratoga Springs, NY area (no obvious cardiometabolic disease by history and physician clearance, weight stable; glucose tolerance not tested), who completed all four test meals in a single-blind randomised crossover. Age 49.00 +/- 13.61 y and BMI 28.16 +/- 5.071 kg/m2 are from Table 2 (mean +/- SD, n = 8); the Results text gives 51.4 +/- 11.5 y and 29.84 +/- 7.77 kg/m2 for the participants, which does not match Table 2; Table 2 is the one labelled N = 8, and its weight 91.34 kg and height 180.49 cm give a BMI of about 28.0, in line with its 28.16 and not with 29.84. Plasma analytes for WMS + WP were not collected."
+  },
+  "protocols": [
+    {
+      "name": "wms",
+      "description": "Waxy maize starch pancake breakfast (Table 1: 397 kcal; 45.0 g waxy maize starch, 4.5 g sucrose, 10.7 g maltodextrin, 21.1 g milk powder, 50.0 g egg, 4.8 g baking powder; total carbohydrate 73.0 g, fat 5.0 g, protein 15.0 g, total fibre 0.0 g), three pancakes eaten within 12 min with 180 mL water. carbs_g = printed total carbohydrate minus printed total fibre (0.0 g): 73.0 - 0.0 = 73.0 g. Fasted blood sample before the meal (minute 0), then 60, 120 and 180 min; meal at minute 0, duration 181. Test days began 0600-0700 after a 12 h water-only fast and the meal followed a blood draw, 15 min rest and 30 min RMR, so the meal is placed at about 07:00 (start_hour 7.0 assumed); the Methods list the fasted blood draw after the 30 min RMR and just before the meal, but also place the VAS that are listed with it before the RMR, so the draw falls somewhere in the roughly 45 min before the meal; it is entered as minute 0 (a fasted, flat state), and the paper does not say whether minute 0 is the start or the end of the 12 min meal.",
+      "duration_min": 181,
+      "start_hour": 7.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 73.0,
+          "fat_g": 5.0,
+          "protein_g": 15.0,
+          "fibre_g": 0.0,
+          "form": "solid",
+          "food": "pancakes (starch, sugar, maltodextrin, oil, egg, milk powder)"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    },
+    {
+      "name": "wms_wp",
+      "description": "Waxy maize starch pancake breakfast with 20.5 g whey protein concentrate added (Table 1: 397 kcal; milk powder 0.90 g; total carbohydrate 60.0 g, fat 5.5 g, protein 26.8 g, total fibre 0.0 g). carbs_g = printed total carbohydrate minus printed total fibre (0.0 g): 60.0 - 0.0 = 60.0 g. Fasted blood sample before the meal (minute 0), then 60, 120 and 180 min; meal at minute 0, duration 181. Test days began 0600-0700 after a 12 h water-only fast and the meal followed a blood draw, 15 min rest and 30 min RMR, so the meal is placed at about 07:00 (start_hour 7.0 assumed); the Methods list the fasted blood draw after the 30 min RMR and just before the meal, but also place the VAS that are listed with it before the RMR, so the draw falls somewhere in the roughly 45 min before the meal; it is entered as minute 0 (a fasted, flat state), and the paper does not say whether minute 0 is the start or the end of the 12 min meal. No blood was drawn for this arm; only indirect-calorimetry findings use it.",
+      "duration_min": 181,
+      "start_hour": 7.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 60.0,
+          "fat_g": 5.5,
+          "protein_g": 26.8,
+          "fibre_g": 0.0,
+          "form": "solid",
+          "food": "pancakes (starch, sugar, maltodextrin, oil, egg, milk powder) and whey protein"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_curve_wms",
+      "description": "Plasma glucose at baseline and 60, 120, 180 min after the waxy maize starch pancakes (WMS) breakfast, estimated marginal means with 95% CI (mixed model). Plasma glucose (glucose oxidase, Analox).",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "wms"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 110.41,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 94.68,
+            "high": 126.13,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 133.11,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 117.39,
+            "high": 148.84,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 99.95,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 83.49,
+            "high": 116.4,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 101.42,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 84.96,
+            "high": 117.87,
+            "level": 95,
+            "n": 8
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 5, row 'Glucose (mg/dL)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
+        "quote": "Glucose (mg/dL) | WMS | 110.41 | (94.68–126.13) | 133.11 | (117.39–148.84) | 99.95 | (83.49–116.40) | 101.42 | (84.96–117.87)"
+      }
+    },
+    {
+      "id": "gip_curve_wms",
+      "description": "GIP at baseline and 60, 120, 180 min after the waxy maize starch pancakes (WMS) breakfast, estimated marginal means with 95% CI (mixed model). Plasma GIP by ELISA; the paper does not say whether total or intact GIP is read.",
+      "marker": "gip",
+      "statistic": "curve",
+      "protocols": [
+        "wms"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 35.26,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 0.5,
+            "high": 70.01,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 184.98,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 150.23,
+            "high": 219.73,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 148.32,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 112.57,
+            "high": 184.06,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 89.31,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 54.56,
+            "high": 124.06,
+            "level": 95,
+            "n": 8
+          }
+        }
+      ],
+      "unusual_value_ok": "the paper prints GIP peaks of 157 to 185 pmol/L (Table 5) in pmol/L; entered as printed",
+      "location": {
+        "where": "Table 5, row 'GIP (pmol/L)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
+        "quote": "GIP (pmol/L) | WMS | 35.26 | (0.50–70.01) | 184.98 | (150.23–219.73) | 148.32 | (112.57–184.06) | 89.31 | (54.56–124.06)"
+      }
+    },
+    {
+      "id": "glp1_curve_wms",
+      "description": "GLP1 at baseline and 60, 120, 180 min after the waxy maize starch pancakes (WMS) breakfast, estimated marginal means with 95% CI (mixed model). Plasma GLP-1 by radioimmunoassay (antiserum no. 89390); the paper does not say whether total or active GLP-1 is read.",
+      "marker": "glp1",
+      "statistic": "curve",
+      "protocols": [
+        "wms"
+      ],
+      "unit": "pM",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 6.63,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 3.03,
+            "high": 10.22,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 11.71,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 7.85,
+            "high": 15.77,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 11.32,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 7.62,
+            "high": 15.03,
+            "level": 95,
+            "n": 8
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 9.93,
+          "uncertainty": {
+            "kind": "ci",
+            "low": 6.22,
+            "high": 13.63,
+            "level": 95,
+            "n": 8
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 5, row 'GLP-1 (pM)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
+        "quote": "GLP-1 (pM) | WMS | 6.63 | (3.03–10.22) | 11.71 | (7.85–15.77) | 11.32 | (7.62–15.03) | 9.93 | (6.22–13.63)"
+      }
+    },
+    {
+      "id": "ee_60_wms",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 60 min after the waxy maize starch pancakes (WMS) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 50-60. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms"
+      ],
+      "window": {
+        "start_min": 50,
+        "end_min": 60
+      },
+      "value": 1.33,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.21,
+        "high": 1.45,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS, column 60 min",
+        "quote": "WMS | 1.33 | (1.21–1.45)"
+      }
+    },
+    {
+      "id": "ee_120_wms",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 120 min after the waxy maize starch pancakes (WMS) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 110-120. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 120
+      },
+      "value": 1.31,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.19,
+        "high": 1.43,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS, column 120 min",
+        "quote": "WMS | 1.31 | (1.19–1.43)"
+      }
+    },
+    {
+      "id": "ee_180_wms",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 180 min after the waxy maize starch pancakes (WMS) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 170-180. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms"
+      ],
+      "window": {
+        "start_min": 170,
+        "end_min": 180
+      },
+      "value": 1.23,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.11,
+        "high": 1.35,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS, column 180 min",
+        "quote": "WMS | 1.23 | (1.11–1.35)"
+      }
+    },
+    {
+      "id": "ee_60_wms_wp",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 60 min after the waxy maize starch pancakes plus whey protein (WMS + WP) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 50-60. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms_wp"
+      ],
+      "window": {
+        "start_min": 50,
+        "end_min": 60
+      },
+      "value": 1.34,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.22,
+        "high": 1.46,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS + WP, column 60 min",
+        "quote": "WMS + WP | 1.34 | (1.22–1.46)"
+      }
+    },
+    {
+      "id": "ee_120_wms_wp",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 120 min after the waxy maize starch pancakes plus whey protein (WMS + WP) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 110-120. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms_wp"
+      ],
+      "window": {
+        "start_min": 110,
+        "end_min": 120
+      },
+      "value": 1.28,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.16,
+        "high": 1.4,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS + WP, column 120 min",
+        "quote": "WMS + WP | 1.28 | (1.16–1.40)"
+      }
+    },
+    {
+      "id": "ee_180_wms_wp",
+      "description": "Energy expenditure (RMR plus thermic effect of the meal) in the block labelled 180 min after the waxy maize starch pancakes plus whey protein (WMS + WP) breakfast; the paper averages the last 10 min of each 15-min block (45-60, 105-120, 165-180 min), taken here as minutes 170-180. Estimated marginal mean, 95% CI.",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "wms_wp"
+      ],
+      "window": {
+        "start_min": 170,
+        "end_min": 180
+      },
+      "value": 1.26,
+      "unit": "kcal/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.14,
+        "high": 1.38,
+        "level": 95,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 3, 'RMR and TEM (kcal/minute)', WMS + WP, column 180 min",
+        "quote": "WMS + WP | 1.26 | (1.14–1.38)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "plasma insulin curves, Table 5 (row labelled 'Insulin (units)' with no unit), and insulin AUC differences in 'units' (text, Figure 7D)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "PYY (pg/mL) curves, Table 5",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "ghrelin (GRL, pM) curves, Table 5: absolute ghrelin levels, assay not stated as active or total",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "carbohydrate and fat oxidation rates (kcal/day), Table 3",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "fat oxidation rate (kcal/day), Table 3",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "respiratory exchange ratio at baseline and 60, 120, 180 min, Table 3: the methods say only that RER was 'similarly derived', so the sampling windows are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "baseline resting metabolic rate (Table 3, 'Baseline' column; Table 4 RMR kcal/day): measured for 30 min before the meal, clock position relative to the meal not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "per-arm incremental and total thermic-effect areas (Table 4: 4.39, 12.53, 8.70 and total 25.61 kcal for WMS and so on): the header says 'kcals burned/180 min' and the footnote 'kcals/minute', the areas are block means times 60 min and not a trapezoid over sampling times, they do not follow from Table 3 (WMS 0-60 min 4.39 against (1.33-1.17) x 60 / 2 = 4.8; 60-120 min 12.53 against 9.0), and the WMS + WP 120-min interval is printed '7.32-6.69'",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "glucose AUC differences between meals (Results 3.5, Figure 6D): paired differences, absolute and percent",
+      "missing": {
+        "kind": "operator",
+        "name": "delta_area"
+      }
+    },
+    {
+      "what": "between-meal mean differences in glucose, insulin, GLP-1 and TEM (Results text, Bonferroni contrasts), each against WMS or involving a different starch, averaged over sampling times or per time; the GLP-1 contrast RS + WP vs RS is printed -0.84 pM (95% CI -5.01 to -0.68), an interval that does not contain it",
+      "missing": {
+        "kind": "input",
+        "name": "meal_details_not_read"
+      }
+    },
+    {
+      "what": "the resistant-starch arms, RS and RS+WP (Table 5 glucose, GIP and GLP-1 curves; Table 3 energy expenditure): Table 1 counts the 40 g RS4 (hydroxypropyl distarch phosphate) inside total carbohydrate with total fibre 0.0 g, so written as printed each arm would tell the model it eats the same 73 g (or 60 g) of available carbohydrate as the waxy-maize arm, while the paper gives no digestible fraction; the difference in starch structure is the contrast the study is about and the format cannot say it",
+      "missing": {
+        "kind": "input",
+        "name": "starch_structure"
+      }
+    },
+    {
+      "what": "hunger, satiation and desire-to-eat visual analogue scales (Table S1, not in the full text)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    }
+  ]
+}
