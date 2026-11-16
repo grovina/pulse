@@ -1,0 +1,47 @@
+{
+  "paper": "nanavati-2026",
+  "citation": {
+    "authors": "Nanavati K, et al.",
+    "title": "Acute New Zealand blackcurrant powder and caffeine on high-intensity intermittent running (modified Loughborough Intermittent Shuttle Test), blood lactate and free fatty acids in recreationally active males",
+    "journal": "Nutrients",
+    "year": 2026,
+    "doi": "10.3390/nu18183063",
+    "pmid": "42797046",
+    "pmcid": "PMC13610668"
+  },
+  "reported": [
+    {
+      "what": "Serum free fatty acids, PLA arm: baseline (before drink, taken at minute 29 of the run-in, just before the drink at 30) and 1 h after the drink (minute 90); mean and SD, n = 14",
+      "location": {
+        "where": "Table 4, row 'Free fatty acids', PLA, columns Baseline and 1 h After Study Drink",
+        "quote": "Free fatty acids (mmol/L) | PLA | 0.45 ± 0.19 | 0.17 ± 0.09"
+      }
+    },
+    {
+      "what": "Systolic BP (supine, Omron), PLA arm: baseline and 1 h after the study drink; mean and SD, n = 14",
+      "location": {
+        "where": "Table A1, row 'Systolic Blood Pressure', PLA, columns Baseline and 1 h After Consuming the Study Drink",
+        "quote": "Systolic Blood Pressure (mmHg) | PLA | 121 ± 5 | 121 ± 9"
+      }
+    },
+    {
+      "what": "Diastolic BP (supine, Omron), PLA arm: baseline and 1 h after the study drink; mean and SD, n = 14",
+      "location": {
+        "where": "Table A1, row 'Diastolic Blood Pressure', PLA, columns Baseline and 1 h After Consuming the Study Drink",
+        "quote": "Diastolic Blood Pressure (mmHg) | PLA | 73 ± 5 | 73 ± 5"
+      }
+    },
+    {
+      "what": "Heart rate (supine, Omron) 1 h after the study drink, PLA arm; mean and SD, n = 14",
+      "location": {
+        "where": "Table A2, row 'Heart Rate', PLA, column 1 h After Drink",
+        "quote": "Heart Rate (beats/min) | PLA | 58 ± 4"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "prior_day_condition"
+  },
+  "detail": "Every value in the placebo arm (baseline and 1 h after the drink) was measured the morning after a deliberate ~90 min glycogen-depleting cycling ride the afternoon before (paper: a 88-92% estimated fall in muscle glycogen before the overnight fast), which the model cannot be told, as with eshghi-2017's day 2; the paper also gives no clock time or minutes between the baseline and the drink, and the placebo carbohydrate is maltodextrin with added fructose and glucose."
+}
