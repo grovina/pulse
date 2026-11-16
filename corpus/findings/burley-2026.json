@@ -1,0 +1,137 @@
+{
+  "paper": "burley-2026",
+  "citation": {
+    "authors": "Burley MJ, Wall BT, Bond B, Williams CA, Monteyne AJ, Stephens FB",
+    "title": "Acute and chronic application of novel incremental breath-hold technique increases endurance exercise performance in healthy men and male military personnel",
+    "journal": "Physiological Reports",
+    "year": 2026,
+    "doi": "10.14814/phy2.71056",
+    "pmid": "42590836",
+    "pmcid": "PMC13469331"
+  },
+  "population": {
+    "n": 11,
+    "sex": "male",
+    "age_years": {
+      "mean": 28.5,
+      "sd": 6.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Study A: eleven healthy male participants (age 28.5 +/- 6.9 y, height 178.3 +/- 5.2 cm, weight 84.7 +/- 7.1 kg); non-smokers without cardiovascular, neurological, respiratory or metabolic disease. BMI is not printed and not computed."
+  },
+  "protocols": [
+    {
+      "name": "control_rest_baseline",
+      "description": "Study A control (CON) visit, baseline sample only: participants arrived 'following a 2 h fast' (Methods); what they ate before it is not printed, so the arm starts from typical values (init norm_center) rather than from a spun-up fed day, and the 2 h is not entered (the arm's minute 0 is also later than arrival: cannula and face mask were fitted first, for an unprinted time). They rested semi-supine for 20 min and the baseline sample was taken at the end of that rest, before the 40 min of CON rest and the cycling. Minute 0 is the start of the 20 min quiet rest, so the baseline is minute 20 and the arm runs to 21. Only the baseline value is entered; the later 40 min rest, the 15 min steady-state cycling at 80% VO2max and the 5 min time trial are not, because the group's VO2max is not printed. The clock hour is not printed.",
+      "duration_min": 21,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "init"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_baseline_hr",
+      "description": "Baseline heart rate of the control (rest) visit, semi-supine after 20 min of rest, before the 40 min control period",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_rest_baseline"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 21
+      },
+      "value": 66.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 11
+      },
+      "location": {
+        "where": "Results, Study A cardiorespiratory variables, paragraph on HR (Figure 1d); all values mean +/- SD (Methods, statistics)",
+        "quote": "Baseline HR (Figure 1d) was similar between CON (66 ± 10 bpm)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate, lactate and other values during the 15 min steady-state cycling at 80% VO2max and the 5 min time trial in CON (Results, HR and lactate paragraphs)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Baseline and rest-phase blood lactate in CON (0.9 +/- 0.0, 0.8 +/- 0.0 mmol/L; n = 3 only)",
+      "missing": {
+        "kind": "source",
+        "name": "zero_uncertainty"
+      }
+    },
+    {
+      "what": "Heart rate at 30 and 40 min of the CON rest period (the text orders the two conditions inconsistently at 40 min)",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Baseline V̇O2 and V̇CO2 of CON in mL/kg/min (Results)",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "Hemoglobin concentration (Study A CON baseline 145.5 +/- 9.3 g/L and later times)",
+      "missing": {
+        "kind": "marker",
+        "name": "hemoglobin"
+      }
+    },
+    {
+      "what": "Estimated PaO2 and PaCO2 of Study A (CON baseline 109.0 +/- 5.1 and 35.1 +/- 2.2 mmHg; estimated with the alveolar gas equation, not measured), and Study B PaO2 and PaCO2",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_acid_base"
+      }
+    },
+    {
+      "what": "End-tidal O2 and CO2 of Study A (CON baseline 110.9 +/- 4.8 and 35.1 +/- 2 mmHg)",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "Breath-hold technique arm (BHT) values in Study A",
+      "missing": {
+        "kind": "input",
+        "name": "breath_hold_technique"
+      }
+    },
+    {
+      "what": "Study B (48 Marine officer candidates, 3 weeks of breath-hold training): 3-mile run times, maximal breath-hold duration, post-run Hb (Results, Study B)",
+      "missing": {
+        "kind": "timescale",
+        "name": "weeks_of_training"
+      }
+    },
+    {
+      "what": "Study B SpO2 of the CON group 2 days before the Intermediate and Final PFT (96.9 +/- 1.6 and 97.6 +/- 1.1 %): time of day, last meal, posture and the n behind it are not printed (figures carry n = 48 overall)",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    }
+  ]
+}
