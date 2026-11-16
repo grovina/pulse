@@ -1,0 +1,321 @@
+{
+  "paper": "kristensen-2019",
+  "citation": {
+    "authors": "Kristensen JM, Lillelund C, Kjobsted R, Birk JB, Andersen NR, Nybo L, Mellberg K, Balendran A, Richter EA, Wojtaszewski JFP",
+    "title": "Metformin does not compromise energy status in human skeletal muscle at rest or during acute exercise: A randomised, crossover trial",
+    "journal": "Physiological Reports",
+    "year": 2019,
+    "doi": "10.14814/phy2.14307",
+    "pmid": "31833226",
+    "pmcid": "PMC6908741"
+  },
+  "population": {
+    "n": 19,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Healthy, moderately trained men in two separate crossover studies: acute (n = 9) and short-term (n = 10) metformin-exercise study (VO2 peak 53.7 +/- 1.2 and 52.3 +/- 0.9 mL/kg/min, SEM, Table 1). The model carries no training status. Age and BMI are given per study in the protocol arms (Table 1, mean +/- SEM, SD computed as SEM x sqrt(n)); no observed ranges are printed. Only the placebo day or period's values before any food or tablet are entered. The paper does not say whether the acute and short-term men overlap; 'acute (A-MES, n = 9) or a short-term (ST-MES, n = 10) study, respectively', the ST-MES added later, different n, weight and BMI, so they are entered as separate groups. The short-term study also has a pre-treatment fasting sample (-72 h, day 3) that is not entered, one fasting state per study."
+  },
+  "protocols": [
+    {
+      "name": "fasting_acute",
+      "description": "Acute study (A-MES, n = 9), placebo day: arrival in the morning after an overnight fast, 1 h rest, then the pre-diet blood sample (Table 2/4 row '0:00 (pre) diet') drawn before the breakfast and before the placebo tablets; arm ends at the sample (the breakfast, placebo, 4.5 h of rest and the one-leg bout are not entered). A 30-minute fasted run-in stands for the single sample; clock hour and fast length are not printed (only 'overnight fast'), so 08:00 and 10 h are assumed. Age 24 +/- 1 SEM and BMI 24.2 +/- 0.6 SEM (Table 1, n = 9) converted to SD = SEM x sqrt(9): age 3.0, BMI 1.8.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 24.0,
+          "sd": 3.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 24.2,
+          "sd": 1.8,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fasting_short",
+      "description": "Short-term study (ST-MES, n = 10), placebo period, experimental day 6: arrival in the morning after an overnight fast, blood sample at time 0 (Table 2/4 row '0:00 diet'), before the 1.5 g placebo and the breakfast; arm ends at the sample (after 3 days of placebo tablets with a controlled diet; the breakfast, 4.5 h of rest and the one-leg bout are not entered). A 30-minute fasted run-in stands for the single sample; clock hour and fast length are not printed (only 'overnight fast'), so 08:00 and 10 h are assumed. Age 24 +/- 1 SEM and BMI 22.0 +/- 0.6 SEM (Table 1, n = 10) converted to SD = SEM x sqrt(10): age 3.16, BMI 1.90.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 24.0,
+          "sd": 3.16,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 22.0,
+          "sd": 1.9,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_acute",
+      "description": "Blood glucose before the breakfast, placebo day of the acute study; mean +/- SEM, n = 9. Table 2 is headed 'Blood glucose', Methods say plasma glucose on a blood-gas analyser (ABL800); entered as printed, possibly whole-blood",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_acute"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, Placebo glucose column, acute study",
+        "quote": "0:00 (pre) diet | 4.8 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_glucose_short",
+      "description": "Blood glucose before the breakfast, placebo period (day 6) of the short-term study; mean +/- SEM, n = 10. Table 2 is headed 'Blood glucose', Methods say plasma glucose on a blood-gas analyser (ABL800); entered as printed, possibly whole-blood",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_short"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, Placebo glucose column, short-term study",
+        "quote": "0:00 diet | 4.9 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_insulin_acute",
+      "description": "Plasma insulin before the breakfast, placebo day of the acute study; mean +/- SEM, n = 9",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_acute"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 27,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, Placebo insulin column, acute study",
+        "quote": "0:00 (pre) diet | 27 ± 4"
+      }
+    },
+    {
+      "id": "fasting_insulin_short",
+      "description": "Plasma insulin before the breakfast, placebo period (day 6) of the short-term study; mean +/- SEM, n = 10",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_short"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 31,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, Placebo insulin column, short-term study",
+        "quote": "0:00 diet | 31 ± 4"
+      }
+    },
+    {
+      "id": "fasting_lactate_acute",
+      "description": "Blood lactate before the breakfast, placebo day of the acute study; mean +/- SEM, n = 9",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_acute"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, Placebo lactate column, acute study",
+        "quote": "0:00 (pre) diet | 0.7 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_lactate_short",
+      "description": "Blood lactate before the breakfast, placebo period (day 6) of the short-term study; mean +/- SEM, n = 10",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_short"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 4, Placebo lactate column, short-term study",
+        "quote": "0:00 diet | 0.7 ± 0.1"
+      }
+    },
+    {
+      "id": "fasting_adrenaline_acute",
+      "description": "Plasma adrenaline before the breakfast, placebo day of the acute study; mean +/- SEM, n = 9",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_acute"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.08,
+      "unit": "nM",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.02,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, Placebo adrenaline column, acute study",
+        "quote": "0:00 (pre) diet | 0.08 ± 0.02"
+      }
+    },
+    {
+      "id": "fasting_adrenaline_short",
+      "description": "Plasma adrenaline before the breakfast, placebo period (day 6) of the short-term study; mean +/- SEM, n = 10",
+      "marker": "epinephrine",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_short"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.19,
+      "unit": "nM",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.04,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 4, Placebo adrenaline column, short-term study",
+        "quote": "0:00 diet | 0.19 ± 0.04"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose, insulin and lactate after the standardized oatmeal-and-raisins breakfast, placebo arms, 1:00 to 4:30 h (Tables 2 and 4): the breakfast is printed as about 1,800 kJ, 15% of daily energy, but not as grams of carbohydrate, fat and protein; the short-term study's standardized diet is 15% protein, 30% fat, 55% carbohydrate, but the paper does not say the day-6 breakfast follows that split",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Glucose, insulin, lactate and adrenaline during the 40-min one-leg knee-extensor bout at 80% of peak work load (samples at 4:50 and 5:10 h, Tables 2 and 4) and the short-term study's 5:40, 7:10 and 9:10 h samples, placebo arms: the bout follows the unwritable breakfast by 4.5 h (whole-body VO2 1.1 +/- 0.1 L/min is printed in Table 5)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Placebo-arm resting and exercise heart rate, RER and oxygen uptake (Table 5): rest was after the breakfast, exercise is the same bout",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Noradrenaline at 0:00 and through the day (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "norepinephrine"
+      }
+    },
+    {
+      "what": "Fasting insulin in uU/mL, HOMA-IR, 2 h glucose/insulin ratio and Matsuda index (Table 3 and text)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Table 3 fasting insulin in uU/mL of the placebo arms (3.9 acute, 4.4 short-term) is a second print of the fasting insulin of Table 2 (27 and 31 pmol/L, i.e. 4.5 and 5.2 uU/mL) that does not agree with it, and the draw is not described separately; Table 2 is entered",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "All metformin arms, plasma and muscle metformin, muscle metabolites (Table 6), AMPK and signalling data",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    }
+  ]
+}
