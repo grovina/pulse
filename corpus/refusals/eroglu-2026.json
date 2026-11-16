@@ -1,0 +1,47 @@
+{
+  "paper": "eroglu-2026",
+  "citation": {
+    "authors": "Eroglu MN, et al.",
+    "title": "Acute beetroot juice supplementation, Wingate test performance and muscle oxygenation in male football players",
+    "journal": "Scientific Reports",
+    "year": 2026,
+    "doi": "10.1038/s41598-026-37514-x",
+    "pmid": "41620457",
+    "pmcid": "PMC12936269"
+  },
+  "reported": [
+    {
+      "what": "blood lactate before the Wingate test, placebo arm, mean ± SD, drawn 2.5 h after an undescribed blackcurrant placebo drink and an undescribed last meal (not a fasting sample)",
+      "location": {
+        "where": "Results, Blood lactate",
+        "quote": "placebo (2.61 ± 0.80 mmol/L)"
+      }
+    },
+    {
+      "what": "blood lactate immediately after the Wingate test, placebo arm, mean ± SD",
+      "location": {
+        "where": "Results, Blood lactate",
+        "quote": "placebo: 15.60 ± 2.01 mmol/L"
+      }
+    },
+    {
+      "what": "blood lactate 3 min after the Wingate test, placebo arm, mean ± SD",
+      "location": {
+        "where": "Results, Blood lactate",
+        "quote": "placebo: 16.32 ± 1.87 mmol/L"
+      }
+    },
+    {
+      "what": "mean heart rate during the Wingate test, placebo arm, mean ± SD",
+      "location": {
+        "where": "Results, RPE and heart rate",
+        "quote": "placebo: 164.6 ± 5.4 bpm"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The warm-up before the 30-s Wingate test (5 min of light cycling at a self-chosen workload, then 3 min at 2 kgf with 5-s maximal sprints each minute) has no printed power or oxygen uptake, the placebo drink is only called low-calorie blackcurrant juice with no grams, and the last meal before the visit is not described; Table 1 (muscle oxygenation) and Table 2 (glucose, blood pressure) are images with no text in the XML, so no fasting value is available either."
+}
