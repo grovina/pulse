@@ -1,0 +1,120 @@
+{
+  "paper": "rosen-2009",
+  "citation": {
+    "authors": "Rosén LA, Silva LOB, Andersson UK, Holm C, Östman EM, Björck IME",
+    "title": "Endosperm and whole grain rye breads are characterized by low post-prandial insulin response and a beneficial blood glucose profile",
+    "journal": "Nutrition Journal",
+    "year": 2009,
+    "doi": "10.1186/1475-2891-8-42"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 25.3,
+      "sd": 2.77,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.1,
+      "sd": 2.08,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve healthy non-smoking volunteers (9 men, 3 women) without drug therapy, all with normal fasting blood glucose; age 25.3 ± 0.8 y and BMI 23.1 ± 0.6 kg/m2, printed with SEM ('Data are expressed as means ± SEM'), so SD computed as SE x sqrt(12): age 0.8 x 3.464 = 2.77, BMI 0.6 x 3.464 = 2.08."
+  },
+  "protocols": [
+    {
+      "name": "fasting_morning",
+      "description": "Overnight-fasted morning of a test day: a standardised white-wheat-bread evening meal at 21.00-22.00, then nothing but small amounts of water; subjects arrived at 07.45 and fasting blood was taken before the breakfast. The paper does not say whether the printed fasting glucose is from the test mornings or from screening, and gives no clock time of the sample and no fast length, so a 30 min fasted window, an 08:00 start and a 10 h fast are assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting blood glucose of the twelve volunteers (Methods, Test subjects); the paper labels its data as means ± SEM in the statistics section, the printed 0.03 is read as an SEM with n = 12 (the paper's glucose statistics used n = 11 because of one subject's capillary sampling, but this sentence describes all subjects)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 4.6,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.03,
+        "n": 12
+      },
+      "location": {
+        "where": "Methods, Test subjects; 'Calculations and statistical methods' states 'Data are expressed as means ± SEM'",
+        "quote": "All subjects had normal fasting blood glucose concentrations (4.6 ± 0.03 mM)."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose iAUC 0-30 and 0-120 min per meal (Table 4) and insulin iAUC 0-30 and 0-120 min per meal (Table 5), eight breakfasts of 40 g available starch (WWB, WWP, ERB, ERP, WGRB, WGRB-lac, WGRP, RBB): the blood samples include a 7.5 min draw, and sampling times must be whole minutes; the paper does not say which samples its trapezoid used, so dropping the 7.5 min sample or rounding it would not be the paper's own area. The eight meal protocols are therefore not entered at all.",
+      "missing": {
+        "kind": "timescale",
+        "name": "fractional_minute_sampling"
+      }
+    },
+    {
+      "what": "Insulin incremental peak per meal (Table 5, nM): each person's maximum rise above fasting, which no statistic expresses",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "Glycaemic index, insulinaemic index and glycaemic profile index, % of WWB (Tables 4 and 5, GI, II, GPI) and glycaemic profile GP, min/mM (Table 4)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses of the eight meals as incremental change (Figure 1)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Total plasma ghrelin: relative decrease to nadir and relative increase 0 to 180 min per meal (Table 6, %); nadir time 64.9 ± 3.1 min pooled over meals (Results)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "Subjective satiety iAUC 0-180 min per meal (Table 6, min·cm)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "Spearman partial correlations between GP, II, GI, insulin incremental peak, ghrelin, hypoglycaemia (neg AUC 30-180) and satiety, pooled over meals and controlled for subject (Table 7)",
+      "missing": {
+        "kind": "operator",
+        "name": "spearman_partial_correlation"
+      }
+    }
+  ]
+}
