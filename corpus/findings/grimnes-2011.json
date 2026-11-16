@@ -1,0 +1,129 @@
+{
+  "paper": "grimnes-2011",
+  "citation": {
+    "authors": "Grimnes G, et al.",
+    "title": "Vitamin D, insulin secretion, sensitivity, and lipids: results from a case-control study and a randomized controlled trial using hyperglycemic clamp technique",
+    "journal": "Diabetes",
+    "year": 2011,
+    "doi": "10.2337/db11-0650",
+    "pmid": "21911741",
+    "pmcid": "PMC3198082"
+  },
+  "population": {
+    "n": 52,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 53.9,
+      "sd": 10.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.3,
+      "sd": 3.0,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "The 52 control subjects of the Tromso case-control study (high serum 25(OH)D, between the 80th and 95th percentiles of the sixth Tromso Study; 25 women, 48.1%), aged 30-75 y in the study as a whole; diabetes, steroid use, renal impairment and other conditions excluded, non-smokers; an OGTT was required only if HbA1c was above 6.1%, so the group is not screened by a glucose test and is entered as unselected. Age 53.9 +/- 10.5 and BMI 26.3 +/- 3.0 kg/m2 are from Table 1 (means +/- SD where normally distributed); BMI is missing in two participants. Only this one group of the paper is entered (see left_out)."
+  },
+  "protocols": [
+    {
+      "name": "fasted_morning",
+      "description": "Fasting plasma glucose of the high-25(OH)D control subjects at the baseline visit (Table 1); the participants came fasting in the morning (hours of fast and clock time not printed, 10 h and 08:00 assumed); short fasted arm, sample read at minute 29-30, duration 31. The hyperglycaemic clamp of the same visit is not entered.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_high_vitd_controls",
+      "description": "Fasting plasma glucose, control subjects with high serum 25(OH)D; mean +/- SD (Table 1 footnote: means +/- SD if normally distributed). n = 52 - 2 = 50 because the table marks data missing in two participants for this row.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.35,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 50
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting plasma glucose (mmol/L)', column High serum 25(OH)D (control subjects, n = 52)",
+        "quote": "Fasting plasma glucose (mmol/L) | 5.35 ± 0.60"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting glucose of the low-25(OH)D case subjects (Table 1, n = 108 less one with missing data) and of the vitamin D and placebo groups at baseline and 6 months (Table 3): the groups are set apart by serum 25(OH)D (cases 5th to 10th percentile, controls 80th to 95th percentile of the sixth Tromso Study), which the model cannot be told; the two groups have the same printed age, sex and BMI, so entering both would ask the model for two different numbers from the same people, and no pooled value is printed. The vitamin D and placebo groups are the cases themselves. One group (the high-25(OH)D controls) is entered",
+      "missing": {
+        "kind": "population",
+        "name": "vitamin_d_status_group"
+      }
+    },
+    {
+      "what": "fasting insulin, HOMA-IR, insulin AUC 0-10 min and 120-180 min, M 120-180 min and ISI 120-180 min (Tables 1 and 3, all groups): printed as median (5th to 95th percentile)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "clamp: the glucose infusion rate, plasma glucose and serum insulin curves are in Figures 2 and 4 only; the plasma glucose of the last hour is printed once, pooled over case and control subjects, in the text (9.9 +/- 0.3 mmol/L, target 10 mmol/L), and the clamp insulin level is not printed anywhere as a number, so the clamp cannot be entered at its measured plasma levels; M and ISI are printed as medians (Tables 1 and 3), the infusion rate itself is not a table value",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "change from baseline to 6 months (placebo and vitamin D3 groups, Table 3 delta values for glucose, insulin areas, M, ISI)",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "insulin sensitivity index ISI and adjusted ln ISI (Tables 1-3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HbA1c (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "serum triglycerides and total, HDL and LDL cholesterol (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "hs-CRP (Tables 1 and 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    }
+  ]
+}
