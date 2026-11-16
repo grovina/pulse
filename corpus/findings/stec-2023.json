@@ -1,0 +1,371 @@
+{
+ "paper": "stec-2023",
+ "citation": {
+  "authors": "Stec S, et al.",
+  "title": "Effects of 8 days of water-only fasting on stress, anxiety and cognitive performance in men with fasting experience",
+  "journal": "Nutrients",
+  "year": 2023,
+  "doi": "10.3390/nu15153444",
+  "pmid": "37571381",
+  "pmcid": "PMC10421233"
+ },
+ "population": {
+  "n": 14,
+  "sex": "male",
+  "age_years": {
+   "mean": 49.72,
+   "sd": 13.03,
+   "min": null,
+   "max": null
+  },
+  "bmi": {
+   "mean": 25.01,
+   "sd": 3.35,
+   "min": null,
+   "max": null
+  },
+  "status": "healthy",
+  "description": "Fourteen men aged 35-60 (enrolment range, not observed min/max) with prior fasting experience, no acute or chronic physical or mental illness, non-smokers; the pooled group (younger n = 6 and elder n = 8, split at age 48). Age and BMI are the pooled 'Together' values of Table 1 (BMI before the fast)."
+ },
+ "protocols": [
+  {
+   "name": "before_fast",
+   "description": "Fasted morning sample before the 8-day water-only fast (volunteers reported to the laboratory in the morning in the fasting state; hours of fasting, clock hour and sampling time not printed). Assumed: 08:00, 10 h fasted, 30-minute arm read at minutes 29-30.",
+   "duration_min": 30,
+   "start_hour": 8.0,
+   "meals": [],
+   "prefast_hours": 10,
+   "assumed": [
+    "start_hour",
+    "prefast_hours",
+    "duration_min"
+   ]
+  },
+  {
+   "name": "after_8d_fast",
+   "description": "Morning sample after 8 days of water-only fasting (mineral water ad libitum). The paper gives no hours and no clock time: the men were already fasted overnight at the first visit and began the 8 days after that visit's tests, and the procedures were 'repeated' after the 8 days. Assumed, not printed: last meal about 10 h before the first morning sample (the same assumption as the before arm) + 8 days x 24 h = 10 + 192 = 202 h at the second morning sample, 08:00; 30-minute arm read at minutes 29-30. (Counted only from the end of the first visit's tests the fast would be a few hours short of 192 h; the difference is small against 8 days.)",
+   "duration_min": 30,
+   "start_hour": 8.0,
+   "meals": [],
+   "prefast_hours": 202,
+   "assumed": [
+    "start_hour",
+    "prefast_hours",
+    "duration_min"
+   ]
+  }
+ ],
+ "findings": [
+  {
+   "id": "glucose_before_fast",
+   "description": "Together (n = 14), glucose at rest, before the 8-day water-only fast; mean and SD",
+   "marker": "glucose",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 4.93,
+   "unit": "mmol/L",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 0.53,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 3, row 'Glucose-Rest (mmol/L)', Together, column Before (M ± SD)",
+    "quote": "Glucose-Rest (mmol/L) | 4.93 ± 0.53"
+   }
+  },
+  {
+   "id": "glucose_after_8d_fast",
+   "description": "Together (n = 14), glucose at rest, after the 8-day water-only fast; mean and SD",
+   "marker": "glucose",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 3.9,
+   "unit": "mmol/L",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 0.66,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 3, row 'Glucose-Rest (mmol/L)', Together, column After (M ± SD)",
+    "quote": "Glucose-Rest (mmol/L) | 3.90 ± 0.66"
+   }
+  },
+  {
+   "id": "bhb_before_fast",
+   "description": "Together (n = 14), beta-hydroxybutyrate at rest, before the 8-day water-only fast; mean and SD",
+   "marker": "bhb",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 0.317,
+   "unit": "mmol/L",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 0.2,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 3, row 'β-hydroxybutyrate-Rest(mmol/L)', Together, column Before (M ± SD)",
+    "quote": "β-hydroxybutyrate-Rest(mmol/L) | 0.317 ± 0.20"
+   }
+  },
+  {
+   "id": "bhb_after_8d_fast",
+   "description": "Together (n = 14), beta-hydroxybutyrate at rest, after the 8-day water-only fast; mean and SD",
+   "marker": "bhb",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 4.25,
+   "unit": "mmol/L",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 1.5,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 3, row 'β-hydroxybutyrate-Rest(mmol/L)', Together, column After (M ± SD)",
+    "quote": "β-hydroxybutyrate-Rest(mmol/L) | 4.25 ± 1.50"
+   }
+  },
+  {
+   "id": "hr_before_fast",
+   "description": "Together (n = 14), resting heart rate at rest, before the 8-day water-only fast; mean and SD",
+   "marker": "hr",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 64.64,
+   "unit": "bpm",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 8.94,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'HR-Rest (bpm)', Together, column Before (M ± SD)",
+    "quote": "HR-Rest (bpm) | 64.64 ± 8.94"
+   }
+  },
+  {
+   "id": "hr_after_8d_fast",
+   "description": "Together (n = 14), resting heart rate at rest, after the 8-day water-only fast; mean and SD",
+   "marker": "hr",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 71.34,
+   "unit": "bpm",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 13.25,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'HR-Rest (bpm)', Together, column After (M ± SD)",
+    "quote": "HR-Rest (bpm) | 71.34 ± 13.25"
+   }
+  },
+  {
+   "id": "sbp_before_fast",
+   "description": "Together (n = 14), resting systolic blood pressure at rest, before the 8-day water-only fast; mean and SD",
+   "marker": "sbp",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 124.64,
+   "unit": "mmHg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 12.63,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'SBP-Rest (mmHg)', Together, column Before (M ± SD)",
+    "quote": "SBP-Rest (mmHg) | 124.64 ± 12.63"
+   }
+  },
+  {
+   "id": "sbp_after_8d_fast",
+   "description": "Together (n = 14), resting systolic blood pressure at rest, after the 8-day water-only fast; mean and SD",
+   "marker": "sbp",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 112.14,
+   "unit": "mmHg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 11.39,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'SBP-Rest (mmHg)', Together, column After (M ± SD)",
+    "quote": "SBP-Rest (mmHg) | 112.14 ± 11.39"
+   }
+  },
+  {
+   "id": "dbp_before_fast",
+   "description": "Together (n = 14), resting diastolic blood pressure at rest, before the 8-day water-only fast; mean and SD",
+   "marker": "dbp",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 82.86,
+   "unit": "mmHg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 9.65,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'DBP-Rest(mmHg)', Together, column Before (M ± SD)",
+    "quote": "DBP-Rest(mmHg) | 82.86 ± 9.65"
+   }
+  },
+  {
+   "id": "dbp_after_8d_fast",
+   "description": "Together (n = 14), resting diastolic blood pressure at rest, after the 8-day water-only fast; mean and SD",
+   "marker": "dbp",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 77.14,
+   "unit": "mmHg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 7.96,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 2, row 'DBP-Rest(mmHg)', Together, column After (M ± SD)",
+    "quote": "DBP-Rest(mmHg) | 77.14 ± 7.96"
+   }
+  },
+  {
+   "id": "fat_mass_before_fast",
+   "description": "Together (n = 14), body fat (Tanita bioimpedance) before the fast, mean and SD",
+   "marker": "fat_mass",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "before_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 15.55,
+   "unit": "kg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 4.82,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 1, row 'BF (kg)', Together, column Before",
+    "quote": "BF (kg) | 15.55 ± 4.82"
+   }
+  },
+  {
+   "id": "fat_mass_after_8d_fast",
+   "description": "Together (n = 14), body fat (Tanita bioimpedance) after the 8-day fast, mean and SD",
+   "marker": "fat_mass",
+   "statistic": "mean_in_window",
+   "protocols": [
+    "after_8d_fast"
+   ],
+   "window": {
+    "start_min": 29,
+    "end_min": 30
+   },
+   "value": 13.62,
+   "unit": "kg",
+   "uncertainty": {
+    "kind": "sd",
+    "value": 5.6,
+    "n": 14
+   },
+   "location": {
+    "where": "Table 1, row 'BF (kg)', Together, column After",
+    "quote": "BF (kg) | 13.62 ± 5.60"
+   }
+  }
+ ],
+ "left_out": [
+  {
+   "what": "all samples taken in the last minute of the maximal cycle-ergometer test, before and after the fast: glucose, cortisol, beta-hydroxybutyrate, HR, BP (Tables 2 and 3, 'Exercise' rows); ramp 30 W + 30 W every 3 min to each person's own maximum, the maximal load or oxygen uptake is not printed",
+   "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+   }
+  },
+  {
+   "what": "body mass, fat-free mass, total body water, BMI before and after (Table 1)",
+   "missing": {
+    "kind": "marker",
+    "name": "body_composition"
+   }
+  },
+  {
+   "what": "serum cortisol at rest before and after the fast, 308.58 ± 87.36 and 487.30 ± 140.07 printed as ng/mL (Results 3.1, Table 3); as ng/mL the after value is 48.7 µg/dL and the before value 30.9, high for a fasted morning, and the sibling papers pilis-2025 and pilis-2025b print near-identical numbers in the same unit; the unit is likely nmol/L, which the paper does not say, so the numbers stay out as in those papers",
+   "missing": {
+    "kind": "source",
+    "name": "unit_implausible"
+   }
+  }
+ ]
+}
