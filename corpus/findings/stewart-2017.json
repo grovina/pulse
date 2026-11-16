@@ -1,0 +1,282 @@
+{
+  "paper": "stewart-2017",
+  "citation": {
+    "authors": "Stewart ML, Zimmer JP",
+    "title": "A High Fiber Cookie Made with Resistant Starch Type 4 Reduces Post-Prandial Glucose and Insulin Responses in Healthy Adults",
+    "journal": "Nutrients",
+    "year": 2017,
+    "doi": "10.3390/nu9030237",
+    "pmid": "28273870",
+    "pmcid": "PMC5372900"
+  },
+  "population": {
+    "n": 28,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 42.8,
+      "sd": 18.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.7,
+      "sd": 3.3,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "28 healthy adults (14 men, 14 women), age and BMI mean ± SD from Table 2. Inclusion: age 18 or older, BMI 18.0-29.9 kg/m2, fasting glucose <=6.0 mmol/L (enrolment criteria; observed min/max not reported). Some analyses have fewer subjects (Table 3 footnote); the finding n is that of the cell."
+  },
+  "protocols": [
+    {
+      "name": "control_cookie",
+      "description": "Control cookie eaten with 250 mL water after a 12 h fast (Table 1: total carbohydrate 36.84 g, available 36.28 g, fibre 0.55 g, fat 3.99 g, protein 5.36 g); samples 0-120 min",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 36.28,
+          "fat_g": 3.99,
+          "protein_g": 5.36,
+          "fibre_g": 0.55,
+          "sugars_g": 11.51,
+          "fat_g_by_type": {
+            "saturated": 0.56
+          },
+          "form": "solid",
+          "food": "control cookie"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fibre_cookie",
+      "description": "Fibre cookie with 25 g VERSAFIBE 1490 RS4, same total carbohydrate as control (Table 1: total 36.84 g, available 12.71 g, fibre 24.13 g, fat 3.92 g, protein 4.92 g), 250 mL water, after a 12 h fast",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 12.71,
+          "fat_g": 3.92,
+          "protein_g": 4.92,
+          "fibre_g": 24.13,
+          "sugars_g": 11.72,
+          "fat_g_by_type": {
+            "saturated": 0.54
+          },
+          "form": "solid",
+          "food": "cookie with resistant starch type 4 (VERSAFIBE 1490)"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasted_sample",
+      "description": "Fasting blood sample, before the cookie; arm ends after the sample. Table 2 does not say when it was drawn, in which fast (the visits' 12 h fast is assumed) or the sample type",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "iv_glucose_iauc_control",
+      "description": "Intravenous blood glucose positive iAUC 0-120 min, control cookie (n=27)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_cookie"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 1.31,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.75,
+        "n": 27
+      },
+      "location": {
+        "where": "Table 3, column 'Control Cookie', row iAUC0-120min (mmol/L *·h); only the positive area above the baseline value counts (Methods 2.5)",
+        "quote": "iAUC0-120min (mmol/L *·h) | 1.31 ± 0.75"
+      }
+    },
+    {
+      "id": "iv_glucose_iauc_fibre",
+      "description": "Intravenous blood glucose positive iAUC 0-120 min, fibre cookie (n=25)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "fibre_cookie"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 0.73,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.9,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, column 'Fiber Cookie', row iAUC0-120min (mmol/L *·h); only the positive area above the baseline value counts (Methods 2.5)",
+        "quote": "iAUC0-120min (mmol/L *·h) | 0.73 ± 0.90"
+      }
+    },
+    {
+      "id": "insulin_iauc_control",
+      "description": "Intravenous serum insulin positive iAUC 0-120 min, control cookie (n=27)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_cookie"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 229,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 124,
+        "n": 27
+      },
+      "location": {
+        "where": "Table 3, column 'Control Cookie', row iAUC0-120min (pmol/L *·h); only the positive area above the baseline value counts (Methods 2.5)",
+        "quote": "iAUC0-120min (pmol/L *·h) | 229 ± 124"
+      }
+    },
+    {
+      "id": "insulin_iauc_fibre",
+      "description": "Intravenous serum insulin positive iAUC 0-120 min, fibre cookie (n=25)",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "fibre_cookie"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 124,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 94,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 3, column 'Fiber Cookie', row iAUC0-120min (pmol/L *·h); only the positive area above the baseline value counts (Methods 2.5)",
+        "quote": "iAUC0-120min (pmol/L *·h) | 124 ± 94"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting blood glucose of all 28 participants (sample type and visit not stated)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_sample"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 5.03,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.34,
+        "n": 28
+      },
+      "location": {
+        "where": "Table 2, column 'All Participants (n = 28)' (Mean ± SD)",
+        "quote": "Fasting blood glucose (mmol/L) | 5.03 ± 0.34"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Cmax0-120min of intravenous and capillary glucose and of intravenous insulin, both cookies (Table 3): the rows are labelled with an area unit (mmol/L *·h, pmol/L *·h) that contradicts a peak concentration (Methods 2.5 defines Cmax as the highest concentration)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "capillary blood glucose iAUC0-120min, both cookies (Table 3: control 2.35 +/- 0.94, n=26; fibre 1.22 +/- 1.18, n=23): the same people and minutes as the intravenous glucose entered, at a different level (the paper notes the sampling technique changes the absolute values); two targets for one glucose in one arm would contradict each other, so only the intravenous one is entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "percent reductions and p-values between cookies, text of 3.2 and Table 3 (44%, 48%, 46%, 8%, 9%, 23%)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "glucose and insulin time courses (Figure 2A-C); only in figures",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "the fibre in the fibre cookie is an added resistant starch type 4 (distarch phosphate); the model carries its grams only, not the fibre type",
+      "missing": {
+        "kind": "input",
+        "name": "fibre_type"
+      }
+    }
+  ]
+}
