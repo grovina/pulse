@@ -1,0 +1,189 @@
+{
+  "paper": "christensen-2026",
+  "citation": {
+    "authors": "Christensen et al.",
+    "title": "Differences in physiological response to an oral glucose tolerance test in adult Maasai men and women",
+    "journal": "Acta Diabetologica",
+    "year": 2026,
+    "doi": "10.1007/s00592-026-02710-8",
+    "pmid": "42171709",
+    "pmcid": "PMC13468978"
+  },
+  "population": {
+    "n": 58,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 34.8,
+      "sd": 11.9,
+      "min": 17.0,
+      "max": 65.0
+    },
+    "bmi": {
+      "mean": 20.3,
+      "sd": 2.9,
+      "min": 14.0,
+      "max": 30.9
+    },
+    "status": "unselected",
+    "description": "58 adult rural Maasai (29 men, 29 women) in Monduli district, Tanzania, without known or study-detected diabetes (pregnant women excluded); not screened as normal glucose tolerance (one man had impaired fasting glucose and three participants had impaired glucose tolerance), so unselected. Age and BMI are the printed means, SDs and observed ranges of all 58."
+  },
+  "protocols": [
+    {
+      "name": "fasting_men",
+      "description": "Fasting plasma glucose of the 29 Maasai men, drawn at the start of the OGTT day after an overnight fast (the 0 min sample); the paper gives no clock time and no number of hours fasted, so a 10 h fast, 08:00 and a 30-minute fasted run-in stand for the single sample. Mean age and BMI are Table 1's for this sex.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 31.7,
+          "sd": 7.1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.5,
+          "sd": 2.9,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_women",
+      "description": "Fasting plasma glucose of the 29 Maasai women, drawn at the start of the OGTT day after an overnight fast (the 0 min sample); the paper gives no clock time and no number of hours fasted, so a 10 h fast, 08:00 and a 30-minute fasted run-in stand for the single sample. Mean age and BMI are Table 1's for this sex.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 37.8,
+          "sd": 14.8,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.1,
+          "sd": 3.8,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_men",
+      "description": "Fasting plasma glucose, Maasai men without diabetes, mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 29
+      },
+      "location": {
+        "where": "Results, OGTT-derived plasma concentrations (also Table 2, row 'Fasting glucose (mmol/L)')",
+        "quote": "Fasting plasma glucose concentrations in men and women were significantly different at 5.2 (SD 0.6) vs. 4.9 (SD 0.5) mmol/L, respectively (p = 0.031)."
+      }
+    },
+    {
+      "id": "fasting_glucose_women",
+      "description": "Fasting plasma glucose, woMaasai men without diabetes, mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 29
+      },
+      "location": {
+        "where": "Results, OGTT-derived plasma concentrations (also Table 2, row 'Fasting glucose (mmol/L)')",
+        "quote": "Fasting plasma glucose concentrations in men and women were significantly different at 5.2 (SD 0.6) vs. 4.9 (SD 0.5) mmol/L, respectively (p = 0.031)."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "2-h glucose, fasting and 2-h insulin, C-peptide, glucagon, GIP and GLP-1 by sex (Table 2), printed as geometric means with 95% CI",
+      "missing": {
+        "kind": "operator",
+        "name": "geometric_mean"
+      }
+    },
+    {
+      "what": "total AUCs of glucose, insulin, C-peptide, glucagon, GIP and GLP-1 by sex (Table 2, Figure 1), geometric means with 95% CI; sampling times (0, 10, 30, 60, 90, 120 min) are printed but the insulin and C-peptide AUC units (nmol/L x min) sit beside pmol/L concentrations",
+      "missing": {
+        "kind": "operator",
+        "name": "geometric_mean"
+      }
+    },
+    {
+      "what": "early phase insulin, C-peptide, GIP and GLP-1 secretion (iAUC of first 30 min), geometric means (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "geometric_mean"
+      }
+    },
+    {
+      "what": "HOMA-IR, disposition index, Matsuda index, insulin/glucagon ratio (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "C-peptide at fasting, 2 h and as AUC (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "glucose, insulin, C-peptide, glucagon, GIP, GLP-1 at 10, 30, 60 and 90 min (sampled per Methods, not tabulated; AUCs in Figure 1 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "resting systolic and diastolic blood pressure and sitting heart rate by sex (Table 1, arithmetic mean and SD, but n printed only as 56 for both sexes together in footnote 3)",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    }
+  ]
+}
