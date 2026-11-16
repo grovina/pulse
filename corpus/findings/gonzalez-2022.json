@@ -1,0 +1,173 @@
+{
+  "paper": "gonzalez-2022",
+  "citation": {
+    "authors": "Gonzalez JT, et al.",
+    "title": "Acute 24-h fasting, ambulatory blood pressure and autonomic cardiovascular control in healthy young adults",
+    "journal": "Am J Physiol Regul Integr Comp Physiol",
+    "year": 2022,
+    "doi": "10.1152/ajpregu.00283.2021",
+    "pmid": "35380473",
+    "pmcid": "PMC9512108"
+  },
+  "population": {
+    "n": 25,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 23.0,
+      "sd": 3.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.0,
+      "sd": 4.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty-five healthy young adults (14 M, 11 F), age 23 +/- 3 yr, BMI 24 +/- 4 kg/m2; no history of autonomic dysfunction, hypertension, diabetes, tobacco or medication; screened normotensive. Female participants tested in the early follicular phase."
+  },
+  "protocols": [
+    {
+      "name": "fast_24h",
+      "description": "Fasted condition: 24 h postprandial (water ad libitum), blood drawn on arrival at the laboratory for the autonomic test; modelled as a short 30 min arm read at minutes 29-30. Clock hour of arrival and of the sample are not stated (08:00 assumed); the 24 h is as printed. The paper says a standardized meal was provided 'for each condition' without saying when or how much in the fasted one; not entered.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 24,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fast_24h_glucose",
+      "description": "Whole-blood glucose (Cholestech LDX, whole blood; the paper does not say plasma-equivalent) on arrival after the 24-h fast, mean +/- SD, n = 25; entered as glucose as other whole-blood meter values are",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_24h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 80.9,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 1, Fasted column",
+        "quote": "Glucose, mg/dL | 98.8 ± 11.7 | 80.9 ± 8.0 | <0.001"
+      }
+    },
+    {
+      "id": "fast_24h_bhb",
+      "description": "Whole-blood beta-hydroxybutyrate (Precision Xtra) after the 24-h fast, mean +/- SD, n = 25",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fast_24h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.536,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.49,
+        "n": 25
+      },
+      "location": {
+        "where": "Table 1, Fasted column",
+        "quote": "Ketones, mmol/L (β-hydroxybutyrate) | 0.128 ± 0.13 | 0.536 ± 0.49"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Fed condition (3-h postprandial) glucose 98.8 +/- 11.7 mg/dL and BHB 0.128 +/- 0.13 mmol/L (Table 1): the standardized meal is given as one third of daily energy need at about 55/20/25% carbohydrate/fat/protein, but the energy (and each person's daily need) is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Total, LDL and HDL cholesterol after the 24-h fast, 172.7 +/- 29.1, 105.5 +/- 21.5, 56.2 +/- 20.3 mg/dL (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Triglycerides after the 24-h fast, 77.2 +/- 37.9 mg/dL (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Body weight, 75.6 +/- 15.2 kg fasted (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "Overall 24-h ambulatory heart rate (65 +/- 10 beats/min), systolic (108 +/- 7), diastolic (63 +/- 6) and mean arterial pressure in the fasted condition, n = 20 (Table 2): the monitor was worn for the 24 h before the test, but the paper does not say when the fast began relative to the monitor or the clock time, nor the hours slept, beyond 'fasting for 24 h'",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Fed 24-h ambulatory values and the fed-minus-fasted differences (Table 2, Results): the fed day is a normal diet, its meals not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Fasted systolic (107 +/- 11) and diastolic (58 +/- 10) pressure from the Finometer during 10 min of paced breathing, supine, after instrumentation (Table 3): the minutes between the blood sample and this recording are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "R-R interval (1,059 +/- 186 ms) and spectral heart rate variability (HF power, HFnu, LFnu) during paced breathing (Table 3): the paper prints no RMSSD, the model's hrv; R-R interval is not heart rate",
+      "missing": {
+        "kind": "marker",
+        "name": "hrv_spectral_power"
+      }
+    },
+    {
+      "what": "Stroke volume, cardiac output and total peripheral resistance (Table 3), pulse contour estimates, supine",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Cardiovagal baroreflex sensitivity (Tables 3 and 4; Table 4 is mean +/- SE, n = 22)",
+      "missing": {
+        "kind": "marker",
+        "name": "baroreflex_sensitivity"
+      }
+    },
+    {
+      "what": "Muscle sympathetic nerve activity (Tables 3 and 4, n = 12)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_sympathetic_nerve_activity"
+      }
+    }
+  ]
+}
