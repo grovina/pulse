@@ -1,0 +1,150 @@
+{
+  "paper": "kim-2026",
+  "citation": {
+    "authors": "Kim H, et al.",
+    "title": "Low-molecular weight polyphenol (oligonol) and fatigue and oxidative stress responses to a maximal exercise test in healthy young men",
+    "journal": "Antioxidants (Basel)",
+    "year": 2026,
+    "doi": "10.3390/antiox15020250",
+    "pmid": "41750630",
+    "pmcid": "PMC12938421"
+  },
+  "population": {
+    "n": 10,
+    "sex": "male",
+    "age_years": {
+      "mean": 24.0,
+      "sd": 1.644,
+      "min": 22.0,
+      "max": 27.0
+    },
+    "bmi": {
+      "mean": 25.52,
+      "sd": 2.561,
+      "min": 23.5,
+      "max": 30.0
+    },
+    "status": "unselected",
+    "description": "Ten males in their twenties, recruited by advertisement as 'healthy males'; volunteers with recent injuries, diagnosed chronic diseases or unable to do an exercise load test were excluded (20 volunteers, 10 enrolled). No glucose-tolerance test screened them, and the paper itself calls them 'obese based on their mean BMI' (mean BMI 25.52, 23.50-30.00), so status is unselected with the observed BMI range. Table 1 baseline. Age and BMI are printed as mean +/- SE (age 24.00 +/- 0.52, min 22.00, max 27.00; BMI 25.52 +/- 0.81, min 23.50, max 30.00); SD computed as SE x sqrt(10)."
+  },
+  "protocols": [
+    {
+      "name": "fasted_before_exercise",
+      "description": "Morning of the maximal Bruce treadmill test, placebo visit (500 mL strawberry-flavoured water, no energy), the sample taken before the exercise. Stated: no food or drink other than water after 9:00 p.m. the day before until the morning of the test, and 'keeping the fasting status for at least 12 h' before the measurements (Sections 2.2 and 2.5). The clock time of the test is not printed, so the length of the fast is not known beyond the stated 'at least 12 h'; prefast_hours 12 is that lower bound, taken as the value. Single sample; run-in of 30 min before it is assumed.",
+      "duration_min": 61,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_before_exercise_placebo",
+      "description": "Heart rate before the maximal exercise test (the 'Before' row of the heart-rate table; the paper does not say the posture or the rest before it), placebo (water) visit, fasted at least 12 h, n = 10, mean +/- SE",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_before_exercise"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 65.6,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.57,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 4, row 'Before' (Exercise), Placebo column",
+        "quote": "Before | 65.60 | ± | 2.57"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "heart rate after the maximal test and at 1-5 and 30 min of rest, HRmax, exercise time and anaerobic threshold time (Tables 3-4); the Bruce treadmill test to exhaustion is a ramp with no printed constant bout oxygen uptake (only the peak, VO2max 47.29 mL/kg/min, which gives level above 1)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "VO2max in mL/kg/min (Table 3)",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "blood glucose (finger-stick test strip) and blood pressure (Table 3): Methods 2.6 say glucose was measured 'before a maximal exercise test' (blood pressure 'at rest'), but the Table 3 footnote says blood glucose, blood pressure and muscle strength were 'measured after the exercise load test', so the state is not clear",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "blood lactate before and after exercise and at 1-5 and 30 min of rest (Figure 1; only the 30 min means of the three phases are in the abstract text, after the exercise)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "lean body mass, skeletal muscle mass, body fat percentage and body weight (Tables 1-2)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "serum malondialdehyde before, after and 30 min after exercise (Figure 3 and the abstract text)",
+      "missing": {
+        "kind": "marker",
+        "name": "malondialdehyde"
+      }
+    },
+    {
+      "what": "serum oxidized LDL (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "oxidized_ldl"
+      }
+    },
+    {
+      "what": "serum uric acid (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "uric_acid"
+      }
+    },
+    {
+      "what": "serum creatine kinase and CK-MB (Table 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "creatine_kinase"
+      }
+    },
+    {
+      "what": "serum lactate dehydrogenase and phosphorus (Figure 4 and text only)",
+      "missing": {
+        "kind": "marker",
+        "name": "lactate_dehydrogenase"
+      }
+    },
+    {
+      "what": "grip strength of both hands and back muscle strength (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "muscle_strength"
+      }
+    }
+  ]
+}
