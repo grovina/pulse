@@ -1,0 +1,128 @@
+{
+  "paper": "ishigaki-2019",
+  "citation": {
+    "authors": "Ishigaki Y, et al.",
+    "title": "Prolonged plasma glucose elevation on oral glucose tolerance test in young healthy Japanese individuals",
+    "journal": "Endocrinology, Diabetes & Metabolism",
+    "year": 2019,
+    "doi": "10.1002/edm2.98",
+    "pmid": "31922025",
+    "pmcid": "PMC6947704"
+  },
+  "population": {
+    "n": 575,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 23.7,
+      "sd": 1.7,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.1,
+      "sd": 2.5,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "575 young Japanese university-hospital volunteers (medical candidates at Gunma University Hospital, 359 male, 216 female) classed as normal glucose tolerance after a 75 g OGTT (of 595 examined, 19 IGT and 1 IFG removed; no diabetes, no medication); the abstract gives aged 22-29 years and the methods exclude those over 30 (enrolment limits, not an observed range, so min and max are null); age and BMI as printed in Table 1, mean +/- SD (the text gives mean BMI 21.2)."
+  },
+  "protocols": [
+    {
+      "name": "fasting",
+      "description": "Fasting plasma glucose of all 575 NGT subjects, drawn as the 0 min sample of the OGTT after a 10-hour fast; entered as a 30 min fasted run-in from 08:00 ending at the sample (clock hour and run-in length assumed)",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose, all 575 NGT subjects (whole cohort, Table 1; not a curve-shape group)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 90.5,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.7,
+        "n": 575
+      },
+      "location": {
+        "where": "Table 1, row 'FPG' (footnote: data presented as mean ± SD)",
+        "quote": "FPG | 90.5 ± 6.7 mg/dL"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose and insulin at 0, 30, 60, 120 min, AUCg, AUCi, and indices, printed only by the four curve-shape groups I-IV (Table 2); no whole-cohort means printed, and pooling groups by n is not allowed",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "fasting plasma insulin of all 575 subjects, printed 'IU/L' (Table 1); read as printed that is 1000 times the group values Table 2 prints in uU/mL, so the unit is implausible and not corrected",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "HbA1c, whole cohort (Table 1) and by group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "C-peptide immunoreactivity, whole cohort fasting (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "HDL-C and LDL-C by group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "triglyceride by group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "glycoalbumin, whole cohort (Table 1) and by group (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "glycoalbumin"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-beta, Matsuda, insulinogenic and disposition indices, AUCi/AUCg (Table 2, by group)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
