@@ -27,7 +27,7 @@
   ],
   "missing": {
     "kind": "input",
-    "name": "exercise_above_activity_scale"
+    "name": "input_not_printed"
   },
-  "detail": "The bout's measured mean oxygen uptake (2.86 L/min over 79.19 kg) gives an activity level of 1.02, above the scale's maximum of 1, and the gate refuses a level above 1; the resting heart rate and VO2 (Table 3, Results) were taken after a pre-exercise meal 2 h earlier whose energy is not printed (65% carbohydrate, 15% protein, 20% fat only), so no fasting arm can be written either."
+  "detail": "The bout's mean level (1.02, from the measured 2.86 L/min over 79.19 kg) is now within the 0-2 activity scale, but the bout is 1 min work and 1 min recovery intervals whose work and recovery intensities are not printed (only the 21 min mean VO2), so a single level misstates the bout; the only clean printed outcome is the post-session blood lactate (7.7 +/- 3.7 mmol/L in the abstract), which is exactly what the interval pattern drives. The exercise heart rates (140 and 139 bpm in the Results, 158 and 147 bpm in the abstract) and the resting values (HR SD of 7.3 or 8.28 bpm; resting VO2 swapped between Table 3 and the text) are inconsistent within the paper, and the pre-exercise meal 2 h earlier is printed only as percentages (65% carbohydrate, 15% protein, 20% fat), so the fed state is unknown."
 }
