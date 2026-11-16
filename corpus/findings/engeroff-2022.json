@@ -1,0 +1,229 @@
+{
+  "paper": "engeroff-2022",
+  "citation": {
+    "authors": "Engeroff T, et al.",
+    "title": "Exercise breaks versus a single exercise bout before sitting: glucose, insulin and well-being in healthy active women",
+    "journal": "Int J Environ Res Public Health",
+    "year": 2022,
+    "doi": "10.3390/ijerph19084422",
+    "pmid": "35457289",
+    "pmcid": "PMC9032798"
+  },
+  "population": {
+    "n": 18,
+    "sex": "female",
+    "age_years": {
+      "mean": 25.6,
+      "sd": 2.6,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.5,
+      "sd": 2.0,
+      "min": 17.5,
+      "max": 25.6
+    },
+    "status": "healthy",
+    "description": "Eighteen physically active young women who completed all three trials (20 enrolled); BMI inclusion 17 to 29, exclusion of acute or chronic disease and of elevated fasting glucose, health confirmed by a physician's examination (no oral glucose test). Age and BMI from Table 1 (n = 18); BMI min and max are the observed values printed there."
+  },
+  "protocols": [
+    {
+      "name": "fasting_baseline",
+      "description": "Fasting baseline blood sample (paper: baseline sampling 'after a 15 min resting period, and in the fasted state', arrival fasted, overnight fast, before the test meal), read at minutes 29-30 of a short fasted arm. Start hour 8.0, 10 h prefast and the 30 min arm length assumed (the paper gives no clock time, fast length or arm length).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "sitting_control_meal",
+      "description": "Control (no exercise) trial: ad libitum standardised meal of white toast bread, cheese and jam eaten immediately before 4 h of sitting, after an overnight fast (first bolus after the fast). Meal grams are the group means of the self-chosen intake printed in Results 3.2 (66.06 g +/- 26.89 'glucose', read as carbohydrate: 51% of 519.7 kcal / 4 = 66.3 g, consistent; 20.5 g fat; 18.22 g protein), so each woman's own meal varied (SD about 40%) and the number of women behind the means is not printed; portion size was chosen in the first trial and kept constant across the three trials. Samples at baseline (before the meal, minute 0) and 30, 60, 90, 120, 180, 240 min of sitting. Start hour 8.0 and 10 h prefast assumed (paper says only 'overnight fast').",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 66.06,
+          "fat_g": 20.5,
+          "protein_g": 18.22,
+          "form": "solid",
+          "food": "white toast bread, cheese and jam"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_baseline",
+      "description": "Baseline (fasting) blood glucose of the no-exercise trial; the other two trials' baselines are the same women on other days and are not entered",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 76.6,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.6,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, Glucose block, row 'Baseline', column 'No Exercise'",
+        "quote": "Baseline | 76.7 ± 6.0 | 76.1 ± 6.5 | 76.6 ± 6.6"
+      }
+    },
+    {
+      "id": "fasting_insulin_baseline",
+      "description": "Baseline (fasting) insulin of the no-exercise trial",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 6.3,
+      "unit": "uU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.4,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, Insulin block, row 'Baseline', column 'No Exercise'",
+        "quote": "Baseline | 6.8 ± 2.7 | 6.5 ± 2.3 | 6.3 ± 2.4"
+      }
+    },
+    {
+      "id": "control_glucose_iauc",
+      "description": "Incremental area under the glucose curve over 4 h of sitting after the ad libitum meal, no exercise; trapezoid on the 7 samples, baseline = the trial's own baseline sample, area under baseline not stated. Methods: 'iAUC (uU/mL x min for insulin; mg/dL x min for glucose) was calculated and time-normalized ... using the trapezoidal method': the unit printed carries min and the value (1828 mg/dL x min against a mean maximal rise of 47 mg/dL) is far above any rise, so it is not divided by the 240 min span and is entered as an area in mg/dL x min. Per-person areas are driven by each woman's own meal size (r = 0.53 with intake), which the protocol enters as the group mean.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "sitting_control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "unstated",
+      "value": 1828.3,
+      "unit": "mg/dL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2956.9,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, Glucose block, row 'Incremental area under the curve', column 'No Exercise'",
+        "quote": "Incremental area under the curve | 957.9 ± 1735.0 | 2144.0 ± 2399.4 | 1828.3 ± 2956.9"
+      }
+    },
+    {
+      "id": "control_insulin_iauc",
+      "description": "Incremental area under the insulin curve over 4 h of sitting after the ad libitum meal, no exercise; trapezoid on the 7 samples, baseline = the trial's own baseline sample, area under baseline not stated (printed unit uU/mL x min; 6037 against a mean maximal rise of 62.9 uU/mL, so not divided by the span). Per-person areas follow each woman's own meal size (r = 0.82 with intake), which the protocol enters as the group mean.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "sitting_control_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "unstated",
+      "value": 6037.0,
+      "unit": "uU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3571.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, Insulin block, row 'Incremental area under the curve', column 'No Exercise'",
+        "quote": "Incremental area under the curve | 4057.2 ± 2079.8 *# | 5346.7 ± 5000.7 | 6037.0 ± 3571.0"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Exercise-prior-to-sitting arm (30 min at 70% VO2max, Table 2 glucose and insulin columns): the minutes of the bout relative to the baseline sample and to the meal are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Exercise-breaks arm (5 x 6 min at 70% VO2max, Table 2 glucose and insulin columns): the minutes of the breaks within the 4 h are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Maximal difference to baseline of glucose and insulin per trial (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "Minimal difference to baseline of glucose and insulin per trial (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "Heart rate and respiratory quotient at 70% VO2max (Table 1): read at a stage of the ramp test, with no minute within the 30 min bout",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Energy expenditure, carbohydrate and fat oxidation for the 30 min bout (Table 1, kcal and g totals)",
+      "missing": {
+        "kind": "operator",
+        "name": "total_over_own_duration"
+      }
+    },
+    {
+      "what": "HOMA-IR (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    }
+  ]
+}
