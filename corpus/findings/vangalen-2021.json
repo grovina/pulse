@@ -1,0 +1,211 @@
+{
+  "paper": "vangalen-2021",
+  "citation": {
+    "authors": "van Galen KA, Booij J, Schrantee A, Adriaanse SM, Unmehopa UA, Fliers E, Schwartz GJ, DiLeone RJ, et al.",
+    "title": "The response to prolonged fasting in hypothalamic serotonin transporter availability is blunted in obesity",
+    "journal": "Metabolism",
+    "year": 2021,
+    "doi": "10.1016/j.metabol.2021.154839",
+    "pmid": "34331964",
+    "pmcid": "PMC8994212"
+  },
+  "population": {
+    "n": 19,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "unselected",
+    "description": "Nineteen men aged 50-75 y (enrolment criterion) who completed a randomised crossover of 12 h vs 24 h fasting: 10 lean (BMI <25) and 9 with obesity (BMI >30); no medication except thyroid hormone, antihypertensive and lipid-lowering drugs, no somatic disorder except treated hypothyroidism, hypertension, dyslipidaemia. No glucose tolerance test reported, so each group is unselected. Age and BMI are given per group (Table 1) as arm overrides."
+  },
+  "protocols": [
+    {
+      "name": "lean_fast12",
+      "description": "Venous blood sample of the lean men after a 12-h overnight fast (stated: 'a 12-h overnight fast'; fast = no food or drink except tap water, started exactly 12 h before the first brain scan, after a 72-h eucaloric diet 50/30/20 % carbohydrate/fat/protein). The sample time and duration are not printed. The paper's own clock puts the end of the 12-h fast at the first brain scan, 10-12 AM (the 24-h fast 'started at 10-12 AM on the day before neuroimaging'), so minute 0 is set to 10.5 h and a 30 min run-in is assumed.",
+      "duration_min": 30,
+      "start_hour": 10.5,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 64.0,
+          "sd": 7.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.0,
+          "sd": 1.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "obese_fast12",
+      "description": "Venous blood sample of the men with obesity after a 12-h overnight fast (stated: 'a 12-h overnight fast'; fast = no food or drink except tap water, started exactly 12 h before the first brain scan, after a 72-h eucaloric diet 50/30/20 % carbohydrate/fat/protein). The sample time and duration are not printed. The paper's own clock puts the end of the 12-h fast at the first brain scan, 10-12 AM (the 24-h fast 'started at 10-12 AM on the day before neuroimaging'), so minute 0 is set to 10.5 h and a 30 min run-in is assumed.",
+      "duration_min": 30,
+      "start_hour": 10.5,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 65.0,
+          "sd": 8.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 32.6,
+          "sd": 2.8,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "lean_fast12_glucose",
+      "description": "Fasting plasma glucose of the lean men after the 12-h fast, mean and SD (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose (mmol/L)', column 'lean men'",
+        "quote": "Glucose (mmol/L) | 4.8 ± 0.4"
+      }
+    },
+    {
+      "id": "obese_fast12_glucose",
+      "description": "Fasting plasma glucose of the men with obesity after the 12-h fast, mean and SD (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.4,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose (mmol/L)', column 'men with obesity'",
+        "quote": "Glucose (mmol/L) | 5.5 ± 1.4"
+      }
+    },
+    {
+      "id": "lean_fast12_rq",
+      "description": "Respiratory quotient of the lean men after the 12-h fast, mean and SD (Table 1; measured by indirect calorimetry together with REE, so presumably at rest; the paper does not say 'at rest' or the clock time)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.78,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.07,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column 'lean men'",
+        "quote": "RQ | 0.78 ± 0.07"
+      }
+    },
+    {
+      "id": "obese_fast12_rq",
+      "description": "Respiratory quotient of the men with obesity after the 12-h fast, mean and SD (Table 1; measured by indirect calorimetry together with REE, so presumably at rest; the paper does not say 'at rest' or the clock time)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.77,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.05,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, row 'RQ', column 'men with obesity'",
+        "quote": "RQ | 0.77 ± 0.05"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting FFA, insulin, glucagon, leptin, ghrelin after the 12-h fast, printed as median [IQR] (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "24-h fast values: printed only as percentage difference from the 12-h value (Table 2; glucose, FFA, glucagon, leptin as mean ± SD of percent change, insulin and ghrelin as median [IQR]); no absolute 24-h values",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "leptin and ghrelin levels (Table 1) and their 24-h changes",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "REE in kcal/kg/day (Table 1) and its 24-h percent change",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "SPECT hypothalamic/thalamic SERT and striatal DAT binding potentials; anthropometrics (Tables 1-2)",
+      "missing": {
+        "kind": "marker",
+        "name": "serotonin_dopamine_transporter_binding"
+      }
+    }
+  ]
+}
