@@ -1,0 +1,376 @@
+{
+  "paper": "revheim-2024",
+  "citation": {
+    "authors": "Revheim I, Ballance S, Standal AF et al.",
+    "title": "The acute effect of a β-glucan-enriched oat bread on gastric emptying, GLP-1 response, and postprandial glycaemia and insulinemia: a randomised crossover trial in healthy adults",
+    "journal": "Nutrition & Metabolism",
+    "year": 2024,
+    "doi": "10.1186/s12986-024-00789-w",
+    "pmid": "38500209",
+    "pmcid": "PMC10949669"
+  },
+  "population": {
+    "n": 22,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 24.6,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.1,
+      "sd": 2.7,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "22 healthy adults (8 men, 14 women) who completed the crossover trial; enrolment 18-40 y, BMI 18.5-30 kg/m2, fasting glucose <= 7 mmol/L and HbA1c <= 48 mmol/mol (Table 2: age 24.6 ± 3.1 y, BMI 23.1 ± 2.7 kg/m2, mean ± SD)."
+  },
+  "protocols": [
+    {
+      "name": "oat_bread",
+      "description": "Visit at 8:15 a.m. after an overnight fast; beta-glucan-enriched oat bread (94.1 g) with 250 mL water, eaten within 10 min (mean 7.1 min), standardised to 25 g available carbohydrate (Table 1: fat 2.9 g, protein 7.6 g, total fibre 5.5 g, sugar 1.1 g, total beta-glucan 3.6 g); blood at 0, 15, 30, 45, 60, 90, 120 min after the start of eating. The paper says the study breads contain gluten proteins (Discussion), so protein_source is 'plant'. Fat types not printed. start_hour taken as the 8:15 visit time (meal start not stated); prefast_hours not stated.",
+      "duration_min": 121,
+      "start_hour": 8.25,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 25.0,
+          "fat_g": 2.9,
+          "protein_g": 7.6,
+          "fibre_g": 5.5,
+          "sugars_g": 1.1,
+          "protein_source": "plant",
+          "form": "solid",
+          "food": "beta-glucan-enriched oat bread, 94.1 g, with 250 mL water"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "wheat_bread",
+      "description": "The same visit with whole-wheat bread (60.1 g) with 250 mL water, standardised to 25 g available carbohydrate (Table 1: fat 3.1 g, protein 4.1 g, total fibre 2.4 g, sugar 1.6 g, total beta-glucan 0.2 g); blood at 0, 15, 30, 45, 60, 90, 120 min. The paper says the study breads contain gluten proteins (Discussion), so protein_source is 'plant'. Fat types not printed. start_hour taken as the 8:15 visit time (meal start not stated); prefast_hours not stated.",
+      "duration_min": 121,
+      "start_hour": 8.25,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 25.0,
+          "fat_g": 3.1,
+          "protein_g": 4.1,
+          "fibre_g": 2.4,
+          "sugars_g": 1.6,
+          "protein_source": "plant",
+          "form": "solid",
+          "food": "whole-wheat bread, 60.1 g, with 250 mL water"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_morning",
+      "description": "The fasting state at the start of a study visit (attendance 8:15 a.m. after an overnight fast); Methods define baseline as 'the clinical data collected in the fasting state (t = 0 min)' but Table 2 does not say at which visit or minute the values were drawn, so a short fasted window is assumed",
+      "duration_min": 30,
+      "start_hour": 8.25,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "oat_glucose_tmax",
+      "description": "Time to the glucose peak (Tmax) after the oat bread, mean ± SD (capillary blood glucose samples)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "oat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 42.3,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.7,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (Tmax, oat vs wheat)",
+        "quote": "42.3 ± 18.7 vs. 42.3 ± 11.0 min, p > 0.99"
+      }
+    },
+    {
+      "id": "wheat_glucose_tmax",
+      "description": "Time to the glucose peak (Tmax) after the wheat bread, mean ± SD (capillary blood glucose samples)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "wheat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 42.3,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (Tmax, oat vs wheat)",
+        "quote": "42.3 ± 18.7 vs. 42.3 ± 11.0 min, p > 0.99"
+      }
+    },
+    {
+      "id": "oat_insulin_cmax",
+      "description": "Peak (Cmax) of serum insulin over 0-120 min after the oat bread, mean ± SD. The paper prints the unit as 'mLU/L' here and 'mlU/L' elsewhere, read as mIU/L (= mU/L; fasting 5.2 in the same unit).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "oat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 21.3,
+      "unit": "mIU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.4,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin Cmax, oat vs wheat)",
+        "quote": "21.3 ± 9.4 vs. 32.0 ± 17.7 mLU/L, p = 0.001"
+      }
+    },
+    {
+      "id": "wheat_insulin_cmax",
+      "description": "Peak (Cmax) of serum insulin over 0-120 min after the wheat bread, mean ± SD. The paper prints the unit as 'mLU/L' here and 'mlU/L' elsewhere, read as mIU/L (= mU/L; fasting 5.2 in the same unit).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "wheat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 32.0,
+      "unit": "mIU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 17.7,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin Cmax, oat vs wheat)",
+        "quote": "21.3 ± 9.4 vs. 32.0 ± 17.7 mLU/L, p = 0.001"
+      }
+    },
+    {
+      "id": "oat_insulin_tmax",
+      "description": "Time to the insulin peak (Tmax) after the oat bread, mean ± SD",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "oat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 49.8,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.2,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin Tmax, oat vs wheat)",
+        "quote": "49.8 ± 18.2 vs. 51.1 ± 21.0 min, p > 0.99"
+      }
+    },
+    {
+      "id": "wheat_insulin_tmax",
+      "description": "Time to the insulin peak (Tmax) after the wheat bread, mean ± SD",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "wheat_bread"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 121
+      },
+      "value": 51.1,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 21.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin Tmax, oat vs wheat)",
+        "quote": "49.8 ± 18.2 vs. 51.1 ± 21.0 min, p > 0.99"
+      }
+    },
+    {
+      "id": "oat_insulin_iauc",
+      "description": "Incremental area under the serum insulin curve 0-120 min after the oat bread (iAUC2h), trapezoidal rule ignoring the area below fasting values (Methods, Calculations), mean ± SD; samples at 0, 15, 30, 45, 60, 90, 120 min",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "oat_bread"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 938,
+      "unit": "mIU/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 440,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin iAUC2h, oat vs wheat)",
+        "quote": "938 ± 440 vs. 1440 ± 722 mlU/L*min, p < 0.001"
+      }
+    },
+    {
+      "id": "wheat_insulin_iauc",
+      "description": "Incremental area under the serum insulin curve 0-120 min after the wheat bread (iAUC2h), trapezoidal rule ignoring the area below fasting values (Methods, Calculations), mean ± SD; samples at 0, 15, 30, 45, 60, 90, 120 min",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "wheat_bread"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "ignored",
+      "value": 1440,
+      "unit": "mIU/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 722,
+        "n": 22
+      },
+      "location": {
+        "where": "Results, Glycaemic and insulinemic responses (insulin iAUC2h, oat vs wheat)",
+        "quote": "938 ± 440 vs. 1440 ± 722 mlU/L*min, p < 0.001"
+      }
+    },
+    {
+      "id": "fasting_insulin",
+      "description": "Fasting serum insulin of all 22 participants, mean ± SD (Table 2, Total column). The table prints the unit as 'mlU/L', read as mIU/L (the Results print 'mLU/L' and 'mlU/L' for the same quantity; the levels, 5.2 fasting and 21 to 32 at the peak, fit mIU/L). Table 2 does not say at which visit or minute the sample was drawn; Methods define baseline as the fasting state at t = 0 min.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.2,
+      "unit": "mIU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.6,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 2, column Total (n = 22)",
+        "quote": "Fasting insulin (mlU/L) | 5.2 ± 2.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Capillary blood glucose levels: Cmax (Results) and fasting (Table 2, Total column). The paper's Table 2 footnote puts its capillary values on a whole-blood scale (plasma glucose divided by 1.11), about 10% below the plasma glucose the model carries; only Tmax, a time, is entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "Glucose iAUC2h (38.9 vs 87.1 mmol/L*min) and GLP-1 iAUC2h (139 vs 50 pM*min): printed as geometric means with 95% CI after log-transformation, not arithmetic means",
+      "missing": {
+        "kind": "operator",
+        "name": "geometric_mean"
+      }
+    },
+    {
+      "what": "GLP-1 time course (Fig. 3) and glucose and insulin curves (Fig. 4): the curve values are in the figures only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Gastric emptying by antrum ultrasound: T1/2, Tlag, rate constant k and peak antrum cross-sectional area (Results, Gastric emptying)",
+      "missing": {
+        "kind": "marker",
+        "name": "gastric_emptying_ultrasound"
+      }
+    },
+    {
+      "what": "Differences between breads (p-values and the mixed-model treatment effect): no between-bread difference with its own uncertainty is printed",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "Systolic BP 111.1 ± 65.1 mmHg (Table 2): the SD is implausible beside the sex columns (13.5 and 5.5); not entered",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "HbA1c, 30.2 mmol/mol (Table 2, total and by sex)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    }
+  ]
+}
