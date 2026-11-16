@@ -1,0 +1,794 @@
+{
+  "paper": "rossmeislova-2024",
+  "citation": {
+    "authors": "Rossmeislova L, et al.",
+    "title": "Obesity alters adipose tissue response to fasting and refeeding in women: A study on lipolytic and endocrine dynamics and acute insulin resistance",
+    "journal": "Heliyon",
+    "year": 2024,
+    "doi": "10.1016/j.heliyon.2024.e37875",
+    "pmid": "39328508",
+    "pmcid": "PMC11425135"
+  },
+  "population": {
+    "n": 20,
+    "sex": "female",
+    "age_years": {
+      "mean": 35.35,
+      "sd": 7.15,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.49,
+      "sd": 1.89,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Lean group (BMI 18-25 allowed, n = 20 completers) of 38 premenopausal women aged 25-45 (20 lean, 18 with obesity, BMI 30-40 allowed); Table 1 age and baseline BMI mean ± SD, no observed range printed. Diabetes was an exclusion criterion but no screening test result is reported, so status is unselected. Protocol overrides give the obese group (n = 18) and the D3 BMI of each group."
+  },
+  "protocols": [
+    {
+      "name": "lean_d0",
+      "description": "Baseline (D0, one week before the intervention) sample of the lean group; Table 2 does not say when the sample was drawn, so it is entered on a fasted morning: 08:00 start, 10 h without food, a 30-minute run-in standing for the single sample (the paper's OGTT at D0 was 'after an overnight fast').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "lean_d3",
+      "description": "Sample of the lean group after the 60-h fast (D3); the paper states a 60-h fast (subjects hospitalised to monitor compliance; the paper does not say whether water was allowed or how long after the end of the fast the D3 sample was taken, so the sample is taken as at 60 h); prefast_hours 60 is that stated length (the sample is read at minutes 29-30 of a 30-minute run-in). The paper does not give the clock hour or when the blood was drawn on D3, so start_hour 8.0 and duration_min 30 are assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 60,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 35.35,
+          "sd": 7.15,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.87,
+          "sd": 1.94,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "obese_d0",
+      "description": "Baseline (D0, one week before the intervention) sample of the obese group; Table 2 does not say when the sample was drawn, so it is entered on a fasted morning: 08:00 start, 10 h without food, a 30-minute run-in standing for the single sample (the paper's OGTT at D0 was 'after an overnight fast').",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 36.46,
+          "sd": 7.3,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 33.7,
+          "sd": 4.4,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    },
+    {
+      "name": "obese_d3",
+      "description": "Sample of the obese group after the 60-h fast (D3); the paper states a 60-h fast (subjects hospitalised to monitor compliance; the paper does not say whether water was allowed or how long after the end of the fast the D3 sample was taken, so the sample is taken as at 60 h); prefast_hours 60 is that stated length (the sample is read at minutes 29-30 of a 30-minute run-in). The paper does not give the clock hour or when the blood was drawn on D3, so start_hour 8.0 and duration_min 30 are assumed.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 60,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 36.46,
+          "sd": 7.3,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 32.74,
+          "sd": 4.41,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "lean_d0_glucose",
+      "description": "Blood glucose (hospital laboratory analysis; the paper says blood glucose and does not print plasma or whole blood) in lean women at baseline (D0), mean and SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.82,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.27,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mM)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Glucose (mM) | 4.82 ± 0.27"
+      }
+    },
+    {
+      "id": "lean_d3_glucose",
+      "description": "Blood glucose (hospital laboratory analysis; the paper says blood glucose and does not print plasma or whole blood) in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 3.53,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.46,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mM)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Glucose (mM) | 3.53 ± 0.46"
+      }
+    },
+    {
+      "id": "obese_d0_glucose",
+      "description": "Blood glucose (hospital laboratory analysis; the paper says blood glucose and does not print plasma or whole blood) in women with obesity at baseline (D0), mean and SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.04,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.29,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mM)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Glucose (mM) | 5.04 ± 0.29"
+      }
+    },
+    {
+      "id": "obese_d3_glucose",
+      "description": "Blood glucose (hospital laboratory analysis; the paper says blood glucose and does not print plasma or whole blood) in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.08,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.45,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mM)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Glucose (mM) | 4.08 ± 0.45"
+      }
+    },
+    {
+      "id": "lean_d0_insulin",
+      "description": "Serum insulin in lean women at baseline (D0), mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.96,
+      "unit": "μIU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.28,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin (μIU/ml)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Insulin (μIU/ml) | 4.96 ± 2.28"
+      }
+    },
+    {
+      "id": "lean_d3_insulin",
+      "description": "Serum insulin in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 3.85,
+      "unit": "μIU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.04,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin (μIU/ml)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Insulin (μIU/ml) | 3.85 ± 2.04"
+      }
+    },
+    {
+      "id": "obese_d0_insulin",
+      "description": "Serum insulin in women with obesity at baseline (D0), mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 16.4,
+      "unit": "μIU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.5,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin (μIU/ml)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Insulin (μIU/ml) | 16.40 ± 11.50"
+      }
+    },
+    {
+      "id": "obese_d3_insulin",
+      "description": "Serum insulin in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 8.59,
+      "unit": "μIU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.83,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Insulin (μIU/ml)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Insulin (μIU/ml) | 8.59 ± 5.83"
+      }
+    },
+    {
+      "id": "lean_d0_glucagon",
+      "description": "Glucagon in lean women at baseline (D0), mean and SD",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 42.23,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.04,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon (pg/ml)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Glucagon (pg/ml) | 42.23 ± 18.04"
+      }
+    },
+    {
+      "id": "lean_d3_glucagon",
+      "description": "Glucagon in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 54.47,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 19.93,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon (pg/ml)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Glucagon (pg/ml) | 54.47 ± 19.93"
+      }
+    },
+    {
+      "id": "obese_d0_glucagon",
+      "description": "Glucagon in women with obesity at baseline (D0), mean and SD",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 51.54,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.37,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon (pg/ml)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "Glucagon (pg/ml) | 51.54 ± 12.37"
+      }
+    },
+    {
+      "id": "obese_d3_glucagon",
+      "description": "Glucagon in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 56.42,
+      "unit": "pg/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.29,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon (pg/ml)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "Glucagon (pg/ml) | 56.42 ± 14.29"
+      }
+    },
+    {
+      "id": "lean_d0_ffa",
+      "description": "Free fatty acids in lean women at baseline (D0), mean and SD",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.56,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.2,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'FFA (mM)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "FFA (mM) | 0.56 ± 0.20"
+      }
+    },
+    {
+      "id": "lean_d3_ffa",
+      "description": "Free fatty acids in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1.38,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.41,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'FFA (mM)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "FFA (mM) | 1.38 ± 0.41"
+      }
+    },
+    {
+      "id": "obese_d0_ffa",
+      "description": "Free fatty acids in women with obesity at baseline (D0), mean and SD",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.63,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.26,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'FFA (mM)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "FFA (mM) | 0.63 ± 0.26"
+      }
+    },
+    {
+      "id": "obese_d3_ffa",
+      "description": "Free fatty acids in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1.06,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.23,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'FFA (mM)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "FFA (mM) | 1.06 ± 0.23"
+      }
+    },
+    {
+      "id": "lean_d0_bhb",
+      "description": "3-hydroxybutyrate (3BH, beta-hydroxybutyrate, umol/L) in lean women at baseline (D0), mean and SD",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 84.65,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 59.27,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row '3BH (μM)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "3BH (μM) | 84.65 ± 59.27"
+      }
+    },
+    {
+      "id": "lean_d3_bhb",
+      "description": "3-hydroxybutyrate (3BH, beta-hydroxybutyrate, umol/L) in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 2819.0,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 875.42,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row '3BH (μM)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "3BH (μM) | 2819.00 ± 875.42"
+      }
+    },
+    {
+      "id": "obese_d0_bhb",
+      "description": "3-hydroxybutyrate (3BH, beta-hydroxybutyrate, umol/L) in women with obesity at baseline (D0), mean and SD",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 51.22,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 26.7,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row '3BH (μM)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "3BH (μM) | 51.22 ± 26.70"
+      }
+    },
+    {
+      "id": "obese_d3_bhb",
+      "description": "3-hydroxybutyrate (3BH, beta-hydroxybutyrate, umol/L) in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1416.22,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 740.78,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row '3BH (μM)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "3BH (μM) | 1416.22 ± 740.78"
+      }
+    },
+    {
+      "id": "lean_d0_lactate",
+      "description": "Lactate in lean women at baseline (D0), mean and SD",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 986.55,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 227.04,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'lactate (μM)', column 'Lean, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "lactate (μM) | 986.55 ± 227.04"
+      }
+    },
+    {
+      "id": "lean_d3_lactate",
+      "description": "Lactate in lean women after the 60-h fast (D3), mean and SD",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1204.9,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 245.47,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'lactate (μM)', column 'Lean, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "lactate (μM) | 1204.90 ± 245.47"
+      }
+    },
+    {
+      "id": "obese_d0_lactate",
+      "description": "Lactate in women with obesity at baseline (D0), mean and SD",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d0"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1387.17,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 420.2,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'lactate (μM)', column 'Obese, Baseline' (footnote: values are mean ± STDEV)",
+        "quote": "lactate (μM) | 1387.17 ± 420.20"
+      }
+    },
+    {
+      "id": "obese_d3_lactate",
+      "description": "Lactate in women with obesity after the 60-h fast (D3), mean and SD",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_d3"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 1253.78,
+      "unit": "μM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 282.52,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2, row 'lactate (μM)', column 'Obese, Fasting' (footnote: values are mean ± STDEV)",
+        "quote": "lactate (μM) | 1253.78 ± 282.52"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glycerol at each phase (Table 2, 'GLY')",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
+      }
+    },
+    {
+      "what": "OGTT AUC of glucose and of insulin at baseline, after the 60-h fast and after refeeding (Table 2): no unit printed for the areas",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "D5 values after 48 h of standardised refeeding (Table 2, 'Refeeding' columns, all markers): the state follows 60 h of fasting and two days of meals the model cannot be told as a prior condition",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "glucose, insulin, FFA, glycerol, glucagon curves during the OGTT at each phase (Fig. 2A, 2B): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "relative change D3-D0 of glucose, OGTT AUC glucose and OGTT AUC insulin, as percent (Results text)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    },
+    {
+      "what": "insulin per body mass, glucagon/insulin ratio, HOMA-IR, Matsuda index, AdipoIR, AdipoSLIP, FFA per fat mass and per fat-free mass (Table 2): derived indices",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "leucine and valine (valine in Table 2, leucine in text)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    },
+    {
+      "what": "triacylglycerol at baseline, fasting and refeeding (Table 1, TAG)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "total cholesterol, HDL and LDL cholesterol (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "circulating leptin, adiponectin and other adipokines (Fig. 2C): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "resting metabolic rate and respiratory quotient (Supplemental Table S2, not in the paper text)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "body composition (weight, fat mass, fat-free mass, waist, hip; Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
