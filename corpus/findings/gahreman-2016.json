@@ -1,0 +1,317 @@
+{
+  "paper": "gahreman-2016",
+  "citation": {
+    "authors": "Gahreman DE, et al.",
+    "title": "Green tea, intermittent sprinting exercise, and fat oxidation (trained and untrained males)",
+    "journal": "J Exerc Nutr Biochem",
+    "year": 2016,
+    "doi": "10.20463/jenb.2016.03.20.1.1",
+    "pmid": "27298806",
+    "pmcid": "PMC4899895"
+  },
+  "population": {
+    "n": 14,
+    "sex": "male",
+    "age_years": {
+      "mean": 25.14,
+      "sd": 5.72,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 25.66,
+      "sd": 3.82,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The 14 untrained males (Table 1: age 25.14 +/- 1.53 yr, BMI 25.66 +/- 1.02, mean and SEM). SDs computed as SEM x sqrt(14): age 1.53 x 3.742 = 5.72; BMI 1.02 x 3.742 = 3.82. Paper describes 28 'healthy volunteer, non-smoking' males; n = 14 per group is from the abstract ('Fourteen trained and 14 untrained males'); the 14 trained males (VO2max > 55 mL/kg/min required) are not entered because they are a group set apart by aerobic fitness, a trait the model cannot be told. Untrained: no regular aerobic or anaerobic exercise for the last year; no regular coffee or green tea drinkers."
+  },
+  "protocols": [
+    {
+      "name": "fasted_rest_untrained",
+      "description": "Fasting blood glucose of the untrained men at the preliminary visit (Table 1; Methods: 'arrived at the laboratory between 07:00 and 09:00 after an approximate 10-hour overnight NPO'; 'fasting blood glucose level' assessed; blood from an antecubital vein). Short fasted arm of 30 min for a single sample read at its last minute; the sample's time, and the clock hour, are not printed. The 10 h is the paper's 'approximate' figure, so it is assumed here.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "ise_placebo_untrained",
+      "description": "Placebo (cellulose capsules, 500 mg, no digestible carbohydrate; last capsule 90 min before exercise) session of the untrained men after an approximate 10-h overnight NPO, no food or drink entered. Minute 0 = start of supine rest (10 min rest then 30 min RQ measurement = 40 min of rest, 0-40). Warm-up 5 min at 30 W (40-45): level 30/186 = 0.161. Interval sprint exercise 20 min (45-65) = sixty 8-s sprints (65% of maximal power) each followed by 12 s easy pedalling (about 25%): the level is one constant for the whole bout, taken from the measured VO2 'Exercise' column of Table 3, untrained placebo 27.8 mL/kg/min: (27.8 - 3.7)/31.7 = 24.1/31.7 = 0.760. The paper does not say how the 'Exercise' VO2 was summarised over the intermittent bout (a mean over the 20 min is the natural reading), so 0.760 stands for the bout's average and the model is not told of the 8 s/12 s alternation. Cool-down 5 min at 30 W (65-70): 0.161. Post-exercise minutes of Table 3 (15, 30, 45, 60) are counted from the end of the 20-min exercise (minute 65): 80, 95, 110, 125; the paper does not say whether post-exercise time starts at the end of the exercise, of the cool-down (5 min later) or after the 10 min of rest for gas calibration that follows it, and the contiguity of rest, warm-up, exercise and cool-down is assumed. Lactate samples 'at 7 and 20 minutes during exercise' are entered at minutes 52 and 65 (45 + 7, 45 + 20: the state after that many minutes of exercise).",
+      "duration_min": 130,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 40,
+            "to_min": 45,
+            "level": 0.161
+          },
+          {
+            "from_min": 45,
+            "to_min": 65,
+            "level": 0.76
+          },
+          {
+            "from_min": 65,
+            "to_min": 70,
+            "level": 0.161
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_untrained",
+      "description": "Fasting blood glucose of the untrained men (Table 1, preliminary visit after an approximate 10-h overnight NPO), read at the last minute of the short fasted arm. Caveat: the paper does not name the glucose assay or say whether it is plasma or whole blood (the Cholestech LDX whole-blood analyser is named for the lipids only), so it may be a whole-blood value.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest_untrained"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.14,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose (mmol/L)', Untrained Mean and SEM columns",
+        "quote": "Glucose (mmol/L) | 5.20 | 0.14"
+      }
+    },
+    {
+      "id": "rest_hr_placebo_untrained",
+      "description": "Heart rate at rest, placebo condition, untrained men (Table 3 'Rest'); taken as the mean over the 40-min supine rest (0-40), the table does not say when within rest",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ise_placebo_untrained"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 40
+      },
+      "value": 60.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate (bpm) Untrained, Placebo, Rest column",
+        "quote": "Placebo | 60± 1# | 150± 4 | 79± 2 | 73± 2 | 70± 2 | 70± 2"
+      }
+    },
+    {
+      "id": "exercise_hr_placebo_untrained",
+      "description": "Heart rate during the interval sprint exercise, placebo, untrained men (Table 3 'Exercise'); taken as the mean over the 20 min of exercise (45-65); the table does not say how HR was summarised over the bout (mean, end or peak)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ise_placebo_untrained"
+      ],
+      "window": {
+        "start_min": 45,
+        "end_min": 65
+      },
+      "value": 150.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 14
+      },
+      "location": {
+        "where": "Table 3, Heart rate (bpm) Untrained, Placebo, Exercise column",
+        "quote": "Placebo | 60± 1# | 150± 4 | 79± 2 | 73± 2 | 70± 2 | 70± 2"
+      }
+    },
+    {
+      "id": "post_hr_curve_placebo_untrained",
+      "description": "Heart rate 15, 30, 45 and 60 min after the exercise, placebo, untrained men (Table 3), at minutes 80, 95, 110, 125 of the arm; each a one-minute reading",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "ise_placebo_untrained"
+      ],
+      "unit": "bpm",
+      "points": [
+        {
+          "t_min": 80,
+          "value": 79.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 95,
+          "value": 73.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 110,
+          "value": 70.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 125,
+          "value": 70.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2,
+            "n": 14
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, Heart rate (bpm) Untrained, Placebo, Post-exercise 15, 30, 45, 60 minutes",
+        "quote": "Placebo | 60± 1# | 150± 4 | 79± 2 | 73± 2 | 70± 2 | 70± 2"
+      }
+    },
+    {
+      "id": "exercise_lactate_curve_placebo_untrained",
+      "description": "Blood lactate at 7 and 20 min of the interval sprint exercise, placebo, untrained men (Table 2; Accutrend whole-blood monitor named for the rest sample, cannula blood), at minutes 52 and 65 of the arm (45 + 7 and 45 + 20)",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "ise_placebo_untrained"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 52,
+          "value": 4.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.3,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 65,
+          "value": 5.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.5,
+            "n": 14
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, rows 'Lactate (mmol/L) at 7 min' and 'at 20 min', Untrained Placebo column",
+        "quote": "Lactate (mmol/L) at 7 min | 3.7± 0.3 | 3.6± 0.3 | 4.1± 0.3# | 3.9± 0.3* ; Lactate (mmol/L) at 20 min | 3.9± 0.4 | 3.9± 0.3 | 5.2± 0.5# | 5.2± 0.4*"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all values of the 14 trained males (Tables 1-3): a group set apart by aerobic fitness (cyclists and triathletes with VO2max above 55 mL/kg/min, against untrained men), which the model cannot be told, so only the untrained reference group is entered",
+      "missing": {
+        "kind": "population",
+        "name": "aerobic_fitness_group"
+      }
+    },
+    {
+      "what": "all green tea arms (250 mg extract, 125 mg EGCG, 20 mg caffeine capsules): Tables 2 and 3, RER, fat oxidation, glycerol and catecholamines",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "VO2 at rest, during exercise and 15-60 min after (Table 3), in mL/kg/min",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    },
+    {
+      "what": "plasma glycerol (Figure 2) and epinephrine and norepinephrine (Figure 3): figures only, glycerol and norepinephrine are not markers",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "fat oxidation rate and carbohydrate oxidation (Figure 1 and text, percentage increases)",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "RER at rest and 30-75 min after exercise (Results text), printed for both groups combined, so not for the untrained alone",
+      "missing": {
+        "kind": "operator",
+        "name": "pooled_over_arms"
+      }
+    },
+    {
+      "what": "mean power output of the 8-s sprints, RPE, pedal resistance (Table 2): inputs or ratings; the exercise level is taken from the measured VO2",
+      "missing": {
+        "kind": "marker",
+        "name": "perceived_exertion"
+      }
+    },
+    {
+      "what": "lactate at rest and at 30 and 60 min after exercise, measured but not printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "total cholesterol, HDL, LDL and TC/HDL, untrained and trained (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "triglycerides, untrained and trained (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "resting heart rate of the untrained men at the preliminary visit (Table 1, 'Resting heart rate (bpm)'): no moment or posture is printed; the same men's supine resting heart rate is entered once, from Table 3",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    }
+  ]
+}
