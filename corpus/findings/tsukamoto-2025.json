@@ -1,0 +1,264 @@
+{
+  "paper": "tsukamoto-2025",
+  "citation": {
+    "authors": "Tsukamoto H, et al.",
+    "title": "Acute high-cocoa flavanol intake and cognitive fatigue during aerobic exercise with prolonged cognitive load (crossover; low-flavanol arm entered)",
+    "journal": "Psychopharmacology (Berl)",
+    "year": 2025,
+    "doi": "10.1007/s00213-025-06826-7",
+    "pmid": "40493074",
+    "pmcid": "PMC12675728"
+  },
+  "population": {
+    "n": 18,
+    "sex": "male",
+    "age_years": {
+      "mean": 22.0,
+      "sd": 2.0,
+      "min": 20.0,
+      "max": 25.0
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Eighteen healthy males, 22 +/- 2 years (range 20-25), height 172.5 +/- 6.7 cm, body mass 65.6 +/- 4.7 kg, VO2peak 46 +/- 4 mL/kg/min; free from neurological, cardiovascular or pulmonary disorders, no medication, nonsmokers. BMI is not printed, so left null. The paper does not report glucose tolerance testing; 'healthy' is the paper's own word."
+  },
+  "protocols": [
+    {
+      "name": "lcf_fasted_rest",
+      "description": "Low-cocoa-flavanol (LCF, 50 mg, control) trial, morning visit after a 12 h food abstention. Minute 0 is arrival (cannula inserted). 10 min rest then a 5-min Stroop task, so the baseline HR, BP and blood sample is taken from about minute 15 (window 15-16, derived: 10 + 5 min). The LCF capsule (50 mg flavanol; the paper prints no other contents, so entered as no meal) is then given, and the second resting sample is 1 h after it: minute 15 + 60 = 75 (window 75-76; the time the baseline measures took is not printed and taken as zero). The 50-min cycling bout that follows is not entered because every post-exercise number that is a mean +/- SD is a marker the model does not carry.",
+      "duration_min": 76,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "baseline_glucose",
+      "description": "Fasting resting blood glucose before the capsule, LCF trial, mean +/- SD; photometric assay on a 1-mL syringe blood sample from the cannula (whole blood or plasma not stated), so a blood-glucose reading",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 85.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1 (baseline), LCF column, row 'Glucose, mg/dL'",
+        "quote": "Glucose, mg/dL | 85 ± 7"
+      }
+    },
+    {
+      "id": "baseline_sbp",
+      "description": "Resting systolic blood pressure before the capsule, LCF trial",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 113.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1 (baseline), LCF column, row 'Systolic, mmHg'",
+        "quote": "Systolic, mmHg | 113 ± 10"
+      }
+    },
+    {
+      "id": "baseline_dbp",
+      "description": "Resting diastolic blood pressure before the capsule, LCF trial",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 15,
+        "end_min": 16
+      },
+      "value": 74.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1 (baseline), LCF column, row 'Diastolic, mmHg'",
+        "quote": "Diastolic, mmHg | 74 ± 5"
+      }
+    },
+    {
+      "id": "rest1h_sbp",
+      "description": "Resting systolic blood pressure 1 h after the LCF capsule",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 75,
+        "end_min": 76
+      },
+      "value": 119.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2 (rest 1 h after capsule), LCF column, row 'Systolic, mm Hg'",
+        "quote": "Systolic, mm Hg | 119 ± 10"
+      }
+    },
+    {
+      "id": "rest1h_dbp",
+      "description": "Resting diastolic blood pressure 1 h after the LCF capsule",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 75,
+        "end_min": 76
+      },
+      "value": 76.0,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2 (rest 1 h after capsule), LCF column, row 'Diastolic, mm Hg'",
+        "quote": "Diastolic, mm Hg | 76 ± 8"
+      }
+    },
+    {
+      "id": "rest1h_lactate",
+      "description": "Resting blood lactate 1 h after the LCF capsule, before the exercise bout (Lactate Pro2)",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lcf_fasted_rest"
+      ],
+      "window": {
+        "start_min": 75,
+        "end_min": 76
+      },
+      "value": 1.6,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 2 (rest 1 h after capsule), LCF column, row 'Lactate, mM'",
+        "quote": "Lactate, mM | 1.6 ± 0.3"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Heart rate at baseline, 1 h after capsule and during the bout (Tables 1-2, Results text): median [IQR] only",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Baseline lactate (Table 1), glucose 1 h after capsule (Table 2) and glucose and lactate after the bout (Table 3): median [IQR] only",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Mean arterial pressure (Tables 1-2): a derived index, not a marker",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Post-exercise findings of the 50-min cycling bout (60% VO2peak, 149 +/- 16 W): the only post-bout numbers are medians [IQR] (glucose, lactate, HR) or markers the model lacks",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Haemoglobin (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "hemoglobin"
+      }
+    },
+    {
+      "what": "Haematocrit (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "hematocrit"
+      }
+    },
+    {
+      "what": "Relative change in plasma volume (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "relative_plasma_volume"
+      }
+    },
+    {
+      "what": "Plasma TBARS (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "tbars"
+      }
+    },
+    {
+      "what": "Plasma BDNF (Tables 1-3)",
+      "missing": {
+        "kind": "marker",
+        "name": "bdnf"
+      }
+    },
+    {
+      "what": "Visual analogue scales, felt arousal, RPE, Stroop reaction times and errors (Tables 1-5)",
+      "missing": {
+        "kind": "marker",
+        "name": "cognitive_performance"
+      }
+    },
+    {
+      "what": "High-cocoa-flavanol (500 mg) arm, all values (Tables 1-5): a flavanol dose the model has no input for",
+      "missing": {
+        "kind": "input",
+        "name": "cocoa_flavanol"
+      }
+    }
+  ]
+}
