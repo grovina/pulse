@@ -1,0 +1,198 @@
+{
+  "paper": "fujita-2022",
+  "citation": {
+    "authors": "Fujita S, et al.",
+    "title": "Four features of temporal patterns characterize similarity among individuals and molecules by glucose ingestion",
+    "journal": "NPJ Systems Biology and Applications",
+    "year": 2022,
+    "doi": "10.1038/s41540-022-00213-0",
+    "pmid": "35136093",
+    "pmcid": "PMC8826934"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 29.0,
+      "sd": 9.0,
+      "min": 20.0,
+      "max": 54.0
+    },
+    "bmi": {
+      "mean": 20.8,
+      "sd": 2.2,
+      "min": 17.5,
+      "max": 25.7
+    },
+    "status": "healthy",
+    "description": "Twenty healthy subjects (6 women, 14 men), Table 1; age and BMI as printed (mean ± SD, observed range). Recruited by snowball sampling; the paper does not state their nationality."
+  },
+  "protocols": [
+    {
+      "name": "ogtt_75g",
+      "description": "75 g glucose solution (TRELAN-G75) ingested within a few minutes after a 10 h overnight fast, in the morning; read at 120 min",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasted",
+      "description": "Fasting sample after the 10 h overnight fast, in the morning; short run-in. Methods: fasting samples were drawn twice before the load; Table 1 does not say whether its fasting value is the mean of the two or the 0 min sample, so it is entered as one fasted sample.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 96.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column N = 20 (mean ± SD), row Fasting glucose",
+        "quote": "Fasting glucose (mg/dL) | 96 ± 8 (82–115)"
+      }
+    },
+    {
+      "id": "fasting_insulin",
+      "description": "Fasting insulin",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.7,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column N = 20 (mean ± SD), row Fasting insulin",
+        "quote": "Fasting insulin (µU/mL) | 5.7 ± 2.1 (1.8–10.8)"
+      }
+    },
+    {
+      "id": "glucose_2h",
+      "description": "Glucose 2 h after 75 g oral glucose (single sample at minute 120)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_75g"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 131.0,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 35.0,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column N = 20 (mean ± SD), row 2-h glucose",
+        "quote": "2-h glucose (mg/dL) | 131 ± 35 (75–238)"
+      }
+    },
+    {
+      "id": "insulin_2h",
+      "description": "Insulin 2 h after 75 g oral glucose (single sample at minute 120)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "ogtt_75g"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 45.71,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 23.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 1, column N = 20 (mean ± SD), row 2-h insulin",
+        "quote": "2-h insulin (µU/mL) | 45.71 ± 23.1 (10.6–95.6)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose and insulin at the other 11 sampling times (10-240 min): plotted in Fig. 1 and Supplementary Fig. 1 / Supplementary Data 1, no table in the paper",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Other molecules (free fatty acids, cortisol, total ketone bodies, amino acids, bile acids, pyruvate, growth hormone, active GIP, C-peptide) over 0-240 min: Fig. 1 and supplementary only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "C-peptide time course (Fig. 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "HOMA-IR and HOMA-beta (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Water-ingestion control arm: only stated as showing no significant changes, no numbers (Supplementary Fig. 2b, Supplementary Data 1)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
