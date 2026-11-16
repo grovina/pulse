@@ -1,0 +1,30 @@
+{
+  "paper": "schild-2016",
+  "citation": "Schild M, et al. Mediators Inflamm 2016;2016:4851935",
+  "doi": "10.1155/2016/4851935",
+  "pmid": "27239103",
+  "pmcid": "PMC4867072",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Bicycle exercise at 80% of VO2max in endurance-trained and untrained individuals; plasma before, directly after and 3 h after; Table 1 prints performance, maximum lactate and HR for both groups",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "19 endurance-trained and 17 untrained men, 24-25 y, VO2max 65.6 +/- 6.7 vs 40.5 +/- 6.1 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD with quartiles; mostly protein-profile paper, so only the performance table is useful."
+}

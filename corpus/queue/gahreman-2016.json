@@ -1,0 +1,35 @@
+{
+  "paper": "gahreman-2016",
+  "citation": "Gahreman DE, et al. J Exerc Nutrition Biochem 2016;20:1",
+  "doi": "10.20463/jenb.2016.03.20.1.1",
+  "pmid": "27298806",
+  "pmcid": "PMC4899895",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/2.0",
+  "protocol": "20-min interval sprint cycling (8-s sprints at 65% of maximum power, 12 s recovery) after green tea or cellulose capsules (placebo); HR and VO2 at rest, exercise and 15, 30, 45, 60 min after; lactate and glucose",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "14 trained (VO2max 59.2 +/- 1.9) and 14 untrained (40.2 +/- 2.1 mL/kg/min) males, 23-25 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Trained and untrained printed separately; mean +/- SEM; placebo condition columns; glucose at baseline."
+}

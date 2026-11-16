@@ -1,0 +1,30 @@
+{
+  "paper": "chen-2023",
+  "citation": "Chen YC, et al. PeerJ 2023;11:e15768",
+  "doi": "10.7717/peerj.15768",
+  "pmid": "37637165",
+  "pmcid": "PMC10448877",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Combined exercise (upper-body resistance 2 sets of 10 reps plus aerobic cycling at VO2peak-based watts), resistance exercise and sitting control sessions; lactate, HR and RPE before, during and after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "15 healthy sedentary men",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Dose is set from 10RM load and a watt workload from the VO2peak test; values are mean (SD)."
+}

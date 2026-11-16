@@ -1,0 +1,30 @@
+{
+  "paper": "stromberg-2025",
+  "citation": "Strömberg A, et al. Clin Transl Immunology 2025;14:e70037",
+  "doi": "10.1002/cti2.70037",
+  "pmid": "40547947",
+  "pmcid": "PMC12179809",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "Three 30-s all-out cycle sprints (Wingate-type, peak powers 769, 620, 581 W); venous blood gas before, immediately after, and 30 and 60 min after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "7 healthy non-smoking subjects (6 M, 1 F)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Supramaximal bout with a clean recovery curve; small n; powers in W given in the text."
+}

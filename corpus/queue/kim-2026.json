@@ -1,0 +1,35 @@
+{
+  "paper": "kim-2026",
+  "citation": "Kim H, et al. Antioxidants (Basel) 2026;15:250",
+  "doi": "10.3390/antiox15020250",
+  "pmid": "41750630",
+  "pmcid": "PMC12938421",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Treadmill maximal exercise test (VO2max, ET) after 500 mL water (placebo arm of a crossover with oligonol); HR before, after and 1-5 min of rest, HRmax, BP and glucose",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 healthy males in their twenties, VO2max about 47 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 3-4",
+      "form": "table"
+    },
+    {
+      "marker": "blood pressure",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Spread is mean +/- standard error (stated in Statistical Analysis); placebo column; n = 10; glucose is a single sample."
+}

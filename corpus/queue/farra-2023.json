@@ -1,0 +1,30 @@
+{
+  "paper": "farra-2023",
+  "citation": "Farra SD, et al. Front Nutr 2023;10:1266422",
+  "doi": "10.3389/fnut.2023.1266422",
+  "pmid": "38144425",
+  "pmcid": "PMC10740374",
+  "licence": "Creative Commons (open access)",
+  "licence_url": null,
+  "protocol": "Five maximal 1-km cycle sprints separated by 2 min active recovery, 1 h after placebo (PLA arm of a BCAA sports drink crossover); HR after each sprint, lactate before and after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "11 experienced cyclists (8 M, 3 F), 25 +/- 5 y, Pmax 283 +/- 79 W, VO2peak 46 +/- 11 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 6",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Read placebo rows; lactate only pre and post; power output measured continuously."
+}

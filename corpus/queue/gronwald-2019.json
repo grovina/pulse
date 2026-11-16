@@ -1,0 +1,30 @@
+{
+  "paper": "gronwald-2019",
+  "citation": "Gronwald T, et al. Front Physiol 2019;10:999",
+  "doi": "10.3389/fphys.2019.00999",
+  "pmid": "31427992",
+  "pmcid": "PMC6688521",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Continuous cycle-ergometer exercise at the individual anaerobic threshold until voluntary exhaustion in normoxia (NC arm; hypoxia arm to ignore); HR, SpO2, lactate and RPE at rest, warm-ups and every 10% of exercise time",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "9 well-trained male cyclists",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Series of HR and lactate against percentage of time to exhaustion in normoxia; dose is the workload at IAT in W."
+}

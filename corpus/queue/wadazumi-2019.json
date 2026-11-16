@@ -1,0 +1,30 @@
+{
+  "paper": "wadazumi-2019",
+  "citation": "Wadazumi T, et al. Sports (Basel) 2019;7:100",
+  "doi": "10.3390/sports7050100",
+  "pmid": "31035710",
+  "pmcid": "PMC6572148",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "60 min at 40% VO2peak then 30 min constant load and Wingate sets (0.075 kg/kg) with water, glucose or trehalose drink (water = control); blood glucose and lactate at stated time points given in text",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "healthy recreationally trained college male students (n per part in Methods)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Results text",
+      "form": "text"
+    },
+    {
+      "marker": "lactate",
+      "where": "Results text",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Water trial is the control but drinks follow the first Wingate set; values are quoted in text for chosen time points, curves are in figures."
+}

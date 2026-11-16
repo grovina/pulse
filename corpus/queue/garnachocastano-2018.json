@@ -1,0 +1,25 @@
+{
+  "paper": "garnachocastano-2018",
+  "citation": "Garnacho-Castaño MV, et al. J Int Soc Sports Nutr 2018;15:49",
+  "doi": "10.1186/s12970-018-0255-6",
+  "pmid": "30286760",
+  "pmcid": "PMC6172780",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Time trial at ventilatory-threshold intensity (cycle ergometer) 2.5 h after beetroot juice or placebo; HR, VO2 and gas exchange at VT1, VT2 and in total; power at VT1, VT2, VO2max from the incremental test",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "12 well-trained male triathletes, 21-47 y, VO2max 54.8 +/- 3.1 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Placebo rows; blood lactate is mentioned in the text, see Results."
+}

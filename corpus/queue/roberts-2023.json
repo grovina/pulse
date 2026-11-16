@@ -1,0 +1,25 @@
+{
+  "paper": "roberts-2023",
+  "citation": "Roberts JD, et al. Nutrients 2023;15:421",
+  "doi": "10.3390/nu15020421",
+  "pmid": "36678293",
+  "pmcid": "PMC9864860",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Demanding aerobic session at 75% of baseline VO2max before the intervention (visit 2) in both groups; VO2, RER and blood lactate in Table 4; the supplement period (16 days) comes after; read the placebo column and the pre-intervention columns",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "29 recreationally active adults, 42 +/- 2 y, split into placebo and olive-phytocomplex groups",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Table headed mean +/- SE; the bout is the pre-intervention session, so both groups are untreated at that point; lactate only once per session."
+}

@@ -1,0 +1,35 @@
+{
+  "paper": "garciasuarez-2020",
+  "citation": "García-Suárez PC, et al. Dose Response 2020;18:1559325820970818",
+  "doi": "10.1177/1559325820970818",
+  "pmid": "33354170",
+  "pmcid": "PMC7734519",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "Graded cycle-ergometer test (60 W then +20 W/min to exhaustion) and a HIIT session; serum cortisol, lactate and HR before and after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "17 physically active healthy women, 20.0 +/- 0.9 y, BMI 23.0 +/- 2.6",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "cortisol",
+      "where": "Results text",
+      "form": "text"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Results text",
+      "form": "text"
+    },
+    {
+      "marker": "lactate",
+      "where": "Results text",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Values in text with +/-; GXT dose is 20 W/min; HIIT dose to be read from Methods."
+}

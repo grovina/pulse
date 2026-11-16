@@ -1,0 +1,30 @@
+{
+  "paper": "behrendt-2024",
+  "citation": "Behrendt T, et al. PeerJ 2024;12:e18027",
+  "doi": "10.7717/peerj.18027",
+  "pmid": "39376227",
+  "pmcid": "PMC11457877",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "40 min of cycling at constant load of 60% VO2peak (80 rpm) in sustained normoxia (NOR arm; the two intermittent-hypoxia arms to ignore); HR during exercise at stated times and lactate at baseline, 0 and 10 min after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "15 healthy recreationally active young males",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Read the NOR rows; absolute dose from measured VO2peak."
+}

@@ -1,0 +1,30 @@
+{
+  "paper": "selvaraj-2025",
+  "citation": "Selvaraj S, et al. Sci Rep 2025;15:33067",
+  "doi": "10.1038/s41598-025-16374-x",
+  "pmid": "41006371",
+  "pmcid": "PMC12475454",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "Supplement (arginine plus citrulline malate) or placebo before a Wingate anaerobic test, a Harvard step test or a CrossFit workout; SBP, DBP and HR before and after the exercise",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "46 healthy trained men, 24.8 +/- 5.0 y, split into three exercise groups",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "blood pressure",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate",
+      "where": "Table 2-3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Placebo column; Wingate and step test are standardised external loads; CrossFit group has no absolute dose."
+}

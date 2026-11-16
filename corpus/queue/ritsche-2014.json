@@ -1,0 +1,25 @@
+{
+  "paper": "ritsche-2014",
+  "citation": "Ritsche K, et al. Physiol Rep 2014;2:e12166",
+  "doi": "10.14814/phy2.12166",
+  "pmid": "25281616",
+  "pmcid": "PMC4254093",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "http://creativecommons.org/licenses/by/3.0/",
+  "protocol": "Four 30-s Wingate cycle sprints after a night of sleep (SLEEP session is the reference; SLD arm is sleep deprivation); lactate and GH before and after",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 men, 20.6 +/- 1.4 y, BMI 26.6 +/- 2.5",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "lactate",
+      "where": "Results text",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "SLEEP session only; lactate quoted as mean +/- SEM in text; GH is the main outcome."
+}

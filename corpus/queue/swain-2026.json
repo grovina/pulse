@@ -1,0 +1,35 @@
+{
+  "paper": "swain-2026",
+  "citation": "Swain P, et al. Exp Physiol 2026;111:3699",
+  "doi": "10.1113/EP093652",
+  "pmid": "42306931",
+  "pmcid": "PMC13394901",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "6 x 2 min jumping at 40% VO2peak in simulated lunar gravity (about 20% bodyweight) with 1 min rest; the non-BFR visit is the plain-exercise arm; HR and VO2 each set, blood lactate at rest and after each set",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "14 healthy adults (11 M, 3 F), 24 +/- 4 y, VO2peak 50 +/- 11 mL/kg/min",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 5",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 6",
+      "form": "table"
+    },
+    {
+      "marker": "blood pressure",
+      "where": "Table 1 (resting only)",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Unusual exercise mode (jumping with head-up tilt suspension) but a clean low-intensity bout; read the non-BFR rows. Lactate barely moves without BFR."
+}

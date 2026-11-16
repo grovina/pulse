@@ -1,0 +1,30 @@
+{
+  "paper": "muramoto-2025",
+  "citation": "Muramoto Y, et al. Curr Res Physiol 2025;8:100159",
+  "doi": "10.1016/j.crphys.2025.100159",
+  "pmid": "40809390",
+  "pmcid": "PMC12346110",
+  "licence": "Creative Commons (open access)",
+  "licence_url": null,
+  "protocol": "Incremental cycle-ergometer test to symptom-limited exhaustion immediately after placebo water (placebo arm of crossover); HR, VO2 and blood lactate through the test, work rate at lactate threshold in W",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "20 healthy adults (12 F), 47.4 +/- 5.0 y, mixed fitness",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 3-4",
+      "form": "table"
+    },
+    {
+      "marker": "lactate (work rate at threshold)",
+      "where": "Table 2-3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean (SD) with n = 20 and 95% CI of difference; read the placebo column; wide age and fitness range."
+}

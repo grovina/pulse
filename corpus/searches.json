@@ -67,11 +67,12 @@
       "why": "Glucose, lactate, fatty acids, heart rate and cortisol during and after one session.",
       "query": "(exercise[Title] OR cycling[Title] OR running[Title] OR \"physical activity\"[Title]) AND (acute[Title] OR single[Title] OR bout[Title]) AND (glucose[All Fields] AND lactate[All Fields]) AND healthy[All Fields]",
       "screened": 363,
-      "queued": 15,
+      "queued": 51,
       "batches": [
         "2026-11-16"
       ],
-      "hits": 363
+      "hits": 363,
+      "note": "Re-screened by reading every dropped record after the first pass dropped most by keyword; 36 more kept."
     },
     {
       "name": "sleep loss and timing",

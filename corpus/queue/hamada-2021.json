@@ -1,0 +1,30 @@
+{
+  "paper": "hamada-2021",
+  "citation": "Hamada N, et al. Nutrients 2021;13:1439",
+  "doi": "10.3390/nu13051439",
+  "pmid": "33923235",
+  "pmcid": "PMC8145241",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "60 min constant-load cycling at 40% VO2peak then four Wingate sets with 30 min constant load between; water (W), 8% glucose (G) or trehalose (T) drink after set 1; blood glucose, lactate, insulin, FFA, catecholamines",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "12 healthy male college students, 21.3 +/- 0.9 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Results text",
+      "form": "text"
+    },
+    {
+      "marker": "catecholamine AUC",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Time courses are in figures; text quotes glucose at some points and Table 3 the catecholamine AUC; water trial is the control."
+}

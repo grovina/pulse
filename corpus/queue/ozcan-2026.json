@@ -1,0 +1,40 @@
+{
+  "paper": "ozcan-2026",
+  "citation": "Özcan FÖ, et al. Physiol Rep 2026;14:e71200",
+  "doi": "10.14814/phy2.71200",
+  "pmid": "43000955",
+  "pmcid": "PMC13745994",
+  "licence": "Creative Commons (open access)",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "20-m shuttle-run test to exhaustion 45 min after 180 mL Arabica coffee, chicory coffee or the no-coffee reference session (control); HR, BP, lactate, glucose pre-exercise, immediately post-exercise and 5 min into recovery",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "22 healthy moderately active young men, 18-25 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "blood pressure",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "lactate",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "No-coffee reference session is the clean control; session always first, so order is not randomised for it. Dose is the shuttle-run stage schedule, not a set wattage."
+}
