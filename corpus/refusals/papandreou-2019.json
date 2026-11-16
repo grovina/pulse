@@ -1,0 +1,40 @@
+{
+  "paper": "papandreou-2019",
+  "citation": {
+    "authors": "Papandreou D, Magriplis E, Abboud M et al.",
+    "title": "Consumption of Raw Orange, 100% Fresh Orange Juice, and Nectar- Sweetened Orange Juice—Effects on Blood Glucose and Insulin Levels on Healthy Subjects",
+    "journal": "Nutrients",
+    "year": 2019,
+    "doi": "10.3390/nu11092171",
+    "pmid": "31509979",
+    "pmcid": "PMC6770506"
+  },
+  "reported": [
+    {
+      "what": "serum insulin at 0, 30, 60, 90, 120 min after raw oranges, fresh juice and nectar-sweetened juice, mean (SD), n=20; Table 3 and Table 2 give no unit for insulin",
+      "location": {
+        "where": "Table 3, Serum Insulin, row RO",
+        "quote": "RO | 55.5 (20.5) | 111.3 (75.4) | 60.8 (40.9) | 51.4 (31.1) | 41.5 (18.4)"
+      }
+    },
+    {
+      "what": "serum glucose at the same times, mean (SD), n=20; Table 3 and Table 2 give no unit for glucose; the Methods print mmol/L for glucose only in the HOMA-IR formula (whereas the numbers are about 85) and mg/dL only for the 15 mg/dL difference of the sample-size calculation",
+      "location": {
+        "where": "Table 3, Serum Glucose, row RO",
+        "quote": "RO | 85.3 (7.6) | 98.1 (14.9) | 86.6 (11.0) | 84.6 (6.7) | 83.3 (6.7)"
+      }
+    },
+    {
+      "what": "fasting glucose and insulin by product, mean (SD), no unit",
+      "location": {
+        "where": "Table 2, Fasting Insulin, row RO",
+        "quote": "RO | 55.5 (20.5) | 56.7 (22.6) | 53.3 (17.6)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unit_not_printed"
+  },
+  "detail": "Neither the glucose nor the insulin column of Tables 2 and 3 carries a unit, and no caption, footnote or figure legend supplies one. The Methods name glucose in mmol/L (HOMA-IR formula, which contradicts values near 85) and, separately, in mg/dL (the 15 mg/dL difference in the power calculation, not a unit of the results); insulin appears only as uU/mL inside the HOMA-IR formula, which does not reproduce the tabulated HOMA-IR from the tabulated insulin and glucose. The paper never ties a unit to the tabulated values, so none is supplied. The meals' carbohydrate, protein and fat grams are also not printed (Table 1 gives only total sugars), so no meal arm could be written either."
+}
