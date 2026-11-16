@@ -523,6 +523,130 @@
       }
     },
     {
+      "id": "con2_insulin_iauc",
+      "description": "Incremental area under the plasma insulin curve over the 8.5 h test day in CON-2, trapezoid on the seven samples (0 to 8.5 h) above the 0 h sample, mean ± SD, n = 10; printed as U·min/L (unit U·min/L printed in the abstract for this value; the Table 3 cell prints no unit, and the table means' trapezoid gives the same number in U·min/L); the paper does not say how stretches below baseline were handled",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "con2"
+      ],
+      "times": [
+        0,
+        60,
+        150,
+        240,
+        330,
+        420,
+        510
+      ],
+      "below_baseline": "unstated",
+      "value": 28.4,
+      "unit": "U/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 15.6,
+        "n": 10
+      },
+      "location": {
+        "where": "Abstract; Table 3, Insulin, iAUC column, row CON-2 (footnote: iAUC is the incremental area under the curve for the 8.5 h period; mean ± standard deviation, n = 10)",
+        "quote": "The iAUC for insulin was the lowest for PRO-6 (13.7 ± 7.1 U.min.L−1) as compared with CON-2 (28.4 ± 15.6 U.min.L−1)"
+      }
+    },
+    {
+      "id": "con6_insulin_iauc",
+      "description": "Incremental area under the plasma insulin curve over the 8.5 h test day in CON-6, trapezoid on the seven samples (0 to 8.5 h) above the 0 h sample, mean ± SD, n = 10; printed as U·min/L (the unit is printed in the abstract only for the CON-2 and PRO-6 cells (U.min.L−1); the Table 3 cells print none, but the trapezoid on this row's own seven means gives the same number in U·min/L, and the Results give this diet's insulin iAUC as a percent below CON-2 (CON-6 30 %, PRO-2 36 %), which matches this cell against CON-2's 28.4); the paper does not say how stretches below baseline were handled",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "con6"
+      ],
+      "times": [
+        0,
+        60,
+        150,
+        240,
+        330,
+        420,
+        510
+      ],
+      "below_baseline": "unstated",
+      "value": 19.8,
+      "unit": "U/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.3,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), iAUC column, row CON-6 (footnote: iAUC is the incremental area under the curve for the 8.5 h period; mean ± standard deviation, n = 10)",
+        "quote": "CON-6 | 8.1 ± 5.0 | 49.7 ± 19.5 | 60.1 ± 31.9 | 45.6 ± 29.2a | 53.7 ± 33.2 | 39.5 ± 22.0 | 44.8 ± 24.9 | 19.8 ± 10.3"
+      }
+    },
+    {
+      "id": "pro2_insulin_iauc",
+      "description": "Incremental area under the plasma insulin curve over the 8.5 h test day in PRO-2, trapezoid on the seven samples (0 to 8.5 h) above the 0 h sample, mean ± SD, n = 10; printed as U·min/L (the unit is printed in the abstract only for the CON-2 and PRO-6 cells (U.min.L−1); the Table 3 cells print none, but the trapezoid on this row's own seven means gives the same number in U·min/L, and the Results give this diet's insulin iAUC as a percent below CON-2 (CON-6 30 %, PRO-2 36 %), which matches this cell against CON-2's 28.4); the paper does not say how stretches below baseline were handled",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pro2"
+      ],
+      "times": [
+        0,
+        60,
+        150,
+        240,
+        330,
+        420,
+        510
+      ],
+      "below_baseline": "unstated",
+      "value": 18.1,
+      "unit": "U/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.6,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, Insulin (μU/ml), iAUC column, row PRO-2 (footnote: iAUC is the incremental area under the curve for the 8.5 h period; mean ± standard deviation, n = 10)",
+        "quote": "PRO-2 | 6.0 ± 4.2 | 63.3 ± 41.2 | 58.7 ± 36.2 | 25.6 ± 18.5b | 46.6 ± 22.5 | 34.4 ± 24.9 | 27.8 ± 25.9 | 18.1 ± 10.6"
+      }
+    },
+    {
+      "id": "pro6_insulin_iauc",
+      "description": "Incremental area under the plasma insulin curve over the 8.5 h test day in PRO-6, trapezoid on the seven samples (0 to 8.5 h) above the 0 h sample, mean ± SD, n = 10; printed as U·min/L (unit U·min/L printed in the abstract for this value; the Table 3 cell prints no unit, and the table means' trapezoid gives the same number in U·min/L); the paper does not say how stretches below baseline were handled",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "pro6"
+      ],
+      "times": [
+        0,
+        60,
+        150,
+        240,
+        330,
+        420,
+        510
+      ],
+      "below_baseline": "unstated",
+      "value": 13.7,
+      "unit": "U/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Abstract; Table 3, Insulin, iAUC column, row PRO-6 (footnote: iAUC is the incremental area under the curve for the 8.5 h period; mean ± standard deviation, n = 10)",
+        "quote": "The iAUC for insulin was the lowest for PRO-6 (13.7 ± 7.1 U.min.L−1) as compared with CON-2 (28.4 ± 15.6 U.min.L−1)"
+      }
+    },
+    {
       "id": "con2_sbp_curve",
       "description": "Systolic blood pressure in CON-2 at 0 (before the first meal) to 8.5 h, mean ± SD, n = 10",
       "marker": "sbp",
@@ -1156,13 +1280,6 @@
     }
   ],
   "left_out": [
-    {
-      "what": "Insulin 8.5 h iAUC per diet (Table 3 iAUC column, mean ± SD, n = 10; unit printed only in the abstract, 28.4 ± 15.6 and 13.7 ± 7.1 U.min.L−1): trapezoid over the seven samples above the 0 h value (the table means reproduce it), but in U·min/L, a unit the loader does not list for insulin",
-      "missing": {
-        "kind": "input",
-        "name": "insulin_in_u_per_l"
-      }
-    },
     {
       "what": "Glucose at 0-8.5 h and its 8.5 h iAUC per diet (Table 3, Glucose rows; abstract; Results): CGM (subcutaneous interstitial) glucose. The row's iAUC is the one the Results call the 'CGMS glucose' iAUC, the plasma assays named are insulin, TAG and hs-CRP only, and the Discussion contrasts the CGM data with venous sampling",
       "missing": {
