@@ -91,17 +91,10 @@
       }
     },
     {
-      "what": "Trained (EET, n = 19) group's HR at end (178.8 +/- 12.4), Table 1: a group split by training status and aerobic capacity (VO2max > 57 against < 47 mL/min/kg), which the model cannot hold as a second arm with the same sex, age and BMI",
+      "what": "Trained (EET, n = 19) group's HR at end (178.8 +/- 12.4), Table 1: a group split by training status and aerobic capacity (VO2max > 57 against < 47 mL/min/kg), which the model cannot hold as a second arm with the same sex, age and BMI. Its bout (80% of its VO2max 65.6 mL/min/kg = 52.5 mL/kg/min, level 1.54; 254.1 W / 186 = 1.37) is within the activity scale of 2.0, so the intensity is no longer what keeps it out: the group is chosen by a measurement (VO2max > 57), not by anything the model's population can take",
       "missing": {
         "kind": "population",
         "name": "aerobic_fitness_group"
-      }
-    },
-    {
-      "what": "Trained group's exercise intensity: 80% of VO2max 65.6 mL/min/kg is 52.5 mL/kg/min, level 1.54 (254.1 W / 186 = 1.37), above the activity scale's maximum of 1",
-      "missing": {
-        "kind": "input",
-        "name": "exercise_above_activity_scale"
       }
     },
     {
