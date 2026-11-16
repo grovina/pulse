@@ -1,0 +1,183 @@
+{
+  "paper": "nakanishi-2013",
+  "citation": {
+    "authors": "Nakanishi S, et al.",
+    "title": "Impact of glucose excursion and mean glucose concentration in oral glucose-tolerance test on oxidative stress",
+    "journal": "Diabetes, Metabolic Syndrome and Obesity",
+    "year": 2013,
+    "doi": "10.2147/DMSO.S53760",
+    "pmid": "24285926",
+    "pmcid": "PMC3840774"
+  },
+  "population": {
+    "n": 558,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 63.1,
+      "sd": 14.17,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.7,
+      "sd": 4.72,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Japanese Americans (Hawaii 2002, Los Angeles 2004) with normal glucose tolerance on the 75 g OGTT by 1998 WHO criteria (Table 1 NGT column): 210 men and 348 women; persons under treatment for hyperlipidemia and/or hypertension were included. Age 63.1 +/- 0.6 and BMI 23.7 +/- 0.2 are mean +/- standard error (Table 1 footnote); sd computed as SE x sqrt(558): 0.6 x 23.62 = 14.17 for age, 0.2 x 23.62 = 4.72 for BMI. All Table 1 values except age are adjusted for age, sex and smoking status (including the BMI used here). Some subjects were under treatment for hyperlipidemia and/or hypertension (how many is not printed; mean SBP 135, DBP 76 mmHg); the paper reports no difference in GE, MGC or isoprostane between treated and untreated subjects (data not shown). Serum samples are mentioned, the glucose medium is not stated. Means are adjusted (analysis of covariance) for age, sex and smoking status, so they are model-adjusted means, not raw group means; the paper gives no unadjusted values."
+  },
+  "protocols": [
+    {
+      "name": "ogtt",
+      "description": "75 g oral glucose tolerance test after an overnight fast, venous samples fasting, 1 h and 2 h (minutes 0, 60, 120), NGT group of 558; the paper does not say whether the load was a drink",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ngt_ogtt_glucose_curve",
+      "description": "Glucose at fasting, 1 h and 2 h of a 75 g OGTT, NGT group; mean +/- SE adjusted for age, sex and smoking status",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 4.89,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.04,
+            "n": 558
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 7.84,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.11,
+            "n": 558
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 5.51,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.08,
+            "n": 558
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, NGT column",
+        "quote": "Fasting glucose (mmol/L) | 4.89±0.04 ; 1-hour glucose (mmol/L) | 7.84±0.11 ; 2-hour glucose (mmol/L) | 5.51±0.08"
+      }
+    },
+    {
+      "id": "ngt_ogtt_insulin_curve",
+      "description": "Insulin at fasting, 1 h and 2 h of a 75 g OGTT, NGT group; mean +/- SE adjusted for age, sex and smoking status; double-antibody radioimmunoassay",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "ogtt"
+      ],
+      "unit": "pmol/L",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 41.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 558
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 402.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 14.2,
+            "n": 558
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 262.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 12.5,
+            "n": 558
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 1, NGT column",
+        "quote": "Fasting insulin (pmol/L) | 41.5±1.7 ; 1-hour insulin (pmol/L) | 402.8±14.2 ; 2-hour insulin (pmol/L) | 262.8±12.5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Mean glucose concentration (MGC, mean of the fasting, 1 h and 2 h values) and glucose excursion (GE, per-person maximum minus minimum), Table 1, and their tertile means in Figures 1 and 2: unweighted mean of three samples and a range, not a trapezoid area or a statistic in the list",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Same measurements for the IGT (n=165) and DM (n=52) columns of Table 1",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "Urinary isoprostane (ng/gCr) and its tertile means by MGC and GE, regression betas (Tables 2 and 3): oxidative-stress marker the model has no series for",
+      "missing": {
+        "kind": "marker",
+        "name": "urinary_isoprostane"
+      }
+    },
+    {
+      "what": "Triglycerides (1.58 +/- 0.07 mmol/L, NGT, Table 1; adjusted, log-analysed): a fasting value for which the model has no series",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Total cholesterol (5.58 +/- 0.05 mmol/L) and HDL cholesterol (1.48 +/- 0.02 mmol/L), NGT, Table 1: no series",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "CRP (0.19 +/- 0.02 mg/L, NGT, Table 1; adjusted, log-analysed): no series",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    }
+  ]
+}
