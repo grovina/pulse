@@ -1,0 +1,194 @@
+{
+  "paper": "smitka-2011",
+  "citation": {
+    "authors": "Smitka K, et al.",
+    "title": "Exercise alone or together with the anti-lipolytic drug Acipimox: plasma neuropeptide Y, growth hormone, leptin, free fatty acids and glycerol in bulimia nervosa and healthy women",
+    "journal": "Nutrition & Metabolism",
+    "year": 2011,
+    "doi": "10.1186/1743-7075-8-81",
+    "pmid": "22093818",
+    "pmcid": "PMC3245450"
+  },
+  "population": {
+    "n": 8,
+    "sex": "female",
+    "age_years": {
+      "mean": 25.83,
+      "sd": 4.78,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 19.98,
+      "sd": 1.24,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The eight healthy control women (controls only; the eight women with bulimia nervosa are not entered). Healthy volunteers with no history of cardiovascular disease, eating disorders or other psychiatric diseases, normal fasting blood glucose, first two weeks of the follicular phase. Age 25.83 +/- 1.69 and BMI 19.98 +/- 0.44 are mean +/- S.E.M. (Table 1); SD computed as SEM x sqrt(8): 4.78 and 1.24. Inclusion age 18 to 30 and BMI 18 to 23 are enrolment criteria, not entered as min and max."
+  },
+  "protocols": [
+    {
+      "name": "fasted_baseline",
+      "description": "Resting fasting sample of the control women before the exercise bout (Table 2, '0 min Basal'): standardized low-fat dinner at 6:00 PM (468 kcal, 5 g fat, 70 g carbohydrate, 25 g protein), nothing but water overnight, subjects admitted 7:00 AM, venous catheter inserted at 8:00 AM 'after overnight fasting', blood drawn 'at the beginning' of the experiment. The clock of the draw is not printed; taken as 08:00, the catheter time, so the arm starts 07:30 and the sample is read at minutes 29-30 of a 30 min arm. Fast length derived from the paper's clock: 18:00 to 07:30 = 13.5 h (18:00 to 08:00 would be 14 h). One basal column serves both the placebo and the Acipimox weeks; whether the draw preceded the capsule (given 1 h before exercise) is not stated, and a placebo capsule is inert. The exercise bout and Acipimox arm are not entered (see left_out).",
+      "duration_min": 30,
+      "start_hour": 7.5,
+      "prefast_hours": 13.5,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "basal_glucose",
+      "description": "Fasting plasma glucose (Cobas Integra assay on plasma; the table heading says 'blood glucose') of the healthy control women, basal sample before exercise, mean and SEM, n = 8",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.72,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.11,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, column '0 min Basal', row 'C group (n = 8)' under the marker heading",
+        "quote": "C group (n = 8) | 4.72 ± 0.11"
+      }
+    },
+    {
+      "id": "basal_insulin",
+      "description": "Fasting plasma insulin of the healthy control women, basal sample before exercise, mean and SEM, n = 8",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.32,
+      "unit": "mIU/l",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.98,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, column '0 min Basal', row 'C group (n = 8)' under the marker heading",
+        "quote": "C group (n = 8) | 4.32 ± 0.98"
+      }
+    },
+    {
+      "id": "basal_ffa",
+      "description": "Fasting plasma free fatty acids of the healthy control women, basal sample before exercise, mean and SEM, n = 8. The printed SEM 0.3 is much larger than the 0.02 to 0.13 printed for the other FFA cells (the BN basal cell also prints 0.3); entered as printed",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.86,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, column '0 min Basal', row 'C group (n = 8)' under the marker heading",
+        "quote": "C group (n = 8) | 0.86 ± 0.3"
+      }
+    },
+    {
+      "id": "basal_leptin",
+      "description": "Fasting plasma leptin of the healthy control women, basal sample before exercise, mean and SEM, n = 8",
+      "marker": "leptin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_baseline"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.83,
+      "unit": "ng/ml",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 2, column '0 min Basal', row 'C group (n = 8)' under the marker heading",
+        "quote": "C group (n = 8) | 7.83 ± 1.3"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "every value during and after the 45 min bicycle bout of the controls on placebo (Table 2 columns 45 and 90 min + placebo; glucose, insulin, FFA, leptin): power is 2 W/kg of lean body mass, but body weight and height are printed nowhere (Table 1 and the text give only BMI and % body fat), so lean mass, watts and the activity level (watts/186) cannot be derived",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "all Acipimox arm columns (Table 2 and 3, 45 and 90 min + Aci): a drug the model has no input for",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "plasma glycerol, basal and during/after exercise (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
+      }
+    },
+    {
+      "what": "plasma growth hormone, basal and during/after exercise (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "growth_hormone"
+      }
+    },
+    {
+      "what": "plasma neuropeptide Y, basal and during/after exercise (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "neuropeptide_y"
+      }
+    },
+    {
+      "what": "adipose tissue dialysate glycerol by microdialysis (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "adipose_tissue_glycerol"
+      }
+    },
+    {
+      "what": "the bulimia nervosa group (Tables 1 to 3): an eating disorder the model cannot represent",
+      "missing": {
+        "kind": "population",
+        "name": "bulimia_nervosa"
+      }
+    }
+  ]
+}
