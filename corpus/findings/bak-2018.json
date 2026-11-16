@@ -1,0 +1,583 @@
+{
+  "paper": "bak-2018",
+  "citation": {
+    "authors": "Bak AM, et al.",
+    "title": "Prolonged fasting-induced metabolic signatures in human skeletal muscle of lean and obese men",
+    "journal": "PLoS One",
+    "year": 2018,
+    "doi": "10.1371/journal.pone.0200817",
+    "pmid": "30183740",
+    "pmcid": "PMC6124727"
+  },
+  "population": {
+    "n": 18,
+    "sex": "male",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 21.0,
+      "max": 35.0
+    },
+    "bmi": null,
+    "status": "unselected",
+    "description": "Eighteen apparently healthy young men aged 20 to 35 y (enrolment), nine lean (BMI 19-23) and nine obese (BMI 32-40 kg/m2), low physical activity, non-smokers, no prescription medication. Age is printed as median (range) (lean 24 (21-33), obese 24 (21-35), Table 1), so mean and SD are null; top-level min/max are the observed range of all 18 and each protocol carries its own group's observed range. Each protocol carries its group's BMI mean +/- SD from Table 1 (lean 21.4 +/- 1.1, obese 35.7 +/- 2.6). The paper calls the cohort apparently healthy, with a medical examination and routine blood chemistry, and HbA1c normal in all (25-36 mmol/mol); the lean group is entered healthy, the obese group unselected, with its BMI (no glucose-tolerance test)."
+  },
+  "protocols": [
+    {
+      "name": "lean_fast12h",
+      "description": "lean men, water only, nothing infused that the model reads before the clamp (t = 240); the arm starts 30 min before the paper's t = 0, so paper t = arm minute - 30; paper t = 0 is taken as the stated 12 h of fasting, so the arm starts after 11.5 h (arithmetic: 12 h - 0.5 h); read at paper t = 0 (arm minute 30), t = 60 (minute 90) and the mean of t = 210-240 (minutes 240-270, before the insulin clamp that starts at t = 240); clock hour of t = 0 not printed (08:00 assumed, so the arm starts 07:30)",
+      "duration_min": 270,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "population": {
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 21.0,
+          "max": 33.0
+        },
+        "bmi": {
+          "mean": 21.4,
+          "sd": 1.1,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "lean_fast72h",
+      "description": "lean men, water only, nothing infused that the model reads before the clamp (t = 240); the arm starts 30 min before the paper's t = 0, so paper t = arm minute - 30; paper t = 0 is taken as the stated 72 h of fasting, so the arm starts after 71.5 h (arithmetic: 72 h - 0.5 h); read at paper t = 0 (arm minute 30), t = 60 (minute 90) and the mean of t = 210-240 (minutes 240-270, before the insulin clamp that starts at t = 240); clock hour of t = 0 not printed (08:00 assumed, so the arm starts 07:30)",
+      "duration_min": 270,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 71.5,
+      "population": {
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 21.0,
+          "max": 33.0
+        },
+        "bmi": {
+          "mean": 21.4,
+          "sd": 1.1,
+          "min": null,
+          "max": null
+        },
+        "status": "healthy"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "obese_fast12h",
+      "description": "obese men, water only, nothing infused that the model reads before the clamp (t = 240); the arm starts 30 min before the paper's t = 0, so paper t = arm minute - 30; paper t = 0 is taken as the stated 12 h of fasting, so the arm starts after 11.5 h (arithmetic: 12 h - 0.5 h); read at paper t = 0 (arm minute 30), t = 60 (minute 90) and the mean of t = 210-240 (minutes 240-270, before the insulin clamp that starts at t = 240); clock hour of t = 0 not printed (08:00 assumed, so the arm starts 07:30)",
+      "duration_min": 270,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "population": {
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 21.0,
+          "max": 35.0
+        },
+        "bmi": {
+          "mean": 35.7,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "obese_fast72h",
+      "description": "obese men, water only, nothing infused that the model reads before the clamp (t = 240); the arm starts 30 min before the paper's t = 0, so paper t = arm minute - 30; paper t = 0 is taken as the stated 72 h of fasting, so the arm starts after 71.5 h (arithmetic: 72 h - 0.5 h); read at paper t = 0 (arm minute 30), t = 60 (minute 90) and the mean of t = 210-240 (minutes 240-270, before the insulin clamp that starts at t = 240); clock hour of t = 0 not printed (08:00 assumed, so the arm starts 07:30)",
+      "duration_min": 270,
+      "start_hour": 7.5,
+      "meals": [],
+      "prefast_hours": 71.5,
+      "population": {
+        "age_years": {
+          "mean": null,
+          "sd": null,
+          "min": 21.0,
+          "max": 35.0
+        },
+        "bmi": {
+          "mean": 35.7,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        },
+        "status": "unselected"
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "bhb_lean_12h",
+      "description": "Plasma beta-hydroxybutyrate, lean men, stated 12 h fast, measured at t = 0 (arm minute 30), mean (SD)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 0.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 12 h fast, -insulin",
+        "quote": "β-hydroxy-butyrate (mM) | 0.3± 0.1 |  | 3.0± 0.6# |  | 0.3± 0.2 |  | 1.9± 0.6# |"
+      }
+    },
+    {
+      "id": "bhb_lean_72h",
+      "description": "Plasma beta-hydroxybutyrate, lean men, stated 72 h fast, measured at t = 0 (arm minute 30), mean (SD)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 3.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 72 h fast, -insulin",
+        "quote": "β-hydroxy-butyrate (mM) | 0.3± 0.1 |  | 3.0± 0.6# |  | 0.3± 0.2 |  | 1.9± 0.6# |"
+      }
+    },
+    {
+      "id": "bhb_obese_12h",
+      "description": "Plasma beta-hydroxybutyrate, obese men, stated 12 h fast, measured at t = 0 (arm minute 30), mean (SD)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 0.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.2,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 12 h fast, -insulin",
+        "quote": "β-hydroxy-butyrate (mM) | 0.3± 0.1 |  | 3.0± 0.6# |  | 0.3± 0.2 |  | 1.9± 0.6# |"
+      }
+    },
+    {
+      "id": "bhb_obese_72h",
+      "description": "Plasma beta-hydroxybutyrate, obese men, stated 72 h fast, measured at t = 0 (arm minute 30), mean (SD)",
+      "marker": "bhb",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 1.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 72 h fast, -insulin",
+        "quote": "β-hydroxy-butyrate (mM) | 0.3± 0.1 |  | 3.0± 0.6# |  | 0.3± 0.2 |  | 1.9± 0.6# |"
+      }
+    },
+    {
+      "id": "glucagon_lean_12h",
+      "description": "Plasma glucagon, lean men, stated 12 h fast, measured at t = 60 (arm minute 90; non-insulin-stimulated period, before the clamp; the muscle biopsy is also at t = 60), mean (SD)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 90,
+        "end_min": 91
+      },
+      "value": 61.3,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 28.6,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 12 h fast, -insulin",
+        "quote": "Glucagon (ng/L) | 61.3± 28.6 | 144.7± 35.3 | 86.1± 27.8 | 136.4± 46.2"
+      }
+    },
+    {
+      "id": "glucagon_lean_72h",
+      "description": "Plasma glucagon, lean men, stated 72 h fast, measured at t = 60 (arm minute 90; non-insulin-stimulated period, before the clamp; the muscle biopsy is also at t = 60), mean (SD)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 90,
+        "end_min": 91
+      },
+      "value": 144.7,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 35.3,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 72 h fast, -insulin",
+        "quote": "Glucagon (ng/L) | 61.3± 28.6 | 144.7± 35.3 | 86.1± 27.8 | 136.4± 46.2"
+      }
+    },
+    {
+      "id": "glucagon_obese_12h",
+      "description": "Plasma glucagon, obese men, stated 12 h fast, measured at t = 60 (arm minute 90; non-insulin-stimulated period, before the clamp; the muscle biopsy is also at t = 60), mean (SD)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 90,
+        "end_min": 91
+      },
+      "value": 86.1,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 27.8,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 12 h fast, -insulin",
+        "quote": "Glucagon (ng/L) | 61.3± 28.6 | 144.7± 35.3 | 86.1± 27.8 | 136.4± 46.2"
+      }
+    },
+    {
+      "id": "glucagon_obese_72h",
+      "description": "Plasma glucagon, obese men, stated 72 h fast, measured at t = 60 (arm minute 90; non-insulin-stimulated period, before the clamp; the muscle biopsy is also at t = 60), mean (SD)",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 90,
+        "end_min": 91
+      },
+      "value": 136.4,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 46.2,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 72 h fast, -insulin",
+        "quote": "Glucagon (ng/L) | 61.3± 28.6 | 144.7± 35.3 | 86.1± 27.8 | 136.4± 46.2"
+      }
+    },
+    {
+      "id": "glucose_lean_12h",
+      "description": "Plasma glucose, lean men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 12 h fast, -insulin",
+        "quote": "Glucose (mM) | 4.9± 0.3 | 3.2± 0.2 | 4.8± 0.4 | 3.6± 0.4"
+      }
+    },
+    {
+      "id": "glucose_lean_72h",
+      "description": "Plasma glucose, lean men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 3.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.2,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 72 h fast, -insulin",
+        "quote": "Glucose (mM) | 4.9± 0.3 | 3.2± 0.2 | 4.8± 0.4 | 3.6± 0.4"
+      }
+    },
+    {
+      "id": "glucose_obese_12h",
+      "description": "Plasma glucose, obese men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 4.8,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 12 h fast, -insulin",
+        "quote": "Glucose (mM) | 4.9± 0.3 | 3.2± 0.2 | 4.8± 0.4 | 3.6± 0.4"
+      }
+    },
+    {
+      "id": "glucose_obese_72h",
+      "description": "Plasma glucose, obese men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 3.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 72 h fast, -insulin",
+        "quote": "Glucose (mM) | 4.9± 0.3 | 3.2± 0.2 | 4.8± 0.4 | 3.6± 0.4"
+      }
+    },
+    {
+      "id": "ffa_lean_12h",
+      "description": "Plasma free fatty acids, lean men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 0.39,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.17,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 12 h fast, -insulin",
+        "quote": "FFA (mM) | 0.39± 0.17 | 1.47± 0.26 | 0.55± 0.09 | 1.07± 0.14"
+      }
+    },
+    {
+      "id": "ffa_lean_72h",
+      "description": "Plasma free fatty acids, lean men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 1.47,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.26,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column LEAN 72 h fast, -insulin",
+        "quote": "FFA (mM) | 0.39± 0.17 | 1.47± 0.26 | 0.55± 0.09 | 1.07± 0.14"
+      }
+    },
+    {
+      "id": "ffa_obese_12h",
+      "description": "Plasma free fatty acids, obese men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 0.55,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.09,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 12 h fast, -insulin",
+        "quote": "FFA (mM) | 0.39± 0.17 | 1.47± 0.26 | 0.55± 0.09 | 1.07± 0.14"
+      }
+    },
+    {
+      "id": "ffa_obese_72h",
+      "description": "Plasma free fatty acids, obese men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 1.07,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.14,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 2, column OBESE 72 h fast, -insulin",
+        "quote": "FFA (mM) | 0.39± 0.17 | 1.47± 0.26 | 0.55± 0.09 | 1.07± 0.14"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "plasma insulin at t = 60 after 12 h and 72 h of fasting, lean and obese (Table 2), printed as median (range)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "leptin (Table 2) and non-insulin-stimulated Rd of glucose, per kg LBM and per kg TBW (Table 3), printed as median (range)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "all values during the hyperinsulinaemic-euglycaemic clamp (t = 240-360): glucose, FFA, glucagon, C-peptide, GIR, Rd, EGP (Tables 2 and 3); insulin infused at 30 mU/m2/min",
+      "missing": {
+        "kind": "input",
+        "name": "insulin_infusion_rate"
+      }
+    },
+    {
+      "what": "EGP per kg lean body mass, GIR and Rd per kg LBM (Table 3); glucose oxidation, lipid oxidation and energy expenditure per kg LBM (Table 4)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "C-peptide, non-insulin-stimulated and clamp (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "adiponectin at t = 0 (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "adiponectin"
+      }
+    },
+    {
+      "what": "plasma glycerol at t = 0 (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "glycerol"
+      }
+    },
+    {
+      "what": "muscle glycogen content (Fig 1) and Western blot phosphorylation levels (Fig 2)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
