@@ -125,8 +125,8 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
-| `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | running from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/`; cut at 26 h |
-| `trainer-kn8wz` | 117, no teacher | 2026-11-15 | running from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/`; cut at 26 h |
+| `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
+| `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
 | `trainer-gqtrs` | 116, no teacher | 2026-11-12 | finished in 19 h 40 min from `b30be0a`: `--teacher-tape-weight=0 --phase1-epochs=0`, warm start from iter 113; output `training/jobs/iter116-noteacher/` |
 | `trainer-rh7j2` | 116, cold start | 2026-11-12 | stopped by its 26 h deadline after epoch 51, the end of phase 2 (no phase 3), from `b30be0a`: `--init-from=`; output `training/jobs/iter116-cold/` |
@@ -213,6 +213,25 @@ the untrained student as above):
   incretin gain (`log_k_incretin`) moves by at most 0.09 from 2.30.
 - The cold start stopped at the end of phase 2: its epochs with the
   literature took about 59 minutes, against 49 for the warm start.
+
+Iter 117, the first runs on the mixed-meal insulin papers and the meal
+details (2026-11-16; their own boards, the untrained student as above):
+
+| Run | Sealed papers, end of phase 2 | Sealed papers, final | Sealed insulin under target | Sealed glucose, median \|z\|, phase 2 |
+|---|---|---|---|---|
+| No teacher (`trainer-kn8wz`) | 1.08 (0.77 to 1.19) | 1.02 (0.80 to 1.16) | 25 of 32 | 0.65 |
+| No teacher, gut reads meal details (`trainer-gxk99`) | 0.97 (0.77 to 1.16) | 1.01 (0.66 to 1.31) | 24 to 25 of 32 | 0.50 |
+
+- Both runs are under the untrained student (1.19) on the sealed papers;
+  the no-teacher run on the older corpus was 1.09. Insulin is still under
+  target on most sealed points.
+- The meal reader improves sealed glucose and otherwise moves the board
+  within its interval. It does not separate the equal-gram pairs it trains
+  on: `almoraie-2026`'s pomegranate-seed-oil and control meals get the same
+  predictions to three figures. On the held-out items of training papers it
+  is worse (0.91 against 0.51 at the end of phase 2, 12 points).
+- The meal-details run's epochs took longer, and its deadline stopped it two
+  epochs into phase 3, so the end-of-phase-2 boards are the even comparison.
 
 Iter 114 was scored on commit `0f4da88` on 2026-11-11,
 with the untrained student on the same items and people (`python -m
