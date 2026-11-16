@@ -1,0 +1,431 @@
+{
+  "paper": "watkins-2020",
+  "citation": {
+    "authors": "Watkins J, Simpson A, Betts JA, et al.",
+    "title": "Galactose Ingested with a High-Fat Beverage Increases Postprandial Lipemia Compared with Glucose but Not Fructose Ingestion in Healthy Men",
+    "journal": "The Journal of Nutrition",
+    "year": 2020,
+    "doi": "10.1093/jn/nxaa105",
+    "pmid": "32297937",
+    "pmcid": "PMC7330468"
+  },
+  "population": {
+    "n": 19,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Healthy nonobese men (BMI < 30, aged 18-35 y, no history of metabolic disease), two separate groups: experiment 1 n = 10 (age 22 ± 1 y, BMI 23.5 ± 2.2) and experiment 2 n = 9 (age 26 ± 6 y, BMI 23.5 ± 2.6), Table 1, mean ± SD; each protocol carries its own group's age and BMI as printed (no observed min or max printed)."
+  },
+  "protocols": [
+    {
+      "name": "glucose_drink",
+      "description": "Experiment 1: high-fat drink (cream and whole-fat milk) with dextrose as the test sugar, drunk within 5 min after a 12-h fast; sampled 0,30,60,90,120,180,240,300 min. Grams per kg from Table 2 times the group's mean body mass (Table 1, 76 kg): fat 0.94 x 76 = 71.44; protein 0.12 x 76 = 9.12; carbohydrate (lactose 0.17 + dextrose 0.75 = 0.92 g/kg) x 76 = 69.92, all of it sugars (lactose and a monosaccharide), so sugars_g = carbs_g. protein_source dairy is my reading of a drink made of cream and whole-fat milk; the paper does not name the protein source. The test sugar itself (glucose, galactose or fructose) cannot be told to the model.",
+      "duration_min": 301,
+      "start_hour": 8.75,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 69.92,
+          "fat_g": 71.44,
+          "protein_g": 9.12,
+          "sugars_g": 69.92,
+          "fat_source": "cream and whole-fat milk",
+          "protein_source": "dairy",
+          "form": "liquid",
+          "food": "cream and whole-fat milk drink, dextrose as test sugar"
+        }
+      ],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 22,
+          "sd": 1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 2.2,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    },
+    {
+      "name": "glucose_fasting",
+      "description": "Experiment 1, the day of the glucose drink: baseline capillary sample taken within 15 min before the drink after a 12-h overnight fast (arrival 08:30-08:45). A 30-minute fasted run-in stands for the single sample; the drink is not entered.",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 22,
+          "sd": 1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 2.2,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fructose_fasting",
+      "description": "Experiment 2, the day of the fructose drink: baseline capillary sample taken within 15 min before the drink after a 12-h overnight fast (arrival 08:30-08:45). A 30-minute fasted run-in stands for the single sample; the drink is not entered.",
+      "duration_min": 30,
+      "start_hour": 8.5,
+      "meals": [],
+      "prefast_hours": 12,
+      "population": {
+        "age_years": {
+          "mean": 26,
+          "sd": 6,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.5,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_glucose",
+      "description": "Fasting plasma glucose before the glucose drink, experiment 1, mean ± SD (Table 3)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "glucose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.06,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.25,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, Experiment 1, Glucose column",
+        "quote": "Plasma glucose concentration, mmol·L−1 | 5.06 ± 0.25"
+      }
+    },
+    {
+      "id": "fasting_glucose_fructose",
+      "description": "Fasting plasma glucose before the fructose drink, experiment 2, mean ± SD (Table 3)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fructose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 5.25,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.22,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, Experiment 2, Fructose column",
+        "quote": "Plasma glucose concentration, mmol·L−1 | 5.25 ± 0.22"
+      }
+    },
+    {
+      "id": "fasting_nefa_glucose",
+      "description": "Fasting plasma NEFA before the glucose drink, experiment 1, mean ± SD (Table 3)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "glucose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.14,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, Experiment 1, Glucose column",
+        "quote": "Plasma NEFA concentration, mmol·L−1 | 0.40 ± 0.14"
+      }
+    },
+    {
+      "id": "fasting_nefa_fructose",
+      "description": "Fasting plasma NEFA before the fructose drink, experiment 2, mean ± SD (Table 3)",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fructose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.29,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.07,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, Experiment 2, Fructose column",
+        "quote": "Plasma NEFA concentration, mmol·L−1 | 0.29 ± 0.07"
+      }
+    },
+    {
+      "id": "fasting_lactate_glucose",
+      "description": "Fasting plasma lactate before the glucose drink, experiment 1, mean ± SD (Table 3); the paper's lactate n is 9 in both experiments (one participant lacked sample)",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "glucose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.92,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.17,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, Experiment 1, Glucose column",
+        "quote": "Plasma lactate concentration, mmol·L−1 | 0.92 ± 0.17"
+      }
+    },
+    {
+      "id": "fasting_lactate_fructose",
+      "description": "Fasting plasma lactate before the fructose drink, experiment 2, mean ± SD (Table 3); the paper's lactate n is 9 in both experiments (one participant lacked sample)",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fructose_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 1.35,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.49,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, Experiment 2, Fructose column",
+        "quote": "Plasma lactate concentration, mmol·L−1 | 1.35 ± 0.49"
+      }
+    },
+    {
+      "id": "glucose_iauc_glucose",
+      "description": "Positive incremental area of plasma glucose over the baseline sample, 0-300 min, trapezoid on the eight samples; the paper ignored values below baseline; glucose drink, experiment 1, mean ± SD",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300
+      ],
+      "below_baseline": "ignored",
+      "value": 123,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 51,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 4, Experiment 1, Glucose column",
+        "quote": "Glucose iAUC, mmol·L−1 × 300 min | 123 ± 51"
+      }
+    },
+    {
+      "id": "nefa_auc_glucose",
+      "description": "Total (not incremental) area of plasma NEFA, 0-300 min, trapezoid on the eight samples, glucose drink, experiment 1, mean ± SD; the paper used total AUC because NEFA fell below baseline",
+      "marker": "ffa",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300
+      ],
+      "value": 100,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 21,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 4, Experiment 1, Glucose column",
+        "quote": "NEFA AUC, mmol·L−1 × 300 min | 100 ± 21"
+      }
+    },
+    {
+      "id": "lactate_iauc_glucose",
+      "description": "Positive incremental area of plasma lactate over the baseline sample, 0-300 min, trapezoid on the eight samples; the paper ignored values below baseline; glucose drink, experiment 1, mean ± SD",
+      "marker": "lactate",
+      "statistic": "incremental_area",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        120,
+        180,
+        240,
+        300
+      ],
+      "below_baseline": "ignored",
+      "value": 51,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 30,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, Experiment 1, Glucose column",
+        "quote": "Lactate iAUC, mmol·L−1 × 300 min | 51 ± 30"
+      }
+    },
+    {
+      "id": "glucose_time_to_peak_glucose",
+      "description": "Time of each person's highest plasma glucose after the glucose drink, experiment 1, mean ± SD, minutes from the start of drinking (the paper's clock starts at the first mouthful; the drink is at minute 0 of the arm)",
+      "marker": "glucose",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 301
+      },
+      "value": 45,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 29,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, Plasma glucose and insulin concentrations, experiment 1",
+        "quote": "to a peak at 45 ± 29 and 39 ± 14 min following glucose and galactose ingestion, respectively"
+      }
+    },
+    {
+      "id": "insulin_time_to_peak_glucose",
+      "description": "Time of each person's highest plasma insulin after the glucose drink, experiment 1, mean ± SD, minutes from the start of drinking (the paper's clock starts at the first mouthful; the drink is at minute 0 of the arm)",
+      "marker": "insulin",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "glucose_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 301
+      },
+      "value": 45,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, Plasma glucose and insulin concentrations, experiment 1",
+        "quote": "to a peak at 45 ± 16 and 51 ± 32 min following glucose and galactose ingestion, respectively"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Insulin fasting concentration (Table 3) and insulin iAUC (Table 4) for all four drinks: both rows are labelled mmol·L−1 (fasting 31-38, iAUC 6-21), a unit that contradicts the numbers (mmol/L would be thousands of times physiological); the paper's real unit is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Plasma triacylglycerol fasting values (Table 3), iAUC (Figure 1C,D and Abstract) and time course (Figure 1A,B)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Glucose, insulin, NEFA and lactate time courses at 0-300 min (Figures 2 and 3, means with 95% CIs only in the figures)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "the galactose drink of experiment 1 and the fructose and galactose drinks of experiment 2 (Table 4 glucose and lactate iAUC, NEFA AUC; Results times to peak): each has the same grams and sugars as the glucose drink and differs only in the test sugar, so the model would get one meal with far-apart targets (glucose iAUC 123 against 46 mmol/L x 300 min in experiment 1). Only the glucose drink, the paper's reference, is entered, with the fasting values of the first day of each experiment (the repeat day's are the same men again). Comparisons between drinks stay out too.",
+      "missing": {
+        "kind": "input",
+        "name": "sugar_type"
+      }
+    }
+  ]
+}
