@@ -1,0 +1,153 @@
+{
+  "paper": "hecksteden-2013",
+  "citation": {
+    "authors": "Hecksteden A, Grütters T, Meyer T",
+    "title": "Associations between Acute and Chronic Effects of Exercise on Indicators of Metabolic Health: A Pilot Training Trial",
+    "journal": "PLoS One",
+    "year": 2013,
+    "doi": "10.1371/journal.pone.0081181",
+    "pmid": "24278393",
+    "pmcid": "PMC3836744"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 49.0,
+      "sd": 7.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 29.0,
+      "sd": 4.0,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "12 untrained, non-smoking adults (8 women, 4 men) who completed the study (14 were included, 2 dropped out for health reasons unrelated to the study); mean +/- SD age 49 +/- 7 y, BMI 29 +/- 4 (Results, Drop-outs and compliance). Enrolment criteria, not observed ranges: age 30-60 y, BMI 25-35, sedentary, VO2max < 45 ml/min/kg, no history of relevant disease, fasting blood glucose < 6.1 mmol/L, blood pressure < 150/95 mmHg. The paper does not call the group healthy and screened glucose only by a fasting value, not a glucose test, so entered as unselected."
+  },
+  "protocols": [
+    {
+      "name": "fasted_rest",
+      "description": "Fasting resting venous blood sample of the 12 participants before the initial exhaustive treadmill test (Table 1 'Initial resting value'; the same table's '1 hour after initial test' rows are post-exercise). Methods: all examinations were in the fasting state for at least 12 hours, initial test scheduled between 8 and 11 a.m.; only water allowed. Short fasted arm of a 30-minute run-in for the single sample. Assumed: clock hour 8.0 (paper gives a window of 8-11 a.m.), fast of 12 h (paper gives 'at least 12 hours', a lower bound) and the arm length.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "initial_resting_glucose",
+      "description": "Fasting glucose before the initial exercise test (venous blood sample; plasma or serum not stated), mean +/- SD, n=12",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Initial resting value' under Glucose [mmol*l-1] (means ± SD; n=12 from Results)",
+        "quote": "Initial resting value | 5.5 ± 0.9"
+      }
+    },
+    {
+      "id": "initial_resting_insulin",
+      "description": "Fasting insulin before the initial exercise test (venous blood sample; serum or plasma not stated), mean +/- SD, n=12",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_rest"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 8.2,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.8,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Initial resting value' under Insulin [mU* l-1] (means ± SD; n=12 from Results)",
+        "quote": "Initial resting value | 8.2 ± 3.8"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose, insulin, HOMA-IR and NEFA 1 h and 24 h after the exhaustive treadmill test (Tables 1 and 2): the test is a stepwise phase followed by a ramp to exhaustion (incline 0.5 degrees), with individual initial velocity and number of steps not printed and no duration, speed or oxygen-uptake time course; the group VO2max is printed, but the bout's own oxygen uptake and length are not, so no activity level can be derived and the '60 min after cessation' sample cannot be placed in time",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Final resting values after the 4-week training period (Tables 1 and 2) and chronic training effects",
+      "missing": {
+        "kind": "timescale",
+        "name": "weeks_of_training"
+      }
+    },
+    {
+      "what": "NEFA initial resting value (Table 2), printed as 0.74 +/- 0,23 'mg*dl-1': the model's free fatty acid marker reads mmol/L and has no mg/dl conversion (a mixture of acids), the paper prints no mmol/L figure, and 0.74 mg/dl is implausibly low for a fasting NEFA level; the unit is not corrected",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "HOMA-IR initial resting value (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Cholesterol, HDL2, LDL, triglyceride (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Correlations between acute and chronic changes (Results, Figures 2 and 3), acute and chronic change differences",
+      "missing": {
+        "kind": "operator",
+        "name": "correlation_of_changes"
+      }
+    },
+    {
+      "what": "Blood lactate courses during the initial and final exercise tests (Figure 1 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "VO2max 34 +/- 7 and anaerobic threshold 15 +/- 3 ml/min/kg (Results, Physical performance): maximal and threshold values of the exercise test, in per-kilogram units the loader does not read",
+      "missing": {
+        "kind": "input",
+        "name": "vo2_in_ml_per_kg_per_min"
+      }
+    }
+  ]
+}
