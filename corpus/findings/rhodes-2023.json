@@ -1,0 +1,147 @@
+{
+  "paper": "rhodes-2023",
+  "citation": {
+    "authors": "Rhodes CH, et al.",
+    "title": "Human metabolome and immunomodulatory effects of 36 h of fasting: plasma metabolites that mimic fasting effects on macrophages and extend lifespan in C. elegans",
+    "journal": "Am J Clin Nutr",
+    "year": 2023,
+    "doi": "10.1016/j.ajcnut.2022.10.015"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 27.5,
+      "sd": 4.35,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.3,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "20 young healthy participants, 10 men and 10 women, recruited at UC Davis; included if aged 20-40 y, BMI 19-27 kg/m2, fasting glucose 70-100 mg/dL, no documented health conditions (enrolment criteria, not observed ranges, so min and max are null). Age 27.5 +/- 4.35 y (Table 1 and Results). BMI is printed twice: 24.3 +/- 3.1 in Table 1 (used here) and 24.1 +/- 2.66 in the Results text; the two disagree and the paper does not say which is right."
+  },
+  "protocols": [
+    {
+      "name": "fasted_12h",
+      "description": "Baseline blood draw at approximately 08:00 after an overnight (12 h) fast, day 1 (state A); a short fasted morning arm, the sample read at the end of 30 minutes, water not restricted ('habitual water consumption')",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 12,
+      "assumed": [
+        "duration_min"
+      ]
+    },
+    {
+      "name": "fasted_38h",
+      "description": "Blood draw at approximately 08:00 on day 3 (state C, '36-h fasted'). Hours without food: last meal at 18:00 on day 1; 18:00 day 1 to 08:00 day 3 = 14 h + 24 h = 38 h. The paper's '36 h' counts from the 20:00 day-1 postprandial draw (20:00 to 08:00 two days later = 36 h), after the 18:00 meal; 38 h since food is derived from the printed times. Water habitual; no food or calories; only strenuous exercise was prohibited. Short arm, sample read at the end of 30 minutes",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 38,
+      "assumed": [
+        "duration_min",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_after_12h_fast",
+      "description": "Plasma glucose (NMR LipoProfile of EDTA plasma) at baseline after an overnight 12 h fast, state A",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 86.4,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mg/dL)', column Baseline (A); footnote: Values are presented as mean ± standard deviation. n = 20",
+        "quote": "Glucose (mg/dL) | 86.4 ± 11.4 | 88.4 ± 14.1 | 74.5 ± 9.1 | 97.1 ± 10.3 | < 0.001 | 0.014"
+      }
+    },
+    {
+      "id": "glucose_after_36h_fast",
+      "description": "Plasma glucose (NMR LipoProfile of EDTA plasma) at 08:00 on day 3, the '36-h fasted' state C (38 h since the last meal)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_38h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 74.5,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.1,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose (mg/dL)', column Fasted (C); footnote: Values are presented as mean ± standard deviation. n = 20",
+        "quote": "Glucose (mg/dL) | 86.4 ± 11.4 | 88.4 ± 14.1 | 74.5 ± 9.1 | 97.1 ± 10.3 | < 0.001 | 0.014"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose in the fed state (B, 2 h after the 18:00 day-1 meal) and re-fed state (D, 2 h after the 18:00 day-3 meal) (Table 2): the meals were each participant's own habitual diet from a food record; no content is printed in the paper (Supplemental Table 1 is not in the full text)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "ketone bodies in all four states (Table 2, umol/L, NMR LipoProfile): total ketone bodies, not beta-hydroxybutyrate; the separate BHB values in the text and Figure 3C (1.16 +/- 1.36 vs 19.8 +/- 10.8) are Metabolon relative abundance, not a concentration",
+      "missing": {
+        "kind": "marker",
+        "name": "total_ketone_bodies"
+      }
+    },
+    {
+      "what": "triglyceride by NMR in four states (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "cholesterol (total, LDL, HDL) by NMR in four states (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "lipoprotein insulin resistance index LPIR (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "NMR amino acids (a.u.) and GlycA (Table 2), and the untargeted plasma metabolome, macrophage and C. elegans results",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    }
+  ]
+}
