@@ -1,0 +1,40 @@
+{
+  "paper": "hamada-2021",
+  "citation": {
+    "authors": "Hamada N, et al.",
+    "title": "Single Ingestion of Trehalose Enhances Prolonged Exercise Performance by Effective Use of Glucose and Lipid in Healthy Men",
+    "journal": "Nutrients",
+    "year": 2021,
+    "doi": "10.3390/nu13051439",
+    "pmid": "33923235",
+    "pmcid": "PMC8145241"
+  },
+  "reported": [
+    {
+      "what": "blood glucose, water trial, 30 min after the drink (sample 5), mean ± SD, n = 12",
+      "location": {
+        "where": "Results 3.2",
+        "quote": "trial W (81.1 ± 12.3 mg/dL)"
+      }
+    },
+    {
+      "what": "blood glucose AUC from sample 4 to 12, water trial, mean ± SD, n = 12",
+      "location": {
+        "where": "Results 3.2",
+        "quote": "trial W (8667 ± 1241 mg/dL·min)"
+      }
+    },
+    {
+      "what": "catecholamine AUC from sample 4 to 12, water trial (adrenaline, noradrenaline, dopamine), mean ± SD, n = 12; unit not printed",
+      "location": {
+        "where": "Table 3, column W",
+        "quote": "Adrenaline | 24.1 ± 13.1"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every arm contains four Wingate sets of 3 x 30 s sprints, but the paper prints the sprint power only as a percentage of the first set (figure 3), never in watts or oxygen uptake, so the bout cannot be given an intensity; the clock minutes of the 12 blood samples and of the drink are shown only in Figure 1, and no resting or fasting value is printed as a number in text or table (Table 1 has only anthropometry and VO2peak)."
+}
