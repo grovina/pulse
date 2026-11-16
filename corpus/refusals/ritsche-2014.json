@@ -1,0 +1,33 @@
+{
+  "paper": "ritsche-2014",
+  "citation": {
+    "authors": "Ritsche K, Nindl BC, Wideman L",
+    "title": "Exercise‐Induced growth hormone during acute sleep deprivation",
+    "journal": "Physiological Reports",
+    "year": 2014,
+    "doi": "10.14814/phy2.12166",
+    "pmid": "25281616",
+    "pmcid": "PMC4254093"
+  },
+  "reported": [
+    {
+      "what": "blood lactate in the SLEEP session at rest and immediately after four maximal 30-s Wingate sprints (4 min active recovery at 50 W between), mean ± SEM, n = 10: 1.54 ± 0.19 and 17.15 ± 1.54 mmol/L. The only measured oxygen uptake is the average over ~15 min of sprints and recoveries (Table 2, 23.4 ± 4.1 mL/kg/min, level 0.62); the sprints themselves (mean power 528 W, Table 1, 528/186 = 2.84) are beyond the activity scale, and the lactate is driven by them, so a constant level of 0.62 would ask the model for a different bout",
+      "location": {
+        "where": "Results, Lactate (paragraph 1); Table 1; Table 2",
+        "quote": "SLEEP sessions (1.54 ± 0.19 vs. 17.15 ± 1.54 mmol/L, P <0.01)"
+      }
+    },
+    {
+      "what": "serum growth hormone in the SLEEP session: resting 0.57 ± 0.13, peak 17.8 ± 3.7 μg/L, time to peak, delta and AUC (Table 3, M ± SEM); the model has no growth hormone state",
+      "location": {
+        "where": "Table 3",
+        "quote": "Peak GH (μg/L) | 17.8 ± 3.7 | 39.6 ± 7.1"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_above_activity_scale"
+  },
+  "detail": "The only enterable number, lactate after four supramaximal 30-s sprints, is set by sprints of about 2.8 times the activity scale's maximum that the paper's whole-bout mean VO2 (level 0.62) averages away, so no honest bout can be written."
+}
