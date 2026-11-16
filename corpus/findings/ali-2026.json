@@ -1,0 +1,117 @@
+{
+  "paper": "ali-2026",
+  "citation": {
+    "authors": "Ali A, Gurney, Brouner, Spendiff, Malaguti, Candow, Wijesekara, Yoon, et al.",
+    "title": "Effects of Acute Ecklonia cava Supplementation on Submaximal Cycling and Repeated-Sprint Performance in Trained Cyclists: A Randomised Double-Blind Placebo-Controlled Crossover Trial",
+    "journal": "Nutrients",
+    "year": 2026,
+    "doi": "10.3390/nu18203430",
+    "pmid": "42943001",
+    "pmcid": "PMC13708020"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 25.0,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.3,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve trained male cyclists (cycling 8 +/- 2 h/week for at least two years; VO2max 50.0 +/- 8.4 mL/kg/min). Excluded: current smoking, history of cardiovascular or metabolic disease, musculoskeletal injury, antihypertensive medication; the paper does not call them healthy and ran no glucose test, so 'healthy' rests on that history screening."
+  },
+  "protocols": [
+    {
+      "name": "cycling_60min_placebo",
+      "description": "Placebo arm of the crossover: 150 mL sugar-free cordial diluted 1:4 with water (no carbohydrate printed, entered as no meal), then 30 min seated, then 60 min cycling at 55% of each rider's WRmax at 80 rpm (Methods). Minute 0 is the drink, so cycling is minutes 30 to 90. Intensity from the measured VO2 of the placebo condition, Table 1: 30.4 mL/kg/min (mean of the three 20-min exercise intervals), level = (30.4 - 3.7) / 31.7 = 0.842. The paper prints no pre-exercise fast or meal (only that diet was replicated from a 3-day record), so the arm starts from typical values (norm_center) and the clock hour is assumed.",
+      "duration_min": 90,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 30,
+            "to_min": 90,
+            "level": 0.8423
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "placebo_hr_cycling_55pct_wrmax",
+      "description": "Heart rate over the 60 min of cycling, placebo condition: participant-level mean of the three 20-min intervals (0-20, 20-40, 40-60 min of exercise), so the window is the whole bout, minutes 30 to 90 of the arm",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "cycling_60min_placebo"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 90
+      },
+      "value": 142.1,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.2,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, row 'Heart rate', column Placebo, Mean +/- SD",
+        "quote": "Heart rate (beats·min−1) | 141.9 ± 11.6 | 142.1 ± 10.2"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Blood glucose and lactate, session mean over rest, 20, 40 and 60 min of cycling (Table 1); the rest sample's time is not printed, and the pre-exercise fasted or fed state is not described",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "RER during cycling (Table 1): depends on the pre-exercise meal and diet, which the paper does not describe (diet only 'replicated' from a 3-day record)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "VO2 in mL/kg/min during cycling (Table 1); used as the bout's intensity input, and the unit is not in the loader's table (marker is mL/min)",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_lean_mass_or_surface"
+      }
+    },
+    {
+      "what": "Repeated 20 s maximal sprints: mean and peak power (Table 2, about 600 and 780 W, beyond the activity scale) and the post-sprint glucose and lactate (Table 2) sampled in the second minute of each 4-min recovery",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    },
+    {
+      "what": "Maximum work rate WRmax in watts and the 55% work rate in watts: not printed (only VO2max 50.0 +/- 8.4 mL/kg/min, and the VO2 measured during the bout, which was used)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    }
+  ]
+}
