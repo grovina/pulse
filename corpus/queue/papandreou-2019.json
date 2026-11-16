@@ -1,0 +1,30 @@
+{
+  "paper": "papandreou-2019",
+  "citation": "Papandreou D, Magriplis E, Abboud M et al. (2019). Consumption of Raw Orange, 100% Fresh Orange Juice, and Nectar- Sweetened Orange Juice—Effects on Blood Glucose and Insulin Levels on Healthy Subjects. Nutrients 11(9):2171.",
+  "doi": "10.3390/nu11092171",
+  "pmid": "31509979",
+  "pmcid": "PMC6770506",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Three orange products, randomised crossover 3 days apart, ~27 g total sugars each: two raw oranges (260 mL equivalent), 100% fresh orange juice (265 mL), nectar-sweetened orange juice (225 mL). Blood at 0, 30, 60, 90, 120 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=20 non-diabetic young Emirati women, age 21.1 ± 0.9 y, BMI 23.6 ± 5.4 kg/m2 (13 normal weight, 7 overweight/obese; Table 2, mean (SD)).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 3: serum glucose at 0, 30, 60, 90, 120 min per product, mean (SD)",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 3: serum insulin at the same times per product",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Paired-meal contrast, form: whole raw oranges vs fresh orange juice at matched sugars (sweetened nectar is a third arm). The cleanest liquid-against-solid pair found, with full time courses in a table. Watch: insulin units are not labelled in the table (fasting ~55, likely pmol/L, check the methods), fibre differs between whole fruit and juice, and the cohort includes 7 overweight women."
+}

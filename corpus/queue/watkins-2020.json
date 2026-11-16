@@ -1,0 +1,40 @@
+{
+  "paper": "watkins-2020",
+  "citation": "Watkins J, Simpson A, Betts JA et al. (2020). Galactose Ingested with a High-Fat Beverage Increases Postprandial Lipemia Compared with Glucose but Not Fructose Ingestion in Healthy Men. The Journal of Nutrition 150(7):1765-1772.",
+  "doi": "10.1093/jn/nxaa105",
+  "pmid": "32297937",
+  "pmcid": "PMC7330468",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "High-fat drinks scaled per kg (0.94 g/kg fat, 0.12 g/kg protein, 0.17 g/kg lactose + 0.75 g/kg of the test sugar): experiment 1 glucose vs galactose; experiment 2 fructose vs galactose. Capillary blood at 0, 30, 60, 90, 120, 180, 240, 300 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "Healthy non-obese men: experiment 1 n=10, experiment 2 n=9 (Table 1).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 4: iAUC over 300 min per drink",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 4: iAUC over 300 min per drink",
+      "form": "table"
+    },
+    {
+      "marker": "NEFA",
+      "where": "Table 4: AUC over 300 min",
+      "form": "table"
+    },
+    {
+      "marker": "fasting values",
+      "where": "Table 3: fasting TAG, glucose, insulin, NEFA per arm",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Paired-meal contrast, sugars: identical high-fat drink with 0.75 g/kg glucose vs galactose vs fructose (sugar type at fixed sugar amount). Sugar identity at matched grams; the model's sugars feature is an amount, so this tests what it cannot distinguish. Watch: the insulin iAUC row is labelled mmol·L−1 × 300 min (a units slip to check), the TAG response may be figure-only, and doses are per kg. Only in figures: triacylglycerol."
+}

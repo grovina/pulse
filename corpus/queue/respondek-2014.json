@@ -1,0 +1,30 @@
+{
+  "paper": "respondek-2014",
+  "citation": "Respondek F, Hilpipre C, Chauveau P et al. (2014). Digestive tolerance and postprandial glycaemic and insulinaemic responses after consumption of dairy desserts containing maltitol and fructo-oligosaccharides in adults. European Journal of Clinical Nutrition 68(5):575-580.",
+  "doi": "10.1038/ejcn.2014.30",
+  "pmid": "24642779",
+  "pmcid": "PMC4013556",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+  "protocol": "Six dairy desserts, crossover: control with 35 g dextrose (48.1 g carbohydrate, 36.0 g sugars) vs desserts in which sugar is replaced by maltitol and/or short-chain FOS (one at the same 48.1 g carbohydrate with 1.1 g sugars; others 25.9-41.6 g carbohydrate). Venous blood at -5, -1, 15, 30, 45, 60, 90, 120 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=36 healthy adults aged 18-60, BMI 18.5-30 kg/m2; glycaemic sub-study n=18.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 4: AUC 0-120 and Cmax per dessert",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 4: AUC 0-120 (mU·min/L) and Cmax per dessert",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Paired-meal contrast, sugars: dextrose dessert vs maltitol dessert at matched total carbohydrate (other arms also swap sugar for fibre). Sugar-content contrast at fixed carbohydrate grams, rare in this search. Watch: maltitol is a polyol counted in carbohydrate but not sugars, so check the reader maps it; FOS arms mix sugar and fibre; same group as the excluded lecerf-2015 but a different trial (DOI differs). Only in figures: time courses."
+}

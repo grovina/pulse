@@ -21,7 +21,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Coupling priors | 32 |
 | Papers | 113, of which 10 are sealed |
 | Held-out items | 5 |
-| Corpus files | 45 papers as findings, 10 as refusals, 0 queued to be read |
+| Corpus files | 45 papers as findings, 10 as refusals, 17 queued to be read |
 | Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) in the older Python queue |
 
 ## The model

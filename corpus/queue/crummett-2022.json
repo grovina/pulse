@@ -1,0 +1,25 @@
+{
+  "paper": "crummett-2022",
+  "citation": "Crummett LT, Grosso RJ (2022). Postprandial Glycemic Response to Whole Fruit versus Blended Fruit in Healthy, Young Adults. Nutrients 14(21):4565.",
+  "doi": "10.3390/nu14214565",
+  "pmid": "36364827",
+  "pmcid": "PMC9657402",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Gala apple (190 g) + blackberries (148 g), crossover: eaten whole vs blended into a smoothie (with 100 mL water, 100 g ice). Blood glucose every 10 min for 60 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=20 young healthy college students (12 women, 8 men).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 1: max, iAUC, 60-min incremental value per form, by sex and all",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Paired-meal contrast, form: whole fruit vs the same fruit blended. Exactly matched form contrast (same fruit). Watch: glucose only (likely capillary), 60 min only, and values are incremental (baseline subtracted). Only in figures: glucose time course."
+}

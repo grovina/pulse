@@ -1,0 +1,40 @@
+{
+  "paper": "mohr-2021",
+  "citation": "Mohr AE, Minicucci O, Long D et al. (2021). Resistant Starch Combined with Whey Protein Increases Postprandial Metabolism and Lowers Glucose and Insulin Responses in Healthy Adult Men. Foods 10(3):537.",
+  "doi": "10.3390/foods10030537",
+  "pmid": "33807618",
+  "pmcid": "PMC8000721",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Four pancake breakfasts, crossover: waxy maize starch (WMS; 73 g carbohydrate, 5 g fat, 15 g protein, 0 g fibre listed), WMS + 20.5 g whey, RS4 resistant starch (hydroxypropyl distarch phosphate) at the same 73/5/15 g, RS + whey. Venous blood at 0, 60, 120, 180 min (no blood for WMS + whey).",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "n=8 men, generally healthy, non-smokers; age and BMI in Table 2 (mean ± SD).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "insulin",
+      "where": "Table 5: estimated marginal means (95% CI) at 0, 60, 120, 180 min per meal",
+      "form": "table"
+    },
+    {
+      "marker": "glucose",
+      "where": "Table 5: same layout, mg/dL",
+      "form": "table"
+    },
+    {
+      "marker": "GIP",
+      "where": "Table 5: pmol/L",
+      "form": "table"
+    },
+    {
+      "marker": "GLP-1",
+      "where": "Table 5: pM",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "ci",
+  "figure_only": false,
+  "note": "Paired-meal contrast, fibre: waxy maize starch pancake vs resistant starch (RS4) pancake at matched grams of carbohydrate, fat and protein (whey arms are a protein-amount add-on, not a source contrast). Clean starch-for-resistant-starch swap at identical macronutrients. Watch: insulin row is labelled only \"(units)\" (looks like µIU/mL), values are model-estimated marginal means with 95% CI, Table 1 lists fibre as 0 g for the RS meal (RS4 counted in carbohydrate), n=8."
+}

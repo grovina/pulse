@@ -1,0 +1,30 @@
+{
+  "paper": "mah-2018",
+  "citation": "Mah E, Garcia-Campayo V, Liska D (2018). Substitution of Corn Starch with Resistant Starch Type 4 in a Breakfast Bar Decreases Postprandial Glucose and Insulin Responses: A Randomized, Controlled, Crossover Study. Current Developments in Nutrition 2(10):nzy066.",
+  "doi": "10.1093/cdn/nzy066",
+  "pmid": "30338311",
+  "pmcid": "PMC6186909",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "Two breakfast bars, double-blind crossover: control bar (55 g total carbohydrate, 4 g fibre, 10 g fat, 4 g protein) vs RS4 bar (56 g carbohydrate, 32 g fibre, 10 g fat, 4 g protein). Capillary glucose and venous insulin at -15, -5, 15, 30, 45, 60, 90, 120 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=21 healthy adults (11 women), age 34.1 ± 8.6 y, BMI 23.5 ± 2.3 kg/m2 (Table 2, mean ± SD); per-protocol n=20.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 3: iAUC0-120, Cmax, Tmax per bar",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 3: iAUC0-120 (µIU/mL × min), Cmax, Tmax per bar",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "ci",
+  "figure_only": false,
+  "note": "Paired-meal contrast, fibre: corn-starch bar vs RS4 bar at matched total carbohydrate, fat and protein. Second RS4-for-starch swap with a different food and much larger fibre gap than stewart-2017. Watch: Table 3 values are medians with 95% CIs, not means. Only in figures: glucose and insulin time courses."
+}
