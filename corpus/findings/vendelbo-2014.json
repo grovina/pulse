@@ -1,0 +1,518 @@
+{
+  "paper": "vendelbo-2014",
+  "citation": {
+    "authors": "Vendelbo MH, et al.",
+    "title": "Fasting increases human skeletal muscle net phenylalanine release and this is associated with decreased mTOR signaling",
+    "journal": "PLoS One",
+    "year": 2014,
+    "doi": "10.1371/journal.pone.0102031",
+    "pmid": "25020061",
+    "pmcid": "PMC4096723"
+  },
+  "population": {
+    "n": 8,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.0,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.8,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Eight healthy men with no family history of diabetes, no prescription medicine; age 26±4 years and BMI 23.8±1.6 kg/m2 are printed without a label for the spread (the paper says results are means ± SE), so no SD is entered."
+  },
+  "protocols": [
+    {
+      "name": "basal_control",
+      "description": "Admission at 08:00 (t = 0) after a 10-hour overnight fast (control); serum sample at t = 30 min (Table 1 basal condition), 30 min into the non-nutritive amino-acid and urea tracer infusions (trace doses, not a meal). Arm ends after the sample: sample at minute 30, duration 31; start_hour 8.0 as printed, so the fast is 10.5 h at the sample while prefast_hours is the printed 10 h at admission.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min"
+      ]
+    },
+    {
+      "name": "basal_fast72",
+      "description": "Admission at 08:00 (t = 0) after a 72-hour fast, tap water allowed (fasting); serum sample at t = 30 min (Table 1 basal condition), 30 min into the non-nutritive amino-acid and urea tracer infusions (trace doses, not a meal). Arm ends after the sample: sample at minute 30, duration 31; start_hour 8.0 as printed, so the fast is 72.5 h at the sample while prefast_hours is the printed 72 h at admission.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 72,
+      "assumed": [
+        "duration_min"
+      ]
+    },
+    {
+      "name": "clamp_control",
+      "description": "Admission 08:00 (t = 0) after an overnight fast of 10 hours (control); hyperinsulinemic euglycemic clamp t = 240-360 min (insulin 0.8 mU/(kg*min), glucose clamped at ~5 mM); sample at t = 270. The arm ends after the t = 270 sample (minute 270, duration 271). Clamp entered at the plasma levels Table 1 prints for t = 270: insulin 269.0 pM, glucose 4.9 mM. Amino acid tracer infusions t = 0-240 are not model inputs and are not entered.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "insulin_clamp": {
+        "unit": "pmol/L",
+        "segments": [
+          {
+            "from_min": 240,
+            "to_min": 271,
+            "level": 269.0
+          }
+        ]
+      },
+      "glucose_clamp": {
+        "unit": "mmol/L",
+        "segments": [
+          {
+            "from_min": 240,
+            "to_min": 271,
+            "level": 4.9
+          }
+        ]
+      },
+      "assumed": [
+        "duration_min"
+      ]
+    },
+    {
+      "name": "clamp_fast72",
+      "description": "Admission 08:00 (t = 0) after an 72-hour fast, tap water allowed (fasting); hyperinsulinemic euglycemic clamp t = 240-360 min (insulin 0.8 mU/(kg*min), glucose clamped at ~5 mM); sample at t = 270. The arm ends after the t = 270 sample (minute 270, duration 271). Clamp entered at the plasma levels Table 1 prints for t = 270: insulin 274.5 pM, glucose 4.6 mM. Amino acid tracer infusions t = 0-240 are not model inputs and are not entered.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 72,
+      "insulin_clamp": {
+        "unit": "pmol/L",
+        "segments": [
+          {
+            "from_min": 240,
+            "to_min": 271,
+            "level": 274.5
+          }
+        ]
+      },
+      "glucose_clamp": {
+        "unit": "mmol/L",
+        "segments": [
+          {
+            "from_min": 240,
+            "to_min": 271,
+            "level": 4.6
+          }
+        ]
+      },
+      "assumed": [
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ins_basal_control",
+      "description": "Serum insulin at t = 30 min, basal, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_control"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 41.5,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.8,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Insulin, pM', column Control (Basal Condition)",
+        "quote": "Insulin, pM | 41.5±3.8"
+      }
+    },
+    {
+      "id": "glu_basal_control",
+      "description": "Plasma glucose at t = 30 min, basal, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_control"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 5.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose, mM', column Control (Basal Condition)",
+        "quote": "Glucose, mM | 5.1±0.06"
+      }
+    },
+    {
+      "id": "ffa_basal_control",
+      "description": "Serum ffa at t = 30 min, basal, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_control"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 0.48,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'FFA, mM', column Control (Basal Condition)",
+        "quote": "FFA, mM | 0.48±0.09"
+      }
+    },
+    {
+      "id": "gcg_basal_control",
+      "description": "Serum glucagon at t = 30 min, basal, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_control"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 46.4,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.2,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucagon, ng/L', column Control (Basal Condition)",
+        "quote": "Glucagon, ng/L | 46.4±7.2"
+      }
+    },
+    {
+      "id": "cor_basal_control",
+      "description": "Serum cortisol at t = 30 min, basal, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_control"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 456,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 65,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Cortisol, nM', column Control (Basal Condition)",
+        "quote": "Cortisol, nM | 456±65"
+      }
+    },
+    {
+      "id": "ins_basal_fast72",
+      "description": "Serum insulin at t = 30 min, basal, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_fast72"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 15.3,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.6,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Insulin, pM', column Fasting (Basal Condition)",
+        "quote": "Insulin, pM | 15.3±1.6"
+      }
+    },
+    {
+      "id": "glu_basal_fast72",
+      "description": "Plasma glucose at t = 30 min, basal, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_fast72"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 3.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.13,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose, mM', column Fasting (Basal Condition)",
+        "quote": "Glucose, mM | 3.9±0.13"
+      }
+    },
+    {
+      "id": "ffa_basal_fast72",
+      "description": "Serum ffa at t = 30 min, basal, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_fast72"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 0.84,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.06,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'FFA, mM', column Fasting (Basal Condition)",
+        "quote": "FFA, mM | 0.84±0.06"
+      }
+    },
+    {
+      "id": "gcg_basal_fast72",
+      "description": "Serum glucagon at t = 30 min, basal, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_fast72"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 134.5,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 20.1,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucagon, ng/L', column Fasting (Basal Condition)",
+        "quote": "Glucagon, ng/L | 134.5±20.1"
+      }
+    },
+    {
+      "id": "cor_basal_fast72",
+      "description": "Serum cortisol at t = 30 min, basal, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "basal_fast72"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 503,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 55,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Cortisol, nM', column Fasting (Basal Condition)",
+        "quote": "Cortisol, nM | 503±55"
+      }
+    },
+    {
+      "id": "ffa_clamp_control",
+      "description": "Serum ffa at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_control"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 0.27,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.03,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'FFA, mM', column Control (Clamp Condition)",
+        "quote": "FFA, mM | 0.27±0.03"
+      }
+    },
+    {
+      "id": "gcg_clamp_control",
+      "description": "Serum glucagon at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_control"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 37.5,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4.4,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucagon, ng/L', column Control (Clamp Condition)",
+        "quote": "Glucagon, ng/L | 37.5±4.4"
+      }
+    },
+    {
+      "id": "cor_clamp_control",
+      "description": "Serum cortisol at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 10-hour overnight fast (control); mean and SE of the 8 men",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_control"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 369,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 50,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Cortisol, nM', column Control (Clamp Condition)",
+        "quote": "Cortisol, nM | 369±50"
+      }
+    },
+    {
+      "id": "ffa_clamp_fast72",
+      "description": "Serum ffa at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_fast72"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 0.72,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.09,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'FFA, mM', column Fasting (Clamp Condition)",
+        "quote": "FFA, mM | 0.72±0.09"
+      }
+    },
+    {
+      "id": "gcg_clamp_fast72",
+      "description": "Serum glucagon at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "glucagon",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_fast72"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 58.5,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7.5,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Glucagon, ng/L', column Fasting (Clamp Condition)",
+        "quote": "Glucagon, ng/L | 58.5±7.5"
+      }
+    },
+    {
+      "id": "cor_clamp_fast72",
+      "description": "Serum cortisol at t = 270 min, during the hyperinsulinemic euglycemic clamp, after 72-hour fast; mean and SE of the 8 men",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "clamp_fast72"
+      ],
+      "window": {
+        "start_min": 270,
+        "end_min": 271
+      },
+      "value": 414,
+      "unit": "nmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 34,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Cortisol, nM', column Fasting (Clamp Condition)",
+        "quote": "Cortisol, nM | 414±34"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "C-peptide, basal and clamp (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "forearm phenylalanine and tyrosine fluxes and venous phenylalanine concentration (Table 1, text), and muscle signalling (Figures 2-4)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_amino_acids"
+      }
+    }
+  ]
+}
