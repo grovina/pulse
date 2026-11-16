@@ -1,0 +1,40 @@
+{
+  "paper": "tsuda-2020",
+  "citation": {
+    "authors": "Tsuda Y, et al.",
+    "title": "Effects of an amino acid mixture of arginine, valine and serine on the cortisol response to exercise in healthy men",
+    "journal": "Journal of the International Society of Sports Nutrition",
+    "year": 2020,
+    "doi": "10.1186/s12970-020-00369-2",
+    "pmid": "32703216",
+    "pmcid": "PMC7376855"
+  },
+  "reported": [
+    {
+      "what": "placebo arm, plasma cortisol before and after 80 min of cycling at 50% VO2max, mean ± SEM, n = 15",
+      "location": {
+        "where": "Results, Cortisol and ACTH",
+        "quote": "9.51 ± 0.85 vs 14.39 ± 2.15"
+      }
+    },
+    {
+      "what": "placebo arm, blood glucose before and after exercise, mean ± SEM, n = 15 (Table 2)",
+      "location": {
+        "where": "Table 2, Placebo row, columns Before exercise and After exercise",
+        "quote": "Placebo | 79.5 ± 2.0 | 73.8 ± 1.8"
+      }
+    },
+    {
+      "what": "placebo arm, serum free fatty acid before and after exercise, mean ± SEM, n = 15 (Table 2)",
+      "location": {
+        "where": "Table 2, Placebo row, columns Before exercise and After exercise",
+        "quote": "Placebo | 0.21 ± 0.03 | 1.02 ± 0.12"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every sample is drawn after a breakfast the paper calls only 'the same breakfast', with no content, grams or clock time, so the bout cannot be written on a fed state and the 'before exercise' values are not fasting values; no value in the paper needs no meal."
+}
