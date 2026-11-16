@@ -308,10 +308,10 @@
       }
     },
     {
-      "what": "insulin at 0, 12, 24, 36 h in both conditions (Table 2), printed in pg/mL",
+      "what": "insulin at 0, 12, 24, 36 h in both conditions (Table 2), printed in pg/mL from a multiplex bead panel (Methods 2.2.2); the levels (means 1,523 to 1,655 pg/mL, about 44 to 47 uU/mL, SD about equal to the mean) stay flat from 12 to 36 h of fasting and are far above a fasting insulin of healthy adults, as for the other hormones of the same panel",
       "missing": {
-        "kind": "input",
-        "name": "insulin_in_pg_per_ml"
+        "kind": "source",
+        "name": "assay_not_comparable"
       }
     },
     {
