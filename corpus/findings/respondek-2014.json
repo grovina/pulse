@@ -1,0 +1,406 @@
+{
+  "paper": "respondek-2014",
+  "citation": {
+    "authors": "Respondek F, Hilpipre C, Chauveau P, Cazaubiel M, Gendre D, Maudet C, Wagner A",
+    "title": "Digestive tolerance and postprandial glycaemic and insulinaemic responses after consumption of dairy desserts containing maltitol and fructo-oligosaccharides in adults",
+    "journal": "European Journal of Clinical Nutrition",
+    "year": 2014,
+    "doi": "10.1038/ejcn.2014.30",
+    "pmid": "24642779",
+    "pmcid": "PMC4013556"
+  },
+  "population": {
+    "n": 18,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 39.0,
+      "sd": 12.6,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.38,
+      "sd": 2.87,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The 18 of 36 healthy adults who also took part in the glycaemic and insulinaemic sub-study (ITT n=18): age 39.0±12.6 years, BMI 23.38±2.87 kg/m2 as printed for these 18. Inclusion: age 18-60 years, BMI 18.5-30.0 kg/m2 (enrolment criteria, so min and max are null), normal stool frequency, no metabolic, functional or inflammatory disease affecting transit or absorption, no IBS, no medication affecting nutrient absorption or lipid or carbohydrate metabolism; screened for fasting glucose <=1.1 g/l, normal renal function, normal blood count and liver enzymes. Sex: 33% men and 66% women is printed for the 36 (ITT), not for the 18, so sex is mixed. Nantes, France; randomised double-blind six-period crossover, at least 2 weeks washout. Per-protocol (n=15 for glycaemia) results are not shown."
+  },
+  "protocols": [
+    {
+      "name": "control",
+      "description": "Control dessert with 35 g dextrose (Table 1, per 210 g: 48.1 g carbohydrates, 2.2 g lipids, 6.1 g proteins, sugars 36.0 g, polyols 0.0 g). Glycaemic sub-study, ITT n=18. carbs_g is Table 1's 'Carbohydrates' (48.1 g) as printed (no polyols in this dessert; sugars 36.0 g, so about 12.1 g starch and maltodextrin). fibre_g 2.7 is Table 1 'Fibres', read as not part of Carbohydrates (the guide's European-table rule). Arm clock starts at the paper's T-5 min (first fasting sample): the T-1 sample is arm minute 4, the dessert is at arm minute 5 (paper T0) and the paper's T15, T30, T45, T60, T90 and T120 samples are arm minutes 20, 35, 50, 65, 95 and 125 (duration 126). The dessert (210 g, a chocolate dairy dessert cream; ingredients in decreasing order of weight: cocoa powder, maltodextrines, modified starch, milk proteins, chocolate flavour, carrageenans, sucralose) was eaten within 5-10 min with 250 cl water as printed (2.5 L, evidently a misprint; the volume is not entered, water carries no grams) after 12 h fasting; entered as one meal at paper T0, read as the start of eating (the paper does not say whether T0 is the start or the end). protein_source dairy is read from the ingredient 'milk proteins' (the paper does not say all protein is milk protein). form solid is read from 'dairy dessert cream' (a spoonable cream; the paper does not say solid or liquid). Stated: the grams (Table 1), 12 h fast (prefast_hours 12). Not stated: the clock hour.",
+      "duration_min": 126,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 48.1,
+          "fat_g": 2.2,
+          "protein_g": 6.1,
+          "fibre_g": 2.7,
+          "sugars_g": 36.0,
+          "protein_source": "dairy",
+          "form": "solid",
+          "food": "chocolate dairy dessert cream with dextrose"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "dex24_fos11",
+      "description": "Dessert with 24 g dextrose and 11 g scFOS (Table 1, per 210 g: 32.1 g carbohydrates, 3.0 g lipids, 8.3 g proteins, sugars 25.3 g, polyols 0.0 g). Glycaemic sub-study, ITT n=18. carbs_g is Table 1's 'Carbohydrates' (32.1 g) as printed (no polyols in this dessert; sugars 25.3 g, so about 6.8 g starch and maltodextrin). fibre_g 14.8 is Table 1 'Fibres', of which scFOS 11.2 g (fibre_g holds the total only), read as not part of Carbohydrates (the guide's European-table rule). Arm clock starts at the paper's T-5 min (first fasting sample): the T-1 sample is arm minute 4, the dessert is at arm minute 5 (paper T0) and the paper's T15, T30, T45, T60, T90 and T120 samples are arm minutes 20, 35, 50, 65, 95 and 125 (duration 126). The dessert (210 g, a chocolate dairy dessert cream; ingredients in decreasing order of weight: cocoa powder, maltodextrines, modified starch, milk proteins, chocolate flavour, carrageenans, sucralose) was eaten within 5-10 min with 250 cl water as printed (2.5 L, evidently a misprint; the volume is not entered, water carries no grams) after 12 h fasting; entered as one meal at paper T0, read as the start of eating (the paper does not say whether T0 is the start or the end). protein_source dairy is read from the ingredient 'milk proteins' (the paper does not say all protein is milk protein). form solid is read from 'dairy dessert cream' (a spoonable cream; the paper does not say solid or liquid). Stated: the grams (Table 1), 12 h fast (prefast_hours 12). Not stated: the clock hour.",
+      "duration_min": 126,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 5,
+          "carbs_g": 32.1,
+          "fat_g": 3.0,
+          "protein_g": 8.3,
+          "fibre_g": 14.8,
+          "sugars_g": 25.3,
+          "protein_source": "dairy",
+          "form": "solid",
+          "food": "chocolate dairy dessert cream, 24 g dextrose and 11 g scFOS"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    },
+    {
+      "name": "fasted_morning",
+      "description": "Glycaemic sub-study subjects (ITT n=18) after 12 h fasting (visits: 'arrived at the clinical site after 12 h fasting'), no food; short arm for the group's printed average fasting values. The paper does not say at which visit or time the fasting values were drawn, nor how they were averaged (they could be the means of the T-5 and T-1 samples over the six visits; not stated). Not stated: clock hour and the arm's length.",
+      "duration_min": 31,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min, after the control dessert with 35 g dextrose. Table 4 is the ITT population (n=18); the Methods say AUC0-120 min is the incremental AUC computed following the FAO recommendation (cited, not described), so what lies under baseline is unstated. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0, so the first of times is the arm minute of the dessert (5), where the model is still fasted; the paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline, the mean of both (baseline_window arm minutes 0-5) is used.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "time_unit": "min",
+      "value": 110.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 56.4,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, glucose block, row 'AUC (mmol min/l)', column 'Control' (ITT n=18, mean±s.d.); Methods, statistical analysis",
+        "quote": "AUC (mmol min/l) | 110.4±56.4"
+      }
+    },
+    {
+      "id": "control_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min, after the control dessert with 35 g dextrose. Table 4 is the ITT population (n=18); the Methods say AUC0-120 min is the incremental AUC computed following the FAO recommendation (cited, not described), so what lies under baseline is unstated. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0, so the first of times is the arm minute of the dessert (5), where the model is still fasted; the paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline, the mean of both (baseline_window arm minutes 0-5) is used.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "time_unit": "min",
+      "value": 4224.1,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1616.9,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, insulin block, row 'AUC (mU min/l)', column 'Control' (ITT n=18, mean±s.d.); Methods, statistical analysis",
+        "quote": "AUC (mU min/l) | 4224.1±1616.9"
+      }
+    },
+    {
+      "id": "control_glucose_cmax",
+      "description": "Peak (Cmax) glucose over the 2 h after the control dessert with 35 g dextrose: mean of each person's highest value, paper T0 to T120 (arm minutes 5-125 inclusive). Absolute concentration, not incremental (Table 4 glucose Cmax is 5.9-8.1 mmol/L, a level, beside incremental AUCs).",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "control"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 8.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.6,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, glucose block, row 'Cmax (mmol/l)', column 'Control' (ITT n=18, mean±s.d.)",
+        "quote": "Cmax (mmol/l) | 8.1±1.6"
+      }
+    },
+    {
+      "id": "control_insulin_cmax",
+      "description": "Peak (Cmax) insulin over the 2 h after the control dessert with 35 g dextrose: mean of each person's highest value, paper T0 to T120 (arm minutes 5-125 inclusive). Absolute concentration, not incremental (Table 4 glucose Cmax is 5.9-8.1 mmol/L, a level, beside incremental AUCs).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "control"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 94.9,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 36.0,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, insulin block, row 'Cmax (mU/l)', column 'Control' (ITT n=18, mean±s.d.)",
+        "quote": "Cmax (mU/l) | 94.9±36.0"
+      }
+    },
+    {
+      "id": "dex24_fos11_glucose_iauc",
+      "description": "Incremental area under the glucose curve, 0-120 min, after the dessert with 24 g dextrose and 11 g scfos. Table 4 is the ITT population (n=18); the Methods say AUC0-120 min is the incremental AUC computed following the FAO recommendation (cited, not described), so what lies under baseline is unstated. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0, so the first of times is the arm minute of the dessert (5), where the model is still fasted; the paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline, the mean of both (baseline_window arm minutes 0-5) is used.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dex24_fos11"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "time_unit": "min",
+      "value": 70.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 48.3,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, glucose block, row 'AUC (mmol min/l)', column 'Dextrose 24 scFOS 11' (ITT n=18, mean±s.d.); Methods, statistical analysis",
+        "quote": "AUC (mmol min/l) | 70.1±48.3"
+      }
+    },
+    {
+      "id": "dex24_fos11_insulin_iauc",
+      "description": "Incremental area under the insulin curve, 0-120 min, after the dessert with 24 g dextrose and 11 g scfos. Table 4 is the ITT population (n=18); the Methods say AUC0-120 min is the incremental AUC computed following the FAO recommendation (cited, not described), so what lies under baseline is unstated. Read as the trapezoid over the paper's samples from T0 to T120; there is no sample at T0, so the first of times is the arm minute of the dessert (5), where the model is still fasted; the paper does not say which fasting sample (T-5, T-1 or their mean) is the baseline, the mean of both (baseline_window arm minutes 0-5) is used.",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "dex24_fos11"
+      ],
+      "times": [
+        5,
+        20,
+        35,
+        50,
+        65,
+        95,
+        125
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "below_baseline": "unstated",
+      "time_unit": "min",
+      "value": 3221.3,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1566.7,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, insulin block, row 'AUC (mU min/l)', column 'Dextrose 24 scFOS 11' (ITT n=18, mean±s.d.); Methods, statistical analysis",
+        "quote": "AUC (mU min/l) | 3221.3±1566.7a"
+      }
+    },
+    {
+      "id": "dex24_fos11_glucose_cmax",
+      "description": "Peak (Cmax) glucose over the 2 h after the dessert with 24 g dextrose and 11 g scfos: mean of each person's highest value, paper T0 to T120 (arm minutes 5-125 inclusive). Absolute concentration, not incremental (Table 4 glucose Cmax is 5.9-8.1 mmol/L, a level, beside incremental AUCs).",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "dex24_fos11"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 7.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.3,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, glucose block, row 'Cmax (mmol/l)', column 'Dextrose 24 scFOS 11' (ITT n=18, mean±s.d.)",
+        "quote": "Cmax (mmol/l) | 7.3±1.3a"
+      }
+    },
+    {
+      "id": "dex24_fos11_insulin_cmax",
+      "description": "Peak (Cmax) insulin over the 2 h after the dessert with 24 g dextrose and 11 g scfos: mean of each person's highest value, paper T0 to T120 (arm minutes 5-125 inclusive). Absolute concentration, not incremental (Table 4 glucose Cmax is 5.9-8.1 mmol/L, a level, beside incremental AUCs).",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "dex24_fos11"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 126
+      },
+      "value": 85.6,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 32.8,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 4, insulin block, row 'Cmax (mU/l)', column 'Dextrose 24 scFOS 11' (ITT n=18, mean±s.d.)",
+        "quote": "Cmax (mU/l) | 85.6±32.8"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Average fasting glucose of the 18 subjects of the glycaemic sub-study (Results, study population; mean±s.d.; the Methods say summary results are means±s.d.). Entered as the mean over a short fasted arm, minutes 0-30.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 4.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.62,
+        "n": 18
+      },
+      "location": {
+        "where": "Results, Study population, paragraph 1",
+        "quote": "Their average fasting glycaemia was 4.90±0.62 mmol/l and insulinaemia was 7.45±2.70 mU/l."
+      }
+    },
+    {
+      "id": "fasting_insulin",
+      "description": "Average fasting insulin of the 18 subjects of the glycaemic sub-study (Results, study population; mean±s.d.; the Methods say summary results are means±s.d.). Entered as the mean over a short fasted arm, minutes 0-30.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 7.45,
+      "unit": "mU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.7,
+        "n": 18
+      },
+      "location": {
+        "where": "Results, Study population, paragraph 1",
+        "quote": "Their average fasting glycaemia was 4.90±0.62 mmol/l and insulinaemia was 7.45±2.70 mU/l."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "The four maltitol desserts (35 g; 30 g + 5 g scFOS; 24 g + 11 g scFOS; 17.5 g + 17.5 g scFOS): glucose and insulin incremental AUC and Cmax, Table 4 (ITT n=18), 16 numbers. Table 1's 'Carbohydrates' includes the polyols (the 35 g maltitol dessert prints 48.1 g like the 35 g dextrose control; sugars 1.1 g, polyols 35.0 g, remainder about 12 g), and the paper says only about 40% of maltitol is absorbed in the small intestine (Discussion). carbs_g is available (digestible) carbohydrate and the guide has no rule for counting a polyol, so writing 48.1 g would state the same digestible load as the dextrose control and write the paper's own result (lower glucose and insulin) as a contradiction, and subtracting the polyols (13.1 g) or counting 40% would be arithmetic the guide does not allow",
+      "missing": {
+        "kind": "input",
+        "name": "polyol_carbohydrate_count"
+      }
+    },
+    {
+      "what": "scFOS (Actilight 950P: about 37% 1-kestose, 53% nystose, 10% fructofuranosyl nystose) as the type of fibre in the 24 g dextrose + 11 g scFOS dessert (Table 1, Products being studied); fibre_g holds the total only",
+      "missing": {
+        "kind": "input",
+        "name": "fibre_type"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses at -5 to 120 min for all six desserts (Figure 1a, 1b, ITT); per-protocol glucose and insulin results ('data not shown')",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Between-dessert comparisons (Dunnett's test P values against the control, e.g. dextrose 24 scFOS 11 glucose AUC P=0.1113): no difference with an uncertainty is printed",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    }
+  ]
+}
