@@ -1,0 +1,269 @@
+{
+  "paper": "gillberg-2019",
+  "citation": {
+    "authors": "Gillberg L, et al.",
+    "title": "Adipose tissue transcriptomics and epigenomics in low birthweight men and controls: role of high-fat overfeeding and effects of fasting",
+    "journal": "EBioMedicine",
+    "year": 2019,
+    "doi": "10.1016/j.ebiom.2019.08.017",
+    "pmid": "31439477",
+    "pmcid": "PMC6796584"
+  },
+  "population": {
+    "n": 8,
+    "sex": "male",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 22.0,
+      "max": 27.0
+    },
+    "bmi": {
+      "mean": 23.5,
+      "sd": 4.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "The 8 normal-birth-weight (NBW) men of Table 1, who took part in both the 36 h fast and the control study; healthy young Danish men born at term (week 39-41), recruited from the Danish National Birth Register, age- and BMI-matched to the LBW men. Age: the paper gives only 'Healthy, young (22-27 years)' for the recruited men (a design statement, not an observed range of these 8) and nothing else on age, so 22-27 is used as min and max. BMI: Table 1 control-study column, 23.5 +/- 4.0 kg/m2 (fasting column 23.7 +/- 4.1); exclusion BMI > 30. The low-birth-weight (LBW) men of Table 1 are also healthy, matched for age and BMI, but a group the model cannot tell apart by birth weight, and no pooled LBW+NBW Table 1 values are printed: the NBW men, the term-born reference group, are the one group entered."
+  },
+  "protocols": [
+    {
+      "name": "nbw_control_12h",
+      "description": "Control study: standardized meals on day 1 (breakfast 8:00, lunch 12:00, snack 15:00, dinner 19:30), then an overnight fast; biopsies 07:00-07:30 on the second day, which the paper calls 12 h of fasting (19:30 + 12 h = 07:30); the glucose, insulin and FFA values were obtained 1 h after the biopsy (Table 1 footnote). Arithmetic: sample 08:00-08:30, midpoint 08:15, is 12 h 45 min after the 19:30 dinner, so prefast_hours 12.75 rather than the printed 12 (which is the time of the biopsy); start_hour 7.75 puts minute 29.5 of the 30 min run-in at 08:15. Neither the sampling clock time nor the arm length is printed, so start_hour, prefast_hours (derived) and duration_min are assumed. The paper also says an IVGTT was started shortly after the biopsies; the printed levels are fasting levels and are read as the basal sample. Water only; no meals.",
+      "duration_min": 30,
+      "start_hour": 7.75,
+      "meals": [],
+      "prefast_hours": 12.75,
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "nbw_fast_36h",
+      "description": "Fasting study: standardized meal at 19:30 on arrival, fasted thereafter (water ad libitum; smokers allowed a 10 mg Nicorette inhaler, number of smokers not printed); biopsies 07:00-07:30 on the morning the paper calls 36 h of fasting (19:30 + 36 h = 07:30 two mornings later); the values were obtained 1 h after the biopsy (Table 1 footnote). Arithmetic: sample 08:00-08:30, midpoint 08:15, is 36 h 45 min after the 19:30 meal, so prefast_hours 36.75 rather than the printed 36; start_hour 7.75 puts minute 29.5 of the 30 min run-in at 08:15. Start hour, derived prefast_hours and arm length are assumed. Two 10-min sessions on an ergometer bicycle on the first day 'to avoid inactivity': no intensity and no clock time printed, so they cannot be entered as activity; 20 min of exercise of unstated intensity, about a day before the sample, in a 36 h fast, is noted and not entered. The paper also says an IVGTT was started shortly after the biopsies; the printed levels are fasting levels and are read as the basal sample.",
+      "duration_min": 30,
+      "start_hour": 7.75,
+      "meals": [],
+      "prefast_hours": 36.75,
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "nbw_control_glucose",
+      "description": "Plasma glucose after the 12 h overnight fast (control study), NBW men, mean and SD; the unit is printed 'mmol l/L' in the table and read as mmol/L",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_control_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Plasma glucose (mmol l/L)', column NBW (n = 8), Control study",
+        "quote": "Plasma glucose (mmol l/L) | 5.0 ± 0.3"
+      }
+    },
+    {
+      "id": "nbw_fast36_glucose",
+      "description": "Plasma glucose after 36 h fasting, NBW men, mean and SD (unit printed 'mmol l/L', read as mmol/L)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_fast_36h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 3.9,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Plasma glucose (mmol l/L)', column NBW (n = 8), Fasting",
+        "quote": "Plasma glucose (mmol l/L) | 3.9 ± 0.5**"
+      }
+    },
+    {
+      "id": "nbw_control_insulin",
+      "description": "Serum insulin after the 12 h overnight fast (control study), NBW men, mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_control_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 21.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.7,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Serum insulin (pmol l−1)', column NBW (n = 8), Control study",
+        "quote": "Serum insulin (pmol l−1) | 21.1 ± 6.7"
+      }
+    },
+    {
+      "id": "nbw_fast36_insulin",
+      "description": "Serum insulin after 36 h fasting, NBW men, mean and SD",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_fast_36h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 11.4,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.1,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Serum insulin (pmol l−1)', column NBW (n = 8), Fasting",
+        "quote": "Serum insulin (pmol l−1) | 11.4 ± 3.1*"
+      }
+    },
+    {
+      "id": "nbw_control_ffa",
+      "description": "Free fatty acids after the 12 h overnight fast (control study), NBW men, mean and SD; footnote a: data from 6 of the 8 NBW men only",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_control_12h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 173.0,
+      "unit": "μmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 61.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 1, row 'FFA (μmol l−1)a', column NBW (n = 8), Control study; n = 6 from footnote a",
+        "quote": "FFA (μmol l−1)a | 173 ± 61"
+      }
+    },
+    {
+      "id": "nbw_fast36_ffa",
+      "description": "Free fatty acids after 36 h fasting, NBW men, mean and SD; footnote a: data from 6 of the 8 NBW men only",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_fast_36h"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 556.0,
+      "unit": "μmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 213.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 1, row 'FFA (μmol l−1)a', column NBW (n = 8), Fasting; n = 6 from footnote a",
+        "quote": "FFA (μmol l−1)a | 556 ± 213**"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "The same Table 1 values for the low-birth-weight (LBW) group, n = 8 (glucose, insulin, FFA, HOMA-IR, lipids), both conditions: a group set apart by birth weight, which the model cannot be told, and the paper gives no pooled LBW+NBW values in the text",
+      "missing": {
+        "kind": "population",
+        "name": "birth_weight_group"
+      }
+    },
+    {
+      "what": "HOMA-IR, both groups and conditions (Table 1; calculated from minimal modelling)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Triglycerides, both groups and conditions (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Total and HDL cholesterol, both groups and conditions (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Energy expenditure, respiratory quotient, glucose and fat oxidation (Table 1; footnote a: 6 NBW men): the control values were measured 'at baseline' with no fasting hours or clock time printed; the fasting-study values 'after 34 h of fasting' in a 30 min indirect calorimetry (the Methods say 'after 31 h and 34 h of fasting'), clock time not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Weight, body fat % and waist-hip ratio (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "Full-cohort (20 LBW vs 17 NBW) glucose, insulin, FFA after 36 h fasting are in Table S1, a supplementary table not in the full text supplied; the text gives no numbers for them",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Hourly overnight blood sampling and the 180-min IVGTT after the biopsies, and the adipose and muscle expression and methylation results: described in the methods, with no values printed in the text or tables",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Two 10-min ergometer bicycle sessions on the first day of the fast, 'to avoid inactivity' (Methods): intensity and clock time not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
