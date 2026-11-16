@@ -14,7 +14,11 @@ an interval of 1 °C whatever the zero.
 
 Molar conversions use the molecular weight named beside them. Insulin uses the
 SI/IUPAC 6.0 pmol/L per µU/mL; some older papers use 6.945 or 7.175, and a paper
-that says so is converted by hand, not listed here.
+that says so is converted by hand, not listed here. A mass concentration of a
+peptide hormone (insulin, GIP, GLP-1 in ng/L or µg/L) goes through its molar mass
+to pmol/L, and for insulin on through the same 6.0 pmol/L per µU/mL: 1 µg/L of
+insulin is 1000 / 5808 nmol/L, 172.2 pmol/L, 28.70 µU/mL. Insulin in U/L is
+1000 mU/L, which is 1000 µU/mL.
 
 Unit strings are compared after ``normalise``, which gives each unit one spelling:
 ``µU/mL``, ``μU/mL`` and ``uU/mL`` are one unit, and so are ``mmol L-1``, ``mM`` and
@@ -75,6 +79,12 @@ _GLUCOSE_MW = 180.16
 _MG_DL_PER_MMOL_L = _GLUCOSE_MW / 10.0          # 18.016
 _PMOL_PER_UU_ML = 6.0                           # insulin, SI
 _INSULIN_PMOL_L = 1.0 / _PMOL_PER_UU_ML
+# Peptide hormones: the average molar mass of the human peptide, from its sequence
+# (UniProt P01308 insulin, P09681 GIP, P01275 proglucagon for GLP-1). Each is stated
+# here once; a mass concentration of the hormone converts through it and nothing else.
+_INSULIN_MW = 5808.0       # human insulin, A and B chains with their three disulfides
+_GIP_MW = 4983.5           # GIP(1-42)
+_GLP1_MW = 3297.7          # GLP-1(7-36) amide; 3297.6 in some tables, the 0.003% is below any assay
 _KJ_PER_KCAL = 4.184
 _KCAL_PER_KJ = 1.0 / _KJ_PER_KCAL
 
@@ -84,13 +94,24 @@ def _pg_ml_per_pmol_l(mw: float) -> float:
     return mw / 1000.0
 
 
+def _pmol_l_per_ng_l(mw: float) -> float:
+    """pmol/L carried by 1 ng/L (= 1 pg/mL) of a peptide of molecular weight ``mw``."""
+    return 1.0 / _pg_ml_per_pmol_l(mw)
+
+
 _INSULIN: dict[str, tuple[float, float]] = {
     "uu/ml": (1.0, 0.0),
     "uiu/ml": (1.0, 0.0),
     "miu/l": (1.0, 0.0),
     "mu/l": (1.0, 0.0),
+    "u/l": (1000.0, 0.0),  # 1 U/L = 1000 mU/L; the range check catches a "U/l" that is µU/mL
     "pmol/l": (_INSULIN_PMOL_L, 0.0),
     "nmol/l": (_INSULIN_PMOL_L * 1000.0, 0.0),
+    # mass, through the molar mass: 1 ng/L = 1000/5808 pmol/L = 0.02870 µU/mL
+    "pg/ml": (_pmol_l_per_ng_l(_INSULIN_MW) * _INSULIN_PMOL_L, 0.0),
+    "ng/l": (_pmol_l_per_ng_l(_INSULIN_MW) * _INSULIN_PMOL_L, 0.0),
+    "ng/ml": (_pmol_l_per_ng_l(_INSULIN_MW) * _INSULIN_PMOL_L * 1000.0, 0.0),
+    "ug/l": (_pmol_l_per_ng_l(_INSULIN_MW) * _INSULIN_PMOL_L * 1000.0, 0.0),
 }
 _GLUCOSE_INFUSION: dict[str, tuple[float, float]] = {
     "mg/kg/min": (1.0, 0.0),
@@ -130,8 +151,11 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "leptin": {  # 16 kDa
         "ng/ml": (1.0, 0.0), "ug/l": (1.0, 0.0), "pg/ml": (0.001, 0.0), "pmol/l": (0.016, 0.0),
     },
-    "glp1": {  # GLP-1(7-36) amide, 3297.7 g/mol; pg/mL = ng/L
-        "pmol/l": (1.0, 0.0), "pg/ml": (1.0 / 3.2977, 0.0), "ng/l": (1.0 / 3.2977, 0.0),
+    "glp1": {  # GLP-1(7-36) amide (_GLP1_MW); pg/mL = ng/L, ng/mL = ug/L
+        "pmol/l": (1.0, 0.0),
+        "pg/ml": (_pmol_l_per_ng_l(_GLP1_MW), 0.0), "ng/l": (_pmol_l_per_ng_l(_GLP1_MW), 0.0),
+        "ng/ml": (_pmol_l_per_ng_l(_GLP1_MW) * 1000.0, 0.0),
+        "ug/l": (_pmol_l_per_ng_l(_GLP1_MW) * 1000.0, 0.0),
         "nmol/l": (1000.0, 0.0),  # how a paper prints an area of it (nmol/L x min)
     },
     "cortisol": {  # 362.46 g/mol
@@ -172,8 +196,11 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "gastric_fat": dict(_GRAMS),
     "circ_phase_offset": dict(_HOURS),
     "sleep_debt": dict(_HOURS),
-    "gip": {  # GIP(1-42), 4983.5 g/mol
-        "pmol/l": (1.0, 0.0), "pg/ml": (1000.0 / 4983.5, 0.0),
+    "gip": {  # GIP(1-42) (_GIP_MW); pg/mL = ng/L, ng/mL = ug/L
+        "pmol/l": (1.0, 0.0),
+        "pg/ml": (_pmol_l_per_ng_l(_GIP_MW), 0.0), "ng/l": (_pmol_l_per_ng_l(_GIP_MW), 0.0),
+        "ng/ml": (_pmol_l_per_ng_l(_GIP_MW) * 1000.0, 0.0),
+        "ug/l": (_pmol_l_per_ng_l(_GIP_MW) * 1000.0, 0.0),
         "nmol/l": (1000.0, 0.0),  # how a paper prints an area of it (nmol/L x min)
     },
     # observables

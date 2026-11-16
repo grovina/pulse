@@ -822,6 +822,7 @@ class _Units:
 
     ``scale`` turns a printed area into the time-weighted mean the spec carries:
     minutes per printed time unit over the span of the sample times. It is 1 for
+    an area the paper printed already divided by its span (``per_span``) and for
     every other statistic, and applies to a value and to every width alike.
     """
 
@@ -1003,8 +1004,10 @@ def _finding_item(
     if kind is StatisticKind.CURVE:
         required |= {"points"}
     elif kind in SAMPLED_KINDS:
-        # The window is the sample times', so it is not stated.
-        required |= {"times", "time_unit", "value", "uncertainty"}
+        # The window is the sample times', so it is not stated. The area is in
+        # unit x time_unit, or already divided by its span (per_span): one of the two.
+        required |= {"times", "value", "uncertainty"}
+        optional |= {"time_unit", "per_span"}
     else:
         required |= {"window", "value", "uncertainty"}
     if kind in TWO_ARM_KINDS:
@@ -1067,7 +1070,27 @@ def _finding_item(
     if kind in SAMPLED_KINDS:
         sample_times = _sample_times(r, d.get("times"), where, duration) if "times" in d and duration else None
         time_unit = r.choice(d, "time_unit", where, tuple(_TIME_UNITS), "units") if "time_unit" in d else None
-        if sample_times is not None and time_unit is not None:
+        per_span = False
+        if "per_span" in d:
+            if d["per_span"] is True:
+                per_span = True
+            else:
+                r.add("parse", f"{where} per_span is not true (leave it out for an area in unit x time)")
+        if per_span and "time_unit" in d:
+            r.add("parse", (
+                f"{where} gives both per_span and time_unit: an area divided by its span is in the "
+                f"marker's own unit and has no time unit"
+            ))
+            sample_times = None
+        elif "time_unit" not in d and "per_span" not in d:
+            r.add("parse", (
+                f"{where} is missing ['time_unit']: an area takes its time unit, or per_span true "
+                f"when the paper prints it divided by its span"
+            ))
+            sample_times = None
+        elif per_span:
+            scale = 1.0  # already the time-weighted mean the spec carries
+        elif sample_times is not None and time_unit is not None:
             scale = _TIME_UNITS[time_unit] / (sample_times[-1] - sample_times[0])
         else:
             sample_times = None

@@ -137,8 +137,12 @@ def test_the_fahrenheit_zero_is_not_the_celsius_zero():
 
 
 @pytest.mark.parametrize("series, unit", [
-    ("insulin", "ng/mL"),         # needs a potency the paper must state
+    ("insulin", "mg/dL"),
     ("insulin", "mmol/L"),
+    ("insulin", "U/mL"),          # not uU/mL: a thousand-fold slip the table must not absorb
+    ("insulin", "IU/mL"),
+    ("gip", "ng/dL"),
+    ("glp1", "mg/L"),
     ("glucose", "mg/kg"),
     ("glucose", ""),
     ("glucose_infusion_rate", "mg/kg FFM/min"),
@@ -153,8 +157,8 @@ def test_an_unlisted_conversion_is_refused_not_guessed(series, unit):
 
 def test_refusal_names_the_listed_units():
     with pytest.raises(UnitError) as err:
-        to_native("insulin", 1.0, "ng/mL")
-    assert "pmol/l" in str(err.value) and "ng/mL" in str(err.value)
+        to_native("insulin", 1.0, "mg/dL")
+    assert "pmol/l" in str(err.value) and "mg/dL" in str(err.value)
 
 
 def test_an_unknown_series_is_refused():
@@ -176,3 +180,85 @@ def test_the_two_insulin_pairs_agree():
     # pmol/L -> µU/mL and back through the glucose-free route: 6 pmol/L per µU/mL.
     assert to_native("insulin", 6.0, "pmol/L") == pytest.approx(1.0)
     assert len(MARKERS) + len(OBSERVABLES) == len(SERIES_INDEX)
+
+
+# --- insulin in U/L, and peptide hormones by mass ---------------------------------------
+#
+# Every expected number below is worked by hand from the constants it names, not read
+# back from the table: a wrong factor, a wrong molar mass or a missing step through
+# pmol/L fails them.
+
+INSULIN_MW = 5808.0     # g/mol
+GIP_MW = 4983.5         # GIP(1-42)
+GLP1_MW = 3297.7        # GLP-1(7-36) amide, as the table's pg/mL entry has always used
+
+
+def test_insulin_in_u_per_l_is_a_thousand_mu_per_l():
+    assert to_native("insulin", 1.0, "U/L") == pytest.approx(1000.0, rel=1e-12)
+    assert to_native("insulin", 1.0, "U/l") == pytest.approx(1000.0, rel=1e-12)
+    assert to_native("insulin", 0.0066, "U/L") == pytest.approx(6.6, rel=1e-12)
+    assert to_native("insulin_slow", 0.01, "U/L") == pytest.approx(10.0, rel=1e-12)
+    # mok-2016: an iAUC of 28.4 U.min/L is 28,400 uU/mL x min
+    assert to_native("insulin", 28.4, "U/L", difference=True) == pytest.approx(28400.0, rel=1e-12)
+
+
+def test_a_u_per_l_that_is_really_uu_per_ml_falls_outside_the_range():
+    # leone-2022 prints fasting insulin as "6.6 U/l": as printed that is 6,600 uU/mL.
+    lo, hi = plausible_range("insulin")
+    assert not lo <= to_native("insulin", 6.6, "U/l") <= hi
+    assert lo <= to_native("insulin", 6.6, "uU/mL") <= hi
+
+
+@pytest.mark.parametrize("unit, per_unit_ng_per_l", [
+    ("pg/mL", 1.0), ("ng/L", 1.0), ("ng/mL", 1000.0), ("µg/L", 1000.0), ("ug/l", 1000.0),
+])
+def test_insulin_by_mass_goes_through_its_molar_mass_and_six_pmol_per_uu(unit, per_unit_ng_per_l):
+    # x ng/L = x / 5808 nmol/L = 1000 x / 5808 pmol/L = 1000 x / 5808 / 6 uU/mL
+    want = per_unit_ng_per_l * 1000.0 / INSULIN_MW / 6.0
+    assert to_native("insulin", 1.0, unit) == pytest.approx(want, rel=1e-12)
+    assert to_native("insulin_slow", 1.0, unit) == pytest.approx(want, rel=1e-12)
+
+
+def test_worked_insulin_mass_numbers():
+    # 1 ug/L = 172.18 pmol/L = 28.696 uU/mL; 200 pg/mL = 5.739 uU/mL
+    assert to_native("insulin", 1.0, "µg/L") == pytest.approx(28.696, abs=1e-3)
+    assert to_native("insulin", 200.0, "pg/mL") == pytest.approx(5.739, abs=1e-3)
+    # the pmol/L route and the mass route agree on one amount of insulin
+    pmol = 1e6 / INSULIN_MW              # 1 ug/L in pmol/L: 1e-6 g/L over 5808 g/mol, 172.18 pmol/L
+    assert pmol == pytest.approx(172.18, abs=1e-2)
+    assert to_native("insulin", 1.0, "ug/L") == pytest.approx(to_native("insulin", pmol, "pmol/L"), rel=1e-12)
+
+
+@pytest.mark.parametrize("unit, per_unit_ng_per_l", [
+    ("pg/mL", 1.0), ("ng/L", 1.0), ("ng/mL", 1000.0), ("µg/L", 1000.0),
+])
+def test_gip_by_mass(unit, per_unit_ng_per_l):
+    want = per_unit_ng_per_l * 1000.0 / GIP_MW
+    assert to_native("gip", 1.0, unit) == pytest.approx(want, rel=1e-12)
+
+
+def test_worked_gip_mass_numbers():
+    # wong-2025 prints fasting GIP in ng/L: 50 ng/L = 10.03 pmol/L; 1 ug/L = 200.66 pmol/L
+    assert to_native("gip", 50.0, "ng/L") == pytest.approx(10.033, abs=1e-3)
+    assert to_native("gip", 1.0, "μg/L") == pytest.approx(200.66, abs=1e-2)
+
+
+@pytest.mark.parametrize("unit, per_unit_ng_per_l", [
+    ("pg/mL", 1.0), ("ng/L", 1.0), ("ng/mL", 1000.0), ("µg/L", 1000.0),
+])
+def test_glp1_by_mass(unit, per_unit_ng_per_l):
+    want = per_unit_ng_per_l * 1000.0 / GLP1_MW
+    assert to_native("glp1", 1.0, unit) == pytest.approx(want, rel=1e-12)
+
+
+def test_the_earlier_gip_and_glp1_mass_factors_are_unchanged_to_the_bit():
+    # Files already admitted in pg/mL or ng/L must load to the same specs.
+    assert CONVERSIONS["glp1"]["pg/ml"] == (1.0 / 3.2977, 0.0)
+    assert CONVERSIONS["glp1"]["ng/l"] == (1.0 / 3.2977, 0.0)
+    assert CONVERSIONS["gip"]["pg/ml"] == (1000.0 / 4983.5, 0.0)
+
+
+def test_an_area_in_ug_per_l_times_min_converts_like_the_level():
+    # an area converts by the factor alone: 2.4 ug/L x min of GLP-1 is 727.8 pmol/L x min
+    assert to_native("glp1", 2.4, "µg/L", difference=True) == pytest.approx(2.4 * 1e6 / GLP1_MW, rel=1e-12)
+    assert to_native("glp1", 2.4, "µg/L", difference=True) == pytest.approx(727.78, abs=1e-2)

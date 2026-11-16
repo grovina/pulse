@@ -624,7 +624,7 @@ what the model and this format should learn next.
 | `ratio_means` | mean(second) divided by mean(first) | 2 | unit `ratio` | `sem`, `ci` |
 | `ratio_increments` | area above each arm's own baseline, second over first | 2 | unit `ratio` | `sem`, `ci` |
 | `change_from_baseline` | the mean of the marker over `window` minus its mean over `baseline_window`, in one arm | 1 | a difference | `sd`, `sem`, `ci`, `range` |
-| `area_under_curve` | the trapezoidal area of one arm, over the sampling minutes `times` | 1 | an area: `unit` is the concentration, `time_unit` is `min` or `h` | `sd`, `sem`, `ci`, `range` |
+| `area_under_curve` | the trapezoidal area of one arm, over the sampling minutes `times` | 1 | an area: `unit` is the concentration, `time_unit` is `min` or `h`; or `per_span: true` for an area printed divided by its span | `sd`, `sem`, `ci`, `range` |
 | `incremental_area` | the trapezoidal area of the marker above (or net of) the person's own baseline, over `times` | 1 | an area, as above | `sd`, `sem`, `ci`, `range` |
 | `spread` | the between-person standard deviation of the person's window mean | 1 | an SD, in the marker's unit | `n_only`, `sem`, `ci` |
 | `correlation` | Pearson r, across people, of the window mean with `partner` | 1 | unit `r` | `n_only`, `sem`, `ci` |
@@ -649,7 +649,17 @@ what the model and this format should learn next.
   different number. It takes no `window`. `unit` is the concentration as the paper prints
   it and `time_unit` is `min` or `h`: split "mmol/L x min" into `"unit": "mmol/L"` and
   `"time_unit": "min"`, and leave the printed form in the quote. A unit printed as one
-  product (`mg*min/dL`, `mmol*h/L`) is split the same way. A paper that prints an "area
+  product (`mg*min/dL`, `mmol*h/L`) is split the same way.
+* **An area printed divided by its span.** Some papers divide an area by the minutes it
+  spans and print "a weighted average value over the time interval", in the marker's own
+  unit. That is already the time-weighted mean the loader carries an area as, so write
+  `"per_span": true` in place of `time_unit`, the `unit` the paper prints for it (mU/L,
+  not mU/L x min), and the number exactly as printed: it is not divided again. `per_span`
+  and `time_unit` are never both given. It applies to `area_under_curve` and
+  `incremental_area` alike, only where the paper says it divided by the span (a net
+  incremental area of 12.5 mU/L over 0 to 180 min is 12.5 uU/mL, where the same area in
+  mU/L x min would be 2250). `incremental_area_per_minute`, used in `left_out` before, is
+  now expressible: a paper left out for it can be read again. A paper that prints an "area
   under the curve" and names no rule is read as the trapezoid over its samples, and one
   that says nothing of a baseline as the total area: say either in the description. An
   area the paper says it got another way (the integral of a fitted curve) is left out.
@@ -696,7 +706,7 @@ A factor raised to minus one is read as a division (`mmol L-1` is `mmol/L`), `M`
 mol/L (`pM` is `pmol/L`), and the order of the divisors does not count
 (`µmol/min/kg` is `µmol/kg/min`).
 **A unit that is not in the table is refused, never guessed.** If the paper
-uses one (insulin in ng/mL, VO2 in mL/kg/min, glucose infusion per kg of
+uses one (cholecystokinin in pg/mL, VO2 in mL/kg/min, glucose infusion per kg of
 fat-free mass), the number cannot be converted without knowing something the
 loader does not: write a refusal of kind `input` or `marker` naming the unit, or
 find the paper's own conversion and say so in the quote. Do not convert by hand
@@ -706,7 +716,7 @@ The gate also refuses a level (a mean, a peak, a curve point, an area under the
 curve) that lies outside a plausible range for its marker, and a difference,
 spread, change from baseline or incremental area wider than that whole range.
 An area is checked as its time-weighted mean, the area divided by the span of
-`times`. That is how the commonest slip is caught: 5.5 read as mg/dL when it
+`times` (or the number as printed, with `per_span`). That is how the commonest slip is caught: 5.5 read as mg/dL when it
 was mmol/L.
 
 Differences (a change from baseline and an incremental area among them),
@@ -717,10 +727,25 @@ the curve among them) by the factor and, for temperature only, an offset
 Molar conversions use the molecular weights in `pulse/knowledge/corpus_units.py`.
 Insulin uses 6.0 pmol/L per uU/mL (SI).
 
+* **Insulin in U/L** is 1000 mU/L, so 1000 uU/mL: write `"unit": "U/L"` as printed
+  (an area in U·min/L is `"U/L"` with `"time_unit": "min"`; 28.4 U·min/L is
+  28,400 uU/mL x min). Some papers print "U/l" for what is really uU/mL; read as
+  printed, a fasting insulin of 6.6 U/l is 6,600 uU/mL and the range check refuses
+  it. Leave such a number out (`source`, `unit_implausible`); do not correct it.
+* **Peptide hormones by mass** (insulin, GIP, GLP-1 in pg/mL, ng/L, ng/mL or ug/L)
+  convert through the hormone's molar mass, stated once in the code: insulin
+  5808 g/mol, GIP(1-42) 4983.5, GLP-1(7-36) amide 3297.7. pg/mL is ng/L and ng/mL
+  is ug/L. 1 ug/L of insulin is 172.2 pmol/L, 28.70 uU/mL; 1 ug/L of GIP is
+  200.7 pmol/L; 1 ug/L of GLP-1 is 303.2 pmol/L. An area in ug/L x min is
+  `"unit": "ug/L"` with its `time_unit`, as any other.
+* `insulin_in_u_per_l`, `insulin_in_pg_per_ml`, `gip_in_ng_per_l`,
+  `gip_in_ug_per_l` and `glp1_in_ug_per_l`, used in `left_out` before these units
+  were listed, are now expressible: a paper left out for them can be read again.
+
 | marker | name | model unit | plausible level | accepted units (multiply by) |
 |---|---|---|---|---|
 | `glucose` | Blood Glucose | mg/dL | 40 to 400 | mg/dl (x1), mg/100ml (x1), mmol/l (x18.016), g/l (x100), mg/l (x0.1) |
-| `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
+| `insulin` | Insulin | μU/mL | 0 to 200 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), u/l (x1000), pmol/l (x0.166667), nmol/l (x166.667), pg/ml (x0.0286961), ng/l (x0.0286961), ng/ml (x28.6961), ug/l (x28.6961) |
 | `glucagon` | Glucagon | pg/mL | 0 to 500 | pg/ml (x1), ng/l (x1), pmol/l (x3.4828) |
 | `ffa` | Free Fatty Acids | mmol/L | 0 to 3 | mmol/l (x1), meq/l (x1), umol/l (x0.001), ueq/l (x0.001) |
 | `bhb` | β-Hydroxybutyrate | mmol/L | 0 to 10 | mmol/l (x1), umol/l (x0.001), mg/dl (x0.0960615) |
@@ -728,7 +753,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `hepatic_output` | Hepatic glucose output | mg/kg/min | 0 to 12 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `ghrelin` | Ghrelin | pg/mL | 20 to 300 | pg/ml (x1), ng/l (x1), ng/ml (x1000), pmol/l (x3.37) |
 | `leptin` | Leptin | ng/mL | 1 to 50 | ng/ml (x1), ug/l (x1), pg/ml (x0.001), pmol/l (x0.016) |
-| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242), nmol/l (x1000) |
+| `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242), ng/ml (x303.242), ug/l (x303.242), nmol/l (x1000) |
 | `cortisol` | Cortisol | μg/dL | 1 to 40 | ug/dl (x1), ug/l (x0.1), ng/ml (x0.1), nmol/l (x0.036246) |
 | `acth` | ACTH | pg/mL | 5 to 120 | pg/ml (x1), ng/l (x1), pmol/l (x4.541) |
 | `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), /min (x1), 1/min (x1) |
@@ -748,7 +773,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `intestinal_bile` | Intestinal bile acids | mmol | 0 to 10 | mmol (x1), umol (x0.001) |
 | `bile_acids` | Serum total bile acids | µmol/L | 0 to 100 | umol/l (x1), nmol/ml (x1), nmol/l (x0.001), mmol/l (x1000) |
 | `fat_mass` | Fat mass | kg | 4 to 60 | kg (x1), g (x0.001), lb (x0.453592) |
-| `insulin_slow` | Insulin (slow) | μU/mL | 0 to 80 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), pmol/l (x0.166667), nmol/l (x166.667) |
+| `insulin_slow` | Insulin (slow) | μU/mL | 0 to 80 | uu/ml (x1), uiu/ml (x1), miu/l (x1), mu/l (x1), u/l (x1000), pmol/l (x0.166667), nmol/l (x166.667), pg/ml (x0.0286961), ng/l (x0.0286961), ng/ml (x28.6961), ug/l (x28.6961) |
 | `insulin_potentiator` | Insulin potentiator | mg/dL | 0 to 200 | mg/dl (x1) |
 | `sns_tone` | Sympathetic tone | fraction | 0 to 1 | fraction (x1), % (x0.01) |
 | `epinephrine` | Epinephrine | pg/mL | 0 to 1500 | pg/ml (x1), ng/l (x1), ng/ml (x1000), pmol/l (x0.1832), nmol/l (x183.2) |
@@ -757,7 +782,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `gastric_fat` | Gastric fat | g | 0 to 150 | g (x1) |
 | `circ_phase_offset` | Circadian phase | h | -6 to 6 | h (x1), min (x0.0166667) |
 | `sleep_debt` | Sleep debt | h | -16 to 16 | h (x1), min (x0.0166667) |
-| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662), nmol/l (x1000) |
+| `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662), ng/l (x0.200662), ng/ml (x200.662), ug/l (x200.662), nmol/l (x1000) |
 | `glucose_infusion_rate` | Glucose infusion rate | mg/kg/min | 0 to 20 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `glucose_disposal` | Glucose disposal | mg/kg/min | 0 to 30 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `urinary_glucose` | Urinary glucose | mg/min | 0 to 1000 | mg/min (x1), mg/h (x0.0166667), g/h (x16.6667), g/day (x0.694444), g/24h (x0.694444), mmol/min (x180.16), mmol/day (x0.125111), mmol/24h (x0.125111) |
@@ -853,7 +878,7 @@ change, and it is counted by kind.
 | kind | the missing piece | `name` examples |
 |---|---|---|
 | `marker` | something measured that the model has no series for. If the name is already a marker or observable, the file is refused. | `adiponectin`, `free_testosterone` |
-| `input` | something done to the subjects that the protocol cannot express, or a unit that cannot be converted | `hypoxia`, `metformin`, `growth_hormone_infusion`, `insulin_in_ng_per_ml` |
+| `input` | something done to the subjects that the protocol cannot express, or a unit that cannot be converted | `hypoxia`, `metformin`, `growth_hormone_infusion`, `cck_in_pg_per_ml` |
 | `population` | subjects the model cannot represent | `type_2_diabetes`, `pregnancy`, `children` |
 | `timescale` | a duration or resolution the model does not simulate | `weeks_of_training`, `sub_minute_pulsatility` |
 | `operator` | a kind of number the statistics do not cover | `median_with_iqr`, `slope`, `threshold_crossing` |

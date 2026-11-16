@@ -306,7 +306,15 @@ Not rescored, from the board of 2026-10-29:
   (`atkinson-2020`, which trains, and `lindgren-2020`, which is sealed). No
   `left_out` entry names one of the three as missing any more: an area that is
   still out lacks its sampling minutes, its time unit or a writable arm in the
-  paper itself.
+  paper itself. An area the paper prints already divided by its span is
+  entered as printed with `per_span: true` in place of a time unit; no file
+  uses it yet (`oberoi-2022` left its areas out for want of it).
+- Insulin converts from U/L (x1000) and, like GIP and GLP-1, from a mass
+  concentration (pg/mL, ng/L, ng/mL, µg/L) through the hormone's molar mass
+  (`pulse/knowledge/corpus_units.py`). Six `left_out` entries in four files
+  (`mok-2016`, `deru-2023`, `wong-2025`, `oberoi-2022`) name a unit or the
+  divided area as missing and are now expressible; those papers have not
+  been read again.
 - A meal in a file may state what the paper prints beyond its grams:
   `fibre_g`, `sugars_g`, `fat_g_by_type`, `fat_source`, `protein_source`,
   `form`, `food` (`corpus/README.md`, "What a meal says"); `carbs_g` is

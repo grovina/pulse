@@ -446,6 +446,120 @@ def test_an_area_in_a_unit_the_loader_does_not_know_is_refused():
     assert any("unit" in p for p in _problems(data))
 
 
+# --- an area printed divided by its span -------------------------------------------------
+
+def _per_span(data: dict, fid: str, value: float, spread: float) -> dict:
+    f = _finding(data, fid)
+    del f["time_unit"]
+    f.update(per_span=True, value=value)
+    f["uncertainty"]["value"] = spread
+    return f
+
+
+def test_an_area_printed_per_span_is_taken_as_printed_and_not_divided_again():
+    data = _data()
+    # 900 mmol/L x min over 119 min, printed already divided: 7.5630 mmol/L
+    _per_span(data, "ogtt_glucose_auc", 900.0 / 119.0, 100.0 / 119.0)
+    auc = _spec("ogtt_glucose_auc", data)
+    assert auc.target == pytest.approx(900.0 / 119.0 * MG_DL_PER_MMOL, rel=1e-12)
+    assert auc.sigma == pytest.approx(100.0 / 119.0 * MG_DL_PER_MMOL, rel=1e-12)
+    # the same as the area in mmol/L x min, so the two spellings are one finding
+    plain = _spec("ogtt_glucose_auc")
+    assert (auc.target, auc.sigma) == pytest.approx((plain.target, plain.sigma), rel=1e-12)
+    assert (auc.n_arm, auc.sample_times, auc.window) == (plain.n_arm, plain.sample_times, plain.window)
+
+
+def test_a_net_incremental_area_per_span_keeps_its_sign_and_its_rule():
+    data = _data()
+    # oberoi-2022's form: net iAUC 0-180 divided by 180 min, printed in mU/L
+    f = _per_span(data, "ogtt_glucose_iauc", -1.5, 0.5)
+    f["below_baseline"] = "subtracted"
+    iauc = _spec("ogtt_glucose_iauc", data)
+    assert iauc.target == pytest.approx(-1.5 * MG_DL_PER_MMOL, rel=1e-12)
+    assert iauc.sigma == pytest.approx(0.5 * 12 ** 0.5 * MG_DL_PER_MMOL, rel=1e-12)
+    assert iauc.below_baseline is BelowBaseline.SUBTRACTED and iauc.sample_times == (0, 30, 60, 90, 119)
+
+
+def test_an_insulin_area_per_span_in_mu_per_l():
+    data = _data()
+    f = _per_span(data, "ogtt_glucose_iauc", 12.5, 1.2)
+    f.update(marker="insulin", unit="mU/L", below_baseline="subtracted")
+    assert _spec("ogtt_glucose_iauc", data).target == pytest.approx(12.5, rel=1e-12)
+
+
+def test_per_span_and_time_unit_are_not_both_given():
+    data = _data()
+    _finding(data, "ogtt_glucose_auc")["per_span"] = True
+    assert any("per_span" in p and "time_unit" in p and "both" in p for p in _problems(data))
+    data = _data()
+    _finding(data, "ogtt_glucose_iauc")["per_span"] = True
+    assert any("per_span" in p and "time_unit" in p and "both" in p for p in _problems(data))
+
+
+@pytest.mark.parametrize("bad", [False, "true", 1, None, "yes"])
+def test_per_span_is_true_or_absent(bad):
+    data = _data()
+    f = _per_span(data, "ogtt_glucose_auc", 900.0 / 119.0, 100.0 / 119.0)
+    f["per_span"] = bad
+    assert any("per_span is not true" in p for p in _problems(data))
+
+
+def test_an_area_with_neither_time_unit_nor_per_span_is_refused():
+    data = _data()
+    del _finding(data, "ogtt_glucose_auc")["time_unit"]
+    problems = _problems(data)
+    assert any("missing" in p and "time_unit" in p and "per_span" in p for p in problems)
+
+
+@pytest.mark.parametrize("fid", ["ogtt_glucose_second_hour_rise", "fasting_glucose_mean"])
+def test_per_span_belongs_to_the_areas_only(fid):
+    data = _data()
+    _finding(data, fid)["per_span"] = True
+    assert any(f"finding {fid} has unknown fields" in p and "per_span" in p for p in _problems(data))
+
+
+def test_an_area_left_in_unit_minutes_but_marked_per_span_is_caught_by_the_range():
+    data = _data()
+    _per_span(data, "ogtt_glucose_auc", 900.0, 100.0)   # 900 mmol/L is 16,214 mg/dL
+    assert any("outside [40, 400]" in p for p in _problems(data))
+
+
+# --- insulin in U/L, at the loader ------------------------------------------------------
+
+def test_an_insulin_incremental_area_in_u_min_per_l():
+    data = _data()
+    f = _finding(data, "ogtt_glucose_iauc")
+    # mok-2016's form, "U.min.L-1", split into U/L and min: 10.0 U/L x min over 119 min
+    f.update(marker="insulin", unit="U/L", value=10.0, uncertainty={"kind": "sd", "value": 5.0, "n": 12})
+    iauc = _spec("ogtt_glucose_iauc", data)
+    assert iauc.target == pytest.approx(10000.0 / 119.0, rel=1e-12)     # 84.03 uU/mL
+    assert iauc.sigma == pytest.approx(5000.0 / 119.0, rel=1e-12)
+
+
+def test_mok_2016s_insulin_iauc_converts_to_a_plausible_mean():
+    # 28.4 U.min/L over its 8.5 h (510 min) of samples: 28,400 / 510 = 55.7 uU/mL
+    from pulse.knowledge.corpus_units import to_native
+    assert to_native("insulin", 28.4, "U/L", difference=True) / 510.0 == pytest.approx(55.686, abs=1e-3)
+
+
+def test_a_fasting_insulin_printed_in_u_per_l_that_is_really_uu_per_ml_is_refused():
+    data = _data()
+    # leone-2022: fasting insulin "6.6 U/l", read as printed 6,600 uU/mL
+    f = _finding(data, "fasting_glucose_mean")
+    f.update(marker="insulin", unit="U/l", value=6.6, uncertainty={"kind": "sem", "value": 0.5, "n": 12})
+    assert any("6600" in p and "outside [0, 200]" in p for p in _problems(data))
+    f["unit"] = "µU/mL"
+    assert _spec("fasting_glucose_mean", data).target == pytest.approx(6.6)
+
+
+def test_insulin_by_mass_at_the_loader():
+    data = _data()
+    f = _finding(data, "fasting_glucose_mean")
+    # 0.25 ug/L = 250 ng/L = 43.04 pmol/L = 7.174 uU/mL
+    f.update(marker="insulin", unit="µg/L", value=0.25, uncertainty={"kind": "sem", "value": 0.02, "n": 12})
+    assert _spec("fasting_glucose_mean", data).target == pytest.approx(250.0 / 5808.0 * 1000.0 / 6.0, rel=1e-12)
+
+
 def test_conflicts_compare_areas_only_over_the_same_samples_baseline_and_rule():
     f = read_finding(FINDING)
     iauc = next(s for s in f.specs if s.name.endswith("ogtt_glucose_iauc"))

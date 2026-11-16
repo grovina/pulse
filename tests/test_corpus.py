@@ -225,8 +225,8 @@ def test_an_unknown_or_unlisted_unit_is_an_error():
     _finding(data, "ogtt_glucose_peak")["unit"] = "mmol/dL"
     assert any("mmol/dL" in p and "not a listed unit" in p for p in _problems(data))
     data = _data()
-    _finding(data, "fasting_insulin_spread")["unit"] = "ng/mL"
-    assert any("ng/mL" in p for p in _problems(data))
+    _finding(data, "fasting_insulin_spread")["unit"] = "U/mL"   # not uU/mL, and not listed
+    assert any("U/mL" in p and "not a listed unit" in p for p in _problems(data))
 
 
 def test_ratios_and_correlations_take_only_their_dimensionless_unit():
