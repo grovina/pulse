@@ -1,0 +1,47 @@
+{
+  "paper": "loebig-2010",
+  "citation": {
+    "authors": "Loebig M, et al.",
+    "title": "Evidence for a relationship between VEGF and BMI independent of insulin sensitivity by glucose clamp procedure in a homogenous group of healthy young men",
+    "journal": "PLoS ONE",
+    "year": 2010,
+    "doi": "10.1371/journal.pone.0012610",
+    "pmid": "20830305",
+    "pmcid": "PMC2935379"
+  },
+  "reported": [
+    {
+      "what": "clamp M value (glucose infusion rate, mg/kg/min) by BMI group, mean and SEM, n=15 each; the minutes over which M was averaged are not printed (only that ISI used 'time point 65 until time point 105' of the VEGF figure, whose time origin is not printed)",
+      "location": {
+        "where": "Table 1, row 'M value'; Figure 1 legend",
+        "quote": "M value † (mg×kg−1×min−1) | 7.20±1.02 | 12.36±1.35 | 9.34±1.01"
+      }
+    },
+    {
+      "what": "clamp-period glucose and insulin by group (Table 1; insulin differs from the fasting-insulin P value, but the minutes averaged are not printed)",
+      "location": {
+        "where": "Table 1, row 'Insulin'",
+        "quote": "Insulin (µU/ml) | 87.8±7.4 | 53.4±3.9 | 50.0±6.1"
+      }
+    },
+    {
+      "what": "fasting glucose and insulin: only P values for group differences, no group means",
+      "location": {
+        "where": "Results, first paragraph",
+        "quote": "The three subject groups showed no difference in fasting glucose (P = 0.304) and fasting insulin (P = 0.160) levels."
+      }
+    },
+    {
+      "what": "cortisol by group, printed in ug/ml (implausible unit), sample time not printed",
+      "location": {
+        "where": "Table 1, row 'Cortisol'",
+        "quote": "Cortisol (µg/ml) | 10.7±0.8 | 10.7±0.9 | 10.6±0.7"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "time_not_printed"
+  },
+  "detail": "The only enterable numbers are the groups' M values, and the paper does not print the minutes over which M was averaged (nor the origin of the 'time point 65 until 105' used for ISI), so no window can be written without inventing one."
+}
