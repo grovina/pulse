@@ -1,0 +1,33 @@
+{
+  "paper": "crummett-2022",
+  "citation": {
+    "authors": "Crummett LT, Grosso RJ",
+    "title": "Postprandial Glycemic Response to Whole Fruit versus Blended Fruit in Healthy, Young Adults",
+    "journal": "Nutrients",
+    "year": 2022,
+    "doi": "10.3390/nu14214565",
+    "pmid": "36364827",
+    "pmcid": "PMC9657402"
+  },
+  "reported": [
+    {
+      "what": "incremental blood glucose after whole fruit vs blended fruit (gala apple 190 g + blackberries 148 g): maximum, iAUC 0-60 min and 60-min value, all 20 participants and by sex, mean ± SEM, baseline subtracted (Table 1); the meal's available carbohydrate, fat and protein grams are not printed, only an enzyme-assay glucose content",
+      "location": {
+        "where": "Results, paragraph 1 (Table 1, 'All' columns)",
+        "quote": "mean ± SEM: 1269 ± 124 mg/dL × min for whole fruit vs. 850 ± 109 mg/dL × min for blended fruit"
+      }
+    },
+    {
+      "what": "baseline blood glucose before each fruit treatment, drawn 3-3.5 h after an undescribed lunch (not a fasting sample)",
+      "location": {
+        "where": "Results, paragraph 1",
+        "quote": "mean ± standard error of the mean (SEM): 102.4 ± 1.8 mg/dL for whole fruit vs. 105.7 ± 1.8 mg/dL for blended fruit"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The paper prints only the glucose content of the fruit after invertase (10.03 g per treatment, fructose not counted) and the fibre grams, never the total available carbohydrate, fat or protein of the meal, so the protocol cannot be written; the only values needing no meal (baseline glucose) were drawn 3-3.5 h after an undescribed lunch and are not fasting samples."
+}
