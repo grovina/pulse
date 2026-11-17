@@ -125,6 +125,8 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 
 | Execution | Iter | Started | Ended |
 |---|---|---|---|
+| `trainer-42rqr` | 118, no teacher, gut reads meal details | 2026-11-16 | stopped by its 24 h deadline after epoch 26 of 28 (23 h 30 min), from the corpus of 2026-11-16 with the fasting and clamp topics: `--meal-details`, warm start; output `training/jobs/iter118-meals/` |
+| `trainer-ss2p8` | 118, no teacher | 2026-11-16 | finished in 18 h 23 min, the same run without `--meal-details`; output `training/jobs/iter118-base/` |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -213,6 +215,26 @@ the untrained student as above):
   incretin gain (`log_k_incretin`) moves by at most 0.09 from 2.30.
 - The cold start stopped at the end of phase 2: its epochs with the
   literature took about 59 minutes, against 49 for the warm start.
+
+Iter 118, the same two runs on the corpus with the fasting and clamp topics
+(2026-11-17; their own boards, 164 sealed points in 12 papers, against 128
+in 10 for iter 117):
+
+| Run | Sealed papers, end of phase 2 | Sealed papers, final | Sealed insulin under target | Sealed glucose, median \|z\|, final |
+|---|---|---|---|---|
+| No teacher (`trainer-ss2p8`) | 1.08 (0.86 to 1.27) | 1.01 (0.90 to 1.16) | 25 of 38 | 0.75 |
+| No teacher, gut reads meal details (`trainer-42rqr`) | 1.03 (0.80 to 1.21) | 1.01 (0.76 to 1.17) | 25 of 38 | 0.64 |
+
+- Level with iter 117 (1.02, 1.01) on a larger sealed set. On the 140
+  sealed items both iters score, the median |z| moves from 1.02 to 0.94
+  (no meal details) and from 0.96 to 0.95 (with), inside the intervals.
+- Insulin is still under target on two thirds of the sealed points. On the
+  common items the mean z rose from -0.86 to -0.43 without meal details and
+  from -0.87 to -0.60 with them: less short, not right.
+- The meal reader again gives the better sealed glucose (0.64 against 0.75)
+  and is better on the 36 sealed items new to this corpus (median |z| 1.17
+  against 1.35); otherwise the two runs are level.
+- Spend: about $6.80 and $9 at Cloud Run list rates (4 vCPU, 16 GiB).
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
