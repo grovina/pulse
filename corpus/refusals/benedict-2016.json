@@ -1,0 +1,47 @@
+{
+  "paper": "benedict-2016",
+  "citation": {
+    "authors": "Benedict C, Vogel H, Jonas W, Woting A, Blaut M, Schürmann A, Cedernaes J",
+    "title": "Gut microbiota and glucometabolic alterations in response to recurrent partial sleep deprivation in normal-weight young individuals",
+    "journal": "Molecular Metabolism",
+    "year": 2016,
+    "doi": "10.1016/j.molmet.2016.10.003",
+    "pmid": "27900260",
+    "pmcid": "PMC5123208"
+  },
+  "reported": [
+    {
+      "what": "fasting insulin after two nights of partial sleep deprivation (PSD) vs normal sleep (NS), n=9, mean ± SEM, morning of the OGTT day",
+      "location": {
+        "where": "Results, 'Effects of partial sleep deprivation on glucometabolic parameters', paragraph 1",
+        "quote": "fasting insulin values were 34% higher following PSD than after NS (4.26 ± 0.48 vs. 3.17 ± 0.35 μU/mL, P = 0.006, one-sided)"
+      }
+    },
+    {
+      "what": "fasting plasma glucose after two nights of PSD vs NS, n=9, mean ± SEM",
+      "location": {
+        "where": "Results, 'Effects of partial sleep deprivation on glucometabolic parameters', paragraph 1",
+        "quote": "glucose values were not significantly different at baseline (5.27 ± 0.07 vs. 5.12 ± 0.10 mmol/L; P = 0.14, one-sided)"
+      }
+    },
+    {
+      "what": "Matsuda index (OGTT, 75 g) after two nights of PSD vs NS, n=9, mean ± SEM; a derived index",
+      "location": {
+        "where": "Results, 'Effects of partial sleep deprivation on glucometabolic parameters', paragraph 1",
+        "quote": "the Matsuda index (8.0 ± 0.90 vs. 10.2 ± 0.78, P = 0.017, one-sided"
+      }
+    },
+    {
+      "what": "HOMA-IR in the fasting state after PSD vs NS, n=9, mean ± SEM; a derived index",
+      "location": {
+        "where": "Results, 'Effects of partial sleep deprivation on glucometabolic parameters', paragraph 1",
+        "quote": "as assessed by the HOMA-IR index in the fasting state on the third day (1.01 ± 0.12 vs. 0.72 ± 0.08, P = 0.014, one-sided; Figure 3)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every glucose and insulin value is measured after two nights of sleep restriction (or normal sleep) and after a day of meals that the paper gives only as energy (33% of the estimated daily calorie requirement each, with no grams of carbohydrate, fat or protein), so a multi-day arm cannot be written without grams the paper does not print; the OGTT curves are in Figure 3 only."
+}
