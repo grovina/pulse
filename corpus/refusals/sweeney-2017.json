@@ -1,0 +1,61 @@
+{
+  "paper": "sweeney-2017",
+  "citation": {
+    "authors": "Sweeney EL, Jeromson S, Hamilton DL, Brooks NE, Walshe IH",
+    "title": "Skeletal muscle insulin signaling and whole‑body glucose metabolism following acute sleep restriction in healthy males",
+    "journal": "Physiological Reports",
+    "year": 2017,
+    "doi": "10.14814/phy2.13498",
+    "pmid": "29233906",
+    "pmcid": "PMC5727269"
+  },
+  "reported": [
+    {
+      "what": "plasma glucose during the OGTT and at baseline, CON and SR, mean ± SEM, n = 10 (Figure 1A; baseline in the text)",
+      "location": {
+        "where": "Results, Blood plasma variables, paragraph 1",
+        "quote": "Mean baseline plasma glucose concentrations during CON were similar to SR (4.92 ± 0.1 mmol/L and 5.02 ± 0.06 mmol/L, respectively)"
+      }
+    },
+    {
+      "what": "plasma insulin at baseline, CON and SR, mean ± SEM, n = 10 (Results text)",
+      "location": {
+        "where": "Results, Blood plasma variables, paragraph 2",
+        "quote": "Plasma insulin values were similar at baseline in CON and SR (18.7 ± 4.9 μIU/mL and 20.0 ± 5.0 μIU/mL, respectively; P = 0.172)"
+      }
+    },
+    {
+      "what": "plasma insulin at 15 and 45 min of the OGTT, CON and SR, mean ± SEM, n = 10 (Figure 2A; values in the text)",
+      "location": {
+        "where": "Results, Blood plasma variables, paragraph 2",
+        "quote": "SR displayed significantly higher insulin concentrations than CON at 15 min (59.1 ± 9.0 μIU/mL and 48.5 ± 9.5 μIU/mL for SR and CON, respectively; P = 0.031)"
+      }
+    },
+    {
+      "what": "insulin AUC 0 to 120 min, CON and SR, mean ± SEM (unit not printed), n = 10 (Figure 2B; values in the text)",
+      "location": {
+        "where": "Results, Blood plasma variables, paragraph 2",
+        "quote": "AUC for insulin was 14% higher in the sleep restriction condition compared to the control (7069 ± 1018 vs. 8068 ± 901 for CON vs. SR, respectively; P = 0.013)"
+      }
+    },
+    {
+      "what": "Matsuda index, CON and SR, n = 10 (dispersion labelled in no section: the methods give SD for characteristics and SEM for glucose, insulin and PKB only)",
+      "location": {
+        "where": "Results, Blood plasma variables, paragraph 2",
+        "quote": "Matsuda index was 19% lower in SR than CON (4.19 ± 0.71 vs. 3.41 ± 0.51 for CON and SR, respectively; P = 0.010)"
+      }
+    },
+    {
+      "what": "resting systolic blood pressure, mean ± SD, n = 10, in Table 1 ('at baseline'); the time of measurement is not printed, and blood pressure is described only at the two laboratory visits (CON and SR)",
+      "location": {
+        "where": "Table 1, Systolic blood pressure row",
+        "quote": "Systolic blood pressure (mmHg) | 125 ± 5"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "Every glucose and insulin value (baseline, OGTT, AUC, Matsuda index) follows two nights of a 48-hour diet, replicated in both trials and given only as 'based on their habitual food intake', whose grams of carbohydrate, fat and protein are not printed (Table 1 gives habitual energy intake alone, 2369 ± 616 kcal/day, which is not the trial diet), and the one blood pressure in the paper has no printed time among its two laboratory visits, so no value can be written; the paper's 'rested and fasted state' also gives no fasting duration."
+}
