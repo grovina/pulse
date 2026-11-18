@@ -1,0 +1,40 @@
+{
+  "paper": "lamon-2021",
+  "citation": {
+    "authors": "Lamon S, Morabito A, Arentson-Lantz E, Knowles O, Vincent GE, Condo D, Alexander SE, Garnham A, Paddon-Jones D, Aisbett B",
+    "title": "The effect of acute sleep deprivation on skeletal muscle protein synthesis and the hormonal environment",
+    "journal": "Physiological Reports",
+    "year": 2021,
+    "doi": "10.14814/phy2.14660",
+    "pmid": "33400856",
+    "pmcid": "PMC7785053"
+  },
+  "reported": [
+    {
+      "what": "postprandial mixed muscle fractional synthesis rate (FSR), one night of sleep deprivation (DEP) against the normal night (CON), mean ± SD, n = 13, measured between 13:00 and 15:00 (Results 3.2)",
+      "location": {
+        "where": "Results, section 3.2 (Muscle protein synthesis)",
+        "quote": "Sleep deprivation reduced postprandial muscle protein fractional synthesis rate (FSR) by 18% (CON: 0.072 ± 0.015% vs. DEP: 0.059 ± 0.014%·h‐1, p = .040)"
+      }
+    },
+    {
+      "what": "plasma cortisol area under the curve 10:00 to 16:00, DEP against CON, mean ± SD, n = 13, in arbitrary units (AU)",
+      "location": {
+        "where": "Results, section 3.4 (Plasma cortisol levels)",
+        "quote": "Plasma cortisol area under the curve (10:00–16:00), was 21% higher during DEP than CON (CON: 186 ± 41.7 AU vs. DEP: 226 ± 44.6 AU, p = .011)"
+      }
+    },
+    {
+      "what": "plasma testosterone area under the curve, DEP against CON, mean ± SD, n = 13, in arbitrary units (AU)",
+      "location": {
+        "where": "Results, section 3.3 (Plasma testosterone levels)",
+        "quote": "The area under the curve decreased by 24% in the DEP condition (CON: 6.40 ± 5.28 AU vs. DEP: 4.86 ± 3.64 AU, p = .029"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "marker",
+    "name": "muscle_protein_synthesis"
+  },
+  "detail": "The primary outcome, the postprandial muscle protein fractional synthesis rate, is a quantity the model has no state for, and the cortisol and testosterone areas are printed in arbitrary units that the loader cannot convert."
+}
