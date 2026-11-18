@@ -1,0 +1,40 @@
+{
+  "paper": "kontou-2022",
+  "citation": {
+    "authors": "Kontou TG, Sargent C, Roach GD",
+    "title": "A Week of Sleep Restriction Does Not Affect Nighttime Glucose Concentration in Healthy Adult Males When Slow-Wave Sleep Is Maintained",
+    "journal": "Sensors",
+    "year": 2022,
+    "doi": "10.3390/s22186962",
+    "pmid": "36146310",
+    "pmcid": "PMC9500600"
+  },
+  "reported": [
+    {
+      "what": "mean interstitial glucose during time in bed, baseline night, 9 h and 5 h conditions (4.4 and 4.6 mmol/L, mean ± SD)",
+      "location": {
+        "where": "Results, paragraph on average glucose concentration; Table 3, row 'Glucose concentration during time in bed'",
+        "quote": "The average glucose concentration during the time in bed on the baseline night was 4.4 ± 0.1 mmol·L−1 in the 9 h condition and 4.6 ± 0.1 mmol·L−1 in the 5 h condition"
+      }
+    },
+    {
+      "what": "mean interstitial glucose during time in bed, experimental night 7, 9 h and 5 h conditions (5.1 and 5.1 mmol/L, mean ± SD)",
+      "location": {
+        "where": "Results, paragraph on average glucose concentration; Table 3, row 'Glucose concentration during time in bed'",
+        "quote": "The average glucose concentration during the time in bed on experimental night seven was 5.1 ± 0.1 mmol·L−1 in the 9 h condition and 5.1 ± 0.1 mmol·L−1 in the 5 h condition"
+      }
+    },
+    {
+      "what": "mean interstitial glucose by sleep stage (N2, N3, REM, WASO), baseline and experimental night 7, 9 h and 5 h conditions (mean ± SD)",
+      "location": {
+        "where": "Table 3, rows 'Glucose concentration during stage N2/N3/REM/WASO (mmol·L−1)'",
+        "quote": "Glucose concentration during stage N2 (mmol·L−1) | 4.4 ± 0.9 | 4.5 ± 0.6"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "marker",
+    "name": "interstitial_glucose"
+  },
+  "detail": "Every glucose value in the paper is an interstitial (CGM) mean and the model's glucose is plasma, so the reported numbers cannot be entered; the stage-wise sleep durations of Table 2 and the day-by-day meals (Table 1, percentages of energy only) would also be out."
+}
