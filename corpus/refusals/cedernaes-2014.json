@@ -1,0 +1,40 @@
+{
+  "paper": "cedernaes-2014",
+  "citation": {
+    "authors": "Cedernaes J, Brandell J, Ros O, Broman J-E, Hogenkamp PS, Schiöth HB, Benedict C",
+    "title": "Increased impulsivity in response to food cues after sleep loss in healthy young men",
+    "journal": "Obesity (Silver Spring)",
+    "year": 2014,
+    "doi": "10.1002/oby.20786",
+    "pmid": "24839251",
+    "pmcid": "PMC4314688"
+  },
+  "reported": [
+    {
+      "what": "fasting plasma glucose at 07:30 after one night of total sleep deprivation (TSD) and after one night of sleep, mean ± SEM, n = 14",
+      "location": {
+        "where": "Results, Glucose values, paragraph 1",
+        "quote": "5.2 ± 0.1 vs. 5.4 ± 0.1 mmol/l"
+      }
+    },
+    {
+      "what": "commission errors in the go/no-go task on food words after TSD vs sleep, mean ± SEM, n = 14",
+      "location": {
+        "where": "Results, Go/no-go task and hunger ratings, paragraph 1",
+        "quote": "25.4 ± 5.6 vs. 16.3 ± 4.1% of total food words"
+      }
+    },
+    {
+      "what": "hunger rating (visual analogue scale, mm) at 07:00 after TSD vs sleep, mean ± SEM, n = 14",
+      "location": {
+        "where": "Results, Go/no-go task and hunger ratings, paragraph 2",
+        "quote": "63 ± 6 vs. 27 ± 5 mm at 0700 h"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The only value the model can carry is the 07:30 fasting glucose, which follows a dinner on the evening before the intervention night that is printed only as one third of an unstated daily energy requirement, with no grams and no clock time, so neither the meal nor the hours fasted can be written (the fed-state rule: glucose goes out, not in); the commission errors, hunger ratings and response times have no model marker."
+}
