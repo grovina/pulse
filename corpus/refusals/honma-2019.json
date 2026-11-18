@@ -1,0 +1,47 @@
+{
+  "paper": "honma-2019",
+  "citation": {
+    "authors": "Honma A, Revell VL, Gunn PJ, Davies SK, Middleton B, Raynaud FI, Skene DJ",
+    "title": "Effect of acute total sleep deprivation on plasma melatonin, cortisol and metabolite rhythms in females",
+    "journal": "European Journal of Neuroscience",
+    "year": 2019,
+    "doi": "10.1111/ejn.14411",
+    "pmid": "30929284",
+    "pmcid": "PMC7027445"
+  },
+  "reported": [
+    {
+      "what": "night-time (00:00-06:00) plasma melatonin, pg/mL, mean ± SEM, n = 12, on day 1 (baseline sleep), day 2 (sleep deprivation) and day 3 (recovery sleep)",
+      "location": {
+        "where": "Results, Hormone rhythms (uncertainty label: Materials and Methods, Data analysis, 'All data are shown as mean ± SEM.')",
+        "quote": "day 1 sleep, 84.8 ± 8.0 pg/ml; day 2 sleep deprivation, 102.1 ± 5.6 pg/ml; day 3 recovery sleep, 81.5 ± 4.2 pg/ml"
+      }
+    },
+    {
+      "what": "dim light melatonin onset clock time on day 1, mean ± SEM, n = 12 (day 2 and day 3 values also printed)",
+      "location": {
+        "where": "Results, Hormone rhythms",
+        "quote": "On day 1, the DLMO was 21:56 ± 0:14 hr"
+      }
+    },
+    {
+      "what": "peak night-time plasma cortisol, nmol/L, mean ± SEM, n = 12, on day 1, day 2 and day 3 (the window of 'peak night-time' is not stated for cortisol)",
+      "location": {
+        "where": "Results, Hormone rhythms; Figure 1b",
+        "quote": "day 1, 268 ± 62 nmol/L; day 2, 309 ± 67 nmol/L; day 3, 287 ± 51 nmol/L"
+      }
+    },
+    {
+      "what": "metabolite PC1 acrophase and amplitude by day (mean score, all metabolites, n = 12)",
+      "location": {
+        "where": "Results, Multivariate analysis of metabolites",
+        "quote": "acrophase: 15:31, 14:04, 15:20 hr; amplitude: 2.14, 2.18, 1.99, day1, 2, 3, respectively"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The standardised meals of every study day (07:00, 13:00 and 19:00 with a 22:00 snack, Methods) are printed with no energy, grams or composition, and every sampled value follows them (the day 1 and day 2 values after one or two such days), so no arm can be written, and the headline melatonin and metabolite series are in any case a marker the model has no series for."
+}
