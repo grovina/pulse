@@ -1,0 +1,452 @@
+{
+  "paper": "centofanti-2024",
+  "citation": {
+    "authors": "Centofanti S, Heilbronn LK, Wittert G, Dorrian J, Coates AM, Kennaway D, Gupta C, Stepien JM, Catcheside P, Yates C, Grosser L, Matthews RW, Banks S",
+    "title": "Fasting as an intervention to alter the impact of simulated night-shift work on glucose metabolism in healthy adults: a cluster randomised controlled trial",
+    "journal": "Diabetologia",
+    "year": 2024,
+    "doi": "10.1007/s00125-024-06279-1",
+    "pmid": "39422718",
+    "pmcid": "PMC11663163"
+  },
+  "population": {
+    "n": 52,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "52 analysed of 55 randomised (the paper's 'self reported 32 men, 23 women' counts the 55; Table 1 per group gives 11/8, 8/8 and 10/7 = 29 men and 23 women for the 52); aged 18-50 and BMI 18.5-29.9 kg/m2 are enrolment criteria, not observed ranges. The paper calls them 'healthy, non-shift-working participants' and screened them: no self-reported medical or psychiatric disorder, questionnaires and PSG, and a blood screen with all haematology and chemistry inside reference intervals. No glucose tolerance test was used for screening, but the paper's own label and the screen make the status healthy. Table 1 gives sex, age and BMI per condition; the baseline groups are entered in their own protocols with that group's age and BMI (mean and SD). Top-level age and BMI are null: no pooled value is printed."
+  },
+  "protocols": [
+    {
+      "name": "baseline_ogtt_fasting_night",
+      "description": "Baseline OGTT, fasting-at-night group, before shiftwork: 8 h time-in-bed 22:00-06:00 (minutes 0-479 asleep), last food the 19:00 dinner (not entered: no grams printed), overnight fast; 75 g glucose drink at minute 510 (06:30 clock); samples drawn at -15 to 150 min after the drink; the arm ends after the 120 min sample at minute 630 (duration 631), the only later sample entered. prefast_hours 3.0 = 22:00 minus 19:00 (derived). Drink clock time 06:30 is assumed: the paper gives catheter insertion at 06:15 and breakfast at 'approximately 06:30 hours (timing similar to OGTT at baseline)'. Fasting value = timepoint 0, before the drink (paper's ISI definition). Age and BMI are this group's Table 1 means and SDs.",
+      "duration_min": 631,
+      "start_hour": 22.0,
+      "meals": [
+        {
+          "t_min": 510,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 3.0,
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "population": {
+        "age_years": {
+          "mean": 24.7,
+          "sd": 5.4,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.9,
+          "sd": 2.3,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "baseline_ogtt_snack_night",
+      "description": "Baseline OGTT, snack-at-night group, before shiftwork: 8 h time-in-bed 22:00-06:00 (minutes 0-479 asleep), last food the 19:00 dinner (not entered: no grams printed), overnight fast; 75 g glucose drink at minute 510 (06:30 clock); samples drawn at -15 to 150 min after the drink; the arm ends after the 120 min sample at minute 630 (duration 631), the only later sample entered. prefast_hours 3.0 = 22:00 minus 19:00 (derived). Drink clock time 06:30 is assumed: the paper gives catheter insertion at 06:15 and breakfast at 'approximately 06:30 hours (timing similar to OGTT at baseline)'. Fasting value = timepoint 0, before the drink (paper's ISI definition). Age and BMI are this group's Table 1 means and SDs.",
+      "duration_min": 631,
+      "start_hour": 22.0,
+      "meals": [
+        {
+          "t_min": 510,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 3.0,
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "population": {
+        "age_years": {
+          "mean": 25.4,
+          "sd": 5.6,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 1.9,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "baseline_ogtt_meal_night",
+      "description": "Baseline OGTT, meal-at-night group, before shiftwork: 8 h time-in-bed 22:00-06:00 (minutes 0-479 asleep), last food the 19:00 dinner (not entered: no grams printed), overnight fast; 75 g glucose drink at minute 510 (06:30 clock); samples drawn at -15 to 150 min after the drink; the arm ends after the 120 min sample at minute 630 (duration 631), the only later sample entered. prefast_hours 3.0 = 22:00 minus 19:00 (derived). Drink clock time 06:30 is assumed: the paper gives catheter insertion at 06:15 and breakfast at 'approximately 06:30 hours (timing similar to OGTT at baseline)'. Fasting value = timepoint 0, before the drink (paper's ISI definition). Age and BMI are this group's Table 1 means and SDs.",
+      "duration_min": 631,
+      "start_hour": 22.0,
+      "meals": [
+        {
+          "t_min": 510,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0
+        }
+      ],
+      "prefast_hours": 3.0,
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "population": {
+        "age_years": {
+          "mean": 23.5,
+          "sd": 3.5,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 24.6,
+          "sd": 3.2,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_fasting_fasting_night",
+      "description": "Fasting plasma glucose at timepoint 0, before the 75 g drink, baseline OGTT, fasting-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_fasting_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 5.2,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Fasting-at-night, row 'Fasting glucose (mmol/l)' (mean ± SD; footnote a: n = 18)",
+        "quote": "Fasting glucose (mmol/l) | 5.2 ± 0.5"
+      }
+    },
+    {
+      "id": "glucose_2h_fasting_night",
+      "description": "Plasma glucose 2 h after the 75 g glucose drink, baseline OGTT, fasting-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_fasting_night"
+      ],
+      "window": {
+        "start_min": 630,
+        "end_min": 631
+      },
+      "value": 6.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.3,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Fasting-at-night, row '2 h glucose (mmol/l)' (mean ± SD; footnote a: n = 18)",
+        "quote": "2 h glucose (mmol/l) | 6.4 ± 1.3"
+      }
+    },
+    {
+      "id": "insulin_fasting_fasting_night",
+      "description": "Fasting plasma insulin at timepoint 0, before the 75 g drink, baseline OGTT, fasting-at-night group (Table 1)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_fasting_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 145.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 53.5,
+        "n": 18
+      },
+      "location": {
+        "where": "Table 1, column Fasting-at-night, row 'Fasting insulin (pmol/l)' (mean ± SD; footnote a: n = 18)",
+        "quote": "Fasting insulin (pmol/l) | 145.2 ± 53.5"
+      }
+    },
+    {
+      "id": "glucose_fasting_snack_night",
+      "description": "Fasting plasma glucose at timepoint 0, before the 75 g drink, baseline OGTT, snack-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_snack_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 5.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.6,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, column Snack-at-night, row 'Fasting glucose (mmol/l)' (mean ± SD; footnote b: n = 15 for glucose, footnote c: n = 12 for insulin)",
+        "quote": "Fasting glucose (mmol/l) | 5.4 ± 0.6"
+      }
+    },
+    {
+      "id": "glucose_2h_snack_night",
+      "description": "Plasma glucose 2 h after the 75 g glucose drink, baseline OGTT, snack-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_snack_night"
+      ],
+      "window": {
+        "start_min": 630,
+        "end_min": 631
+      },
+      "value": 7.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.2,
+        "n": 15
+      },
+      "location": {
+        "where": "Table 1, column Snack-at-night, row '2 h glucose (mmol/l)' (mean ± SD; footnote b: n = 15 for glucose, footnote c: n = 12 for insulin)",
+        "quote": "2 h glucose (mmol/l) | 7.0 ± 1.2"
+      }
+    },
+    {
+      "id": "insulin_fasting_snack_night",
+      "description": "Fasting plasma insulin at timepoint 0, before the 75 g drink, baseline OGTT, snack-at-night group (Table 1)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_snack_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 118.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 43.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, column Snack-at-night, row 'Fasting insulin (pmol/l)' (mean ± SD; footnote b: n = 15 for glucose, footnote c: n = 12 for insulin)",
+        "quote": "Fasting insulin (pmol/l) | 118.1 ± 43.1"
+      }
+    },
+    {
+      "id": "glucose_fasting_meal_night",
+      "description": "Fasting plasma glucose at timepoint 0, before the 75 g drink, baseline OGTT, meal-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_meal_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 5.3,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, column Meal-at-night, row 'Fasting glucose (mmol/l)' (mean ± SD; no footnote: n = 17)",
+        "quote": "Fasting glucose (mmol/l) | 5.3 ± 0.5"
+      }
+    },
+    {
+      "id": "glucose_2h_meal_night",
+      "description": "Plasma glucose 2 h after the 75 g glucose drink, baseline OGTT, meal-at-night group (Table 1)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_meal_night"
+      ],
+      "window": {
+        "start_min": 630,
+        "end_min": 631
+      },
+      "value": 6.7,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.7,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, column Meal-at-night, row '2 h glucose (mmol/l)' (mean ± SD; no footnote: n = 17)",
+        "quote": "2 h glucose (mmol/l) | 6.7 ± 1.7"
+      }
+    },
+    {
+      "id": "insulin_fasting_meal_night",
+      "description": "Fasting plasma insulin at timepoint 0, before the 75 g drink, baseline OGTT, meal-at-night group (Table 1)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_ogtt_meal_night"
+      ],
+      "window": {
+        "start_min": 510,
+        "end_min": 511
+      },
+      "value": 113.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 35.4,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, column Meal-at-night, row 'Fasting insulin (pmol/l)' (mean ± SD; no footnote: n = 17)",
+        "quote": "Fasting insulin (pmol/l) | 113.2 ± 35.4"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Table 1, glucose AUC (mmol/l × min), all three groups: the printed unit contradicts the printed values (7.4 to 7.9 mmol/L x min over 150 min against fasting glucose near 5 mmol/L)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Table 1, insulin AUC (pmol/l × min), all three groups: the printed unit contradicts the printed values (about 570 to 730 over 150 min against fasting insulin 113 to 145 pmol/L)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Table 1, NEFA AUC (mmol/l × min), all three groups: the printed unit contradicts the printed values (0.15 to 0.17 over 150 min against NEFA 0.32 to 0.42 mmol/L)",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "Table 1, NEFA (mmol/l), all three groups: the sampling time is not printed (Table 2 gives 'fasting NEFA' as a separate row), so the row cannot be placed in the OGTT",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Table 1, HOMA-IR, insulin sensitivity index (ISI), insulinogenic index and disposition index (DI), all three groups: derived indices, not measured markers",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Table 2, changes from baseline in glucose AUC, 2 h glucose, insulin AUC, NEFA AUC, fasting glucose, fasting insulin and fasting NEFA (mixed-model estimates with 95% CI) at the OGTT after 4 nights of simulated night shift and the recovery sleep: the arm needs four days of meals whose grams of carbohydrate, fat and protein are not printed (only percentages of energy, and energy is printed only as a rounded EER)",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "Table 2, changes from baseline in ISI, insulinogenic index, DI and HOMA-IR: derived indices, and the same multi-day arm as above",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Table 3, changes from NS1 in breakfast glucose AUC and insulin AUC after 1 and 4 nights of simulated night shift: the breakfast is given only as percentages (76.0% carbohydrate, 13.8% protein, 7.5% fat, 2.6% fibre) with no energy or weight, so its grams cannot be written; the NS4 value also follows four days of unprinted meals",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Table 3, changes from NS1 in ISI, IGI and DI after breakfast: derived indices, on the same breakfast arms",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Table 4, polysomnography sleep measures (TST, SOL, WASO, sleep efficiency, stages 1 to 4, REM) at baseline, after NS3 and at RTDS, all three groups: the model has no sleep-architecture marker",
+      "missing": {
+        "kind": "marker",
+        "name": "polysomnography_sleep"
+      }
+    },
+    {
+      "what": "Figure 2 (a-c), glucose, insulin and NEFA curves at 0 to 150 min after the OGTT, at baseline and at RTDS: values exist only in the figure",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Figure 3 (a, b), glucose and insulin curves at 0 to 150 min after the breakfast, after NS1 and NS4: values exist only in the figure",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
