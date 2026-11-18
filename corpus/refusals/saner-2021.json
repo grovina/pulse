@@ -1,0 +1,54 @@
+{
+  "paper": "saner-2021",
+  "citation": {
+    "authors": "Saner NJ, Lee MJ-C, Kuang J, Pitchford NW, Roach GD, Garnham A, Genders AJ, Stokes T, Schroder EA, Huo Z, Esser KA, Phillips SM, Bishop DJ, Bartlett JD",
+    "title": "Exercise mitigates sleep-loss-induced changes in glucose tolerance, mitochondrial function, sarcoplasmic protein synthesis, and diurnal rhythms",
+    "journal": "Molecular Metabolism",
+    "year": 2021,
+    "doi": "10.1016/j.molmet.2020.101110",
+    "pmid": "33137489",
+    "pmcid": "PMC7704425"
+  },
+  "reported": [
+    {
+      "what": "OGTT glucose area under the curve, sleep restriction (SR) group, pre and post intervention, mean +/- SD, n = 8; printed only in arbitrary units (A.U.)",
+      "location": {
+        "where": "Results, OGTT paragraph (SR group)",
+        "quote": "pre: 678 ± 92 vs post: 827 ± 56 A.U."
+      }
+    },
+    {
+      "what": "OGTT insulin area under the curve, Normal Sleep (NS) group, pre and post intervention, mean +/- SD, n = 8; printed only in A.U.",
+      "location": {
+        "where": "Results, OGTT paragraph, insulin AUC (NS group)",
+        "quote": "NS pre: 5,845 ± 3,548 vs post: 5,264 ± 2,072 A.U."
+      }
+    },
+    {
+      "what": "sarcoplasmic protein synthesis (fractional synthetic rate, %/day), SR group, mean +/- SD, n = 8, over the intervention",
+      "location": {
+        "where": "Abstract, results sentence",
+        "quote": "FSR%/day SR: 1.11 ± 0.25%"
+      }
+    },
+    {
+      "what": "maximal coupled mitochondrial respiration (ETF+CI+CII)P in muscle fibres, SR group, pre and post intervention, mean +/- SD, n = 8, in pmol O2 s-1 mg-1",
+      "location": {
+        "where": "Results, mitochondrial respiration paragraph (SR group)",
+        "quote": "pre: 88.4 ± 24.6 vs post: 72.5 ± 22.6 pmol O2.s−1.mg−1"
+      }
+    },
+    {
+      "what": "change in wrist skin temperature diurnal amplitude, SR group, mean +/- SD, n = 8, in °C (a peripheral skin measure, not core temperature)",
+      "location": {
+        "where": "Results, skin temperature paragraph",
+        "quote": "SR: -0.74 ± 0.57 °C"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unit_not_printed"
+  },
+  "detail": "The paper's glucose and insulin area under the curve, its one glucose-tolerance outcome, is printed only in arbitrary units (A.U.) that cannot be converted to a concentration times minutes, and its glucose and insulin concentrations appear only in figures, so no OGTT number can be entered; the sarcoplasmic protein synthesis, mitochondrial respiration and wrist skin temperature outcomes would also need markers the model does not carry, and the multi-day sleep and diet arms would need meal times the paper does not print (its diet is given as grams per kg per day with six meal times 'kept constant')."
+}
