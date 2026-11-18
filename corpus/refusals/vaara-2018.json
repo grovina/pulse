@@ -1,0 +1,54 @@
+{
+  "paper": "vaara-2018",
+  "citation": {
+    "authors": "Vaara JP, Oksanen H, Kyröläinen H, Virmavirta M, Koski H, Finni T",
+    "title": "60-Hour Sleep Deprivation Affects Submaximal but Not Maximal Physical Performance",
+    "journal": "Frontiers in Physiology",
+    "year": 2018,
+    "doi": "10.3389/fphys.2018.01437",
+    "pmid": "30386253",
+    "pmcid": "PMC6198717"
+  },
+  "reported": [
+    {
+      "what": "maximal heart rate of the incremental cycle test to exhaustion, PRE (before 60 h sleep deprivation), mean (SD), n = 10 (the aerobic subset)",
+      "location": {
+        "where": "Results, Aerobic performance, Maximal performance (PRE and POST values)",
+        "quote": "maximal heart rate (PRE: 190 ± 7, POST: 187 ± 6 bpm)"
+      }
+    },
+    {
+      "what": "maximal blood lactate of the same test, PRE, mean (SD), n = 10",
+      "location": {
+        "where": "Results, Aerobic performance, Maximal performance",
+        "quote": "maximal blood lactate level was lower after SD (PRE: 10.7 ± 2.2; POST: 8.2 ± 2.4 mmol/L)"
+      }
+    },
+    {
+      "what": "blood lactate at 8 min of the test, at the 275 W load, PRE, mean (SD); the paper does not print the n for this load (see detail)",
+      "location": {
+        "where": "Results, Aerobic performance, Submaximal performance, paragraph 2",
+        "quote": "Blood lactate decreased at a load of 275 W (at 8 min) (PRE: 9.4 ± 3.2; POST: 6.5 ± 1.6 mmol/L)"
+      }
+    },
+    {
+      "what": "mean heart rate over the submaximal loads (100 to 250 W), PRE, mean (SD), n = 10; the window the mean covers is not printed",
+      "location": {
+        "where": "Results, Aerobic performance, Submaximal performance, paragraph 1",
+        "quote": "a decrease was observed in mean heart rate (PRE: 160 ± 11, POST: 149 ± 9 bpm, p < 0.05)"
+      }
+    },
+    {
+      "what": "time to exhaustion, PRE and POST after 60 h sleep deprivation, mean (SD), n = 10",
+      "location": {
+        "where": "Results, Aerobic performance, Maximal performance",
+        "quote": "there was no difference (p > 0.05) in time to exhaustion (PRE: 9:27 ± 1:22, POST: 10:06 ± 1:32 min:s)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "exercise_to_exhaustion_ramp"
+  },
+  "detail": "The paper's maximal values (heart rate and lactate at the end of a 100 W, +25 W per minute ramp to exhaustion, whose end minute varies between people: mean 9:27 PRE, 10:06 POST) are the gap named here, as in schild-2016 and muramoto-2025; adding it would let the PRE maxima be written. The paper's central comparison is also not writable: the POST values follow 60 h of sleep deprivation, and the meals of those days (and of the days before the PRE test) are not printed, so they are input prior_day_condition, as in vanleeuwen-2010. The 275 W lactate at 8 min is not written because the paper prints n = 10 for the aerobic test but gives counts of 9, 8 and 4 for 'the last 3 workloads' without saying which loads those are, so the n of that value is not stated."
+}
