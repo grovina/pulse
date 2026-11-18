@@ -1,0 +1,40 @@
+{
+  "paper": "broussard-2015",
+  "citation": {
+    "authors": "Broussard JL, Kilkus JM, Delebecque F, Abraham V, Day A, Whitmore HR, Tasali E",
+    "title": "Elevated ghrelin predicts food intake during experimental sleep restriction",
+    "journal": "Obesity (Silver Spring, Md.)",
+    "year": 2015,
+    "doi": "10.1002/oby.21321",
+    "pmid": "26467988",
+    "pmcid": "PMC4688118"
+  },
+  "reported": [
+    {
+      "what": "24-hour mean ghrelin, normal sleep against sleep restriction, mean ± SEM, n=19 (Table 1); the profile follows several days of standardized meals whose grams are not printed",
+      "location": {
+        "where": "Table 1, Ghrelin, 24-hour mean (pg/mL) row, Normal Sleep and Sleep Restriction columns",
+        "quote": "24-hour mean (pg/mL) | 658 ±54 | 704 ±52 | 0.005"
+      }
+    },
+    {
+      "what": "24-hour mean leptin, normal sleep against sleep restriction, mean ± SEM, n=19 (Table 1); same meal gap",
+      "location": {
+        "where": "Table 1, Leptin, 24-hour mean (ng/mL) row, Normal Sleep and Sleep Restriction columns",
+        "quote": "24-hour mean (ng/mL) | 3.6 ± 0.6 | 3.8 ± 0.7 | 0.62"
+      }
+    },
+    {
+      "what": "percent body fat by bioimpedance at admission, before each sleep condition, mean ± SEM, n=19; the model carries fat mass in kg, not a percentage, and the body weight needed to convert it is averaged over four days",
+      "location": {
+        "where": "Results, Body weight and percent body fat",
+        "quote": "19.3 ± 1.1 % before normal sleep"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The Table 1 profiles follow several days of standardized meals (three a day at 09:00, 14:00 and 19:00, plus a 19:00 meal before sampling) that the paper gives only as percentages of energy, with the energy itself (Schofield equation) not printed, so no meal can be written in grams; that gap alone blocks the leptin means, and absolute ghrelin levels would be left out under the guide's total-versus-active rule in any case."
+}
