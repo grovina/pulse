@@ -21,7 +21,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Coupling priors | 32 |
 | Papers | 189, of which 29 are sealed |
 | Held-out items | 5 |
-| Corpus files | 121 papers as findings, 41 as refusals, 0 queued to be read |
+| Corpus files | 121 papers as findings, 41 as refusals, 13 queued to be read |
 | Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) in the older Python queue |
 
 ## The model
@@ -303,10 +303,10 @@ Not rescored, from the board of 2026-10-29:
   uncertainty and its n; the loader derives the sigma.
 - Papers are found by a standing search list, `corpus/searches.json`: one
   PubMed Central open-access query per topic, worked in batches until its
-  hits are all screened. Six topics are worked (insulin after a meal;
+  hits are all screened. Seven topics are worked (insulin after a meal;
   meals equal in grams, different in kind; the oral glucose tolerance test;
-  fasting; intravenous glucose and clamps; a bout of exercise), and 3,465 of
-  4,056 hits found so far are screened. Screening runs on Haiku.
+  fasting; intravenous glucose and clamps; a bout of exercise; sleep loss
+  and timing), and 3,739 of 4,056 hits found so far are screened. Screening runs on Haiku.
 - A paper is read by one agent and checked against the paper, number by
   number, by a second that sees only the file and the paper. Only then is it
   committed. First readers run on Haiku since 2026-11-16: re-reading three

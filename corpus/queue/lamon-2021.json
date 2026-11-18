@@ -1,0 +1,25 @@
+{
+  "paper": "lamon-2021",
+  "citation": "Lamon S, et al. 2021. The effect of acute sleep deprivation on skeletal muscle protein synthesis and the hormonal environment. Physiological Reports 9:e14660.",
+  "doi": "10.14814/phy2.14660",
+  "pmid": "33400856",
+  "pmcid": "PMC7785053",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "One night of total sleep deprivation (DEP) vs control night of sleep 22:00-07:00 (CON), standardized meals, plasma cortisol sampled from 08:00 with AUC 10:00-16:00",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=13 healthy young adults (7 male, 6 female), age 22 +/- 1 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "cortisol",
+      "where": "Results text, cortisol AUC 10:00-16:00",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Cortisol AUC over stated clock times; the cortisol curve is a figure. Insulin and glucose are not printed as values. Paper states all data are mean +/- SD."
+}

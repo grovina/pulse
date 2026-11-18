@@ -76,12 +76,14 @@
     },
     {
       "name": "sleep loss and timing",
-      "status": "later",
+      "status": "active",
       "why": "Sleep restriction or deprivation and meal timing against glucose, insulin and cortisol.",
       "query": "(\"sleep restriction\"[Title] OR \"sleep deprivation\"[Title] OR \"sleep loss\"[Title] OR \"circadian misalignment\"[Title] OR \"night shift\"[Title]) AND (glucose[All Fields] AND insulin[All Fields]) AND healthy[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 274,
+      "queued": 13,
+      "batches": [
+        "2026-11-18"
+      ],
       "hits": 274
     },
     {

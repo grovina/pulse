@@ -1,0 +1,31 @@
+{
+  "paper": "souza-2024",
+  "citation": "Souza et al. 2024. Sleep Debt and Insulin Resistance: What's Worse, Sleep Deprivation or Sleep Restriction? Sleep Science 17:e272.",
+  "doi": "10.1055/s-0044-1782173",
+  "pmid": "39268336",
+  "pmcid": "PMC11390169",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "24 h sleep deprivation vs regular sleep (23:00-07:00); 4 nights of 4 h in bed (01:00-05:00) for sleep restriction; OGTT of 75 g anhydrous glucose in 300 ml with samples at baseline, 30, 60, 90 and 120 min",
+  "protocol_kinds": [
+    "OGTT",
+    "other"
+  ],
+  "population": "n=28 healthy male subjects, age 18-40 y (two groups: sleep deprivation and sleep restriction)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Table 2, OGTT glucose (mg/dL) at 0, 30, 60, 90, 120 min, sleep conditions",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table 2, OGTT insulin (uU/mL) at the same minutes",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Table 2 is mean +/- SEM (GEE), so the glucose and insulin series at 0-120 min are usable; baseline table 1 is mean +/- SD. Sleep schedule is printed in the abstract and methods."
+}

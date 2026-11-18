@@ -1,0 +1,31 @@
+{
+  "paper": "sweeney-2017",
+  "citation": "Sweeney LA, et al. 2017. Skeletal muscle insulin signaling and whole-body glucose metabolism following acute sleep restriction in healthy males. Physiological Reports 5:e13498.",
+  "doi": "10.14814/phy2.13498",
+  "pmid": "29233906",
+  "pmcid": "PMC5727269",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "2 nights of habitual sleep (CON; bed 23:49, wake 07:11) vs 2 nights at 50% of habitual sleep (SR; bed 03:19, wake 07:14); OGTT after the second night, blood at regular intervals (load grams not stated in the text extract)",
+  "protocol_kinds": [
+    "OGTT",
+    "other"
+  ],
+  "population": "n=10 healthy young males (age 23 +/- 4 y, BMI 24.9 +/- 2.1 kg/m2)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose",
+      "where": "Results text, baseline mean; OGTT AUC and figure curves",
+      "form": "text"
+    },
+    {
+      "marker": "insulin",
+      "where": "Results text, baseline, 15 min, AUC",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Glucose and insulin are mean +/- SEM in text; full OGTT curves and AUC bars are in figures. Participant characteristics are mean +/- SD. Check the OGTT load before use."
+}

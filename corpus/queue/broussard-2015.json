@@ -1,0 +1,30 @@
+{
+  "paper": "broussard-2015",
+  "citation": "Broussard JL, et al. 2015. Elevated ghrelin predicts food intake during experimental sleep restriction. Obesity 24:132.",
+  "doi": "10.1002/oby.21321",
+  "pmid": "26467988",
+  "pmcid": "PMC4688118",
+  "licence": "publisher terms (Obesity; see URL)",
+  "licence_url": "http://www.nature.com/authors/editorial_policies/license.html#terms",
+  "protocol": "4 nights of 8.5 h in bed (23:00-07:30) vs 4 nights of 4.5 h in bed (01:00-05:30), crossover; blood sampled for 24 h during standardized meals",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "n=19 healthy young lean men, age 23.5 +/- 0.7 y, BMI 23.1 +/- 0.4 kg/m2",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "ghrelin",
+      "where": "Table 1, 24-h mean, nocturnal mean and meal peaks/nadirs (normal sleep vs restriction)",
+      "form": "table"
+    },
+    {
+      "marker": "leptin",
+      "where": "Table 1, 24-h mean and nocturnal mean",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Table 1 gives mean +/- SEM for 24-h hormone profiles; pancreatic polypeptide is also in the table but is not one of the wanted markers. Licence is the publisher's author-reuse terms, not CC."
+}
