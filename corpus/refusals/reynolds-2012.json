@@ -1,0 +1,61 @@
+{
+  "paper": "reynolds-2012",
+  "citation": {
+    "authors": "Reynolds AC, Dorrian J, Liu PY, Van Dongen HPA, Wittert GA, Harmer LJ, Banks S",
+    "title": "Impact of Five Nights of Sleep Restriction on Glucose Metabolism, Leptin and Testosterone in Young Adult Men",
+    "journal": "PLoS ONE",
+    "year": 2012,
+    "doi": "10.1371/journal.pone.0041218",
+    "pmid": "22844441",
+    "pmcid": "PMC3402517"
+  },
+  "reported": [
+    {
+      "what": "plasma cortisol at 16:00 on SR5 and on B1, mean +/- SEM as printed in the text (14 men studied)",
+      "location": {
+        "where": "Results, Adrenal Axis - Cortisol paragraph (planned contrasts)",
+        "quote": "cortisol levels were significantly higher at 16:00 on SR5 (mean ± SEM; 247.1±21.9) than B1 (179.0±16.6"
+      }
+    },
+    {
+      "what": "plasma ACTH at 16:00 on SR5 and on B1, mean +/- SEM as printed in the text",
+      "location": {
+        "where": "Results, Adrenal Axis paragraph (planned contrasts)",
+        "quote": "ACTH levels were higher at 16:00 on SR5 (mean ± SEM; 20.2±1.4) than B1 (16.8±1.5"
+      }
+    },
+    {
+      "what": "blood glucose on B1 and SR5, mean +/- SE over the sampling day as printed in the text (mixed-model means, Table 1 note)",
+      "location": {
+        "where": "Results, Glucose Metabolism - Glucose, Insulin and Triglycerides, paragraph on glucose",
+        "quote": "Glucose was 11.4% higher after sleep restriction (mean ± SE; 5.5±0.1) than at baseline (4.9±0.1)"
+      }
+    },
+    {
+      "what": "serum insulin on B1 and SR5, mean +/- SE over the sampling day as printed in the text",
+      "location": {
+        "where": "Results, Glucose, Insulin and Triglycerides section, paragraph on insulin",
+        "quote": "Insulin was 28.8% higher after sleep restriction (mean ± SE: 44.2±4.2 uU/ml) than at baseline (34.4±2.8)"
+      }
+    },
+    {
+      "what": "leptin on B1 and SR5, mean +/- SE over the sampling day as printed in the text",
+      "location": {
+        "where": "Results, Leptin section",
+        "quote": "Leptin was 13.7% higher after sleep restriction (mean ± SE: 4.8±0.4 ng/ml) than at baseline (4.3±0.3)"
+      }
+    },
+    {
+      "what": "daily energy intake on B1 and SR5, mean +/- SD, and its carbohydrate share on B1, as day totals with no meal split",
+      "location": {
+        "where": "Results, Caloric Intake paragraph",
+        "quote": "Average caloric intake (mean ± SD) was 1973.0±31.9 kcal on B1 and 1961.8±30.9 kcal on SR5. Carbohydrates accounted for 52.9%±2.2% of caloric intake on B1"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The lab meals are printed only as day totals (energy and macronutrient percentages) with no grams per meal and no split of the day among breakfast, lunch and dinner, so the grams cannot be placed at the meal times (09:00, 13:00, 18:30 by the Figure 3 legend) that every B1 and SR5 sample after the fasting draw depends on; the SR5 samples also need the five restricted nights and their meals (a prior_day_condition), and the 09:00 fasting draws are given only as figure bars, so no value can be written."
+}
