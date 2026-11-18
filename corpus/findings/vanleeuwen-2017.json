@@ -1,0 +1,214 @@
+{
+  "paper": "vanleeuwen-2017",
+  "citation": {
+    "authors": "van Leeuwen WMA, Sallinen M, Virkkala J, Lindholm H, Hirvonen A, Hublin C, Porkka-Heiskanen T, Härmä M",
+    "title": "Physiological and autonomic stress responses after prolonged sleep restriction and subsequent recovery sleep in healthy young men",
+    "journal": "Sleep and Biological Rhythms",
+    "year": 2017,
+    "doi": "10.1007/s41105-017-0122-x",
+    "pmid": "29367834",
+    "pmcid": "PMC5754428"
+  },
+  "population": {
+    "n": 23,
+    "sex": "male",
+    "age_years": {
+      "mean": 23.1,
+      "sd": 2.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty-three healthy men aged 19-29 years (mean +/- SD 23.1 +/- 2.5; the age range is the enrolment range, not an observed range), screened by telephone interview, physical examination, blood tests and polysomnography; 15 randomised to sleep restriction (EXP), 8 controls (CON). No BMI is printed. The same cohort as vanleeuwen-2010 (the paper cites its design and inclusion criteria to that study, ref. 43). The per-cell n of Table 1 is not printed; the ANOVA dfs imply fewer than the randomised 15 (heart rate EXP 10, RR interval EXP 12)."
+  },
+  "protocols": [
+    {
+      "name": "baseline_night_exp",
+      "description": "Experimental group (EXP), a baseline night: in bed 23:00-07:00 (paper: 'spent the first two nights 8 h in bed (baseline, BL; from 2300 to 0700 hours)'; 8 h = 480 min, minutes 0-479 asleep, awake afterwards), then the cardiac recording of 10 min supine rest 'between 0800 and 0900 hours' (minutes 540-599; window 540-600). The paper does not say whether this is the morning after the first or the second baseline night; both nights are the same, so one night is entered. Starts from typical values (norm_center), no meal: the paper gives a 21:30 snack (200 kcal) and breakfast at 08:00 (600 kcal), both without grams, and does not say whether the recording came before or after breakfast, so the fed state is unknown and no fast or meal is assumed. Only heart rate and blood pressure are entered, as markers that hardly depend on the meal.",
+      "duration_min": 600,
+      "start_hour": 23.0,
+      "meals": [],
+      "init": "norm_center",
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "assumed": [
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hr_baseline_exp",
+      "description": "Resting heart rate at 08:00-09:00 after a baseline night, experimental group (Table 1, Heart rate, BL, EXP); mean of the 10-min supine recording, arm window 540-600 min; n = 10 from the printed repeated-measures df, F(2,18) = 6.29 (Results), not the 15 randomised",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 600
+      },
+      "value": 60.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.8,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, BL column (Mean ± SE), experimental group",
+        "quote": "Heart rate (bpm) | 60 ± 1.8"
+      }
+    },
+    {
+      "id": "sbp_baseline_exp",
+      "description": "Systolic arterial pressure at 08:00-09:00 after a baseline night, experimental group (Table 1, BL, EXP); n = 12 is not printed: taken from the ANOVA of the same table (F(2,22) printed for the RR interval; the p of this row's F reproduces with df 22), not the 15 randomised",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 600
+      },
+      "value": 132.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 5.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, BL column (Mean ± SE), experimental group",
+        "quote": "Systolic arterial pressure (mmHg) | 132 ± 5.0"
+      }
+    },
+    {
+      "id": "dbp_baseline_exp",
+      "description": "Diastolic arterial pressure at 08:00-09:00 after a baseline night, experimental group (Table 1, BL, EXP); n = 12 is not printed: taken from the ANOVA of the same table (F(2,22) printed for the RR interval; the p of this row's F reproduces with df 22), not the 15 randomised",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "baseline_night_exp"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 600
+      },
+      "value": 55.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.3,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, BL column (Mean ± SE), experimental group",
+        "quote": "Diastolic arterial pressure (mmHg) | 55 ± 3.3"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all control-group (CON) cells of Table 1, baseline heart rate 59 +/- 6.3, systolic 120 +/- 3.4, diastolic 48 +/- 0.35 mmHg: the n behind the cells is not printed, and the printed F and p of every CON row (e.g. F = 5.08, p = .164) fit an ANOVA with only 2 people (p = 1/(1+F)), not the 8 controls",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    },
+    {
+      "what": "heart rate, systolic and diastolic arterial pressure after sleep restriction (SR, after five nights of 4 h in bed) and after recovery (REC, after three nights of 8 h), both groups (Table 1, SR and REC columns): the arm needs five study days of standardized meals whose grams are not printed, with sleep debt carried across days",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "mean arterial pressure, all columns (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "pulse pressure, all columns (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_pressure"
+      }
+    },
+    {
+      "what": "stroke volume, all columns (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "stroke_volume"
+      }
+    },
+    {
+      "what": "cardiac output, all columns (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cardiac_output"
+      }
+    },
+    {
+      "what": "RR interval, all columns (Table 1, Results)",
+      "missing": {
+        "kind": "marker",
+        "name": "rr_interval"
+      }
+    },
+    {
+      "what": "short-term spectral analysis of blood pressure variability (total, ULF, VLF, LF, HF power, LF/HF, normalized units), all columns (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_pressure_spectral_power"
+      }
+    },
+    {
+      "what": "short-term spectral analysis of heart rate variability (total, ULF, VLF, LF, HF power, LF/HF, normalized units) (Table 3), and the whole-day LF/HF ratio, 4.6 ± 0.4 at BL and 6.0 ± 0.6 after SR (Results, Fig. 3c): the whole-day values are averages over epochs across a day of meals, and the model has no spectral HRV marker",
+      "missing": {
+        "kind": "marker",
+        "name": "hrv_spectral_power"
+      }
+    },
+    {
+      "what": "baroreflex sensitivity (BRS, ms/mmHg), Table 3",
+      "missing": {
+        "kind": "marker",
+        "name": "baroreflex_sensitivity"
+      }
+    },
+    {
+      "what": "salivary cortisol, morning and afternoon values, Results and Fig. 3a (salivary, not the model's serum cortisol)",
+      "missing": {
+        "kind": "marker",
+        "name": "salivary_cortisol"
+      }
+    },
+    {
+      "what": "salivary neuropeptide Y, Results and Fig. 3b",
+      "missing": {
+        "kind": "marker",
+        "name": "neuropeptide_y"
+      }
+    },
+    {
+      "what": "study-day meals (breakfast 0800 600 kcal, lunch 1230 800 kcal, dinner 1830 700 kcal, snacks 1530 300 kcal and 2130 200 kcal, and an EXP fruit at 0030 50 kcal): energy only, no grams of carbohydrate, fat or protein",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
