@@ -1,0 +1,375 @@
+{
+  "paper": "souza-2024",
+  "citation": {
+    "authors": "Souza JFT, Monico-Neto M, Tufik S, Antunes HKM",
+    "title": "Sleep Debt and Insulin Resistance: What's Worse, Sleep Deprivation or Sleep Restriction?",
+    "journal": "Sleep Science",
+    "year": 2024,
+    "doi": "10.1055/s-0044-1782173",
+    "pmid": "39268336",
+    "pmcid": "PMC11390169"
+  },
+  "population": {
+    "n": 23,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.2,
+      "sd": 4.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.9,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twenty-three healthy, physically active young men completed the study (28 recruited; Methods, Results). Age 18-40 was the enrolment criterion (no range printed for those studied). Total-sample age and BMI are Table 1 (mean +/- SD, 26.2 +/- 4.1 y and 24.9 +/- 3.1 kg/m2). Two randomised groups: SD (n=10) and SR (n=13), each doing a regular-sleep night and a sleep-debt condition at least a week apart. Group age and BMI are per protocol (SD 23.7 +/- 1 y, 23.74 +/- 3.18 kg/m2; SR 28.23 +/- 4.51 y, 25.90 +/- 2.73 kg/m2, Results text). Healthy: no family history of diabetes and no diabetes or impaired glucose tolerance (Introduction, Methods)."
+  },
+  "protocols": [
+    {
+      "name": "sd_regular",
+      "description": "SD group (n=10), regular-sleep condition: in bed 23:00-07:00 (printed 'regular sleep (11 pm to 7 am)'; minutes 0-479 asleep); blood collection and OGTT at 08:00 (minute 540, printed 'blood collection was performed at 8 am'): 75 g anhydrous glucose in 300 mL water at minute 540, blood at minutes 540, 570, 600, 630, 660. The paper prints only 'at least 8 hours of fasting' before the OGTT (a lower bound, not a last-meal time): the last meal is assumed at the arm start, 23:00 (prefast_hours 0, assumed), 9 h before the draw, which satisfies the bound.",
+      "duration_min": 661,
+      "start_hour": 23.0,
+      "meals": [
+        {
+          "t_min": 540,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g anhydrous glucose in 300 mL water"
+        }
+      ],
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "prefast_hours": 0.0,
+      "population": {
+        "age_years": {
+          "mean": 23.7,
+          "sd": 1.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.74,
+          "sd": 3.18,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "sr_regular",
+      "description": "SR group (n=13), regular-sleep condition: in bed 23:00-07:00 (printed; minutes 0-479 asleep); blood collection and OGTT at 08:00 (minute 540): 75 g anhydrous glucose in 300 mL water at minute 540, blood at minutes 540, 570, 600, 630, 660. As for sd_regular: 'at least 8 hours of fasting' is a lower bound, the last meal is assumed at 23:00 (prefast_hours 0, assumed).",
+      "duration_min": 661,
+      "start_hour": 23.0,
+      "meals": [
+        {
+          "t_min": 540,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g anhydrous glucose in 300 mL water"
+        }
+      ],
+      "sleep_wake": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 480,
+            "level": 0
+          }
+        ]
+      },
+      "prefast_hours": 0.0,
+      "population": {
+        "age_years": {
+          "mean": 28.23,
+          "sd": 4.51,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.9,
+          "sd": 2.73,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ogtt_glucose_sd_regular",
+      "description": "Glucose (plasma or serum, not stated) through the OGTT, SD group, regular-sleep condition, mean and SEM (first point is the pre-load sample) (GEE estimate printed as mean and SEM, see protocol notes)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "sd_regular"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 540,
+          "value": 84.0,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.8,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 570,
+          "value": 112.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.6,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 600,
+          "value": 93.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.0,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 630,
+          "value": 85.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 7.2,
+            "n": 10
+          }
+        },
+        {
+          "t_min": 660,
+          "value": 83.1,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.8,
+            "n": 10
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, glucose row 'Regular sleep', SD columns (Baseline, 30, 60, 90, 120 min); GEE estimate printed as mean +/- SEM; Table 3 baseline differs slightly (84.8/86.5/88.8/90.6)",
+        "quote": "Glucose (mg/dL) | Regular sleep | 84.0 ± 1.8 | 90.3 ± 1.9 | 112.2 ± 4.6 | 128.6 ± 6.8 | 93.6 ± 6.0 | 115.5 ± 10.4 | 85.7 ± 7.2 | 95.6 ± 3.9 | 83.1 ± 3.8 | 85.2 ± 6.7"
+      }
+    },
+    {
+      "id": "ogtt_glucose_sr_regular",
+      "description": "Glucose (plasma or serum, not stated) through the OGTT, SR group, regular-sleep condition, mean and SEM (GEE estimate printed as mean and SEM, see protocol notes)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "sr_regular"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 540,
+          "value": 90.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.9,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 570,
+          "value": 128.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.8,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 600,
+          "value": 115.5,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 10.4,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 630,
+          "value": 95.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.9,
+            "n": 13
+          }
+        },
+        {
+          "t_min": 660,
+          "value": 85.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.7,
+            "n": 13
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, glucose row 'Regular sleep', SR columns (Baseline, 30, 60, 90, 120 min); GEE estimate printed as mean +/- SEM; Table 3 baseline differs slightly (84.8/86.5/88.8/90.6)",
+        "quote": "Glucose (mg/dL) | Regular sleep | 84.0 ± 1.8 | 90.3 ± 1.9 | 112.2 ± 4.6 | 128.6 ± 6.8 | 93.6 ± 6.0 | 115.5 ± 10.4 | 85.7 ± 7.2 | 95.6 ± 3.9 | 83.1 ± 3.8 | 85.2 ± 6.7"
+      }
+    },
+    {
+      "id": "ffa_baseline_sd_regular",
+      "description": "Fasting free fatty acids before the OGTT, SD group, regular-sleep condition (Table 3, Baseline parameters); sample matrix (plasma or serum) not stated; GEE estimate printed as mean +/- SEM",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sd_regular"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "value": 285.4,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 31.4,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, FFAs row, SD group Regular column",
+        "quote": "FFAs (umol/L) | 285.4 ± 31.4"
+      }
+    },
+    {
+      "id": "ffa_baseline_sr_regular",
+      "description": "Fasting free fatty acids before the OGTT, SR group, regular-sleep condition (Table 3, Baseline parameters); sample matrix (plasma or serum) not stated; GEE estimate printed as mean +/- SEM",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sr_regular"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "value": 310.3,
+      "unit": "umol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 41.4,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, FFAs row, SR group Regular column",
+        "quote": "FFAs (umol/L) | 310.3 ± 41.4"
+      }
+    },
+    {
+      "id": "cortisol_baseline_sd_regular",
+      "description": "Fasting blood cortisol before the OGTT, SD group, regular-sleep condition (Table 3, Baseline parameters; serum or plasma, as the blood samples); GEE estimate printed as mean +/- SEM",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sd_regular"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "value": 10.2,
+      "unit": "ug/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.8,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 3, Cortisol row, SD group Regular column",
+        "quote": "Cortisol (ug/dL) | 10.2 ± 0.8"
+      }
+    },
+    {
+      "id": "cortisol_baseline_sr_regular",
+      "description": "Fasting blood cortisol before the OGTT, SR group, regular-sleep condition (Table 3, Baseline parameters); GEE estimate printed as mean +/- SEM",
+      "marker": "cortisol",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sr_regular"
+      ],
+      "window": {
+        "start_min": 540,
+        "end_min": 541
+      },
+      "value": 11.7,
+      "unit": "ug/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.7,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, Cortisol row, SR group Regular column",
+        "quote": "Cortisol (ug/dL) | 11.7 ± 1.7"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "insulin through the OGTT (Table 2, both groups and conditions) and baseline insulin (Table 3): unit printed literally as 'ulU/mL', not read as microunits",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "glucose and insulin AUC at baseline (Table 3, e.g. glucose AUC 376.7 +/- 16.7): no unit and no sampling window printed",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    },
+    {
+      "what": "HOMA-IR and Matsuda ISI at baseline (Table 3, Results): derived indices from glucose and insulin",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "SR group, sleep-restriction condition after four nights of 4 h in bed at home (Table 2 'Sleep debt' SR columns; Table 3 SR 'Debt' column for FFA and cortisol; Discussion FFA rise of about 35%): the days between the nights were not standardized and their meals are not printed",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "sleep-deprivation night (SD group, Sleep debt): OGTT glucose curve (Table 2), baseline FFA and cortisol (Table 3). The paper prints a 24 h deprivation with fasting from 23:00 and 'meals were not allowed' but not when the 24 h or the fast began, so the fast before the 08:00 draw may be 9 h or much longer; FFA in particular depends on it",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
