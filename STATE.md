@@ -420,8 +420,13 @@ Not rescored, from the board of 2026-10-29:
   Harmless (about 2% of parameters, no output); meal-kind differences go
   through the meal reader, which is live. Checked on iter 118 (2026-11-19).
 - The stomach's split correction acts on the three gastric pools and never
-  reaches absorption: no module reads a gastric state. It is exactly zero in
-  iter 114. The meal reader's speeds do not reach those pools either.
+  reaches absorption: no module reads a gastric state, so the pools are
+  decorative and the correction is a dead branch (zero gradient, exactly
+  zero in iter 114). Appearance comes from the by-meal stomach
+  (`gastric.simulate_by_meal`), which the meal reader's speeds do drive
+  (live gradient on a reader grafted onto iter 118, 2026-11-19); fat slowing
+  carbohydrate is in its shared-calorie law. Harmless; retire it when the
+  module is next touched.
 - The cortisol gain on glucose production is centred on the population's
   12 µg/dL, not the person's own basal cortisol, which the stress module
   learns (7.3 to 19.6 across 512 draws). Basal production is off by up to 9%
