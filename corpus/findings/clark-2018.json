@@ -1,0 +1,266 @@
+{
+  "paper": "clark-2018",
+  "citation": {
+    "authors": "Clark CM, Monahan KD, Drew RC",
+    "title": "Omega‑3 polyunsaturated fatty acid supplementation reduces blood pressure but not renal vasoconstrictor response to orthostatic stress in healthy older adults",
+    "journal": "Physiol Rep",
+    "year": 2018,
+    "doi": "10.14814/phy2.13674",
+    "pmid": "29673104",
+    "pmcid": "PMC5907940"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty healthy adults in two groups of 10: young 25 ± 1 y and older 66 ± 2 y (mean ± SEM, Results). Screened by history and examination: normotensive, nonsmokers, no cardiovascular or renal disease, no medication affecting autonomic or cardiovascular function (Methods). Sex per group from Table 1 row 'Number of subjects (men/women)': young 5 men / 5 women, older 3 men / 7 women. Age is given per group, so each protocol carries its group's age: SD = SEM x sqrt(10) computed (young 1 x 3.16; older 2 x 6.32). BMI not printed (height and weight are; BMI not derived). Only the pre-fish-oil visit is entered."
+  },
+  "protocols": [
+    {
+      "name": "rest_pre_young",
+      "description": "Young group (n = 10), pre-fish-oil visit (untreated): lying supine and instrumented for at least 30 min (the paper's lower bound, used as minutes 0 to 29), then the 3-min supine baseline before LBNP (minutes 30 to 32, the window). Fasted 8 h as the paper states (subjects were asked to refrain from ingesting food for 8 h before the visits); no meal. The visit clock hour is not printed; 08:00 assumed. Duration 33 min = 30 min run-in + 3 min baseline.",
+      "duration_min": 33,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 8,
+      "population": {
+        "age_years": {
+          "mean": 25.0,
+          "sd": 3.16,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "rest_pre_older",
+      "description": "Older group (n = 10), pre-fish-oil visit (untreated): lying supine and instrumented for at least 30 min (the paper's lower bound, used as minutes 0 to 29), then the 3-min supine baseline before LBNP (minutes 30 to 32, the window). Fasted 8 h as the paper states (subjects were asked to refrain from ingesting food for 8 h before the visits); no meal. The visit clock hour is not printed; 08:00 assumed. Duration 33 min = 30 min run-in + 3 min baseline.",
+      "duration_min": 33,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 8,
+      "population": {
+        "age_years": {
+          "mean": 66.0,
+          "sd": 6.32,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "sbp_baseline_young",
+      "description": "Systolic BP, supine 3-min baseline before LBNP, young group, pre-fish-oil visit (Table 1)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_young"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 118.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Young, pre-fish oil', row 'SBP (mmHg)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "SBP (mmHg) | 118 ± 3"
+      }
+    },
+    {
+      "id": "dbp_baseline_young",
+      "description": "Diastolic BP, supine 3-min baseline before LBNP, young group, pre-fish-oil visit (Table 1)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_young"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 66.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Young, pre-fish oil', row 'DBP (mmHg)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "DBP (mmHg) | 66 ± 2"
+      }
+    },
+    {
+      "id": "sbp_baseline_older",
+      "description": "Systolic BP, supine 3-min baseline before LBNP, older group, pre-fish-oil visit (Table 1)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_older"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 125.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Older, pre-fish oil', row 'SBP (mmHg)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "SBP (mmHg) | 125 ± 3"
+      }
+    },
+    {
+      "id": "dbp_baseline_older",
+      "description": "Diastolic BP, supine 3-min baseline before LBNP, older group, pre-fish-oil visit (Table 1)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_older"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 72.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Older, pre-fish oil', row 'DBP (mmHg)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "DBP (mmHg) | 72 ± 1"
+      }
+    },
+    {
+      "id": "hr_baseline_young",
+      "description": "Heart rate, supine 3-min baseline before LBNP, young group, pre-fish-oil visit (Table 1)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_young"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 58.0,
+      "unit": "b/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Young, pre-fish oil', row 'HR (b/min)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "HR (b/min) | 58 ± 2"
+      }
+    },
+    {
+      "id": "hr_baseline_older",
+      "description": "Heart rate, supine 3-min baseline before LBNP, older group, pre-fish-oil visit (Table 1)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_pre_older"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 33
+      },
+      "value": 63.0,
+      "unit": "b/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, column 'Older, pre-fish oil', row 'HR (b/min)' (Table 1 footnote and Methods: mean ± SEM, n = 10)",
+        "quote": "HR (b/min) | 63 ± 3"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Mean arterial pressure at baseline, pre-fish-oil, young 87 ± 1 and older 91 ± 2 (Table 1, row 'MAP (mmHg)')",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "Pulse pressure at baseline, pre-fish-oil, young 52 ± 2 and older 53 ± 3 (Table 1, row 'PP (mmHg)')",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_pressure"
+      }
+    },
+    {
+      "what": "Renal vascular resistance at baseline, pre-fish-oil, young 1.69 ± 0.09 and older 2.00 ± 0.24 au (Table 1, row 'RVR (au)')",
+      "missing": {
+        "kind": "marker",
+        "name": "renal_vascular_resistance"
+      }
+    },
+    {
+      "what": "Renal blood flow velocity at baseline, pre-fish-oil, young 52.6 ± 2.8 and older 51.0 ± 5.7 cm/sec (Table 1, row 'RBFV (cm/sec)')",
+      "missing": {
+        "kind": "marker",
+        "name": "renal_blood_flow_velocity"
+      }
+    },
+    {
+      "what": "Erythrocyte EPA and DHA content at baseline, pre-fish-oil (Table 1, rows 'Erythrocyte EPA content (%)' and 'Erythrocyte DHA content (%)', n = 7 young and 8 older)",
+      "missing": {
+        "kind": "marker",
+        "name": "erythrocyte_epa_dha"
+      }
+    },
+    {
+      "what": "Plasma creatinine and blood urea nitrogen at baseline, pre-fish-oil (Table 1, rows 'Plasma creatinine (mg/dL)' and 'Plasma blood urea nitrogen (mg/dL)'): renal screening values",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_creatinine"
+      }
+    },
+    {
+      "what": "All post-fish-oil values (Table 1 'post-fish oil' columns, after 12 weeks of 4 g/day fish-oil ethyl esters): the arm needs a supplement the model has no input for, and the paper has no placebo arm",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "Renal, blood pressure and heart rate responses to LBNP at -15 and -30 mmHg, pre- and post-fish oil (Results; Figures 2 to 5; text values such as older -30 mmHg mean BP pre -4 ± 1 vs post 0 ± 1 mmHg): lower-body negative pressure is not an input the model has",
+      "missing": {
+        "kind": "input",
+        "name": "lower_body_negative_pressure"
+      }
+    }
+  ]
+}
