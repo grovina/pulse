@@ -1,0 +1,626 @@
+{
+  "paper": "abubakar-2019",
+  "citation": {
+    "authors": "Abubakar SM, Ukeyima MT, Spencer JPE, Lovegrove JA",
+    "title": "Acute Effects of Hibiscus sabdariffa Calyces on Postprandial Blood Pressure, Vascular Function, Blood Lipids, Biomarkers of Insulin Resistance and Inflammation in Humans",
+    "journal": "Nutrients",
+    "year": 2019,
+    "doi": "10.3390/nu11020341",
+    "pmid": "30764582",
+    "pmcid": "PMC6412462"
+  },
+  "population": {
+    "n": 22,
+    "sex": "male",
+    "age_years": {
+      "mean": 49.0,
+      "sd": 9.38,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.9,
+      "sd": 3.28,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Men with 1 to 10% 10-year CVD risk (QRISK2), not taking BP medication, no kidney, liver or chronic disease (Methods 2.4); 25 recruited, 22 in Tables 3 to 5 ('mean ± SEM of 22 volunteers'). Age and BMI: Table 2 water visit, mean ± SEM printed; sd computed by the reader as SEM x sqrt(22) (age 2.0 x 4.69 = 9.38; BMI 0.7 x 4.69 = 3.28). Table 2 prints no n of its own, so no Table 2 value is entered as a finding; the 22 of Tables 3 to 5 is used only to shape the virtual cohort. Status unselected: screening was a health questionnaire and fasting blood tests (glucose, lipids), with no glucose-tolerance test and no healthy label in the paper."
+  },
+  "protocols": [
+    {
+      "name": "water_visit",
+      "description": "Water visit of the crossover (Methods 2.2, 2.7, 2.10). Fasted, water only, for the past 12 h at arrival (stated). 30 min rest in bed before BP measurement (stated); arm minute = paper minute + 30 (arm 0-29 is the rest). The paper does not say how long the baseline BP readings, cannula and baseline blood take between the end of the rest and breakfast, so the breakfast at arm minute 30 is a placement, not a printed time. Breakfast at paper 0 (arm 30): 120 g buttered croissants, 30 g butter, 15 g honey, with 250 mL water (water is nothing). Lunch at paper 120 min (arm 150): 89 g bread, 33 g soft cheese, 35 g shortbread, 18 g crisps, with water. Grams from Table 1 as printed: breakfast carbohydrate 70.2, fat 50.1 (saturated 32.3), protein 8.6; lunch carbohydrate 70.1, fat 24.9 (saturated 11.4), protein 12.8. BP and heart rate at paper 0, 60, 120, 180, 240 min (arm 30, 90, 150, 210, 270; Methods 2.7); blood at paper 0 to 240 min, minutes not printed. Posture at the readings is not stated beyond the rest in bed.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 70.2,
+          "fat_g": 50.1,
+          "protein_g": 8.6,
+          "fat_g_by_type": {
+            "saturated": 32.3
+          },
+          "fat_source": "butter",
+          "form": "solid",
+          "food": "buttered croissants, butter and honey"
+        },
+        {
+          "t_min": 150,
+          "carbs_g": 70.1,
+          "fat_g": 24.9,
+          "protein_g": 12.8,
+          "fat_g_by_type": {
+            "saturated": 11.4
+          },
+          "form": "solid",
+          "food": "bread, soft cheese, shortbread and crisps"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "water_sbp_auc",
+      "description": "Systolic BP area under the curve over the 240 min after breakfast, water visit; the paper prints no rule, so the trapezoid over the five readings (paper minutes 0, 60, 120, 180, 240; Methods 2.7) is assumed, total area including the baseline level; printed as mmHg.minutes",
+      "marker": "sbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "water_visit"
+      ],
+      "times": [
+        30,
+        90,
+        150,
+        210,
+        270
+      ],
+      "value": 30992.0,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 571.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (SBP), row AUC 0-240min",
+        "quote": "AUC0–240min | 31,134 ± 496 | 30,992 ± 571"
+      }
+    },
+    {
+      "id": "water_dbp_auc",
+      "description": "Diastolic BP area under the curve over 240 min, water visit (trapezoid over the five readings, as water_sbp_auc)",
+      "marker": "dbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "water_visit"
+      ],
+      "times": [
+        30,
+        90,
+        150,
+        210,
+        270
+      ],
+      "value": 17692.0,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 338.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (DBP), row AUC 0-240min",
+        "quote": "AUC0–240min | 17,924 ± 325 | 17,692 ± 338"
+      }
+    },
+    {
+      "id": "water_sbp_iauc",
+      "description": "Systolic BP incremental area over 240 min above the time-0 reading, water visit; the paper does not say in the text how negative stretches are treated (the same table prints negative DBP and heart-rate means, but this SBP mean is positive, so it does not settle it): unstated",
+      "marker": "sbp",
+      "statistic": "incremental_area",
+      "protocols": [
+        "water_visit"
+      ],
+      "times": [
+        30,
+        90,
+        150,
+        210,
+        270
+      ],
+      "below_baseline": "unstated",
+      "value": 658.0,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 346.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (SBP), row IAUC 0-240min",
+        "quote": "IAUC0–240min | 219 ± 361 | 658 ± 346"
+      }
+    },
+    {
+      "id": "water_dbp_iauc",
+      "description": "Diastolic BP incremental area over 240 min from the time-0 reading, water visit; the printed mean is negative, so the area is net (below-baseline stretches subtracted)",
+      "marker": "dbp",
+      "statistic": "incremental_area",
+      "protocols": [
+        "water_visit"
+      ],
+      "times": [
+        30,
+        90,
+        150,
+        210,
+        270
+      ],
+      "below_baseline": "subtracted",
+      "value": -61.0,
+      "unit": "mmHg",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 183.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (DBP), row IAUC 0-240min",
+        "quote": "IAUC0–240min | −86 ± 217 | −61 ± 183"
+      }
+    },
+    {
+      "id": "water_glucose_cmax_0_240",
+      "description": "Glucose peak (Cmax) over 0 to 240 min after breakfast, water visit, mean of each person's highest value (blood sample minutes not printed)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 7.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (glucose), row Cmax 0-240 min",
+        "quote": "C max 0–240 min | 7.5 ± 0.3 | 7.6 ± 0.3"
+      }
+    },
+    {
+      "id": "water_glucose_cmax_0_120",
+      "description": "Glucose peak (Cmax) over 0 to 120 min after breakfast, water visit",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 151
+      },
+      "value": 7.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (glucose), row Cmax 0-120 min",
+        "quote": "C max 0–120 min | 6.9 ± 0.3 | 7.1 ± 0.3"
+      }
+    },
+    {
+      "id": "water_glucose_cmax_121_240",
+      "description": "Glucose peak (Cmax) over 121 to 240 min, i.e. after lunch at paper 120 min, water visit",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 151,
+        "end_min": 271
+      },
+      "value": 7.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.3,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (glucose), row Cmax 121-240 min",
+        "quote": "C max 121–240 min | 7.2 ± 0.3 * | 7.5 ± 0.3"
+      }
+    },
+    {
+      "id": "water_insulin_cmax_0_240",
+      "description": "Plasma insulin peak (Cmax) over 0 to 240 min, water visit, printed in pmol/L",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 403.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 49.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (insulin), row Cmax 0-240 min",
+        "quote": "C max 0–240 min | 387 ± 61 | 403 ± 49"
+      }
+    },
+    {
+      "id": "water_insulin_cmax_0_120",
+      "description": "Plasma insulin peak (Cmax) over 0 to 120 min, water visit",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 151
+      },
+      "value": 338.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 49.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (insulin), row Cmax 0-120 min",
+        "quote": "C max 0–120 min | 339 ± 60 | 338 ± 49"
+      }
+    },
+    {
+      "id": "water_insulin_cmax_121_240",
+      "description": "Plasma insulin peak (Cmax) over 121 to 240 min, water visit",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 151,
+        "end_min": 271
+      },
+      "value": 347.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 46.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 4, water column (insulin), row Cmax 121-240 min",
+        "quote": "C max 121–240 min | 365 ± 61 | 347 ± 46"
+      }
+    },
+    {
+      "id": "water_nefa_cmax_91_240",
+      "description": "Serum NEFA peak (Cmax) over 91 to 240 min of the paper's clock (after breakfast at 0), water visit; the table gives NEFA in µmol/L",
+      "marker": "ffa",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 121,
+        "end_min": 271
+      },
+      "value": 410.0,
+      "unit": "µmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 25.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 5, water column, row C max 91-240 min",
+        "quote": "C max 91–240 min | 423 ± 26 | 410 ± 25"
+      }
+    },
+    {
+      "id": "water_sbp_pmax_0_240",
+      "description": "Systolic BP maximum over the five readings (paper minutes 0 to 240), mean of each person's highest, water visit",
+      "marker": "sbp",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 135.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (SBP), row Pmax0–240min",
+        "quote": "Pmax0–240min | 138 ± 3 | 135 ± 3"
+      }
+    },
+    {
+      "id": "water_dbp_pmax_0_240",
+      "description": "Diastolic BP maximum over the five readings (paper minutes 0 to 240), mean of each person's highest, water visit",
+      "marker": "dbp",
+      "statistic": "peak_value",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 78.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (DBP), row Pmax0–240min",
+        "quote": "Pmax0–240min | 79 ± 1 | 78 ± 2"
+      }
+    },
+    {
+      "id": "water_sbp_tmax_0_240",
+      "description": "Time of the systolic BP maximum, water visit: printed 108 ± 18 min from the paper's time 0 (breakfast); entered on the arm clock, 108 + 30 min rest = 138 min; the readings are at paper minutes 0, 60, 120, 180 and 240",
+      "marker": "sbp",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 138.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (SBP), row Tmax0–240min",
+        "quote": "Tmax0–240min | 142 ± 16 | 108 ± 18"
+      }
+    },
+    {
+      "id": "water_dbp_tmax_0_240",
+      "description": "Time of the diastolic BP maximum, water visit: printed 119 ± 17 min from the paper's time 0 (breakfast); entered on the arm clock, 119 + 30 min rest = 149 min; the readings are at paper minutes 0, 60, 120, 180 and 240",
+      "marker": "dbp",
+      "statistic": "time_to_peak",
+      "protocols": [
+        "water_visit"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 271
+      },
+      "value": 149.0,
+      "unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17.0,
+        "n": 22
+      },
+      "location": {
+        "where": "Table 3, water column (DBP), row Tmax0–240min",
+        "quote": "Tmax0–240min | 101 ± 18 | 119 ± 17"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Hibiscus-visit values, all of Tables 2 to 5 (the hibiscus column of every table, baselines included, the same 22 men on another arm) and the hibiscus side of every comparison: the 250 mL hibiscus extract is a polyphenol drink with no printed carbohydrate or energy, and the model has no polyphenol input",
+      "missing": {
+        "kind": "input",
+        "name": "polyphenol_extract"
+      }
+    },
+    {
+      "what": "Water-visit baseline SBP 126 ± 3, DBP 74 ± 2, heart rate 63 ± 3, glucose 5.51 ± 0.1 and insulin 51.90 ± 7.9 (Table 2, mean ± SEM): Table 2 prints no n ('All values are mean ± SEM'); the 22 volunteers are printed only under Tables 3 to 5, and 25 were recruited",
+      "missing": {
+        "kind": "source",
+        "name": "n_not_printed"
+      }
+    },
+    {
+      "what": "Serum total, HDL, LDL cholesterol and TC:HDL-C at baseline (Table 2, water column)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "Serum triacylglycerol at baseline (Table 2) and its AUC, IAUC, Cmax and Tmax over 0-240 and 0-120 and 121-240 min (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Total antioxidant capacity (TAC) AUC, IAUC, Cmax and Tmax (Table 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "total_antioxidant_capacity"
+      }
+    },
+    {
+      "what": "HOMA2 IR at baseline (Table 2): a derived index of the authors' own model",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Flow-mediated dilatation of the brachial artery at baseline (Table 2) and its time course (Figure 4a, figure only)",
+      "missing": {
+        "kind": "marker",
+        "name": "flow_mediated_dilation"
+      }
+    },
+    {
+      "what": "Augmentation index at baseline (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "augmentation_index"
+      }
+    },
+    {
+      "what": "Pulse pressure at baseline (Table 2) and its summary measures (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_pressure"
+      }
+    },
+    {
+      "what": "Serum NEFA at baseline (Table 2): printed as 454.9 mmol/L, which contradicts Table 5 (µmol/L) and is not a physiological value",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Heart rate AUC and IAUC 0-240 min (Table 3, Heart Rate columns): the footnote prints every AUC and IAUC as mmHg.minutes, which cannot be a heart-rate area, and no other unit is printed",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "Glucose AUC and IAUC over 0-240, 0-120 and 121-240 min (Table 4): the blood sample minutes are not printed, so the trapezoid cannot be reproduced",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Glucose Tmax over 0-240, 0-120 and 121-240 min (Table 4): sample minutes not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Insulin AUC and IAUC over 0-240, 0-120 and 121-240 min (Table 4): the blood sample minutes are not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Insulin Tmax over 0-240, 0-120 and 121-240 min (Table 4): sample minutes not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "NEFA AUC and IAUC over 91-240 min and NEFA Tmax (Table 5): sample minutes not printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "NEFA T min over 0-90 and 91-240 min (Table 5, water column: 76.4 ± 4.7 and 130 ± 12 min)",
+      "missing": {
+        "kind": "operator",
+        "name": "time_to_nadir"
+      }
+    },
+    {
+      "what": "NEFA C min over 0-90 and 91-240 min (Table 5, water column: 221 ± 14 and 215 ± 14 µmol/L)",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "Time courses of systolic and diastolic BP, heart rate and pulse pressure relative to baseline (Figure 3): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Plasma gallic acid, 4-O- and 3-O-methylgallic acid and hippuric acid concentrations and their maxima (Figure 2 and Results 3.2; the maximum time 55 ± 5 min is in the text)",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_polyphenols"
+      }
+    },
+    {
+      "what": "Urinary and plasma nitrite, nitrate and NOx time courses (Figure 4b-g, figure only)",
+      "missing": {
+        "kind": "marker",
+        "name": "nitric_oxide_metabolites"
+      }
+    },
+    {
+      "what": "C-reactive protein time course (Figure 5, figure only)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "Minimum pressure Pmin and its time Tmin for SBP and DBP and heart rate over 0-240 min (Table 3, water column: SBP 122 ± 2 mmHg at 90 ± 19 min; DBP 69 ± 1 at 119 ± 18; HR 56 ± 2 at 112 ± 17)",
+      "missing": {
+        "kind": "operator",
+        "name": "minimum_value"
+      }
+    },
+    {
+      "what": "Time of the minimum Tmin for SBP, DBP and heart rate over 0-240 min (Table 3, water column, values in the previous entry)",
+      "missing": {
+        "kind": "operator",
+        "name": "time_to_nadir"
+      }
+    },
+    {
+      "what": "Heart rate maximum Pmax (66 ± 2) and its time Tmax (65 ± 17 min) over 0-240 min (Table 3, water column): the footnote prints Pmax in mmHg for every column, which cannot be a heart rate, and no other unit is printed",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    }
+  ]
+}
