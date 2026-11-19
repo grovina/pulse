@@ -66,6 +66,30 @@
         "where": "Table 4, row 'Before' (Exercise), Placebo column",
         "quote": "Before | 65.60 | ± | 2.57"
       }
+    },
+    {
+      "id": "fat_mass_placebo",
+      "description": "Body fat mass (BFM) by impedance analyser (Accuniq BC720), placebo visit, measured before the exercise test after a fast of at least 12 h; n = 10, mean +/- SE. Table 1 (baseline) and Table 2 (placebo column) print the same value, entered once.",
+      "marker": "fat_mass",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_before_exercise"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "value": 18.98,
+      "unit": "kg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.89,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, row 'BFM (kg)', Mean and SE columns (same as Table 2, Placebo)",
+        "quote": "BFM (kg) | 18.98 | ± | 1.89"
+      }
     }
   ],
   "left_out": [
@@ -98,7 +122,7 @@
       }
     },
     {
-      "what": "lean body mass, skeletal muscle mass, body fat percentage and body weight (Tables 1-2)",
+      "what": "lean body mass, skeletal muscle mass, body fat percentage and body weight (Tables 1-2); body fat mass is entered as a finding",
       "missing": {
         "kind": "marker",
         "name": "body_composition"
