@@ -1,0 +1,35 @@
+{
+  "paper": "gonzalezhermosillo-2023",
+  "citation": "González-Hermosillo G JA, Galarza EJ, Fermín OV, González JMN, Tostado LMFÁ, Lozano MAE, et al. Exaggerated blood pressure elevation in response to orthostatic challenge, a post-acute sequelae of SARS-CoV-2 infection (PASC) after hospitalization. Auton Neurosci. 2023;247:103094.",
+  "doi": "10.1016/j.autneu.2023.103094",
+  "pmid": "37137186",
+  "pmcid": "PMC10121145",
+  "licence": "Elsevier, all rights reserved; COVID-19 resource-centre re-use grant (PMC)",
+  "licence_url": null,
+  "protocol": "Passive head-up tilt test: 30 min supine rest, baseline in the last 5 min; then tilt to 70 degrees for 25 min; then supine recovery.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "Healthy controls n=32 (historical asymptomatic comparison group; age 47.7 +/- 10.7 y, BMI 26.3 +/- 3.2, 16 women), printed beside the PASC group (n=23) in Table 1; PASC patients excluded here.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "systolic BP (supine)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "diastolic BP (supine)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate (supine)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Blood pressure is mean +/- SD, but supine heart rate in Table 1 is median (IQR), so the HR cannot be pooled as a mean. Controls are historical, and the licence is publisher-specific (COVID-19 reuse grant), not Creative Commons."
+}

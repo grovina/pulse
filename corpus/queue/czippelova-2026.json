@@ -1,0 +1,30 @@
+{
+  "paper": "czippelova-2026",
+  "citation": "Czippelova B, Turianikova Z, Cernanova Krohova J, Mazgutova N, Javorka M. Arterial stiffness in the context of heart rate and vasomotion during orthostatic stress and cognitive load. Front Netw Physiol. 2026;6:1829189.",
+  "doi": "10.3389/fnetp.2026.1829189",
+  "pmid": "42422316",
+  "pmcid": "PMC13341531",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Supine rest about 7 min, then 10-degree head-down tilt, 20-degree and 40-degree head-up tilt on a motor-driven table, each with its own measurement; a mental arithmetic task compared with supine rest. Heart rate and brachial mean BP per position.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "23 healthy volunteers (16 male), age 22.3 +/- 2.4 y, height 177.9 +/- 10.0 cm, weight 73.2 +/- 13.5 kg.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate (supine)",
+      "where": "Table 2 supine column and Table 3 supine rest",
+      "form": "table"
+    },
+    {
+      "marker": "mean arterial BP, brachial (supine)",
+      "where": "Table 2 supine column",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD. Brachial mean BP is the only pressure printed (no SBP or DBP), and the 10-degree head-down column must not be pooled with supine. The supine HR is the same number in Tables 2 and 3."
+}

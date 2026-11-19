@@ -1,0 +1,30 @@
+{
+  "paper": "vancampen-2024",
+  "citation": "van Campen C, Rowe PC, Visser FC. Two Different Hemodynamic Responses in ME/CFS Patients with Postural Orthostatic Tachycardia Syndrome During Head-Up Tilt Testing. J Clin Med. 2024;13(24):7726.",
+  "doi": "10.3390/jcm13247726",
+  "pmid": "39768649",
+  "pmcid": "PMC11677391",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Head-up tilt test to 70 degrees: supine rest before tilt (about 20 min in Methods), then tilted; supine and end-tilt values are compared. Healthy-control values are mid-tilt images from an earlier study of the same group.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "47 healthy controls (10 male, 37 female), age 38 +/- 14 y, BMI median 24.2 (IQR 21.3-27.3), recruited separately from the ME/CFS groups.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "heart rate (supine)",
+      "where": "Table 2, supine HR row, healthy-control column",
+      "form": "table"
+    },
+    {
+      "marker": "systolic BP (supine)",
+      "where": "Table 2, supine SBP row, healthy-control column",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Table 2 cells are \"mean (SD)\" by the methods, with no label in the cells. The healthy-control supine values come from an earlier cohort, and the supine length for them is not restated."
+}

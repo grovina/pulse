@@ -92,7 +92,7 @@
       "why": "Heart rate and blood pressure responses to meals, posture, exercise and stress.",
       "query": "(\"blood pressure\"[Title] OR \"heart rate\"[Title] OR haemodynamic[Title] OR hemodynamic[Title]) AND (postprandial[Title] OR meal[Title] OR \"head-up tilt\"[Title] OR \"orthostatic\"[Title]) AND healthy[All Fields]",
       "screened": 129,
-      "queued": 7,
+      "queued": 16,
       "batches": [
         "2026-11-19"
       ],
