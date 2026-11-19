@@ -85,44 +85,6 @@ class TestStatisticExtractors(unittest.TestCase):
         self.assertLess(float(v[0]), 35.0)
 
 
-class TestCounterRegulatorySpecs(unittest.TestCase):
-    """The Phase-3 specs encode counter-regulatory physiology that the
-    benchmark currently fails. Cheap structural checks: each spec is well-
-    formed, references a real marker, has a sensible window, and lives in
-    ``ALL_COHORT_STATISTICS`` so the training signal will pick it up.
-    """
-
-    def test_counter_regulatory_specs_registered(self) -> None:
-        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-        names = {s.name for s in ALL_COHORT_STATISTICS}
-        for required in (
-            "extended_fast_ffa_overnight",
-            "extended_fast_insulin_basal",
-            "ogtt_glucagon_suppression",
-            "mixed_meal_glucagon_suppression",
-            "meal_ffa_suppression",
-        ):
-            self.assertIn(required, names, f"missing cohort spec: {required}")
-
-    def test_counter_regulatory_specs_have_valid_markers_and_windows(self) -> None:
-        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-        new_names = {
-            "extended_fast_ffa_overnight",
-            "extended_fast_insulin_basal",
-            "ogtt_glucagon_suppression",
-            "mixed_meal_glucagon_suppression",
-            "meal_ffa_suppression",
-        }
-        for spec in ALL_COHORT_STATISTICS:
-            if spec.name not in new_names:
-                continue
-            self.assertIn(spec.marker_id, MARKER_INDEX, f"{spec.name}: unknown marker")
-            self.assertGreater(spec.sigma, 0.0)
-            for arm in spec.arms:
-                self.assertGreater(spec.window.end_min, spec.window.start_min)
-                self.assertLessEqual(spec.window.end_min, arm.duration_min)
-
-
 class TestSpecValidation(unittest.TestCase):
     def test_delta_means_requires_two_arms(self) -> None:
         with self.assertRaises(ValueError):

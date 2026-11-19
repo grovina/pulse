@@ -127,7 +127,7 @@ def test_every_paper_of_the_python_registries_is_grandfathered():
 def test_the_grandfathered_papers_are_frozen():
     assert list(GRANDFATHERED_PAPERS) == sorted(set(GRANDFATHERED_PAPERS))
     assert _digest(GRANDFATHERED_PAPERS) == (
-        "23cb3bc33423d621053c9d8510e7dd03c07416f8e18d9799926b6340f670c5aa"
+        "3420bcd4dc50c3e3c122d408969aab838fc7d1f314db87455a52f9a7f643c096"
     )
 
 

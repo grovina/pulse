@@ -208,6 +208,7 @@ DAY_NIGHT_HR_CONTRAST = CohortStatisticSpec(
     window=StatisticWindow(start_min=420, end_min=600),
     target=82.0,
     sigma=10.0,
+    n_arm=134,  # sigma is the cohort's SD, n as the source line states
 )
 
 NIGHT_HR_LEVEL = CohortStatisticSpec(
@@ -222,12 +223,12 @@ NIGHT_HR_LEVEL = CohortStatisticSpec(
     kind=StatisticKind.MEAN_IN_WINDOW,
     target=64.0,
     sigma=8.0,
+    n_arm=134,
 )
 
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
     POSTPRANDIAL_HR_RISE,
-    SLEEP_HR_DIP,
     DAY_NIGHT_HR_CONTRAST,
     NIGHT_HR_LEVEL,
 ]

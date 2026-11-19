@@ -16,10 +16,10 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Parameters | 37,290 at the default widths |
 | Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
-| Cohort specs | 1155 authored, 140 of them curves; 1237 training points and 324 held-out points |
+| Cohort specs | 1123 authored, 140 of them curves; 1205 training points and 324 held-out points |
 | Rules | 62 training, 0 held out |
 | Coupling priors | 32 |
-| Papers | 204, of which 30 are sealed |
+| Papers | 189, of which 30 are sealed |
 | Held-out items | 5 |
 | Corpus files | 136 papers as findings, 56 as refusals, 0 queued to be read |
 | Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) in the older Python queue |
@@ -414,8 +414,15 @@ Not rescored, from the board of 2026-10-29:
 - A cohort item with no `n_arm` has its sigma divided by the square root of
   the number of people drawn (`pulse/cohort_loss.py`,
   `pulse/training/evidence_step.py`), so how tightly it binds depends on a
-  training flag. That is 35 of the 275 training points, all from the Python
-  registries; a file always states its n.
+  training flag. After the 2026-11-19 sweep no scored point is in that case:
+  the 34 that were had their n looked up in the repository. Two state it
+  (`day_night_hr_contrast`, `night_hr_level`: n = 134, in their `source`)
+  and carry `n_arm=134`; the other 32 were Python-registry points that cite a
+  review or a textbook with no n anywhere in the repository, and were removed
+  from the registries (15 papers left training with them). The code path stays
+  for `n_arm=None` because the unit tests exercise it and a spread has no n
+  to divide by (`cryer_1987_fasting_glucose_spread`, the one remaining
+  `None`). Training iters up to 118 trained on the 32 dropped points.
 - `pytest` from the repository root fails while collecting
   `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
 - There is no CI. The suite is run by hand:

@@ -172,13 +172,6 @@ if __name__ == "__main__":
 class TestCohortReencodings(unittest.TestCase):
     """Iter 97 follow-up: the cohort registry encodes what its sources say."""
 
-    def test_ogtt_2h_is_a_ceiling(self):
-        from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-        from pulse.knowledge.cohort_types import TargetShape
-        spec = {s.name: s for s in ALL_COHORT_STATISTICS}["ogtt_75g_glucose_120min"]
-        self.assertIs(spec.shape, TargetShape.AT_MOST)
-        self.assertEqual(spec.target, 140.0)
-
     def test_sem_sigmas_are_pinned(self):
         from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
         pinned = {s.name for s in ALL_COHORT_STATISTICS if s.n_arm == 1}

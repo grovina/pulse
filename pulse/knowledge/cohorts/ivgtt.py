@@ -87,6 +87,4 @@ IVGTT_INSULIN_FIRST_PHASE = CohortStatisticSpec(
 
 
 COHORT_STATISTICS: list[CohortStatisticSpec] = [
-    IVGTT_GLUCOSE_PEAK,
-    IVGTT_INSULIN_FIRST_PHASE,
 ]
