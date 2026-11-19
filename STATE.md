@@ -231,6 +231,16 @@ in 10 for iter 117):
 - Insulin is still under target on two thirds of the sealed points. On the
   common items the mean z rose from -0.86 to -0.43 without meal details and
   from -0.87 to -0.60 with them: less short, not right.
+- Free tests on the no-meal-details checkpoint (2026-11-19, no training)
+  give the miss one shape: after mixed meals insulin is about 0.6 of target
+  at 10-90 min and 0.34 at 120-180 min, while glucose is back at baseline;
+  yet fasting and exercise insulin sit 1.4-1.7 times target (sealed mean z
+  +1.5 and +2.6). The glucose drink's insulin is right at 2 h. Raising
+  `log_amino_ins_gain` 3, 5 or 10 times, or slowing the potentiator
+  (`_K_POT` 0.025 to 0.01, `_PHASE2_FRAC` 0.5), barely moves the meal miss
+  and worsens the drink: secretion runs on glucose above basal, which a
+  mixed meal barely raises. The candidate is secretion driven by nutrient
+  absorption plus a lower basal rate; it needs code and a paid run.
 - The meal reader again gives the better sealed glucose (0.64 against 0.75)
   and is better on the 36 sealed items new to this corpus (median |z| 1.17
   against 1.35); otherwise the two runs are level.
