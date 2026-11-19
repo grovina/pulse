@@ -121,10 +121,10 @@
       }
     },
     {
-      "what": "Overall 24-h ambulatory heart rate (65 +/- 10 beats/min), systolic (108 +/- 7), diastolic (63 +/- 6) and mean arterial pressure in the fasted condition, n = 20 (Table 2): the monitor was worn for the 24 h before the test, but the paper does not say when the fast began relative to the monitor or the clock time, nor the hours slept, beyond 'fasting for 24 h'",
+      "what": "Overall 24-h ambulatory heart rate (65 +/- 10 beats/min), systolic (108 +/- 7), diastolic (63 +/- 6) and mean arterial pressure (78 +/- 5) in the fasted condition, mean +/- SD, n = 20 (Table 2; wake and sleep values only in Fig. 3): the 24 h monitored are the 24 h of the fast, so the arm starts at the last meal, a 'standardized' meal of one third of each person's daily energy need at about 55/20/25% carbohydrate/fat/protein, whose energy and grams are not printed (the activity factor behind the need is not given); the clock hour, and the hours slept (actigraphy-defined, not printed), are also not stated",
       "missing": {
         "kind": "source",
-        "name": "time_not_printed"
+        "name": "input_not_printed"
       }
     },
     {
