@@ -1,0 +1,45 @@
+{
+  "paper": "abubakar-2019",
+  "citation": "Abubakar SM, Ukeyima MT, Spencer JPE, Lovegrove JA. Acute Effects of Hibiscus sabdariffa Calyces on Postprandial Blood Pressure, Vascular Function, Blood Lipids, Biomarkers of Insulin Resistance and Inflammation in Humans. Nutrients. 2019;11(2):341.",
+  "doi": "10.3390/nu11020341",
+  "pmid": "30764582",
+  "pmcid": "PMC6412462",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Two-meal crossover: high-fat breakfast at time 0 (120 g croissants, 30 g butter, 15 g honey) with 250 mL hibiscus drink or water, then medium-fat lunch at 120 min (89 g bread, 33 g cheese, 35 g shortbread, 18 g crisps); sampling 0-240 min. Totals (Table 1): breakfast carbohydrate 70.2 g, protein 8.6 g, fat 50.1 g (32.3 g saturated); lunch carbohydrate 70.1 g, protein 12.8 g, fat 24.9 g (11.4 g saturated).",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "Men (22 analysed of 25 recruited) with 1-10% 10-year CVD risk (QRISK2), not on BP medication, no kidney, liver or chronic disease; age 49 +/- 2.0 y, BMI 26.9 +/- 0.7 kg/m2 (water visit, Table 2).",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "systolic BP (summary AUC and IAUC)",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "diastolic BP (summary AUC and IAUC)",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate (summary AUC and IAUC)",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "glucose (summary AUC and IAUC)",
+      "where": "Table 4",
+      "form": "table"
+    },
+    {
+      "marker": "insulin (summary AUC and IAUC)",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Hibiscus vs water crossover; the water visit is the meal-only comparator. Values are summary measures (AUC, IAUC, Tmax, Pmax), not timepoint means, and the 0-240 min rows are the usable ones. Analysed n=22 vs 25 recruited. Insulin AUC units are not clear in the extracted table; check the layout before use."
+}

@@ -1,0 +1,30 @@
+{
+  "paper": "hashizume-2019",
+  "citation": "Hashizume M, Kinami S, Sakurai K, Izawa KP, Shiotani H. Postprandial Blood Pressure Decrease in Patients with Type 2 Diabetes and Mild or Severe Cardiac Autonomic Dysfunction. Int J Environ Res Public Health. 2019;16(5):812.",
+  "doi": "10.3390/ijerph16050812",
+  "pmid": "30845668",
+  "pmcid": "PMC6427584",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Test meal E460F18 (460 kcal: 56.5 g carbohydrate, 18.0 g protein, 18.0 g fat, 670 mg sodium) eaten within 15-20 min after 10 min seated rest and a fasting blood draw; BP measured at 0, 60 and 120 min after the meal started; plasma glucose and serum insulin at the same times.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "Control: 17 adults without T2DM (13 M, 4 F; age 54.8 +/- 1.58 y; BMI 22.0 +/- 0.47). T2DM mild group n=20 (9 M, 11 F; age 60.6 +/- 1.57 y; BMI 25.1 +/- 0.77). T2DM severe group n=15 (6 M, 9 F; age 60.1 +/- 2.17 y; BMI 25.8 +/- 1.01). Mean +/- SE as printed.",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "brachial systolic BP",
+      "where": "Results, postprandial blood pressure paragraph",
+      "form": "text"
+    },
+    {
+      "marker": "central systolic BP",
+      "where": "Results, postprandial blood pressure paragraph",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "The healthy control arm (n=17) is printed separately, but its postprandial BP, HR, glucose and insulin are figure-only (Figures 3-4); the printed postprandial numbers are for the T2DM groups. Table 1 gives the control fasting baseline (SBP, HR, glucose, insulin; mean +/- SE). Use the control rows for a healthy reference only with figure reads."
+}

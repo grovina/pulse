@@ -88,12 +88,14 @@
     },
     {
       "name": "heart and circulation",
-      "status": "later",
+      "status": "active",
       "why": "Heart rate and blood pressure responses to meals, posture, exercise and stress.",
       "query": "(\"blood pressure\"[Title] OR \"heart rate\"[Title] OR haemodynamic[Title] OR hemodynamic[Title]) AND (postprandial[Title] OR meal[Title] OR \"head-up tilt\"[Title] OR \"orthostatic\"[Title]) AND healthy[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
+      "screened": 129,
+      "queued": 7,
+      "batches": [
+        "2026-11-19"
+      ],
       "hits": 129
     },
     {

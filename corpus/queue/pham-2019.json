@@ -1,0 +1,35 @@
+{
+  "paper": "pham-2019",
+  "citation": "Pham H, Trahair L, Phillips L, Rayner C, Horowitz M, Jones K. A randomized, crossover study of the acute effects of acarbose and gastric distension, alone and combined, on postprandial blood pressure in healthy older adults. BMC Geriatr. 2019;19.",
+  "doi": "10.1186/s12877-019-1251-7",
+  "pmid": "31470806",
+  "pmcid": "PMC6717369",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "After overnight fast, 300 mL drink of 100 g sucrose (about 407 kcal), with or without 100 mg acarbose; crossover with a 300 mL water preload arm; MAP and HR every 3 min to 120 min (baseline from -9 to -3 min); blood glucose at -2, 30, 60, 90, 120 min.",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "10 healthy community-dwelling older adults (2 male, 8 female; age 74.0 +/- 1.4 y; BMI 26.2 +/- 1.1 kg/m2); no GI disease, diabetes, or significant cardiac, renal or respiratory disease. Three fainted during the study days.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "mean arterial pressure (maximum fall and AUC)",
+      "where": "Results, postprandial BP paragraphs",
+      "form": "text"
+    },
+    {
+      "marker": "heart rate (maximum rise and AUC)",
+      "where": "Results, postprandial BP paragraphs",
+      "form": "text"
+    },
+    {
+      "marker": "blood glucose (AUC)",
+      "where": "Results, blood glucose paragraphs",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "The usable postprandial numbers are AUCs, maxima and baseline means (mean +/- SEM) in the Results text; the time-course means for MAP, HR, SMA flow and glucose are figure-only (Figures 2-4). MAP is printed, not SBP. Sucrose, not glucose: protocol kind set to other. n=10 for BP and HR, n=9 for glucose and flow."
+}

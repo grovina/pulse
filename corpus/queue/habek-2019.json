@@ -1,0 +1,35 @@
+{
+  "paper": "habek-2019",
+  "citation": "Habek M, Ruška B, Crnošija L, Adamec I, Junaković A, Krbot Skorić M. Effect of Food Intake on Hemodynamic Parameters during the Tilt-Table Test in Patients with Postural Orthostatic Tachycardia Syndrome. J Clin Neurol. 2019;15(2):205-210.",
+  "doi": "10.3988/jcn.2019.15.2.205",
+  "pmid": "30877690",
+  "pmcid": "PMC6444156",
+  "licence": "CC BY-NC 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by-nc/4.0/",
+  "protocol": "Tilt-table protocol: 10 min supine, 10 min at 70 degrees, then 400 mL Nutridrink Multi Fibre liquid meal (per 100 mL: 5.8 g fat, 6 g protein, 18 g carbohydrate; 300 kcal per 200 mL), then 45 min supine and 10 min tilted; HR and BP before and after the meal.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "POTS group n=41 (29 female; age 29.74 +/- 10.61 y), split by heart-rate response to the meal: A n=13, B n=12, C n=16. Healthy group D n=10 (6 female; age 24.25 +/- 2.25 y).",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "systolic BP (supine rows, before and after meal)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "diastolic BP (supine rows, before and after meal)",
+      "where": "Table 1",
+      "form": "table"
+    },
+    {
+      "marker": "heart rate (supine rows, before and after meal)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Healthy group D (n=10) is printed separately in Table 1 with pre- and post-meal values (mean +/- SD). Use the supine rows only: the tilted rows are posture-specific and the model has no posture input. Grams are per 100 mL, so 400 mL is derivable but not printed. The post-meal value is a single supine window, not a stated minute."
+}
