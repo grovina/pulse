@@ -1,0 +1,40 @@
+{
+  "paper": "sumi-2020",
+  "citation": {
+    "authors": "Sumi Y, Nakayama C, Kadotani H, Matsuo M, Ozeki Y, Kinoshita T, et al.",
+    "title": "Resting Heart Rate Variability Is Associated With Subsequent Orthostatic Hypotension: Comparison Between Healthy Older People and Patients With Rapid Eye Movement Sleep Behavior Disorder",
+    "journal": "Frontiers in Neurology",
+    "year": 2020,
+    "doi": "10.3389/fneur.2020.567984",
+    "pmid": "33329309",
+    "pmcid": "PMC7719719"
+  },
+  "reported": [
+    {
+      "what": "Supine baseline systolic BP, diastolic BP and pulse rate of the 42 healthy controls (mean of five cuff readings over 15 min supine; mean ± SD): 132.8 ± 17.3 mm Hg, 79.7 ± 8.0 mm Hg, 63.6 ± 7.8 beats/min. The group includes people with hypertension and people on drugs that act on BP and heart rate.",
+      "location": {
+        "where": "Table 2, row 'Baseline', HC column (n = 42), Systolic BP",
+        "quote": "Baseline | 132.8 ±17.3"
+      }
+    },
+    {
+      "what": "Arterial hypertension in 9 of the 42 healthy controls (21.4%), diabetes mellitus in 3 (7.1%)",
+      "location": {
+        "where": "Table 1, Comorbidities, HC column",
+        "quote": "Arterial hypertension (n) | 9 (21.4%)"
+      }
+    },
+    {
+      "what": "Calcium channel blockers in 6 of the 42 healthy controls (14.3%); ACE and AT II inhibitors in 4 (9.5%); organic nitrates in 1 (2.4%); overlap between drugs not stated",
+      "location": {
+        "where": "Table 1, Medication, HC column",
+        "quote": "Calcium channel blockers (n) | 6 (14.3%)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "antihypertensive_use"
+  },
+  "detail": "Every enterable number is a BP or pulse baseline of one control group (called healthy by the authors) in which 9 of 42 have hypertension and up to 11 take calcium channel blockers, ACE/AT II inhibitors or nitrates (3 have diabetes), so the group is neither healthy nor unselected and the model has no way to state the drug or the disease on the very markers measured."
+}
