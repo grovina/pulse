@@ -1,0 +1,143 @@
+{
+  "paper": "habek-2019",
+  "citation": {
+    "authors": "Habek M, Ruška B, Crnošija L, Adamec I, Junaković A, Krbot Skorić M",
+    "title": "Effect of Food Intake on Hemodynamic Parameters during the Tilt-Table Test in Patients with Postural Orthostatic Tachycardia Syndrome",
+    "journal": "Journal of Clinical Neurology",
+    "year": 2019,
+    "doi": "10.3988/jcn.2019.15.2.205",
+    "pmid": "30877690",
+    "pmcid": "PMC6444156"
+  },
+  "population": {
+    "n": 10,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 24.25,
+      "sd": 2.25,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Group D, the healthy control group: 10 healthy individuals, 6 female, age 24.25±2.25 years (mean±SD, Results paragraph 1 and Table 1). Called healthy by the paper, with no history of events associated with orthostatic intolerance; no glucose test is reported. The min and max are not printed, so null (the model draws from mean±2 sd). BMI is not printed for group D."
+  },
+  "protocols": [
+    {
+      "name": "pre_meal_supine",
+      "description": "Tilt-table test, first phase only: 10 min supine before any tilt or meal (Results: 10-min supine phase is phase 1 of five). The paper says only that participants 'had fasted for at least 3 hours prior to the testing', a lower bound and no last-meal contents, so the arm starts from typical values (norm_center) with no meal; only heart rate and blood pressure are entered. Clock hour not printed, so 8.0 is assumed. The arm ends after the supine phase.",
+      "duration_min": 10,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "init"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "pre_meal_systolic_bp_supine",
+      "description": "Systolic BP, supine, healthy group D (n=10), before the meal: mean over the 10-min supine phase (the paper prints one supine value per group and does not say whether it is a mean over the phase or an end value; the window is the 10-min phase)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_supine"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 112.6,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.17,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, Group D (n=10) column, Before meal block, sBP, mm Hg sub-block, Supine row",
+        "quote": "Supine | 112.60±12.17"
+      }
+    },
+    {
+      "id": "pre_meal_diastolic_bp_supine",
+      "description": "Diastolic BP, supine, healthy group D (n=10), before the meal: mean over the 10-min supine phase (window as for the systolic value)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_supine"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 68.7,
+      "unit": "mm Hg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.53,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, Group D (n=10) column, Before meal block, dBP, mm Hg sub-block, Supine row",
+        "quote": "Supine | 68.70±6.53"
+      }
+    },
+    {
+      "id": "pre_meal_heart_rate_supine",
+      "description": "Heart rate, supine, healthy group D (n=10), before the meal: mean over the 10-min supine phase (window as for the systolic value)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_supine"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 74.5,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.58,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, Group D (n=10) column, Before meal block, HR, beats/min sub-block, Supine row",
+        "quote": "Supine | 74.50±16.58"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "tilted rows (70 degree tilt) of sBP, dBP and HR, before and after the meal, all four groups (Table 1, 'Tilted' rows); the standing-minus-supine HR increments (Results; Fig. 3); and the post-meal supine rows of sBP, dBP and HR for healthy group D (Table 1, After meal), because the meal follows a 10-min 70 degree tilt that the model cannot express",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "supine sBP, dBP and HR before and after the meal, groups A, B and C (Table 1; n=13, 12, 16): patients with orthostatic intolerance (POTS and vasovagal syncope), not a healthy group",
+      "missing": {
+        "kind": "population",
+        "name": "orthostatic_intolerance"
+      }
+    },
+    {
+      "what": "groups A, B and C as defined by their tilt response (dHR before the meal of 30 or more, or below 30 before and at or above 30 after; Methods): the groups are split by the measurement itself",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "Figure 3 (supine HR, tilted HR and their increments by meal and group) and Figure 4 (ROC curves): values in figures only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
