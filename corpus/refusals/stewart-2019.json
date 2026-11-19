@@ -1,0 +1,54 @@
+{
+  "paper": "stewart-2019",
+  "citation": {
+    "authors": "Stewart K.C., Subramanian D., Neal U.J., Hanson Angela J.",
+    "title": "APOE Genotype Influences Postprandial Blood Pressure After High fat Feeding in Older Adults",
+    "journal": "The Journal of Nutrition, Health & Aging",
+    "year": 2019,
+    "doi": "10.1007/s12603-019-1167-0",
+    "pmid": "31021357",
+    "pmcid": "PMC6544369"
+  },
+  "reported": [
+    {
+      "what": "net AUC of the SBP change score after the high fat meal, E4+ group (n=18), mean ± SE, adjusted for age and baseline SBP",
+      "location": {
+        "where": "Abstract, Results; Results, 'Postprandial BP response' (Table 2 caption gives the statistic as mean ± standard error)",
+        "quote": "E4+ AUC = -30.8 ± 7.6, E4- AUC = -0.2 ± 8.7, p=0.015"
+      }
+    },
+    {
+      "what": "net AUC of the SBP change score after the high carbohydrate meal, E4+ group, mean ± SE, adjusted for age and baseline SBP",
+      "location": {
+        "where": "Table 2, HCM AUC column",
+        "quote": "E4+ | -34.7 ± 10.8"
+      }
+    },
+    {
+      "what": "baseline SBP of the E4- and E4+ groups (n=14 and 18), mean ± SD, from the participants' table",
+      "location": {
+        "where": "Table 1, 'Baseline SBP' row",
+        "quote": "Baseline SBP | 14.4 | 120.6 ± 14.7 | 127.1 ± 13.9"
+      }
+    },
+    {
+      "what": "heart rate change at 15 min after the meals, no uncertainty printed",
+      "location": {
+        "where": "Results, 'Postprandial BP response', paragraph 1",
+        "quote": "Heart rate increased on average of 4 beats per minute at the 15-minute time point"
+      }
+    },
+    {
+      "what": "proportion of the group meeting criteria for postprandial hypotension",
+      "location": {
+        "where": "Results, 'Postprandial BP response', paragraph 2",
+        "quote": "Overall in this group of healthy older adults, 37.5% met criteria for clinical PPH."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "apoe_genotype_group"
+  },
+  "detail": "Every number the paper prints is split by APOE genotype (E4- against E4+, or the E2, E33, E4 and E24 groups), which the model has no state for, and the pooled group's means are not printed (the 'All' column of Table 1 carries no means)."
+}
