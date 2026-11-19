@@ -1,0 +1,184 @@
+{
+  "paper": "dorogovtsev-2021",
+  "citation": {
+    "authors": "Dorogovtsev VN, Yankevich DS, Goswami N",
+    "title": "Effects of an Innovative Head-Up Tilt Protocol on Blood Pressure and Arterial Stiffness Changes",
+    "journal": "Journal of Clinical Medicine",
+    "year": 2021,
+    "doi": "10.3390/jcm10061198",
+    "pmid": "33805654",
+    "pmcid": "PMC7998828"
+  },
+  "population": {
+    "n": 40,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 25.1,
+      "sd": 2.64,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.7,
+      "sd": 3.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Forty young healthy volunteers, 23 men and 17 women (Table 1; Methods), without arterial hypertension, atherosclerosis or diabetes mellitus, with clinical and biochemical blood tests within normal limits (Methods). Age 25.1 +/- 2.64 y and BMI 24.7 +/- 3.6 kg/m2 are mean and SD for all 40 (Table 1, 'M +/- SD'). The Abstract's 20-32 y is an enrolment-style range and is not used; min and max are null."
+  },
+  "protocols": [
+    {
+      "name": "supine_rest",
+      "description": "Lying supine (the paper's 'horizontal supine 1', Abstract; Table 2 'Horizontal 1') after 10 min of rest in the horizontal position, before any tilt; values averaged over minutes 6 to 10 of that block (Methods). Arm minutes 0 to 10: duration 11 = the 10-min block with minute 10 held, so the averaged minutes 6 to 10 are simulated. No tilt. No meal and no fasting time printed; fed state not stated, so init norm_center with no meal (coordinator rule for heart and circulation; markers are BP and HR only). Clock hour not printed (experiments 8:00 to 11:30 a.m., Methods): 8.0 assumed.",
+      "duration_min": 11,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "sbp_supine_rest",
+      "description": "Systolic BP lying supine (horizontal 1), mean over minutes 6 to 10 of the 10-min rest, n=40, mean +/- SD",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 6,
+        "end_min": 11
+      },
+      "value": 114.7,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.5,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, column 'Horizontal 1', row 'SBP mmHg' (Measuring Units header: 'M +/- SD')",
+        "quote": "SBP mmHg | 114.7 ± 11.5"
+      }
+    },
+    {
+      "id": "dbp_supine_rest",
+      "description": "Diastolic BP lying supine (horizontal 1), mean over minutes 6 to 10 of the 10-min rest, n=40, mean +/- SD",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 6,
+        "end_min": 11
+      },
+      "value": 74.8,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.3,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, column 'Horizontal 1', row 'DBP mmHg' (Measuring Units header: 'M +/- SD')",
+        "quote": "DBP mmHg | 74.8 ± 7.3"
+      }
+    },
+    {
+      "id": "hr_supine_rest",
+      "description": "Heart rate lying supine (horizontal 1), mean over minutes 6 to 10 of the 10-min rest, n=40, mean +/- SD. The paper prints the unit as 'b/min' (beats per minute); entered as beats/min, the loader's spelling of the same unit",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 6,
+        "end_min": 11
+      },
+      "value": 67,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11.5,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, column 'Horizontal 1', row 'HR b/min' (Measuring Units header: 'M +/- SD')",
+        "quote": "HR b/min | 67 ± 11.5"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Standardised HUTT (tilted) column of Table 2: SBP, DBP, HR, SV, CO, TVR and PWV during the individual tilt (Table 2; Results 3.1-3.2)",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Horizontal 2 column of Table 2: SBP, DBP, HR, SV, CO, TVR and PWV, supine again after the 10-min tilt (Table 2; Methods)",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Group-mean change on tilt, delta SBP and delta DBP each -1.9 mmHg, and the orthostatic classes by delta SBP (48%, 32%, 20%; Abstract, Results 3.2): tilt differences, the second with no uncertainty printed",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Venous pressure in the great saphenous vein, horizontal and during HUTT 30 and 70 degrees (Discussion 4.2): the model has no venous pressure series (the tilt values would also need posture); no n printed and not clearly this study's own measurement",
+      "missing": {
+        "kind": "marker",
+        "name": "saphenous_venous_pressure"
+      }
+    },
+    {
+      "what": "Stroke volume, horizontal 1 (Table 2: 93.1 +/- 13.9 mL)",
+      "missing": {
+        "kind": "marker",
+        "name": "stroke_volume"
+      }
+    },
+    {
+      "what": "Cardiac output, horizontal 1 (Table 2: 6.4 +/- 1.9 l/min)",
+      "missing": {
+        "kind": "marker",
+        "name": "cardiac_output"
+      }
+    },
+    {
+      "what": "Total vascular resistance, horizontal 1 (Table 2: 1078.5 +/- 261.9 din.sec.cm-5)",
+      "missing": {
+        "kind": "marker",
+        "name": "total_vascular_resistance"
+      }
+    },
+    {
+      "what": "Pulse wave velocity, horizontal 1 (Table 2: 6.2 +/- 0.6 m/s; Results 3.2)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_wave_velocity"
+      }
+    },
+    {
+      "what": "PWV in healthy subjects with and without orthostatic disturbance, horizontal and tilt (Results 3.2: 6.2 +/- 0.7 vs 6.2 +/- 0.4; 8.0 +/- 1.1 vs 7.8 +/- 0.42 m/s)",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    }
+  ]
+}
