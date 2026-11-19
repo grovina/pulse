@@ -1,0 +1,68 @@
+{
+  "paper": "rickenlund-2010",
+  "citation": {
+    "authors": "Rickenlund A, et al.",
+    "title": "Effects of oral contraceptives on diurnal profiles of insulin, insulin-like growth factor binding protein-1, growth hormone and cortisol in endurance athletes with menstrual disturbance",
+    "journal": "Human Reproduction",
+    "year": 2010,
+    "doi": "10.1093/humrep/dep350",
+    "pmid": "19840988",
+    "pmcid": "PMC2794666"
+  },
+  "reported": [
+    {
+      "what": "sedentary regularly menstruating control group (CTR, n = 8), before oral contraceptives: 24-h insulin baseline mean, the Pulsar smoothed-baseline statistic (Table IV, insulin block)",
+      "location": {
+        "where": "Table IV, insulin block, row '24 h baseline mean', CTR Before column (mean +/- SD)",
+        "quote": "24 h baseline mean | 11.4 ± 3.0"
+      }
+    },
+    {
+      "what": "sedentary control group (CTR, n = 8), before oral contraceptives: 24-h cortisol AUC, a Pulsar-fitted profile area over the 20-min samples (Table IV, cortisol block)",
+      "location": {
+        "where": "Table IV, cortisol block, row 'AUC', CTR Before column (mean +/- SD)",
+        "quote": "AUC (µg/dl × 24 h) | 161 ± 34"
+      }
+    },
+    {
+      "what": "sedentary control group (CTR, n = 8), before oral contraceptives: 24-h cortisol baseline mean, the Pulsar smoothed-baseline statistic (Table IV, cortisol block)",
+      "location": {
+        "where": "Table IV, cortisol block, row '24 h baseline mean', CTR Before column (mean +/- SD)",
+        "quote": "24 h baseline mean | 3.8 ± 1.1"
+      }
+    },
+    {
+      "what": "sedentary control group (CTR, n = 8), before oral contraceptives: total IGF-I, fasting (Table III)",
+      "location": {
+        "where": "Table III, row 'Total IGF-I (μg/l)', CTR Before column (mean +/- SD)",
+        "quote": "Total IGF-I (μg/l) | 313 ± 68"
+      }
+    },
+    {
+      "what": "sedentary control group (CTR, n = 8), before oral contraceptives: IGFBP-2, fasting (Table III)",
+      "location": {
+        "where": "Table III, row 'IGFBP-2 (μg/l)', CTR Before column (mean +/- SD)",
+        "quote": "IGFBP-2 (μg/l) | 141 ± 51"
+      }
+    },
+    {
+      "what": "sedentary control group (CTR, n = 8), before oral contraceptives: fasting corticosteroid-binding globulin (Results, text)",
+      "location": {
+        "where": "Results, 'Effects of OCs on fasting levels of IGF-I, IGFBP-2 and CBG', paragraph 2",
+        "quote": "CTR 44.6 ± 6.5 µg/l"
+      }
+    },
+    {
+      "what": "the athletes with menstrual disturbance (OAM, n = 9) and regularly menstruating athletes (RM, n = 8), and the CTR group during oral contraceptive treatment: excluded by population, and the CTR during-treatment columns by drug",
+      "location": {
+        "where": "Table IV, insulin block, row '24 h baseline mean', OAM Before column (mean +/- SD)",
+        "quote": "24 h baseline mean | 7.0 ± 2.3"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "pulsatile_profile_statistic"
+  },
+  "detail": "The control group's only insulin and cortisol values are 24-h baseline means and areas from the authors' Pulsar pulsatile-profile fit, not means or trapezoid areas of the 20-min samples, and the model has no operator for them; its fasting IGF-I, IGFBP-2 and CBG have no marker in the model; and the medians (IQR) of the rest of Table IV are not a statistic the model covers."
+}
