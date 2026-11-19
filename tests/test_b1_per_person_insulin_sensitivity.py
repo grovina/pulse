@@ -723,6 +723,9 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
         Sleep debt widens those same four first layers once more (+192).
         Intestinal bile widens them once more (+192). The SGLT2 input
         is not a head column.
+        The islet's nutrient-insulin drive adds four published gains
+        (ins_nut_gain, ins_nut_w_p, ins_nut_w_f, gn_nut_gain) and retires
+        amino_ins_gain: +3.
         Only the module's own total is asserted."""
         m = ModularPhysiologyNetwork()
         heads = ("insulin_sens_net", "hepatic_ins_k_net", "beta_cell_gain_net",
@@ -732,7 +735,7 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 21999)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 22002)
         self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 

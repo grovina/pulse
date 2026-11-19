@@ -101,8 +101,10 @@ class TestKernelIsANormalizedDensity(unittest.TestCase):
             emb = 2.0 * torch.randn(8)
             with torch.no_grad():
                 out = gut.forward_window(times, _MEAL, emb)[:, 0]
-            peak_t = int(out.argmax())
-            self.assertEqual(peak_t, 0)
+            # The cap is a plateau, so the argmax lands on float noise (1e-7);
+            # the question is whether minute 0 is on it.
+            self.assertGreaterEqual(float(out[0]), float(out.max()) * (1 - 1e-5))
+            peak_t = 0
             tail = out[peak_t:]
             # The calorie cap is flat; float noise on that plateau is ~1e-6.
             self.assertTrue(bool((tail[1:] <= tail[:-1] + 1e-5).all()))
@@ -138,7 +140,8 @@ class TestFreshKernelIsPhysiological(unittest.TestCase):
     def test_appearance_is_at_the_cap_from_the_first_minute(self) -> None:
         """The compartment delivers at 2.13 kcal/min as soon as the meal is in.
         A gamma peaking at 30-60 min was the previous kernel, not this law."""
-        self.assertEqual(int(self.student[:, 0].argmax()), 0)
+        # The cap is a plateau, so argmax is float noise: ask minute 0 to be on it.
+        self.assertGreaterEqual(float(self.student[0, 0]), float(self.student[:, 0].max()) * (1 - 1e-5))
         early = self.student[:30, 0]
         self.assertLess(float(early.max() - early.min()) / float(early.max()), 0.02)
 

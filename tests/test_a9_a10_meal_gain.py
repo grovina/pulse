@@ -195,7 +195,10 @@ class TestColdStartIsPreserved(unittest.TestCase):
         small = _meal_peak(m, carbs=25.0, n=180)
         large = _meal_peak(m, carbs=75.0, n=180)
         none = _meal_peak(m, carbs=0.0, n=180)
-        self.assertLess(none, 1.0)
+        # No carbohydrate, so only the drift: the run starts at the normative
+        # insulin (10) and the basal setpoint is now 0.8 of it (7c781a5), which
+        # lets glucose creep up 1.8 mg/dL (0.3 before that change).
+        self.assertLess(none, 3.0)
         self.assertGreater(small, 20.0)
         self.assertLess(abs(large - small) / small, 0.35)
 

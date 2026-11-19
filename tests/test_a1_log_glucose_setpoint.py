@@ -275,8 +275,16 @@ class TestGbIsStillAnExactFixedPoint(unittest.TestCase):
     def test_dg_is_zero_at_the_decoded_setpoint(self) -> None:
         m = _model(9)
         with torch.no_grad():
-            for p in m.metabolic.parameters():
-                p.add_(torch.randn_like(p))      # every parameter perturbed
+            for name, p in m.metabolic.named_parameters():
+                # Every parameter perturbed but two groups that are not part of
+                # the fasted balance. The epinephrine threshold: a threshold
+                # below the population's epinephrine makes the drive non-zero
+                # at the reference, adding hepatic output the basal split
+                # (egp_b = k_ii Gb) does not carry. The kidney: a renal
+                # threshold perturbed below Gb spills glucose (glucosuria,
+                # landed after this test). Neither is a broken fixed point.
+                if name != "epinephrine_action.log_epi_threshold" and not name.startswith("kidney."):
+                    p.add_(torch.randn_like(p))
         for gb in (60.6, 70.0, 95.0, 130.0, 148.9):
             _set_gb(m, gb)
             args = _fasted_reference(m, gb)

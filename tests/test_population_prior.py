@@ -16,7 +16,8 @@ from pulse.modules.metabolic import (
     POPULATION_PRIOR_NAMES,
 )
 from pulse.training.population_prior_signal import population_prior_nll
-from pulse.types import EMBEDDING_DIM, NORM_CENTER, SERIES_INDEX
+from pulse.incretin import INSULIN_SETPOINT_SCALE
+from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, SERIES_INDEX
 
 
 def _model() -> ModularPhysiologyNetwork:
@@ -91,6 +92,10 @@ class TestLandauFraction(unittest.TestCase):
         torch.manual_seed(0)
         model = _model()
         state = torch.tensor(NORM_CENTER, dtype=torch.float32).unsqueeze(0)
+        # Fasting means insulin at its basal setpoint, which is 0.8 of the
+        # normative centre since 7c781a5; at the centre itself the gates read
+        # 25 % excess insulin and the fraction falls to 0.27.
+        state[0, MARKER_INDEX["insulin"]] *= INSULIN_SETPOINT_SCALE
         emb = torch.zeros(1, EMBEDDING_DIM)
         traj = integrate(model, state, emb, n_steps=2, observe=True, meals=[])
         frac = traj[0, -1, SERIES_INDEX["gng_fraction"]]

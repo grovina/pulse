@@ -402,18 +402,20 @@ def test_integrate_steps_whole_minutes_only() -> None:
 # 240-minute rollout of ``_live_model(21)`` with three members (two meals, none, one meal),
 # sleep, activity, an SGLT2 arm and per-member clocks. States are z-scores of the markers
 # below at the last minute; the gradient is ``|d loss / d embedding|`` per member.
+# Re-recorded on 2026-11-19 after 7c781a5 (insulin follows absorbed nutrients, basal
+# insulin 0.8 of the centre); the first recording matched until that commit.
 _GOLDEN_MARKERS = (
     "glucose", "insulin", "cortisol", "hr", "temp", "gastric_carb", "intestinal_bile", "bile_acids")
 _GOLDEN_FINAL = [
-    [0.264008, 0.768351, 0.476284, 0.563051, -14.7389, 1.31717, 1.43054, 2.72093],
-    [-0.10647, -0.233391, -0.585703, -0.112075, -20.8669, 0.0, 0.553161, 1.19113],
-    [0.0491768, 0.125701, -0.830219, 0.541172, -17.9501, 0.939248, 1.37881, 2.59091],
+    [0.272477, 1.20984, 0.5355, 0.367633, -5.26943, 1.26963, 1.40999, 2.39791],
+    [-0.0789177, -0.311687, -0.523336, -0.219759, -6.26705, 0.0, 0.545249, 0.997911],
+    [0.0725911, 0.272612, -0.751938, 0.451344, -5.799, 0.867934, 1.35135, 2.26341],
 ]
-_GOLDEN_EMBEDDING_GRAD = [625.632, 261.89, 716.891]
+_GOLDEN_EMBEDDING_GRAD = [370.986, 372.687, 364.91]
 _GOLDEN_OBSERVABLES_T89 = [
-    [0.0, 2.72325, 0.0, 310.035, 237.348, 0.765552, 1.48435, 0.0615583, 0.130303, 1.0],
-    [0.0, 1.8566, 0.0, 276.365, 208.278, 0.753632, 1.31951, 0.113586, 0.485541, 1.0],
-    [0.0, 1.97396, 85.7782, 303.006, 231.933, 0.765442, 1.45066, 0.0844609, 0.227545, 1.0],
+    [0.0, 3.00282, 0.0, 288.062, 235.653, 0.818063, 1.39589, 0.0460326, 0.0887723, 1.0],
+    [0.0, 1.85251, 0.0, 253.467, 205.583, 0.811081, 1.22629, 0.108545, 0.494658, 1.0],
+    [0.0, 2.0531, 85.9869, 277.179, 227.235, 0.819815, 1.34368, 0.0715555, 0.183146, 1.0],
 ]
 
 
@@ -460,8 +462,9 @@ def test_a_rollout_keeps_the_trajectories_and_gradients_it_always_had() -> None:
 def test_the_checkpoint_layout_is_untouched() -> None:
     """Moving terms into ``constants`` and ``drives`` adds no parameter or buffer."""
     model = _live_model(21)
-    assert sum(p.numel() for p in model.parameters()) == 11079
-    assert len(model.state_dict()) == 252
+    # +3 since 7c781a5: four nutrient-insulin gains added, the amino one retired.
+    assert sum(p.numel() for p in model.parameters()) == 11082
+    assert len(model.state_dict()) == 255
 
 
 def test_member_steps_hold_a_finished_member() -> None:

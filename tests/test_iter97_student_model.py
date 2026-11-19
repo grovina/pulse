@@ -250,7 +250,11 @@ class TestFromInitSanity(unittest.TestCase):
 
     def test_three_meal_day(self) -> None:
         self._check(self.fed)
-        self.assertGreater(float(self.fed[:, MI["glucose"]].max()), 105.0)  # meals are visible
+        # Meals are visible: the fed day peaks above the fasted one. (An absolute
+        # 105 mg/dL was 107.7 before the nutrient-driven insulin of 7c781a5 and is
+        # 104.75 after it, as the meals now draw more insulin.)
+        self.assertGreater(float(self.fed[:, MI["glucose"]].max()),
+                           float(self.fasted[:, MI["glucose"]].max()) + 2.0)
 
     def test_no_meal_day(self) -> None:
         self._check(self.fasted)
