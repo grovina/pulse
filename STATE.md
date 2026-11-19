@@ -422,7 +422,7 @@ Not rescored, from the board of 2026-10-29:
   from the registries (15 papers left training with them). The code path stays
   for `n_arm=None` because the unit tests exercise it and a spread has no n
   to divide by (`cryer_1987_fasting_glucose_spread`, the one remaining
-  `None`). Training iters up to 118 trained on the 32 dropped points.
+  `None`). Training iters up to 119 trained on the 32 dropped points (119 was launched on `7c781a5`, before the drop).
 - `pytest` from the repository root fails while collecting
   `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
 - There is no CI. The suite is run by hand:
