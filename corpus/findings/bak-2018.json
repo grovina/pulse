@@ -520,6 +520,198 @@
         "where": "Table 2, column OBESE 72 h fast, -insulin",
         "quote": "FFA (mM) | 0.39± 0.17 | 1.47± 0.26 | 0.55± 0.09 | 1.07± 0.14"
       }
+    },
+    {
+      "id": "hepatic_output_lean_12h",
+      "description": "Endogenous glucose production (tracer Ra of glucose, equal to EGP without insulin), per kg total body weight, lean men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 1.89,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.36,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column LEAN 12 h fast, -insulin, row EGP (mg/kg TBW/min)",
+        "quote": "EGP(mg/kg TBW/min) | 1.89± 0.36 | 0.22*± 0.20 | 1.22#± 0.10 | 0.53*± 0.20 | 1.05+± 0.17 | 0.31*± 0.23 | 0.85#+± 0.18 | 0.40*#± 0.24"
+      }
+    },
+    {
+      "id": "rq_lean_12h",
+      "description": "Respiratory exchange ratio by indirect calorimetry, lean men, stated 12 h fast, non-insulin-stimulated measurement at t = 180-210, mean of the last 25 min (t = 185-210; arm minutes 215-240, before the clamp at t = 240), mean (SD)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast12h"
+      ],
+      "window": {
+        "start_min": 215,
+        "end_min": 240
+      },
+      "value": 0.82,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.04,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, column LEAN 12 h fast, -insulin, row RER",
+        "quote": "RER | 0.82± 0.04 | 0.85± 0.04* | 0.74± 0.02# | 0.73± 0.01# | 0.80± 0.03 | 0.81± 0.03+ | 0.74± 0.01# | 0.73 ± 0.02*# |"
+      }
+    },
+    {
+      "id": "hepatic_output_lean_72h",
+      "description": "Endogenous glucose production (tracer Ra of glucose, equal to EGP without insulin), per kg total body weight, lean men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 1.22,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column LEAN 72 h fast, -insulin, row EGP (mg/kg TBW/min)",
+        "quote": "EGP(mg/kg TBW/min) | 1.89± 0.36 | 0.22*± 0.20 | 1.22#± 0.10 | 0.53*± 0.20 | 1.05+± 0.17 | 0.31*± 0.23 | 0.85#+± 0.18 | 0.40*#± 0.24"
+      }
+    },
+    {
+      "id": "rq_lean_72h",
+      "description": "Respiratory exchange ratio by indirect calorimetry, lean men, stated 72 h fast, non-insulin-stimulated measurement at t = 180-210, mean of the last 25 min (t = 185-210; arm minutes 215-240, before the clamp at t = 240), mean (SD)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "lean_fast72h"
+      ],
+      "window": {
+        "start_min": 215,
+        "end_min": 240
+      },
+      "value": 0.74,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.02,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, column LEAN 72 h fast, -insulin, row RER",
+        "quote": "RER | 0.82± 0.04 | 0.85± 0.04* | 0.74± 0.02# | 0.73± 0.01# | 0.80± 0.03 | 0.81± 0.03+ | 0.74± 0.01# | 0.73 ± 0.02*# |"
+      }
+    },
+    {
+      "id": "hepatic_output_obese_12h",
+      "description": "Endogenous glucose production (tracer Ra of glucose, equal to EGP without insulin), per kg total body weight, obese men, stated 12 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 1.05,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.17,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column OBESE 12 h fast, -insulin, row EGP (mg/kg TBW/min)",
+        "quote": "EGP(mg/kg TBW/min) | 1.89± 0.36 | 0.22*± 0.20 | 1.22#± 0.10 | 0.53*± 0.20 | 1.05+± 0.17 | 0.31*± 0.23 | 0.85#+± 0.18 | 0.40*#± 0.24"
+      }
+    },
+    {
+      "id": "rq_obese_12h",
+      "description": "Respiratory exchange ratio by indirect calorimetry, obese men, stated 12 h fast, non-insulin-stimulated measurement at t = 180-210, mean of the last 25 min (t = 185-210; arm minutes 215-240, before the clamp at t = 240), mean (SD)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast12h"
+      ],
+      "window": {
+        "start_min": 215,
+        "end_min": 240
+      },
+      "value": 0.8,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.03,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, column OBESE 12 h fast, -insulin, row RER",
+        "quote": "RER | 0.82± 0.04 | 0.85± 0.04* | 0.74± 0.02# | 0.73± 0.01# | 0.80± 0.03 | 0.81± 0.03+ | 0.74± 0.01# | 0.73 ± 0.02*# |"
+      }
+    },
+    {
+      "id": "hepatic_output_obese_72h",
+      "description": "Endogenous glucose production (tracer Ra of glucose, equal to EGP without insulin), per kg total body weight, obese men, stated 72 h fast, mean of the last 30 min of the non-insulin-stimulated period (t = 210-240; arm minutes 240-270; the insulin clamp starts at t = 240), mean (SD)",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 240,
+        "end_min": 270
+      },
+      "value": 0.85,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.18,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 3, column OBESE 72 h fast, -insulin, row EGP (mg/kg TBW/min)",
+        "quote": "EGP(mg/kg TBW/min) | 1.89± 0.36 | 0.22*± 0.20 | 1.22#± 0.10 | 0.53*± 0.20 | 1.05+± 0.17 | 0.31*± 0.23 | 0.85#+± 0.18 | 0.40*#± 0.24"
+      }
+    },
+    {
+      "id": "rq_obese_72h",
+      "description": "Respiratory exchange ratio by indirect calorimetry, obese men, stated 72 h fast, non-insulin-stimulated measurement at t = 180-210, mean of the last 25 min (t = 185-210; arm minutes 215-240, before the clamp at t = 240), mean (SD)",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "obese_fast72h"
+      ],
+      "window": {
+        "start_min": 215,
+        "end_min": 240
+      },
+      "value": 0.74,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.01,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 4, column OBESE 72 h fast, -insulin, row RER",
+        "quote": "RER | 0.82± 0.04 | 0.85± 0.04* | 0.74± 0.02# | 0.73± 0.01# | 0.80± 0.03 | 0.81± 0.03+ | 0.74± 0.01# | 0.73 ± 0.02*# |"
+      }
     }
   ],
   "left_out": [
