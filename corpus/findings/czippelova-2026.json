@@ -1,0 +1,123 @@
+{
+  "paper": "czippelova-2026",
+  "citation": {
+    "authors": "Czippelova B, Turianikova Z, Cernanova Krohova J, Mazgutova N, Javorka M",
+    "title": "Arterial stiffness in the context of heart rate and vasomotion during orthostatic stress and cognitive load",
+    "journal": "Frontiers in Network Physiology",
+    "year": 2026,
+    "doi": "10.3389/fnetp.2026.1829189",
+    "pmid": "42422316",
+    "pmcid": "PMC13341531"
+  },
+  "population": {
+    "n": 23,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 22.3,
+      "sd": 2.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty-three healthy volunteers (16 male, 7 female), screened at interview by a physician for infection, cardiovascular disease including hypertension, diabetes, psychiatric disorder and hypothyroidism; normotensive (office BP below 140/90). Age 22.3 +/- 2.4 y (mean, SD); height 177.9 +/- 10.0 cm; weight 73.2 +/- 13.5 kg. BMI is printed only as median [IQR] 22.3 [21-23.7], so bmi is null."
+  },
+  "protocols": [
+    {
+      "name": "supine_rest",
+      "description": "Supine rest of approximately 7 min (Measurement protocol, paragraph 1) before the first tilt, in the morning session (paper: 08:00-11:00). No meal, fast or fed state is printed (only abstinence from caffeine, alcohol, energy drinks and strenuous activity for 24 h), so the arm starts from typical values (norm_center) with no meal; 8.0 is the start of the printed clock range and is assumed.",
+      "duration_min": 7,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "supine_hr_mean",
+      "description": "Heart rate supine at rest before the first tilt (Table 2, Supine column; the same value is printed as 'Supine rest' in Table 3). The paper says all cardiovascular parameters are means over 300 consecutive cardiac cycles (about 4.5 min at 66 bpm) of the continuous recording, but not which 300 cycles of the roughly 7-min rest; the window is therefore the whole printed rest.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 7
+      },
+      "value": 66.4,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.9,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 2, column 'Supine', row 'HR [bpm]'; caption: data are mean +/- SD (normally distributed variables)",
+        "quote": "HR [bpm] | 66.4 ± 9.9"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "every Table 2 tilt-angle row (10 degree HDT, 20 degree HUT, 40 degree HUT) for HR, MBP, haPWV, SVR and CAVI0 ADJ, and the tilt-induced %change correlations (Results; Figure 2): posture rows, never pooled with supine",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "brachial mean blood pressure (MBP), supine 90.4 +/- 6.7 mmHg (Table 2, Supine column): a mean arterial pressure, which the model has no marker for (only systolic and diastolic)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "systemic vascular resistance (SVR), supine 1,081.4 +/- 204.2 dyn.sec.cm-5 (Table 2, Supine column)",
+      "missing": {
+        "kind": "marker",
+        "name": "systemic_vascular_resistance"
+      }
+    },
+    {
+      "what": "heart-to-ankle pulse wave velocity (haPWV), supine 6.13 +/- 0.50 m/s (Table 2, Supine column)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_wave_velocity"
+      }
+    },
+    {
+      "what": "cardio-ankle vascular index CAVI0 ADJ, supine 8.39 +/- 0.86 (Table 2, Supine column), and the Results correlations of supine CAVI0 with HR, SBP, DBP and MBP (R and p printed, first paragraph of Results)",
+      "missing": {
+        "kind": "marker",
+        "name": "arterial_stiffness"
+      }
+    },
+    {
+      "what": "mental arithmetic task, first minute, against supine rest (Table 3): HR 77.4 +/- 14.6, haPWV 6.50 +/- 0.55, SVR 1,126.4 +/- 198.3, CAVI0 8.47 +/- 1.29; the cognitive load is an input the protocol cannot express",
+      "missing": {
+        "kind": "input",
+        "name": "mental_arithmetic"
+      }
+    },
+    {
+      "what": "brachial MBP as median [IQR] at supine rest and in the first minute of mental arithmetic (Table 3), and the Table 1 body composition (BMI, fat percentage, fat mass, skeletal muscle mass, visceral fat area) printed as median [IQR]",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "office (clinic) systolic and diastolic BP, 126.2 +/- 11.1 and 83.9 +/- 6.0 mmHg (Table 1), taken at the initial interview: the time and the posture of that reading are not printed, so it cannot be stated as a supine or seated rest",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
