@@ -1,0 +1,30 @@
+{
+  "paper": "rickenlund-2010",
+  "citation": "Rickenlund A, et al. Effects of oral contraceptives on diurnal profiles of insulin, insulin-like growth factor binding protein-1, growth hormone and cortisol in endurance athletes with menstrual disturbance. Hum Reprod. 2010;25(1):85-93.",
+  "doi": "10.1093/humrep/dep350",
+  "pmid": "19840988",
+  "pmcid": "PMC2794666",
+  "licence": "CC BY-NC 2.0 UK",
+  "licence_url": "https://creativecommons.org/licenses/by-nc/2.0/uk/",
+  "protocol": "24-h venous serum sampling in 20-min periods, before and during 8 months of a low-dose combined oral contraceptive; standard meals at 08:00, 10:30, 13:00, 15:30 and dinner; recorded sleep mostly 23:00-07:00",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "CTR: 8 sedentary, healthy, non-smoking, regularly menstruating women, age 21.1 +/- 4.8 y, BMI 19.3 +/- 1.6; the other arms are endurance athletes (OAM n 9 with menstrual disturbance; RM n 8 regularly menstruating)",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "cortisol",
+      "where": "Table IV",
+      "form": "table"
+    },
+    {
+      "marker": "insulin",
+      "where": "Table IV",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Serum cortisol and insulin are printed as 24-h AUC, 24-h baseline mean and peaks in Table IV, with mean +/- SD for the CTR group (the Before columns are pre-treatment). No clock-time values are printed, so the 24-h profiles are only in figures. Some Table IV rows are median (IQR), so take the cortisol means and SDs only from rows labelled mean +/- SD."
+}

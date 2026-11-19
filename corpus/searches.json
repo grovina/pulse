@@ -100,13 +100,15 @@
     },
     {
       "name": "stress and cortisol",
-      "status": "later",
+      "status": "active",
       "why": "Cortisol and its daily rhythm, and the response to a stressor.",
       "query": "(cortisol[Title]) AND (\"diurnal\"[Title] OR awakening[Title] OR \"stress test\"[Title] OR TSST[Title] OR rhythm[Title]) AND healthy[All Fields]",
-      "screened": 0,
-      "queued": 0,
-      "batches": [],
-      "hits": 188
+      "screened": 191,
+      "queued": 1,
+      "batches": [
+        "2026-11-19"
+      ],
+      "hits": 191
     }
   ]
 }
