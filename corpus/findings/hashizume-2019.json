@@ -1,0 +1,183 @@
+{
+  "paper": "hashizume-2019",
+  "citation": {
+    "authors": "Hashizume M, Kinami S, Sakurai K, Izawa KP, Shiotani H",
+    "title": "Postprandial Blood Pressure Decrease in Patients with Type 2 Diabetes and Mild or Severe Cardiac Autonomic Dysfunction",
+    "journal": "Int J Environ Res Public Health",
+    "year": 2019,
+    "doi": "10.3390/ijerph16050812",
+    "pmid": "30845668",
+    "pmcid": "PMC6427584"
+  },
+  "population": {
+    "n": 17,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 54.8,
+      "sd": 6.51,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.0,
+      "sd": 1.94,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Control group of 17 adults without type 2 diabetes (13 M, 4 F; 20 were recruited, Figure 2 and Results give 17 analysed), recruited by advertisement at Kobe University; inclusion age 40 to 80 y; exclusions pre-existing diabetes, cardiovascular or arrhythmic disease, pregnancy, night-shift work, smoking (Methods 2.1). No OGTT or HbA1c was done and the paper cannot exclude impaired glucose tolerance (Discussion), so the group is unselected, not healthy. Age 54.8 +/- 1.58 y and BMI 22.0 +/- 0.47 kg/m2 are mean +/- SE (Table 1); sd computed here as SE x sqrt(17) = 6.51 y and 1.94 kg/m2. Min and max not printed."
+  },
+  "protocols": [
+    {
+      "name": "control_pre_meal",
+      "description": "Control group, seated rest from 11:30 (Methods 2.2: 'Assessments began at 11:30. After 10 min of rest in a seated position, blood pressure ... measured'); the seated BP, the supine ECG and the blood draw all came before the test meal, started at 12:00 (minute 30). The arm stops at minute 29 because no finding uses the meal. Fed state unknown: the participants were asked to finish breakfast by 7:30, its contents are not printed and no fast is stated, so no meal is entered and the start is typical values (norm_center). Duration 30 min = 11:30 to 12:00 (derived from the printed clock times).",
+      "duration_min": 30,
+      "start_hour": 11.5,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "init",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "ctrl_sbp_pre_meal",
+      "description": "Brachial systolic BP of the control group before the test meal, seated after the 10-min rest (mean of the two readings per person, mean +/- SE, n = 17); window minutes 10 to 30 of the arm, the seated measurements before the meal at 12:00.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_pre_meal"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 30
+      },
+      "value": 125.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.53,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, row 'bSBP (mmHg)', column Control (n = 17); footnote 'Data given as mean ± SE.'",
+        "quote": "bSBP (mmHg) | 125.9 ± 3.53"
+      }
+    },
+    {
+      "id": "ctrl_dbp_pre_meal",
+      "description": "Brachial diastolic BP of the control group before the test meal, seated after the 10-min rest (mean +/- SE, n = 17); window minutes 10 to 30 of the arm.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_pre_meal"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 30
+      },
+      "value": 81.9,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.41,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, row 'bDBP (mmHg)', column Control (n = 17); footnote 'Data given as mean ± SE.'",
+        "quote": "bDBP (mmHg) | 81.9 ± 2.41"
+      }
+    },
+    {
+      "id": "ctrl_hr_pre_meal",
+      "description": "Heart rate of the control group before the test meal, from the 200-pulse ECG taken in the supine position after the seated BP and before the blood draw (mean +/- SE, n = 17); window minutes 10 to 30 of the arm.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "control_pre_meal"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 30
+      },
+      "value": 66.1,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.83,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 1, row 'HR (bpm)', column Control (n = 17); footnote 'Data given as mean ± SE.'",
+        "quote": "HR (bpm) | 66.1 ± 1.83"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Control group postprandial bSBP, cSBP and HR at 60 and 120 min after the test meal (Figure 4; the text gives only the direction of change)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Control group glucose and insulin over the meal (Figure 3, control curves; figure only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Control plasma glucose before the meal (Table 1) and at 120 min after the meal (Discussion): breakfast contents not printed, so the fed state cannot be written",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Control serum insulin before the meal (Table 1): breakfast contents not printed, so the fed state cannot be written",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Control central systolic BP before the meal (Table 1, cSBP): the model's sbp is brachial, and central pressure is a different measurement",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "Control CVRR (coefficient of variation of R-R intervals) before the meal (Table 1): an R-R variability index the model does not carry (its hrv is RMSSD)",
+      "missing": {
+        "kind": "marker",
+        "name": "hrv_cvrr"
+      }
+    },
+    {
+      "what": "Mild (n = 20) and severe (n = 15) T2DM groups: brachial and central SBP before, at 60 and 120 min after the test meal (Results, paragraph 2, with +/- SE values)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "Mild and severe T2DM groups: all Table 1 columns (BMI, BP, HR, glucose, insulin, lipids, CVRR), Table 2 (diabetes duration, HbA1c, medication), and their postprandial glucose, insulin and HR (Figures 3 and 4, Results)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    },
+    {
+      "what": "Pearson correlations of the blood pressure changes with baseline BP and CVRR, across all 52 participants including the T2DM groups (Results, Pearson's paragraph)",
+      "missing": {
+        "kind": "population",
+        "name": "type_2_diabetes"
+      }
+    }
+  ]
+}
