@@ -1,0 +1,164 @@
+{
+  "paper": "vancampen-2024",
+  "citation": {
+    "authors": "van Campen CMC, Rowe PC, Visser FC",
+    "title": "Two Different Hemodynamic Responses in ME/CFS Patients with Postural Orthostatic Tachycardia Syndrome During Head-Up Tilt Testing",
+    "journal": "Journal of Clinical Medicine",
+    "year": 2024,
+    "doi": "10.3390/jcm13247726",
+    "pmid": "39768649",
+    "pmcid": "PMC11677391"
+  },
+  "population": {
+    "n": 47,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 38.0,
+      "sd": 14.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Healthy controls of the tilt study (Table 1, Group 3 Healthy Controls, n = 47: 10 male, 37 female), recruited by announcements on ME/CFS advocacy websites, clinic posters and acquaintances of the ME/CFS participants; subjects referred for cardiology analysis were not counted as controls. Age 38 (SD 14) y as printed in Table 1 (mean and SD, one-way Welch ANOVA row); BMI is printed only as median 24.2 (IQR 21.3-27.3), so bmi is null. All controls had a normal HR and BP response on the tilt (Table 1 caption): a selection on the tilt response, not on supine HR or BP. The Results text says 48 controls had complete data, while Tables 1 and 2 print n = 47; the table n is used."
+  },
+  "protocols": [
+    {
+      "name": "healthy_supine_rest",
+      "description": "Healthy controls, supine rest before the head-up tilt to 70 degrees; the tilt itself is not entered (no posture input). Methods: 'all participants were positioned supine for 20 min before being tilted head-up to 70 degrees', so the arm is 20 min supine (duration_min 20, minutes 0 to 19). Results: supine image acquisition 'started at 2.5 (1.2) min before onset of the tilt' and 'lasted 0.6 (0.2) min', i.e. about minutes 17.5 to 18.1 of the rest; the window 17 to 19 min covers it. The paper prints no food, fast or meal for any group, so the arm starts from typical values (norm_center) with no meal. The paper prints no clock hour for the test; start_hour 9.0 is a placeholder. The paper does not say whether the controls' supine values were recorded in this study or in the earlier healthy-control study its Methods cite for their mid-tilt images (ref 29); it states the 20 min supine for 'all participants' and that supine image acquisition did not differ between the three groups.",
+      "duration_min": 20,
+      "start_hour": 9.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "healthy_supine_hr",
+      "description": "Heart rate (echo-derived, Table 2) in the healthy controls' supine rest before tilt, mean over minutes 17 to 19 of the 20-min rest",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_supine_rest"
+      ],
+      "window": {
+        "start_min": 17,
+        "end_min": 19
+      },
+      "value": 62.0,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.0,
+        "n": 47
+      },
+      "location": {
+        "where": "Table 2, row 'supine HR (bpm)', column Group 3 Healthy Controls (supine rest, before tilt)",
+        "quote": "supine HR (bpm) | 62 (9)"
+      }
+    },
+    {
+      "id": "healthy_supine_sbp",
+      "description": "Systolic blood pressure (finger plethysmography, Table 2) in the healthy controls' supine rest before tilt, mean over minutes 17 to 19 of the 20-min rest; the paper does not print the timing of the BP averaging, so the echo window is used",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_supine_rest"
+      ],
+      "window": {
+        "start_min": 17,
+        "end_min": 19
+      },
+      "value": 135.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.0,
+        "n": 47
+      },
+      "location": {
+        "where": "Table 2, row 'supine SBP (mmHg)', column Group 3 Healthy Controls (supine rest, before tilt)",
+        "quote": "supine SBP (mmHg) | 135 (16)"
+      }
+    },
+    {
+      "id": "healthy_supine_dbp",
+      "description": "Diastolic blood pressure (finger plethysmography, Table 2) in the healthy controls' supine rest before tilt, mean over minutes 17 to 19 of the 20-min rest; the BP timing is not printed, as for the SBP finding",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "healthy_supine_rest"
+      ],
+      "window": {
+        "start_min": 17,
+        "end_min": 19
+      },
+      "value": 79.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 47
+      },
+      "location": {
+        "where": "Table 2, row 'supine DBP (mmHg)', column Group 3 Healthy Controls (supine rest, before tilt)",
+        "quote": "supine DBP (mmHg) | 79 (8)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "supine HR, SBP and DBP of the two ME/CFS patient groups (Table 2, Group 1 and Group 2 columns)",
+      "missing": {
+        "kind": "population",
+        "name": "me_cfs"
+      }
+    },
+    {
+      "what": "end-tilt HR, SBP and DBP and the HR increase (delta HR) of the healthy controls (Table 2), measured during the 70-degree tilt",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "stroke volume index of the healthy controls, supine, end-tilt and delta (Table 2, SVI rows)",
+      "missing": {
+        "kind": "marker",
+        "name": "stroke_volume"
+      }
+    },
+    {
+      "what": "cardiac index of the healthy controls, supine, end-tilt and delta (Table 2, CI rows)",
+      "missing": {
+        "kind": "marker",
+        "name": "cardiac_output"
+      }
+    },
+    {
+      "what": "ME/CFS POTS patients split by the HR increase during tilt (Table 4), all rows",
+      "missing": {
+        "kind": "population",
+        "name": "group_split_by_measurement"
+      }
+    },
+    {
+      "what": "healthy-control BMI, printed as median and interquartile range (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "supine HR cohorts against SVI and CI, bar charts (Figure 1); not in the XML tables",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
