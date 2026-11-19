@@ -1,0 +1,309 @@
+{
+  "paper": "pham-2019",
+  "citation": {
+    "authors": "Pham H, Trahair L, Phillips L, Rayner C, Horowitz M, Jones K",
+    "title": "A randomized, crossover study of the acute effects of acarbose and gastric distension, alone and combined, on postprandial blood pressure in healthy older adults",
+    "journal": "BMC Geriatrics",
+    "year": 2019,
+    "doi": "10.1186/s12877-019-1251-7",
+    "pmid": "31470806",
+    "pmcid": "PMC6717369"
+  },
+  "population": {
+    "n": 10,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 74.0,
+      "sd": 4.43,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.2,
+      "sd": 3.48,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Ten healthy community-dwelling older adults (2 male, 8 female), non-smokers, with no GI disease or surgery, diabetes, significant respiratory, renal or cardiac disease, alcohol abuse, epilepsy, or medication affecting BP or GI function; no autonomic neuropathy on testing (mean score 1.4 +/- 0.2). Age 74.0 +/- 1.4 y and BMI 26.2 +/- 1.1 kg/m2 are mean +/- SEM (Methods: data presented as SEM unless stated); SD computed as SEM x sqrt(10): age 4.43, BMI 3.48. No age or BMI range printed."
+  },
+  "protocols": [
+    {
+      "name": "sucrose_control",
+      "description": "Control (C) study day, no preload and no acarbose: seated, after an overnight fast (12 h for liquids, 14 h for solids, as printed; attendance at about 09.00; prefast_hours 12 is the shorter of the two, the last intake of anything caloric). 100 g sucrose dissolved in 300 mL water drunk within 2 min; t = 0 is the end of the drink. Arm minute = t + 30: the paper gives a rest of 15-30 min before the drink and no clock time for its start, so the arm starts at attendance and a 30 min run-in (the upper end of that rest) is assumed; the drink is at arm minute 30. Baseline samples t = -9, -6, -3 min are arm minutes 21, 24, 27; glucose baseline t = -2 is arm minute 28; last sample t = 120 is arm minute 150. Sucrose is all digestible carbohydrate: carbs_g 100 as printed; no fat or protein in the drink (composition stated as sucrose and water only); sugars_g 100 as printed (100 g sucrose, so total sugars equal carbs_g); sucrose as against glucose is a detail the model cannot be told (sugar_type); 300 mL water is not an input.",
+      "duration_min": 151,
+      "start_hour": 9.0,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 100.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "sucrose in water",
+          "sugars_g": 100.0
+        }
+      ],
+      "prefast_hours": 12,
+      "assumed": [
+        "start_hour",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "sbp_baseline_control",
+      "description": "Seated systolic BP before the control drink: mean of the readings at t = -9, -6, -3 min on the study day with no preload (paper's baseline definition)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "window": {
+        "start_min": 21,
+        "end_min": 28
+      },
+      "value": 133.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3.7,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, 'Blood pressure and heart rate', paragraph 1 (first value of the control column)",
+        "quote": "There were no differences in baseline BP or HR among the 4 treatments (control vs. distension vs. acarbose vs. combined treatment, respectively): SBP (133 ± 3.7 mmHg vs. 128 ± 2.8 mmHg vs. 125 ± 3.6 mmHg vs. 129 ± 3.7 mmHg; P = 0.19)"
+      }
+    },
+    {
+      "id": "dbp_baseline_control",
+      "description": "Seated diastolic BP before the control drink: mean of the readings at t = -9, -6, -3 min on the study day with no preload",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "window": {
+        "start_min": 21,
+        "end_min": 28
+      },
+      "value": 72.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.6,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, 'Blood pressure and heart rate', paragraph 1 (first value of the control column)",
+        "quote": "DBP (72 ± 2.6 mmHg vs. 73 ± 2.8 mmHg vs. 70 ± 1.9 mmHg vs. 73 ± 1.7 mmHg; P = 0.23)"
+      }
+    },
+    {
+      "id": "hr_baseline_control",
+      "description": "Seated heart rate before the control drink: mean of the readings at t = -9, -6, -3 min on the study day with no preload",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "window": {
+        "start_min": 21,
+        "end_min": 28
+      },
+      "value": 67.0,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.1,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, 'Blood pressure and heart rate', paragraph 1 (first value of the control column)",
+        "quote": "HR (67 ± 2.1 beats/min vs. 68 ± 2.5 beats/min vs. 66 ± 2.8 beats/min vs. 67 ± 2.6 beats/min; P = 0.76)"
+      }
+    },
+    {
+      "id": "glucose_baseline_control",
+      "description": "Venous whole-blood glucose at t = -2 min (before the control drink), read on a portable glucometer (Medisense Companion 2), not a laboratory plasma assay; entered with that caveat. n = 9 from the Results text ('blood glucose data are available in 9 subjects', cannula failed in one subject) and the Figure 4 legend",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "window": {
+        "start_min": 28,
+        "end_min": 29
+      },
+      "value": 5.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.16,
+        "n": 9
+      },
+      "location": {
+        "where": "Results, 'Blood glucose', paragraph 1 (control column)",
+        "quote": "control vs. distension vs. acarbose vs. combined treatment: 5.6 ± 0.16 mmol/L vs. 5.6 ± 0.14 mmol/L vs. 5.6 ± 0.10 mmol/L vs. 5.7 ± 0.20 mmol/L, respectively"
+      }
+    },
+    {
+      "id": "glucose_auc_control",
+      "description": "Area under the venous whole-blood glucose curve (portable glucometer, not a plasma assay; entered with that caveat), t = -2 to 120 min, trapezoid over the five samples (t = -2, 30, 60, 90, 120); the Methods say blood glucose is presented as absolute values, so the printed value is the total area, not incremental (919 / 122 min = 7.5 mmol/L mean). n = 9 from the Results text and the Figure 4 legend",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "times": [
+        28,
+        60,
+        90,
+        120,
+        150
+      ],
+      "value": 919.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 41.9,
+        "n": 9
+      },
+      "location": {
+        "where": "Results, 'Blood glucose', paragraph 2 (control, AUC0-120min)",
+        "quote": "compared with control (C: 919 ± 41.9 mmol/L.min)"
+      }
+    },
+    {
+      "id": "hr_auc_control",
+      "description": "Area under the heart-rate curve, t = 0 to 120 min, trapezoid over the samples every 3 min (t = 0, 3, ..., 120). The Statistical analysis paragraph says MAP and HR are 'presented as change from baseline', but the printed control area cannot be an area of change: the control maximum rise in HR is 10.7 bpm, so a change area is at most 10.7 x 120 = 1284 bpm.min, against the printed 8252 (mean 68.8 bpm over 120 min, baseline 67 bpm). So the total area of absolute HR is entered",
+      "marker": "hr",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "sucrose_control"
+      ],
+      "times": [
+        30,
+        33,
+        36,
+        39,
+        42,
+        45,
+        48,
+        51,
+        54,
+        57,
+        60,
+        63,
+        66,
+        69,
+        72,
+        75,
+        78,
+        81,
+        84,
+        87,
+        90,
+        93,
+        96,
+        99,
+        102,
+        105,
+        108,
+        111,
+        114,
+        117,
+        120,
+        123,
+        126,
+        129,
+        132,
+        135,
+        138,
+        141,
+        144,
+        147,
+        150
+      ],
+      "value": 8252.0,
+      "unit": "bpm",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 357.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Results, 'Heart rate', paragraph 1 (control, AUC0-120min)",
+        "quote": "compared to control (C: 8252 ± 357 bpm.min)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "MAP baseline 92 +/- 2.2 mmHg (control) and control AUC0-120 10,366 +/- 281 mmHg.min (Results, 'Mean arterial pressure'); the paper derives MAP as DBP + (SBP - DBP)/3",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "maximum fall in MAP from baseline on the control day, -12.2 +/- 1.4 mmHg (Results, 'Mean arterial pressure'): MAP is not a marker, and it is a per-person maximum change, not a statistic the model has",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "maximum rise in heart rate from baseline on the control day, 10.7 +/- 2.5 bpm (Results, 'Heart rate'): a per-person maximum change above baseline",
+      "missing": {
+        "kind": "operator",
+        "name": "incremental_peak"
+      }
+    },
+    {
+      "what": "superior mesenteric artery blood flow, all arms including control: baseline 543 +/- 55 mL/min, AUC0-120 111,738 +/- 12,631 mL/min.min, maximum rise 1173 +/- 111 mL/min (Results, 'Superior mesenteric artery blood flow')",
+      "missing": {
+        "kind": "marker",
+        "name": "splanchnic_blood_flow"
+      }
+    },
+    {
+      "what": "mean MAP and heart-rate change curves on the control day, 0-120 min (Figure 2; figure only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "glucose at 30, 60, 90 and 120 min on the control day (Figure 4; only the AUC is printed in the text)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "superior mesenteric artery flow time course, control day (Figure 3; figure only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "all acarbose values (A and AD columns, Results: baselines, MAP, HR, SMA flow and glucose AUCs and maxima): 100 mg acarbose dissolved in the test drink, a drug the model has no input for",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "all distension values (D column, Results: baselines, MAP, HR, SMA flow and glucose AUCs and maxima): 300 mL water preload 15 min before the drink, a gastric-distension input the model does not have",
+      "missing": {
+        "kind": "input",
+        "name": "gastric_distension"
+      }
+    }
+  ]
+}
