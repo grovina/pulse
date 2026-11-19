@@ -85,6 +85,22 @@ _SAT_REF = SALEHI_GLP1_EXCESS / (SALEHI_GLP1_EXCESS + K_INCRETIN)
 AMINO_INS_GAIN = 1.0
 PROTEIN_GN_GAIN = 3.5
 
+# Insulin secretion driven by absorbed nutrients, not by glucose above basal
+# (which a mixed meal barely raises): µU/mL per minute per weighted gram
+# leaving the stomach, times the incretin factor. Carbohydrate is not in the
+# drive; glucose already secretes through ``gamma``. ``AMINO_INS_GAIN`` stays
+# for the teacher (``knowledge/full_body.py``); the student's old protein-only
+# term is replaced by this.
+INS_NUT_GAIN = 2.0
+INS_NUT_W_P = 2.0
+INS_NUT_W_F = 0.5
+# pg/mL per minute of glucagon per gram of absorbed amino acids: 3 x 2 x the
+# protein-triggered rate above, so the drive that lifts insulin does not
+# leave a mixed meal's glucagon suppressed.
+GN_NUT_GAIN = 3.0 * 2.0 * PROTEIN_GN_GAIN
+# Setpoint of basal insulin as a share of the normative centre.
+INSULIN_SETPOINT_SCALE = 0.8
+
 GIP_KINETICS: dict[str, Published] = {
     "gip_b": Published(GIP_B, "Fasting plasma GIP in healthy adults"),
     "k_gip": Published(K_GIP, "Plasma GIP decay after an intravenous bolus"),
@@ -100,7 +116,12 @@ ISLET: dict[str, Published] = {
         INCRETIN_HALF, "Vilsbøll 2003: the incretins' share of the meal insulin response"),
     "glp1_gn_pg": Published(
         GLP1_GN_PG, "Salehi 2008: glucagon area with exendin-(9-39) after 75 g, glucose clamped"),
-    "amino_ins_gain": Published(AMINO_INS_GAIN, "Westphal 1990: insulin after 50 g of protein alone"),
+    "ins_nut_gain": Published(
+        INS_NUT_GAIN, "Westphal 1990 and the mixed-meal insulin curves: secretion driven by absorbed amino acids and fat, scaled by the incretin factor"),
+    "ins_nut_w_p": Published(INS_NUT_W_P, "Weight of an absorbed gram of protein in that drive"),
+    "ins_nut_w_f": Published(INS_NUT_W_F, "Weight of an absorbed gram of fat in that drive"),
+    "gn_nut_gain": Published(
+        GN_NUT_GAIN, "Westphal 1990: glucagon after protein alone, with the mixed meal's glucagon kept"),
     "protein_gn_gain": Published(
         PROTEIN_GN_GAIN, "Westphal 1990: glucagon after 50 g of protein alone, glucose unchanged"),
 }
@@ -174,5 +195,16 @@ def glp1_glucagon_rate_t(
     return drop * k_gn
 
 
-def amino_insulin_rate_t(protein_g: torch.Tensor, islet: Mapping[str, torch.Tensor]) -> torch.Tensor:
-    return islet["amino_ins_gain"] * torch.clamp(protein_g, min=0.0)
+def nutrient_insulin_rate_t(
+    protein_g: torch.Tensor, fat_g: torch.Tensor, incretin: torch.Tensor,
+    islet: Mapping[str, torch.Tensor],
+) -> torch.Tensor:
+    """µU/mL per minute. Zero when no protein or fat is leaving the stomach."""
+    drive = (islet["ins_nut_w_p"] * torch.clamp(protein_g, min=0.0)
+             + islet["ins_nut_w_f"] * torch.clamp(fat_g, min=0.0))
+    return islet["ins_nut_gain"] * incretin * drive
+
+
+def nutrient_glucagon_rate_t(protein_g: torch.Tensor, islet: Mapping[str, torch.Tensor]) -> torch.Tensor:
+    """pg/mL per minute. Zero when no protein is leaving the stomach."""
+    return islet["gn_nut_gain"] * torch.clamp(protein_g, min=0.0)

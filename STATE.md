@@ -13,8 +13,8 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Modules | 9 (metabolic 13 states, appetite 5, stress 5, cardiovascular 4, hepatobiliary 4, gastric 3, respiratory 2, circadian 2, thermoreg 1) |
 | States | 39 |
 | Observables | 10 |
-| Parameters | 37,287 at the default widths |
-| Published numbers | 43 in 10 tables, each learned from its published value |
+| Parameters | 37,290 at the default widths |
+| Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
 | Cohort specs | 1155 authored, 140 of them curves; 1237 training points and 324 held-out points |
 | Rules | 62 training, 0 held out |
@@ -48,6 +48,23 @@ trained with it.
 An evidence step of items with meal details costs the same with it as
 without (24.5 s against 26.5 s batched, mean of three steps on the lab box,
 2026-11-15, `python -m pulse.diagnostics step-time --only-meal-details`).
+
+Insulin secretion in the islet (`pulse/incretin.py`, `metabolic.state_fluxes`)
+is the glucose-driven term (`gamma`, on glucose above basal and the
+potentiator, times the incretin factor) plus, since 2026-11-19, a
+nutrient-driven one: `ins_nut_gain` x incretin factor x (`ins_nut_w_p` x
+protein + `ins_nut_w_f` x fat) leaving the stomach, starting at 2, 2 and 0.5
+(µU/mL per minute per gram). It replaces the protein-only `amino_ins_gain`
+(1 per gram, dropped; the teacher keeps its own). Glucagon gains
+`gn_nut_gain` x protein, starting at 3 x 2 x `protein_gn_gain` = 21 pg/mL per
+minute per gram. The basal insulin setpoint is 0.8 of what it was
+(`INSULIN_SETPOINT_SCALE`, applied in `insulin_setpoint_raw`; the
+normative centre is unchanged). Carbohydrate is not in the nutrient drive.
+Not yet trained: the four numbers start at these values and no run has moved
+them. Iter 118's checkpoint loads (`load_model_state` starts the new keys at their
+defaults and ignores `log_amino_ins_gain`). Free tests of this form on it
+(2026-11-19, variant `n2_m3`) are the case for it; the checkpoint has not
+been rescored on the full board.
 
 ## Training
 
@@ -210,7 +227,7 @@ the untrained student as above):
 - Training barely teaches insulin after a mixed meal. Of the 60 trained
   insulin points, 19 follow a mixed meal and 18 of those are one meal of one
   paper (`atkinson-2020`); 22 of the 31 sealed insulin points follow a mixed
-  meal. The islet's amino-acid gain (`metabolic.islet.log_amino_ins_gain`)
+  meal. The islet's amino-acid gain (`log_amino_ins_gain`, since replaced, below)
   starts at 0 and ends between -0.04 and +0.10 in all four runs, and its
   incretin gain (`log_k_incretin`) moves by at most 0.09 from 2.30.
 - The cold start stopped at the end of phase 2: its epochs with the

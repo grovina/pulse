@@ -638,7 +638,7 @@ def train(
     start_epoch = 0
     if resume_from:
         resumed = _load_checkpoint_uri(resume_from)
-        model.load_state_dict(resumed["model_state"], strict=True)
+        model.load_model_state(resumed["model_state"], strict=True)
         if "embeddings_state" in resumed:
             print(
                 "[RESUME] checkpoint embeddings_state ignored; people are drawn from the factor prior",

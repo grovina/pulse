@@ -17,7 +17,7 @@ import torch
 
 from pulse.incretin import (
     GIP_B, GIP_KINETICS, GLP1_GN_PG, ISLET, K_INCRETIN, SALEHI_GLP1_EXCESS, VOLLMER_RATIO,
-    VOLLMER_RATIO_SE, amino_insulin_rate, amino_insulin_rate_t, gip_rate, gip_rate_t,
+    VOLLMER_RATIO_SE, amino_insulin_rate, nutrient_insulin_rate_t, gip_rate, gip_rate_t,
     glp1_glucagon_rate, glp1_glucagon_rate_t, incretin_factor, incretin_factor_t,
 )
 from pulse.published import initial_values
@@ -62,7 +62,8 @@ class TestTheFactor(unittest.TestCase):
     def test_no_protein_adds_nothing(self) -> None:
         self.assertEqual(amino_insulin_rate(0.0), 0.0)
         self.assertEqual(
-            float(amino_insulin_rate_t(torch.tensor(0.0), initial_values(ISLET))), 0.0)
+            float(nutrient_insulin_rate_t(torch.tensor(0.0), torch.tensor(0.0), torch.tensor(1.5),
+                                          initial_values(ISLET))), 0.0)
         self.assertAlmostEqual(gip_rate(GIP_B, 0.0, 0.0), 0.0, places=6)
         torch.testing.assert_close(
             gip_rate_t(torch.tensor(GIP_B), torch.tensor(0.2), torch.tensor(0.1),

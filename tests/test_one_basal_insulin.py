@@ -12,6 +12,7 @@ import unittest
 
 import torch
 
+from pulse.incretin import INSULIN_SETPOINT_SCALE
 from pulse.knowledge.full_body import PatientParams
 from pulse.model import ModularPhysiologyNetwork, integrate
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, STATE_DIM
@@ -37,7 +38,7 @@ class TestOneBasalInsulin(unittest.TestCase):
     def test_a_fitted_patient_is_the_ib_both_modules_read(self) -> None:
         model = _model()
         patient = PatientParams(Ib=18.0)
-        bias = math.atanh(math.log(patient.Ib / 10.0) / 0.9)
+        bias = math.atanh(math.log(patient.Ib / (10.0 * INSULIN_SETPOINT_SCALE)) / 0.9)
         with torch.no_grad():
             last = model.metabolic.insulin_baseline_net[-1]
             last.weight.zero_()

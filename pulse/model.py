@@ -405,6 +405,29 @@ class ModularPhysiologyNetwork(nn.Module):
         # module's initial weights where the same seed puts them without it.
         self.meal_reader: Optional[MealReader] = MealReader() if meal_details else None
 
+    # Parameters added or retired since a checkpoint was written. A checkpoint
+    # without the first starts them at their published defaults; one carrying
+    # the second drops them. Any other missing or extra key is still an error.
+    ADDED_STATE_KEYS = frozenset({
+        "metabolic.islet.log_ins_nut_gain", "metabolic.islet.log_ins_nut_w_p",
+        "metabolic.islet.log_ins_nut_w_f", "metabolic.islet.log_gn_nut_gain",
+    })
+    RETIRED_STATE_KEYS = frozenset({"metabolic.islet.log_amino_ins_gain"})
+
+    def load_model_state(self, state: dict, strict: bool = True) -> None:
+        """``load_state_dict`` that is strict except for ``ADDED_STATE_KEYS`` and
+        ``RETIRED_STATE_KEYS``."""
+        if not strict:
+            self.load_state_dict(state, strict=False)
+            return
+        state = {k: v for k, v in state.items() if k not in self.RETIRED_STATE_KEYS}
+        result = self.load_state_dict(state, strict=False)
+        missing = [k for k in result.missing_keys if k not in self.ADDED_STATE_KEYS]
+        if missing or result.unexpected_keys:
+            raise RuntimeError(
+                f"Error(s) in loading state_dict: missing keys {missing}, "
+                f"unexpected keys {list(result.unexpected_keys)}")
+
     @classmethod
     def from_checkpoint(cls, checkpoint: dict, strict: bool = True) -> "ModularPhysiologyNetwork":
         """Rebuild the model a checkpoint was trained with.
@@ -443,7 +466,7 @@ class ModularPhysiologyNetwork(nn.Module):
             }
         model = cls(**cfg)
         try:
-            model.load_state_dict(checkpoint.get("model_state", checkpoint), strict=strict)
+            model.load_model_state(checkpoint.get("model_state", checkpoint), strict=strict)
         except RuntimeError as exc:
             if "size mismatch" in str(exc).lower():
                 raise RuntimeError(

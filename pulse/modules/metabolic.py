@@ -265,7 +265,8 @@ from ..circadian import (
 )
 from ..correction import Correction, apply_correction, corrected_mass_action
 from ..incretin import (
-    ISLET, amino_insulin_rate_t, glp1_glucagon_rate_t, glucagon_from_protein_t,
+    INSULIN_SETPOINT_SCALE, ISLET, glp1_glucagon_rate_t, glucagon_from_protein_t,
+    nutrient_glucagon_rate_t, nutrient_insulin_rate_t,
     incretin_factor_t,
 )
 from ..published import PublishedNumbers
@@ -935,7 +936,7 @@ class MetabolicModule(MassActionModule):
         return (self.glucose_setpoint_raw(embedding) - _GLUCOSE_CENTER) / _GLUCOSE_NORM_SCALE
 
     def insulin_setpoint_raw(self, embedding: torch.Tensor) -> torch.Tensor:
-        return _INSULIN_CENTER * torch.exp(
+        return INSULIN_SETPOINT_SCALE * _INSULIN_CENTER * torch.exp(
             _IB_LOG_MAX * torch.tanh(self.insulin_baseline_net(embedding).squeeze(-1)))
 
     def body_mass_kg(self, embedding: torch.Tensor) -> torch.Tensor:
@@ -1147,8 +1148,6 @@ class MetabolicModule(MassActionModule):
             "work_vco2": work_vco2,
             "glucagon_from_protein": glucagon_from_protein_t(
                 coupling[..., _DUO_PROT_COUPLING_IDX], const),
-            "amino_insulin": amino_insulin_rate_t(
-                coupling[..., _DUO_PROT_COUPLING_IDX], const),
             "mito_training": _MITO_TRAIN_GAIN * relu(act - 0.2),
         }
 
@@ -1244,7 +1243,8 @@ class MetabolicModule(MassActionModule):
         ins_restoring = c["k_ins"] * (effective_ib - ins)
         ins_clamp = insulin_clamp_infusion_t(
             d["insulin_clamp"], effective_ib, c["k_ins"], d["insulin_clamp_on"])
-        ins_rate = ins_restoring + ins_gsir + d["amino_insulin"] + ins_clamp
+        ins_nutrient = nutrient_insulin_rate_t(d["amino_g"], d["lipid_g"], incretin, c)
+        ins_rate = ins_restoring + ins_gsir + ins_nutrient + ins_clamp
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
         # which is the teacher's `dX = −p2·X + p3·(I − Ib)` with `p3 = Si_eff·p2`
         # exactly (divide both by Si: the student's `xa` is Si-free by construction).
@@ -1281,6 +1281,7 @@ class MetabolicModule(MassActionModule):
         glucagon_restoring = c["k_gn"] * ((c["gn_b"] + c["gn_epi_span"] * epi_drive) - gn)
         gn_rate = (glucagon_restoring + glucagon_stim - glucagon_supp
                    + d["glucagon_from_protein"]
+                   + nutrient_glucagon_rate_t(d["amino_g"], c)
                    - glp1_glucagon_rate_t(glp1_excess, c["k_gn"], c))
         lipolysis = (c["lip_max"] / (1.0 + ins / c["ic50_lip"])
                      * lipolysis_scale_t(ins, ib, c["ic50_lip"], debt, c["lipolysis_k"])
