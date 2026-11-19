@@ -1,0 +1,40 @@
+{
+  "paper": "rani-2022",
+  "citation": {
+    "authors": "Rani R, Rengarajan P, Sethi T, Khuntia BK, Kumar A, Punera DS, et al.",
+    "title": "Heart rate variability during head-up tilt shows inter-individual differences among healthy individuals of extreme Prakriti types",
+    "journal": "Physiological Reports",
+    "year": 2022,
+    "doi": "10.14814/phy2.15435",
+    "pmid": "36106418",
+    "pmcid": "PMC9475339"
+  },
+  "reported": [
+    {
+      "what": "Heart rate, systolic and diastolic blood pressure of all 379 healthy adults, mean ± SD, in the demographics table; the paper does not say when, in what posture or with what method BP was taken, nor that this heart rate is the 5-min supine ECG phase",
+      "location": {
+        "where": "Table 4 (Demographic details, n = 379)",
+        "quote": "Heart rate (BPM) 71.79 ± 11.5 Systolic blood pressure (mmHg) 110.75 ± 10.66 Diastolic blood pressure (mmHg) 71.32 ± 13.71"
+      }
+    },
+    {
+      "what": "Supine, tilt and re-supine heart rate (median with IQR, n = 379)",
+      "location": {
+        "where": "Table 5",
+        "quote": "Heart rate (BPM) 70.78 (63.66–78.84) 84.15 (76.25–93.79) 70.2 (62.64–77.56)"
+      }
+    },
+    {
+      "what": "BP by Prakriti group, mean ± SD (groups split by constitution type)",
+      "location": {
+        "where": "Table 6",
+        "quote": "Systolic blood pressure (mmHg) 108.64 ± 8.91 109.42 ± 10.32 113.62 ± 10.33 111.39 ± 11.71"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "time_not_printed"
+  },
+  "detail": "The only mean ± SD of heart rate and blood pressure (Table 4, a demographics table 'at baseline level') is not tied by the paper to the supine pre-tilt phase: no time, posture or method is given for BP, and the HR mean (71.79) differs from the supine-phase median in Table 5 (70.78), which is a median with IQR and cannot be entered. The tilt rows have no posture input; Prakriti groups cannot be told to the model."
+}
