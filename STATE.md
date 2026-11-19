@@ -412,8 +412,13 @@ Not rescored, from the board of 2026-10-29:
   `test_iter81_stability.py` and `test_training_signals.py` passed 30 minutes.
   The other 89 files pass, in 49 minutes one after another.
 
-- 693 parameters of the gut kernel (the mixture logits of its last layer)
-  receive no gradient from any loss.
+- 693 parameters of the gut kernel (the mixture logits of its last layer,
+  rows 0-20 of `gut.kernel.kernel[-1]`) receive no gradient from any loss.
+  They are dead rows, not a closed gate: `GutModule.appearance` discards
+  the mixture weights since appearance comes from the stomach simulation,
+  and only the bioavailability rows 21-23 are read (they do get gradient).
+  Harmless (about 2% of parameters, no output); meal-kind differences go
+  through the meal reader, which is live. Checked on iter 118 (2026-11-19).
 - The stomach's split correction acts on the three gastric pools and never
   reaches absorption: no module reads a gastric state. It is exactly zero in
   iter 114. The meal reader's speeds do not reach those pools either.

@@ -264,8 +264,9 @@ of a 68 s step, and 24 s of that is the spin-up.
 
 - The sigma of the 35 registry points with no `n_arm` depends on a training
   flag. State each point's n, or drop the point.
-- 693 gut-kernel parameters receive no gradient, and the stomach's split
-  correction never reaches absorption.
+- The stomach's split correction never reaches absorption. (The 693
+  gut-kernel parameters with no gradient are dead rows and harmless; they
+  can go when the gut kernel is next reshaped.)
 - The cortisol gain on glucose production is centred on the population's
   cortisol.
 - `peak_value` reads a dense maximum where a paper's Cmax is the largest of
