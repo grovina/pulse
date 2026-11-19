@@ -1,0 +1,176 @@
+{
+  "paper": "oyake-2021",
+  "citation": {
+    "authors": "Oyake K, Murayama J, Tateishi T, Mochida A, Matsumoto M, Tsujikawa M, et al.",
+    "title": "Comparison of the sit-up test and head-up tilt test for assessing blood pressure and hemodynamic responses in healthy young individuals",
+    "journal": "Blood Pressure Monitoring",
+    "year": 2021,
+    "doi": "10.1097/MBP.0000000000000570",
+    "pmid": "34629377",
+    "pmcid": "PMC8893123"
+  },
+  "population": {
+    "n": 19,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 24.3,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 20.9,
+      "sd": null,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Nineteen healthy adult volunteers analysed (21 recruited, 2 lost to technical failure of the haemodynamic measurement); nine male, the rest not split by sex in the paper (mixed). Age 24.3 ± 2.4 years and BMI 20.9 ± 1.8 kg/m2 as printed in Results; the ± is not labelled SD or SEM anywhere, so no sd is entered. Inclusion: aged 20 to 40, no underlying disease, no history of syncope; 'healthy' is the paper's word."
+  },
+  "protocols": [
+    {
+      "name": "supine_rest",
+      "description": "Supine rest on a motorized tilt table for 10 min before either test (sit-up, or 70-degree head-up tilt; order randomised, 10 min apart; each Table 1 supine column pools both orders, so about half of each column's supine rests followed the other test and the first-in-session rest cannot be separated; the two columns are the same 19 people in the same state, so only the sit-up column is entered). Minute 0 is the start of the 10-min rest; the supine value is the mean of its final 2 min (minutes 8 to 9, window 8 to 10), per Methods. Fed state: the paper says only that participants refrained from eating and caffeinated products for at least 2 h before each test, so no meal is entered and the arm starts from typical values (norm_center). The tests were run between 18:00 and 19:00 (printed as 'between 6:00 and 7:00 p.m.'); 18.5 is the middle of that hour. The second test's supine rest came after the first test's upright period and the 10-min rest between tests, which the arm does not carry. No derived input: no meal, dose or intensity.",
+      "duration_min": 10,
+      "start_hour": 18.5,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "sbp_supine_situp",
+      "description": "Systolic BP supine before the sit-up test: mean of the final 2 min of the 10-min supine rest, test order randomised per participant and pooled in the column, mean ± SD, n = 19",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 108,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 11,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 1, column 'Sit-up test', row 'Supine' under Systolic blood pressure (mmHg); table footnote 'Values are presented as the mean ± SD'",
+        "quote": "Systolic blood pressure (mmHg) | Supine | 108 ± 11"
+      }
+    },
+    {
+      "id": "dbp_supine_situp",
+      "description": "Diastolic BP supine before the sit-up test: mean of the final 2 min of the 10-min supine rest, test order randomised per participant and pooled in the column, mean ± SD, n = 19",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 68,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 1, column 'Sit-up test', row 'Supine' under Diastolic blood pressure (mmHg); table footnote 'Values are presented as the mean ± SD'",
+        "quote": "Diastolic blood pressure (mmHg) | Supine | 68 ± 5"
+      }
+    },
+    {
+      "id": "hr_supine_situp",
+      "description": "Heart rate supine before the sit-up test: mean of the final 2 min of the 10-min supine rest, test order randomised per participant and pooled in the column, mean ± SD, n = 19",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 10
+      },
+      "value": 68,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 1, column 'Sit-up test', row 'Supine' under Heart rate (bpm); table footnote 'Values are presented as the mean ± SD'",
+        "quote": "Heart rate (bpm) | Supine | 68 ± 8"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "upright rows of Table 1 (sit-up and 70-degree head-up tilt) for systolic and diastolic BP, heart rate, stroke volume, cardiac output and total peripheral resistance, and the upright between-test contrasts (Results)",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "changes from supine to upright and their comparison between tests, with the Bland-Altman bias and limits of agreement for the changes in SBP and DBP (Results; Fig. 1 captions; Fig. 2)",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "supine SBP, DBP and heart rate of the 'Head-up tilt test' column of Table 1 (108 ± 12, 67 ± 7, 67 ± 7): the same 19 people, same arm and window as the sit-up column entered; the paper pools test orders (randomised per participant), so no first-in-session column exists, and entering both would count the same state twice",
+      "missing": {
+        "kind": "source",
+        "name": "same_state_repeated_column"
+      }
+    },
+    {
+      "what": "between-test mean differences in the supine position, from the post-hoc paired tests (Results: SBP, DBP, HR, SV, CO and TPR); the two columns are one arm to the model, so the contrast cannot be a difference between two arms",
+      "missing": {
+        "kind": "operator",
+        "name": "post_hoc_mean_difference"
+      }
+    },
+    {
+      "what": "Pearson correlations between the changes in SBP and DBP and the changes in HR, SV, CO and TPR, each test (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "correlation_of_changes"
+      }
+    },
+    {
+      "what": "stroke volume, cardiac output and total peripheral resistance, supine rows (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "central_haemodynamics"
+      }
+    },
+    {
+      "what": "spread of age and BMI of the participants (Results): the ± is not labelled SD or SEM, so the mean is entered and no sd",
+      "missing": {
+        "kind": "source",
+        "name": "unlabelled_uncertainty"
+      }
+    },
+    {
+      "what": "Supplementary Fig. 1 (example responses) and Supplementary Fig. 2A to 2C (changes in DBP, CO and TPR), figures only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
