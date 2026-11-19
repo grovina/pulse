@@ -163,7 +163,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
         "nmol/l": (362.46 / 10000.0, 0.0),
     },
     "acth": {"pg/ml": (1.0, 0.0), "ng/l": (1.0, 0.0), "pmol/l": (_pg_ml_per_pmol_l(4541.0), 0.0)},
-    "hr": {"bpm": (1.0, 0.0), "beats/min": (1.0, 0.0), "/min": (1.0, 0.0), "1/min": (1.0, 0.0)},
+    "hr": {"bpm": (1.0, 0.0), "beats/min": (1.0, 0.0), "b/min": (1.0, 0.0), "beats/minute": (1.0, 0.0), "/min": (1.0, 0.0), "1/min": (1.0, 0.0)},
     "hrv": {"ms": (1.0, 0.0), "s": (1000.0, 0.0)},
     "sbp": {"mmhg": (1.0, 0.0), "mm/hg": (1.0, 0.0), "kpa": (7.50062, 0.0)},  # some papers print mm/Hg
     "dbp": {"mmhg": (1.0, 0.0), "mm/hg": (1.0, 0.0), "kpa": (7.50062, 0.0)},  # some papers print mm/Hg

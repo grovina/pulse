@@ -759,7 +759,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `glp1` | GLP-1 | pmol/L | 2 to 100 | pmol/l (x1), pg/ml (x0.303242), ng/l (x0.303242), ng/ml (x303.242), ug/l (x303.242), nmol/l (x1000) |
 | `cortisol` | Cortisol | μg/dL | 1 to 40 | ug/dl (x1), ug/l (x0.1), ng/ml (x0.1), nmol/l (x0.036246) |
 | `acth` | ACTH | pg/mL | 5 to 120 | pg/ml (x1), ng/l (x1), pmol/l (x4.541) |
-| `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), /min (x1), 1/min (x1) |
+| `hr` | Heart Rate | bpm | 30 to 220 | bpm (x1), beats/min (x1), b/min (x1), beats/minute (x1), /min (x1), 1/min (x1) |
 | `hrv` | HRV (RMSSD) | ms | 0 to 300 | ms (x1), s (x1000) |
 | `sbp` | Systolic BP | mmHg | 60 to 250 | mmhg (x1), mm/hg (x1), kpa (x7.50062) |
 | `dbp` | Diastolic BP | mmHg | 30 to 150 | mmhg (x1), mm/hg (x1), kpa (x7.50062) |
