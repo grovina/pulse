@@ -53,6 +53,19 @@
         "duration_min",
         "prefast_hours"
       ]
+    },
+    {
+      "name": "nbw_fast_34h_calorimetry",
+      "description": "Fasting study, same setup as nbw_fast_36h (standardized meal 19:30 on arrival, then fasted, water ad libitum, nothing else eaten), at the indirect calorimetry: 30 min of calorimetry (Methods) whose values the Table 1 footnote says 'were obtained after 34 h fasting' (the Methods say 'after 31 h and 34 h of fasting'; the footnote's 34 h is followed, as it is the one tied to the table). The calorimetry is taken to end at 34 h of fasting, so it starts at 33.5 h: prefast_hours 33.5 (derived), start_hour 19.5 + 33.5 - 24 - 24 = 5.0 from the 19:30 meal (assumed; the paper prints no clock time for the calorimetry). The 36 h biopsies are later (07:00-07:30 the next morning) and not part of this arm. Two 10-min ergometer sessions on day 1 are not entered (no intensity or clock time). No meals.",
+      "duration_min": 30,
+      "start_hour": 5.0,
+      "meals": [],
+      "prefast_hours": 33.5,
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "prefast_hours"
+      ]
     }
   ],
   "findings": [
@@ -199,6 +212,54 @@
         "where": "Table 1, row 'FFA (μmol l−1)a', column NBW (n = 8), Fasting; n = 6 from footnote a",
         "quote": "FFA (μmol l−1)a | 556 ± 213**"
       }
+    },
+    {
+      "id": "nbw_fast34_rq",
+      "description": "Respiratory quotient (CO2 expired / O2 consumed) over the 30 min of indirect calorimetry after 34 h of fasting, NBW men, mean and SD; footnote a: data from 6 of the 8 NBW men only",
+      "marker": "rq",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_fast_34h_calorimetry"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 0.76,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.03,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 1, row 'RQa', column NBW (n = 8), Fasting; n = 6 from footnote a",
+        "quote": "RQa | 0.78 ± 0.02** | 0.85 ± 0.02 | 0.76 ± 0.03*"
+      }
+    },
+    {
+      "id": "nbw_fast34_ee",
+      "description": "Energy expenditure (kcal/24 h, from the 30 min of indirect calorimetry) after 34 h of fasting, NBW men, mean and SD; footnote a: data from 6 of the 8 NBW men only",
+      "marker": "energy_expenditure",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "nbw_fast_34h_calorimetry"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 1642.0,
+      "unit": "kcal/24h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 195.0,
+        "n": 6
+      },
+      "location": {
+        "where": "Table 1, row 'EE (kcal/24 h)a', column NBW (n = 8), Fasting; n = 6 from footnote a",
+        "quote": "EE (kcal/24 h)a | 1411 ± 83 | 1550 ± 137* | 1562 ± 182 | 1642 ± 195"
+      }
     }
   ],
   "left_out": [
@@ -231,7 +292,7 @@
       }
     },
     {
-      "what": "Energy expenditure, respiratory quotient, glucose and fat oxidation (Table 1; footnote a: 6 NBW men): the control values were measured 'at baseline' with no fasting hours or clock time printed; the fasting-study values 'after 34 h of fasting' in a 30 min indirect calorimetry (the Methods say 'after 31 h and 34 h of fasting'), clock time not printed",
+      "what": "Control-study energy expenditure and respiratory quotient (NBW 1562 +/- 182 kcal/24 h, 0.85 +/- 0.02), glucose and fat oxidation, and the fasting-study glucose and fat oxidation (Table 1; footnote a: 6 NBW men): the control values were measured 'at baseline' with no fasting hours or clock time printed (a meal-dependent RQ); glucose and fat oxidation (mg/min) are markers the model lacks under a name in use. The fasting-study EE and RQ are entered on nbw_fast_34h_calorimetry",
       "missing": {
         "kind": "source",
         "name": "time_not_printed"
