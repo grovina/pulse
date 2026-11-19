@@ -1,0 +1,351 @@
+{
+  "paper": "ekici-2024",
+  "citation": {
+    "authors": "Ekici M, et al.",
+    "title": "Evaluation of Exposure to Bisphenol Analogs through Canned and Ready-to-Eat Meal Consumption and Their Possible Effects on Blood Pressure and Heart Rate",
+    "journal": "Nutrients",
+    "year": 2024,
+    "doi": "10.3390/nu16142275",
+    "pmid": "39064718",
+    "pmcid": "PMC11279681"
+  },
+  "population": {
+    "n": 48,
+    "sex": "mixed",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "48 healthy university students (24 male, 24 female), randomised to three meal groups of 16 (8 M, 8 F each); inclusion aged 18-30 y, BMI 18.5-24.9 kg/m2, normotensive, no diagnosed chronic illness; excluded: medication, hypertension, pregnancy or lactation, menstrual period (Methods). The paper calls them healthy and screened for chronic illness, normotension and medication; no glucose test was reported. Age and BMI per group (Table 1: means and SDs) are in each protocol; no pooled age or BMI is printed."
+  },
+  "protocols": [
+    {
+      "name": "pre_meal_canned",
+      "description": "Morning of the study visit, before the group's meal: fasted overnight (paper: 'at least 8 h overnight fasting' and no food or drink except water after 10:00 p.m.; the meal is at 10:00 a.m., so a participant who stopped at 22:00 had fasted 12 h at the meal). The arm starts at 09:30 (assumed; the paper gives no arrival or seating time, only the 10:00 meal), so prefast_hours is 11.5 (22:00 to 09:30; the paper's 'at least 8 h' is a lower bound, not a value, and 22:00 is a latest time, so 11.5 h is assumed), seated at rest. Sample = mean of two readings (paper: seated 'at least 10 min', first reading, then 'another 10 min', second; the two are averaged), modelled as the mean over minutes 10 to 20 of the arm (readings at 10 and 20 min; the paper gives 'at least 10 min' seated before the first reading, so these minutes and the 21-minute arm are assumed). The canned meal (bean pilaki, stuffed grape leaves, corn, chicken, tomato; Table 2) (given at 10:00, paper's Methods) is after the sample and is not entered; the arm ends at minute 20. Age and BMI are this group's own Table 1 means and SDs (n = 16, 8 M and 8 F). Seated posture.",
+      "duration_min": 21,
+      "start_hour": 9.5,
+      "prefast_hours": 11.5,
+      "meals": [],
+      "population": {
+        "age_years": {
+          "mean": 21.75,
+          "sd": 1.06,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.753,
+          "sd": 2.211,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "pre_meal_ready_to_eat",
+      "description": "Morning of the study visit, before the group's meal: fasted overnight (paper: 'at least 8 h overnight fasting' and no food or drink except water after 10:00 p.m.; the meal is at 10:00 a.m., so a participant who stopped at 22:00 had fasted 12 h at the meal). The arm starts at 09:30 (assumed; the paper gives no arrival or seating time, only the 10:00 meal), so prefast_hours is 11.5 (22:00 to 09:30; the paper's 'at least 8 h' is a lower bound, not a value, and 22:00 is a latest time, so 11.5 h is assumed), seated at rest. Sample = mean of two readings (paper: seated 'at least 10 min', first reading, then 'another 10 min', second; the two are averaged), modelled as the mean over minutes 10 to 20 of the arm (readings at 10 and 20 min; the paper gives 'at least 10 min' seated before the first reading, so these minutes and the 21-minute arm are assumed). The plastic-packaged ready-to-eat meal (same foods; Table 2) (given at 10:00, paper's Methods) is after the sample and is not entered; the arm ends at minute 20. Age and BMI are this group's own Table 1 means and SDs (n = 16, 8 M and 8 F). Seated posture.",
+      "duration_min": 21,
+      "start_hour": 9.5,
+      "prefast_hours": 11.5,
+      "meals": [],
+      "population": {
+        "age_years": {
+          "mean": 22.313,
+          "sd": 1.138,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.733,
+          "sd": 2.021,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "pre_meal_fresh",
+      "description": "Morning of the study visit, before the group's meal: fasted overnight (paper: 'at least 8 h overnight fasting' and no food or drink except water after 10:00 p.m.; the meal is at 10:00 a.m., so a participant who stopped at 22:00 had fasted 12 h at the meal). The arm starts at 09:30 (assumed; the paper gives no arrival or seating time, only the 10:00 meal), so prefast_hours is 11.5 (22:00 to 09:30; the paper's 'at least 8 h' is a lower bound, not a value, and 22:00 is a latest time, so 11.5 h is assumed), seated at rest. Sample = mean of two readings (paper: seated 'at least 10 min', first reading, then 'another 10 min', second; the two are averaged), modelled as the mean over minutes 10 to 20 of the arm (readings at 10 and 20 min; the paper gives 'at least 10 min' seated before the first reading, so these minutes and the 21-minute arm are assumed). The fresh meal (same foods, prepared in the lab; Table 2) (given at 10:00, paper's Methods) is after the sample and is not entered; the arm ends at minute 20. Age and BMI are this group's own Table 1 means and SDs (n = 16, 8 M and 8 F). Seated posture.",
+      "duration_min": 21,
+      "start_hour": 9.5,
+      "prefast_hours": 11.5,
+      "meals": [],
+      "population": {
+        "age_years": {
+          "mean": 22.813,
+          "sd": 0.834,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 21.982,
+          "sd": 2.242,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "canned_sbp_baseline",
+      "description": "Systolic blood pressure before the canned meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_canned"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 106.969,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.231,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour SBP I (mmHg)', Table 4 rows, Canned Meal Group a columns Mean and SD",
+        "quote": "0th hour SBP I (mmHg) | 106.969 | 9.231"
+      }
+    },
+    {
+      "id": "canned_dbp_baseline",
+      "description": "Diastolic blood pressure before the canned meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_canned"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 76.125,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.375,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour DBP I (mmHg)', Table 4 rows, Canned Meal Group a columns Mean and SD",
+        "quote": "0th hour DBP I (mmHg) | 76.125 | 9.375"
+      }
+    },
+    {
+      "id": "canned_hr_baseline",
+      "description": "Heart rate before the canned meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_canned"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 85.688,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.389,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour HR I (bpm)', Table 4 rows, Canned Meal Group a columns Mean and SD",
+        "quote": "0th hour HR I (bpm) | 85.688 | 12.389"
+      }
+    },
+    {
+      "id": "ready_to_eat_sbp_baseline",
+      "description": "Systolic blood pressure before the ready-to-eat meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_ready_to_eat"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 104.313,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.274,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour SBP I (mmHg)', Table 4 rows, Ready-to-Eat Meal Group b columns Mean and SD",
+        "quote": "0th hour SBP I (mmHg) | 104.313 | 10.274"
+      }
+    },
+    {
+      "id": "ready_to_eat_dbp_baseline",
+      "description": "Diastolic blood pressure before the ready-to-eat meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_ready_to_eat"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 76.25,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 9.918,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour DBP I (mmHg)', Table 4 rows, Ready-to-Eat Meal Group b columns Mean and SD",
+        "quote": "0th hour DBP I (mmHg) | 76.250 | 9.918"
+      }
+    },
+    {
+      "id": "ready_to_eat_hr_baseline",
+      "description": "Heart rate before the ready-to-eat meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_ready_to_eat"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 88.125,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 12.425,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour HR I (bpm)', Table 4 rows, Ready-to-Eat Meal Group b columns Mean and SD",
+        "quote": "0th hour HR I (bpm) | 88.125 | 12.425"
+      }
+    },
+    {
+      "id": "fresh_sbp_baseline",
+      "description": "Systolic blood pressure before the fresh meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_fresh"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 102.625,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.564,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour SBP I (mmHg)', Table 4 rows, Fresh Meal Group c columns Mean and SD",
+        "quote": "0th hour SBP I (mmHg) | 102.625 | 7.564"
+      }
+    },
+    {
+      "id": "fresh_dbp_baseline",
+      "description": "Diastolic blood pressure before the fresh meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_fresh"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 70.625,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.336,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour DBP I (mmHg)', Table 4 rows, Fresh Meal Group c columns Mean and SD",
+        "quote": "0th hour DBP I (mmHg) | 70.625 | 7.336"
+      }
+    },
+    {
+      "id": "fresh_hr_baseline",
+      "description": "Heart rate before the fresh meal (0th hour, Table 4): mean of the two seated readings, as the mean over the arm's minutes 10 to 20",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_meal_fresh"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 21
+      },
+      "value": 80.625,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.316,
+        "n": 16
+      },
+      "location": {
+        "where": "Table 4, row '0th hour HR I (bpm)', Table 4 rows, Fresh Meal Group c columns Mean and SD",
+        "quote": "0th hour HR I (bpm) | 80.625 | 13.316"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "SBP, DBP and HR at 2, 4 and 6 h after the meal, all three groups (Table 4, 2nd, 4th and 6th hour rows): the meals' grams of carbohydrate, fat and protein are not printed (Table 2 gives food masses and bisphenol concentrations only)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "pulse pressure (SBP minus DBP) at 0, 2, 4 and 6 h, all groups (Table 4, PP rows)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_pressure"
+      }
+    },
+    {
+      "what": "urinary BPA, BPS and BPF at 0, 2, 4 and 6 h, all groups, in ug/g creatinine (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "urinary_bisphenols"
+      }
+    },
+    {
+      "what": "bisphenol A, S and F in each meal, ng/g (Table 2): the bisphenol dose the groups received",
+      "missing": {
+        "kind": "input",
+        "name": "bisphenol_exposure"
+      }
+    }
+  ]
+}
