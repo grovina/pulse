@@ -144,6 +144,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 |---|---|---|---|
 | `trainer-42rqr` | 118, no teacher, gut reads meal details | 2026-11-16 | stopped by its 24 h deadline after epoch 26 of 28 (23 h 30 min), from the corpus of 2026-11-16 with the fasting and clamp topics: `--meal-details`, warm start; output `training/jobs/iter118-meals/` |
 | `trainer-ss2p8` | 118, no teacher | 2026-11-16 | finished in 18 h 23 min, the same run without `--meal-details`; output `training/jobs/iter118-base/` |
+| `trainer-c7m8g` | 119, no teacher, insulin follows absorbed nutrients | 2026-11-19 | running, launched 19:08 UTC on image `7c781a5` with a 24 h deadline, warm start from `iter118-base` (the four new islet gains start at their defaults), the corpus of 2026-11-19 with every topic read; output `training/jobs/iter119-insulin/` |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
