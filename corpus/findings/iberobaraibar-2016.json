@@ -1,0 +1,287 @@
+{
+  "paper": "iberobaraibar-2016",
+  "citation": {
+    "authors": "Ibero-Baraibar I, Suárez M, Arola-Arnal A, Zulet MA, Martínez JA",
+    "title": "Cocoa extract intake for 4 weeks reduces postprandial systolic blood pressure response of obese subjects, even after following an energy-restricted diet",
+    "journal": "Food & Nutrition Research",
+    "year": 2016,
+    "doi": "10.3402/fnr.v60.30449",
+    "pmid": "27037002",
+    "pmcid": "PMC4818356"
+  },
+  "population": {
+    "n": 12,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 57.0,
+      "sd": 4.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 30.2,
+      "sd": 2.2,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "The control group of the substudy: 12 overweight/obese middle-aged volunteers (6 men, 6 women), age and BMI as printed for this group in Table 1 (age 57 (4.9) y, BMI 30.2 (2.2) kg/m2). Enrolment: age 50 to 80 y, BMI 27.0 to 35.5 kg/m2, stable weight; diabetes, gastrointestinal, hepatic, inflammatory disease, cancer, smoking and blood pressure, lipid or weight-loss treatment excluded. No glucose test is reported, so unselected. The cocoa group is not entered."
+  },
+  "protocols": [
+    {
+      "name": "fasted_morning",
+      "description": "The fasted morning of day 1 for the Table 1 baseline values, after the stated 10-h overnight fast, nothing eaten; the table does not say on which occasion it was drawn, so a 30-min run-in with the value read at minutes 29-30 is assumed. The 3 days of low-polyphenol diet before are not entered.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min"
+      ]
+    },
+    {
+      "name": "control_day1",
+      "description": "Postprandial 1 (day 1 of the 4-week intervention), control group: after a 10-h overnight fast (stated), a test meal without cocoa extract at minute 0 (courgette cream 300 g and chocolate custard 150 g; whole meal 365 kcal: carbohydrate 34.2 g, lipid 20.9 g, protein 8.9 g, fibre 4.9 g as printed for the meal, which the paper gives for the cocoa-containing meal; the 1.4 g extract is the only stated difference). Samples and blood pressure at 0, 60, 120, 180 min. The 3 days of low-polyphenol diet before the study (fruit and vegetables restricted, no cocoa, coffee, tea, juice, alcohol) change neither energy nor macronutrients as printed and are not entered; the clock time is not printed.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 34.2,
+          "fat_g": 20.9,
+          "protein_g": 8.9,
+          "fibre_g": 4.9,
+          "food": "courgette cream and chocolate custard"
+        }
+      ],
+      "assumed": [
+        "start_hour"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "baseline_glucose",
+      "description": "Fasting plasma glucose at baseline (Table 1), control group; the table does not say on which occasion it was drawn, taken as the fasted morning",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 96.2,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.6,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Baseline column, Control (n=12)",
+        "quote": "Glucose (mg/dL) | 96.2 (8.6) | 99.1 (7.0)"
+      }
+    },
+    {
+      "id": "baseline_insulin",
+      "description": "Fasting insulin at baseline (Table 1), control group; occasion as for glucose",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.6,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.1,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Baseline column, Control (n=12)",
+        "quote": "Insulin (µU/mL) | 7.6 (5.1) | 9.2 (7.4)"
+      }
+    },
+    {
+      "id": "baseline_sbp",
+      "description": "Systolic blood pressure at baseline (Table 1), control group; occasion as for glucose (blood pressure in the study was taken seated)",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 116.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.4,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Baseline column, Control (n=12)",
+        "quote": "SBP (mmHg) | 116 (14.4) | 122 (16.5)"
+      }
+    },
+    {
+      "id": "baseline_dbp",
+      "description": "Diastolic blood pressure at baseline (Table 1), control group; occasion as for glucose (seated)",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 76.0,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.9,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, Baseline column, Control (n=12)",
+        "quote": "DBP (mmHg) | 76 (8.9) | 80 (7.1)"
+      }
+    },
+    {
+      "id": "glucose_auc_0_180",
+      "description": "Area under the glucose curve 0-180 min after the test meal, Postprandial 1, control; trapezoid on the 4 samples, per hour then summed (Methods), total area, unadjusted mean (SD)",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_day1"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180
+      ],
+      "value": 286.9,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 43.5,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, Postprandial 1 (day 1), Control (n=12) column",
+        "quote": "Glucose (mg·h/dL) | 286.9 (43.5) | 314.8 (29.1)"
+      }
+    },
+    {
+      "id": "sbp_auc_0_180",
+      "description": "Area under the systolic pressure curve 0-180 min after the test meal, Postprandial 1, control; trapezoid on the 4 readings, unadjusted mean (SD)",
+      "marker": "sbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_day1"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180
+      ],
+      "value": 338.0,
+      "unit": "mmHg",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 31.0,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, Postprandial 1 (day 1), Control (n=12) column",
+        "quote": "SBP (mmHg·h) | 338.0 (31.0) | 376.0 (46.6)"
+      }
+    },
+    {
+      "id": "dbp_auc_0_180",
+      "description": "Area under the diastolic pressure curve 0-180 min after the test meal, Postprandial 1, control; trapezoid on the 4 readings, unadjusted mean (SD)",
+      "marker": "dbp",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "control_day1"
+      ],
+      "times": [
+        0,
+        60,
+        120,
+        180
+      ],
+      "value": 226.0,
+      "unit": "mmHg",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 19.8,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2, Postprandial 1 (day 1), Control (n=12) column",
+        "quote": "DBP (mmHg·h) | 226.0 (19.8) | 240.0 (22.8)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "the cocoa group (n=11): every value, which follows a test meal with 1.4 g cocoa extract (415 mg flavanols); Tables 1, 2, 3 and Figure 2",
+      "missing": {
+        "kind": "input",
+        "name": "cocoa_flavanol"
+      }
+    },
+    {
+      "what": "Postprandial 2 (day 28) values of the control group, Table 2: after 4 weeks of a 15% energy-restricted diet whose meals are not printed in grams, and 3 days of prescribed test meals before",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "insulin area under the curve, Postprandial 1 control (Table 2), printed in µU·h/dL; the area divided by 3 h is 0.25 µU/mL against a fasting 7.6 µU/mL, so the unit is a misprint",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "total cholesterol and HDL cholesterol at baseline and their areas (Tables 1 and 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "cocoa-derived metabolites in plasma (Table 3), measured in the cocoa group on day 1 and not in the control group",
+      "missing": {
+        "kind": "marker",
+        "name": "plasma_flavanol_metabolites"
+      }
+    },
+    {
+      "what": "systolic pressure curve at 0, 60, 120, 180 min (Figure 2) and the group difference at 120 min (p = 0.018); means in the figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
