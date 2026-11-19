@@ -16,12 +16,12 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Parameters | 37,287 at the default widths |
 | Published numbers | 43 in 10 tables, each learned from its published value |
 | Corrections | 3 |
-| Cohort specs | 1112 authored, 139 of them curves; 1186 training points and 323 held-out points |
+| Cohort specs | 1114 authored, 139 of them curves; 1188 training points and 323 held-out points |
 | Rules | 62 training, 0 held out |
 | Coupling priors | 32 |
-| Papers | 199, of which 30 are sealed |
+| Papers | 200, of which 30 are sealed |
 | Held-out items | 5 |
-| Corpus files | 131 papers as findings, 54 as refusals, 6 queued to be read |
+| Corpus files | 132 papers as findings, 54 as refusals, 5 queued to be read |
 | Queue | 23 (15 integrated, 7 blocked, 1 backlog, 0 ready) in the older Python queue |
 
 ## The model

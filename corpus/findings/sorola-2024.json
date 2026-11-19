@@ -1,0 +1,146 @@
+{
+  "paper": "sorola-2024",
+  "citation": {
+    "authors": "Sorola S, Hyrylä V, Eronen T, Kupari S, Venojärvi M, Tikkanen H, Tarvainen M, Lindholm H",
+    "title": "Orthostatic test shows higher systolic blood pressure and sympathetic response in uncomplicated type 1 diabetes patients with normal V̇O2max vs. healthy controls",
+    "journal": "Clinical Autonomic Research",
+    "year": 2024,
+    "doi": "10.1007/s10286-024-01094-5",
+    "pmid": "39681809",
+    "pmcid": "PMC12137366"
+  },
+  "population": {
+    "n": 31,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 33.0,
+      "sd": 7.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.2,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Healthy control group (CON) of the study, n = 31 (15 women, 16 men). The paper calls them healthy controls: no diagnosed chronic illness, no cardiovascular medication, not smoking, and no known coronary disease (Methods, 'Study participants'). Age 33 +/- 7 years and BMI 24.2 +/- 3.1 kg/m2 are the CON column of Table 1 (mean +/- SD); the paper prints no minimum or maximum, so they are null. The type 1 diabetes group is not used. Control V̇O2max is 40.2 +/- 7.6 mL/min/kg (Table 1), a fitness descriptor of the group, not a finding; the groups were matched for it."
+  },
+  "protocols": [
+    {
+      "name": "supine_rest",
+      "description": "Healthy controls lying supine for the 5-min supine rest of the passive orthostatic test, before the 5-s table tilt to 70 degrees. The blood pressure is read at the end of the rest, just before the tilt (Methods, 'Experimental protocol'), so it is minute 5 of the arm: duration_min 6 = the 5-min rest plus the state at minute 5. The rest is preceded by a 5-min seated rest and a 1-min paced deep-breathing test ending 30 to 60 s before the supine rest; neither is modelled. Fed state: the paper says only that participants were to 'consume a normal breakfast and a small lunch if necessary', with tests between 7 AM and 2 PM; the breakfast time and contents are not printed, so no meal is entered and the arm starts from typical values (norm_center). Clock hour not printed; 8.0 assumed.",
+      "duration_min": 6,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "init"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_supine_sbp",
+      "description": "Systolic BP of the healthy controls at the end of the 5-min supine rest, before the tilt (one reading at minute 5 of the arm; window is that minute). Mean +/- SD, n = 31. Control column only.",
+      "marker": "sbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 6
+      },
+      "value": 122.4,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.8,
+        "n": 31
+      },
+      "location": {
+        "where": "Table 4, column CON (n = 31), block 'Supine', SBP row; table footnote: 'Values are presented as mean ± SD'",
+        "quote": "SBP | 122.4 ± 10.8"
+      }
+    },
+    {
+      "id": "control_supine_dbp",
+      "description": "Diastolic BP of the healthy controls at the end of the 5-min supine rest, before the tilt (one reading at minute 5 of the arm; window is that minute). Mean +/- SD, n = 31. Control column only.",
+      "marker": "dbp",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "supine_rest"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 6
+      },
+      "value": 71.4,
+      "unit": "mmHg",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.4,
+        "n": 31
+      },
+      "location": {
+        "where": "Table 4, column CON (n = 31), block 'Supine', DBP row; table footnote: 'Values are presented as mean ± SD'",
+        "quote": "DBP | 71.4 ± 7.4"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "heart rate at supine rest, control column (Table 3, first HR row; the deep-breathing HR row of Table 2 likewise): printed as median (25th; 75th) only, with no mean or SD",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "RR interval, RMSSD, SDNN, SD1, SD2, SD2/SD1, PNS index, EDR and E/I ratio, control column, deep-breathing and orthostatic tests (Tables 2 and 3): medians with 25th and 75th percentiles only",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "mean arterial pressure at supine rest, control column (Table 4, MAP row)",
+      "missing": {
+        "kind": "marker",
+        "name": "mean_arterial_pressure"
+      }
+    },
+    {
+      "what": "systolic, diastolic and mean arterial pressure at 1, 3 and 5 min after the 5-s tilt to 70 degrees, control column (Table 4, upright blocks), and the within-group changes from supine (Table 4, control 'Difference' columns); upright HR and HRV rows of Table 3 likewise",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "all type 1 diabetes group rows (n = 14) of Tables 1 to 4, and every between-group difference (Table 4 'Between group' column; Table 3; Table 2): a patient group the model cannot express",
+      "missing": {
+        "kind": "population",
+        "name": "type_1_diabetes"
+      }
+    },
+    {
+      "what": "HbA1c in mmol/mol and in %, control column (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "Figure 2 (HRV, HR and SBP, supine and upright, both groups): values in the figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
