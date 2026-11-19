@@ -1,0 +1,33 @@
+{
+  "paper": "gonzalezhermosillo-2023",
+  "citation": {
+    "authors": "González-Hermosillo G JA, Galarza EJ, Fermín OV, González JMN, Tostado LMFÁ, Lozano MAE, Ruíz Rabasa C, Martínez Alvarado MR",
+    "title": "Exaggerated blood pressure elevation in response to orthostatic challenge, a post-acute sequelae of SARS-CoV-2 infection (PASC) after hospitalization",
+    "journal": "Autonomic Neuroscience",
+    "year": 2023,
+    "doi": "10.1016/j.autneu.2023.103094",
+    "pmid": "37137186",
+    "pmcid": "PMC10121145"
+  },
+  "reported": [
+    {
+      "what": "supine systolic blood pressure of the historical healthy controls, n=32, mean ± SD (Table 1); the PASC column reads 109 ± 12, p = 0.279",
+      "location": {
+        "where": "Table 1, row 'Supine systolic blood pressure (mmHg)', column 'Healthy Controls (n = 32)'",
+        "quote": "Supine systolic blood pressure (mmHg) | 113 ± 13"
+      }
+    },
+    {
+      "what": "supine diastolic blood pressure of the historical healthy controls, n=32, mean ± SD (Table 1)",
+      "location": {
+        "where": "Table 1, row 'Supine diastolic blood pressure (mmHg)', column 'Healthy Controls (n = 32)'",
+        "quote": "Supine diastolic blood pressure (mmHg) | 75.1 ± 13"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The only enterable-looking numbers are the supine SBP and DBP of 32 historical healthy controls (Table 1). Section 2.2 describes the 30 min supine rest with baseline over its last 5 min, but in the context of the PASC patients (10.8 months from symptom onset, none on medication). For the controls the paper says only that they were 'historical healthy control subjects without COVID-19 submitted to HUTT' and cites an earlier paper; it does not print their rest duration, posture timing, fasting or meal state, so the supine values cannot be placed at a minute or a state. The PASC patients (n = 23; 109 ± 12 and 72.6 ± 8.5 mmHg) are a post-COVID population the model cannot express, and the EOPR/OHT split is by the tilt response itself; BP during the 70 degree tilt is an input (posture) the model lacks. Supine heart rate is a median (IQR), 66 (61-74)."
+}
