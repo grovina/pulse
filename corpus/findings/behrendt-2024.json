@@ -330,6 +330,112 @@
         "where": "Table 4, row NOR, columns Post 0, Post 10",
         "quote": "NOR | 0.40 ± 0.25 | 0.74 ± 0.37 | 0.43 ± 0.21"
       }
+    },
+    {
+      "id": "spo2_curve",
+      "description": "Peripheral oxygen saturation (fingertip pulse oximeter), NOR condition, at 4, 8, ... 40 min of the 40-min bout (P4 to P40), i.e. arm minutes 9 to 45 (bout starts at minute 5); the seated BSL value (96.6 +/- 0.9) is not entered, as for heart rate. n 14: the SpO2 ANOVA dfs of Table 3 (F20,260; F2,26) imply 14 people, as for heart rate",
+      "marker": "spo2",
+      "statistic": "curve",
+      "protocols": [
+        "nor_cycling_60pct"
+      ],
+      "unit": "%",
+      "points": [
+        {
+          "t_min": 9,
+          "value": 95.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.2,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 13,
+          "value": 94.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.0,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 17,
+          "value": 94.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.9,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 21,
+          "value": 93.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 25,
+          "value": 93.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 29,
+          "value": 93.6,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.1,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 33,
+          "value": 94.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 37,
+          "value": 93.5,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.9,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 41,
+          "value": 93.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.7,
+            "n": 14
+          }
+        },
+        {
+          "t_min": 45,
+          "value": 93.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.2,
+            "n": 14
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, SpO2 [%], row NOR, columns P4 to P40",
+        "quote": "NOR | 96.6 ± 0.9 | 95.2 ± 1.2 | 94.4 ± 1.0 | 94.6 ± 0.9 | 93.9 ± 1.4 | 93.9 ± 1.4 | 93.6 ± 1.1 | 94.1 ± 1.4 | 93.5 ± 0.9 | 93.9 ± 1.7 | 93.7 ± 1.2"
+      }
     }
   ],
   "left_out": [
@@ -362,7 +468,7 @@
       }
     },
     {
-      "what": "Seated baseline heart rate, NOR (Table 3, BSL, 60 s 'immediately before exercise'): sits at the arm start, and the paper states no run-in or whether it precedes the warm-up",
+      "what": "Seated baseline heart rate and SpO2, NOR (Table 3, BSL, 60 s 'immediately before exercise'): sits at the arm start, and the paper states no run-in or whether it precedes the warm-up",
       "missing": {
         "kind": "source",
         "name": "time_not_printed"
