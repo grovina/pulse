@@ -312,6 +312,54 @@
       }
     },
     {
+      "id": "con_spo2_set1",
+      "description": "Arterial oxygen saturation by finger pulse oximeter (PULSOX-Me300), control condition, mean over set 1 (sprints and 40-s recoveries; monitored every second)",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 43,
+        "end_min": 45
+      },
+      "value": 92.6,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, SpO2 (%), row CON, Set 1; values are means ± SE (95% CI)",
+        "quote": "CON | 92.6 ± 1.2 (90.2–94.9)"
+      }
+    },
+    {
+      "id": "con_spo2_set2",
+      "description": "Arterial oxygen saturation by finger pulse oximeter (PULSOX-Me300), control condition, mean over set 2 (sprints and 40-s recoveries; monitored every second)",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "con_repeated_sprints"
+      ],
+      "window": {
+        "start_min": 55,
+        "end_min": 57
+      },
+      "value": 90.6,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.2,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 1, SpO2 (%), row CON, Set 2; values are means ± SE (95% CI)",
+        "quote": "CON | 90.6 ± 2.2 (86.3–94.8)"
+      }
+    },
+    {
       "id": "con_vco2_set1",
       "description": "CO2 output, control condition, mean over set 1 (sprints and 40-s recoveries, breath by breath)",
       "marker": "vco2",
@@ -421,7 +469,7 @@
       }
     },
     {
-      "what": "arterial oxygen saturation per set, control row (Table 1): 92.6 ± 1.2, 90.6 ± 2.2, 92.2 ± 4.3 printed, the last SE out of line with the others; not entered",
+      "what": "arterial oxygen saturation, control, Set 3 (Table 1): 92.2 ± 4.3 (95% CI 89.6–94.9) printed; the SE is out of line with its own CI (the table's CIs are about +/- 2 SE, which gives about 1.3), so the uncertainty is not settled; sets 1 and 2 (CIs consistent with their SEs) are entered. The Average column is also not entered (a mean of sets)",
       "missing": {
         "kind": "source",
         "name": "table_ambiguous"
