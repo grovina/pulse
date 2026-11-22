@@ -1,0 +1,334 @@
+{
+  "paper": "polidori-2013",
+  "citation": {
+    "authors": "Polidori D, Sha S, Mudaliar S, Ciaraldi TP, Ghosh A, Vaccaro N, Farrell K, Rothenberg P, Henry RR",
+    "title": "Canagliflozin Lowers Postprandial Glucose and Insulin by Delaying Intestinal Glucose Absorption in Addition to Increasing Urinary Glucose Excretion",
+    "journal": "Diabetes Care",
+    "year": 2013,
+    "doi": "10.2337/dc12-2391",
+    "pmid": "23412078",
+    "pmcid": "PMC3714520"
+  },
+  "population": {
+    "n": 19,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Healthy men: 20 enrolled, 19 completed both treatment periods, 1 withdrawn for noncompliance with study prohibitions (Results, first paragraph); fasting plasma glucose below 6.1 mmol/L at screening. n = 19 is the completers: the paper prints no n beside the areas ('Unless otherwise specified, all results shown are mean +/- SD'; the Abstract says 'in 20 healthy subjects'), so a placebo value from the withdrawn subject cannot be ruled out. Enrolment criteria (aged 18-45, BMI 20-27 kg/m2, weight at least 50 kg) are not observed ranges, so age and BMI are null. Table 1 (demographics) is an image in the XML and was not read."
+  },
+  "protocols": [
+    {
+      "name": "placebo_mmtt",
+      "description": "Matching placebo at arm minute 0 (paper t = -20 min, first blood sample), then a standard 600-kcal mixed-meal tolerance test at arm minute 20 (paper t = 0): liquid part 75 g glucose oral solution with 75 uCi 14C-glucose and 960 mg acetaminophen in 30 mL. Grams from the printed 600 kcal at 55% carbohydrate, 30% fat, 15% protein: carbs 600*0.55/4 = 82.5 g, fat 600*0.30/9 = 20.0 g, protein 600*0.15/4 = 22.5 g. Arm minute = paper clock + 20; blood at arm minutes 0,10,20,35,50,60,70,80,95,110,125,140,170,200,230,260,290,320,380 (paper t = -20 to 360 min). Start 08:00 assumed ('morning of day 1'). Fast: 'after an overnight fast of at least 8 h' the 3-h 3H-glucose infusion began (paper t = -180 min), so at the arm start (paper t = -20) the fast was at least 8 h + 2 h 40 min = 10.7 h; prefast_hours 11 is that lower bound rounded up, the paper gives no exact value. Baseline of the areas: 'the positive area above the premeal value', taken as the paper t = 0 sample (arm minute 20), the first of times. Acetaminophen is a gastric-emptying probe given in both arms and not entered; the 3H-glucose tracer is not an input.",
+      "duration_min": 381,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 20,
+          "carbs_g": 82.5,
+          "fat_g": 20.0,
+          "protein_g": 22.5,
+          "food": "600-kcal MMTT: 75 g glucose oral solution with acetaminophen, plus solid food"
+        }
+      ],
+      "prefast_hours": 11,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "placebo_glucose_iauc_0_1h",
+      "description": "Placebo: positive incremental plasma glucose area 0-1 h above the premeal (t = 0) sample, mean (SD) over people; trapezoid on the printed samples at paper t = 0, 15, 30, 40, 50, 60 min",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80
+      ],
+      "below_baseline": "ignored",
+      "value": 3.34,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.43,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (3.34 ± 1.43, 5.61 ± 2.62, and 6.44 ± 2.57 [mmol/L] ⋅ h, respectively)"
+      }
+    },
+    {
+      "id": "placebo_glucose_iauc_0_2h",
+      "description": "Placebo: positive incremental plasma glucose area 0-2 h above the premeal (t = 0) sample, mean (SD); trapezoid on the printed samples at paper t = 0 to 120 min",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80,
+        95,
+        110,
+        125,
+        140
+      ],
+      "below_baseline": "ignored",
+      "value": 5.61,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.62,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (3.34 ± 1.43, 5.61 ± 2.62, and 6.44 ± 2.57 [mmol/L] ⋅ h, respectively)"
+      }
+    },
+    {
+      "id": "placebo_glucose_iauc_0_6h",
+      "description": "Placebo: positive incremental plasma glucose area 0-6 h above the premeal (t = 0) sample, mean (SD); trapezoid on the printed samples at paper t = 0 to 360 min",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80,
+        95,
+        110,
+        125,
+        140,
+        170,
+        200,
+        230,
+        260,
+        290,
+        320,
+        380
+      ],
+      "below_baseline": "ignored",
+      "value": 6.44,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2.57,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (3.34 ± 1.43, 5.61 ± 2.62, and 6.44 ± 2.57 [mmol/L] ⋅ h, respectively)"
+      }
+    },
+    {
+      "id": "placebo_insulin_iauc_0_1h",
+      "description": "Placebo: positive incremental plasma insulin area 0-1 h above the premeal (t = 0) sample, mean (SD); trapezoid on the printed samples at paper t = 0 to 60 min",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80
+      ],
+      "below_baseline": "ignored",
+      "value": 474,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 263,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (474 ± 263, 906 ± 521, and 1,104 ± 624 [pmol/L] ⋅ h, respectively)"
+      }
+    },
+    {
+      "id": "placebo_insulin_iauc_0_2h",
+      "description": "Placebo: positive incremental plasma insulin area 0-2 h above the premeal (t = 0) sample, mean (SD); trapezoid on the printed samples at paper t = 0 to 120 min",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80,
+        95,
+        110,
+        125,
+        140
+      ],
+      "below_baseline": "ignored",
+      "value": 906,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 521,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (474 ± 263, 906 ± 521, and 1,104 ± 624 [pmol/L] ⋅ h, respectively)"
+      }
+    },
+    {
+      "id": "placebo_insulin_iauc_0_6h",
+      "description": "Placebo: positive incremental plasma insulin area 0-6 h above the premeal (t = 0) sample, mean (SD); trapezoid on the printed samples at paper t = 0 to 360 min",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "placebo_mmtt"
+      ],
+      "times": [
+        20,
+        35,
+        50,
+        60,
+        70,
+        80,
+        95,
+        110,
+        125,
+        140,
+        170,
+        200,
+        230,
+        260,
+        290,
+        320,
+        380
+      ],
+      "below_baseline": "ignored",
+      "value": 1104,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 624,
+        "n": 19
+      },
+      "location": {
+        "where": "Results, Postprandial plasma glucose and insulin responses, paragraph 1",
+        "quote": "placebo (474 ± 263, 906 ± 521, and 1,104 ± 624 [pmol/L] ⋅ h, respectively)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Every value in the canagliflozin 300 mg arm and every canagliflozin-minus-placebo or ratio comparison (glucose and insulin areas, RaO, EGP, Rd, UGE, RTG, percent reductions; Results and Figs 1-3)",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "Placebo oral glucose appearance (RaO): AUC RaO 0-1, 0-2 and 0-6 h as geometric means 381, 723 and 1,018 mg/kg (Abstract; no dispersion) and maximum RaO 9.38 mg/kg/min (Results, LS geometric mean, no dispersion); the model has no series for this flux",
+      "missing": {
+        "kind": "marker",
+        "name": "oral_glucose_appearance"
+      }
+    },
+    {
+      "what": "Total oral glucose absorbed over 0-6 h, placebo 79 g (Fig. 2 legend, a calculated mean): no dispersion printed",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "Endogenous glucose production before the meal, placebo: 'approximately 2 mg/kg/min' (Results, Rates of EGP and Rd): an approximate value with no dispersion",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "Plasma acetaminophen AUC 0-2 h, placebo 10.29 ug h/mL (LS geometric mean, no dispersion; Results, Gastric emptying): a gastric-emptying probe, not a marker the model has",
+      "missing": {
+        "kind": "marker",
+        "name": "gastric_emptying_acetaminophen"
+      }
+    },
+    {
+      "what": "Incremental GIP area 0-2 h, placebo 63.5 +/- 20.2 pmol h/L (Results, Gut peptides): the GIP sampling minutes are 'predefined time points' that the paper does not print",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Incremental PYY area 0-2 h, placebo 13.6 +/- 10.8 (Results, Gut peptides): the model has no PYY series; the paper prints no unit and no sampling minutes for it",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "Placebo time courses of plasma glucose, insulin, 14C and 3H tracer, oral RaO, glucose absorption (Fig. 1A-F), UGE, EGP, total and tissue Rd (Fig. 2A-D), and GIP, PYY, total and active GLP-1 (Fig. 3A-D): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Subject demographics (Table 1): an image in the XML, not readable here",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Placebo urinary glucose excretion 0-2 h and 2-6 h: only an upper bound ('less than 0.15 g in each interval', Results, UGE and RTG)",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "Total GLP-1 incremental area 0-2 h, placebo 10.1 +/- 5.38 (Results, Gut peptides): the paper prints no unit for this area and no sampling minutes",
+      "missing": {
+        "kind": "source",
+        "name": "unit_not_printed"
+      }
+    }
+  ]
+}
