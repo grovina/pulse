@@ -1,0 +1,288 @@
+{
+  "paper": "whelehan-2024",
+  "citation": {
+    "authors": "Whelehan G, West S, Abdelrahman DR, Murton AJ, Finnigan TJA, Wall BT, Stephens FB",
+    "title": "The addition of mycoprotein to a mixed-meal impacts postprandial glucose kinetics without altering blood glucose concentrations: a randomised controlled trial",
+    "journal": "European Journal of Clinical Nutrition",
+    "year": 2024,
+    "doi": "10.1038/s41430-024-01470-4",
+    "pmid": "39003347",
+    "pmcid": "PMC11368804"
+  },
+  "population": {
+    "n": 24,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 30.1,
+      "sd": 8.4,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 30.5,
+      "sd": 5.7,
+      "min": 22.2,
+      "max": 38.5
+    },
+    "status": "unselected",
+    "description": "24 adults, 8 women and 16 men (Table 1). Age 30.1 (SD 8.4) y at screening and BMI 30.5 (SD 5.7) kg/m2, both Table 1 mean (SD); BMI range 22.2-38.5 is the observed range printed in the Discussion. The paper never calls the group healthy and reports no glucose test at screening (the Discussion notes the 2 h glucose was below 6 mmol/L in all but one, after recruitment), so status is unselected."
+  },
+  "protocols": [
+    {
+      "name": "fasted_morning",
+      "description": "Overnight fast of 10 h, water only (Methods: arrival at 0700 +/- 1 h following a 10 h overnight fast); a 30-minute arm with no food. Table 1 fasting glucose and insulin are entered as the fasted morning value, read at minutes 29-30; the paper prints no sampling time or visit for Table 1 (its age is 'at screening').",
+      "duration_min": 30,
+      "start_hour": 7.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min"
+      ]
+    },
+    {
+      "name": "control_drink",
+      "description": "250 mL full-fat milk with 50 g dextrose and no mycoprotein (CON), drunk within 5 min at the paper's t = 0, which is arm minute 120; arm minute 0 is the priming dose at t = -120 min. Carbohydrate 74.5 g, protein 17.8 g, fat 11.9 g, fibre 0.2 g as printed in Table 2; carbohydrate is taken as printed and excludes fibre because 4 x 74.5 + 4 x 17.8 + 9 x 11.9 = 476.3 kcal, the printed CON energy. Fat types from Table 2 (7.7 + 3.2 + 1.0 = 11.9 g). Samples t = -30 to 360 min, arm minutes 90 to 480.",
+      "duration_min": 481,
+      "start_hour": 7.0,
+      "meals": [
+        {
+          "t_min": 120,
+          "carbs_g": 74.5,
+          "fat_g": 11.9,
+          "protein_g": 17.8,
+          "fibre_g": 0.2,
+          "fat_g_by_type": {
+            "saturated": 7.7,
+            "monounsaturated": 3.2,
+            "polyunsaturated": 1.0
+          },
+          "form": "liquid",
+          "food": "milk drink with 50 g dextrose"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "mycoprotein_drink",
+      "description": "250 mL full-fat milk with 50 g dextrose and 20 g mycoprotein (MYC), drunk within 5 min at the paper's t = 0, which is arm minute 120; arm minute 0 is the priming dose at t = -120 min. Carbohydrate 74.5 g, protein 17.8 g, fat 11.9 g and fibre 5.0 g as printed in Table 2; carbohydrate excludes fibre as for CON (4 x 74.5 + 4 x 17.8 + 9 x 11.9 = 476.3 kcal against the printed 475.8). Fat types from Table 2 (6.6 + 2.9 + 2.2 = 11.7 g, under the printed 11.9 g). Samples t = -30 to 360 min, arm minutes 90 to 480.",
+      "duration_min": 481,
+      "start_hour": 7.0,
+      "meals": [
+        {
+          "t_min": 120,
+          "carbs_g": 74.5,
+          "fat_g": 11.9,
+          "protein_g": 17.8,
+          "fibre_g": 5.0,
+          "fat_g_by_type": {
+            "saturated": 6.6,
+            "monounsaturated": 2.9,
+            "polyunsaturated": 2.2
+          },
+          "form": "liquid",
+          "food": "milk drink with 50 g dextrose and 20 g mycoprotein"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "fasting_glucose_table1",
+      "description": "Fasting plasma glucose, mean (SD), all 24 participants (Table 1), entered on a fasted morning",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.6,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting Glucose'; table caption 'Data presented as mean (SD)'",
+        "quote": "Fasting Glucose, mmol٠L−1 | 4.6 (0.4)"
+      }
+    },
+    {
+      "id": "fasting_insulin_table1",
+      "description": "Fasting serum insulin, mean (SD), all 24 participants (Table 1), entered on a fasted morning",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 96.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 48.2,
+        "n": 24
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting Insulin'; table caption 'Data presented as mean (SD)'",
+        "quote": "Fasting Insulin, pmol٠L−1 | 96.1 (48.2)"
+      }
+    },
+    {
+      "id": "insulin_peak_control",
+      "description": "Serum insulin peak over the 6 h after the control drink, read as the mean of the participants' own peaks. The paper prints 'peak' without defining it; it analyses it as a summary measure by repeated-measures ANOVA, and the same paragraph's 'mean peak blood glucose of 7.3 mmol/L at 41 min' is at a time that is not a sampling minute (samples every 15 min to t = 120), so these are per-person peaks, not the peak of the mean curve.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_drink"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 481
+      },
+      "value": 667.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 66.0,
+        "n": 24
+      },
+      "location": {
+        "where": "Results, 'Postprandial glucose and insulin response' (insulin paragraph); methods: 'Data are presented as mean (SEM) unless otherwise stated'",
+        "quote": "MYC had a greater peak of 722 (59) compared to 667 (66) pmol٠L−1 after CON ingestion (P = 0.02)."
+      }
+    },
+    {
+      "id": "insulin_peak_mycoprotein",
+      "description": "Serum insulin peak over the 6 h after the mycoprotein drink, mean of the participants' peaks (same reading as insulin_peak_control)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "mycoprotein_drink"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 481
+      },
+      "value": 722.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 59.0,
+        "n": 24
+      },
+      "location": {
+        "where": "Results, 'Postprandial glucose and insulin response' (insulin paragraph); methods: 'Data are presented as mean (SEM) unless otherwise stated'",
+        "quote": "MYC had a greater peak of 722 (59) compared to 667 (66) pmol٠L−1 after CON ingestion (P = 0.02)."
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "glucose AUC 0-6 h, 1804 (42) CON and 1778 (36) MYC, and 0-2 h, 720 (29) and 712 (25), printed as 'mmol/L x 6 h' and 'mmol/L x 2 h' (Results, glucose paragraph; mean (SEM) by the Methods): read in hours these would be mean concentrations of 300 and 360 mmol/L; the paper prints no minute unit, and the guide says a unit that contradicts the numbers is left out, not corrected",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "mean peak blood glucose 7.3 mmol/L at 41 min, both drinks (Results, glucose paragraph): no uncertainty printed",
+      "missing": {
+        "kind": "source",
+        "name": "uncertainty_not_printed"
+      }
+    },
+    {
+      "what": "blood glucose and serum insulin time courses over 6 h (Figure 1A and C): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "total glucose appearance (RaT) over 6 h, 90 (12) g CON and 95 (13) g MYC (Results, plasma glucose kinetics): this is the tracer-derived total rate of appearance, which includes endogenous glucose production (exogenous glucose was 62 and 60% of it), not the drink's glucose alone; the 0-120 min part, 46 and 51 g, is printed without uncertainty; the model has no total-appearance marker",
+      "missing": {
+        "kind": "marker",
+        "name": "glucose_appearance"
+      }
+    },
+    {
+      "what": "exogenous (oral) glucose appearing in the circulation over 6 h, 53 g for both drinks, in the 13C-tracer subset of 12 (Results, plasma glucose kinetics): no uncertainty printed, and the model has no oral glucose appearance marker",
+      "missing": {
+        "kind": "marker",
+        "name": "oral_glucose_appearance"
+      }
+    },
+    {
+      "what": "total glucose disappearance as grams, 0-120 min 42 (9) and 47 (9) g and 6 h 93 and 99 g (Results, RdT paragraph; the 6 h totals have no uncertainty): grams in total, not a rate per kg of body weight",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_body_mass"
+      }
+    },
+    {
+      "what": "RaT, RdT, RaEx and EGP rate time courses over 6 h (Figure 2A, C, E, G): figure only",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "carbohydrate oxidation over 6 h, 62 (21) g CON and 58 (20) g MYC (Results, substrate oxidation paragraph)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "fat oxidation over 6 h, 24 (9) g CON and 24 (9) g MYC (Results, substrate oxidation paragraph)",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "total energy expenditure over 6 h, 1920 (292) kJ CON and 1904 (378) kJ MYC (Results, substrate oxidation paragraph): a total over the arm, not a rate; the rate curves are Figure 3A only",
+      "missing": {
+        "kind": "operator",
+        "name": "total_over_own_duration"
+      }
+    },
+    {
+      "what": "insulin sensitivity indices, Table 3 (insulinogenic index, Matsuda, Cederholm, disposition index), CON and MYC with SD",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "HOMA-IR 2.9 (1.6), Table 1 (mean (SD))",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "percent changes with MYC: RaT over 6 h +5% (P = 0.03), mean 6 h glucose appearance and disappearance +5% and +9% (Abstract), RdT over 6 h +7%, EGP share of appearance 15% greater (P = 0.05)",
+      "missing": {
+        "kind": "operator",
+        "name": "percent_change"
+      }
+    }
+  ]
+}
