@@ -302,7 +302,16 @@ trained items in common):
   18% of the printed grams by then. Halving the muscle share lifts mixed-meal
   glucose (z -0.67 to -0.54) but raises the drink (+0.32 to +0.58), so a flat
   change is not the fix. No corpus paper gives a mixed-meal plasma Ra to set
-  this against; a dual-tracer mixed-meal paper would settle it.
+  this against; a tracer topic was read for it (below).
+- The tracer papers settle the direction, not yet a target (their oral
+  appearance prints no spread, so it is in `left_out` as
+  `oral_glucose_appearance`): on polidori-2013's meal the model absorbs 79
+  g from the gut by 6 h, as the paper does, but only 45 g reaches plasma
+  against the paper's about 79 g (whelehan-2024: 38 g against 53 g). At 1 h
+  and 2 h the model has 46% and 41% of the paper's oral appearance. The
+  loss is mostly the first-pass split (54-57% of what is absorbed reaches
+  plasma), with gut absorption too slow in the first 2 h. A flat cut to the
+  muscle share moves the drink, which fits today.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
