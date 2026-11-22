@@ -1,0 +1,40 @@
+{
+  "paper": "stadler-2010",
+  "citation": "Stadler et al. 2010. Chronic peripheral hyperinsulinemia in type 1 diabetic patients after successful combined pancreas-kidney transplantation does not affect ectopic lipid accumulation in skeletal muscle and liver. Diabetes 59:215.",
+  "doi": "10.2337/db09-0354",
+  "pmid": "19833878",
+  "pmcid": "PMC2797924",
+  "licence": "CC BY-NC-ND 3.0 (ADA free access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/3.0/",
+  "protocol": "3-h 75 g glucose OGTT in water (Glukodrink), standard dose within 5 min, with basal samples; fasting EGP from d-[6,6-2H2]glucose tracer dilution.",
+  "protocol_kinds": [
+    "OGTT"
+  ],
+  "population": "9 pancreas-kidney transplant recipients with type 1 diabetes (4 F / 5 M; age 50 +/- 8 y; BMI 26 +/- 3 kg/m2) and 9 nondiabetic controls (3 F / 6 M; age 53 +/- 9 y; BMI 26 +/- 2 kg/m2), means +/- SD.",
+  "population_class": "mixed",
+  "reports": [
+    {
+      "marker": "plasma glucose (fasting, AUC, incremental AUC) during OGTT",
+      "where": "Table 1, OGTT section",
+      "form": "table"
+    },
+    {
+      "marker": "plasma insulin (fasting, AUC, incremental AUC) during OGTT",
+      "where": "Table 1, OGTT section",
+      "form": "table"
+    },
+    {
+      "marker": "C-peptide AUC during OGTT",
+      "where": "Table 1, OGTT section",
+      "form": "table"
+    },
+    {
+      "marker": "fasting endogenous glucose production",
+      "where": "Table 1, EGP section",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Healthy nondiabetic controls are printed separately from the type 1 diabetic transplant group, n=9 each, means with SD. Only fasting EGP is tracer-measured, not postprandial. Units in mmol and mg/dL mixed in the same table."
+}

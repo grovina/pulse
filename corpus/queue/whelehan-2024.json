@@ -1,0 +1,30 @@
+{
+  "paper": "whelehan-2024",
+  "citation": "Whelehan et al. 2024. The addition of mycoprotein to a mixed-meal impacts postprandial glucose kinetics without altering blood glucose concentrations: a randomised controlled trial. Eur J Clin Nutr 78:757.",
+  "doi": "10.1038/s41430-024-01470-4",
+  "pmid": "39003347",
+  "pmcid": "PMC11368804",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "250 mL full-fat milk drink with 50 g dextrose (glucose) plus 20 g mycoprotein (MYC) or control (CON), ingested at t=0; glucose kinetics over 6 h with a primed [6,6-2H2]glucose infusion; 1000 mg [U-13C6]glucose added in 12 participants.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "24 adults, 8 F / 16 M, BMI 30 +/- 6 kg/m2 (range 22.2-38.5), age 30.1 (SD 8.4) y, fasting glucose 4.6 (SD 0.4) mmol/L; all but one had 2 h glucose below 6 mmol/L. Not described as healthy in the text.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "glucose AUC 0-6 h and 0-2 h",
+      "where": "Results, glucose paragraph",
+      "form": "text"
+    },
+    {
+      "marker": "total glucose appearance (RaT) over 6 h",
+      "where": "Results, RaT paragraph",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sem",
+  "figure_only": false,
+  "note": "Glucose AUC printed as mean (SEM) and total appearance as mean (SD) in the text, with n. EGP, RaEx and insulin are figure-only, so not taken. Population is adults across a BMI range with normal 2 h glucose, but the paper never calls them healthy; check before use."
+}

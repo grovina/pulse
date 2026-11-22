@@ -1,0 +1,35 @@
+{
+  "paper": "powell-2020",
+  "citation": "Powell et al. 2020. Sotagliflozin decreases postprandial glucose and insulin concentrations by delaying intestinal glucose absorption. J Clin Endocrinol Metab 105:e1235.",
+  "doi": "10.1210/clinem/dgz258",
+  "pmid": "31837264",
+  "pmcid": "PMC7067537",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Mixed-meal tolerance test after a single oral dose of placebo, sotagliflozin 400 mg or canagliflozin 300 mg: drink with 75 g glucose, boiled egg 70 g, mozzarella 70 g (50% kcal carbohydrate); dual glucose tracer; RaO sampled 0-5 h. Breakfast at 0.25 h post-dose (cohort 1) or lunch at 4.25 or 5.25 h (cohorts 1 and 2).",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "24 healthy participants in two cohorts of 12. Cohort 1 mean age 37.1 (SD 11.6) y; cohort 2 mean age 43.3 (SD 9.2) y; 22 male; BMI 29.7 (SD 4.2) and 29.5 (SD 2.8) kg/m2.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "rate of appearance of oral glucose (RaO), AUC 0-1, 0-2, 2-5 and 0-5 h, mg/kg FFM",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "plasma glucose AUC and incremental AUC",
+      "where": "Table 3",
+      "form": "table"
+    },
+    {
+      "marker": "insulin and C-peptide AUC",
+      "where": "Table 4",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "ci",
+  "figure_only": false,
+  "note": "Group values are geometric least-square means; the 90% CIs are for ratios against placebo only, so per-arm dispersion is not printed. Use the placebo arm as the healthy meal reference; the drug arms are the study's question. Cohorts differ in timing after dose."
+}

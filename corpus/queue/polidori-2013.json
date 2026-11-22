@@ -1,0 +1,35 @@
+{
+  "paper": "polidori-2013",
+  "citation": "Polidori et al. 2013. Canagliflozin lowers postprandial glucose and insulin by delaying intestinal glucose absorption in addition to increasing urinary glucose excretion. Diabetes Care 36:2154.",
+  "doi": "10.2337/dc12-2391",
+  "pmid": "23412078",
+  "pmcid": "PMC3714520",
+  "licence": "CC BY-NC-ND 3.0 (ADA free access)",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/3.0/",
+  "protocol": "Placebo or canagliflozin 300 mg 20 min before a 600-kcal mixed-meal tolerance test: 75 g glucose oral solution with 14C-glucose; plasma sampled for 6 h.",
+  "protocol_kinds": [
+    "mixed meal"
+  ],
+  "population": "20 healthy subjects (per abstract). Baseline demographics are in a table that is an image in the XML and were not read.",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "plasma glucose incremental AUC 0-1, 0-2 and 0-6 h",
+      "where": "Results, glucose paragraph",
+      "form": "text"
+    },
+    {
+      "marker": "insulin incremental AUC 0-1, 0-2 and 0-6 h",
+      "where": "Results, insulin paragraph",
+      "form": "text"
+    },
+    {
+      "marker": "total oral glucose absorbed over 0-6 h",
+      "where": "Results, RaO paragraph (no dispersion printed)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Glucose and insulin incremental AUCs are printed as arithmetic mean (SD) in text, with placebo and canagliflozin arms; the RaO totals (79 g placebo, 75 g canagliflozin) have no dispersion. Use the placebo arm as the healthy meal reference. Demographics table is an image."
+}

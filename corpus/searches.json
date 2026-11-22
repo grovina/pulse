@@ -109,6 +109,18 @@
         "2026-11-19"
       ],
       "hits": 191
+    },
+    {
+      "name": "glucose fluxes traced with isotopes",
+      "status": "active",
+      "screened": 29,
+      "queued": 4,
+      "batches": [
+        "2026-11-22"
+      ],
+      "hits": 29,
+      "query": "(tracer[Title/Abstract] OR \"dual-tracer\"[Title/Abstract] OR \"triple-tracer\"[Title/Abstract] OR isotope[Title/Abstract]) AND (meal[Title/Abstract] OR \"glucose ingestion\"[Title/Abstract] OR \"oral glucose\"[Title/Abstract]) AND (\"rate of appearance\"[Title/Abstract] OR \"endogenous glucose production\"[Title/Abstract]) AND healthy[All Fields] AND \"open access\"[filter]",
+      "why": "How much of a meal's glucose reaches plasma, and how far endogenous production falls: iter 119's mixed-meal glucose dip traces to small plasma appearance, with nothing in the corpus to set it against."
     }
   ]
 }
