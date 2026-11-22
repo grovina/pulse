@@ -1274,6 +1274,8 @@ def load_compatible_state_dict(
     state column stays at its new init. Copying a slice of the old weight
     would be a different model that looks warm.
     """
+    if hasattr(module, "adjusted_state"):
+        state = module.adjusted_state(state)
     current = module.state_dict()
     keep: dict[str, torch.Tensor] = {}
     mismatched: list[str] = []

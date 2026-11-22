@@ -422,15 +422,23 @@ class ModularPhysiologyNetwork(nn.Module):
     # nutrient insulin gain stays where the new default is, twice the old one.
     LOAD_ADJUSTMENTS = {"metabolic.islet.log_ins_nut_gain": math.log(2.0)}
 
+    @classmethod
+    def adjusted_state(cls, state: dict) -> dict:
+        """``state`` with ``LOAD_ADJUSTMENTS`` applied if it has no ``state_rev``.
+        Every load of an older checkpoint goes through this, warm starts too."""
+        if "state_rev" in state:
+            return state
+        state = dict(state)
+        for k, delta in cls.LOAD_ADJUSTMENTS.items():
+            if k in state:
+                state[k] = state[k] + delta
+        return state
+
     def load_model_state(self, state: dict, strict: bool = True) -> None:
         """``load_state_dict`` that is strict except for ``ADDED_STATE_KEYS`` and
         ``RETIRED_STATE_KEYS``, and that applies ``LOAD_ADJUSTMENTS`` to a state
         without ``state_rev``."""
-        if "state_rev" not in state:
-            state = dict(state)
-            for k, delta in self.LOAD_ADJUSTMENTS.items():
-                if k in state:
-                    state[k] = state[k] + delta
+        state = self.adjusted_state(state)
         if not strict:
             self.load_state_dict(state, strict=False)
             return

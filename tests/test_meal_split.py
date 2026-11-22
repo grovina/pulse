@@ -123,6 +123,18 @@ class TestLoadAdjustment(unittest.TestCase):
         m.load_model_state(state, strict=True)
         self.assertAlmostEqual(float(m.metabolic.islet.log_ins_nut_gain.exp()), 4.0, places=4)
 
+    def test_a_warm_start_gets_the_gain_doubled_too(self) -> None:
+        # --init-from loads through train.load_compatible_state_dict, not
+        # load_model_state; iter 120's first launch missed the doubling there.
+        from pulse.train import load_compatible_state_dict
+        src = _model()
+        state = {k: v.clone() for k, v in src.state_dict().items() if k != "state_rev"}
+        with torch.no_grad():
+            state["metabolic.islet.log_ins_nut_gain"] = torch.tensor(0.5)
+        m = _model()
+        load_compatible_state_dict(m, state)
+        self.assertAlmostEqual(float(m.metabolic.islet.log_ins_nut_gain), 0.5 + 0.6931472, places=5)
+
 
 if __name__ == "__main__":
     unittest.main()
