@@ -282,6 +282,18 @@ trained items in common):
 - Against the bar set before the run: met for the sealed and trained
   miss, the drink and fasting insulin; not met for late mixed-meal
   insulin (0.57 against 0.8) or exercise insulin. Spend about $9.
+- Free frozen tests on iter 119 (2026-11-22): at the late minutes the
+  model's mixed-meal glucose sits 10-15 mg/dL below baseline (battezzati
+  75-78 against 80-83), so any extra secretion pushes it lower; tripling the
+  nutrient gain gives late insulin 1.06 but glucose mean z -1.36. Slower
+  gastric emptying makes late insulin worse (0.43 at x0.7) and moves the
+  drink. Exercise insulin is two thirds basal level: the restoring term has
+  no epinephrine gate; gating it moves exercise insulin 1.77 to 1.24 at no
+  cost to meals. Stronger glucagon from protein and an extra hepatic output
+  below baseline are nearly inert; only damping insulin-dependent uptake
+  below baseline (`min(g/gb,1)^n`) holds glucose up. No frozen variant meets
+  the bar; the best (glucagon x10, uptake gate ^16) has glucose z -0.84 and
+  overall mean |z| 1.04 against 0.90.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
