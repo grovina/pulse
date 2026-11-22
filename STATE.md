@@ -312,6 +312,14 @@ trained items in common):
   loss is mostly the first-pass split (54-57% of what is absorbed reaches
   plasma), with gut absorption too slow in the first 2 h. A flat cut to the
   muscle share moves the drink, which fits today.
+- A split that separates meal from drink: scaling the muscle share by
+  `1 - nut/(nut + c)`, with `nut` the absorbed protein plus fat in g/min,
+  leaves the drink where it is. Frozen on iter 119 with the epinephrine gate
+  on the insulin setpoint and the nutrient gain x2, at c = 0.025: late
+  mixed-meal insulin 0.88, mixed-meal glucose z -0.74, drink glucose and
+  insulin z 0.25 and 0.33 (base 0.32 and 0.63); exercise insulin still 1.62
+  and overall mean |z| on those 618 items 0.98 against 0.90. Untrained, so
+  the remaining two misses are what a run would have to fix.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
