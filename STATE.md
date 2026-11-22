@@ -144,7 +144,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 |---|---|---|---|
 | `trainer-42rqr` | 118, no teacher, gut reads meal details | 2026-11-16 | stopped by its 24 h deadline after epoch 26 of 28 (23 h 30 min), from the corpus of 2026-11-16 with the fasting and clamp topics: `--meal-details`, warm start; output `training/jobs/iter118-meals/` |
 | `trainer-ss2p8` | 118, no teacher | 2026-11-16 | finished in 18 h 23 min, the same run without `--meal-details`; output `training/jobs/iter118-base/` |
-| `trainer-c7m8g` | 119, no teacher, insulin follows absorbed nutrients | 2026-11-19 | running, launched 19:08 UTC on image `7c781a5` with a 24 h deadline, warm start from `iter118-base` (the four new islet gains start at their defaults), the corpus of 2026-11-19 with every topic read; output `training/jobs/iter119-insulin/` |
+| `trainer-c7m8g` | 119, no teacher, insulin follows absorbed nutrients | 2026-11-19 | stopped by its 24 h deadline (2026-11-20 19:09 UTC) on image `7c781a5`, warm start from `iter118-base` (the four new islet gains at their defaults), the corpus of 2026-11-19 with every topic read; output `training/jobs/iter119-insulin/` |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -263,6 +263,25 @@ in 10 for iter 117):
   and is better on the 36 sealed items new to this corpus (median |z| 1.17
   against 1.35); otherwise the two runs are level.
 - Spend: about $6.80 and $9 at Cloud Run list rates (4 vCPU, 16 GiB).
+
+Iter 119, insulin driven by absorbed protein and fat and a basal 0.8 times
+lower (2026-11-19; its own board against iter 118's, 176 sealed and 821
+trained items in common):
+
+- Sealed papers 0.99 (0.88 to 1.14) on 312 points in 30 papers, 0.92 at
+  the end of phase 2; on the common sealed items 0.99 to 0.96, and the
+  common trained items 0.59 to 0.59. Level, slightly better.
+- Insulin is no longer mostly short: 28 of 65 sealed points under target
+  and 37 over (iter 118: 25 under, 13 over of 38). After mixed meals the
+  median ratio rose from 0.78 to 0.88 (mean z -0.46 to -0.16), but from
+  120 min on only from 0.40 to 0.57. Fasting insulin fell from 1.59 to
+  1.12 times target; exercise insulin from 2.57 to 2.14 (two points).
+- Mixed-meal glucose moved lower (mean z -0.35 to -0.65); the glucose
+  drink did not move (insulin +1.21 to +1.14, glucose +0.12 to +0.06).
+  Sealed glucose median |z| 0.84 on its larger set (0.75 on iter 118's).
+- Against the bar set before the run: met for the sealed and trained
+  miss, the drink and fasting insulin; not met for late mixed-meal
+  insulin (0.57 against 0.8) or exercise insulin. Spend about $9.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
