@@ -420,7 +420,9 @@ class TestSiDrivesTheMealResponse(unittest.TestCase):
         lo_g, lo_i = _meal_iauc(m)
         _set_factor(m, "si", 10.0 * _TEACHER_SI_P90 / _centre(m)["si"])
         hi_g, hi_i = _meal_iauc(m)
-        self.assertAlmostEqual(lo_g / hi_g, 1.77, delta=0.25, msg=f"{lo_g:.0f}/{hi_g:.0f}")
+        # 1.77 before the meal split (gate, epinephrine setpoint and nutrient gain each raise it;
+        # now 4996 vs 2156 = 2.32x); insulin stays 1.77x.
+        self.assertAlmostEqual(lo_g / hi_g, 2.32, delta=0.25, msg=f"{lo_g:.0f}/{hi_g:.0f}")
         self.assertAlmostEqual(lo_i / hi_i, 1.70, delta=0.25, msg=f"{lo_i:.0f}/{hi_i:.0f}")
 
 

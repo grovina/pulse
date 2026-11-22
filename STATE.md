@@ -320,6 +320,16 @@ trained items in common):
   insulin z 0.25 and 0.33 (base 0.32 and 0.63); exercise insulin still 1.62
   and overall mean |z| on those 618 items 0.98 against 0.90. Untrained, so
   the remaining two misses are what a run would have to fix.
+- That split is now in the code (uncommitted until a run): `f_muscle` is
+  scaled by `1 - nut/(nut + 0.025)` (`_MEAL_GATE_NUT`, a constant, not a
+  learned number); the insulin restoring setpoint is divided by
+  `1 + ins_epi_gain * epi_drive`; `ins_nut_gain` starts at 4.0 (was 2.0).
+  A checkpoint without the `state_rev` buffer (every one before this) loads
+  with `log_ins_nut_gain` raised by ln 2 (`LOAD_ADJUSTMENTS` in
+  `pulse/model.py`), so iter 119 warm-starts on its trained gain doubled.
+  Loading iter 119 through that path reproduces the frozen numbers on the
+  618 items exactly: late mixed insulin 0.88, mixed glucose z -0.74, drink
+  0.25 and 0.33, exercise insulin 1.62, overall mean |z| 0.98.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):

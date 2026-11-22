@@ -91,7 +91,7 @@ PROTEIN_GN_GAIN = 3.5
 # drive; glucose already secretes through ``gamma``. ``AMINO_INS_GAIN`` stays
 # for the teacher (``knowledge/full_body.py``); the student's old protein-only
 # term is replaced by this.
-INS_NUT_GAIN = 2.0
+INS_NUT_GAIN = 4.0
 INS_NUT_W_P = 2.0
 INS_NUT_W_F = 0.5
 # pg/mL per minute of glucagon per gram of absorbed amino acids: 3 x 2 x the

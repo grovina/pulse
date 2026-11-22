@@ -378,6 +378,9 @@ _N_SPECIES = 13
 # w without the 120-minute insulin anchor walks the first-phase gain instead.
 _K_POT = 0.025
 _PHASE2_FRAC = 0.3
+# Absorbed protein plus fat (g/min) at which a meal halves the muscle share of its
+# glucose: a mixed meal sends less of it to muscle glycogen than a plain drink.
+_MEAL_GATE_NUT = 0.025
 
 # Index of the gut glucose-appearance channel within the `coupling` tensor.
 _GUT_GLUCOSE_COUPLING_IDX = 0
@@ -1193,6 +1196,8 @@ class MetabolicModule(MassActionModule):
         f_liver = _LIVER_DIRECT_FRAC * (0.5 + 0.5 * ins_drive) * fill_l
         muscle_share = torch.sigmoid(store_logit) * fill_m
         f_muscle = muscle_share * (1.0 - f_liver)
+        nut = d["amino_g"] + d["lipid_g"]
+        f_muscle = f_muscle * (1.0 - nut / (nut + _MEAL_GATE_NUT))
         f_plasma = 1.0 - f_liver - f_muscle
         syn_liver = f_liver * app_g
         syn_muscle_oral = f_muscle * app_g
@@ -1240,7 +1245,8 @@ class MetabolicModule(MassActionModule):
         phase2_stim = (1.0 - _PHASE2_FRAC) * g_above + _PHASE2_FRAC * pot
         ins_gsir = (c["gamma"] * gsir_mod * phase2_stim * incretin
                     / (1.0 + c["ins_epi_gain"] * epi_drive))
-        ins_restoring = c["k_ins"] * (effective_ib - ins)
+        ins_restoring = c["k_ins"] * (
+            effective_ib / (1.0 + c["ins_epi_gain"] * epi_drive) - ins)
         ins_clamp = insulin_clamp_infusion_t(
             d["insulin_clamp"], effective_ib, c["k_ins"], d["insulin_clamp_on"])
         ins_nutrient = nutrient_insulin_rate_t(d["amino_g"], d["lipid_g"], incretin, c)

@@ -404,6 +404,8 @@ class ModularPhysiologyNetwork(nn.Module):
         # no parameter and no change. Built last, so switching it on leaves every other
         # module's initial weights where the same seed puts them without it.
         self.meal_reader: Optional[MealReader] = MealReader() if meal_details else None
+        # Marks a state written after LOAD_ADJUSTMENTS' change (see below).
+        self.register_buffer("state_rev", torch.ones(()))
 
     # Parameters added or retired since a checkpoint was written. A checkpoint
     # without the first starts them at their published defaults; one carrying
@@ -411,12 +413,24 @@ class ModularPhysiologyNetwork(nn.Module):
     ADDED_STATE_KEYS = frozenset({
         "metabolic.islet.log_ins_nut_gain", "metabolic.islet.log_ins_nut_w_p",
         "metabolic.islet.log_ins_nut_w_f", "metabolic.islet.log_gn_nut_gain",
+        "state_rev",
     })
     RETIRED_STATE_KEYS = frozenset({"metabolic.islet.log_amino_ins_gain"})
+    # A checkpoint written before the meal-gated muscle share and the epinephrine
+    # gate on the insulin setpoint has no ``state_rev``. Loading it carries the
+    # trained values over by these additive log offsets (key present only), so the
+    # nutrient insulin gain stays where the new default is, twice the old one.
+    LOAD_ADJUSTMENTS = {"metabolic.islet.log_ins_nut_gain": math.log(2.0)}
 
     def load_model_state(self, state: dict, strict: bool = True) -> None:
         """``load_state_dict`` that is strict except for ``ADDED_STATE_KEYS`` and
-        ``RETIRED_STATE_KEYS``."""
+        ``RETIRED_STATE_KEYS``, and that applies ``LOAD_ADJUSTMENTS`` to a state
+        without ``state_rev``."""
+        if "state_rev" not in state:
+            state = dict(state)
+            for k, delta in self.LOAD_ADJUSTMENTS.items():
+                if k in state:
+                    state[k] = state[k] + delta
         if not strict:
             self.load_state_dict(state, strict=False)
             return

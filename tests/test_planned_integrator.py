@@ -404,18 +404,20 @@ def test_integrate_steps_whole_minutes_only() -> None:
 # below at the last minute; the gradient is ``|d loss / d embedding|`` per member.
 # Re-recorded on 2026-11-19 after 7c781a5 (insulin follows absorbed nutrients, basal
 # insulin 0.8 of the centre); the first recording matched until that commit.
+# Re-recorded on 2026-11-22 for the meal-gated muscle share, the epinephrine gate on
+# the insulin setpoint and the doubled nutrient gain (glucose, insulin, observables).
 _GOLDEN_MARKERS = (
     "glucose", "insulin", "cortisol", "hr", "temp", "gastric_carb", "intestinal_bile", "bile_acids")
 _GOLDEN_FINAL = [
-    [0.272477, 1.20984, 0.5355, 0.367633, -5.26943, 1.26963, 1.40999, 2.39791],
-    [-0.0789177, -0.311687, -0.523336, -0.219759, -6.26705, 0.0, 0.545249, 0.997911],
-    [0.0725911, 0.272612, -0.751938, 0.451344, -5.799, 0.867934, 1.35135, 2.26341],
+    [0.153093, 1.61801, 0.5355, 0.367084, -5.26943, 1.26963, 1.40999, 2.39791],
+    [-0.0942187, -0.327436, -0.523336, -0.219828, -6.26705, 0.0, 0.545249, 0.997911],
+    [0.0102931, 0.548855, -0.751938, 0.451024, -5.799, 0.867934, 1.35135, 2.26341],
 ]
-_GOLDEN_EMBEDDING_GRAD = [370.986, 372.687, 364.91]
+_GOLDEN_EMBEDDING_GRAD = [371.379, 372.68, 364.869]
 _GOLDEN_OBSERVABLES_T89 = [
-    [0.0, 3.00282, 0.0, 288.062, 235.653, 0.818063, 1.39589, 0.0460326, 0.0887723, 1.0],
-    [0.0, 1.85251, 0.0, 253.467, 205.583, 0.811081, 1.22629, 0.108545, 0.494658, 1.0],
-    [0.0, 2.0531, 85.9869, 277.179, 227.235, 0.819815, 1.34368, 0.0715555, 0.183146, 1.0],
+    [0.0, 3.22924, 0.0, 288.062, 235.653, 0.818063, 1.39589, 0.0400821, 0.0816165, 1.0],
+    [0.0, 1.852, 0.0, 253.467, 205.583, 0.811081, 1.22629, 0.108819, 0.494707, 1.0],
+    [0.0, 2.19763, 85.5981, 277.179, 227.235, 0.819815, 1.34368, 0.0607885, 0.149683, 1.0],
 ]
 
 
@@ -463,8 +465,9 @@ def test_the_checkpoint_layout_is_untouched() -> None:
     """Moving terms into ``constants`` and ``drives`` adds no parameter or buffer."""
     model = _live_model(21)
     # +3 since 7c781a5: four nutrient-insulin gains added, the amino one retired.
+    # +1 for the `state_rev` buffer that marks a state saved after the meal split.
     assert sum(p.numel() for p in model.parameters()) == 11082
-    assert len(model.state_dict()) == 255
+    assert len(model.state_dict()) == 256
 
 
 def test_member_steps_hold_a_finished_member() -> None:

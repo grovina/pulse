@@ -67,9 +67,9 @@ class TestTheTerm(unittest.TestCase):
         r = [float(nutrient_insulin_rate_t(torch.tensor(p), torch.tensor(0.0), one, islet))
              for p in (0.0, 0.1, 0.2)]
         self.assertTrue(r[0] < r[1] < r[2])
-        self.assertAlmostEqual(r[1], 2.0 * 2.0 * 0.1, places=5)
+        self.assertAlmostEqual(r[1], 4.0 * 2.0 * 0.1, places=5)
         fat = float(nutrient_insulin_rate_t(torch.tensor(0.0), torch.tensor(0.1), one, islet))
-        self.assertAlmostEqual(fat, 2.0 * 0.5 * 0.1, places=5)
+        self.assertAlmostEqual(fat, 4.0 * 0.5 * 0.1, places=5)
         # in the model: a protein meal raises insulin and glucagon above the same model without the term
         meal = [MealEvent(time=0.0, carbs=0.0, fats=0.0, proteins=50.0)]
         with_term = _run(_model(), meal)
@@ -116,7 +116,7 @@ class TestOldCheckpoints(unittest.TestCase):
     def test_the_iter118_checkpoint_loads(self) -> None:
         from pulse.diagnostics.probe import load_model_from_checkpoint
         model, _ = load_model_from_checkpoint(_OLD_CHECKPOINT)
-        self.assertAlmostEqual(float(model.metabolic.islet.log_ins_nut_gain.exp()), 2.0, places=4)
+        self.assertAlmostEqual(float(model.metabolic.islet.log_ins_nut_gain.exp()), 4.0, places=4)
 
 
 if __name__ == "__main__":
