@@ -294,6 +294,15 @@ trained items in common):
   below baseline (`min(g/gb,1)^n`) holds glucose up. No frozen variant meets
   the bar; the best (glucagon x10, uptake gate ^16) has glucose z -0.84 and
   overall mean |z| 1.04 against 0.90.
+- Where the dip comes from (same day): fasting balance is right (EGP 1.80,
+  uptake 1.81 mg/kg/min) and meal EGP suppression (about -0.8) is inside its
+  cohort target. The small flux is meal glucose reaching plasma: battezzati
+  absorbs 46 of 136 g carbohydrate by 150 min and about half of it goes to
+  liver and muscle glycogen (`f_liver`, `f_muscle`), so plasma sees about
+  18% of the printed grams by then. Halving the muscle share lifts mixed-meal
+  glucose (z -0.67 to -0.54) but raises the drink (+0.32 to +0.58), so a flat
+  change is not the fix. No corpus paper gives a mixed-meal plasma Ra to set
+  this against; a dual-tracer mixed-meal paper would settle it.
 
 Iter 117, the first runs on the mixed-meal insulin papers and the meal
 details (2026-11-16; their own boards, the untrained student as above):
