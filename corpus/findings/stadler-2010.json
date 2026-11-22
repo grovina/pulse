@@ -1,0 +1,368 @@
+{
+  "paper": "stadler-2010",
+  "citation": {
+    "authors": "Stadler M, Anderwald C, Pacini G, Zbýň Š, Promintzer-Schifferl M, Mandl M, Bischof M, Gruber S, Nowotny P, Luger A, Prager R, Krebs M",
+    "title": "Chronic Peripheral Hyperinsulinemia in Type 1 Diabetic Patients After Successful Combined Pancreas-Kidney Transplantation Does Not Affect Ectopic Lipid Accumulation in Skeletal Muscle and Liver",
+    "journal": "Diabetes",
+    "year": 2010,
+    "doi": "10.2337/db09-0354",
+    "pmid": "19833878",
+    "pmcid": "PMC2797924"
+  },
+  "population": {
+    "n": 9,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 53.0,
+      "sd": 9.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.0,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Nine nondiabetic control subjects (3 F / 6 M), called healthy ('healthy control subjects') and matched for age and BMI to the pancreas-kidney transplant recipients; screened by nondiabetic fasting plasma glucose and A1C < 6.5% (Methods). Age 53 +/- 9 y and BMI 26 +/- 2 kg/m2 as printed in Table 1 (means +/- SD). The type 1 diabetic transplant group is left out."
+  },
+  "protocols": [
+    {
+      "name": "fasting_controls",
+      "description": "Control subjects, fasting, no meal, no drink, no infusion the model reads; the stable-isotope tracer (d-[6,6-2H2]glucose) is a measurement, not an input. Primed continuous tracer infusion: 5 min priming then 115 min continuous (Methods), 120 min in all, so the arm starts with the tracer and runs 120 min; EGP was calculated from blood samples 'taken after 2 h of steady-state infusion', read here at minute 120 (the end of the infusion; the paper prints no sampling minutes). The state is 'fasting EGP'; the hours fasted and the clock time are not printed for this study, so a 10 h overnight fast and 08:00 are assumed.",
+      "duration_min": 121,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasted_morning_controls",
+      "description": "Control subjects, basal samples of the OGTT day, taken after an overnight fast ('An oral glucose tolerance test (OGTT) was performed after an overnight fast. After the collection of basal samples, participants were given ... 75 g glucose'); no food. Hours fasted not printed beyond 'overnight', so 10 h assumed; 08:00 and a 30 min arm assumed, the basal value read at the end of the arm.",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "ogtt_controls",
+      "description": "Control subjects, 75 g glucose in water (Glukodrink) given within 5 min after the basal sample at minute 0 (Methods), 75 g carbohydrate, bed rest; samples at 0, 10, 20, 30, 40, 60, 90, 120, 150 and 180 min. Fasted overnight (stated as overnight; 10 h assumed). Start hour not printed; 08:00 assumed.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in water"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "egp_fasting",
+      "description": "Fasting endogenous glucose production, nondiabetic controls, tracer dilution (d-[6,6-2H2]glucose), from samples after 2 h of steady-state infusion, read at minute 120 of the infusion",
+      "marker": "hepatic_output",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_controls"
+      ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "value": 1.7,
+      "unit": "mg/kg/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.2,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, EGP section, column 'Nondiabetic control subjects'",
+        "quote": "Fasting EGP (mg · min−1 · kg−1) | 1.7 ± 0.2"
+      }
+    },
+    {
+      "id": "fasting_glucose",
+      "description": "Fasting plasma glucose, nondiabetic controls, basal sample of the OGTT after an overnight fast",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning_controls"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 92.0,
+      "unit": "mg/dl",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 8.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'Fasting plasma glucose', column 'Nondiabetic control subjects'",
+        "quote": "Fasting plasma glucose (mg/dl) | 92 ± 8"
+      }
+    },
+    {
+      "id": "fasting_insulin",
+      "description": "Fasting plasma insulin, nondiabetic controls, basal sample of the OGTT after an overnight fast",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning_controls"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 9.0,
+      "unit": "uU/ml",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.1,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'Fasting plasma insulin', column 'Nondiabetic control subjects'",
+        "quote": "Fasting plasma insulin (μU/ml) | 9.0 ± 3.1"
+      }
+    },
+    {
+      "id": "fasting_ffa",
+      "description": "Fasting plasma free fatty acids, nondiabetic controls, basal sample of the OGTT after an overnight fast",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasted_morning_controls"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 522.0,
+      "unit": "umol/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 184.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'Fasting plasma FFA', column 'Nondiabetic control subjects'",
+        "quote": "Fasting plasma FFA (μmol/l) | 522 ± 184"
+      }
+    },
+    {
+      "id": "glucose_auc",
+      "description": "Area under the plasma glucose curve, 0 to 180 min, trapezoid over the ten OGTT samples, nondiabetic controls",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_controls"
+      ],
+      "times": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "value": 1116.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 171.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'AUCglucose', column 'Nondiabetic control subjects'",
+        "quote": "AUCglucose (mmol · l−1 · min−1) | 1,116 ± 171"
+      }
+    },
+    {
+      "id": "glucose_incremental_auc",
+      "description": "Dynamic glucose area, 0 to 180 min: total AUC minus fasting concentration x 180 min, nondiabetic controls",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "ogtt_controls"
+      ],
+      "times": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 200.0,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 163.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'ΔAUCglucose', column 'Nondiabetic control subjects'",
+        "quote": "ΔAUCglucose (mmol · l−1 · min−1) | 200 ± 163"
+      }
+    },
+    {
+      "id": "insulin_auc",
+      "description": "Area under the plasma insulin curve, 0 to 180 min, trapezoid over the ten OGTT samples, nondiabetic controls",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "ogtt_controls"
+      ],
+      "times": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "value": 53.0,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 44.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'AUCinsulin', column 'Nondiabetic control subjects'",
+        "quote": "AUCinsulin (nmol · l−1 · min−1) | 53 ± 44"
+      }
+    },
+    {
+      "id": "insulin_incremental_auc",
+      "description": "Dynamic insulin area, 0 to 180 min: total AUC minus fasting concentration x 180 min, nondiabetic controls",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "ogtt_controls"
+      ],
+      "times": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        60,
+        90,
+        120,
+        150,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 42.0,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 40.0,
+        "n": 9
+      },
+      "location": {
+        "where": "Table 1, OGTT section, row 'ΔAUCinsulin', column 'Nondiabetic control subjects'",
+        "quote": "ΔAUCinsulin (nmol · l−1 · min−1) | 42 ± 40"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all values of the pancreas-kidney transplant recipients with type 1 diabetes (Table 1, all sections, and the Results): fasting EGP 1.6 +/- 0.2, glucose, insulin, FFA, AUCs, estimated portal insulin, CLIX, HIR",
+      "missing": {
+        "kind": "population",
+        "name": "type_1_diabetes"
+      }
+    },
+    {
+      "what": "C-peptide, fasting and AUC and dynamic AUC during the OGTT, controls (Table 1, OGTT section)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_peptide"
+      }
+    },
+    {
+      "what": "intrahepatocellular lipid (IHCL), controls 4.4 +/- 6.6% (Results, paragraph 2) and its correlations",
+      "missing": {
+        "kind": "marker",
+        "name": "intrahepatocellular_lipid"
+      }
+    },
+    {
+      "what": "intramyocellular lipid (IMCL), controls 1.0 +/- 0.5% (Results, paragraph 2) and its correlations",
+      "missing": {
+        "kind": "marker",
+        "name": "intramyocellular_lipid"
+      }
+    },
+    {
+      "what": "CLIX insulin sensitivity, estimated fasting portal insulin and hepatic insulin resistance index HIR, controls (Table 1, EGP section)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "triglycerides, controls 134 +/- 78 mg/dl (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triglycerides"
+      }
+    },
+    {
+      "what": "total and LDL cholesterol, controls 216 +/- 31 and 129 +/- 26 mg/dl (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "systolic and diastolic blood pressure, controls 111 +/- 11 / 76 +/- 8 mmHg (Table 1): no time of day and no posture printed",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    }
+  ]
+}
