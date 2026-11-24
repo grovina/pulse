@@ -281,6 +281,11 @@ and the nutrient gain doubled (2026-11-22; its board against iter 119's):
 - Against the bar set before the run: met for mixed-meal glucose and the
   overall sealed miss; not met for late insulin (0.72 against 0.8), the
   drink (moved 0.24 z against 0.2) or exercise insulin (1.66 against 1.4).
+- The rise in sealed mean |z| is GLP-1 alone: without its 15 sealed items
+  mean |z| falls 1.32 to 1.22 and the median 0.95 to 0.80. The model's
+  fasting GLP-1 doubled (hjorth-2022 t0 11.2 to 23.8 pM against 3.4;
+  zilstorff-2024 7.2 to 15.7 against 4.0), though none of the three changes
+  touches GLP-1. Trained items: no marker worse but glucose.
 
 Iter 119, insulin driven by absorbed protein and fat and a basal 0.8 times
 lower (2026-11-19; its own board against iter 118's, 176 sealed and 821
