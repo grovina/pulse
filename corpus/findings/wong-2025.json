@@ -178,27 +178,87 @@
       }
     },
     {
-      "id": "fasting_glp1",
-      "description": "Fasting plasma GLP-1 (0 min sample, MILLIPLEX MAP Human Metabolic Hormone panel, EDTA plasma 'pretreated with 50 mmol of dipeptidyl peptidase-IV' as printed) at the start of the vegetable-oil visit, over the run-in; the paper does not say whether the assay reads total or active GLP-1",
+      "id": "veg_oil_glp1_ratio_0_480",
+      "description": "Time-weighted mean plasma GLP-1 over 0 to 480 min (the paper's total area 140.0 ug/L x min over 480 min) over the fasting value 137 ng/L printed for the vegetable-oil visit. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "mean_in_window",
+      "statistic": "ratio_to_baseline",
       "protocols": [
         "veg_oil_day"
       ],
       "window": {
+        "start_min": 30,
+        "end_min": 511
+      },
+      "baseline_window": {
         "start_min": 0,
         "end_min": 31
       },
-      "value": 137.0,
-      "unit": "ng/L",
+      "value": 2.129,
+      "unit": "ratio",
       "uncertainty": {
         "kind": "sem",
-        "value": 9.0,
+        "value": 0.207,
         "n": 13
       },
       "location": {
-        "where": "Table 3, column 'Vegetable oil' (fasting values at the start of the vegetable-oil visit; means ± SEM, n = 13)",
-        "quote": "GLP-1 (ng/L) | 140 ± 9.0 | 137 ± 9 | 129 ± 9 | 0.776"
+        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
+        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
+      }
+    },
+    {
+      "id": "butter_glp1_ratio_0_480",
+      "description": "Time-weighted mean plasma GLP-1 over 0 to 480 min (the paper's total area 114.0 ug/L x min over 480 min) over the fasting value 137 ng/L printed for the vegetable-oil visit (taken as the fasting value of this visit too; not printed for it). Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "butter_day"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 511
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 1.734,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.167,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
+        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
+      }
+    },
+    {
+      "id": "coconut_glp1_ratio_0_480",
+      "description": "Time-weighted mean plasma GLP-1 over 0 to 480 min (the paper's total area 138.0 ug/L x min over 480 min) over the fasting value 137 ng/L printed for the vegetable-oil visit (taken as the fasting value of this visit too; not printed for it). Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "coconut_day"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 511
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 31
+      },
+      "value": 2.099,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.194,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
+        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
       }
     },
     {
@@ -785,201 +845,6 @@
         "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), GIP (μg/L × 480 min), row iAUC",
         "quote": "iAUC | 133 ± 11b | 187 ± 10a | 109 ± 12b | <0.001"
       }
-    },
-    {
-      "id": "glp1_auc_0_480",
-      "description": "Total area under the plasma GLP-1 curve, paper 0 to 480 min (trapezoid, Methods), over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); both meals; the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "area_under_curve",
-      "protocols": [
-        "veg_oil_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "value": 140.0,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 10.0,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
-        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
-      }
-    },
-    {
-      "id": "butter_glp1_auc_0_480",
-      "description": "Total area under the plasma GLP-1 curve, paper 0 to 480 min (trapezoid, Methods), over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); both meals; the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "area_under_curve",
-      "protocols": [
-        "butter_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "value": 114.0,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 8.0,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
-        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
-      }
-    },
-    {
-      "id": "coconut_glp1_auc_0_480",
-      "description": "Total area under the plasma GLP-1 curve, paper 0 to 480 min (trapezoid, Methods), over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); both meals; the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "area_under_curve",
-      "protocols": [
-        "coconut_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "value": 138.0,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 9.0,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row AUC",
-        "quote": "AUC | 114 ± 8 | 140 ± 10 | 138 ± 9 | 0.109"
-      }
-    },
-    {
-      "id": "glp1_iauc_0_480",
-      "description": "Incremental area under the plasma GLP-1 curve, paper 0 to 480 min, defined in Methods as AUC minus the mean fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "veg_oil_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "below_baseline": "subtracted",
-      "value": 74.2,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 7.3,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Vegetable oils' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row iAUC",
-        "quote": "iAUC | 47.2 ± 6.5b | 74.2 ± 7.3a | 75.7 ± 7.1a | 0.012"
-      }
-    },
-    {
-      "id": "butter_glp1_iauc_0_480",
-      "description": "Incremental area under the plasma GLP-1 curve, paper 0 to 480 min, defined in Methods as AUC minus the mean fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "butter_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "below_baseline": "subtracted",
-      "value": 47.2,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 6.5,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Butter' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row iAUC",
-        "quote": "iAUC | 47.2 ± 6.5b | 74.2 ± 7.3a | 75.7 ± 7.1a | 0.012"
-      }
-    },
-    {
-      "id": "coconut_glp1_iauc_0_480",
-      "description": "Incremental area under the plasma GLP-1 curve, paper 0 to 480 min, defined in Methods as AUC minus the mean fasting concentration × duration (a net area: stretches below fasting count negative); fasting taken as the 0-min sample, over the 9 samples drawn (0, 30, 60, 120, 240, 330, 360, 390 and 480 min); the paper does not say whether the assay reads total or active GLP-1",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "coconut_day"
-      ],
-      "times": [
-        30,
-        60,
-        90,
-        150,
-        270,
-        360,
-        390,
-        420,
-        510
-      ],
-      "below_baseline": "subtracted",
-      "value": 75.7,
-      "unit": "μg/L",
-      "time_unit": "min",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 7.1,
-        "n": 13
-      },
-      "location": {
-        "where": "Table 4, column 'Coconut oil' (means ± SEM, n = 13), GLP-1 (μg/L × 480 min), row iAUC",
-        "quote": "iAUC | 47.2 ± 6.5b | 74.2 ± 7.3a | 75.7 ± 7.1a | 0.012"
-      }
     }
   ],
   "left_out": [
@@ -1058,6 +923,20 @@
       "missing": {
         "kind": "marker",
         "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "absolute fasting plasma GLP-1 level (137 ng/L): the level depends on the assay, so only the ratios to fasting are entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
+      }
+    },
+    {
+      "what": "incremental areas of GLP-1 (vegetable oil, butter, coconut): each is the total-area ratio entered less 1, with the vegetable-oil visit's fasting value",
+      "missing": {
+        "kind": "source",
+        "name": "restates_entered_finding"
       }
     }
   ]

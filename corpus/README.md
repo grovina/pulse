@@ -627,6 +627,7 @@ what the model and this format should learn next.
 | `ratio_means` | mean(second) divided by mean(first) | 2 | unit `ratio` | `sem`, `ci` |
 | `ratio_increments` | area above each arm's own baseline, second over first | 2 | unit `ratio` | `sem`, `ci` |
 | `change_from_baseline` | the mean of the marker over `window` minus its mean over `baseline_window`, in one arm | 1 | a difference | `sd`, `sem`, `ci`, `range` |
+| `ratio_to_baseline` | the mean of the marker over `window` divided by its mean over `baseline_window`, in one arm | 1 | unit `ratio` | `sem`, `ci` |
 | `area_under_curve` | the trapezoidal area of one arm, over the sampling minutes `times` | 1 | an area: `unit` is the concentration, `time_unit` is `min` or `h`; or `per_span: true` for an area printed divided by its span | `sd`, `sem`, `ci`, `range` |
 | `incremental_area` | the trapezoidal area of the marker above (or net of) the person's own baseline, over `times` | 1 | an area, as above | `sd`, `sem`, `ci`, `range` |
 | `spread` | the between-person standard deviation of the person's window mean | 1 | an SD, in the marker's unit | `n_only`, `sem`, `ci` |
@@ -640,6 +641,13 @@ what the model and this format should learn next.
 * `ratio_increments` also takes `baseline_window` (the run-in, ending before `window`
   starts). It is for "incremental area under the curve" comparisons between two arms, where
   the fasting level must cancel. One arm's own incremental area is `incremental_area`.
+* `ratio_to_baseline` is the mean of the marker over `window` divided by its mean over
+  `baseline_window`, one arm, as a ratio of the two population means (the published
+  number, not a mean of each person's ratio). It takes both windows, each inside the arm.
+  The uncertainty is the standard error of the ratio, used whole. A paper that prints
+  the level and its baseline gives you both numbers: divide, and propagate
+  `se = r * sqrt((se_level / level)^2 + (se_base / base)^2)`; say in the description
+  that the two are taken as independent, which overstates the error of a paired design.
 * `change_from_baseline` is the mean of the marker over `window` minus its mean over
   `baseline_window`, one arm, one person at a time. It takes both windows, each inside the
   arm and nowhere else constrained (the baseline need not come first). The value is a
@@ -997,6 +1005,13 @@ used.
   lower and are a different measurement: leave them out (`marker`, `active_glp1` or
   `active_gip`). If the paper does not say which form its assay reads, say so in
   the finding's description.
+* A `glp1` level is entered as a **ratio to the same arm's own baseline** (`ratio_to_baseline`,
+  or `ratio_increments` between two arms), never as an absolute level or area. Assays
+  differ multiplicatively: fasting total GLP-1 in healthy adults runs from 3.4 pmol/L
+  (`hjorth-2022`) to 48 pmol/L (`schwander-2014`) across the corpus, a spread no one
+  body can fit. A lone fasting level, with no change from it printed, goes to `left_out`
+  (kind `source`, name `assay_dependent_level`). A baseline that is not printed for the
+  arm may be borrowed from the same subjects' other visit; say so in the description.
 * A unit the paper does not print is not to be supplied from convention (RMSSD "in
   ms"): leave the number out.
 * If the unit as printed converts to an absurd value (adrenaline in ng/mL), the paper

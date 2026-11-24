@@ -735,3 +735,70 @@ def test_the_median_persons_residual_and_the_cold_model_read_the_new_kinds():
     rows = cold_calibration(specs=_specs()[:4]).rows
     assert [r.name for r in rows] == ["auc40", "iauc30", "net30", "change40"]
     assert all(np.isfinite(r.cold_predicted) for r in rows)
+
+
+# --- ratio_to_baseline: the assay's scale cancels --------------------------------------
+
+def _ratio_spec(target: float, sigma: float = 0.1):
+    arm = CohortArmSpec(label="a", duration_min=121, start_hour=8.0, meals=())
+    return CohortStatisticSpec(
+        name="ratio", source="t", description="", arms=(arm,), marker_id="glucose",
+        kind=StatisticKind.RATIO_TO_BASELINE, window=StatisticWindow(60, 120),
+        baseline=StatisticWindow(0, 1), target=target, sigma=sigma,
+    )
+
+
+def _ratio_traj(scale: float) -> torch.Tensor:
+    """[B=3, 121, series]: glucose 10 x scale at minute 0 and 25 x scale from minute 60 on."""
+    from pulse.types import SERIES_INDEX as IDX
+    traj = torch.ones(3, 121, len(IDX), dtype=torch.float64)
+    g = torch.full((3, 121), 10.0 * scale, dtype=torch.float64)
+    g[:, 60:] = 25.0 * scale
+    traj[:, :, IDX["glucose"]] = g
+    return traj
+
+
+def test_ratio_to_baseline_is_the_window_mean_over_the_baseline_mean_whatever_the_scale():
+    from pulse.cohort_loss import _score_arm_trajs
+    spec = _ratio_spec(target=2.5)
+    for scale in (1.0, 0.2, 7.0):
+        loss, pred, z = _score_arm_trajs(spec, [_ratio_traj(scale)], torch.zeros(3, 4), None)
+        assert pred == pytest.approx(2.5) and z == pytest.approx(0.0, abs=1e-9)
+    _loss, pred, z = _score_arm_trajs(_ratio_spec(target=2.0, sigma=0.25), [_ratio_traj(3.0)], torch.zeros(3, 4), None)
+    assert pred == pytest.approx(2.5) and z == pytest.approx(2.0)   # (2.5 - 2.0) / 0.25
+
+
+def test_ratio_to_baseline_scores_the_population_mean_ratio_and_has_a_gradient():
+    from pulse.cohort_loss import _score_arm_trajs
+    traj = _ratio_traj(1.0).requires_grad_(True)
+    loss, _pred, _z = _score_arm_trajs(_ratio_spec(target=2.0), [traj], torch.zeros(3, 4), None)
+    loss.backward()
+    assert torch.isfinite(traj.grad).all() and float(traj.grad.abs().sum()) > 0.0
+
+
+def test_the_spec_wants_a_baseline_and_one_arm_for_a_ratio_to_baseline():
+    arm = CohortArmSpec(label="a", duration_min=121, start_hour=8.0, meals=())
+    base = dict(name="s", source="t", description="", marker_id="glucose", target=1.5, sigma=0.1,
+                kind=StatisticKind.RATIO_TO_BASELINE, window=StatisticWindow(60, 120))
+    with pytest.raises(ValueError, match="needs a baseline window"):
+        CohortStatisticSpec(arms=(arm,), **base)
+    with pytest.raises(ValueError, match="single-arm"):
+        CohortStatisticSpec(arms=(arm, arm), baseline=StatisticWindow(0, 1), **base)
+    spec = CohortStatisticSpec(arms=(arm,), baseline=StatisticWindow(0, 1), **base)
+    assert 0 in statistic_cuts(spec) and 1 in statistic_cuts(spec)
+
+
+def test_a_ratio_to_baseline_finding_is_unitless_and_takes_its_standard_error_whole():
+    spec = _spec("ogtt_glucose_second_hour_over_fasting")
+    assert spec.kind is StatisticKind.RATIO_TO_BASELINE
+    assert spec.window == StatisticWindow(60, 120) and spec.baseline == StatisticWindow(0, 1)
+    assert spec.target == pytest.approx(1.25) and spec.sigma == pytest.approx(0.05) and spec.n_arm == 1
+    data = _data()
+    _finding(data, "ogtt_glucose_second_hour_over_fasting")["unit"] = "mmol/L"
+    assert any("dimensionless" in p for p in _problems(data))
+    data = _data()
+    _finding(data, "ogtt_glucose_second_hour_over_fasting")["uncertainty"] = {"kind": "sd", "value": 0.2, "n": 12}
+    assert any("sem, ci" in p or "takes an uncertainty" in p for p in _problems(data))
+    data = _data()
+    del _finding(data, "ogtt_glucose_second_hour_over_fasting")["baseline_window"]
+    assert _problems(data)

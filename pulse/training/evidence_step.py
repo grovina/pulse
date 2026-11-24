@@ -87,6 +87,7 @@ def sample_evidence(
 def _sigma(spec: CohortStatisticSpec, n_people: int) -> float:
     if spec.kind in (
         StatisticKind.SPREAD, StatisticKind.CORRELATION, StatisticKind.RATIO_INCREMENTS,
+        StatisticKind.RATIO_TO_BASELINE,
     ):
         return float(spec.sigma)
     n = int(spec.n_arm) if spec.n_arm is not None else max(n_people, 1)

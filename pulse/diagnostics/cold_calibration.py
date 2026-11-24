@@ -173,6 +173,10 @@ def cold_calibration(
             win = _arm_window(spec, arm_idx)
             if spec.kind in PER_PERSON_KINDS:
                 per_arm.append(_per_person(traj, marker_idx, spec))
+            elif spec.kind is StatisticKind.RATIO_TO_BASELINE:
+                assert spec.baseline is not None
+                base = _extract_statistic(traj, marker_idx, spec.baseline, StatisticKind.MEAN_IN_WINDOW)
+                per_arm.append(_extract_statistic(traj, marker_idx, win, StatisticKind.MEAN_IN_WINDOW) / base)
             elif spec.kind is StatisticKind.RATIO_INCREMENTS:
                 assert spec.baseline is not None
                 per_arm.append(_excess_area(traj, marker_idx, win, spec.baseline))

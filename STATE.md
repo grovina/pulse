@@ -16,7 +16,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Parameters | 37,290 at the default widths |
 | Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
-| Cohort specs | 1141 authored, 140 of them curves; 1215 training points and 332 held-out points |
+| Cohort specs | 1135 authored, 137 of them curves; 1208 training points and 326 held-out points |
 | Rules | 62 training, 0 held out |
 | Coupling priors | 32 |
 | Papers | 192, of which 31 are sealed |
@@ -295,6 +295,19 @@ and the nutrient gain doubled (2026-11-22; its board against iter 119's):
   to 0.6 gives fasting 0.99, exercise 1.24, late mixed-meal insulin 0.65
   (from 0.72); doubling the nutrient gain again is inert. sandovalalzate-2016's
   2 h glucose below its 1 h value is as the paper prints it.
+- GLP-1 is now scored scale-free (`ratio_to_baseline`, and `ratio_increments`
+  for lindgren-2020): the corpus's fasting GLP-1 runs 3.4 to 48 pmol/L, in two
+  clusters about sevenfold apart, with every trained paper in the high one and
+  every sealed paper in the low one, and the rises scale with it. Lone fasting
+  levels go to `left_out` (`assay_dependent_level`). Re-scored that way, sealed
+  median and mean |z| are 0.92 and 1.30 for iter 119, 0.77 and 1.18 for iter
+  120. Lindgren's post-dinner ratios stay poor (the model shows no rise).
+- A stomach that empties faster when full (rate x clamp(kcal/300, 1)^0.33;
+  the drink is unchanged) frozen on iter 120: late mixed-meal insulin 0.72 to
+  0.81, mok-2016's post-lunch insulin 19 to 31 against 106, battezzati 48 to
+  65 g absorbed by 150 min; other targets within 0.05. At 150 min after mok's
+  breakfast insulin barely moves (17 to 19 against 74): secretion, not the
+  stomach.
 
 Iter 119, insulin driven by absorbed protein and fat and a basal 0.8 times
 lower (2026-11-19; its own board against iter 118's, 176 sealed and 821

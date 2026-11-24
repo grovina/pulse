@@ -66,6 +66,11 @@ class StatisticKind(str, Enum):
     # divided by the span. ``below_baseline`` says whether stretches under the
     # baseline count negative or not at all. Per person. Single arm.
     INCREMENTAL_AREA = "incremental_area"
+    # mean(arm[window]) / mean(arm[baseline]) in one arm: a marker read against
+    # the same arm's own run-in, as a ratio of the two population means. For a
+    # level whose assay scale differs between papers (GLP-1): the scale cancels,
+    # and shape and relative size remain. Single arm.
+    RATIO_TO_BASELINE = "ratio_to_baseline"
 
 
 class BelowBaseline(str, Enum):
@@ -124,7 +129,9 @@ SAMPLED_KINDS = frozenset({StatisticKind.AREA_UNDER_CURVE, StatisticKind.INCREME
 # mean (sigma is the between-person SD, divided by sqrt(n_arm)); they have no entry in
 # MEAN_KINDS because that reads a plain window mean.
 PER_PERSON_KINDS = frozenset({StatisticKind.CHANGE_FROM_BASELINE}) | SAMPLED_KINDS
-_SINGLE_ARM_ONLY = PER_PERSON_KINDS | {StatisticKind.SPREAD, StatisticKind.CORRELATION}
+_SINGLE_ARM_ONLY = PER_PERSON_KINDS | {
+    StatisticKind.SPREAD, StatisticKind.CORRELATION, StatisticKind.RATIO_TO_BASELINE,
+}
 MEAN_KINDS = frozenset({
     StatisticKind.MEAN_IN_WINDOW, StatisticKind.DELTA_MEANS, StatisticKind.RATIO_MEANS,
 })
@@ -148,7 +155,8 @@ def statistic_cuts(spec: "CohortStatisticSpec", arm_idx: int = 0) -> tuple[int, 
     """
     window = spec.per_arm_windows[arm_idx] if spec.per_arm_windows is not None else spec.window
     cuts = [window.start_min, window.end_min]
-    if spec.kind in PER_PERSON_KINDS and spec.baseline is not None:
+    if (spec.kind in PER_PERSON_KINDS or spec.kind is StatisticKind.RATIO_TO_BASELINE) \
+            and spec.baseline is not None:
         cuts += [spec.baseline.start_min, spec.baseline.end_min]
     if spec.sample_times is not None:
         cuts += [x for t in spec.sample_times for x in (t, t + 1)]
@@ -506,17 +514,17 @@ class CohortStatisticSpec:
                     )
                 if window.end_min > arm.duration_min or self.baseline.end_min > arm.duration_min:
                     raise ValueError(f"{self.name}: a window runs past the arm")
-        elif self.kind is StatisticKind.CHANGE_FROM_BASELINE:
+        elif self.kind in (StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.RATIO_TO_BASELINE):
             if self.baseline is None:
-                raise ValueError(f"{self.name}: kind=change_from_baseline needs a baseline window")
+                raise ValueError(f"{self.name}: kind={self.kind.value} needs a baseline window")
             self._check_inside_arm("window", self.window)
             self._check_inside_arm("baseline window", self.baseline)
         elif self.kind is StatisticKind.INCREMENTAL_AREA and self.baseline is not None:
             self._check_inside_arm("baseline window", self.baseline)
         elif self.baseline is not None:
             raise ValueError(
-                f"{self.name}: baseline is only for kinds ratio_increments, change_from_baseline "
-                "and incremental_area",
+                f"{self.name}: baseline is only for kinds ratio_increments, change_from_baseline, "
+                "ratio_to_baseline and incremental_area",
             )
         if self.kind in SAMPLED_KINDS:
             times = self.sample_times

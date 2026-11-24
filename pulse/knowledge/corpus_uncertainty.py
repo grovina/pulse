@@ -32,8 +32,8 @@ area / incremental area        for a range (Wan et al. 2014). An area is
                                carried as its time-weighted mean (area / span of
                                the sample times), so its sigma is the SD of that
                                mean, scaled by the same factor as the value.
-ratio of increments            the reported standard error (``sem`` or     1
-                               CI half-width / quantile)
+ratio of increments /         the reported standard error (``sem`` or     1
+ratio to baseline              CI half-width / quantile)
 spread                         ``sd / sqrt(2 (n_eff - 1))`` from ``n``     1
                                alone; or the reported standard error /
                                CI of the SD
@@ -97,6 +97,7 @@ ALLOWED_KINDS: dict[StatisticKind, frozenset[str]] = {
     StatisticKind.INCREMENTAL_AREA: _SCALAR,
     StatisticKind.RATIO_MEANS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_INCREMENTS: frozenset({"sem", "ci"}),
+    StatisticKind.RATIO_TO_BASELINE: frozenset({"sem", "ci"}),
     StatisticKind.SPREAD: frozenset({"n_only", "sem", "ci"}),
     StatisticKind.CORRELATION: frozenset({"n_only", "sem", "ci"}),
 }
@@ -260,7 +261,7 @@ def to_sigma(kind: StatisticKind, target: float, u: Uncertainty) -> tuple[float,
     ):
         sigma = between_person_sd(u)
         return _positive(sigma), n_eff
-    if kind is StatisticKind.RATIO_INCREMENTS:
+    if kind in (StatisticKind.RATIO_INCREMENTS, StatisticKind.RATIO_TO_BASELINE):
         return _positive(_widened_se(u)), 1
     if kind is StatisticKind.SPREAD:
         if u.kind == "n_only":

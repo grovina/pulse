@@ -140,6 +140,13 @@ def _cohort_residual(
                 traj, series, _arm_window(spec, arm_idx), spec.baseline,
             ))
         pred = combine_arms(spec.kind, areas)
+    elif spec.kind is StatisticKind.RATIO_TO_BASELINE:
+        assert spec.baseline is not None
+        traj = _rollout_arm_batched(model, embedding, spec.arms[0], initial_state, observe=observe)
+        pred = (
+            traj[:, _arm_window(spec, 0).start_min:_arm_window(spec, 0).end_min, series].mean(dim=1)
+            / traj[:, spec.baseline.start_min:spec.baseline.end_min, series].mean(dim=1)
+        )
     elif spec.kind in PER_PERSON_KINDS:
         traj = _rollout_arm_batched(model, embedding, spec.arms[0], initial_state, observe=observe)
         pred = per_person_statistic(traj[:, :, series], spec)

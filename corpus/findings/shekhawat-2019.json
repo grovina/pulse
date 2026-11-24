@@ -128,30 +128,6 @@
       }
     },
     {
-      "id": "hc_fasting_glp1",
-      "description": "Fasting total GLP-1, healthy controls",
-      "marker": "glp1",
-      "statistic": "mean_in_window",
-      "protocols": [
-        "fasted_sample_12h"
-      ],
-      "window": {
-        "start_min": 0,
-        "end_min": 30
-      },
-      "value": 22.8,
-      "unit": "pmol/L",
-      "uncertainty": {
-        "kind": "sd",
-        "value": 9.7,
-        "n": 10
-      },
-      "location": {
-        "where": "Table 3, column Group HC (n = 10, MEAN ± S.D.)",
-        "quote": "Fasting GLP-1 (total)(pmol/L) | 22.8 ± 9.7(21.60)"
-      }
-    },
-    {
       "id": "hc_fasting_glucagon",
       "description": "Fasting glucagon, healthy controls",
       "marker": "glucagon",
@@ -224,6 +200,13 @@
       "missing": {
         "kind": "population",
         "name": "acromegaly"
+      }
+    },
+    {
+      "what": "absolute fasting total GLP-1 level in healthy controls (22.8 pmol/L): the level depends on the assay and no change from it is printed",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     }
   ]

@@ -813,7 +813,12 @@ _DIFF_KINDS = frozenset({
 })
 # The paper's time unit for an area, in minutes.
 _TIME_UNITS = {"min": 1.0, "h": 60.0}
-_RATIO_KINDS = frozenset({StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS})
+_RATIO_KINDS = frozenset({
+    StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS, StatisticKind.RATIO_TO_BASELINE,
+})
+_BASELINE_KINDS = (
+    StatisticKind.RATIO_INCREMENTS, StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.RATIO_TO_BASELINE,
+)
 
 
 @dataclass(frozen=True)
@@ -1012,7 +1017,7 @@ def _finding_item(
         required |= {"window", "value", "uncertainty"}
     if kind in TWO_ARM_KINDS:
         optional |= {"per_arm_windows"}
-    if kind in (StatisticKind.RATIO_INCREMENTS, StatisticKind.CHANGE_FROM_BASELINE):
+    if kind in _BASELINE_KINDS:
         required |= {"baseline_window"}
     if kind is StatisticKind.INCREMENTAL_AREA:
         required |= {"below_baseline"}
@@ -1261,8 +1266,7 @@ def _finding_item(
                 complete = False
         if window is None and "window" in d and ok_protocols:
             complete = False
-        if kind in (StatisticKind.RATIO_INCREMENTS, StatisticKind.CHANGE_FROM_BASELINE) \
-                and baseline is None:
+        if kind in _BASELINE_KINDS and baseline is None:
             complete = False
         if kind in SAMPLED_KINDS and sample_times is None:
             complete = False

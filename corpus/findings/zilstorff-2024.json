@@ -64,30 +64,6 @@
       }
     },
     {
-      "id": "fasting_glp1",
-      "description": "Fasting plasma total GLP-1 at 09:00",
-      "marker": "glp1",
-      "statistic": "mean_in_window",
-      "protocols": [
-        "day24"
-      ],
-      "window": {
-        "start_min": 60,
-        "end_min": 61
-      },
-      "value": 4.0,
-      "unit": "pmol/L",
-      "uncertainty": {
-        "kind": "sd",
-        "value": 1.5,
-        "n": 22
-      },
-      "location": {
-        "where": "Table 2, columns 'Unit' and 'Baseline fasting value Mean (SD)' (header says SD; footnote: N = 22 for the first timepoint, t = 9 h; same value as Table 1)",
-        "quote": "GLP-1 | pmol/L | 4.0 (1.5)"
-      }
-    },
-    {
       "id": "fasting_gip",
       "description": "Fasting plasma total GIP at 09:00",
       "marker": "gip",
@@ -163,6 +139,13 @@
       "missing": {
         "kind": "operator",
         "name": "correlation_pooled_over_time"
+      }
+    },
+    {
+      "what": "absolute fasting plasma total GLP-1 level at 09:00 (4.0 pmol/L): the level depends on the assay and no change from it is printed",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     }
   ]

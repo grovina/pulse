@@ -196,60 +196,84 @@
       }
     },
     {
-      "id": "glp1_curve_wms",
-      "description": "GLP1 at baseline and 60, 120, 180 min after the waxy maize starch pancakes (WMS) breakfast, estimated marginal means with 95% CI (mixed model). Plasma GLP-1 by radioimmunoassay (antiserum no. 89390); the paper does not say whether total or active GLP-1 is read.",
+      "id": "glp1_ratio_wms_t60",
+      "description": "Plasma GLP-1 at 60 min over the same arm's fasting (0 min) value, estimated marginal means, SE from the 95% CI with t(7). Ratio 11.71/6.63 = 1.766. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "curve",
+      "statistic": "ratio_to_baseline",
       "protocols": [
         "wms"
       ],
-      "unit": "pM",
-      "points": [
-        {
-          "t_min": 0,
-          "value": 6.63,
-          "uncertainty": {
-            "kind": "ci",
-            "low": 3.03,
-            "high": 10.22,
-            "level": 95,
-            "n": 8
-          }
-        },
-        {
-          "t_min": 60,
-          "value": 11.71,
-          "uncertainty": {
-            "kind": "ci",
-            "low": 7.85,
-            "high": 15.77,
-            "level": 95,
-            "n": 8
-          }
-        },
-        {
-          "t_min": 120,
-          "value": 11.32,
-          "uncertainty": {
-            "kind": "ci",
-            "low": 7.62,
-            "high": 15.03,
-            "level": 95,
-            "n": 8
-          }
-        },
-        {
-          "t_min": 180,
-          "value": 9.93,
-          "uncertainty": {
-            "kind": "ci",
-            "low": 6.22,
-            "high": 13.63,
-            "level": 95,
-            "n": 8
-          }
-        }
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.766,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.477,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 5, row 'GLP-1 (pM)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
+        "quote": "GLP-1 (pM) | WMS | 6.63 | (3.03–10.22) | 11.71 | (7.85–15.77) | 11.32 | (7.62–15.03) | 9.93 | (6.22–13.63)"
+      }
+    },
+    {
+      "id": "glp1_ratio_wms_t120",
+      "description": "Plasma GLP-1 at 120 min over the same arm's fasting (0 min) value, estimated marginal means, SE from the 95% CI with t(7). Ratio 11.32/6.63 = 1.707. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "wms"
       ],
+      "window": {
+        "start_min": 120,
+        "end_min": 121
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.707,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.457,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 5, row 'GLP-1 (pM)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
+        "quote": "GLP-1 (pM) | WMS | 6.63 | (3.03–10.22) | 11.71 | (7.85–15.77) | 11.32 | (7.62–15.03) | 9.93 | (6.22–13.63)"
+      }
+    },
+    {
+      "id": "glp1_ratio_wms_t180",
+      "description": "Plasma GLP-1 at 180 min over the same arm's fasting (0 min) value, estimated marginal means, SE from the 95% CI with t(7). Ratio 9.93/6.63 = 1.498. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "wms"
+      ],
+      "window": {
+        "start_min": 180,
+        "end_min": 181
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.498,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.417,
+        "n": 8
+      },
       "location": {
         "where": "Table 5, row 'GLP-1 (pM)' / WMS, columns Baseline, 60, 120, 180 min (mean, 95% CI)",
         "quote": "GLP-1 (pM) | WMS | 6.63 | (3.03–10.22) | 11.71 | (7.85–15.77) | 11.32 | (7.62–15.03) | 9.93 | (6.22–13.63)"
@@ -495,6 +519,13 @@
       "missing": {
         "kind": "marker",
         "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "absolute baseline plasma GLP-1 level (6.6 pM): the level depends on the assay, so only the ratios to baseline are entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     }
   ]

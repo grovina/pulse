@@ -250,86 +250,112 @@
       }
     },
     {
-      "id": "glp1_curve_fishmeal",
-      "description": "Plasma GLP-1 (K2EDTA tubes with DPP-IV inhibitor) at 0, 30 and 60 min after fishmeal capsules, mean (SD), n=5. Assay form (total or active) not stated in the paper.",
+      "id": "glp1_ratio_fishmeal_t30",
+      "description": "Plasma GLP-1 at 30 min over the same arm's fasting (0 min) value, mean (SD), n=5. Ratio 4.07/3.37 = 1.208. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "curve",
+      "statistic": "ratio_to_baseline",
       "protocols": [
         "fishmeal_capsules"
       ],
-      "unit": "pmol/L",
-      "points": [
-        {
-          "t_min": 0,
-          "value": 3.37,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 1.58,
-            "n": 5
-          }
-        },
-        {
-          "t_min": 30,
-          "value": 4.07,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 1.02,
-            "n": 5
-          }
-        },
-        {
-          "t_min": 60,
-          "value": 3.67,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 0.71,
-            "n": 5
-          }
-        }
-      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.208,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.287,
+        "n": 5
+      },
       "location": {
         "where": "Table 3, Fishmeal columns Fasting, 30 min, 60 min (mean (SD))",
         "quote": "p-GLP-1, pmol/L | 3.37 (1.58) | 4.07 (1.02) | 3.67 (0.71)"
       }
     },
     {
-      "id": "glp1_curve_whey",
-      "description": "Plasma GLP-1 (K2EDTA tubes with DPP-IV inhibitor) at 0, 30 and 60 min after whey capsules, mean (SD), n=5. Assay form (total or active) not stated in the paper.",
+      "id": "glp1_ratio_fishmeal_t60",
+      "description": "Plasma GLP-1 at 60 min over the same arm's fasting (0 min) value, mean (SD), n=5. Ratio 3.67/3.37 = 1.089. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "curve",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "fishmeal_capsules"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.089,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.247,
+        "n": 5
+      },
+      "location": {
+        "where": "Table 3, Fishmeal columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "p-GLP-1, pmol/L | 3.37 (1.58) | 4.07 (1.02) | 3.67 (0.71)"
+      }
+    },
+    {
+      "id": "glp1_ratio_whey_t30",
+      "description": "Plasma GLP-1 at 30 min over the same arm's fasting (0 min) value, mean (SD), n=5. Ratio 3.36/3.63 = 0.926. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
       "protocols": [
         "whey_capsules"
       ],
-      "unit": "pmol/L",
-      "points": [
-        {
-          "t_min": 0,
-          "value": 3.63,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 1.58,
-            "n": 5
-          }
-        },
-        {
-          "t_min": 30,
-          "value": 3.36,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 1.48,
-            "n": 5
-          }
-        },
-        {
-          "t_min": 60,
-          "value": 3.68,
-          "uncertainty": {
-            "kind": "sd",
-            "value": 1.79,
-            "n": 5
-          }
-        }
+      "window": {
+        "start_min": 30,
+        "end_min": 31
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 0.926,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.256,
+        "n": 5
+      },
+      "location": {
+        "where": "Table 3, Whey columns Fasting, 30 min, 60 min (mean (SD))",
+        "quote": "p-GLP-1, pmol/L | 3.63 (1.58) | 3.36 (1.48) | 3.68 (1.79)"
+      }
+    },
+    {
+      "id": "glp1_ratio_whey_t60",
+      "description": "Plasma GLP-1 at 60 min over the same arm's fasting (0 min) value, mean (SD), n=5. Ratio 3.68/3.63 = 1.014. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "whey_capsules"
       ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.014,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.296,
+        "n": 5
+      },
       "location": {
         "where": "Table 3, Whey columns Fasting, 30 min, 60 min (mean (SD))",
         "quote": "p-GLP-1, pmol/L | 3.63 (1.58) | 3.36 (1.48) | 3.68 (1.79)"
@@ -384,6 +410,13 @@
       "missing": {
         "kind": "marker",
         "name": "hepatic_gene_expression"
+      }
+    },
+    {
+      "what": "absolute fasting plasma GLP-1 level, fishmeal and whey arms (3.4 and 3.6 pmol/L): the level depends on the assay, so only the ratios to fasting are entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     }
   ]

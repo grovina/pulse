@@ -682,6 +682,16 @@ def _score_arm_trajs(
             for i, traj in enumerate(arm_trajs)
         ]
         return _scalar_z2(areas[1].mean() / areas[0].mean(), spec)
+    if spec.kind is StatisticKind.RATIO_TO_BASELINE:
+        # One published ratio of the two population means (the assay's scale
+        # cancels); ``sigma`` is that ratio's standard error, so it is not divided
+        # by the draw size again.
+        assert spec.baseline is not None
+        n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))
+        idx = SERIES_INDEX[spec.marker_id]
+        top = _window_mean(arm_trajs[0], idx, _arm_window(spec, 0))[:n].mean()
+        bottom = _window_mean(arm_trajs[0], idx, spec.baseline)[:n].mean()
+        return _scalar_z2(top / bottom, spec)
     if spec.kind in PER_PERSON_KINDS:
         # A mean over people of a per-person number: scored like a window mean.
         series = arm_trajs[0][:, :, SERIES_INDEX[spec.marker_id]]

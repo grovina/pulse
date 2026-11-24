@@ -368,6 +368,34 @@
       }
     },
     {
+      "id": "ogtt_glucose_second_hour_over_fasting",
+      "description": "Glucose over the second hour of the OGTT as a ratio to the fasting sample at minute 0",
+      "marker": "glucose",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "ogtt"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 120
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.25,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.05,
+        "n": 12
+      },
+      "location": {
+        "where": "Results, paragraph 4",
+        "quote": "Glucose rose by 1.4 (SEM 0.2) mmol/L from fasting to the second hour."
+      }
+    },
+    {
       "id": "ogtt_glucose_auc",
       "description": "Area under the glucose curve over the five samples, trapezoid",
       "marker": "glucose",

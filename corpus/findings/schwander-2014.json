@@ -405,51 +405,171 @@
       }
     },
     {
-      "id": "fasting_glp1_nw",
-      "description": "Fasting serum total GLP-1 (Multi Species GLP-1 Total ELISA), normal-weight men, baseline characteristics (mean and SD)",
+      "id": "glp1_ratio_500_nw",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 46.6 pmol/L x h over 6 h, over the group's fasting level 31.8 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "mean_in_window",
+      "statistic": "ratio_to_baseline",
       "protocols": [
-        "fasted_nw"
+        "meal_500_nw"
       ],
       "window": {
         "start_min": 0,
-        "end_min": 30
+        "end_min": 361
       },
-      "value": 31.8,
-      "unit": "pmol/L",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.244,
+      "unit": "ratio",
       "uncertainty": {
-        "kind": "sd",
-        "value": 15.8,
+        "kind": "sem",
+        "value": 0.066,
         "n": 19
       },
       "location": {
-        "where": "Table 2, column 'Normal-weight (n = 19)'; footnote: values are means ± SDs",
-        "quote": "GLP-1, pmol/L | 31.8 ± 15.8*"
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 46.6 ± 11.5†"
       }
     },
     {
-      "id": "fasting_glp1_ob",
-      "description": "Fasting serum total GLP-1 (Multi Species GLP-1 Total ELISA), obese men, baseline characteristics (mean and SD)",
+      "id": "glp1_ratio_1000_nw",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 63.8 pmol/L x h over 6 h, over the group's fasting level 31.8 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
       "marker": "glp1",
-      "statistic": "mean_in_window",
+      "statistic": "ratio_to_baseline",
       "protocols": [
-        "fasted_ob"
+        "meal_1000_nw"
       ],
       "window": {
         "start_min": 0,
-        "end_min": 30
+        "end_min": 361
       },
-      "value": 48.0,
-      "unit": "pmol/L",
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.334,
+      "unit": "ratio",
       "uncertainty": {
-        "kind": "sd",
-        "value": 20.6,
+        "kind": "sem",
+        "value": 0.091,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 63.8 ± 15.7†"
+      }
+    },
+    {
+      "id": "glp1_ratio_1500_nw",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 88.1 pmol/L x h over 6 h, over the group's fasting level 31.8 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "meal_1500_nw"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.462,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.144,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 88.1 ± 25.5†"
+      }
+    },
+    {
+      "id": "glp1_ratio_500_ob",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 47.6 pmol/L x h over 6 h, over the group's fasting level 48.0 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "meal_500_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.165,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.033,
         "n": 17
       },
       "location": {
-        "where": "Table 2, column 'Obese (n = 17)'; footnote: values are means ± SDs",
-        "quote": "GLP-1, pmol/L | 48.0 ± 20.6*"
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 47.6 ± 8.2b,†"
+      }
+    },
+    {
+      "id": "glp1_ratio_1000_ob",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 70.6 pmol/L x h over 6 h, over the group's fasting level 48.0 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "meal_1000_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.245,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.042,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1000 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 70.6 ± 9.5a,†"
+      }
+    },
+    {
+      "id": "glp1_ratio_1500_ob",
+      "description": "Time-weighted mean serum total GLP-1 over 0 to 6 h (1 + net incremental area 76.1 pmol/L x h over 6 h, over the group's fasting level 48.0 pmol/L from Table 2) over the minute-0 value. Entered as a ratio to the arm's own baseline because assays of GLP-1 differ several-fold between papers (printed fasting levels run 3 to 48 pmol/L); the standard error propagates the two printed uncertainties as independent (a paired design would give a smaller one).",
+      "marker": "glp1",
+      "statistic": "ratio_to_baseline",
+      "protocols": [
+        "meal_1500_ob"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 361
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 1
+      },
+      "value": 1.264,
+      "unit": "ratio",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.052,
+        "n": 17
+      },
+      "location": {
+        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
+        "quote": "GLP-1, pmol/L × 6 h | 76.1 ± 12.8a,†"
       }
     },
     {
@@ -799,180 +919,6 @@
         "where": "Table 3, row 'Glucose, mmol/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
         "quote": "Glucose, mmol/L × 6 h | 1.8 ± 1.0a,*"
       }
-    },
-    {
-      "id": "net_iauc_glp1_500_nw",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_500_nw"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 46.6,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 11.5,
-        "n": 19
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 500 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 46.6 ± 11.5†"
-      }
-    },
-    {
-      "id": "net_iauc_glp1_1000_nw",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1000-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_1000_nw"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 63.8,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 15.7,
-        "n": 19
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1000 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 63.8 ± 15.7†"
-      }
-    },
-    {
-      "id": "net_iauc_glp1_1500_nw",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1500-kcal high-fat meal, normal-weight men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_1500_nw"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 88.1,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 25.5,
-        "n": 19
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Normal-weight (n = 19) 1500 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 88.1 ± 25.5†"
-      }
-    },
-    {
-      "id": "net_iauc_glp1_500_ob",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_500_ob"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 47.6,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 8.2,
-        "n": 17
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 500 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 47.6 ± 8.2b,†"
-      }
-    },
-    {
-      "id": "net_iauc_glp1_1000_ob",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1000-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_1000_ob"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 70.6,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 9.5,
-        "n": 17
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1000 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 70.6 ± 9.5a,†"
-      }
-    },
-    {
-      "id": "net_iauc_glp1_1500_ob",
-      "description": "Net incremental AUC of serum total GLP-1 (Total ELISA) over 0-6 h after the 1500-kcal high-fat meal, obese men; trapezoid over the samples at 0, 1, 2, 4, 6 h, area below baseline subtracted (Methods); mean and SEM",
-      "marker": "glp1",
-      "statistic": "incremental_area",
-      "protocols": [
-        "meal_1500_ob"
-      ],
-      "times": [
-        0,
-        60,
-        120,
-        240,
-        360
-      ],
-      "below_baseline": "subtracted",
-      "value": 76.1,
-      "unit": "pmol/L",
-      "time_unit": "h",
-      "uncertainty": {
-        "kind": "sem",
-        "value": 12.8,
-        "n": 17
-      },
-      "location": {
-        "where": "Table 3, row 'GLP-1, pmol/L × 6 h', column Obese (n = 17) 1500 kcal; footnote: values are means ± SEMs",
-        "quote": "GLP-1, pmol/L × 6 h | 76.1 ± 12.8a,†"
-      }
     }
   ],
   "left_out": [
@@ -1030,6 +976,13 @@
       "missing": {
         "kind": "operator",
         "name": "spearman_correlation"
+      }
+    },
+    {
+      "what": "absolute fasting serum total GLP-1 levels, normal-weight and obese men (31.8 and 48.0 pmol/L): the level depends on the assay, so only the ratios to fasting are entered",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     }
   ]

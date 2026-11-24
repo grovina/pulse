@@ -517,6 +517,7 @@ def _comparable(spec):
     sigma = spec.sigma
     if spec.n_arm is not None and spec.kind not in (
         StatisticKind.SPREAD, StatisticKind.CORRELATION, StatisticKind.RATIO_INCREMENTS,
+        StatisticKind.RATIO_TO_BASELINE,
     ):
         sigma = spec.sigma / (spec.n_arm ** 0.5)
     arms = tuple(replace(a, label="") for a in spec.arms)
