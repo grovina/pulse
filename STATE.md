@@ -286,6 +286,15 @@ and the nutrient gain doubled (2026-11-22; its board against iter 119's):
   fasting GLP-1 doubled (hjorth-2022 t0 11.2 to 23.8 pM against 3.4;
   zilstorff-2024 7.2 to 15.7 against 4.0), though none of the three changes
   touches GLP-1. Trained items: no marker worse but glucose.
+- Fasting and exercise insulin after iter 120 (free, frozen): fasting
+  insulin is the basal setpoint alone (every nutrient and glucose-driven
+  term is zero fasted), and the corpus pulls both ways (majorpedersen-2008
+  2.8x target, hoeks-2010 and raz-2013 0.35x). The epinephrine gate works:
+  li-2024's run lowers insulin 38% against the paper's 40%, so exercise
+  insulin's 1.66x is the resting excess carried through. Setpoint scale 0.8
+  to 0.6 gives fasting 0.99, exercise 1.24, late mixed-meal insulin 0.65
+  (from 0.72); doubling the nutrient gain again is inert. sandovalalzate-2016's
+  2 h glucose below its 1 h value is as the paper prints it.
 
 Iter 119, insulin driven by absorbed protein and fat and a basal 0.8 times
 lower (2026-11-19; its own board against iter 118's, 176 sealed and 821
