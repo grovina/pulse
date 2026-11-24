@@ -26,7 +26,9 @@ from pulse.modules.metabolic import (
 def _proportion(pool: torch.Tensor, rate: float) -> torch.Tensor:
     kcal_g = pool.new_tensor(KCAL_PER_G)
     kcal = (pool * kcal_g).sum(-1, keepdim=True)
-    frac = torch.where(kcal > 0, torch.minimum(kcal, kcal.new_full(kcal.shape, rate)) / kcal, torch.zeros_like(kcal))
+    # The load law written out: the rate grows as (held / 300) ** 0.33 above 300 kcal, to a cap.
+    rate_now = rate * (kcal / 300.0).clamp(1.0, 10.0) ** 0.33
+    frac = torch.where(kcal > 0, torch.minimum(kcal, rate_now) / kcal, torch.zeros_like(kcal))
     return pool * frac
 
 

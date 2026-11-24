@@ -222,16 +222,18 @@ class TestGutKernelStructuralProperties(unittest.TestCase):
         self.assertLess(flags[-1], 1.0)
 
     def test_a_larger_meal_leaves_at_the_same_rate_for_longer(self) -> None:
-        """Both loads are above 2.13 kcal/min, so the early rate matches and the
-        larger meal is still leaving after the smaller one has gone. The integral
-        over a window that covers both is the dose."""
+        """The larger meal (856 kcal against 214) starts at the load-law rate, 2.13 times
+        ``load_factor(856)``, and is still leaving after the smaller one has gone. The
+        integral over a window that covers both is the dose."""
         emb = torch.randn(8)
         times = torch.arange(0, 900, dtype=torch.float32)
         meals_a = [MealEvent(time=0.0, carbs=30.0, fats=6.0, proteins=10.0)]
         meals_b = [MealEvent(time=0.0, carbs=120.0, fats=24.0, proteins=40.0)]
         out_a = self.gut.forward_window(times, meals_a, emb)
         out_b = self.gut.forward_window(times, meals_b, emb)
-        torch.testing.assert_close(out_b[0, :3], out_a[0, :3], atol=1e-4, rtol=1e-4)
+        from pulse.gastric import load_factor_scalar
+        torch.testing.assert_close(
+            out_b[0, :3], out_a[0, :3] * load_factor_scalar(856.0), atol=1e-4, rtol=1e-4)
         gone_a = int((out_a[:, 0] > 1e-4).sum())
         gone_b = int((out_b[:, 0] > 1e-4).sum())
         self.assertGreater(gone_b, gone_a + 60)

@@ -37,7 +37,7 @@ class TestOneBasalInsulin(unittest.TestCase):
 
     def test_a_fitted_patient_is_the_ib_both_modules_read(self) -> None:
         model = _model()
-        patient = PatientParams(Ib=18.0)
+        patient = PatientParams(Ib=15.0)   # the head reaches 10 * scale * e^0.9 = 16 at most
         bias = math.atanh(math.log(patient.Ib / (10.0 * INSULIN_SETPOINT_SCALE)) / 0.9)
         with torch.no_grad():
             last = model.metabolic.insulin_baseline_net[-1]
@@ -88,3 +88,28 @@ class TestOneBasalInsulin(unittest.TestCase):
         model = _model()
         with self.assertRaises(RuntimeError):
             model.appetite.bind_body(model.appetite.constants(torch.zeros(1, 16)), None)
+
+
+class TestTheSetpointScaleIsNotCarriedByTheHead(unittest.TestCase):
+    """The scale (0.65 since iter 121, 0.8 before) is a constant in front of the head, not a
+    parameter. An older checkpoint, a warm start included, keeps its trained head untouched
+    (no load adjustment), so its setpoint moves by the ratio of the scales."""
+
+    def test_a_warm_start_keeps_the_head_and_scales_the_setpoint(self) -> None:
+        from pulse.train import load_compatible_state_dict
+        self.assertEqual(INSULIN_SETPOINT_SCALE, 0.65)
+        self.assertEqual(ModularPhysiologyNetwork.LOAD_ADJUSTMENTS.keys(),
+                         {"metabolic.islet.log_ins_nut_gain"})
+        src = _model()
+        with torch.no_grad():
+            src.metabolic.insulin_baseline_net[-1].bias.fill_(0.3)
+        state = {k: v.clone() for k, v in src.state_dict().items()}   # a state with state_rev 1
+        m = _model()
+        load_compatible_state_dict(m, state)
+        torch.testing.assert_close(
+            m.metabolic.insulin_baseline_net[-1].bias, src.metabolic.insulin_baseline_net[-1].bias)
+        emb = torch.randn(3, EMBEDDING_DIM)
+        got = m.metabolic.insulin_setpoint_raw(m.embedding_projections["metabolic"](emb))
+        want = 10.0 * INSULIN_SETPOINT_SCALE * torch.exp(0.9 * torch.tanh(
+            m.metabolic.insulin_baseline_net(m.embedding_projections["metabolic"](emb)).squeeze(-1)))
+        torch.testing.assert_close(got, want, rtol=1e-4, atol=1e-5)

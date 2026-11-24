@@ -57,14 +57,31 @@ protein + `ins_nut_w_f` x fat) leaving the stomach, starting at 2, 2 and 0.5
 (µU/mL per minute per gram). It replaces the protein-only `amino_ins_gain`
 (1 per gram, dropped; the teacher keeps its own). Glucagon gains
 `gn_nut_gain` x protein, starting at 3 x 2 x `protein_gn_gain` = 21 pg/mL per
-minute per gram. The basal insulin setpoint is 0.8 of what it was
-(`INSULIN_SETPOINT_SCALE`, applied in `insulin_setpoint_raw`; the
-normative centre is unchanged). Carbohydrate is not in the nutrient drive.
+minute per gram. The basal insulin setpoint is 0.65 of the normative centre
+(`INSULIN_SETPOINT_SCALE`, applied in `insulin_setpoint_raw`; 0.8 through iter
+120; the centre is unchanged, and the head reaches 16 µU/mL at most). Carbohydrate is not in the nutrient drive.
 Not yet trained: the four numbers start at these values and no run has moved
 them. Iter 118's checkpoint loads (`load_model_state` starts the new keys at their
 defaults and ignores `log_amino_ins_gain`). Free tests of this form on it
 (2026-11-19, variant `n2_m3`) are the case for it; the checkpoint has not
 been rescored on the full board.
+
+The stomach empties faster when full (`pulse/gastric.py`): the 2.13 kcal/min
+is multiplied by `clamp(held kcal / 300, 1, 10) ** 0.33`
+(`LOAD_REF_KCAL`, `LOAD_CAP`, `LOAD_EXPONENT`), in the teacher's `step_grams`
+and the student's `leaving_grams` and `simulate_by_meal`. Brener's 75 g drink
+(300 kcal) is unchanged; a 900 kcal meal leaves 1.44 times faster. The incretin
+constants derived from the rate follow: the Vollmer breakfast delivers 0.73 of
+its calories by 240 min (was 0.62), so `GIP_FAT_WEIGHT` 6.48 to 5.17 and
+`GIP_GAIN` 1.41 to 1.66 (iter 120's trained values, 8.36 and 2.26, load as
+they are). No load adjustment accompanies the setpoint scale or the stomach:
+the insulin head is not anchored (setpoint supervision weight 0, no insulin
+prior), so an offset would cancel the change, and a warm start from iter 120
+loads its head untouched. That head had already drifted up against the 0.8
+scale (tanh output at the zero embedding 0.25 at iter 119, 0.37 at iter 120),
+so training may re-learn part of the cut. Not trained yet. Full suite: 1673 passed
+and 5 tests that pinned old numbers (Ib, the constant-rate plateau, one golden rollout)
+re-recorded or restated.
 
 ## Training
 
@@ -308,6 +325,22 @@ and the nutrient gain doubled (2026-11-22; its board against iter 119's):
   65 g absorbed by 150 min; other targets within 0.05. At 150 min after mok's
   breakfast insulin barely moves (17 to 19 against 74): secretion, not the
   stomach.
+
+The bundle (setpoint scale 0.65 and load-dependent emptying), frozen on iter
+120 (2026-11-24, free; 808 glucose and insulin items, 18 GLP-1 ratio items and
+every sealed item, 969 in all; before to after):
+
+- Late (from 120 min) mixed-meal insulin 0.75 to 0.77 of target; mixed-meal
+  glucose z -0.53 to -0.58; drink glucose z +0.76 to +0.68, drink insulin
+  +0.43 to +0.20; fasting insulin 1.32 to 1.03 times target; exercise
+  insulin 1.79 to 1.39 (mean z +1.43 to +0.39).
+- Mean |z| on the 808 items 0.98 to 0.91; GLP-1 ratio items 0.95 to 1.32 (the
+  faster stomach raises the model's GLP-1 rise); all 969 1.04 to 0.99. The 326
+  sealed items (every marker, rescored by `score_cohorts`, so not the board's
+  paper-weighted number): median |z| 0.85 to 0.81, mean 1.24 to 1.16.
+- The scale cut carries the fasting and exercise gain; the stomach adds
+  little to late insulin on its own (see the 0.72 to 0.81 above, which had the
+  scale at 0.8).
 
 Iter 119, insulin driven by absorbed protein and fat and a basal 0.8 times
 lower (2026-11-19; its own board against iter 118's, 176 sealed and 821

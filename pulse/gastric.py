@@ -6,6 +6,11 @@ tried. Carbohydrate, protein and fat that are in the stomach together share
 that rate in proportion to the calories still there, so a fattier meal
 delivers its carbohydrate more slowly. What leaves over the whole bout is
 what entered.
+
+The rate is not quite constant for a bigger load: a stomach holding more than
+Brener's 300 kcal (75 g of glucose) empties faster, as the rate times
+``(held kcal / 300)^LOAD_EXPONENT``. Their drinks sit at the reference, so the
+published 2.13 kcal/min is unchanged at 300 kcal and below.
 """
 
 from __future__ import annotations
@@ -19,6 +24,32 @@ from .correction import correction_weights
 EMPTY_KCAL_PER_MIN = 2.13
 KCAL_PER_G = (4.0, 4.0, 9.0)  # carbohydrate, protein, fat
 FLAG_GATE_SCALE_G = 10.0
+
+# Load-dependent emptying: the rate is multiplied by
+# clamp(held_kcal / LOAD_REF_KCAL, 1, LOAD_CAP) ** LOAD_EXPONENT. The reference
+# is Brener's 75 g glucose drink; the cap (3000 kcal) keeps a huge load from
+# emptying more than about twice as fast.
+LOAD_REF_KCAL = 300.0
+LOAD_EXPONENT = 0.33
+LOAD_CAP = 10.0
+
+
+def load_factor(held_kcal: torch.Tensor) -> torch.Tensor:
+    """Multiplier on the calorie rate for a stomach holding ``held_kcal``."""
+    return (held_kcal / LOAD_REF_KCAL).clamp(min=1.0, max=LOAD_CAP) ** LOAD_EXPONENT
+
+
+def load_factor_scalar(held_kcal: float) -> float:
+    """``load_factor`` for a float (the teacher's clock)."""
+    return min(max(held_kcal / LOAD_REF_KCAL, 1.0), LOAD_CAP) ** LOAD_EXPONENT
+
+
+def delivered_kcal(total_kcal: float, minutes: int, kcal_per_min: float = EMPTY_KCAL_PER_MIN) -> float:
+    """Calories that have left by ``minutes`` after one meal of ``total_kcal`` is swallowed."""
+    held = total_kcal
+    for _ in range(minutes):
+        held -= min(kcal_per_min * load_factor_scalar(held), held)
+    return total_kcal - held
 
 
 def _allocate_kcal(
@@ -73,7 +104,7 @@ def leaving_grams(
     runs every minute builds them once."""
     available = (pool * kcal_g).clamp(min=0)
     kcal = available.sum(-1)
-    budget = torch.minimum(rate.expand_as(kcal), kcal)
+    budget = torch.minimum(rate.expand_as(kcal) * load_factor(kcal), kcal)
     return _allocate_kcal(available, budget, weight) / kcal_g
 
 
@@ -168,7 +199,8 @@ def simulate_by_meal(
 
     ``swallow`` is ``[M, K, T, 3]`` (``swallow_by_meal``) and ``speed`` ``[M, K, 3]``. A
     part (one macro of one meal) holding ``kcal_i`` of the pool's ``K`` calories leaves
-    ``kcal_i · min(1, R · speed_i / K)`` a minute. At speed 1 that is the shared law
+    ``kcal_i · min(1, R(K) · speed_i / K)`` a minute, ``R(K)`` the rate times ``load_factor(K)``.
+    At speed 1 that is the shared law
     (each part leaves ``min(R, K) / K`` of itself), so the summed outflow is
     ``simulate``'s to float rounding; a faster part takes a larger share of the minute.
     Returns ``(outflow[M, K, T, 3], filled[M, T, 3])``, ``filled`` summed over meals.
@@ -184,7 +216,7 @@ def simulate_by_meal(
         filled.append(pool.sum(dim=1))
         held = pool.clamp(min=0)
         total = (held * kcal_g).sum(dim=(1, 2))
-        per_kcal = torch.where(total > 0, rate / total.clamp(min=1e-12), 0.0)
+        per_kcal = torch.where(total > 0, rate * load_factor(total) / total.clamp(min=1e-12), 0.0)
         left = held * (speed * per_kcal[:, None, None]).clamp(max=1.0)
         outs.append(left)
         pool = pool - left
@@ -198,5 +230,5 @@ def step_grams(
     kcal = KCAL_PER_G[0] * carb + KCAL_PER_G[1] * protein + KCAL_PER_G[2] * fat
     if kcal <= 0.0:
         return 0.0, 0.0, 0.0
-    frac = min(kcal_per_min, kcal) / kcal
+    frac = min(kcal_per_min * load_factor_scalar(kcal), kcal) / kcal
     return carb * frac, protein * frac, fat * frac

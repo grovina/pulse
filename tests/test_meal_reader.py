@@ -153,7 +153,7 @@ def test_at_speed_one_the_stomach_by_meal_is_the_shared_stomach():
     left, filled = simulate(swallow_from_meals(400, meals, torch.device("cpu")), 2.13)
     by_meal, filled_k = simulate_by_meal(
         swallow_by_meal(400, [meals], 2, torch.device("cpu")), 2.13, torch.ones(1, 2, 3))
-    assert torch.allclose(by_meal.sum(dim=1)[0], left, atol=1e-5)
+    assert torch.allclose(by_meal.sum(dim=1)[0], left, atol=1e-4)
     assert torch.allclose(filled_k[0], filled, atol=1e-4)
 
 

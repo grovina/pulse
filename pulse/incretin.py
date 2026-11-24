@@ -22,7 +22,7 @@ from typing import Mapping
 
 import torch
 
-from .gastric import EMPTY_KCAL_PER_MIN
+from .gastric import EMPTY_KCAL_PER_MIN, delivered_kcal
 from .published import Published
 from .types import MG_DL_PER_G
 
@@ -43,10 +43,13 @@ _OGTT_G = 75.0
 VOLLMER_RATIO = 1.0 + 1.86
 VOLLMER_RATIO_SE = 0.17
 
-# One compartment empties at 2.13 kcal/min, mixed in the proportion swallowed.
-# The breakfast is still emptying at 240 min, so the ratio is of what has
-# left by then, not of the plate.
-_DELIVERED = min(1.0, _WINDOW_MIN * EMPTY_KCAL_PER_MIN / _MEAL_KCAL)
+# One compartment empties at 2.13 kcal/min (faster while it holds more than
+# 300 kcal, ``gastric.load_factor``), mixed in the proportion swallowed. The
+# breakfast is still emptying at 240 min, so the ratio is of what has left by
+# then, not of the plate.
+_DELIVERED = delivered_kcal(_MEAL_KCAL, int(_WINDOW_MIN)) / _MEAL_KCAL
+# Its mean rate over that window, which is what its incretin excess is set at.
+_BREAKFAST_KCAL_PER_MIN = _DELIVERED * _MEAL_KCAL / _WINDOW_MIN
 _CARB_DELIVERED = _DELIVERED * _CARB_G
 _FAT_DELIVERED = _DELIVERED * _FAT_G
 # (carb + weight * fat) / 75 g = 2.86, and the glucose load is all carb.
@@ -57,8 +60,8 @@ GIP_FAT_WEIGHT = (VOLLMER_RATIO * _OGTT_G - _CARB_DELIVERED) / _FAT_DELIVERED
 # is the "nearly equally" operating point.
 _GLP1_MEAL_GAIN = 0.7
 _K_GLP1 = 0.2
-_D_CARB = EMPTY_KCAL_PER_MIN * (360.0 / _MEAL_KCAL) / 4.0
-_D_FAT = EMPTY_KCAL_PER_MIN * (353.0 / _MEAL_KCAL) / 9.0
+_D_CARB = _BREAKFAST_KCAL_PER_MIN * (360.0 / _MEAL_KCAL) / 4.0
+_D_FAT = _BREAKFAST_KCAL_PER_MIN * (353.0 / _MEAL_KCAL) / 9.0
 _STIM = _D_CARB + GIP_FAT_WEIGHT * _D_FAT
 _GLP1_EXCESS = (_GLP1_MEAL_GAIN / _K_GLP1) * _D_CARB * MG_DL_PER_G
 GIP_GAIN = _GLP1_EXCESS * K_GIP / _STIM
@@ -99,7 +102,7 @@ INS_NUT_W_F = 0.5
 # leave a mixed meal's glucagon suppressed.
 GN_NUT_GAIN = 3.0 * 2.0 * PROTEIN_GN_GAIN
 # Setpoint of basal insulin as a share of the normative centre.
-INSULIN_SETPOINT_SCALE = 0.8
+INSULIN_SETPOINT_SCALE = 0.65
 
 GIP_KINETICS: dict[str, Published] = {
     "gip_b": Published(GIP_B, "Fasting plasma GIP in healthy adults"),

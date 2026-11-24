@@ -239,13 +239,13 @@ class TestPerPatientGates(unittest.TestCase):
         met = m.metabolic
         with torch.no_grad():
             met.insulin_baseline_net[-1].weight.zero_()
-            met.insulin_baseline_net[-1].bias.fill_(1.0)  # Ib = 10·exp(0.9·tanh 1) ≈ 19.8
+            met.insulin_baseline_net[-1].bias.fill_(1.0)  # Ib = 6.5·exp(0.9·tanh 1) ≈ 12.9
         state, coupling, external, emb, tf = _inputs(m)
-        state[:, M._INSULIN_IDX] = 0.5           # insulin 15 µU/mL: above the population 10, below Ib
+        state[:, M._INSULIN_IDX] = 0.2           # insulin 12 µU/mL: above the population 10, below Ib
         state[:, M._INSULIN_ACTION_IDX] = 0.0
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)
-        self.assertTrue(bool((f["ib"] > 15.0).all()))
+        self.assertTrue(bool((f["ib"] > 12.0).all()))
         self.assertTrue(bool((f["xa_rate"] < 0).all()))  # signed: I < Ib drives X down
 
     @staticmethod
@@ -481,7 +481,7 @@ class TestSignedInsulinAction(unittest.TestCase):
         m = _model(8, perturb=0.0)
         met = m.metabolic
         state, coupling, external, emb, tf = _inputs(m, batch=1, seed=0, app=0.0)
-        state[0, M._INSULIN_IDX] = (7.0 - 10.0) / 10.0
+        state[0, M._INSULIN_IDX] = (5.0 - 10.0) / 10.0   # below Ib = 6.5 at the zero head
         state[0, M._INSULIN_ACTION_IDX] = -4.0
         with torch.no_grad():
             f = met.fluxes(state, coupling, external, emb, tf)

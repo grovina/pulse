@@ -138,12 +138,13 @@ class TestFreshKernelIsPhysiological(unittest.TestCase):
             [compute_absorption_profile(float(t), [(0.0, 60.0, 20.0, 25.0)], p) for t in range(600)])
 
     def test_appearance_is_at_the_cap_from_the_first_minute(self) -> None:
-        """The compartment delivers at 2.13 kcal/min as soon as the meal is in.
-        A gamma peaking at 30-60 min was the previous kernel, not this law."""
-        # The cap is a plateau, so argmax is float noise: ask minute 0 to be on it.
+        """The compartment delivers at its fullest as soon as the meal is in (2.13 kcal/min
+        times the load factor, 1.22 for these 545 kcal) and eases off as it empties. A gamma
+        peaking at 30-60 min was the previous kernel, not this law."""
         self.assertGreaterEqual(float(self.student[0, 0]), float(self.student[:, 0].max()) * (1 - 1e-5))
         early = self.student[:30, 0]
-        self.assertLess(float(early.max() - early.min()) / float(early.max()), 0.02)
+        self.assertTrue(bool((early[1:] <= early[:-1] * (1 + 1e-6)).all()))
+        self.assertLess(float(early.max() - early.min()) / float(early.max()), 0.15)
 
     def test_fat_in_the_same_meal_slows_the_carbohydrate(self) -> None:
         carb_only = [MealEvent(time=0.0, carbs=60.0, fats=0.0, proteins=0.0)]
