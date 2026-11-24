@@ -326,6 +326,15 @@ and the nutrient gain doubled (2026-11-22; its board against iter 119's):
   65 g absorbed by 150 min; other targets within 0.05. At 150 min after mok's
   breakfast insulin barely moves (17 to 19 against 74): secretion, not the
   stomach.
+- Candidate after run D (frozen on iter 120 with main's code, 969 items):
+  damping insulin-dependent uptake below baseline (`min(g/gb,1)^4`), a
+  stronger meal gate on the muscle share (0.025 to 0.01) and insulin
+  clearance after a meal x0.8 give late mixed-meal insulin 0.77 to 0.87, no
+  minutes below baseline on battezzati or mok, mean |z| 0.99 to 0.98 and
+  sealed median 0.81 to 0.82. Without the clearance change: 0.80 late, mean
+  |z| 0.97. Reducing the liver's first-pass share instead lowers fasting
+  glucose and costs 0.2 mean |z|. Battezzati's own glucose dips a little (78
+  to 83 against 85), so part of the model's dip is real.
 
 The bundle (setpoint scale 0.65 and load-dependent emptying), frozen on iter
 120 (2026-11-24, free; 808 glucose and insulin items, 18 GLP-1 ratio items and
