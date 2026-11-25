@@ -1,0 +1,25 @@
+{
+  "paper": "jansevanrensburg-2024",
+  "citation": "Janse van Rensburg et al. 2024. Effects of no mask, a surgical mask and a fabric buff on peripheral oxygenation saturation during moderate intensity exercise: a randomised cross-over study. Journal of Thoracic Disease",
+  "doi": "10.21037/jtd-23-1178",
+  "pmid": "38617788",
+  "pmcid": "PMC11009602",
+  "licence": "CC BY-NC-ND 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+  "protocol": "Cycling at 60% power output for 30 min with no mask, surgical mask or buff; breathing rate at resting baseline (T0) and at 9, 18 and 27 min",
+  "protocol_kinds": [
+    "exercise"
+  ],
+  "population": "30 participants aged 30-45 y, described as healthy in the discussion",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (breaths/min)",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD by time point and mask condition. Resting posture not verified. 60% power output is a percentage of an unnamed reference (not watts)."
+}

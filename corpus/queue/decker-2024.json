@@ -1,0 +1,25 @@
+{
+  "paper": "decker-2024",
+  "citation": "Decker et al. 2024. Body Positions and Physical Activity Levels Modulate the Ratio of Abdominal to Thoracic Breathing and Respiratory Rate in Young Individuals. Journal of Clinical Medicine",
+  "doi": "10.3390/jcm13247825",
+  "pmid": "39768748",
+  "pmcid": "PMC11727880",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Respiratory belts at rest in standing, sitting, supine and prone; two groups by physical activity (low and high)",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "37 young adults aged 21 +/- 2 y in low and high physical-activity groups",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (1/min) by body position",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Each posture printed as mean and SD per activity group, so posture is stated. Rest only, no exercise. Abstract says 'young individuals'; health status as printed is not 'healthy' in the abstract, but no disease is listed."
+}

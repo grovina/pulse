@@ -1,0 +1,25 @@
+{
+  "paper": "engeroff-2024",
+  "citation": "Engeroff et al. 2024. Investigating effects of FFP2 wearing during physical activity on gas exchange, metabolism and affective state using a randomized controlled trial. Scientific Reports",
+  "doi": "10.1038/s41598-024-56560-x",
+  "pmid": "38491110",
+  "pmcid": "PMC10943002",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Cycling at 40, 50 and 70% VO2max for 10 min each, with FFP2 mask and without, separated by 48 h; spirometry breath-by-breath",
+  "protocol_kinds": [
+    "exercise"
+  ],
+  "population": "13 healthy adults (6 F, 7 M), age 31.3 +/- 5.5 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "breathing frequency (breaths/min)",
+      "where": "Table 3",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Table 3 gives mean and SD per stage and mask condition; Table 2 gives baseline values with ANOVA statistics. Steady stages with %VO2max stated."
+}

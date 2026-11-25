@@ -1,0 +1,26 @@
+{
+  "paper": "cabiddu-2016",
+  "citation": "Cabiddu et al. 2016. Inductive plethysmography potential as a surrogate for ventilatory\nmeasurements during rest and moderate physical exercise. Brazilian Journal of Physical Therapy",
+  "doi": "10.1590/bjpt-rbf.2014.0147",
+  "pmid": "26982454",
+  "pmcid": "PMC4900041",
+  "licence": "CC BY 4.0",
+  "licence_url": "http://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Standing rest and constant-intensity treadmill exercise; portable respiratory inductive plethysmography versus spirometry (ergospirometry)",
+  "protocol_kinds": [
+    "exercise",
+    "other"
+  ],
+  "population": "7 healthy male volunteers",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (bpm)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD for standing rest and treadmill exercise, by method. Treadmill intensity is 'constant' in the text read; speed or %VO2max not checked. Very small n; method comparison paper."
+}

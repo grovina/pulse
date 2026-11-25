@@ -1,0 +1,25 @@
+{
+  "paper": "nanda-2022",
+  "citation": "Nanda et al. 2022. An Observational Crossover Study of N95 Respirator with Surgical Mask and Visor in Various Combinations on Healthy Volunteers and Their Impact on Physiological Variables. Anesthesia, Essays and Researches",
+  "doi": "10.4103/aer.aer_97_22",
+  "pmid": "36447927",
+  "pmcid": "PMC9701335",
+  "licence": "CC BY-NC-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "protocol": "Seated relaxed rest for 45 min with N95 respirator, surgical mask and visor combinations; breathing rate every 15 min",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "21 healthy volunteers",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (breaths/min)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean (SD) per time point and condition, seated posture stated. Sex and age not checked. Masks are the experimental manipulation."
+}

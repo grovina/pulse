@@ -1,0 +1,31 @@
+{
+  "paper": "chiba-2025",
+  "citation": "Chiba et al. 2025. Kyphotic Posture Reduces Respiratory Efficiency During Walking and Running. Cureus",
+  "doi": "10.7759/cureus.93367",
+  "pmid": "41164020",
+  "pmcid": "PMC12558834",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Standing rest, then walking 4 km/h and running 10 km/h on a treadmill (steady), in neutral and simulated kyphotic posture; breath-by-breath measured",
+  "protocol_kinds": [
+    "exercise",
+    "other"
+  ],
+  "population": "10 healthy young men",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (breaths/min)",
+      "where": "Table 2",
+      "form": "table"
+    },
+    {
+      "marker": "respiratory rate (breaths/min)",
+      "where": "Results text (at-rest paragraph)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Rest is standing (posture stated), the kyphotic posture is an experimental manipulation: the neutral-posture column is the usable baseline. Paired design, n=10."
+}

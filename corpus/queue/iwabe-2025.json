@@ -1,0 +1,25 @@
+{
+  "paper": "iwabe-2025",
+  "citation": "Iwabe et al. 2025. Slow-paced breathing reduces anxiety and enhances midfrontal alpha asymmetry, buffering responses to aversive visual stimuli. Frontiers in Human Neuroscience",
+  "doi": "10.3389/fnhum.2025.1605862",
+  "pmid": "40727675",
+  "pmcid": "PMC12301348",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Resting natural breathing (RB) block in a reclined chair, 17 healthy students; slow-paced breathing block for comparison; EEG and respiration recorded",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "17 healthy students (7 F, 10 M), mean age 22.2 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (breaths/min)",
+      "where": "Results text (respiratory paragraph)",
+      "form": "text"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean 14.76 with SD 3.43 for the natural-breathing block, from text. Reclined chair (seated/reclining posture stated). Duration of the resting block not checked."
+}

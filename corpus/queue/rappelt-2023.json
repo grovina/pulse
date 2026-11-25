@@ -1,0 +1,25 @@
+{
+  "paper": "rappelt-2023",
+  "citation": "Rappelt et al. 2023. Restricted nasal-only breathing during self-selected low intensity training does not affect training intensity distribution. Frontiers in Physiology",
+  "doi": "10.3389/fphys.2023.1134778",
+  "pmid": "37153227",
+  "pmcid": "PMC10156973",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "60 min self-selected low-intensity cycling (about 145 W, 77 kg) with oro-nasal and nasal-only breathing, in 10-min intervals",
+  "protocol_kinds": [
+    "exercise"
+  ],
+  "population": "19 physically healthy adults (3 F), age 26.5 +/- 5.1 y",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "breathing frequency (min-1)",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD per 10-min interval; nasal-only is the intervention, the unrestricted condition is the comparison. Steady intensity given in watts with body mass."
+}

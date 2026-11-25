@@ -1,0 +1,26 @@
+{
+  "paper": "vinetti-2023",
+  "citation": "Vinetti et al. 2023. Surgical masks and filtering facepiece class 2 respirators (FFP2) have no major physiological effects at rest and during moderate exercise at 3000-m altitude: a randomised controlled trial. Journal of Travel Medicine",
+  "doi": "10.1093/jtm/taad031",
+  "pmid": "36881665",
+  "pmcid": "PMC10481409",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Rest and cycling at 1 W/kg, in normoxia and simulated 3000 m hypoxia, with no mask, surgical mask and FFP2",
+  "protocol_kinds": [
+    "exercise",
+    "other"
+  ],
+  "population": "8 healthy participants (4 F)",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "breathing frequency fR (min-1)",
+      "where": "Table 1",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Mean +/- SD by condition. The normoxic rest and exercise cells are the usable ones; the hypoxia cells need altitude context. Very small n."
+}

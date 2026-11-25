@@ -121,6 +121,18 @@
       "hits": 29,
       "query": "(tracer[Title/Abstract] OR \"dual-tracer\"[Title/Abstract] OR \"triple-tracer\"[Title/Abstract] OR isotope[Title/Abstract]) AND (meal[Title/Abstract] OR \"glucose ingestion\"[Title/Abstract] OR \"oral glucose\"[Title/Abstract]) AND (\"rate of appearance\"[Title/Abstract] OR \"endogenous glucose production\"[Title/Abstract]) AND healthy[All Fields] AND \"open access\"[filter]",
       "why": "How much of a meal's glucose reaches plasma, and how far endogenous production falls: iter 119's mixed-meal glucose dip traces to small plasma appearance, with nothing in the corpus to set it against."
+    },
+    {
+      "name": "breathing rate at rest and in exercise",
+      "status": "active",
+      "why": "Iter 121's resting breathing rate drifted from about 21 to 26 breaths/min: one trained paper (yu-2026, sustained exercise) carries the marker and nothing anchors rest, against sealed crabtree-2025.",
+      "query": "(\"respiratory rate\"[Title/Abstract] OR \"breathing frequency\"[Title/Abstract] OR \"breathing rate\"[Title/Abstract]) AND (rest[Title/Abstract] OR resting[Title/Abstract] OR exercise[Title/Abstract] OR cycling[Title/Abstract]) AND healthy[Title/Abstract] AND (adults[Title/Abstract] OR volunteers[Title/Abstract] OR participants[Title/Abstract]) AND \"open access\"[filter]",
+      "screened": 100,
+      "queued": 15,
+      "batches": [
+        "2026-11-25"
+      ],
+      "hits": 100
     }
   ]
 }

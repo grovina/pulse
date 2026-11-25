@@ -1,0 +1,25 @@
+{
+  "paper": "scala-2025",
+  "citation": "Scala et al. 2025. Analysis of the effect of 6‐Hz binaural beats on electroencephalographic and autonomic parameters of healthy individuals: An exploratory study. Physiological Reports",
+  "doi": "10.14814/phy2.70271",
+  "pmid": "40405521",
+  "pmcid": "PMC12098959",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "protocol": "Resting-state recording of 10 min lying on a bed, eyes closed, before and during auditory stimulation (6-Hz binaural beats); respiratory rate in the resting-state condition",
+  "protocol_kinds": [
+    "other"
+  ],
+  "population": "20 healthy volunteers",
+  "population_class": "healthy",
+  "reports": [
+    {
+      "marker": "respiratory rate (count/min)",
+      "where": "Table 2",
+      "form": "table"
+    }
+  ],
+  "uncertainty": "sd",
+  "figure_only": false,
+  "note": "Resting-state mean 18.9 +/- 3.9 with median (IQR); lying posture stated. The rest is with auditory stimulation in other blocks; the resting-state block is the usable one. Sex not checked."
+}
