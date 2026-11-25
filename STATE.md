@@ -298,6 +298,17 @@ as ratios on both):
   undid part of the setpoint cut. mok-2016's post-lunch insulin 33 against
   106 (iter 120: 19).
 - Iter 120 stays the reference model.
+- Why (free, frozen and from the boards): the two code changes are neutral
+  to slightly good on sealed papers frozen on iter 120 (median 0.85 to 0.81);
+  the loss comes from retraining. Five sealed items carry nearly all of the
+  mean's growth: ketones (`bhb`) in rossmeislova-2024 and breathing rate in
+  crabtree-2025. The basal cut came back through
+  `embedding_projections.metabolic.bias` (setpoint at the zero embedding
+  11.1 to 11.4 uU/mL; the population mean still fell 11%), not through the
+  head. Exercise insulin sensitivity rose x1.24. The late-insulin candidate
+  above on iter 121: late 0.67 to 0.78, sealed median 0.81 to 0.83.
+- A sealed number must not choose checkpoints or stop training, or it stops
+  being a test; a guard of that kind needs a split of the trained papers.
 
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
