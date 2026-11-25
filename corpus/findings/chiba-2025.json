@@ -1,0 +1,215 @@
+{
+  "paper": "chiba-2025",
+  "citation": {
+    "authors": "Chiba N, Minamisawa T, Matsuda Y, Fujimoto T",
+    "title": "Kyphotic Posture Reduces Respiratory Efficiency During Walking and Running",
+    "journal": "Cureus",
+    "year": 2025,
+    "doi": "10.7759/cureus.93367",
+    "pmid": "41164020",
+    "pmcid": "PMC12558834"
+  },
+  "population": {
+    "n": 10,
+    "sex": "male",
+    "age_years": null,
+    "bmi": null,
+    "status": "healthy",
+    "description": "Ten healthy young men (Methods: 'Ten healthy young men'), each measured in both postures (paired design). No age, height or body mass is printed (only 'young'), so age_years and bmi are null. Screening is not described beyond the paper's word 'healthy'."
+  },
+  "protocols": [
+    {
+      "name": "walk_4kmh",
+      "description": "Walking at 4 km/h, 0% grade, on a rehabilitation treadmill, neutral posture (support belt), Methods and Table 2. No meal and the fed state is not stated (norm_center start). Level from the measured mass-specific VO2 of the neutral condition, 12.5 mL/kg/min (Table 2, VO2/W, 4 km/h; Results): level = (12.5 - 3.7) / 31.7 = 0.2776. Speed was ramped to the target then held for 2 min; the ramp is not printed, so minute 0 is taken as the start of the constant speed, with the activity on for minutes 0 to 2; the sample is the final 60 s (minutes 1 to 2).",
+      "duration_min": 2,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 2,
+            "level": 0.2776
+          }
+        ]
+      },
+      "assumed": [
+        "init",
+        "start_hour",
+        "activity"
+      ]
+    },
+    {
+      "name": "run_10kmh",
+      "description": "Running at 10 km/h, 0% grade, on a rehabilitation treadmill, neutral posture (support belt), Methods and Table 2. No meal and the fed state is not stated (norm_center start). Level from the measured mass-specific VO2 of the neutral condition, 33.9 mL/kg/min (Table 2, VO2/W, 10 km/h; Results): level = (33.9 - 3.7) / 31.7 = 0.9527 (below 1.0, no extrapolation). Speed was ramped to the target then held for 2 min; the ramp is not printed, so minute 0 is taken as the start of the constant speed, with the activity on for minutes 0 to 2; the sample is the final 60 s (minutes 1 to 2).",
+      "duration_min": 2,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 2,
+            "level": 0.9527
+          }
+        ]
+      },
+      "assumed": [
+        "init",
+        "start_hour",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rr_walk_4kmh_neutral",
+      "description": "Respiratory rate walking at 4 km/h, neutral posture, final minute of steady state (SD, n = 10)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "walk_4kmh"
+      ],
+      "window": {
+        "start_min": 1,
+        "end_min": 2
+      },
+      "value": 25.7,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.7,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, RR row, 4 km/h, neutral column",
+        "quote": "RR | 4 km/h | 25.7 ± 4.7"
+      }
+    },
+    {
+      "id": "rr_run_10kmh_neutral",
+      "description": "Respiratory rate running at 10 km/h, neutral posture, final minute of steady state (SD, n = 10)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_10kmh"
+      ],
+      "window": {
+        "start_min": 1,
+        "end_min": 2
+      },
+      "value": 36.0,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, RR row, 10 km/h, neutral column",
+        "quote": "RR | 10 km/h | 36.0 ± 6.9"
+      }
+    },
+    {
+      "id": "vco2_walk_4kmh_neutral",
+      "description": "Carbon dioxide output walking at 4 km/h, neutral posture, final minute (SD, n = 10)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "walk_4kmh"
+      ],
+      "window": {
+        "start_min": 1,
+        "end_min": 2
+      },
+      "value": 637.6,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 54.0,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, VCO2 row, 4 km/h, neutral column",
+        "quote": "VCO2 | 4 km/h | 637.6 ± 54.0"
+      }
+    },
+    {
+      "id": "vco2_run_10kmh_neutral",
+      "description": "Carbon dioxide output running at 10 km/h, neutral posture, final minute (SD, n = 10)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "run_10kmh"
+      ],
+      "window": {
+        "start_min": 1,
+        "end_min": 2
+      },
+      "value": 2248.6,
+      "unit": "mL/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 242.9,
+        "n": 10
+      },
+      "location": {
+        "where": "Table 2, VCO2 row, 10 km/h, neutral column",
+        "quote": "VCO2 | 10 km/h | 2248.6 ± 242.9"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Kyphotic (simulated kyphotic) posture: every kyphotic-column value of Table 2 (RR, VO2, VCO2, RER, VE, ETCO2, ETO2, VD/VT and the rest) and the kyphotic-minus-neutral differences with their CIs (Table 2, Results); the model has no posture input",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Standing-at-rest values of the neutral posture: RR 15.6 ± 3.3 breaths/min, VO2 309.0 ± 22.6 mL/min and VCO2 261.3 ± 24.5 mL/min (Table 2, Standing rows); the paper's rest is standing on the treadmill, not seated or supine, and its length is not printed",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Spinal curvature angle and thoracolumbar flexion, standing, 4 km/h and 10 km/h, both postures (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "spinal_curvature"
+      }
+    },
+    {
+      "what": "Respiratory exchange ratio (RER) at rest, 4 km/h and 10 km/h, neutral posture (Table 2): the fed state is not stated, and RER depends on the meal",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Minute ventilation (VE), VE/VO2 and VE/VCO2, neutral posture, standing, 4 km/h and 10 km/h (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "End-tidal O2 and end-tidal CO2 (ETO2, ETCO2), neutral posture, standing, 4 km/h and 10 km/h (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "Physiological dead-space to tidal volume ratio (VD/VT), neutral posture, 4 km/h and 10 km/h (and standing, see above) (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "dead_space_fraction"
+      }
+    }
+  ]
+}
