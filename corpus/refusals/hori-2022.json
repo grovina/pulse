@@ -1,0 +1,26 @@
+{
+  "paper": "hori-2022",
+  "citation": {
+    "authors": "Hori R, Sasaki M",
+    "title": "Inefficiency of wide-based walking from the perspective of lateral center of gravity, gluteus medius muscle myoelectric activity, and cardiopulmonary parameters",
+    "journal": "Journal of Physical Therapy Science",
+    "year": 2022,
+    "doi": "10.1589/jpts.34.369",
+    "pmid": "35527839",
+    "pmcid": "PMC9057682"
+  },
+  "reported": [
+    {
+      "what": "20 healthy male students walked on a treadmill; the paper's record links a retraction notice (PMC11872180, J Phys Ther Sci 2025;37(3)), so none of its cardiopulmonary results can be used",
+      "location": {
+        "where": "Participants and Methods (the retraction link, related-article PMC11872180, is in the article metadata)",
+        "quote": "Participants were 20 healthy male university students"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "retracted"
+  },
+  "detail": "The paper has been retracted, so nothing it reports may enter the corpus."
+}
