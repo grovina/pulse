@@ -333,7 +333,13 @@ as ratios on both):
   `rr` is unchanged by code: z 0.0 to 1.9 on iter 120, 1.2 to 4.3 on
   iter 121 (pre-exercise 25.7 predicted against 17), so iter 121's rr loss
   was retraining. The one large loss: vollmer-2008 `gip` ratio z 3.1 to 6.4
-  on iter 120, from the run D incretin constants it was not trained with.
+  on iter 120. Not the incretin constants (trained `log_gip_gain` and
+  `log_gip_fat_weight` override them; reverting changes no gip z) but the
+  load-scaled stomach: `LOAD_EXPONENT` 0 gives 3.07 (iter 121: 7.09 to
+  3.70). Its 820 kcal breakfast empties faster, GIP peaks 41.8 at 90 min
+  against a flat 34.4, ratio 3.95 against 2.86 ± 0.17. On every other gip
+  item the new stomach is slightly better (trained mean |z| 1.69 to 1.61,
+  sealed 2.96 to 2.93; iter 121 1.54 to 1.43, 2.92 to 2.88).
 
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
