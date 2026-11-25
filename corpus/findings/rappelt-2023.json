@@ -1,0 +1,643 @@
+{
+  "paper": "rappelt-2023",
+  "citation": {
+    "authors": "Rappelt L, Held S, Wiedenmann T, Deutsch J-P, Hochstrate J, Wicker P, Donath L",
+    "title": "Restricted nasal-only breathing during self-selected low intensity training does not affect training intensity distribution",
+    "journal": "Frontiers in Physiology",
+    "year": 2023,
+    "doi": "10.3389/fphys.2023.1134778",
+    "pmid": "37153227",
+    "pmcid": "PMC10156973"
+  },
+  "population": {
+    "n": 19,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 26.5,
+      "sd": 5.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Nineteen physically healthy adults, 3 female, who had pursued an endurance sport for at least 2 years (3 or more sessions a week) and had no medical condition that would prevent the sessions (Methods 2.1). Age 26.5 ± 5.1 y, height 1.77 ± 0.08 m, body mass 77.3 ± 11.4 kg, VO2peak 53.4 ± 6.6 mL/kg/min (Methods 2.1). No BMI is printed, so bmi is null. Whole group; no split. The paper calls the group 'physically healthy' and screened no further, so status is healthy; they are endurance-trained (at least 2 years, 3 or more sessions a week), which is not a split of the group."
+  },
+  "protocols": [
+    {
+      "name": "oronasal_bout",
+      "description": "60 min of self-selected low-intensity cycling, ordinary oro-nasal (unrestricted) breathing, about 80 rpm, no mouth tape or nasal dilators (Methods 2.3; Results 3.1). Activity level per 10-min interval from Table 2's measured oxygen uptake (Unrestricted row, 2.49, 2.59, 2.59, 2.57, 2.60, 2.61 l/min for T10 to T60): level = (VO2 x 1000 / 77.3 - 3.7) / 31.7 with the group's mean mass 77.3 kg (Methods 2.1), giving 0.8994, 0.9402, 0.9402, 0.9321, 0.9443, 0.9484 for minutes 0-10 up to 50-61 (ratio of means). Table 1 power / 186 would give 0.77 to 0.82, about 0.1 lower; the README's measured-VO2 rule takes precedence (gross efficiency 15.7-17.7%). The last segment runs to minute 61 so the T60 lactate sample falls with the input on, as bradley-2015 does. No food, fasting state or clock hour printed, only the same time of day per visit and no strenuous exercise in the prior 24 h: no meal, norm_center start, clock hour assumed (10.0); duration 61 min assumed.",
+      "duration_min": 61,
+      "start_hour": 10.0,
+      "init": "norm_center",
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 10,
+            "level": 0.8994
+          },
+          {
+            "from_min": 10,
+            "to_min": 20,
+            "level": 0.9402
+          },
+          {
+            "from_min": 20,
+            "to_min": 30,
+            "level": 0.9402
+          },
+          {
+            "from_min": 30,
+            "to_min": 40,
+            "level": 0.9321
+          },
+          {
+            "from_min": 40,
+            "to_min": 50,
+            "level": 0.9443
+          },
+          {
+            "from_min": 50,
+            "to_min": 61,
+            "level": 0.9484
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "duration_min",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rr_oronasal_t10",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 0-10 (interval T10), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 26.1,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.4,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T10 (mean ± SD)",
+        "quote": "Unrestricted | 26.1 ± 4.4"
+      }
+    },
+    {
+      "id": "rr_oronasal_t20",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 10-20 (interval T20), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 20
+      },
+      "value": 28.5,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.8,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T20 (mean ± SD)",
+        "quote": "Unrestricted | 28.5 ± 4.8"
+      }
+    },
+    {
+      "id": "rr_oronasal_t30",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 20-30 (interval T30), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 30
+      },
+      "value": 29.7,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.2,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T30 (mean ± SD)",
+        "quote": "Unrestricted | 29.7 ± 5.2"
+      }
+    },
+    {
+      "id": "rr_oronasal_t40",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 30-40 (interval T40), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 40
+      },
+      "value": 30.3,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.2,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T40 (mean ± SD)",
+        "quote": "Unrestricted | 30.3 ± 5.2"
+      }
+    },
+    {
+      "id": "rr_oronasal_t50",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 40-50 (interval T50), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 40,
+        "end_min": 50
+      },
+      "value": 30.8,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.4,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T50 (mean ± SD)",
+        "quote": "Unrestricted | 30.8 ± 5.4"
+      }
+    },
+    {
+      "id": "rr_oronasal_t60",
+      "description": "Breathing frequency during the oro-nasal 60-min bout, minutes 50-60 (interval T60), mean +/- SD of the 19 persons",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 50,
+        "end_min": 60
+      },
+      "value": 30.7,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.3,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'BF [min−1]', Unrestricted row, column T60 (mean ± SD)",
+        "quote": "Unrestricted | 30.7 ± 5.3"
+      }
+    },
+    {
+      "id": "hr_oronasal_t10",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 0-10 (interval T10), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 124.2,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.4,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T10 (mean ± SD)",
+        "quote": "Unrestricted | 124.2 ± 13.4"
+      }
+    },
+    {
+      "id": "hr_oronasal_t20",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 10-20 (interval T20), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 20
+      },
+      "value": 130.5,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.2,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T20 (mean ± SD)",
+        "quote": "Unrestricted | 130.5 ± 16.2"
+      }
+    },
+    {
+      "id": "hr_oronasal_t30",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 20-30 (interval T30), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 30
+      },
+      "value": 132.9,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 17.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T30 (mean ± SD)",
+        "quote": "Unrestricted | 132.9 ± 17.5"
+      }
+    },
+    {
+      "id": "hr_oronasal_t40",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 30-40 (interval T40), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 40
+      },
+      "value": 134.3,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 17.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T40 (mean ± SD)",
+        "quote": "Unrestricted | 134.3 ± 17.5"
+      }
+    },
+    {
+      "id": "hr_oronasal_t50",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 40-50 (interval T50), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 40,
+        "end_min": 50
+      },
+      "value": 136.5,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.0,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T50 (mean ± SD)",
+        "quote": "Unrestricted | 136.5 ± 18.0"
+      }
+    },
+    {
+      "id": "hr_oronasal_t60",
+      "description": "Heart rate during the oro-nasal 60-min bout, minutes 50-60 (interval T60), mean +/- SD of the 19 persons",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 50,
+        "end_min": 60
+      },
+      "value": 138.7,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.5,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'HR [min−1]', Unrestricted row, column T60 (mean ± SD)",
+        "quote": "Unrestricted | 138.7 ± 18.5"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t10",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 0-10 (interval T10), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 2.19,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.68,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T10 (mean ± SD)",
+        "quote": "Unrestricted | 2.19 ± 0.68"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t20",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 10-20 (interval T20), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 20
+      },
+      "value": 2.34,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.72,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T20 (mean ± SD)",
+        "quote": "Unrestricted | 2.34 ± 0.72"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t30",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 20-30 (interval T30), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 20,
+        "end_min": 30
+      },
+      "value": 2.33,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.72,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T30 (mean ± SD)",
+        "quote": "Unrestricted | 2.33 ± 0.72"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t40",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 30-40 (interval T40), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 30,
+        "end_min": 40
+      },
+      "value": 2.29,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.7,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T40 (mean ± SD)",
+        "quote": "Unrestricted | 2.29 ± 0.70"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t50",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 40-50 (interval T50), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 40,
+        "end_min": 50
+      },
+      "value": 2.3,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.69,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T50 (mean ± SD)",
+        "quote": "Unrestricted | 2.30 ± 0.69"
+      }
+    },
+    {
+      "id": "vco2_oronasal_t60",
+      "description": "Carbon dioxide output (VCO2) during the oro-nasal 60-min bout, minutes 50-60 (interval T60), mean +/- SD of the 19 persons",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "window": {
+        "start_min": 50,
+        "end_min": 60
+      },
+      "value": 2.3,
+      "unit": "l/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.67,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 2, row 'VCO2 [l·min−1]', Unrestricted row, column T60 (mean ± SD)",
+        "quote": "Unrestricted | 2.30 ± 0.67"
+      }
+    },
+    {
+      "id": "lactate_oronasal_curve",
+      "description": "Capillary blood lactate during the oro-nasal bout at T50 and T60 (text values, mean ± SD)",
+      "marker": "lactate",
+      "statistic": "curve",
+      "protocols": [
+        "oronasal_bout"
+      ],
+      "unit": "mmol/L",
+      "points": [
+        {
+          "t_min": 50,
+          "value": 1.48,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.59,
+            "n": 19
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 1.45,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.52,
+            "n": 19
+          }
+        }
+      ],
+      "location": {
+        "where": "Results 3.1, paragraph 2 (text; Figure 1B is not used)",
+        "quote": "significant differences between the nasal-only and oro-nasal conditions were found for T50 condition (1.21 ± 0.52 vs. 1.48 ± 0.59 mmol·l−1, p = 0.01, SMD = 0.49) and T60 (1.21 ± 0.47 vs. 1.45 ± 0.52 mmol·l−1"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "the whole nasal-only arm (mouth taped, nasal dilator strips, sea-water nasal spray): Table 2 breathing frequency, heart rate and VCO2 at T10 to T60, and the nasal-only blood lactate at T10, T20, T50 and T60 in the text of Results 3.1. The model has no input for how a person breathes, so this arm would look identical to the oro-nasal one",
+      "missing": {
+        "kind": "input",
+        "name": "nasal_only_breathing"
+      }
+    },
+    {
+      "what": "resting VO2 before the two sessions (Results 2.3 text: 0.499 ± 0.144 L/min nasal-only, 0.469 ± 0.117 L/min oro-nasal): the posture and the length of the rest are not printed, and no fed state",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "resting blood lactate before the two sessions (Results 2.3 text: 1.00 ± 0.28 and 1.16 ± 0.48 mmol/L): no fed state, so resting lactate is not entered",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "respiratory exchange ratio RER per 10-min interval, T10 to T60 (Table 2, RER [au]): RQ/RER depends on the meal, and the paper gives no food state",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "total ventilation VE per 10-min interval, T10 to T60 (Table 2, VE [l·min−1])",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "tidal volume VT per 10-min interval, T10 to T60 (Table 2, VT [l])",
+      "missing": {
+        "kind": "marker",
+        "name": "tidal_volume"
+      }
+    },
+    {
+      "what": "end-tidal O2 and CO2 pressures, PETO2 and PETCO2 per 10-min interval, T10 to T60 (Table 2, mmHg)",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "gross efficiency per 10-min interval, T10 to T60 (Table 2, GE [%])",
+      "missing": {
+        "kind": "marker",
+        "name": "gross_efficiency"
+      }
+    },
+    {
+      "what": "ratings of perceived effort (CR-10 scale) per 10-min interval, T10 to T60 (Table 2, RPE [au])",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "ratings of discomfort per 10-min interval, T10 to T60 (Table 2, Discomfort [au])",
+      "missing": {
+        "kind": "marker",
+        "name": "discomfort"
+      }
+    },
+    {
+      "what": "power output per 10-min interval, T10 to T60 (Table 1, Power [W]; the ergometer's work, not a marker the model has)",
+      "missing": {
+        "kind": "marker",
+        "name": "power_output"
+      }
+    },
+    {
+      "what": "blood lactate at T10 to T40 in the oro-nasal bout and at T30 and T40 in the nasal-only bout (Figure 1B only; the text prints no values for them)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "time spent in each training zone, power- and heart-rate-based (Figure 2; figure only, the text gives F and p values only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "VO2peak 53.4 ± 6.6 mL/kg/min, power at VO2peak 285.7 ± 58.0 W, and the powers and heart rates at 2 and 4 mmol/L from the step test to exhaustion (Methods 2.1)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    }
+  ]
+}
