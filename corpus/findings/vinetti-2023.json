@@ -1,0 +1,302 @@
+{
+  "paper": "vinetti-2023",
+  "citation": {
+    "authors": "Vinetti G, Micarelli A, Falla M, Randi A, Dal Cappello T, Gatterer H, Brugger H, Strapazzon G, Rauch S",
+    "title": "Surgical masks and filtering facepiece class 2 respirators (FFP2) have no major physiological effects at rest and during moderate exercise at 3000-m altitude: a randomised controlled trial",
+    "journal": "Journal of Travel Medicine",
+    "year": 2023,
+    "doi": "10.1093/jtm/taad031",
+    "pmid": "36881665",
+    "pmcid": "PMC10481409"
+  },
+  "population": {
+    "n": 8,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 30.0,
+      "sd": 6.0,
+      "min": 23.0,
+      "max": 40.0
+    },
+    "bmi": {
+      "mean": 23.0,
+      "sd": 3.0,
+      "min": 19.0,
+      "max": 27.0
+    },
+    "status": "healthy",
+    "description": "Eight healthy participants, four females (Methods, Participants: 'Eight participants (four females)'; 'no history of systemic disease, normal physical examination'); the four males follow by subtraction. Age 30 +/- 6 years (range 23-40), BMI 23 +/- 3 kg/m2 (range 19-27), weight 71 +/- 10 kg, height 174 +/- 8 cm, all mean +/- SD as printed. Enrolment was in a low-altitude resident group with sedentary occupations (no regular mountaineers)."
+  },
+  "protocols": [
+    {
+      "name": "rest_nx_none",
+      "description": "Rest in normoxia (NX: the chamber at 250 m, barometric pressure 744 +/- 3 mmHg, 22.0 +/- 0.2 C, 45 +/- 3% RH; Interventions), no mask (the 'None' row of Table 1, NX rest column). A light meal is printed before the session, with no contents and no time, so no meal is entered and init is norm_center. Posture at rest is not printed. Run-in: the paper allows 5 min of habituation 'to the assigned mask' at rest before the cognitive test (Interventions); it is taken to apply to the no-mask session too, so minutes 0 to 5 are habituation; the battery 'lasting ~10 min' (Interventions, approximate, so duration_min is assumed) is minutes 5 to 15, and the rest values are averaged over the battery (Physiological measurements). The clock hour is not printed: 08:00 assumed.",
+      "duration_min": 15,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "init"
+      ]
+    },
+    {
+      "name": "exercise_nx_none",
+      "description": "Cycling for 12 min at 1 W/kg on a cycle ergometer at 60 rpm, in normoxia (chamber at 250 m, 744 mmHg), no mask (the 'None' row of Table 1, NX exercise column); seated on the saddle (saddle height individually adjusted, Interventions). Intensity: 1 W/kg x the group's mean body mass 71 kg (Participants, 71 +/- 10 kg) = 71 W; level = 71 / 186 = 0.3817 (watts rule). Measurements: fR, HR and SpO2 averaged from minute 5:00 to 10:00 of exercise; arterialised capillary lactate drawn between minute 10:00 and 12:00 (Physiological measurements). A light meal before the session is printed with no contents and no time, so no meal is entered and init is norm_center. Rest before cycling is not described: the arm starts at the start of cycling. The clock hour is not printed: 08:00 assumed.",
+      "duration_min": 12,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 0,
+            "to_min": 12,
+            "level": 0.3817
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rest_nx_fr_none",
+      "description": "Respiratory frequency at rest in normoxia, no mask: the mean over the cognitive battery (arm minutes 5 to 15), mean and SD over eight people",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 15
+      },
+      "value": 17,
+      "unit": "/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 2,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'fR (min-1)', column Rest NX, sub-row 'None'",
+        "quote": "f R (min−1) | None | 17 ± 2 | 16 ± 3 | 20 ± 4 | 23 ± 5"
+      }
+    },
+    {
+      "id": "exercise_nx_fr_none",
+      "description": "Respiratory frequency during 12 min of cycling at 1 W/kg in normoxia, no mask: the mean over minutes 5 to 10 of exercise, mean and SD over eight people",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 20,
+      "unit": "/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'fR (min-1)', column Exercise NX, sub-row 'None'",
+        "quote": "f R (min−1) | None | 17 ± 2 | 16 ± 3 | 20 ± 4 | 23 ± 5"
+      }
+    },
+    {
+      "id": "rest_nx_hr_none",
+      "description": "Heart rate at rest in normoxia, no mask: the mean over the cognitive battery (arm minutes 5 to 15), mean and SD over eight people",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 15
+      },
+      "value": 67,
+      "unit": "/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'HR (min-1)', column Rest NX, sub-row 'None'",
+        "quote": "HR (min−1) | None | 67 ± 3 | 75 ± 7 | 105 ± 10 | 120 ± 14"
+      }
+    },
+    {
+      "id": "exercise_nx_hr_none",
+      "description": "Heart rate during 12 min of cycling at 1 W/kg in normoxia, no mask: the mean over minutes 5 to 10 of exercise, mean and SD over eight people",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 105,
+      "unit": "/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'HR (min-1)', column Exercise NX, sub-row 'None'",
+        "quote": "HR (min−1) | None | 67 ± 3 | 75 ± 7 | 105 ± 10 | 120 ± 14"
+      }
+    },
+    {
+      "id": "rest_nx_spo2_none",
+      "description": "Forehead peripheral oxygen saturation (SpO2) at rest in normoxia, no mask: the mean over the cognitive battery (arm minutes 5 to 15), mean and SD over eight people",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 15
+      },
+      "value": 98.8,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.7,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'SpO2 (%)', column Rest NX, sub-row 'None'",
+        "quote": "SpO 2 (%) | None | 98.8 ± 0.7 | 92.4 ± 2.4 | 98.5 ± 0.5 | 88.2 ± 2.6"
+      }
+    },
+    {
+      "id": "exercise_nx_spo2_none",
+      "description": "Forehead peripheral oxygen saturation (SpO2) during 12 min of cycling at 1 W/kg in normoxia, no mask: the mean over minutes 5 to 10 of exercise, mean and SD over eight people",
+      "marker": "spo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_nx_none"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 10
+      },
+      "value": 98.5,
+      "unit": "%",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.5,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'SpO2 (%)', column Exercise NX, sub-row 'None'",
+        "quote": "SpO 2 (%) | None | 98.8 ± 0.7 | 92.4 ± 2.4 | 98.5 ± 0.5 | 88.2 ± 2.6"
+      }
+    },
+    {
+      "id": "exercise_nx_lactate_none",
+      "description": "Arterialised capillary lactate during 12 min of cycling at 1 W/kg in normoxia, no mask, drawn between minutes 10 and 12 of exercise, mean and SD over eight people",
+      "marker": "lactate",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "exercise_nx_none"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 12
+      },
+      "value": 0.7,
+      "unit": "mM",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.3,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row '[La] (mM)', column Exercise NX, sub-row 'None'",
+        "quote": "[La] (mM) | None | 0.8 ± 0.4 | 0.7 ± 0.3 | 0.7 ± 0.3 | 1.0 ± 0.6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "surgical mask and FFP2 sub-rows of Table 1 (fR, HR, SpO2, lactate, pH, gases, ScO2, dyspnoea and discomfort), NX rest and exercise, and the mask effects in Results: a face mask is something worn, which the protocol cannot express",
+      "missing": {
+        "kind": "input",
+        "name": "face_mask"
+      }
+    },
+    {
+      "what": "all HH (3000 m simulated hypobaria) cells of Table 1 and Table 2, and the altitude effects in Results: the model has no hypoxia input",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "resting capillary lactate, NX None rest column (0.8 +/- 0.4 mM, Table 1): a light meal is printed with no contents or time, so the fed state is unknown",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "PaCO2, PaO2 and SaO2 (arterial gases), NX None rows of Table 1, rest and exercise: the model has no arterial gas series",
+      "missing": {
+        "kind": "marker",
+        "name": "arterial_blood_gases"
+      }
+    },
+    {
+      "what": "pH, NX None rows of Table 1, rest and exercise (bicarbonate appears only as P values in Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_acid_base"
+      }
+    },
+    {
+      "what": "visual analogue scale for dyspnoea, NX None rows of Table 1 (rest 0 +/- 0, exercise 3 +/- 6, 0-100 mm scale)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceptual_ratings"
+      }
+    },
+    {
+      "what": "left cerebral frontal oxygenation ScO2 (NIRS), NX None rows of Table 1, rest and exercise",
+      "missing": {
+        "kind": "marker",
+        "name": "cerebral_oxygenation"
+      }
+    },
+    {
+      "what": "bilateral tympanic temperature TTy, end-exercise values (Table 1, NX None: 36.3 +/- 0.3 left and 35.9 +/- 0.5 right) and the TTy results in text: tympanic is not the core temperature the model carries",
+      "missing": {
+        "kind": "marker",
+        "name": "tympanic_temperature"
+      }
+    },
+    {
+      "what": "cognitive tests (DSST, BART, PVT) at rest, no-mask baseline session: the values are in Supplementary Tables S1 and S2, not in the full text",
+      "missing": {
+        "kind": "marker",
+        "name": "cognitive_performance"
+      }
+    }
+  ]
+}
