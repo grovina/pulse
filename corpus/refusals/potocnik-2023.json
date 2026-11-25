@@ -1,0 +1,26 @@
+{
+  "paper": "potocnik-2023",
+  "citation": {
+    "authors": "Potočnik MM, Edwards I, Potočnik N",
+    "title": "Locomotor–Respiratory Entrainment upon Phonated Compared to Spontaneous Breathing during Submaximal Exercise",
+    "journal": "International Journal of Environmental Research and Public Health",
+    "year": 2023,
+    "doi": "10.3390/ijerph20042838",
+    "pmid": "36833534",
+    "pmcid": "PMC9957459"
+  },
+  "reported": [
+    {
+      "what": "respiratory rate averaged over the 5-min constant-load cycling bout (its last three minutes analysed), pooled over the participants, mean ± SD, for each of the three breathing patterns (BrP1 spontaneous, BrP2 phonated 'h', BrP3 phonated 'ss'); n = 26, the number implied by the printed counts of 13 (50%) and 11 (42%) entrained participants",
+      "location": {
+        "where": "Results, section 3.2, paragraph 2",
+        "quote": "The average RR (18.8 ± 5.0) at BrP2 was lower compared to BrP1 (22.6 ± 5.5) and BrP3 (21.3 ± 7.2)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The bout is a 'predetermined load' 'below the GET' (Methods 2.2), and the paper prints neither its watts nor a %VO2max nor a VO2 for the pooled group: Table 2 gives measured VO2/kg only for nine breathing-by-entrainment cells, and picking one or averaging them is not a derivation the format allows, so the bout's level cannot be written; the resting values, which need no bout, are not printed (Table 1 holds test statistics only, Table 2 is exercise)."
+}
