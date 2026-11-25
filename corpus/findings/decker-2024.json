@@ -1,0 +1,110 @@
+{
+  "paper": "decker-2024",
+  "citation": {
+    "authors": "Decker S, Horváth T, Takács J, Koller A",
+    "title": "Body Positions and Physical Activity Levels Modulate the Ratio of Abdominal to Thoracic Breathing and Respiratory Rate in Young Individuals",
+    "journal": "Journal of Clinical Medicine",
+    "year": 2024,
+    "doi": "10.3390/jcm13247825",
+    "pmid": "39768748",
+    "pmcid": "PMC11727880"
+  },
+  "population": {
+    "n": 37,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 21.0,
+      "sd": 2.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 21.6,
+      "sd": 2.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "37 young adults (19 men, 18 women; Methods) aged 18-24 years by enrolment, age 21.0 +/- 2.0 y and BMI 21.6 +/- 2.6 kg/m2 (Table 1, 'Mean +/- SD', pooled over both activity groups). Non-smokers with no cardiorespiratory or respiratory disease, none obese (Methods: 'young, healthy adults'), so healthy. Entered as the pooled sample: the paper splits it into low (n = 15) and high (n = 22) physical activity groups, which the model cannot hold as two arms (left_out)."
+  },
+  "protocols": [
+    {
+      "name": "seated_rest",
+      "description": "Sitting: feet flat on the floor, thighs at 90 degrees, back not touching the chair (Methods, 'Sitting position (Si)'). Seated for 10 min before any measurements ('seated for 10 min before any intervention or measurements began', Methods), then 'one to two minutes' of calm nasal breathing in the position; the measurement is entered as minutes 10 to 12 of the arm (upper bound of the printed 1-2 min), so duration_min 12 = 10 + 2, derived and assumed. The order of the four positions is not printed in the text (Figure 1 only; the text lists sitting first, and the whole measurement lasted ~25 min), so the sitting minutes are an assumption. Food: participants were 'instructed not to eat for 4 h before measurements' (an instruction, compliance and the last meal's contents not printed), so by the fed-state-unknown rule no fast is assumed: the arm starts from typical values (init norm_center, assumed), no meal. The clock hour is not printed (start_hour 8.0 assumed). The standing, supine and prone arms of the paper are not entered: the model has no posture input, so they would be the same arm (left_out, input/posture).",
+      "duration_min": 12,
+      "start_hour": 8.0,
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "duration_min",
+        "init"
+      ],
+      "init": "norm_center"
+    }
+  ],
+  "findings": [
+    {
+      "id": "rr_sitting",
+      "description": "Respiratory rate sitting, all 37 participants, mean with the printed 95% CI (Figure 3 caption: 'error bar, 95% confidence interval'). Methods say Bonferroni 'confidence interval adjustment' was used to compare main effects; the interval's width matches an unadjusted 95% t-interval from the paper's own Table 2 SDs (pooled SD about 3.9, 2.03 x 3.9/sqrt(37) = 1.3 = printed half-width), so it is entered as a 95% interval of the mean, but the paper does not say so outright.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest"
+      ],
+      "window": {
+        "start_min": 10,
+        "end_min": 12
+      },
+      "value": 15.1,
+      "unit": "1/min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 13.8,
+        "high": 16.4,
+        "level": 95,
+        "n": 37
+      },
+      "location": {
+        "where": "Results 3.2, paragraph 1 (Figure 3); Figure 3 caption: error bar, 95% confidence interval",
+        "quote": "RR was significantly higher in Si (15.1 [13.8, 16.4]"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "respiratory rate in each position for the low PA (n = 15) and high PA (n = 22) groups (Table 2, rows 'RR sitting', 'RR standing', 'RR supine', 'RR prone'), the group comparison of Results 3.4 and Figure 6: the paper splits the sample by weekly training hours, which the model cannot hold as two arms",
+      "missing": {
+        "kind": "population",
+        "name": "aerobic_fitness_group"
+      }
+    },
+    {
+      "what": "abdominal and thoracic breathing contributions (AB/TB, %) in each position, pooled (Results 3.3, Figure 2) and by activity group (Table 2 AB and TB rows, Figure 5)",
+      "missing": {
+        "kind": "marker",
+        "name": "abdominal_thoracic_ratio"
+      }
+    },
+    {
+      "what": "between-position differences in RR (Results 3.2: -1.4 [-2.5, -0.4] Si against Su, -1.3 [-2.5, -0.1] St against Su, and the Pr differences); the paper's sign convention is not stated, and the intervals come from Bonferroni-adjusted post hoc comparisons; the Bonferroni adjustment of these differences is stated in Methods",
+      "missing": {
+        "kind": "operator",
+        "name": "post_hoc_mean_difference"
+      }
+    },
+    {
+      "what": "respiratory rate standing, supine and prone, all 37 (Results 3.2, Figure 3: 15.0 [13.7, 16.3], 13.7 [12.5, 15.0], 14.4 [13.0, 15.9]): the model has no posture input, so these arms look identical to the seated arm; only the seated arm is entered",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "heart rate 77.5 +/- 12.4 /min, systolic 126.8 +/- 14.2 and diastolic 72.3 +/- 9.0 mmHg (Table 1, 'Hemodynamic data', n = 37): taken at cardiovascular screening with an Omron monitor, the time and posture are not printed (the 10 min seat is described only for 'before any intervention or measurements'), so not a seated rest at a stated minute",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    }
+  ]
+}
