@@ -1,0 +1,33 @@
+{
+  "paper": "cabiddu-2016",
+  "citation": {
+    "authors": "Cabiddu R, et al.",
+    "title": "Inductive plethysmography potential as a surrogate for ventilatory measurements during rest and moderate physical exercise",
+    "journal": "Brazilian Journal of Physical Therapy",
+    "year": 2016,
+    "doi": "10.1590/bjpt-rbf.2014.0147",
+    "pmid": "26982454",
+    "pmcid": "PMC4900041"
+  },
+  "reported": [
+    {
+      "what": "Respiratory rate at standing rest, reference method (ergospirometry), mean ± SD, n = 7 apparently healthy men: the rest value is the mean over 4.5 min of the 5-min standing rest (first 30 s excluded, Data analysis)",
+      "location": {
+        "where": "Table 1, row 'RR [bpm]', column ES, resting standing position",
+        "quote": "RR [bpm] | 16.2±3.2"
+      }
+    },
+    {
+      "what": "Respiratory rate during constant-intensity treadmill exercise, reference method (ergospirometry), mean ± SD, n = 7; the bout is set by heart rate (speed raised until HR was 20 beats above rest), with no speed, VO2 or watts printed",
+      "location": {
+        "where": "Table 1, row 'RR [bpm]', column ES, treadmill exercise",
+        "quote": "RR [bpm] | 23.3±3.8"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "posture"
+  },
+  "detail": "The resting value was taken standing (Table 1, 'Resting standing position'), and the model's posture input keeps only healthy supine or seated baselines, so the resting respiratory rate cannot be entered. The 4.5-min steady window (30 s excluded) is an ordinary resting mean and is not the gap. The exercise value (23.3±3.8 bpm) would also be left out: the treadmill speed was raised in 30-s steps until HR was 20 beats above the resting value and then held for 6 min, so intensity is set by heart rate with no speed, grade, VO2 or watts printed (source/input_not_printed)."
+}
