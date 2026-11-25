@@ -1,0 +1,445 @@
+{
+  "paper": "engeroff-2024",
+  "citation": {
+    "authors": "Engeroff T, Heinsel K, Niederer D, Nienhaus A, Groneberg DA, Vogt L",
+    "title": "Investigating effects of FFP2 wearing during physical activity on gas exchange, metabolism and affective state using a randomized controlled trial",
+    "journal": "Scientific Reports",
+    "year": 2024,
+    "doi": "10.1038/s41598-024-56560-x",
+    "pmid": "38491110",
+    "pmcid": "PMC10943002"
+  },
+  "population": {
+    "n": 13,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.3,
+      "sd": 5.5,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.6,
+      "sd": 4.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirteen healthy adults (6 female, 7 male; abstract and Results: 'Healthy adults'). Eligibility 18 to 50 years; excluded cardiovascular, pulmonary or advanced musculoskeletal disease; no medication except oral contraceptives. Age and BMI as printed in Table 1 (mean and SD)."
+  },
+  "protocols": [
+    {
+      "name": "seated_rest_no_mask",
+      "description": "Seated rest without a mask: the 5 min rest before the first bout of a session (Methods: 'rested for five minutes in a seated position without wearing a FFP2'). Start clock hour not printed (trials at 'a comparable time of the day'); 12.0 assumed. No food or drink for 2 h before each visit, habitual diet otherwise, so the last meal is not stated: norm_center start, no meal. Rows: 'No mask' column of Table 2 (the FFP2 column is a second no-mask baseline on the other day, see left_out).",
+      "duration_min": 5,
+      "start_hour": 12.0,
+      "meals": [],
+      "init": "norm_center",
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    },
+    {
+      "name": "bout_40pct_no_mask",
+      "description": "40% VO2max cycling bout without a mask, 10 min, after the 5 min seated rest (Methods: bouts 'of 10 min' at 40, 50 and 70% of individual VO2max; 5 min rest without mask between bouts). Level from the group's printed VO2max, Table 1: 47.2 mL/kg/min x 0.40 = 18.88 mL/kg/min, level = (18.88 - 3.7) / 31.7 = 0.4789. The bouts were run in randomised order within a session, so the state left by an earlier bout is not modelled. Start clock hour not printed (12.0 assumed); no food or drink for 2 h before the visit, last meal not stated: norm_center, no meal.",
+      "duration_min": 15,
+      "start_hour": 12.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 5,
+            "to_min": 15,
+            "level": 0.4789
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    },
+    {
+      "name": "bout_50pct_no_mask",
+      "description": "50% VO2max cycling bout without a mask, 10 min, after the 5 min seated rest (Methods: bouts 'of 10 min' at 40, 50 and 70% of individual VO2max; 5 min rest without mask between bouts). Level from the group's printed VO2max, Table 1: 47.2 mL/kg/min x 0.50 = 23.6 mL/kg/min, level = (23.6 - 3.7) / 31.7 = 0.6278. The bouts were run in randomised order within a session, so the state left by an earlier bout is not modelled. Start clock hour not printed (12.0 assumed); no food or drink for 2 h before the visit, last meal not stated: norm_center, no meal.",
+      "duration_min": 15,
+      "start_hour": 12.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 5,
+            "to_min": 15,
+            "level": 0.6278
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    },
+    {
+      "name": "bout_70pct_no_mask",
+      "description": "70% VO2max cycling bout without a mask, 10 min, after the 5 min seated rest (Methods: bouts 'of 10 min' at 40, 50 and 70% of individual VO2max; 5 min rest without mask between bouts). Level from the group's printed VO2max, Table 1: 47.2 mL/kg/min x 0.70 = 33.04 mL/kg/min, level = (33.04 - 3.7) / 31.7 = 0.9256. The bouts were run in randomised order within a session, so the state left by an earlier bout is not modelled. Start clock hour not printed (12.0 assumed); no food or drink for 2 h before the visit, last meal not stated: norm_center, no meal.",
+      "duration_min": 15,
+      "start_hour": 12.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 5,
+            "to_min": 15,
+            "level": 0.9256
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rest_breathing_frequency",
+      "description": "Breathing frequency, seated rest without a mask, mean and SD over the 5 min rest (Table 2 baseline, no-mask day)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest_no_mask"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 15,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, 'No mask' column, row 'Breathing frequency'",
+        "quote": "Breathing frequency (Breaths per minute) | 15, 6"
+      }
+    },
+    {
+      "id": "rest_heart_rate",
+      "description": "Heart rate, seated rest without a mask, mean and SD over the 5 min rest (Table 2 baseline, no-mask day)",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest_no_mask"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 70,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, 'No mask' column, row 'Heart rate (Beats per minute)'",
+        "quote": "Heart rate (Beats per minute) | 70, 10"
+      }
+    },
+    {
+      "id": "rest_oxygen_uptake",
+      "description": "Oxygen uptake, seated rest without a mask, mean and SD over the 5 min rest (Table 2 baseline, no-mask day)",
+      "marker": "vo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest_no_mask"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 346,
+      "unit": "ml/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 81.5,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, 'No mask' column, row 'Oxygen uptake (Milliliters per minute)'",
+        "quote": "Oxygen uptake (Milliliters per minute) | 346, 81.5"
+      }
+    },
+    {
+      "id": "rest_carbon_dioxide_output",
+      "description": "Carbon dioxide exhalation (the paper's label for VCO2), seated rest without a mask, mean and SD over the 5 min rest (Table 2 baseline, no-mask day)",
+      "marker": "vco2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest_no_mask"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 301,
+      "unit": "ml/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 63,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 2, 'No mask' column, row 'Carbon dioxide exhalation (Milliliters per minute)'",
+        "quote": "Carbon dioxide exhalation (Milliliters per minute) | 301, 63"
+      }
+    },
+    {
+      "id": "bout_40_breathing_frequency",
+      "description": "Breathing frequency during the 40% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_40pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 26.16,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 4.14,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Breathing frequency', 40% VO2max; mean on the first line, SD on the second",
+        "quote": "Breathing frequency (Breaths per minute) | 26.16 | 22.05 | 4.14 | 3.73"
+      }
+    },
+    {
+      "id": "bout_40_heart_rate",
+      "description": "Heart rate during the 40% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_40pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 117.77,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.41,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Heart rate (Beats per minute)', 40% VO2max; mean on the first line, SD on the second",
+        "quote": "Heart rate (Beats per minute) | 117.77 | 120.09 | 13.41 | 14.49"
+      }
+    },
+    {
+      "id": "bout_50_breathing_frequency",
+      "description": "Breathing frequency during the 50% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_50pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 28.09,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.01,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Breathing frequency', 50% VO2max; mean on the first line, SD on the second",
+        "quote": "Breathing frequency (Breaths per minute) | 28.09 | 24.64 | 5.01 | 3.89"
+      }
+    },
+    {
+      "id": "bout_50_heart_rate",
+      "description": "Heart rate during the 50% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_50pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 127.99,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.01,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Heart rate (Beats per minute)', 50% VO2max; mean on the first line, SD on the second",
+        "quote": "Heart rate (Beats per minute) | 127.99 | 130.69 | 14.01 | 12.17"
+      }
+    },
+    {
+      "id": "bout_70_breathing_frequency",
+      "description": "Breathing frequency during the 70% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_70pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 32.24,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 6.21,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Breathing frequency', 70% VO2max; mean on the first line, SD on the second",
+        "quote": "Breathing frequency (Breaths per minute) | 32.24 | 29.75 | 6.21 | 4.54"
+      }
+    },
+    {
+      "id": "bout_70_heart_rate",
+      "description": "Heart rate during the 70% VO2max bout without a mask, mean and SD over the 5 min steady-state block. Mean over the 5 min steady-state block: the paper analyses 'a 5 min continuous time block that excluded the first 3 min of each cycling bout'. The block's exact placement is not printed; it is read as bout minutes 3 to 8 (arm minutes 8 to 13), the first 5 min after the excluded 3.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "bout_70pct_no_mask"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 13
+      },
+      "value": 156.26,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 14.55,
+        "n": 13
+      },
+      "location": {
+        "where": "Table 3, 'No mask' column (first of each pair), row 'Heart rate (Beats per minute)', 70% VO2max; mean on the first line, SD on the second",
+        "quote": "Heart rate (Beats per minute) | 156.26 | 159.15 | 14.55 | 12.69"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "FFP2 mask worn during the 40, 50 and 70% VO2max bouts: the FFP2 columns of Table 3 (breathing frequency, ventilation, end-tidal gases, blood gases, RER, HR, breathing effort)",
+      "missing": {
+        "kind": "input",
+        "name": "face_mask"
+      }
+    },
+    {
+      "what": "Baseline of the FFP2 day, Table 2 'FFP2' column: a second seated rest without a mask on the other trial day, the same 13 people, so it is not entered beside the 'No mask' rest",
+      "missing": {
+        "kind": "source",
+        "name": "same_state_repeated_column"
+      }
+    },
+    {
+      "what": "Ventilation (L/min) at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "minute_ventilation"
+      }
+    },
+    {
+      "what": "Tidal volume (L) at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "tidal_volume"
+      }
+    },
+    {
+      "what": "Inspiration and exhalation time (s) at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "inspiration_time"
+      }
+    },
+    {
+      "what": "End-tidal CO2 and O2 partial pressures (mmHg) at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "Capillary blood pCO2, pO2, pH and base excess at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "blood_acid_base"
+      }
+    },
+    {
+      "what": "Capillary lactate in each no-mask bout (Table 3): the paper does not say when the earlobe sample was drawn",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Capillary lactate at rest (Table 2, no-mask column): resting lactate is outside the fed-state list (the last meal is not stated)",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Respiratory exchange ratio at rest (Table 2) and in each no-mask bout (Table 3): RER depends on the meal, which is not stated",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Perceived exertion (Borg 6-20) in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "Breathing effort (Borg CR-10) at rest (Table 2) and in each no-mask bout (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "perceptual_ratings"
+      }
+    },
+    {
+      "what": "Maximal values of the incremental cardiopulmonary test (Table 1: power 324 +/- 82 W, heart rate 175 +/- 11, RER 1.28 +/- 0.10); the VO2max of Table 1 is used as the intensity input, not entered",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    }
+  ]
+}
