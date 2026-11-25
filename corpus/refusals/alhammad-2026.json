@@ -1,0 +1,54 @@
+{
+  "paper": "alhammad-2026",
+  "citation": {
+    "authors": "Alhammad SA, Alhozaimi AY, Kateeb AA, Alghamdi AS, Algabbani MF, Algarni FS, Alrashidi M, Almeshari MA, Alahmari A, Almohsen SM, Alwadeai KS",
+    "title": "Psychophysiological effects of traditional cycling, virtual reality-enhanced cycling, and passive virtual reality exposure in young adults: A controlled within-subject study",
+    "journal": "PLOS One",
+    "year": 2026,
+    "doi": "10.1371/journal.pone.0343812",
+    "pmid": "41801914",
+    "pmcid": "PMC12970915"
+  },
+  "reported": [
+    {
+      "what": "baseline heart rate, mean +/- SD, n = 60, before the first session; posture and the minute of the measurement not printed",
+      "location": {
+        "where": "Table 1, row 'Heart rate in (bpm)', Mean ± SD column",
+        "quote": "Heart rate in (bpm) | 79.5 ± 11.6"
+      }
+    },
+    {
+      "what": "baseline systolic blood pressure, mean +/- SD, n = 60 (same measurement)",
+      "location": {
+        "where": "Table 1, row 'Systolic blood pressure (mmHg)', Mean ± SD column",
+        "quote": "Systolic blood pressure (mmHg) | 127.6 ± 10.4"
+      }
+    },
+    {
+      "what": "baseline diastolic blood pressure, mean +/- SD, n = 60 (same measurement)",
+      "location": {
+        "where": "Table 1, row 'Diastolic blood pressure (mmHg)', Mean ± SD column",
+        "quote": "Diastolic blood pressure (mmHg) | 72.5 ± 9.9"
+      }
+    },
+    {
+      "what": "baseline respiratory rate, mean +/- SD, n = 60, counted over 30 s; unit 'bpm' with footnote 'breaths per minute' (same measurement)",
+      "location": {
+        "where": "Table 1, row 'Respiratory rate (bpm)', Mean ± SD column",
+        "quote": "Respiratory rate (bpm) | 15.4 ± 2.6"
+      }
+    },
+    {
+      "what": "the only rest the paper describes is between sessions, not the baseline measurement",
+      "location": {
+        "where": "Methods, Intervention",
+        "quote": "with 10-minute seated rests between sessions"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The paper prints baseline heart rate, blood pressure and breathing rate for 60 healthy students but never states the posture of that measurement (its only stated 'seated' rests are the 10-minute rests between sessions), and the cycling and VR values have no printed intensity or minute, so no arm can be set up."
+}
