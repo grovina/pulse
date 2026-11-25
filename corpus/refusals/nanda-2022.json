@@ -1,0 +1,54 @@
+{
+  "paper": "nanda-2022",
+  "citation": {
+    "authors": "Nanda A, Sangineni KSDL, Pakhare V, Ramachandran G, Chellaboyina CSN",
+    "title": "An Observational Crossover Study of N95 Respirator with Surgical Mask and Visor in Various Combinations on Healthy Volunteers and Their Impact on Physiological Variables",
+    "journal": "Anesthesia, Essays and Researches",
+    "year": 2022,
+    "doi": "10.4103/aer.aer_97_22",
+    "pmid": "36447927",
+    "pmcid": "PMC9701335"
+  },
+  "reported": [
+    {
+      "what": "respiratory rate at 45 min, N95 respirator only, mean (SD), n=21 (seated, rest)",
+      "location": {
+        "where": "Table 1, row 'RR', column N95, Mean±SD at 45 min",
+        "quote": "RR | 18.29 (3.62)"
+      }
+    },
+    {
+      "what": "respiratory rate at 45 min, N95 with surgical mask, mean (SD), n=21 (seated, rest)",
+      "location": {
+        "where": "Table 1, row 'RR', column N95+SM, Mean±SD at 45 min",
+        "quote": "RR | 16.90 (3.51)"
+      }
+    },
+    {
+      "what": "respiratory rate at 45 min, N95 with visor, mean (SD), n=21 (seated, rest)",
+      "location": {
+        "where": "Table 1, row 'RR', column N95+V, Mean±SD at 45 min",
+        "quote": "RR | 18.29 (2.15)"
+      }
+    },
+    {
+      "what": "respiratory rate at 45 min, surgical mask under N95, mean (SD), n=21 (seated, rest)",
+      "location": {
+        "where": "Table 1, row 'RR', column SM+N95, Mean±SD at 45 min",
+        "quote": "RR | 18.10 (3.74)"
+      }
+    },
+    {
+      "what": "respiratory rate at 45 min, N95 with surgical mask and visor, mean (SD), n=21 (seated, rest)",
+      "location": {
+        "where": "Table 1, row 'RR', column N95+SM+V, Mean±SD at 45 min",
+        "quote": "RR | 17.90 (3.49)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "face_mask"
+  },
+  "detail": "Every breathing-rate value is measured while the volunteers wear a N95 respirator, a surgical mask, a visor or a combination of them, which is the manipulation the paper studies; the paper has no mask-free arm, and the model has no input for a face covering, so no protocol can be written without inventing one."
+}
