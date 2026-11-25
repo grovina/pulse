@@ -1,0 +1,26 @@
+{
+  "paper": "iwabe-2025",
+  "citation": {
+    "authors": "Iwabe T, et al.",
+    "title": "Slow-paced breathing reduces anxiety and enhances midfrontal alpha asymmetry, buffering responses to aversive visual stimuli",
+    "journal": "Frontiers in Human Neuroscience",
+    "year": 2025,
+    "doi": "10.3389/fnhum.2025.1605862",
+    "pmid": "40727675",
+    "pmcid": "PMC12301348"
+  },
+  "reported": [
+    {
+      "what": "breathing rate during the slow-paced (SB) and natural-breathing (RB) sessions, 6.00 and 14.76 breaths/min, n=17 healthy students; the plus-minus is not labelled SD or SEM anywhere in the paper, and the sentence names no period of the session",
+      "location": {
+        "where": "Results, first paragraph (manipulation check before the physiological results)",
+        "quote": "The mean respiratory rate was 6.00 ± 0.11 breaths/min during SB condition and 14.76 ± 3.43 breaths/min during RB condition."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "unlabelled_uncertainty"
+  },
+  "detail": "The only breathing-rate numbers in the text are the two means above, printed with a plus-minus that no sentence labels as SD or SEM (the paper writes 'standard deviation (SD)' only for age and for its outlier rule), so the uncertainty cannot be assumed; the sentence also names no period of the 5 min breathing task or of the 2 min fixation periods, so the window cannot be placed either. The paper's other numbers are estimated marginal means of its own mixed models (RMSSD, CVRR, ETCO2, rLFA) or STAI-S and EEG measures the model does not carry, and the healthy group has no printed resting value with a labelled spread."
+}
