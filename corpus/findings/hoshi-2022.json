@@ -1,0 +1,259 @@
+{
+  "paper": "hoshi-2022",
+  "citation": {
+    "authors": "Hoshi D, Fukuie M, Hashitomi T, Tarumi T, Sugawara J, Watanabe K",
+    "title": "Respiratory function and breathing response to water- and land-based cycling at the matched oxygen uptake",
+    "journal": "Physiological Reports",
+    "year": 2022,
+    "doi": "10.14814/phy2.15475",
+    "pmid": "36117322",
+    "pmcid": "PMC9483428"
+  },
+  "population": {
+    "n": 12,
+    "sex": "male",
+    "age_years": {
+      "mean": 24.0,
+      "sd": 1.0,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 22.3,
+      "sd": 1.6,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Twelve healthy men (Methods 2.2: mean age 24 +/- 1 years, BMI 22.3 +/- 1.6 kg/m2; Data are presented as mean +/- SD). Screened by medical history questionnaire: no overt cardiovascular, respiratory or neuromuscular disease, no medication, no smoking. Age and BMI as printed; no minimum or maximum printed."
+  },
+  "protocols": [
+    {
+      "name": "land_cycling",
+      "description": "Land-based cycling day (LC, day 3) from the start of the seated rest. Arm minutes 0 to 4: 5 min seated on land (Methods: 'rested in the seated position on land for 5 min'). Minutes 5 to 8: 4 min on the semi-recumbent bicycle (hip angle about 130 deg; 'rested for another 4 min on a semi-recumbent bicycle'), read as seated rest; no load is stated. Minutes 9 to 23: 15 min of cycling at 60 rpm, three 5-min stages ('wattage was adjusted ... at the beginning and every 5 min'): stage 1 minutes 9 to 13, stage 2 minutes 14 to 18, stage 3 minutes 19 to 23. Duration 5 + 4 + 15 = 24 min. Intensity from the measured VO2 of each stage (Table 1, LC, ml/kg/min; mean of the last 30 s of the stage), level = (VO2 - 3.7) / 31.7: stage 1 (5.8 - 3.7) / 31.7 = 0.0662, stage 2 (9.4 - 3.7) / 31.7 = 0.1798, stage 3 (17.1 - 3.7) / 31.7 = 0.4227. The rest VO2 (3.1 ml/kg/min) is below 3.7, so rest is level 0. The printed watts (12.9, 44.6 and 105.0 W; Results 3.1) are not used, since the measured VO2 is. Food before the visit is 'fast for a minimum of 3 h' (Methods 2.3), a lower bound with no last meal and no contents, so the fed state is unknown: norm_center start, no meal. Clock hour not printed: 8.0 assumed.",
+      "duration_min": 24,
+      "start_hour": 8.0,
+      "meals": [],
+      "init": "norm_center",
+      "activity": {
+        "segments": [
+          {
+            "from_min": 9,
+            "to_min": 14,
+            "level": 0.0662
+          },
+          {
+            "from_min": 14,
+            "to_min": 19,
+            "level": 0.1798
+          },
+          {
+            "from_min": 19,
+            "to_min": 24,
+            "level": 0.4227
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "lc_rest_heart_rate",
+      "description": "Heart rate at seated rest before land cycling: mean of the readings at 2 and 4 min of the 4-min bicycle rest (Methods 2.4.1: HR 'intermittently measured at 2- and 4-min during rest ... and averaged'), arm minutes 7 and 9, entered as the window [7, 9) just before cycling starts at minute 9. SD, n = 12.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "land_cycling"
+      ],
+      "window": {
+        "start_min": 7,
+        "end_min": 9
+      },
+      "value": 60,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, 'HR, bpm' block, row 'Rest', column LC",
+        "quote": "Rest | 60 ± 13 | 53 ± 10"
+      }
+    },
+    {
+      "id": "lc_rest_oxygen_uptake",
+      "description": "Oxygen uptake at seated rest before land cycling: mean of the last 30 s of the 4-min bicycle rest (Methods 2.4.1: 'average of the last 30 s during each stage'), read as the window [8, 9). SD, n = 12. ml/min as printed.",
+      "marker": "vo2",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "land_cycling"
+      ],
+      "window": {
+        "start_min": 8,
+        "end_min": 9
+      },
+      "value": 209,
+      "unit": "ml/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 39,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 1, 'VO2, ml/min' block, row 'Rest', column LC",
+        "quote": "Rest | 209 ± 39 | 219 ± 36"
+      }
+    },
+    {
+      "id": "lc_stage3_respiratory_rate",
+      "description": "Respiratory rate at stage 3 of land cycling (the last of three 5-min stages, arm minutes 19 to 23, VO2 17.1 ml/kg/min): mean of the last 30 s of the stage, which the paper names as the steady-state window (Methods 2.4.1: 'these variables were averaged over the last 30 s of the resting and cycling conditions'; 'all metabolic and breathing parameters reached a steady state'), read as the window [23, 24). Printed 'bpm'; it is breaths per minute. SD, n = 12.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "land_cycling"
+      ],
+      "window": {
+        "start_min": 23,
+        "end_min": 24
+      },
+      "value": 23.3,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.7,
+        "n": 12
+      },
+      "location": {
+        "where": "Results 3.2, paragraph 2 (post hoc, stage 3, LC value)",
+        "quote": "RR was higher at stage 3 in WC than in LC (26.8 ± 2.7 vs. 23.3 ± 3.7 bpm, p = 0.012, Figure 2)"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "water-based cycling day (WC): every value of that day (rest HR and VO2 in Table 1, WC column; RR at stage 3, 26.8 ± 2.7 breaths/min, Results 3.2; the WC spirometry and breathing data); the day is immersion to the xiphoid in 31-32 °C water on an underwater bicycle (Methods 2.3)",
+      "missing": {
+        "kind": "input",
+        "name": "water_immersion"
+      }
+    },
+    {
+      "what": "respiratory rate at rest and at stages 1 and 2 of land cycling, and at rest of the water day (Figure 2 only; the text gives stage 3 of each day alone)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "respiratory exchange ratio at rest and each stage, both days (Table 1, RER block): food before the visit not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "ventilation (VE) and total breathing time (Ttot), rest and stages, both days (Figure 2 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Borg rating of perceived exertion, rest and stages, both days (Table 1, RPE block)",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "oxygen uptake at stages 1 to 3 of land cycling (Table 1, VO2 blocks): used as the bout's intensity input in the protocol, so not also a finding; and %VO2peak at each stage (Table 1), a ratio of the same VO2 to the peak",
+      "missing": {
+        "kind": "source",
+        "name": "restates_entered_finding"
+      }
+    },
+    {
+      "what": "heart rate at stages 1 to 3 of land cycling (Table 1, HR block; 112 ± 16 bpm at stage 3): HR was read at 2 and 4 min of each stage and averaged (Methods 2.4.1), and the paper says steady VO2 took about 3 min to reach after each change of load (Methods 2.3); only the metabolic and breathing variables are given a steady-state window (last 30 s), HR is not, so the 2-min reading is not a steady-state value",
+      "missing": {
+        "kind": "source",
+        "name": "steady_state_not_printed"
+      }
+    },
+    {
+      "what": "carbon dioxide output in ml/kg/min at rest and stages 1 to 3, both days (Table 1, VCO2 block); the model's vco2 is ml/min and the paper gives no ml/min figure",
+      "missing": {
+        "kind": "input",
+        "name": "unit_per_body_mass"
+      }
+    },
+    {
+      "what": "tympanic temperature at rest and stages, both days (Table 1, Body temp block): the model's temperature is core, and this is tympanic",
+      "missing": {
+        "kind": "marker",
+        "name": "tympanic_temperature"
+      }
+    },
+    {
+      "what": "end-tidal CO2 (PETCO2) at rest and stage 3, both days (Results 3.2 text: 40.1 ± 1.8 and 37.6 ± 1.3 mmHg at rest; 44.8 ± 1.8 and 46.1 ± 2.2 mmHg at stage 3; Figure 4)",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "tidal volume during inspiration and expiration, rest and stages, both days (Table 2, VTI and VTE)",
+      "missing": {
+        "kind": "marker",
+        "name": "tidal_volume"
+      }
+    },
+    {
+      "what": "inspiratory time Ti, rest and stages, both days (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "inspiration_time"
+      }
+    },
+    {
+      "what": "expiratory time Te, rest and stages, both days (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "expiration_time"
+      }
+    },
+    {
+      "what": "inspiratory and expiratory flow, rest and stages, both days (Table 2, VTI/Ti and VTE/Te)",
+      "missing": {
+        "kind": "marker",
+        "name": "respiratory_flow"
+      }
+    },
+    {
+      "what": "spirometry before and after cycling, FVC, FEV1, FEV1/FVC and PEF, both days (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "spirometry"
+      }
+    },
+    {
+      "what": "maximal inspiratory and expiratory muscle pressure, PImax and PEmax, before and after cycling, both days (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "respiratory_muscle_pressure"
+      }
+    },
+    {
+      "what": "peak oxygen uptake VO2peak 39.8 ± 4.1 ml/kg/min from a graded maximal test (Methods 2.2, 2.3 day 1)",
+      "missing": {
+        "kind": "input",
+        "name": "exercise_to_exhaustion_ramp"
+      }
+    }
+  ]
+}
