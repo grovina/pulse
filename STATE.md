@@ -324,6 +324,16 @@ as ratios on both):
   above on iter 121: late 0.67 to 0.78, sealed median 0.81 to 0.83.
 - A sealed number must not choose checkpoints or stop training, or it stops
   being a test; a guard of that kind needs a split of the trained papers.
+- Frozen on main at 0ca5c24 (ketone glycogen threshold, breathing-rate
+  papers; 2026-11-25), on the 317 sealed and 1,261 trained non-GLP-1 items
+  both boards hold: iter 120 sealed median 0.78 to 0.73 (mean 1.20 to 1.07),
+  trained 0.64 to 0.60; iter 121 sealed 0.80 to 0.78. Nearly all of it is
+  day-0 fasting `bhb` (rossmeislova-2024 obese z 6.9 to 2.3 on iter 120;
+  dai-2024 and dai-2022 likewise); day-3 ketones barely move. Crabtree-2025
+  `rr` is unchanged by code: z 0.0 to 1.9 on iter 120, 1.2 to 4.3 on
+  iter 121 (pre-exercise 25.7 predicted against 17), so iter 121's rr loss
+  was retraining. The one large loss: vollmer-2008 `gip` ratio z 3.1 to 6.4
+  on iter 120, from the run D incretin constants it was not trained with.
 
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
