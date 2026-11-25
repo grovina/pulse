@@ -1,0 +1,33 @@
+{
+  "paper": "kwon-2025",
+  "citation": {
+    "authors": "Kwon Y, Nam KS, Chang JS, Kang KW",
+    "title": "Comparison of cardiorespiratory responses between treadmill and bicycle ergometer exercise",
+    "journal": "Journal of Exercise Rehabilitation",
+    "year": 2025,
+    "doi": "10.12965/jer.2550198.099",
+    "pmid": "40613048",
+    "pmcid": "PMC12214955"
+  },
+  "reported": [
+    {
+      "what": "breathing rate (breaths/min) on the treadmill, mean and SD (n = 22) at the resting phase and at talk-test stages I, II and III, Table 2",
+      "location": {
+        "where": "Table 2, row 'RR (breaths/min)', Treadmill; columns Resting, TT level 1, TT level 2, TT level 3",
+        "quote": "Treadmill | 20.17 ± 2.92 | 20.74 ± 4.78 | 22.92 ± 5.33 | 25.84 ± 6.07"
+      }
+    },
+    {
+      "what": "breathing rate (breaths/min) on the bicycle, mean and SD (n = 22) at the resting phase and at talk-test stages I, II and III, Table 2",
+      "location": {
+        "where": "Table 2, row 'RR (breaths/min)', Bicycle; columns Resting, TT level 1, TT level 2, TT level 3",
+        "quote": "Bicycle | 19.42 ± 4.97 | 20.52 ± 4.98 | 21.97 ± 5.60 | 25.07 ± 5.24"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "input_not_printed"
+  },
+  "detail": "The paper gives no posture for its resting phase, and the model's rest arm needs a seated or supine one; its talk-test stages also have no printed minutes, and their VO2/kg is labelled L/kg against values (4.91 to 22.32) that are plainly mL/kg/min, so the exercise rows could not be placed either."
+}
