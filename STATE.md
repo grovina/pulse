@@ -164,7 +164,7 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 | `trainer-c7m8g` | 119, no teacher, insulin follows absorbed nutrients | 2026-11-19 | stopped by its 24 h deadline (2026-11-20 19:09 UTC) on image `7c781a5`, warm start from `iter118-base` (the four new islet gains at their defaults), the corpus of 2026-11-19 with every topic read; output `training/jobs/iter119-insulin/` |
 | `trainer-hrx5g` | 120, first launch | 2026-11-22 | cancelled after 2 min: `--init-from` loaded through `load_compatible_state_dict`, which skipped the doubling of the nutrient gain; fixed in the next commit |
 | `trainer-zw876` | 120, no teacher, meal-gated muscle share and epinephrine gate on basal insulin | 2026-11-22 | stopped by its 24 h deadline (2026-11-23 22:46 UTC) on image `e3ace61`, warm start from `iter119-insulin` (nutrient gain 1.79 doubled to 3.59 on load); output `training/jobs/iter120-mealsplit/`, whose final board equals its phase-2 board; approved by Gabriel, about $9 |
-| `trainer-2qvnr` | 121 (run D), no teacher, basal setpoint scale 0.65 and load-dependent gastric emptying | 2026-11-24 | running since 12:03 UTC on image `6496abe`, warm start from `iter120-mealsplit`, self-stop at 24 h; output `training/jobs/iter121-basal-gastric/`; approved by Gabriel, about $9 |
+| `trainer-2qvnr` | 121 (run D), no teacher, basal setpoint scale 0.65 and load-dependent gastric emptying | 2026-11-24 | stopped by its 24 h deadline (2026-11-25 13:06 UTC) on image `6496abe`, warm start from `iter120-mealsplit`; output `training/jobs/iter121-basal-gastric/`; approved by Gabriel, about $9 |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -283,6 +283,21 @@ in 10 for iter 117):
   and is better on the 36 sealed items new to this corpus (median |z| 1.17
   against 1.35); otherwise the two runs are level.
 - Spend: about $6.80 and $9 at Cloud Run list rates (4 vCPU, 16 GiB).
+
+Iter 121 (run D), basal setpoint scale 0.65 and a stomach that empties
+faster when full (2026-11-24; its board against iter 120's, GLP-1 scored
+as ratios on both):
+
+- Sealed papers 0.82 (0.68 to 1.01) on 314 points in 31 papers, against
+  iter 120's 0.77 on the same scoring; on the 317 common non-GLP-1 sealed
+  items median |z| 0.78 to 0.80, mean 1.20 to 1.25. Trained items 0.64 to
+  0.59 (mean 1.06 to 1.02): better on what it trained on, not on sealed.
+- Mixed-meal glucose z -0.67 to -0.22 (ratio 0.98). Fasting insulin 1.36 to
+  1.20 of target, but exercise insulin 1.66 to 1.80 and late mixed-meal
+  insulin 0.72 to 0.67; the drink's glucose z +0.57 to +0.69. Training
+  undid part of the setpoint cut. mok-2016's post-lunch insulin 33 against
+  106 (iter 120: 19).
+- Iter 120 stays the reference model.
 
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
