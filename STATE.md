@@ -155,6 +155,21 @@ With arms capped at 300 minutes, on the same box at 2 CPUs:
 - A simulated minute costs 979 tensor operations, down from 1,167. With a
   different meal list for every member of a batch it cost 8,009.
 
+A validation split picks the checkpoint (2026-11-25, `--val-fraction`, off by
+default). Iter 121 trained better (0.64 to 0.59) and sealed worse (0.77 to
+0.82): the job kept the last epoch whatever it scored. With `--val-fraction
+0.1`, about a tenth of the papers that train (a hash of the slug with its own
+salt, `sealing.paper_is_validation`; a sealed paper is never drawn) leave the
+evidence step and the rules draw: 14 papers, 152 cohort items of 129 papers
+and 1,241 items. Every `--val-every` epochs (default 1, and the last epoch
+always) they are scored as the board scores cohorts (4 draws, `[VAL]` lines in
+the job log) and the weights with the lowest median |z| are the `model.pt`;
+the last epoch is `model_last.pt` (when it differs). The curve is in the board
+and in the checkpoint as `validation`. One scoring of the 14 papers takes 61 s
+on iter 121's checkpoint (one core); an epoch with the literature is 3 h, so
+every epoch adds under 1% to a 24 h run. The board's training line still
+includes these papers. A sealed number still never chooses.
+
 ## Runs
 
 | Execution | Iter | Started | Ended |

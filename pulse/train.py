@@ -138,8 +138,9 @@ from .training.trajectory_signal import (
     normalize_contribution_weights,
     parse_band_per_marker,
 )
+from .knowledge.sealing import paper_is_validation
 from .scoreboard import (
-    attach_individual_skill, render as render_scoreboard, scoreboard,
+    attach_individual_skill, render as render_scoreboard, score_cohorts, scoreboard,
     scoreboard_object, scoreboard_path,
 )
 from .types import EMBEDDING_DIM, MARKERS, MODULE_COUPLING_CHANNELS
@@ -329,6 +330,60 @@ def _last_good_checkpoint(
     }
 
 
+def split_validation(specs, rules, fraction: float):
+    """(training specs, validation specs, training rules). The validation papers are
+    drawn from the papers that train (``sealing.paper_is_validation``); their cohort
+    items are scored, never stepped on, and their rules are not drawn either."""
+    if fraction <= 0.0:
+        return list(specs), [], list(rules)
+    val = [s for s in specs if paper_is_validation(s.paper, fraction)]
+    return (
+        [s for s in specs if not paper_is_validation(s.paper, fraction)],
+        val,
+        [r for r in rules if not paper_is_validation(r.paper, fraction)],
+    )
+
+
+def validation_median_abs_z(model: nn.Module, val_specs, *, n_draws: int = 4, seed: int = 0) -> float:
+    """Median |z| of ``val_specs``, scored the way the board scores cohorts
+    (``score_cohorts``), without disturbing the training RNG or train mode."""
+    was_training = model.training
+    model.eval()
+    try:
+        with torch.random.fork_rng():
+            rows = score_cohorts(model, val_specs, n_draws, seed)
+    finally:
+        model.train(was_training)
+    return float(np.median([abs(r.z) for r in rows]))
+
+
+class BestOnValidation:
+    """Keeps the weights with the lowest validation median |z| (first one on a tie)
+    and the curve of every scoring."""
+
+    def __init__(self) -> None:
+        self.curve: list[dict[str, float]] = []
+        self.best_score: float | None = None
+        self.best_epoch: int | None = None
+        self.best_state: dict[str, torch.Tensor] | None = None
+
+    def consider(self, epoch: int, score: float, model: nn.Module) -> bool:
+        self.curve.append({"epoch": epoch, "median_abs_z": score})
+        if self.best_score is not None and not score < self.best_score:
+            return False
+        self.best_score, self.best_epoch = score, epoch
+        self.best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        return True
+
+    def report(self, fraction: float, every: int, papers: list[str], n_items: int, last_epoch: int) -> dict:
+        return {
+            "fraction": fraction, "every": every, "papers": papers, "n_items": n_items,
+            "curve": self.curve, "best_epoch": self.best_epoch,
+            "best_median_abs_z": self.best_score, "last_epoch": last_epoch,
+            "kept": "best" if self.best_epoch != last_epoch else "last",
+        }
+
+
 def _warm_start_patient_table(
     embeddings: nn.Embedding, ckpt: dict, source: str, *, seed: int,
 ) -> bool:
@@ -484,6 +539,8 @@ def train(
     scoreboard: bool = True,
     scoreboard_identifiability: bool = True,
     deadline_hours: float = 0.0,
+    val_fraction: float = 0.0,
+    val_every: int = 1,
     deterministic: bool = False,
     torch_threads: int = 1,
     compile_steps: bool = False,
@@ -735,7 +792,20 @@ def train(
     if start_epoch < total_epochs:
         _arm_phase(start_epoch, announce=start_epoch > 0)
     aux_steps_by_signal: dict[str, int] = {}
-    evidence_pool = list(ALL_COHORT_STATISTICS)
+    evidence_pool, val_specs, rules_pool = split_validation(
+        ALL_COHORT_STATISTICS, PHYSIOLOGY_RULES, val_fraction,
+    )
+    keeper = BestOnValidation() if val_specs else None
+    last_scored = -1
+    if val_fraction > 0.0:
+        val_papers = sorted({s.paper for s in val_specs})
+        print(
+            f"[VAL] {len(val_papers)} validation papers ({len(val_specs)} items) held out of "
+            f"the evidence step, scored every {val_every} epoch(s): {', '.join(val_papers)}",
+            flush=True,
+        )
+        if keeper is None:
+            print("[VAL] no paper drawn: keeping the last epoch", flush=True)
     evidence_p = evidence_probabilities(evidence_pool, evidence_paper_weighting)
     try:
         for epoch in range(start_epoch, total_epochs):
@@ -808,7 +878,7 @@ def train(
                     _CORRECTION_SHRINKAGE * shrinkage_of(model), ctx, signal="evidence",
                 )
                 evidence_on = w_cohort > 0.0 and bool(evidence_pool) and evidence_batch_size > 0
-                rules_on = w_rules > 0.0 and bool(PHYSIOLOGY_RULES)
+                rules_on = w_rules > 0.0 and bool(rules_pool)
                 if evidence_on or rules_on:
                     t0 = time.time()
                     item_terms = [
@@ -822,7 +892,7 @@ def train(
                         EvidenceTerm(
                             rule, w_rules * float(rule.weight), physiology_rules_sample_patients,
                         )
-                        for rule in (sample_evidence(PHYSIOLOGY_RULES, 1, rng) if rules_on else [])
+                        for rule in (sample_evidence(rules_pool, 1, rng) if rules_on else [])
                     ]
                     step_report = accumulate_evidence_step(
                         model, ctx, [*item_terms, *rule_terms], rng=rng, device=device,
@@ -949,6 +1019,18 @@ def train(
                 flush=True,
             )
 
+            if keeper is not None and ((epoch + 1) % val_every == 0 or epoch + 1 == total_epochs):
+                t_val = time.time()
+                score = validation_median_abs_z(model, val_specs)
+                last_scored = epoch
+                kept = keeper.consider(epoch, score, model)
+                print(
+                    f"[VAL] epoch={epoch:3d} median_abs_z={score:.4f} "
+                    f"best={keeper.best_score:.4f}@{keeper.best_epoch}"
+                    f"{' kept' if kept else ''} ({time.time() - t_val:.0f}s)",
+                    flush=True,
+                )
+
             if scoreboard and phased and epoch + 1 in phase_ends and epoch + 1 < total_epochs:
                 _write_phase_board(
                     model, cur_phase, output_path, gcs_bucket, gcs_object,
@@ -1039,6 +1121,25 @@ def train(
             else:
                 print("[ABORT] no last-good checkpoint to upload (aborted before any epoch completed)", flush=True)
         return 42
+
+    validation = None
+    if keeper is not None:
+        if last_scored != epoch:  # stopped early (deadline): the last epoch is a candidate too
+            score = validation_median_abs_z(model, val_specs)
+            keeper.consider(epoch, score, model)
+            print(f"[VAL] epoch={epoch:3d} median_abs_z={score:.4f} (final)", flush=True)
+        validation = keeper.report(
+            val_fraction, val_every, sorted({s.paper for s in val_specs}), len(val_specs), epoch,
+        )
+        last_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        if keeper.best_epoch != epoch:
+            model.load_state_dict(keeper.best_state)
+        print(
+            f"[VAL] curve {[(c['epoch'], round(c['median_abs_z'], 4)) for c in keeper.curve]}; "
+            f"keeping epoch {keeper.best_epoch} ({keeper.best_score:.4f}) as the model, "
+            f"last epoch {epoch} saved as model_last.pt",
+            flush=True,
+        )
 
     _emb_prior_mean, _emb_prior_std = reference_prior_stats()
     gut_dose_sweep_protocol = GutDoseSweepProtocol()
@@ -1145,6 +1246,7 @@ def train(
         "seed": seed,
         "stopped_for_deadline": stopped_for_deadline,
         "deadline_hours": deadline_hours,
+        "validation": validation,
         "input_dropout": input_dropout,
         "train_config": dict(train_config) if train_config else None,
         "spec_path": spec_path,
@@ -1156,6 +1258,13 @@ def train(
     if gcs_bucket and gcs_object:
         _upload_to_gcs(output_path, gcs_bucket, gcs_object)
 
+    if validation is not None and keeper.best_epoch != epoch:
+        last_path = str(Path(output_path).with_name("model_last.pt"))
+        torch.save({**checkpoint, "model_state": last_state, "validation": validation}, last_path)
+        print(f"Last epoch saved to {last_path}")
+        if gcs_bucket and gcs_object:
+            _upload_to_gcs(last_path, gcs_bucket, _gcs_sibling(gcs_object, "model_last.pt"))
+
     board = None
     if scoreboard:
         board = score_on_board(
@@ -1165,6 +1274,7 @@ def train(
         )
         # The benchmark forks this process. Writing first means a scorer that
         # dies there still leaves the board, which is the expensive part.
+        board["validation"] = validation
         _write_board(board, output_path, gcs_bucket, gcs_object)
 
     exit_code = 0
@@ -1179,6 +1289,7 @@ def train(
         if board is not None and report is not None:
             board = attach_individual_skill(board, report["individual_skill"])
     if board is not None:
+        board["validation"] = validation
         _write_board(board, output_path, gcs_bucket, gcs_object)
     return exit_code
 
@@ -2291,6 +2402,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
              "A patient table in the checkpoint is ignored: people are drawn from the factor prior.",
     )
     parser.add_argument(
+        "--val-fraction", type=float, default=0.0,
+        help="Hold this share of the TRAINED papers (a hash of the slug, never a sealed paper) "
+             "out of the evidence step, score them every --val-every epochs, and keep the "
+             "epoch with the lowest validation median |z| as the model (the last epoch is "
+             "saved as model_last.pt). 0 keeps the last epoch, as before.",
+    )
+    parser.add_argument(
+        "--val-every", type=int, default=1,
+        help="Epochs between validation scorings (the last epoch is always scored).",
+    )
+    parser.add_argument(
         "--resume-from", type=str, default=None,
         help="Continue a run from last_good.pt (local path or gs://). "
              "Weights must match this model. Training starts at epoch+1. "
@@ -2460,6 +2582,8 @@ def main():
         scoreboard=args.scoreboard,
         scoreboard_identifiability=args.scoreboard_identifiability,
         deadline_hours=args.deadline_hours,
+        val_fraction=args.val_fraction,
+        val_every=args.val_every,
         deterministic=args.deterministic,
         torch_threads=args.torch_threads,
         compile_steps=args.compile_steps,

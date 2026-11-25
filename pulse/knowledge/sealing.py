@@ -38,6 +38,8 @@ __all__ = [
     "Overlap",
     "apply_seal",
     "paper_is_sealed",
+    "paper_is_validation",
+    "VALIDATION_SALT",
 ]
 
 SEAL_SHARE = 0.2
@@ -158,6 +160,25 @@ def paper_is_sealed(paper: str) -> bool:
         return False
     digest = hashlib.sha256(paper.encode("utf-8")).digest()
     return int.from_bytes(digest[:8], "big") / float(1 << 64) < SEAL_SHARE
+
+
+# A second draw, over the trained papers only, for the run's own validation split
+# (``train --val-fraction``): a different salt, so it is independent of the seal.
+VALIDATION_SALT = "validation-v1:"
+
+
+def paper_is_validation(paper: str, fraction: float) -> bool:
+    """Whether ``paper`` is held out of the evidence step to pick checkpoints.
+
+    Never a sealed paper: the draw is made only among papers that train. The same
+    slug always gives the same answer, and a larger ``fraction`` only adds papers.
+    """
+    if not _SLUG.fullmatch(paper):
+        raise ValueError(f"a paper is a lowercase slug like 'schulla-2003', got {paper!r}")
+    if fraction <= 0.0 or paper_is_sealed(paper):
+        return False
+    digest = hashlib.sha256((VALIDATION_SALT + paper).encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], "big") / float(1 << 64) < fraction
 
 
 _Item = TypeVar("_Item")
