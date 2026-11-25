@@ -198,7 +198,7 @@ BHB is the teacher's ketogenesis, not a mass-action head plus a rectifier
 on FFA excess (iter 101: insulin tracked the 48 h teacher at 3.15 vs 3.83
 and BHB still ended at 0.23 vs 3.14):
 
-    ketogenesis = k_keto · FFA / (1 + I/IC50) · (1 + 13 · relu(1 − LGly/LGly_b))
+    ketogenesis = k_keto · FFA / (1 + I/IC50) · (1 + 13 · relu(1 − LGly/(KT·LGly_b)))   KT = 0.7
     k_bhb       = (k_keto · FFA_b / (1 + Ib/IC50)) / BHB_b
     dBHB        = ketogenesis − k_bhb · BHB
 
@@ -593,6 +593,11 @@ _PLASMA_FRAC_INIT = 1.0 - _LIVER_DIRECT_FRAC - _MUSCLE_STORE_FRAC_INIT
 _K_KETO_INIT = 0.005          # teacher keto_max
 _KETO_INS_SUPP_INIT = 15.0    # teacher IC50_keto
 _KETO_GLYC_GAIN = 13.0        # teacher keto_glyc_gain
+# The glycogen term starts only when the liver is below this fraction of its
+# fed baseline. Starting at 1.0 gave 0.4-0.9 mM BHB at a 10-12 h fast; the
+# corpus reads 0.05-0.30 mM there (dai-2024, dai-2022, bak-2018,
+# rossmeislova-2024). Teacher: keto_glyc_thresh.
+_KETO_GLYC_THRESH = 0.7
 _BHB_CENTER = NORM_CENTER[MARKER_INDEX["bhb"]]  # teacher BHB_b / typical
 
 # --- lipolysis -----------------------------------------------------------------
@@ -1277,7 +1282,7 @@ class MetabolicModule(MassActionModule):
         hep_target = (glycogenolysis_plasma + gng_released) * VG_DL_PER_KG
         hep_rate = hep_cons * c["hep_cons_scale"] * (hep_target - hep)
 
-        glyco_depletion = relu(1.0 - lgly / _LIVER_GLY_CENTER)
+        glyco_depletion = relu(1.0 - lgly / (_KETO_GLYC_THRESH * _LIVER_GLY_CENTER))
         ketogenesis = (c["k_keto"] * ffa / (1.0 + ins / c["ic50_keto"])
                        * (1.0 + _KETO_GLYC_GAIN * glyco_depletion))
         bhb_rate = ketogenesis - c["k_bhb"] * bhb

@@ -373,6 +373,10 @@ class PatientParams:
     # dinner, ~2.6 at 24 h when the fast starts from a full liver at dawn
     # (Cahill 0.8-2.2 at 24 h, 2-3 at 48 h).
     keto_glyc_gain: float = 13.0
+    # Depletion term starts below this fraction of LGly_b (corpus: dai-2024,
+    # dai-2022, bak-2018, rossmeislova-2024 read 0.05-0.30 mM BHB at 10-12 h;
+    # starting at 1.0 gave 0.4-0.9 mM).
+    keto_glyc_thresh: float = 0.7
 
     # --- Hepatobiliary / enterohepatic circulation (iter 95) ---------------------
     # Sourced anchors and the design rationale: docs/iter95-biliary-anchors.md.
@@ -1769,7 +1773,7 @@ def simulate_full_body(
 
         # glyco_depletion ∈ [0,1): 0 when the liver is full (fed calibration —
         # ketosis unchanged), rising as it empties to drive the fuel switch.
-        glyco_depletion = max(0.0, 1.0 - LGly / params.LGly_b)   # linear (see keto_glyc_gain)
+        glyco_depletion = max(0.0, 1.0 - LGly / (params.keto_glyc_thresh * params.LGly_b))   # linear (see keto_glyc_gain)
         ketogenesis = (
             params.keto_max * FFA / (1 + I / params.IC50_keto)
             * (1.0 + params.keto_glyc_gain * glyco_depletion)

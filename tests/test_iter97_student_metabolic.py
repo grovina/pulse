@@ -700,6 +700,21 @@ class TestKetogenesisAndHepaticOutput(unittest.TestCase):
         self.assertGreater(float(tr[-1, MI["bhb"]]), 0.4)
         self.assertGreater(float(tr[-1, MI["bhb"]]), float(tr[0, MI["bhb"]]) + 0.2)
 
+    def test_keto_glycogen_term_starts_below_70_percent_of_baseline(self) -> None:
+        """BHB at 10 h of fasting sits under 0.3 mM (corpus: dai-2024, dai-2022,
+        bak-2018, rossmeislova-2024 read 0.05-0.30 mM at 10-12 h) and a 72 h fast
+        still rises (model gives 3.35 mM; window is within 20%)."""
+        m = _model(14, hidden=32, perturb=0.0)
+        n = 72 * 60
+        with torch.no_grad():
+            tr = integrate(
+                m, _CENTER.clone(), torch.zeros(EMBEDDING_DIM), n,
+                start_time_minutes=20.0 * 60.0, meals=[],
+                sleep_wake=torch.ones(n), activity=torch.zeros(n),
+            )
+        self.assertLess(float(tr[10 * 60 - 1, MI["bhb"]]), 0.3)
+        self.assertAlmostEqual(float(tr[-1, MI["bhb"]]), 3.35, delta=0.2 * 3.35)
+
     def test_hepatic_output_target_is_release_into_plasma_in_mg_per_kg(self) -> None:
         """A11: ``hep_target = (glycogenolysis + gng_RELEASED)·VG_DL_PER_KG``.
 

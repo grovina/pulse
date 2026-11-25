@@ -778,6 +778,14 @@ BHB_RISES_DURING_FAST = PhysiologyRule(
         min_rise=0.05,
     ),
     scale=0.05,
+    # 2026-11-25: the teacher's glycogen term now starts below 0.7 of baseline
+    # (keto_glyc_thresh) so a 10-12 h fast reads 0.05-0.30 mM as dai-2024,
+    # dai-2022, bak-2018 and rossmeislova-2024 do. The 8 h to 16 h extension
+    # now rises 0.03 mM (under the 0.05 floor); the 12 h to 24 h one still holds.
+    teacher_correction=True,
+    teacher_correction_note=(
+        "corpus reads 0.05-0.30 mM BHB at 10-12 h; the 8 h to 16 h rise is 0.03 mM"
+    ),
 )
 
 

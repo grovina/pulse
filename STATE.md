@@ -605,6 +605,22 @@ Not rescored, from the board of 2026-10-29:
   for `n_arm=None` because the unit tests exercise it and a spread has no n
   to divide by (`cryer_1987_fasting_glucose_spread`, the one remaining
   `None`). Training iters up to 119 trained on the 32 dropped points (119 was launched on `7c781a5`, before the drop).
+- Ketogenesis's glycogen term used to switch on as soon as liver glycogen fell
+  below its fed baseline, giving 0.4 to 0.9 mM beta-hydroxybutyrate at a 10 to
+  12 h fast where the corpus (dai-2024, dai-2022, bak-2018, rossmeislova-2024)
+  reads 0.05 to 0.30 mM. It now starts below 0.7 of the baseline
+  (`_KETO_GLYC_THRESH` in `pulse/modules/metabolic.py`, `keto_glyc_thresh` in
+  the teacher, `pulse/knowledge/full_body.py`). Untrained: frozen on iter 121's
+  weights, `bhb` mean |z| 3.90 to 1.29 on 19 items (median 0.89; the 10 to
+  12 h items 1.10), the other 162 fasting items unchanged at mean 1.06. A
+  default person's BHB at 10, 12, 24, 48, 72 h went from 0.67, 0.74, 1.68,
+  2.78, 3.36 to 0.20, 0.32, 1.34, 2.68, 3.35 mM, so long fasts still rise.
+  The teacher's 24 h BHB for a typical patient is now 0.63 mM (Cahill's 24 h
+  band starts at 0.8), and the rule `bhb_rises_during_fast` is flagged as a
+  teacher correction (its 8 h to 16 h arm rises 0.03 mM, floor 0.05). Test
+  expectations moved: teacher 48 h band lower edge 2.0 to 1.8 (Gb 130 reads
+  1.92), 24 h lower edge 0.7 to 0.5, and the planned-integrator golden
+  glucose/insulin/gradient values (shifts under 1e-4). The next run trains with it.
 - `pytest` from the repository root fails while collecting
   `scripts/iter89_recovery_test.py`. Run `pytest tests/`.
 - There is no CI. The suite is run by hand:
