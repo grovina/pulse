@@ -1,0 +1,247 @@
+{
+  "paper": "jansevanrensburg-2024",
+  "citation": {
+    "authors": "Janse van Rensburg, Jansen van Rensburg, Botha, Elliott, Ramagole, Pillay, Hendricks, Eyden, Arnott, Stevens",
+    "title": "Effects of no mask, a surgical mask and a fabric buff on peripheral oxygenation saturation during moderate intensity exercise: a randomised cross-over study",
+    "journal": "Journal of Thoracic Disease",
+    "year": 2024,
+    "doi": "10.21037/jtd-23-1178",
+    "pmid": "38617788",
+    "pmcid": "PMC11009602"
+  },
+  "population": {
+    "n": 30,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 35.83,
+      "sd": 4.7,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.8,
+      "sd": 3.41,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "30 adults aged 30 to 45 y by enrolment (Methods), 13 women and 17 men (Table 1, n (%)). Age 35.83 +/- 4.70 y and BMI 24.80 +/- 3.41 kg/m2 are printed as mean +/- standard deviation for all participants (Table 1; Results paragraph 1); min and max are not printed, so null. Regular exercisers (at least three sessions a week, Methods). Excluded: chronic respiratory, cardiovascular, rheumatological or musculoskeletal conditions, respiratory medications, acute illness or COVID-19 in the last 3 months (Methods). The Discussion calls them healthy ('healthy populations'), so healthy. Pooled sample; the paper does not split the findings used here by sex."
+  },
+  "protocols": [
+    {
+      "name": "seated_rest",
+      "description": "Seated rest, no-mask control condition (NM), before the cycling bout. Methods: 'Resting measures (T0) were established by having participants sit quietly for 5 min during T0'. Posture: seated (the paper's words: sit quietly). Minutes 0 to 4 are the printed 5-min sitting; the T0 value is entered as the mean over that period, because the paper says T0 was established during those 5 min but does not say how it was averaged. No activity, no meal. Fed state: the paper says nothing about food before the visit, so no fast and no meal are assumed (init norm_center). The clock hour is not printed (start_hour 8.0 assumed).",
+      "duration_min": 5,
+      "start_hour": 8.0,
+      "init": "norm_center",
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    },
+    {
+      "name": "nm_exercise",
+      "description": "No-mask control bout (NM), Wattbike cycle ergometer, Methods. Minutes 0 to 4: seated rest, 5 min quietly sitting (T0, as in the rest arm). Minutes 5 to 14: 10-min gradual warm-up 'building toward the required power output (60%)'; its intensity is not printed, so it is entered at the baseline (activity 0), listed in assumed. Minutes 15 to 44: 30 min at 60% of each rider's peak power from the PRE-test 3-min maximal effort ('The test intensity was determined using 60% of the individual's peak power'). Group mean peak power 242.19 W (Table 1, 'Mean maximal power (Watt)', mean +/- SD 85.53); the mean of the individual bouts is 0.60 x 242.19 = 145.31 W (the mean is linear). Level by the cycle-watts rule: 145.31 / 186 = 0.7813 (activity segment minutes 15 to 45). Samples at T1, T2, T3 = 9, 18 and 27 min of the 30-min bout, i.e. minutes 24, 33 and 42 of the arm, taking the clock as starting with the 60% bout (the paper does not say from which minute its 9/18/27 min are counted; assumed). Duration 45 min (last minute 44). No meal and no drink are described, so none is entered. Fed state not printed: init norm_center, no meal. Clock hour not printed (start_hour 8.0 assumed). The surgical-mask and buff-mask conditions are not entered: the model has no mask input (left_out, input/face_mask).",
+      "duration_min": 45,
+      "start_hour": 8.0,
+      "init": "norm_center",
+      "meals": [],
+      "activity": {
+        "segments": [
+          {
+            "from_min": 15,
+            "to_min": 45,
+            "level": 0.7813
+          }
+        ]
+      },
+      "assumed": [
+        "start_hour",
+        "init",
+        "activity",
+        "duration_min"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rest_rr_seated",
+      "description": "Respiratory rate, no-mask condition, seated rest at T0 (the 5 min of quiet sitting), mean +/- SD, all 30 participants.",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 26.6,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.9,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 2, No mask group, row 'RR (breaths/min)', column T0",
+        "quote": "RR (breaths/min) | 26.6±5.9"
+      }
+    },
+    {
+      "id": "rest_hr_seated",
+      "description": "Heart rate, no-mask condition, seated rest at T0 (the 5 min of quiet sitting), mean +/- SD, 30 participants.",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "seated_rest"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 5
+      },
+      "value": 76.0,
+      "unit": "beats/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.5,
+        "n": 30
+      },
+      "location": {
+        "where": "Table 2, No mask group, row 'HR (beats/min)', column T0",
+        "quote": "HR (beats/min) | 76.0±13.5"
+      }
+    },
+    {
+      "id": "nm_exercise_rr_curve",
+      "description": "Respiratory rate through the no-mask cycling bout at 60% of peak power (T1, T2, T3 at 9, 18, 27 min of the bout, arm minutes 24, 33, 42), mean +/- SD, 30 participants.",
+      "marker": "rr",
+      "statistic": "curve",
+      "protocols": [
+        "nm_exercise"
+      ],
+      "unit": "breaths/min",
+      "points": [
+        {
+          "t_min": 24,
+          "value": 30.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 5.8,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 33,
+          "value": 30.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.3,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 42,
+          "value": 29.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 6.8,
+            "n": 30
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, No mask group, row 'RR (breaths/min)', columns T1, T2, T3 (T0 cell is the rest value)",
+        "quote": "RR (breaths/min) | 26.6±5.9 | 30.3±5.8* | 30.2±6.3* | 29.1±6.8"
+      }
+    },
+    {
+      "id": "nm_exercise_hr_curve",
+      "description": "Heart rate through the no-mask cycling bout (arm minutes 24, 33, 42 = T1, T2, T3), mean +/- SD, 30 participants.",
+      "marker": "hr",
+      "statistic": "curve",
+      "protocols": [
+        "nm_exercise"
+      ],
+      "unit": "beats/min",
+      "points": [
+        {
+          "t_min": 24,
+          "value": 148.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.6,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 33,
+          "value": 152.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 13.4,
+            "n": 30
+          }
+        },
+        {
+          "t_min": 42,
+          "value": 155.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 12.9,
+            "n": 30
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, No mask group, row 'HR (beats/min)', columns T1, T2, T3",
+        "quote": "HR (beats/min) | 76.0±13.5 | 148.4±12.6* | 152.8±13.4*+ | 155.4±12.9*+#"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "surgical-mask and buff-mask conditions: every SM and BM row of Table 2 (SpO2, EtCO2, RR, HR, EBT, RPE, RPB at T0 to T3) and the between-mask comparisons (Results, Figures 1 to 4): the model has no mask input",
+      "missing": {
+        "kind": "input",
+        "name": "face_mask"
+      }
+    },
+    {
+      "what": "SpO2 (finger pulse oximetry, LifeSense II), no-mask condition, Table 2 row 'SpO2 (%)', T0 to T3 (93.7, 93.1, 93.2, 93.1 %): withheld because the values sit at about 93% for healthy adults at seated rest and unchanged through exercise, which a sea-level model cannot reproduce. The paper does not print an altitude; it gives only Pretoria, South Africa (University of Pretoria sports campus), and no ambient pressure or FiO2. The cause cannot be settled from the paper (altitude, the device or the finger site), so the values are not entered.",
+      "missing": {
+        "kind": "input",
+        "name": "hypoxia"
+      }
+    },
+    {
+      "what": "end-tidal CO2 (EtCO2, mmHg), no-mask condition, Table 2 row 'EtCO2 (mmHg)', T0 to T3",
+      "missing": {
+        "kind": "marker",
+        "name": "end_tidal_gases"
+      }
+    },
+    {
+      "what": "expired breath temperature (EBT, deg C), no-mask condition, Table 2 row 'EBT (℃)', T0 to T3",
+      "missing": {
+        "kind": "marker",
+        "name": "expired_breath_temperature"
+      }
+    },
+    {
+      "what": "ratings of perceived exertion (RPE, /20), no-mask condition, Table 2 row 'RPE (/20)', T1 to T3",
+      "missing": {
+        "kind": "marker",
+        "name": "rpe"
+      }
+    },
+    {
+      "what": "ratings of perceived breathlessness (RPB, /10), no-mask condition, Table 2 row 'RPB (/10)', T0 to T3",
+      "missing": {
+        "kind": "marker",
+        "name": "breathlessness_rating"
+      }
+    }
+  ]
+}
