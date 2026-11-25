@@ -1,0 +1,126 @@
+{
+  "paper": "scala-2025",
+  "citation": {
+    "authors": "Scala I, Marotta J, Brunetti V, Del Tedesco F, Xhemalaj R, Rizzo PA, Frisullo G, Rollo E, Bocci MG, Piervincenzi E, Della Marca G, Maviglia R",
+    "title": "Analysis of the effect of 6‑Hz binaural beats on electroencephalographic and autonomic parameters of healthy individuals: An exploratory study",
+    "journal": "Physiological Reports",
+    "year": 2025,
+    "doi": "10.14814/phy2.70271",
+    "pmid": "40405521",
+    "pmcid": "PMC12098959"
+  },
+  "population": {
+    "n": 20,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.35,
+      "sd": null,
+      "min": 25.0,
+      "max": 53.0
+    },
+    "bmi": null,
+    "status": "healthy",
+    "description": "Twenty healthy adult volunteers, 10 men and 10 women (Methods 2.1: 'age range 25–53 years; mean age 31.35 years'; no SD printed, so sd is null). Screened by history: no medical, psychiatric or neurological disease, no CNS-active drugs in the 3 weeks before, no EEG abnormality. Recorded January 2021 to January 2022. Only the resting-state (BS) block is entered; the population is the whole cohort of 20."
+  },
+  "protocols": [
+    {
+      "name": "rest_lying",
+      "description": "Resting-state block (BS, the first of four blocks in the order BS, BB, MB, RN; no stimulation, played continuously with no interruption between blocks): lying on a comfortable bed with eyes closed, awake (Methods 2.1; the paper does not say supine). Block length: 2.1 and the Abstract say 'approximately 10 min'; 2.2.1 says each acoustic condition 'lasted between 10 and 12 min'; the mean artifact-free time analysed for BS was 657.7 +/- 79.2 s (2.3, EEG; the time analysed for the rate in 2.6 is not printed separately). The arm is therefore 10 min, the lower end of the stated range, and the window is minutes 0-10; the means may cover up to 12 min. The respiratory rate is the breaths counted over the analysed time divided by that time (2.6). No run-in before the block is printed. Fed state not stated and no meal is mentioned: the arm starts from typical values with no meal (norm_center, assumed; only heart rate and respiratory rate, which hardly depend on a meal, are entered). Clock hour not printed (10.0 assumed).",
+      "duration_min": 10,
+      "start_hour": 10.0,
+      "init": "norm_center",
+      "meals": [],
+      "assumed": [
+        "start_hour",
+        "init"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "rest_rr_mean",
+      "description": "Respiratory rate during the resting-state block (lying, eyes closed, no stimulation; block of 10-12 min, see protocol), mean of persons, mean +/- SD; the paper's unit 'count/min' (Table 2 row label) is read as breaths per minute, as its own definition of the rate is the count of breaths divided by the time analysed (2.6)",
+      "marker": "rr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_lying"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 18.9,
+      "unit": "breaths/min",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.9,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, 'Baseline' block, column 'Mean ± SD', row 'Respiratory rate (count/min)'",
+        "quote": "Respiratory rate (count/min) | 18.8 (16.3–20.6) | 18.9 ± 3.9"
+      }
+    },
+    {
+      "id": "rest_hr_mean",
+      "description": "Mean heart rate during the resting-state block (lying, eyes closed, no stimulation; block of 10-12 min, see protocol), mean of persons, mean +/- SD",
+      "marker": "hr",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "rest_lying"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 10
+      },
+      "value": 73.8,
+      "unit": "bpm",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 10.4,
+        "n": 20
+      },
+      "location": {
+        "where": "Table 2, 'Baseline' block, column 'Mean ± SD', row 'Mean HR (bpm)'",
+        "quote": "Mean HR (bpm) | 72.2 (66.8–81.1) | 73.8 ± 10.4"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Respiratory rate, heart rate, HRV, pulse transit time of the binaural-beat, monaural-beat and random-noise blocks (Table 2, the three later blocks; Results): these blocks are auditory stimulation, which the model has no input for",
+      "missing": {
+        "kind": "input",
+        "name": "auditory_stimulation"
+      }
+    },
+    {
+      "what": "Baseline (resting-state) RMSSD, NN50, HF, LF and LF/HF (Table 2, Baseline block): the paper gives no meal or fasting state, so the HRV markers cannot be placed on a rest arm with the fed state unknown",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "Baseline pulse transit time, 0.311 ± 0.020 s (Table 2, Baseline block)",
+      "missing": {
+        "kind": "marker",
+        "name": "pulse_transit_time"
+      }
+    },
+    {
+      "what": "Median (IQR) of every heart-rate-variability, heart rate and respiratory rate row, all blocks (Table 2, Median (IQR) columns)",
+      "missing": {
+        "kind": "operator",
+        "name": "median_with_iqr"
+      }
+    },
+    {
+      "what": "Figures 1 and 2: eLORETA 6-Hz power and lagged-phase connectivity maps (figure only; the text gives T thresholds and p values, not a mean of a marker)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    }
+  ]
+}
