@@ -880,8 +880,17 @@ not fixable frozen):
   tsukamoto-2023, wadazumi-2019; sealed ones got the field, their scores not looked at; wadazumi-2019 is
   converted from mL/min with the printed group mass). The other exercise papers print none (chiba-2025
   estimates it; eshghi-2017 prints only VO2 at the ventilatory threshold; taboni-2024 only W/kg) or none
-  at all; hedrington-2015 prints 39 +/- 2 SE but its file already fails the gate on main (gir_final does
+  at all; hedrington-2015 prints 39 +/- 2 SE but its file fails the gate on main (gir_final does
   not move with the parameters), so it is left without.
+  A sweep of the gate over all 147 findings and 64 refusals (2026-11-26) found that one failure
+  and no other. Cause (bisected): dcf7ec2 made exercise lower basal insulin, so in
+  exercise_euglycemia glucose runs 95 -> 103 mg/dL above the 95.5 clamp target and the one-sided
+  clamp infusion (relu) is exactly 0, with no gradient; the paper's 1.2 umol/kg/min is a real
+  number, the file is right, the model is not. Not changed: the gap is the model's exercise
+  glucose (the clamp should hold it level), a model change for a training round. Meanwhile
+  `tests/test_corpus_gate_sweep.py` records it in `KNOWN_DEAD` (a strict test: it fails when the
+  finding moves again), gates three small files by default, and sweeps every file with
+  `PULSE_GATE_SWEEP=1` (about 25 CPU-minutes; run after a change to a module that moves a marker).
   `training.factors.FITNESS_FROM_VO2MAX` (False) sets the fitness code from it
   ((VO2max - 38) / 9); turn it on for the run. `body_quantities["fitness_z"]` reaches the
   cardiovascular module, which adds `hr_fit_gain` (init 0) bpm per unit activity per SD below
