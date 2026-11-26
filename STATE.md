@@ -786,6 +786,26 @@ Not rescored, from the board of 2026-10-29:
   retrain was made for it. Heart rate runs low at every Bruce stage of
   crabtree-2025 alike (-1.9 at level 0.45, -2.0 at 1.07): a bias of its own,
   not of the extrapolation. All-out sprints stay out.
+- Exercise heart rate (2026-11-26, frozen on iter 120, trained-side items
+  only to choose). Not the HR-activity gain alone: iter 120's heart rate is flat
+  from activity 0.6 to 1.4 (139, 143, 143, 143 bpm at 0.6, 0.8, 1.0, 1.4)
+  while steeper than the teacher at 0.2 to 0.4 (93, 122 against 82, 98): a
+  saturating learned driver. `k_hr` is 0.18 (tau 5.4 min), so a 3 min bout
+  (cesaremarincola-2025) reaches 88 against 123. Recovery is back to rest in
+  about 7 min, with no slow tail, and nothing exercise-slow reaches the module:
+  temperature falls below rest within 5 min, lactate and cortisol are the only
+  slow ones and are not physiological drivers of heart rate. A slow
+  post-exercise state (tens of minutes; sugimoto-2020, gahreman-2016) needs a new
+  marker and a coupling channel, which changes the checkpoint layout, so it is a
+  retrain-level change. cesaremarincola-2025's flat 85 bpm "recovery" is its
+  resting level (84.8), a baseline item, not a tail. Tried layout-free: a term
+  8 bpm/min per unit activity above 0.5 on the HR rate. Trained hr 1.57 to
+  1.47 (signed -1.19 to -0.88), nothing else moved, but behrendt-2024 and
+  ali-2026 (matched before) got worse by up to 1.3 z, the trained median rose
+  0.616 to 0.623, and sealed hr went 0.95 to 1.24 (median 0.68 to 0.74). Not
+  kept. Targets at the same activity differ by 15 to 25 bpm between papers
+  (behrendt, ali against sugimoto, tsukamoto, schubert), so a single gain cannot
+  fit them; who the people are (age, fitness) is the next thing to look at.
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 
