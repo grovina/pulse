@@ -892,7 +892,20 @@ not fixable frozen):
   finding moves again), gates three small files by default, and sweeps every file with
   `PULSE_GATE_SWEEP=1` (about 25 CPU-minutes; run after a change to a module that moves a marker).
   `training.factors.FITNESS_FROM_VO2MAX` (False) sets the fitness code from it
-  ((VO2max - 38) / 9); turn it on for the run. `body_quantities["fitness_z"]` reaches the
+  ((VO2max - 38) / 9); turn it on for the run with `train --fitness-from-vo2max` (default off;
+  `train(fitness_from_vo2max=)` sets the module switch, the flag is in `train_config` and the
+  checkpoint's top-level `fitness_from_vo2max`). Every loader that builds people reads it back:
+  `diagnostics.probe.load_model_from_checkpoint` (so `scoreboard_for_checkpoint`, compare,
+  identifiability, rules, ablation, signal balance) sets the switch from the checkpoint, absent
+  meaning off. The switch is process-global: a script that loads two checkpoints of different
+  settings must load each before scoring it. Frozen on iter 120 (trained-side items only, sealed
+  scores not looked at): switching it on moves 127 of 1,303 trained-side items, all in the
+  13 papers whose arms carry a `vo2max` (hr 46, glucose 23, lactate 15, spo2 10, insulin 8,
+  rq 8, rr 5, vco2 5), median |z| 0.588 -> 0.599, largest single move 1.7 sigma (sugimoto-2020 hr
+  at minute 59, 141 -> 133 bpm, away from the 158 target). Cause: the fitness code is one coordinate of the person
+  embedding, so it reaches every module through the learned embedding projections, not only
+  through the zero hr_fit_gain; iter 120 saw fitness as a standard-normal latent, so a
+  VO2max-set person is a different person to every head. Off, boards are identical to before. `body_quantities["fitness_z"]` reaches the
   cardiovascular module, which adds `hr_fit_gain` (init 0) bpm per unit activity per SD below
   median to where heart rate settles. Teacher: 12 bpm per SD per unit activity, on the patient's
   fitness latent. Both gains are zero in the student, so iter 120 and every rollout are as

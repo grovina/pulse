@@ -172,6 +172,13 @@ def draw_factor_codes(
     return torch.tensor(codes, dtype=torch.float32, device=device)
 
 
+def set_fitness_from_vo2max(on: bool) -> None:
+    """Set the module switch for this process: a run that learns the fitness gain turns it on,
+    and whatever loads that run's checkpoint to build people sets it the same way."""
+    global FITNESS_FROM_VO2MAX
+    FITNESS_FROM_VO2MAX = bool(on)
+
+
 def years_of(codes: torch.Tensor) -> torch.Tensor:
     return codes[..., factor_index("age")] * AGE_SCALE_YEARS + AGE_CENTER_YEARS
 
@@ -186,6 +193,7 @@ __all__ = [
     "BMI_CENTER",
     "BMI_SCALE",
     "FITNESS_FROM_VO2MAX",
+    "set_fitness_from_vo2max",
     "VO2MAX_CENTER",
     "VO2MAX_SCALE",
     "FED_DAY_MEALS",

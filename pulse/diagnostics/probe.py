@@ -108,6 +108,10 @@ def load_model_from_checkpoint(path: str | Path) -> tuple[ModularPhysiologyNetwo
     ckpt = torch.load(str(path), map_location="cpu", weights_only=False)
     model = ModularPhysiologyNetwork.from_checkpoint(ckpt)
     model.eval()
+    # People are built from populations by whoever scores this model; they must be built the
+    # way the run built them. A checkpoint that predates the flag was trained with it off.
+    from ..training.factors import set_fitness_from_vo2max
+    set_fitness_from_vo2max(bool(ckpt.get("fitness_from_vo2max", False)))
     return model, ckpt
 
 

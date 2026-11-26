@@ -129,7 +129,7 @@ from .correction import shrinkage_of
 from .training.evidence_step import (
     PAPER_WEIGHTINGS, EvidenceTerm, accumulate_evidence_step, evidence_probabilities, sample_evidence,
 )
-from .training.factors import reference_prior_stats, teacher_tape_weight as tape_weight_at
+from .training.factors import reference_prior_stats, set_fitness_from_vo2max, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
 from .training.trajectory_signal import (
@@ -544,8 +544,10 @@ def train(
     deterministic: bool = False,
     torch_threads: int = 1,
     compile_steps: bool = False,
+    fitness_from_vo2max: bool = False,
 ):
     _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
+    set_fitness_from_vo2max(fitness_from_vo2max)
     device = torch.device("cpu")
 
     cnames, cprobs = normalize_contribution_weights(contribution_weights)
@@ -1249,6 +1251,8 @@ def train(
         "validation": validation,
         "input_dropout": input_dropout,
         "train_config": dict(train_config) if train_config else None,
+        # Read back by every loader that builds people (probe.load_model_from_checkpoint).
+        "fitness_from_vo2max": bool(fitness_from_vo2max),
         "spec_path": spec_path,
         "trained_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -2106,6 +2110,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--fitness-from-vo2max",
+        dest="fitness_from_vo2max",
+        action="store_true",
+        help=(
+            "Set the fitness code of a cohort arm's people from the arm's printed group "
+            "VO2max ((VO2max - 38) / 9), so the heart-rate fitness gain can be learned. Off "
+            "by default: a run without it never sees a fitness code set from a paper. "
+            "Recorded in the checkpoint; the scoreboard and every checkpoint loader apply it."
+        ),
+    )
+    parser.add_argument(
         "--cold-distill-anchor-window",
         type=int,
         default=60,
@@ -2587,6 +2602,7 @@ def main():
         deterministic=args.deterministic,
         torch_threads=args.torch_threads,
         compile_steps=args.compile_steps,
+        fitness_from_vo2max=args.fitness_from_vo2max,
     )
 
     if exit_code != 0:

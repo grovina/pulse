@@ -259,3 +259,80 @@ def test_the_teacher_holds_heart_rate_up_for_tens_of_minutes_and_a_fitter_patien
     unfit, _ = _teacher_hr(fitness_z=-1.5)
     assert fit[79] < hr[79] < unfit[79]
     assert 15.0 < unfit[79] - fit[79] < 40.0   # papers at the same activity differ by 15 to 25 bpm
+
+
+# -- the switch is a run setting: CLI -> checkpoint -> every loader ----------------------------
+
+def _cohort_codes(pop, n=5):
+    from pulse.scoreboard import cohort_people
+    return cohort_people(n, 11)(pop)
+
+
+def test_the_cli_flag_is_off_by_default_and_sets_the_run():
+    from pulse.train import build_arg_parser, resolved_train_config
+    parser = build_arg_parser()
+    assert parser.parse_args([]).fitness_from_vo2max is False
+    args = parser.parse_args(["--fitness-from-vo2max"])
+    assert args.fitness_from_vo2max is True
+    assert resolved_train_config(args)["fitness_from_vo2max"] is True
+
+
+def test_a_checkpoint_carries_the_setting_and_loaders_apply_it(monkeypatch, tmp_path):
+    from pulse.diagnostics.probe import load_model_from_checkpoint
+    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", False)   # restored after the test
+    m = _model()
+    base = {"model_state": m.state_dict(), "model_config": m.constructor_kwargs}
+    for recorded, want in ((True, True), (False, False)):
+        torch.save({**base, "fitness_from_vo2max": recorded}, tmp_path / "c.pt")
+        factors.set_fitness_from_vo2max(not want)               # whatever a previous load left
+        load_model_from_checkpoint(tmp_path / "c.pt")
+        assert factors.FITNESS_FROM_VO2MAX is want
+    factors.set_fitness_from_vo2max(True)                       # an older checkpoint: off
+    torch.save(base, tmp_path / "old.pt")
+    load_model_from_checkpoint(tmp_path / "old.pt")
+    assert factors.FITNESS_FROM_VO2MAX is False
+
+
+def test_a_trained_checkpoint_records_the_flag_and_the_board_people_follow_it(monkeypatch, tmp_path):
+    import pulse.train as train_mod
+    from pulse.scoreboard import scoreboard_for_checkpoint  # noqa: F401  (the loader path)
+    from pulse.diagnostics.probe import load_model_from_checkpoint
+    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", False)
+    monkeypatch.setattr(train_mod, "_WATCHDOG_TIMEOUT_S", 0)
+    prev = torch.get_num_threads()
+    outs = {}
+    try:
+        for on in (False, True):
+            out = tmp_path / f"m{int(on)}.pt"
+            code = train_mod.train(
+                n_patients=2, n_epochs=1, hidden_dim=8, windows_per_patient=1, n_days=1, seed=42,
+                coupling_prior_weight=0.0, verifier_loss_weight=0.0, cohort_statistic_weight=0.0,
+                setpoint_supervision_weight=0.5, embedding_prior_weight=0.001,
+                contribution_weights={"full_body": 1.0}, output_path=str(out), scoreboard=False,
+                fitness_from_vo2max=on,
+            )
+            assert code == 0
+            outs[on] = out
+    finally:
+        torch.set_num_threads(prev)
+    fit = Population(name="b", sex="male", age=(20.0, 30.0), vo2max=(47.0, 56.0))
+    col = factor_index("fitness")
+    people = {}
+    for on, path in outs.items():
+        ckpt = torch.load(path, map_location="cpu", weights_only=False)
+        assert ckpt["fitness_from_vo2max"] is on
+        factors.set_fitness_from_vo2max(not on)
+        load_model_from_checkpoint(path)                        # what scoreboard_for_checkpoint does
+        people[on] = _cohort_codes(fit)
+    others = [i for i in range(people[True].shape[1]) if i != col]
+    assert torch.equal(people[False][:, others], people[True][:, others])
+    assert not torch.equal(people[False][:, col], people[True][:, col])
+    z = people[True][:, col]
+    assert float(z.min()) >= (47.0 - 38.0) / 9.0 - 1e-6 and float(z.max()) <= (56.0 - 38.0) / 9.0 + 1e-6
+
+
+def test_default_off_people_are_unchanged_for_a_population_with_vo2max(monkeypatch):
+    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", False)
+    fit = Population(name="b", sex="male", age=(20.0, 30.0), vo2max=(47.0, 56.0))
+    plain = Population(name="b", sex="male", age=(20.0, 30.0))
+    assert torch.equal(_cohort_codes(fit), _cohort_codes(plain))
