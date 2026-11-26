@@ -879,7 +879,16 @@ not fixable frozen):
 - Gastric emptying starts at once at 2.13 kcal/min: mixed-meal glucose peaks at 25 to 34 min
   against 36 to 143 min measured (12 items; no solid-food lag in the compartment).
 - Fasted baseline glucose in exercise papers (bradley-2015, sugimoto-2020, tsukamoto-2023) is
-  10 mg/dL low at the start of the session (87 against 97): a person-level baseline.
+  10 mg/dL low at the start of the session (87 against 97): a person-level baseline. Checked
+  frozen on iter 120 (2026-11-26): not an init fault. The arms start from the student's own fed
+  day and pre-fast (`arm_init._spinup_protocol`), and a 6-person spin-up of the sugimoto arm reads
+  89 mg/dL at 12 h fasted (90 at 10 h, 83 at 16 h), the model's general fasted level (all trained
+  fasting glucose items: median -1.9 mg/dL; exercise ones -7.8, but yamaguchi-2020 is +5.6 at a
+  target of 83 against 94 to 98 in the other four). The gap is between papers, not a start-state
+  error. The `_AA_GLUCOSE_FRAC` term (0e1959f) takes only `amino_g`, the gut's amino appearance, which
+  is zero without a meal (no endogenous amino acids); on exercise arms it lifts the start by 0.5 to
+  1 mg/dL through the fed day's protein and helps (zhang-2024, protein meal 2.5 h before HIIE, glucose
+  at 154 to 170 min z -2.1 to -2.7 now -1.4 to -1.7; insulin items move under 0.05 z).
 
 Reported by the review of 2026-11-11 and not yet confirmed:
 
