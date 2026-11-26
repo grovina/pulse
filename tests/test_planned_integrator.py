@@ -412,6 +412,8 @@ _GOLDEN_MARKERS = (
     "glucose", "insulin", "cortisol", "hr", "temp", "gastric_carb", "intestinal_bile", "bile_acids")
 # 2026-11-25: glucose and insulin of the two fasting-ish rows moved by <=7e-5 z and the
 # embedding gradient norms by <=0.15 when ketogenesis's glycogen term got its 0.7 threshold.
+# 2026-11-26 (RQ follows the fuel mix): VCO2, RQ and energy expenditure of the observables
+# moved (RQ 0.818 to 0.868 at 3.2 insulin ratio, 0.811 to 0.816 at fasted); states unchanged.
 # 2026-11-26: leptin's insulin term scales the fat-set level (through
 # its coupling): glucose and insulin of the three rows moved <=3e-5 z, gradient norms <=0.13.
 _GOLDEN_FINAL = [
@@ -421,9 +423,9 @@ _GOLDEN_FINAL = [
 ]
 _GOLDEN_EMBEDDING_GRAD = [369.781, 371.781, 361.782]
 _GOLDEN_OBSERVABLES_T89 = [
-    [0, 3.23933, 0, 288.062, 235.653, 0.818063, 1.39589, 0.0374739, 0.0669527, 1],
-    [0, 1.85081, 0, 253.467, 205.583, 0.811081, 1.22629, 0.109385, 0.494446, 1],
-    [0, 2.44095, 89.4405, 281.088, 230.773, 0.821001, 1.363, 0.0480334, 0.105512, 1],
+    [0, 3.23933, 0, 288.062, 250.117, 0.868274, 1.41188, 0.0374742, 0.0669529, 1],
+    [0, 1.85081, 0, 253.467, 206.832, 0.81601, 1.22767, 0.109386, 0.494446, 1],
+    [0, 2.441, 89.4406, 281.088, 240.131, 0.854292, 1.37335, 0.0480312, 0.105507, 1],
 ]
 
 

@@ -276,7 +276,7 @@ from ..sympathoadrenal import (
 from ..renal import KIDNEY, clearance_t, excretion_mg_per_min_t, urinary_rate_t
 from ..expenditure import (
     GAS, KCAL_CARB, KCAL_FAT, KCAL_PER_G_GLYCOGEN, KCAL_PER_KG_FAT, KCAL_PROT, THERMIC,
-    frequency_rise_t, frequency_span_t, meal_gas_t, work_gas_t,
+    WEIR_VCO2, WEIR_VO2, frequency_rise_t, frequency_span_t, meal_gas_t, work_gas_t,
 )
 from ..types import (
     BODY_MASS_KG, GUT_OUTPUT_DIM, MARKER_INDEX, MG_DL_PER_G, MODULE_COUPLING_CHANNELS,
@@ -598,6 +598,20 @@ _KETO_GLYC_GAIN = 13.0        # teacher keto_glyc_gain
 # corpus reads 0.05-0.30 mM there (dai-2024, dai-2022, bak-2018,
 # rossmeislova-2024). Teacher: keto_glyc_thresh.
 _KETO_GLYC_THRESH = 0.7
+_RQ_INS_FASTED = 0.54
+_RQ_INS_LOW = 0.2
+_RQ_INS_HIGH = 0.014
+_RQ_SHIFT_MAX = 0.12
+
+
+def rq_fuel_shift_t(ins_over_ib: torch.Tensor) -> torch.Tensor:
+    """Respiratory quotient shift from the fuel mix, zero at the 12 h fasted insulin.
+
+    Insulin below that burns more fat (0.74 at 72 h: Bak 2018, Gillberg 2019); high
+    insulin burns glucose (0.87 to 0.89 at the end of a clamp: Hoeg 2011).
+    """
+    x = ins_over_ib - _RQ_INS_FASTED
+    return torch.where(x < 0, _RQ_INS_LOW * x, (_RQ_INS_HIGH * x).clamp(max=_RQ_SHIFT_MAX))
 _BHB_CENTER = NORM_CENTER[MARKER_INDEX["bhb"]]  # teacher BHB_b / typical
 
 # --- lipolysis -----------------------------------------------------------------
@@ -1313,9 +1327,13 @@ class MetabolicModule(MassActionModule):
         kcal_in = d["kcal_carb_in"] + KCAL_FAT * absorbed_g + KCAL_PROT * amino_g
         kcal_out, vo2, vco2, rq = meal_gas_t(
             d["work_vo2"], d["work_vco2"], d["app_g"], absorbed_g, amino_g, c)
-        # Breaths/min above RR₀ from this same CO₂. Mass stays in this
-        # compartment: the lung adds the rise and does not see the kilograms.
+        # Breaths/min above RR₀ from the CO₂ before the fuel shift (rest with no
+        # meal is exactly RR₀). Mass stays in this compartment: the lung adds the
+        # rise and does not see the kilograms.
         rr_rise = frequency_rise_t(vco2, c["rr_rest"], c["rr_span"], c)
+        vco2 = vco2 + rq_fuel_shift_t(ins / ib) * vo2
+        rq = vco2 / vo2
+        kcal_out = (WEIR_VO2 * vo2 + WEIR_VCO2 * vco2) / 1000.0
         ffa_rate = lipolysis - c["k_ffa"] * ffa + ffa_from_lipid
 
         mito_rate = -_K_MITO * (mito - c["mito_sp"]) + d["mito_training"]

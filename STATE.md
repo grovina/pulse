@@ -807,6 +807,41 @@ Not rescored, from the board of 2026-10-29:
   (behrendt, ali against sugimoto, tsukamoto, schubert), so a single gain cannot
   fit them; who the people are (age, fitness) is the next thing to look at.
 
+- Between-paper heart-rate spread (2026-11-26, free, trained side). Not a
+  population or entry problem. At the same relative intensity (60% VO2peak)
+  behrendt-2024 (VO2peak 51.4, level 0.86) and ali-2026 (50, 0.84) read 142 to
+  147 bpm, sugimoto-2020 and tsukamoto-2023 (45.9, 0.75) 153 to 160, schubert-2024
+  (level 0.81, VO2peak not printed) 167; all are young (21 to 25 y), mostly male,
+  BMI 21 to 25, so age, sex and BMI explain nothing and fitness (a 5 mL/kg/min gap)
+  could at most explain part of it. Entries follow the README rule alike (VO2, or
+  60% of the group's VO2peak); a watts/186 reading would raise tsukamoto's 0.75
+  to about 0.8, but the model is flat from 0.6 to 1.4, so no entry change moves
+  a prediction. And no fitness reaches the heart-rate path: the corpus `Population`
+  carries sex, age, BMI and health only, `fitness` is a person factor nothing sets
+  from VO2max, and the teacher's `act_hr_gain` does not depend on it (fitness
+  only lowers HR0 and raises HRV0). Needs a VO2max field in the corpus schema and
+  a fitness-dependent gain in the teacher; a retrain-level change. Nothing changed.
+
+Respiratory quotient follows the fuel mix (2026-11-26, free, frozen on iter 120; board run
+before the respiratory-rate line was moved ahead of the shift, so rr was not
+rescored; `rq_fuel_shift_t` in `pulse/modules/metabolic.py`, `tests/test_rq_fuel_shift.py`).
+Next after leptin and heart rate on the trained side: RQ was a constant 0.807 at
+rest whatever the insulin (activity and the meal's thermic fuel were its only
+inputs), so a 72 h fast read 0.807 against 0.74 (bak-2018 z +3.4 and +6.7) and
+the end of a clamp 0.807 against 0.87 to 0.89 (hoeg-2011 -2.2, -2.9). A shift
+from `ins/ib`, zero at 0.54 (the 12 h fasted level: the 12 h items stay put),
+0.2 per unit below and 0.014 per unit above, capped at +0.12; VCO2 and Weir
+energy follow; the respiratory rate still reads the CO2 before the shift (rest with
+no meal stays at RR0, `test_expenditure`). Frozen on iter 120, trained items: rq mean |z| 2.15 to 1.68
+(bak 72 h to 0.0, gillberg 34 h 1.6 to -0.5, hoeg clamps 2.9 to 1.1 and 2.2 to
+1.7), all items median 0.616 to 0.611, mean 0.992 to 0.983; energy expenditure
+0.79 to 0.83 (Weir on the new VCO2, mainly ostrowska-2022). Worse:
+wadazumi-2019 fasted-exercise water arm (-4.5 to -6.3 at 65 min) and
+wahren-1971 at 10 min. The full suite: 1,701 passed, one golden rollout re-recorded (observables only: VCO2, RQ, energy). Sealed (looked at once, to report): median 0.682 to 0.685,
+mean 1.027 to 1.023 on 339 common non-GLP-1 items, neutral. The first
+setting (zero at 1.0, 0.12 below, 0.02 above) overshot the 12 h fasts to -1.4
+to -1.7 z and was replaced.
+
 Reported by the review of 2026-11-11 and not yet confirmed:
 
 - calibration fits interstitial glucose while evaluation reads plasma.
