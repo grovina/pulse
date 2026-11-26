@@ -180,7 +180,7 @@ includes these papers. A sealed number still never chooses.
 | `trainer-hrx5g` | 120, first launch | 2026-11-22 | cancelled after 2 min: `--init-from` loaded through `load_compatible_state_dict`, which skipped the doubling of the nutrient gain; fixed in the next commit |
 | `trainer-zw876` | 120, no teacher, meal-gated muscle share and epinephrine gate on basal insulin | 2026-11-22 | stopped by its 24 h deadline (2026-11-23 22:46 UTC) on image `e3ace61`, warm start from `iter119-insulin` (nutrient gain 1.79 doubled to 3.59 on load); output `training/jobs/iter120-mealsplit/`, whose final board equals its phase-2 board; approved by Gabriel, about $9 |
 | `trainer-2qvnr` | 121 (run D), no teacher, basal setpoint scale 0.65 and load-dependent gastric emptying | 2026-11-24 | stopped by its 24 h deadline (2026-11-25 13:06 UTC) on image `6496abe`, warm start from `iter120-mealsplit`; output `training/jobs/iter121-basal-gastric/`; approved by Gabriel, about $9 |
-| `trainer-qqb4f` | 122 (run E), no teacher, ketone glycogen threshold, breathing-rate papers, `--val-fraction 0.1` keeps the best validation epoch | 2026-11-25 | running on image `d1ef4f2`, 24 h deadline, warm start from `iter120-mealsplit`; output `training/jobs/iter122-ketone-breath/`; approved by Gabriel, about $9 |
+| `trainer-qqb4f` | 122 (run E), no teacher, ketone glycogen threshold, breathing-rate papers, `--val-fraction 0.1` keeps the best validation epoch | 2026-11-25 | completed after 28 epochs in 20 h 57 min (2026-11-26 13:24 UTC) on image `d1ef4f2`; `model.pt` is epoch 1 (best validation), `model_last.pt` epoch 27; warm start from `iter120-mealsplit`; output `training/jobs/iter122-ketone-breath/`; approved by Gabriel, about $9 |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -299,6 +299,22 @@ in 10 for iter 117):
   and is better on the 36 sealed items new to this corpus (median |z| 1.17
   against 1.35); otherwise the two runs are level.
 - Spend: about $6.80 and $9 at Cloud Run list rates (4 vCPU, 16 GiB).
+
+Iter 122 (run E), warm start from iter 120 on main with the ketone
+threshold, the breathing-rate papers and `--val-fraction 0.1` (2026-11-26;
+against iter 120 frozen on the same code, `$S/fz/i120.json`):
+
+- No gain. Sealed median 0.68 to 0.79 on the whole board (kept epoch 1;
+  phase-2 board 0.77); on the 339 common non-GLP-1 sealed items median
+  0.68 to 0.76, mean 1.03 to 1.16. Trained 0.62 to 0.61. Sealed rr 0.32 to
+  0.94 (11 items), insulin 0.72 to 0.85, glucose 0.67 to 0.75, hr 0.52 to
+  0.61, bhb 1.71 to 2.02.
+- The validation papers (14, trained-side, never sealed) agree: median
+  0.61 at epoch 0, 0.57 at epoch 1, then 0.64 to 0.92 for the rest. The
+  guard kept epoch 1, so it worked; but by its own measure, training from
+  iter 120 makes held-out papers worse after one epoch. Epochs ran about
+  45 min, not 3 h, so the guard costs about 4% of the run.
+- Iter 120 on current code stays the reference model.
 
 Iter 121 (run D), basal setpoint scale 0.65 and a stomach that empties
 faster when full (2026-11-24; its board against iter 120's, GLP-1 scored
