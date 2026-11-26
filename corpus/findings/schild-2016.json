@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 40.5,
+      "sd": 6.1,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "The untrained/sedentary (SED) group of Table 1: 17 healthy men (less than 2 hours of unspecific sports per week, VO2max < 47 mL/min/kg; each underwent a medical screening). The endurance-trained group (n = 19) is not entered (see left_out). Age and BMI are the SED group's mean and SD in Table 1."
+    "description": "The untrained/sedentary (SED) group of Table 1: 17 healthy men (less than 2 hours of unspecific sports per week, VO2max < 47 mL/min/kg; each underwent a medical screening). The endurance-trained group (n = 19) is not entered (see left_out). Age and BMI are the SED group's mean and SD in Table 1. VO2max of the SED group (incremental bicycle test; Table 1, 'Entrance examination VO2max [mL/min/kg]'): 40.5 +/- 6.1 (mean +/- SD)."
   },
   "protocols": [
     {

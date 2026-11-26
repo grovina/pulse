@@ -22,8 +22,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 55.0,
+      "sd": 9.2,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Healthy, recreationally active, non-obese adults (BMI 18-30 enrolled, age 18-65 enrolled; no hypertension, smoking or ketogenic diet). 12 completed the study and 11 were analysed (Results); Table 1 gives 1 F : 10 M, age 27.08 +/- 8.8 y and BMI 25.6 +/- 2.0 (visit 1) as mean +/- SD, without stating its n. Table 2 values are taken as n = 11 (Results: 'the full analyzed cohort was n = 11'; sample size is mentioned only where different)."
+    "description": "Healthy, recreationally active, non-obese adults (BMI 18-30 enrolled, age 18-65 enrolled; no hypertension, smoking or ketogenic diet). 12 completed the study and 11 were analysed (Results); Table 1 gives 1 F : 10 M, age 27.08 +/- 8.8 y and BMI 25.6 +/- 2.0 (visit 1) as mean +/- SD, without stating its n. Table 2 values are taken as n = 11 (Results: 'the full analyzed cohort was n = 11'; sample size is mentioned only where different). Peak VO2 of the placebo condition of the Bruce-protocol treadmill VO2max test (Results: 'oxygen consumption at peak exercise was reduced 6% following BO-BD (51.7 +/- 7.9 mL/min/kg) compared to PL (55.0 +/- 9.2 mL/min/kg)'; that comparison is the n = 10 with usable gas data)."
   },
   "protocols": [
     {

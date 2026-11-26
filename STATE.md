@@ -874,8 +874,14 @@ not fixable frozen):
   through `hr_slow_gain` (bpm per unit, init 0). Teacher mirror in `full_body.py`: 30 bpm, tau 30.
 - BUILT, awaiting a run (2026-11-26): a fitness-dependent heart-rate gain. Corpus `Population`
   has an optional `vo2max` (mL/kg/min as printed, same fields as age; `corpus/README.md`),
-  filled in engeroff-2024 (47.2), hoshi-2022 (39.8) and rappelt-2023 (53.4, sealed; its scores
-  not looked at): the only exercise papers with cached full text that print a group VO2max.
+  filled in 20 papers (engeroff-2024, hoshi-2022, rappelt-2023 and 17 more: ali-2026, behrendt-2024,
+  bradley-2015, broome-2022, cesaremarincola-2025, crabtree-2025, garnachocastano-2018, gahreman-2016,
+  gronwald-2019, li-2024, mosqueralopez-2025, roberts-2023, schild-2016, schubert-2024, sugimoto-2020,
+  tsukamoto-2023, wadazumi-2019; sealed ones got the field, their scores not looked at; wadazumi-2019 is
+  converted from mL/min with the printed group mass). The other exercise papers print none (chiba-2025
+  estimates it; eshghi-2017 prints only VO2 at the ventilatory threshold; taboni-2024 only W/kg) or none
+  at all; hedrington-2015 prints 39 +/- 2 SE but its file already fails the gate on main (gir_final does
+  not move with the parameters), so it is left without.
   `training.factors.FITNESS_FROM_VO2MAX` (False) sets the fitness code from it
   ((VO2max - 38) / 9); turn it on for the run. `body_quantities["fitness_z"]` reaches the
   cardiovascular module, which adds `hr_fit_gain` (init 0) bpm per unit activity per SD below

@@ -24,6 +24,12 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 54.8,
+      "sd": 3.1,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
     "description": "Twelve well-trained male triathletes (national n = 8, international n = 4), age 39.3 +/- 7.5 y (abstract: aged 21-47 yr), BMI 23.4 +/- 2.2, weight 72.8 +/- 6.9 kg, VO2max 54.8 +/- 3.1 mL/kg/min. Inclusion: no cardiovascular, respiratory, metabolic, neurological or orthopedic disorders, no drugs, no smoking. Crossover; only the placebo (nitrate-depleted) session is entered."
   },

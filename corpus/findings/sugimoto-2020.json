@@ -19,8 +19,14 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 45.9,
+      "sd": 4.47,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Twenty healthy, recreationally active young men, age 21.0 ± 0.4 years (mean ± SEM; SD computed as 0.4 x sqrt(20) = 1.79), body weight 64.0 ± 2.0 kg, height 172.6 ± 0.7 cm, VO2peak 45.9 ± 1.0 mL/kg/min; BMI not printed. Crossover, same men in both arms."
+    "description": "Twenty healthy, recreationally active young men, age 21.0 ± 0.4 years (mean ± SEM; SD computed as 0.4 x sqrt(20) = 1.79), body weight 64.0 ± 2.0 kg, height 172.6 ± 0.7 cm, VO2peak 45.9 ± 1.0 mL/kg/min; BMI not printed. Crossover, same men in both arms. VO2peak (ramp-incremental cycle test; Methods, Participants: 'VO2 peak: 45.9 +/- 1.0 ml min-1 kg-1', mean +/- SEM; SD = 1.0 x sqrt(20) = 4.47)."
   },
   "protocols": [
     {

@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 50.0,
+      "sd": 8.4,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Twelve trained male cyclists (cycling 8 +/- 2 h/week for at least two years; VO2max 50.0 +/- 8.4 mL/kg/min). Excluded: current smoking, history of cardiovascular or metabolic disease, musculoskeletal injury, antihypertensive medication; the paper does not call them healthy and ran no glucose test, so 'healthy' rests on that history screening."
+    "description": "Twelve trained male cyclists (cycling 8 +/- 2 h/week for at least two years; VO2max 50.0 +/- 8.4 mL/kg/min). Excluded: current smoking, history of cardiovascular or metabolic disease, musculoskeletal injury, antihypertensive medication; the paper does not call them healthy and ran no glucose test, so 'healthy' rests on that history screening. VO2max as printed (Methods, Participants; incremental cycling test, highest 15 s VO2): 'Twelve trained male cyclists completed the study (mean +/- SD; age, 25 +/- 2 years; body mass index, 21.3 +/- 2.0 kg/m2; and VO2max, 50.0 +/- 8.4 mL/kg/min)'."
   },
   "protocols": [
     {

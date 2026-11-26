@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 56.3,
+      "sd": 4.2,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Fifteen healthy young Japanese men (Table 1: age 22.7 +/- 1.8 y, BMI 22.2 +/- 2.6 kg/m2, VO2max 56.3 +/- 4.2 mL/kg/min, mean +/- SD). Exclusion criteria included age <20 or >30 y, medication or supplements, major illness, smoking; these are enrolment limits, so min and max are left null. Ghrelin and BChE were analysed in 12 of them; glucose, insulin, heart rate and RER in all 15."
+    "description": "Fifteen healthy young Japanese men (Table 1: age 22.7 +/- 1.8 y, BMI 22.2 +/- 2.6 kg/m2, VO2max 56.3 +/- 4.2 mL/kg/min, mean +/- SD). Exclusion criteria included age <20 or >30 y, medication or supplements, major illness, smoking; these are enrolment limits, so min and max are left null. Ghrelin and BChE were analysed in 12 of them; glucose, insulin, heart rate and RER in all 15. VO2max (Table 1, mean +/- SD): 'Maximum oxygen uptake (mL/kg/min) 56.3 +/- 4.2'."
   },
   "protocols": [
     {

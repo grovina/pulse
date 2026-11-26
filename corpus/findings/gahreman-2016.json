@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 40.23,
+      "sd": 7.78,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "The 14 untrained males (Table 1: age 25.14 +/- 1.53 yr, BMI 25.66 +/- 1.02, mean and SEM). SDs computed as SEM x sqrt(14): age 1.53 x 3.742 = 5.72; BMI 1.02 x 3.742 = 3.82. Paper describes 28 'healthy volunteer, non-smoking' males; n = 14 per group is from the abstract ('Fourteen trained and 14 untrained males'); the 14 trained males (VO2max > 55 mL/kg/min required) are not entered because they are a group set apart by aerobic fitness, a trait the model cannot be told. Untrained: no regular aerobic or anaerobic exercise for the last year; no regular coffee or green tea drinkers."
+    "description": "The 14 untrained males (Table 1: age 25.14 +/- 1.53 yr, BMI 25.66 +/- 1.02, mean and SEM). SDs computed as SEM x sqrt(14): age 1.53 x 3.742 = 5.72; BMI 1.02 x 3.742 = 3.82. Paper describes 28 'healthy volunteer, non-smoking' males; n = 14 per group is from the abstract ('Fourteen trained and 14 untrained males'); the 14 trained males (VO2max > 55 mL/kg/min required) are not entered because they are a group set apart by aerobic fitness, a trait the model cannot be told. Untrained: no regular aerobic or anaerobic exercise for the last year; no regular coffee or green tea drinkers. VO2max of the untrained group (electronically braked cycle ergometer test; Table 1, mean and SEM): 'VO2max (ml/kg/min) 40.23 2.08'; SD = 2.08 x sqrt(14) = 7.78."
   },
   "protocols": [
     {

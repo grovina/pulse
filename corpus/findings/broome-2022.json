@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 39.1,
+      "sd": 7.4,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Placebo group of the parallel trial (Table 1, mean +/- SD, n = 11): untrained healthy middle-aged men, non-smokers, free of injury and chronic illness including cardiovascular and metabolic disease, doing under 2 h physical activity per week. Only the placebo group is entered; the MitoQ group (n = 12) is not. The paper does not print n beside Table 2; n = 11 is the placebo group size of Table 1 and Results say results are for the 23 who completed the acute trial."
+    "description": "Placebo group of the parallel trial (Table 1, mean +/- SD, n = 11): untrained healthy middle-aged men, non-smokers, free of injury and chronic illness including cardiovascular and metabolic disease, doing under 2 h physical activity per week. Only the placebo group is entered; the MitoQ group (n = 12) is not. The paper does not print n beside Table 2; n = 11 is the placebo group size of Table 1 and Results say results are for the 23 who completed the acute trial. VO2peak of the placebo group (ramp-incremental cycle test to exhaustion; Table 1, mean +/- SD): 'VO2peak (ml/kg/min) 39.1 +/- 7.4' under 'Placebo group (n = 11)'."
   },
   "protocols": [
     {

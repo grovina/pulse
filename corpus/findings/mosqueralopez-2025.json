@@ -19,8 +19,14 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 47.0,
+      "sd": 4.0,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Nine healthy, non-smoking, recreationally active men (>=3 endurance sessions per week, VO2max >= 40 mL/kg/min as enrolment criteria); age 26 ± 5 y (mean ± SD), height 1.80 ± 0.07 m, body mass 80 ± 9 kg, VO2max 47 ± 4 mL/kg/min. BMI not printed. Only the placebo (PLA) arm is entered; the ketone monoester (KME) arm is not."
+    "description": "Nine healthy, non-smoking, recreationally active men (>=3 endurance sessions per week, VO2max >= 40 mL/kg/min as enrolment criteria); age 26 ± 5 y (mean ± SD), height 1.80 ± 0.07 m, body mass 80 ± 9 kg, VO2max 47 ± 4 mL/kg/min. BMI not printed. Only the placebo (PLA) arm is entered; the ketone monoester (KME) arm is not. VO2max (cycle ramp test, highest 30 s value; Methods, Participants: 'V̇O2max: 47 +/- 4 mL kg-1 min-1', mean +/- SD)."
   },
   "protocols": [
     {

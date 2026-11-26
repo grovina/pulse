@@ -19,8 +19,14 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 45.14,
+      "sd": 5.56,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Part 2 participants: 24 healthy recreationally trained college men (age 21.9 ± 1.2 y, weight 66.2 ± 5.8 kg, height 173.4 ± 5.6 cm, VO2peak 2988.5 mL/min); BMI not printed. Separate people from Part 1."
+    "description": "Part 2 participants: 24 healthy recreationally trained college men (age 21.9 ± 1.2 y, weight 66.2 ± 5.8 kg, height 173.4 ± 5.6 cm, VO2peak 2988.5 mL/min); BMI not printed. Separate people from Part 1. VO2peak converted: the paper prints it in mL/min with the group weight (Part 2, Table 2, n = 24: weight 66.2 kg, 'VO2 (peak) (mL/min)' 2988.5 +/- 368.1), so 2988.5 / 66.2 = 45.14 mL/kg/min and SD 368.1 / 66.2 = 5.56 (mean and SD of mL/min divided by the group mean mass)."
   },
   "protocols": [
     {

@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 36.1,
+      "sd": 5.2,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Thirteen healthy, non-smoking, leisure-time-active men (Methods: healthy, aged 20-40 y, no cardiovascular, metabolic or respiratory disease, no medication; preliminary medical examination); age 29.7 +/- 4.5 y and BMI 23.5 +/- 1.4 kg/m2 from Table 1 (mean +/- SD). Enrolment age range is a criterion, so min and max are null. Only the normoxia (NORMO) test of the crossover is entered."
+    "description": "Thirteen healthy, non-smoking, leisure-time-active men (Methods: healthy, aged 20-40 y, no cardiovascular, metabolic or respiratory disease, no medication; preliminary medical examination); age 29.7 +/- 4.5 y and BMI 23.5 +/- 1.4 kg/m2 from Table 1 (mean +/- SD). Enrolment age range is a criterion, so min and max are null. Only the normoxia (NORMO) test of the crossover is entered. VO2max from the incremental test (Results: 'During the maximal exertion phase of the test (Wmax = 255.4 +/- 42.6 W), the VO2 recorded was 36.1 +/- 5.2 ml/kg/min', mean +/- SD)."
   },
   "protocols": [
     {

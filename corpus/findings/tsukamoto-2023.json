@@ -19,8 +19,14 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 45.9,
+      "sd": 4.6,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Forty-three men the paper calls healthy, in three studies of different people (study 1 n=20, study 2 n=11, study 3 n=12; 20+11+12=43); free of neurologic, cardiovascular or pulmonary disease, no medication, nonsmokers. Top-level age is study 1 (21 +/- 2 y); studies 2 (22 +/- 1) and 3 (21 +/- 2) override it. Height and weight are printed (study 1: 173 cm, 64 kg) but not BMI."
+    "description": "Forty-three men the paper calls healthy, in three studies of different people (study 1 n=20, study 2 n=11, study 3 n=12; 20+11+12=43); free of neurologic, cardiovascular or pulmonary disease, no medication, nonsmokers. Top-level age is study 1 (21 +/- 2 y); studies 2 (22 +/- 1) and 3 (21 +/- 2) override it. Height and weight are printed (study 1: 173 cm, 64 kg) but not BMI. VO2peak (ramp-incremental cycle test; Methods: 'In study 1, twenty participants (... VO2 peak 45.9 +/- 4.6 ml/kg/min; means +/- SDs)'). Study 2 (override): 'VO2 peak 47.0 +/- 4.3 ml/kg/min'; study 3 (override): 'VO2 peak 46.9 +/- 4.0 ml/kg/min'."
   },
   "protocols": [
     {
@@ -63,6 +69,12 @@
           "sd": 1.0,
           "min": null,
           "max": null
+        },
+        "vo2max": {
+          "mean": 47.0,
+          "sd": 4.3,
+          "min": null,
+          "max": null
         }
       },
       "assumed": [
@@ -81,6 +93,12 @@
         "age_years": {
           "mean": 21.0,
           "sd": 2.0,
+          "min": null,
+          "max": null
+        },
+        "vo2max": {
+          "mean": 46.9,
+          "sd": 4.0,
           "min": null,
           "max": null
         }

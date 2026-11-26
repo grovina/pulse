@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 49.6,
+      "sd": 9.15,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "29 recreationally active adults (20 men, 9 women) who completed the study, of 32 who volunteered (3 datasets removed for adherence or outliers); no known metabolic disorders; VO2max above 25 mL/kg/min was required. Table 1 prints mean +/- SE; SD computed as SE x sqrt(n) (age 2 x sqrt(29), BMI 0.4 x sqrt(29)). Two randomised groups, OliP (n = 15) and placebo PL (n = 14); the findings use the visit-2 values, before any supplement, and each arm carries its own group's Table 1 numbers."
+    "description": "29 recreationally active adults (20 men, 9 women) who completed the study, of 32 who volunteered (3 datasets removed for adherence or outliers); no known metabolic disorders; VO2max above 25 mL/kg/min was required. Table 1 prints mean +/- SE; SD computed as SE x sqrt(n) (age 2 x sqrt(29), BMI 0.4 x sqrt(29)). Two randomised groups, OliP (n = 15) and placebo PL (n = 14); the findings use the visit-2 values, before any supplement, and each arm carries its own group's Table 1 numbers. VO2max (Table 1, mean +/- SE; 'VO2max (mL kg-1 min-1)': overall 49.6 +/- 1.7, n = 29; OliP 48.3 +/- 2.5, n = 15; PL 51.0 +/- 2.2, n = 14); SD = SE x sqrt(n): 9.15, 9.68, 8.23. Top level is overall; each arm carries its own."
   },
   "protocols": [
     {
@@ -63,7 +69,13 @@
           "min": null,
           "max": null
         },
-        "status": "healthy"
+        "status": "healthy",
+        "vo2max": {
+          "mean": 48.3,
+          "sd": 9.68,
+          "min": null,
+          "max": null
+        }
       }
     },
     {
@@ -101,7 +113,13 @@
           "min": null,
           "max": null
         },
-        "status": "healthy"
+        "status": "healthy",
+        "vo2max": {
+          "mean": 51.0,
+          "sd": 8.23,
+          "min": null,
+          "max": null
+        }
       }
     }
   ],

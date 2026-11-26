@@ -19,6 +19,12 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 53.1,
+      "sd": 4.7,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
     "description": "Nine endurance-trained male cyclists (at least 12 h of cycling training a week), non-smokers, free from cardiovascular, neurologic, pulmonary and orthopedic problems by a preliminary medical check-up with ECG. Age 26.4 ± 4.1 years; height 181.7 ± 5.3 cm; body mass 79.2 ± 9.3 kg; body fat 13.2 ± 3.6%; VO2peak 53.1 ± 4.7 mL/min/kg (Results). BMI is not printed and not computed."
   },

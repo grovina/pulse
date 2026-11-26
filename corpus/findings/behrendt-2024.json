@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 51.4,
+      "sd": 6.5,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Fifteen physically active healthy males aged 20 to 39 years (enrolment range, not observed min/max); body weight 80.3 +/- 9.6 kg; VO2peak 51.4 +/- 6.5 mL/min/kg. Heart-rate findings carry n 14 (Table 3 ANOVA dfs F20,260 and F2,26 imply 14); the paper reports no exclusion."
+    "description": "Fifteen physically active healthy males aged 20 to 39 years (enrolment range, not observed min/max); body weight 80.3 +/- 9.6 kg; VO2peak 51.4 +/- 6.5 mL/min/kg. Heart-rate findings carry n 14 (Table 3 ANOVA dfs F20,260 and F2,26 imply 14); the paper reports no exclusion. VO2peak as printed (Methods, Participants; cardiopulmonary exercise test, mean +/- SD, relative value): 'peak oxygen consumption [VO2peak]: 4.1 +/- 0.6 L/min, 51.4 +/- 6.5 ml/min/kg'."
   },
   "protocols": [
     {

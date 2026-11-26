@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 45.2,
+      "sd": 7.6,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "The nonuser group only (NU, n = 11, five males; Table 1): physically active (>= 150 min MVPA per week), aged 18-50, no history of cardiovascular or metabolic disease, no medication affecting metabolism aside from birth control. The paper calls the cohort 'otherwise healthy and active' in its Discussion and ran no glucose test, so 'healthy' rests on that history screening. Age and BMI are the NU column of Table 1. The cannabis-user group (n = 11) is not entered."
+    "description": "The nonuser group only (NU, n = 11, five males; Table 1): physically active (>= 150 min MVPA per week), aged 18-50, no history of cardiovascular or metabolic disease, no medication affecting metabolism aside from birth control. The paper calls the cohort 'otherwise healthy and active' in its Discussion and ran no glucose test, so 'healthy' rests on that history screening. Age and BMI are the NU column of Table 1. The cannabis-user group (n = 11) is not entered. VO2peak of the nonusers (incremental treadmill test to volitional exhaustion; Table 1, NU column, mean +/- SD): 'VO2peak (mL kg-1 min-1) 45.2 +/- 7.6'."
   },
   "protocols": [
     {

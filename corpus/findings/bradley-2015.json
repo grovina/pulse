@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 50.7,
+      "sd": 6.96,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Experiment 2: ten healthy, lean, recreationally active men (abstract: 'a second cohort of ten age-, BMI- and VO2 max-matched insulin-sensitive men'; heights 1.83 m, body mass 75.3 kg). All insulin sensitive by fasting plasma glucose below 5.6 mmol/L and 2 h OGTT glucose below 7.8 mmol/L. Age 25 +/- 2 and BMI 22.6 +/- 0.5 are mean +/- SE (Table 1; Methods print SEM); SD computed as SE x sqrt(10) (6.32, 1.58). Experiment 1 (a different ten men) is entered as a per-protocol override."
+    "description": "Experiment 2: ten healthy, lean, recreationally active men (abstract: 'a second cohort of ten age-, BMI- and VO2 max-matched insulin-sensitive men'; heights 1.83 m, body mass 75.3 kg). All insulin sensitive by fasting plasma glucose below 5.6 mmol/L and 2 h OGTT glucose below 7.8 mmol/L. Age 25 +/- 2 and BMI 22.6 +/- 0.5 are mean +/- SE (Table 1; Methods print SEM); SD computed as SE x sqrt(10) (6.32, 1.58). Experiment 1 (a different ten men) is entered as a per-protocol override. VO2max, experiment 2 (incremental test to exhaustion on a cycle ergometer; Methods, Participants: 'experiment 2 ... VO2 max 50.7 +/- 2.2 mL min-1 kg-1', mean +/- SEM; SD = SEM x sqrt(10) = 6.96). Experiment 1 (override on its protocols): 'VO2 max 52.5 +/- 2.4 mL min-1 kg-1', SD = 2.4 x sqrt(10) = 7.59."
   },
   "protocols": [
     {
@@ -81,7 +87,13 @@
           "min": null,
           "max": null
         },
-        "status": "healthy"
+        "status": "healthy",
+        "vo2max": {
+          "mean": 52.5,
+          "sd": 7.59,
+          "min": null,
+          "max": null
+        }
       }
     },
     {
@@ -119,7 +131,13 @@
           "min": null,
           "max": null
         },
-        "status": "healthy"
+        "status": "healthy",
+        "vo2max": {
+          "mean": 52.5,
+          "sd": 7.59,
+          "min": null,
+          "max": null
+        }
       }
     }
   ],
