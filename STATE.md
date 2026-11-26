@@ -300,6 +300,33 @@ in 10 for iter 117):
   against 1.35); otherwise the two runs are level.
 - Spend: about $6.80 and $9 at Cloud Run list rates (4 vCPU, 16 GiB).
 
+Leptin falls with insulin by a fraction of its level (2026-11-26, free, frozen
+on iter 120; `pulse/modules/appetite.py`, teacher `lep_ins_gain*` in
+`full_body.py`, `tests/test_leptin_fast_fall.py`). Chosen from the trained-side
+board only: leptin was the one marker with every item the same sign (13 items,
+all predicted too high, mean |z| 7.8; deru-2023 36 h 7.8 ng/mL against 0.87,
+pilis-2025 after 8 days 6.9 against 1.46). The model's fall was an additive
+2.5 ng/mL at most (24 h to 36 h fasts read 9.1 and 7.8 against 10.3 at 12 h),
+so a fast could take a quarter of the level; the corpus has deru-2023's 36 h at
+a quarter of its 12 h value and Boden 1996's 30 to 50% by 16 to 24 h. The
+insulin term now multiplies the fat-set level: 0.25 per unit of
+(insulin_slow/ib - 1) when fed (the old size at 10 ng/mL), 0.8 below basal. A
+symmetric 0.8 was tried first and sent `leptin_fed_vs_fasted` from z 1.1 to
+7.6, so the fed side keeps its old size. Frozen on iter 120, trained
+items: leptin mean |z| 7.84 to 4.85 (deru 36 h 17.9 to 8.5, pilis after 16.0
+to 5.3), all other trained items mean 0.952 to 0.953, median 0.608 to 0.607, the
+one worse leptin item `leptin_fed_vs_fasted` z 1.14 to 1.36; sealed (no leptin
+item there) median 0.679 to 0.682, mean 1.026 to 1.027 on 339 common non-GLP-1
+items: neutral, as it should be. The full suite: 1,697 passed, one golden rollout re-recorded (`test_planned_integrator`, shifts under 3e-5 z). Not fixed: the 12 h level is 3 times the
+corpus's in lean arms (deru 10.5 against 3.5, z 4.7; pilis, skurvydas the
+same), which is the fat-mass to leptin map, not fasting; and heart rate runs
+about 10% low in exercise (61 trained items, mean z -1.95) with post-exercise
+heart rate back to rest within 5 minutes in the model where sugimoto-2020,
+cesaremarincola-2025 and gahreman-2016 hold 10 to 20 bpm above for 10 to 30
+minutes (the model's temperature, sympathetic tone and epinephrine all snap
+back inside 5 minutes of the last bout); that needs a slow post-exercise state
+in the heart-rate module.
+
 Iter 122 (run E), warm start from iter 120 on main with the ketone
 threshold, the breathing-rate papers and `--val-fraction 0.1` (2026-11-26;
 against iter 120 frozen on the same code, `$S/fz/i120.json`):

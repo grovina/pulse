@@ -658,11 +658,15 @@ class PatientParams:
     # circadian rhythm persists. The teacher had no meal coupling at all, so the
     # `leptin_fed_vs_fasted` anchor was structurally 0.00 against +2. Now a slow
     # insulin state (tau 4 h) moves the leptin target, SIGNED about basal insulin:
-    #     target = Lep_b + circ + lep_ins_gain * (Ins_slow / Ib - 1).
+    #     target = Lep_b * (1 + gain * (Ins_slow / Ib - 1)) + circ (2026-11-26; was additive).
     # A fed day (Ins_slow ~ 1.4 Ib) sits +1, a 16 h fast (~0.6 Ib) -1: the +2
     # difference Boden/Kolaczynski report, and a 48 h fast (~0.35 Ib) gives -16%,
     # the low end of the cited fall.
-    lep_ins_gain: float = 2.5
+    # 2026-11-26: a fraction of the fat-set level, not +2.5 ng/mL: 0.25 per unit of
+    # (Ins_slow/Ib - 1) when fed (the old 2.5 at Lep_b 10), 0.8 below basal, so a long
+    # fast takes leptin down by most of its level (deru-2023: 36 h at a quarter of 12 h).
+    lep_ins_gain: float = 0.25
+    lep_ins_gain_fast: float = 0.8
     k_ins_slow: float = 1.0 / 240.0
     body_mass_kg: float = 70.0
     Fat_b: float = 18.0
@@ -1871,8 +1875,9 @@ def simulate_full_body(
 
         circ_lep = _circadian(t_bio, params.lep_circ_amp, peak_hour=2.0)
         dIns_slow = -params.k_ins_slow * (Ins_slow - I)
-        lep_ins = params.lep_ins_gain * (Ins_slow / params.Ib - 1.0)
-        dLep = -params.k_lep * (Lep - params.Lep_b * (Fat / params.Fat_b) - circ_lep - lep_ins)
+        r_ins = Ins_slow / params.Ib - 1.0
+        lep_ins = max(0.05, 1.0 + (params.lep_ins_gain if r_ins >= 0 else params.lep_ins_gain_fast) * r_ins)
+        dLep = -params.k_lep * (Lep - params.Lep_b * (Fat / params.Fat_b) * lep_ins - circ_lep)
 
         glp1_prod = glp1_base_prod + params.glp1_meal_gain * Ra
         dGLP1 = glp1_prod - params.k_glp1 * GLP1

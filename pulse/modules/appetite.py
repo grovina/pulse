@@ -62,7 +62,12 @@ _GHR_INS_N = 1.0
 _GHR_SUPP_MAX = 0.60
 _GHR_ANTIC_AMP = 0.55
 _LEP_CIRC_AMP = 2.0
-_LEP_INS_GAIN = 2.5
+# Leptin's insulin term is a fraction of the fat-set level, not an add-on of 2.5 ng/mL: 0.25 per
+# unit of (insulin_slow/ib - 1) when fed (the old +2.5 at 10 ng/mL), 0.8 when below basal, so a
+# long fast takes leptin down by most of its level (Boden 1996: 30-50% by 16-24 h; deru-2023:
+# 36 h at a quarter of the 12 h value) where +2.5 could take a quarter.
+_LEP_INS_GAIN_FED = 0.25
+_LEP_INS_GAIN_FAST = 0.8
 _LEP_FAT_GAIN = 1.0  # target *= (Fat / Fat_b)^gain at gain=1 is linear in Fat/Fat_b
 _K_INS_SLOW = 1.0 / 240.0
 _K_LEP = 0.025
@@ -189,12 +194,11 @@ class AppetiteModule(MassActionModule):
         # --- insulin_slow: 4 h lag of plasma insulin ---
         d_slow = -_K_INS_SLOW * (ins_slow - ins)
 
-        # --- leptin: fat mass + circadian + lagged insulin ---
-        lep_ins = _LEP_INS_GAIN * (ins_slow / ib - 1.0)
-        lep_target = (
-            _TYPICALS[_LEPTIN_IDX] * (fat / _FAT_CENTER) ** _LEP_FAT_GAIN
-            + lep_circ + lep_ins
-        )
+        # --- leptin: fat-set level x lagged-insulin factor, plus circadian ---
+        lep_fat = _TYPICALS[_LEPTIN_IDX] * (fat / _FAT_CENTER) ** _LEP_FAT_GAIN
+        r = ins_slow / ib - 1.0
+        lep_ins = (1.0 + torch.where(r >= 0, _LEP_INS_GAIN_FED, _LEP_INS_GAIN_FAST) * r).clamp(min=0.05)
+        lep_target = lep_fat * lep_ins + lep_circ
         d_lep = -_K_LEP * (lep - lep_target)
 
         # --- GLP-1: learned meal-gated peak on appearance, plus a small duodenal term ---
