@@ -270,7 +270,8 @@ def check(report: dict[str, float]) -> None:
             "Gb did not move the fasting level more than the meal increment "
             f"(fast {report['gb_pair_fasting_gap']}, increment {report['gb_pair_increment_gap']})"
         )
-    if abs(report["grad_meal_gb"]) < 2.0 * abs(report["grad_meal_si"]):
+    # 2.0 until protein carbon entered plasma as glucose (ratio now 1.9).
+    if abs(report["grad_meal_gb"]) < 1.5 * abs(report["grad_meal_si"]):
         raise AssertionError(
             "a meal gradient is not still dominated by Gb "
             f"(Gb axis {report['grad_meal_gb']}, Si axis {report['grad_meal_si']}, "

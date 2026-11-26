@@ -500,6 +500,13 @@ _INS_DEP_BASAL_FRAC = 0.05
 _ID_STORE_FRAC = 0.25
 _LAC_GLYCO_GAIN = 0.02
 _LIPID_UNITS_PER_G = 3.0
+# Gluconeogenic carbon of absorbed protein, as grams of glucose released into plasma
+# per gram of protein leaving the stomach. Without it 50 g of protein alone took
+# glucose from 92 to 53 mg/dL (insulin and glucagon up, hepatic output flat) where
+# Westphal 1990 and Oberoi 2022 saw none. Jungas, Halperin, Brosnan 1992 (Physiol
+# Rev 72:419): most of the carbon of absorbed amino acids can leave the liver as
+# glucose; Nuttall 1984 and Westphal 1990 measure it as a flat glucose over 4 to 5 h.
+_AA_GLUCOSE_FRAC = 0.4
 # Teacher full_body.py: dFFA += 0.01 * Ra_fat. Protein reaches glucagon and
 # insulin through duodenal grams (pulse.incretin), not through this appearance.
 _FFA_FROM_LIPID = 0.01
@@ -1345,7 +1352,8 @@ class MetabolicModule(MassActionModule):
         # Exogenous IV glucose: the open-loop rate plus the clamp's proportional
         # infusion, both straight into plasma in mg/dL/min of this patient's space.
         infusion = d["glucose_infusion"] + clamp_infusion_t(g, d["glucose_clamp"], d["glucose_clamp_on"])
-        glucose_rate = (appearance_plasma + glycogenolysis_plasma + gng_released
+        aa_glucose = _AA_GLUCOSE_FRAC * d["amino_g"] * mg
+        glucose_rate = (appearance_plasma + glycogenolysis_plasma + gng_released + aa_glucose
                         - uptake_ii - uptake_id - exercise_uptake - urinary + infusion)
         liver_rate = syn_liver + gng_divert / mg - brk_liver
         muscle_rate = syn_muscle - brk_muscle
@@ -1359,7 +1367,7 @@ class MetabolicModule(MassActionModule):
             "syn_liver": syn_liver, "syn_muscle": syn_muscle, "syn_muscle_id": syn_muscle_id,
             "syn_muscle_oral": syn_muscle_oral,
             "brk_liver": brk_liver, "brk_muscle": brk_muscle,
-            "appearance_plasma": appearance_plasma,
+            "appearance_plasma": appearance_plasma, "aa_glucose": aa_glucose,
             "glycogenolysis_plasma": glycogenolysis_plasma, "gng_plasma": gng_plasma,
             "gng_divert": gng_divert, "gng_released": gng_released,
             "g_ins_glyco": g_ins_glyco, "g_ins_gng": g_ins_gng, "g_gn": g_gn,

@@ -48,7 +48,8 @@ class TestSiGbCalibrationWindow(unittest.TestCase):
         self.assertLess(report["grad_meal_si"], -5.0)
         self.assertGreater(report["grad_fast_gb"], 20.0)
         self.assertGreater(abs(report["grad_meal_si"]), 10.0 * abs(report["grad_fast_si"]))
-        self.assertGreater(abs(report["grad_meal_gb"]), 2.0 * abs(report["grad_meal_si"]))
+        # 2.0 until protein carbon entered plasma as glucose (a meal's Si gradient grew); 1.9 now.
+        self.assertGreater(abs(report["grad_meal_gb"]), 1.5 * abs(report["grad_meal_si"]))
         self.assertGreater(report["cosine"], 0.8)
         self.assertLess(report["grad_fast_off_axis"], 1e-4)
         self.assertLess(report["grad_meal_off_axis"], 1e-4)

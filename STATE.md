@@ -842,6 +842,45 @@ mean 1.027 to 1.023 on 339 common non-GLP-1 items, neutral. The first
 setting (zero at 1.0, 0.12 below, 0.02 above) overshot the 12 h fasts to -1.4
 to -1.7 z and was replaced.
 
+Absorbed protein releases glucose (2026-11-26, free, frozen on iter 120; `_AA_GLUCOSE_FRAC`
+in `pulse/modules/metabolic.py`, `tests/test_protein_glucose.py`). Chosen from the trained-side
+board after leptin, exercise heart rate and RQ: glucose after a mixed meal read low on 102
+scalar items in 21 papers (signed z -0.69, 85% negative: peaks 9% low, incremental areas
+a third low, time to peak 20% early), and the protein-only arms were the worst of them
+(westphal-1990 50 g protein alone: model 92 to 53 mg/dL against "no change", z -6.1;
+oberoi-2022 protein arms -2.6 and -2.8). The model had no glucose from protein at all: insulin and
+glucagon rose and hepatic output stayed flat. Now 0.4 g of glucose enters plasma per gram of
+protein leaving the stomach (Jungas, Halperin, Brosnan 1992, Physiol Rev 72:419: up to about
+57% of amino-acid carbon can leave the liver as glucose; 0.15 and 0.2 were tried and lifted the
+protein arm's trough (53 mg/dL) by only 8 and 10 mg/dL, 0.4 by 19 and 0.6 overshoots to 102). Frozen on iter 120, trained
+items (1,294 common non-GLP-1): median |z| 0.611 to 0.587, mean 0.983 to 0.965; mixed-meal
+glucose scalars 0.77 to 0.58, westphal -6.1 to -1.7, oberoi protein iAUC -2.8 to -1.6 and -2.6 to
+-1.1, glucose in exercise papers (a fed start) 1.49 to 1.17 late. Worse: urinary glucose under
+SGLT2 (empagliflozin 24 h 6.8 to 7.7, 3 items), early oral-glucose glucose 0.91 to 0.97, exercise
+lactate and heart rate late by under 0.1, demoraisjunior-2020 delta items still -3.9 to -4.0. The full suite: 1,703 passed after one golden rollout re-recorded (meal rows only), the carbon ledger given the new input, and the Si/Gb meal-gradient dominance check relaxed from 2.0 to 1.5 (it reads 1.9). Sealed (looked at once, to report): median 0.685 to 0.707,
+mean 1.023 to 1.012 on 339 common non-GLP-1 items; mixed-meal glucose scalars 1.28 to 0.92, but
+glucose, insulin in exercise arms 0.54 to 0.66 and 0.83 to 0.92. The teacher has no such term, so a
+retrain would fit around it; add it there before the next run. Tried and not kept:
+potentiator rate `_K_POT` 0.0125, 0.0167 and 0.04 and hepatic autoregulation `_HEP_AUTOREG_M` 1.0 for the late
+oral-glucose tail (glucose at 90 to 360 min 10 to 25 mg/dL high, 25 items): none moved it
+(mean |z| 1.43 to 1.40 to 1.58), so the tail is not these constants.
+
+Retrain-level candidates (changes the checkpoint layout or needs learned parameters;
+not fixable frozen):
+- A slow post-exercise heart-rate state (tens of minutes; sugimoto-2020, gahreman-2016,
+  cesaremarincola-2025) with its coupling channel.
+- A fitness-dependent heart-rate gain: a VO2max field in the corpus `Population`, and
+  `fitness` set from it, in the teacher's `act_hr_gain` (behrendt-2024 and ali-2026 against
+  sugimoto-2020, tsukamoto-2023, schubert-2024 at the same relative intensity).
+- Exercise lactate runs low (trained signed z -1.3, yamaguchi-2020 1 to 5 mmol/L against
+  10 to 17 at high intensity; gahreman-2016 2 against 4 to 5): the learned lactate production head.
+- Protein-only insulin is too high after the nutrient gain was doubled at load (37 µU/mL
+  mean at 50 g protein), which is what drives the remaining dip; a learned `ins_nut_gain`.
+- Gastric emptying starts at once at 2.13 kcal/min: mixed-meal glucose peaks at 25 to 34 min
+  against 36 to 143 min measured (12 items; no solid-food lag in the compartment).
+- Fasted baseline glucose in exercise papers (bradley-2015, sugimoto-2020, tsukamoto-2023) is
+  10 mg/dL low at the start of the session (87 against 97): a person-level baseline.
+
 Reported by the review of 2026-11-11 and not yet confirmed:
 
 - calibration fits interstitial glucose while evaluation reads plasma.

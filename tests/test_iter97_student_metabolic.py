@@ -68,7 +68,7 @@ def _inputs(m, batch=32, seed=0, app=None, act=None):
 
 class TestCarbonBudget(unittest.TestCase):
     """2.2: d(G/mg) + dLGly + dMGly = app_g − brk_M − (uptake_ii + uptake_id + exercise − gng − syn_id)/mg,
-    with mg the patient's 1000/(mass·1.85)."""
+    with mg the patient's 1000/(mass·1.85); the protein carbon released as glucose (aa_glucose) is an input like gng."""
 
     def test_ledger_closes_pointwise_for_random_states(self) -> None:
         m = _model(0)
@@ -81,7 +81,8 @@ class TestCarbonBudget(unittest.TestCase):
             c = f["mg_dl_per_g"]
             lhs = rates[:, M._GLUCOSE_IDX] / c + rates[:, M._LIVER_GLYCOGEN_IDX] + rates[:, M._MUSCLE_GLYCOGEN_IDX]
             uptake = f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"] - f["syn_muscle_id"] * c
-            rhs = f["app_g"] - f["brk_muscle"] - uptake / c - f["urinary"] / c
+            rhs = (f["app_g"] - f["brk_muscle"] - uptake / c - f["urinary"] / c
+                   + f["aa_glucose"] / c)
             torch.testing.assert_close(lhs, rhs, atol=1e-6, rtol=1e-5)
 
     def test_ledger_closes_over_a_eucaloric_day(self) -> None:
@@ -125,7 +126,8 @@ class TestCarbonBudget(unittest.TestCase):
             (f["uptake_ii"] + f["uptake_id"] + f["exercise_uptake"] - f["gng_plasma"])[sl]
             - f["syn_muscle_id"][sl] * mg
         )
-        rhs = float((f["app_g"][sl] - f["brk_muscle"][sl] - uptake / mg - f["urinary"][sl] / mg).sum())
+        rhs = float((f["app_g"][sl] - f["brk_muscle"][sl] - uptake / mg - f["urinary"][sl] / mg
+                     + f["aa_glucose"][sl] / mg).sum())
         total_in = float(f["app_g"][sl].sum())
         self.assertGreater(total_in, 50.0)
         self.assertAlmostEqual(d_pool, rhs, delta=1e-3 * total_in)
