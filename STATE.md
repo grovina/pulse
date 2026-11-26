@@ -315,6 +315,27 @@ against iter 120 frozen on the same code, `$S/fz/i120.json`):
   iter 120 makes held-out papers worse after one epoch. Epochs ran about
   45 min, not 3 h, so the guard costs about 4% of the run.
 - Iter 120 on current code stays the reference model.
+- Where the validation drift sits (2026-11-26, frozen swaps on `model_last.pt`,
+  validation papers only, 4 draws; epoch 27 is 0.807, iter 120 0.623, epoch 1
+  0.571). It is diffuse, not one module: putting iter 120's values back for
+  respiratory and cardiovascular networks gives 0.655, adding the metabolic heads
+  and nets 0.595; the gut kernel, embedding projections, appetite heads, thermo
+  net, default inputs and the scalars alone move it by under 0.02. Walking from
+  iter 120 to epoch 27 in a straight line rises smoothly (0.614, 0.66, 0.72,
+  0.81 at a quarter, half, three quarters, all), and epoch 1 (a third of the
+  distance) is off that line. One paper carries much of it: `behrendt-2024` (22
+  of 152 items) median |z| 0.17 to 0.91, a hr curve moving to +1.2 and an spo2
+  curve to -0.8 to -2; insulin 0.35 to 0.95 and lactate 1.4 to 4.2 also.
+  The log shows why: evidence nll has no trend over 28 epochs (10.7, then 6.5
+  to 18.5, noisy), 30 to 45% of evidence backwards are clipped, one epoch has
+  rules 6.7 and evidence gradient 410, while rules, dose response, the coupling
+  prior and carbohydrate balance sit where they were or fall. So it is not the
+  auxiliary losses pulling away; the weights random-walk at lr 0.0015 on 4-item
+  steps (phase 3 starts at epoch 22 and does not change the picture). No
+  frozen or short probe shows a recipe that holds epoch 1's level (a probe of
+  40 steps is 40 minutes); the candidates are a lower phase-2 lr (iter 120
+  ended at 0.001, the warm start raised it to 0.0015) or averaging weights over
+  epochs, to be tried as a run with the validation guard, not on sealed.
 
 Iter 121 (run D), basal setpoint scale 0.65 and a stomach that empties
 faster when full (2026-11-24; its board against iter 120's, GLP-1 scored
