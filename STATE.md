@@ -336,6 +336,14 @@ against iter 120 frozen on the same code, `$S/fz/i120.json`):
   40 steps is 40 minutes); the candidates are a lower phase-2 lr (iter 120
   ended at 0.001, the warm start raised it to 0.0015) or averaging weights over
   epochs, to be tried as a run with the validation guard, not on sealed.
+  Uniform weight averages on the validation papers (2026-11-26): mean(epoch 1,
+  epoch 27) 0.621, mean(iter 120, epoch 1, epoch 27) 0.601, and 0.675 for
+  epoch 1 with `last_good.pt` and epoch 27 (`last_good.pt` is epoch 27, so that
+  is one third epoch 1); none beats epoch 1 (0.571), so averaging alone does
+  not argue for EMA; a lower warm-start lr does. A warm start builds a fresh
+  Adam at `--phase2-lr` (train.py `_build_phase`, cosine to
+  `--phase2-lr-floor`), so 'continue at the floor' needs only
+  `--phase2-lr 0.001 --phase2-lr-floor 0.001`, or lower (0.0003 to 0.0001).
 
 Iter 121 (run D), basal setpoint scale 0.65 and a stomach that empties
 faster when full (2026-11-24; its board against iter 120's, GLP-1 scored
