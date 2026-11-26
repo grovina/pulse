@@ -898,6 +898,22 @@ class PatientParams:
 
     # Activity coupling
     act_hr_gain: float = 25.0
+    # Fitness and the slow tail on heart rate (mirrored by the student's
+    # ``hr_fit_gain`` / ``hr_slow_gain``, which start at zero there).
+    #  - hr_fit_gain: bpm per unit of activity per fitness SD below the median. Relative
+    #    to the same absolute work, a group 1.5 SD fitter (VO2max about 51 against 38
+    #    mL/kg/min) runs 15 to 25 bpm lower at activity 0.8 to 1 (behrendt-2024 and
+    #    ali-2026 against sugimoto-2020, tsukamoto-2023, schubert-2024): 12 bpm gives 14 at 0.8.
+    #  - hr_slow_gain, hr_slow_tau_min: heart rate stays above rest for tens of minutes
+    #    after a bout (sugimoto-2020 and gahreman-2016: still 5 to 10 bpm up 30 min after
+    #    a 30 to 60 min bout at 60 to 70% VO2max). A leaky integral of activity above
+    #    0.1 with tau 30 min and 30 bpm per unit leaves 0.37 * 30 * 0.6 = 7 bpm at 30 min
+    #    after a bout at activity 0.7 long enough to settle it.
+    # ``fitness_z`` is the patient's fitness latent, set by ``randomize_params``.
+    fitness_z: float = 0.0
+    hr_fit_gain: float = 12.0
+    hr_slow_gain: float = 30.0
+    hr_slow_tau_min: float = 30.0
     act_sbp_gain: float = 8.0
     act_dbp_gain: float = -2.0
     act_insulin_sens: float = 0.3
@@ -1059,6 +1075,7 @@ def randomize_params(rng: np.random.Generator) -> PatientParams:
     # Latent physiological axes (standard normal, independent).
     z_ir = float(rng.normal())
     z_fit = float(rng.normal())
+    p.fitness_z = z_fit
 
     def vary(val, spread=0.3, ir: float = 0.0, fit: float = 0.0):
         shared = ir * z_ir + fit * z_fit
@@ -1663,6 +1680,7 @@ def simulate_full_body(
     Ins_slow = params.Ib
     CRH = params.CRH_b
     Sns = SNS_B
+    HRslow = 0.0
     Epi = EPI_B
     Mito = params.mito_0
     Fat = params.Fat_b
@@ -1972,7 +1990,10 @@ def simulate_full_body(
         # Tone below rest (sleep) does not subtract: sleep bradycardia is
         # sleep_hr_shift. Tone above rest during hypoglycaemia does raise HR.
         sns_ex = _sns_exercise(Sns)
-        dHR = (-params.k_hr * (HR - params.HR0 - circ_hr - sleep_hr_shift)
+        hr_shift = (params.hr_slow_gain * HRslow
+                    - params.hr_fit_gain * params.fitness_z * act)
+        dHRslow = (max(act - 0.1, 0.0) - HRslow) / params.hr_slow_tau_min
+        dHR = (-params.k_hr * (HR - params.HR0 - circ_hr - sleep_hr_shift - hr_shift)
                 + params.cort_hr * cort_dev
                 + params.act_hr_gain * sns_ex
                 + params.meal_hr_gain * ra_norm)
@@ -2048,6 +2069,7 @@ def simulate_full_body(
         BA = max(BA + dBA + rng.normal(0, ns * 0.2), 0.1)
         CRH = max(CRH + dCRH + rng.normal(0, ns * 0.8), 10.0)
         Sns = min(max(Sns + dSns, 0.0), 1.0)
+        HRslow = max(HRslow + dHRslow, 0.0)
         Epi = max(Epi + dEpi, 1.0)
         Mito = max(Mito + dMito, 0.2)
         Fat = max(Fat + dFat, 4.0)
@@ -2081,6 +2103,7 @@ def simulate_full_body(
             offset,
             debt,
             GIP,
+            HRslow,
         ]
 
     return trajectory, absorption_profile

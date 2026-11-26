@@ -120,7 +120,7 @@ class TestLearnableDebtGains(unittest.TestCase):
         )
         # 46: the nutrient-insulin drive added four gains and retired one (+3).
         self.assertEqual(published, 46)
-        self.assertEqual(sum(p.numel() for p in model.parameters()), 37244 + published)
+        self.assertEqual(sum(p.numel() for p in model.parameters()), 37247 + published)
 
     def test_gradient_reaches_every_gain_under_sleep_debt(self) -> None:
         m = ModularPhysiologyNetwork()

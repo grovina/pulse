@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 39.8,
+      "sd": 4.1,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Twelve healthy men (Methods 2.2: mean age 24 +/- 1 years, BMI 22.3 +/- 1.6 kg/m2; Data are presented as mean +/- SD). Screened by medical history questionnaire: no overt cardiovascular, respiratory or neuromuscular disease, no medication, no smoking. Age and BMI as printed; no minimum or maximum printed."
+    "description": "Twelve healthy men (Methods 2.2: mean age 24 +/- 1 years, BMI 22.3 +/- 1.6 kg/m2; Data are presented as mean +/- SD). Screened by medical history questionnaire: no overt cardiovascular, respiratory or neuromuscular disease, no medication, no smoking. Age and BMI as printed; no minimum or maximum printed. VO2peak from the graded exercise test on a semi-recumbent bike (Methods 2.2): 'VO2peak of 39.8 ± 4.1 ml/kg/min'."
   },
   "protocols": [
     {

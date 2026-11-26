@@ -171,6 +171,8 @@ class Population:
     standard normal in its code slot, sex is a fair coin, age is centred at
     40 years and adiposity at BMI 25. ``sex`` is ``"female"`` or ``"male"``.
     ``age`` and ``bmi`` are inclusive ranges (years, kg/m²) drawn uniformly.
+    ``vo2max`` (mL/kg/min) is the group's aerobic fitness, optional; it sets the fitness
+    code only when ``training.factors.FITNESS_FROM_VO2MAX`` is on (a run that learns it).
     ``healthy`` puts insulin resistance on the sensitive side of the median
     and beta-cell function on the competent side.
     """
@@ -180,11 +182,12 @@ class Population:
     age: tuple[float, float] | None = None
     bmi: tuple[float, float] | None = None
     healthy: bool = False
+    vo2max: tuple[float, float] | None = None
 
     def __post_init__(self) -> None:
         if self.sex not in (None, "female", "male"):
             raise ValueError(f"{self.name}: sex must be 'female', 'male', or unset")
-        for label, span in (("age", self.age), ("bmi", self.bmi)):
+        for label, span in (("age", self.age), ("bmi", self.bmi), ("vo2max", self.vo2max)):
             if span is None:
                 continue
             if len(span) != 2 or float(span[0]) > float(span[1]):

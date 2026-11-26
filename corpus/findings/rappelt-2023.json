@@ -19,8 +19,14 @@
       "max": null
     },
     "bmi": null,
+    "vo2max": {
+      "mean": 53.4,
+      "sd": 6.6,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Nineteen physically healthy adults, 3 female, who had pursued an endurance sport for at least 2 years (3 or more sessions a week) and had no medical condition that would prevent the sessions (Methods 2.1). Age 26.5 ± 5.1 y, height 1.77 ± 0.08 m, body mass 77.3 ± 11.4 kg, VO2peak 53.4 ± 6.6 mL/kg/min (Methods 2.1). No BMI is printed, so bmi is null. Whole group; no split. The paper calls the group 'physically healthy' and screened no further, so status is healthy; they are endurance-trained (at least 2 years, 3 or more sessions a week), which is not a split of the group."
+    "description": "Nineteen physically healthy adults, 3 female, who had pursued an endurance sport for at least 2 years (3 or more sessions a week) and had no medical condition that would prevent the sessions (Methods 2.1). Age 26.5 ± 5.1 y, height 1.77 ± 0.08 m, body mass 77.3 ± 11.4 kg, VO2peak 53.4 ± 6.6 mL/kg/min (Methods 2.1). No BMI is printed, so bmi is null. Whole group; no split. The paper calls the group 'physically healthy' and screened no further, so status is healthy; they are endurance-trained (at least 2 years, 3 or more sessions a week), which is not a split of the group. VO2peak is from the step test to exhaustion, printed 'VO2peak: 53.4 ± 6.6 mL·kg−1 min−1' (Methods 2.1)."
   },
   "protocols": [
     {

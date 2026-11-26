@@ -59,6 +59,9 @@ MEALS = [
 ]
 
 
+_AT_ZERO = ("cardiovascular.hr_fit_gain", "cardiovascular.hr_slow_gain", "cardiovascular.slow_tau_raw")
+
+
 def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
     """Small widths, and every zero-init output layer woken so all heads matter."""
     torch.manual_seed(seed)
@@ -69,7 +72,9 @@ def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
     )
     g = torch.Generator().manual_seed(seed + 1)
     with torch.no_grad():
-        for p in model.parameters():
+        for name, p in model.named_parameters():
+            if name in _AT_ZERO:
+                continue   # the heart-rate gains stay at their zero init, and draw nothing
             p.add_(0.05 * torch.randn(p.shape, generator=g))
     return model
 
@@ -97,7 +102,10 @@ def _only_reporting(monkeypatch, modules) -> None:
 def _states(n: int, seed: int) -> torch.Tensor:
     g = torch.Generator().manual_seed(seed)
     scale = torch.tensor(NORM_SCALE)
-    s = torch.tensor(NORM_CENTER) + 0.3 * torch.randn(n, STATE_DIM, generator=g) * scale
+    # The draw is one column short and the last marker (hr_slow, appended later) starts at its
+    # centre, so the goldens recorded before it existed keep their people.
+    noise = torch.cat([torch.randn(n, STATE_DIM - 1, generator=g), torch.zeros(n, 1)], dim=-1)
+    s = torch.tensor(NORM_CENTER) + 0.3 * noise * scale
     s = s.clamp(min=1e-3)
     s[:, MARKER_INDEX["spo2"]] = s[:, MARKER_INDEX["spo2"]].clamp(90.0, 99.5)
     s[:, MARKER_INDEX["sbp"]] = s[:, MARKER_INDEX["dbp"]] + 40.0
@@ -244,7 +252,7 @@ def test_a_parameter_only_decay_broadcasts_across_the_batch(monkeypatch) -> None
     """Cardiovascular, thermoreg and respiratory keep their k in ``constants``: a decay with no
     batch dimension must be broadcast to the rate's shape in the plan and in ``forward``."""
     model = _live_model(16)
-    row = {CardiovascularModule: [0.3, 0.3, 0.3, 0.3], ThermoregModule: [0.025], RespiratoryModule: [0.08, 0.08]}
+    row = {CardiovascularModule: [0.3, 0.3, 0.3, 0.3, 0.0], ThermoregModule: [0.025], RespiratoryModule: [0.08, 0.08]}
     for cls, vals in row.items():
         monkeypatch.setattr(cls, "decay_rates", (lambda v: lambda self, state, coupling, const, drv, raw:
                                                  torch.tensor(v))(vals), raising=False)
@@ -263,7 +271,7 @@ def test_a_decay_of_the_wrong_width_is_an_error_that_names_the_module(monkeypatc
     ``forward``."""
     model = _live_model(18)
     _report_decay(monkeypatch, lambda self, state, coupling, const, drv, raw: torch.zeros(state.shape[0], 3),
-                  (CardiovascularModule,))  # it has four markers
+                  (CardiovascularModule,))  # it has five markers
     state, emb = _states(2, 20), torch.zeros(2, EMBEDDING_DIM)
     for planned in (True, False):
         with pytest.raises(ValueError, match="cardiovascular.decay_rates"):
@@ -476,8 +484,9 @@ def test_the_checkpoint_layout_is_untouched() -> None:
     model = _live_model(21)
     # +3 since 7c781a5: four nutrient-insulin gains added, the amino one retired.
     # +1 for the `state_rev` buffer that marks a state saved after the meal split.
-    assert sum(p.numel() for p in model.parameters()) == 11082
-    assert len(model.state_dict()) == 256
+    # +3 parameters (and 3 keys) for the heart-rate fitness gain, slow gain and slow tau.
+    assert sum(p.numel() for p in model.parameters()) == 11085
+    assert len(model.state_dict()) == 259
 
 
 def test_member_steps_hold_a_finished_member() -> None:

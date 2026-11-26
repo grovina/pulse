@@ -41,6 +41,9 @@ from .modules import (
 from .modules.base import PhysiologyModule, compute_time_features
 from .modules.food import MealReader, meal_feature_table
 from .modules.gut import MealEvent
+from .knowledge.cohort_types import factor_index
+
+_FITNESS_COL = factor_index("fitness")
 
 # Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
 # stay strictly positive along every trajectory (review 2026-09-04, items 3.5/3.7). The
@@ -414,6 +417,8 @@ class ModularPhysiologyNetwork(nn.Module):
         "metabolic.islet.log_ins_nut_gain", "metabolic.islet.log_ins_nut_w_p",
         "metabolic.islet.log_ins_nut_w_f", "metabolic.islet.log_gn_nut_gain",
         "state_rev",
+        "cardiovascular.hr_fit_gain", "cardiovascular.hr_slow_gain",
+        "cardiovascular.slow_tau_raw",
     })
     RETIRED_STATE_KEYS = frozenset({"metabolic.islet.log_amino_ins_gain"})
     # A checkpoint written before the meal-gated muscle share and the epinephrine
@@ -426,6 +431,7 @@ class ModularPhysiologyNetwork(nn.Module):
     def adjusted_state(cls, state: dict) -> dict:
         """``state`` with ``LOAD_ADJUSTMENTS`` applied if it has no ``state_rev``.
         Every load of an older checkpoint goes through this, warm starts too."""
+        state = cls._with_current_norm(state)
         if "state_rev" in state:
             return state
         state = dict(state)
@@ -433,6 +439,21 @@ class ModularPhysiologyNetwork(nn.Module):
             if k in state:
                 state[k] = state[k] + delta
         return state
+
+    @staticmethod
+    def _with_current_norm(state: dict) -> dict:
+        """``state`` with ``norm_center`` and ``norm_scale`` as this tree's marker table has
+        them. They are constants of ``types.py`` kept as buffers, one entry per marker: a
+        checkpoint written before a marker was appended holds the shorter table, and the
+        markers it knew keep their places, so the current table replaces it."""
+        out = state
+        for key, table in (("norm_center", NORM_CENTER), ("norm_scale", NORM_SCALE)):
+            old = state.get(key)
+            if old is not None and old.shape[0] < len(table):
+                if out is state:
+                    out = dict(state)
+                out[key] = torch.tensor(table, dtype=old.dtype, device=old.device)
+        return out
 
     def load_model_state(self, state: dict, strict: bool = True) -> None:
         """``load_state_dict`` that is strict except for ``ADDED_STATE_KEYS`` and
@@ -636,6 +657,9 @@ class ModularPhysiologyNetwork(nn.Module):
             "ib": self.metabolic.insulin_setpoint_raw(met).clamp(min=1e-3),
             "body_mass_kg": self.metabolic.body_mass_kg(met),
             **{k: v.expand(batch) for k, v in self.metabolic.body_numbers().items()},
+            # The person's fitness coordinate, in SD (a VO2max of 38 is 0, 47 is +1:
+            # ``training.factors``). The heart-rate path reads it for its fitness gain.
+            "fitness_z": embedding[:, _FITNESS_COL],
         }
 
     @staticmethod

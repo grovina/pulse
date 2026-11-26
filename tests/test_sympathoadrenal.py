@@ -17,10 +17,10 @@ from pulse.sympathoadrenal import EPI_B, EXERCISE_UPTAKE_K, HEP_EPI_GAIN, LIP_EP
 from pulse.types import EMBEDDING_DIM, MARKER_INDEX, NORM_CENTER, NORM_SCALE
 
 
-def _teacher(activity: np.ndarray) -> np.ndarray:
+def _teacher(activity: np.ndarray, **params) -> np.ndarray:
     dur = len(activity)
     traj, _ = simulate_full_body(
-        PatientParams(), [], np.ones(dur), activity, dur,
+        PatientParams(**params), [], np.ones(dur), activity, dur,
         start_hour=10.0, noise_scale=0.0,
     )
     return traj
@@ -32,6 +32,8 @@ class TestTeacherArm(unittest.TestCase):
         dur = 80
         cls.rest = _teacher(np.zeros(dur))
         cls.bout = _teacher(np.array([0.0 if t < 20 else 0.7 for t in range(dur)]))
+        # the same bout without the slow post-exercise term (``hr_slow_gain``), which adds its own
+        cls.bout_no_tail = _teacher(np.array([0.0 if t < 20 else 0.7 for t in range(dur)]), hr_slow_gain=0.0)
 
     def _delta(self, marker: str) -> float:
         i = MARKER_INDEX[marker]
@@ -65,7 +67,9 @@ class TestTeacherArm(unittest.TestCase):
 
     def test_settled_heart_rate_matches_the_old_activity_gain(self) -> None:
         # act_hr_gain * 0.7 / k_hr once tone has caught activity.
-        self.assertAlmostEqual(self._delta("hr"), 58.3, delta=2.0)
+        i = MARKER_INDEX["hr"]
+        delta = float(self.bout_no_tail[55:70, i].mean() - self.rest[55:70, i].mean())
+        self.assertAlmostEqual(delta, 58.3, delta=2.0)
 
 
 class TestStudentArm(unittest.TestCase):

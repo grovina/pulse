@@ -343,6 +343,13 @@ MARKERS = [
         "gip", "GIP", "pmol/L", System.APPETITE, 10.0,
         "hormonal", 0, 150, "#d946ef", "Candy",
     ),
+    # A leaky integral of activity above rest (tens of minutes), read by the heart-rate
+    # path through a learned gain that starts at zero. Appended so earlier indices stay put.
+    # In the activity scale of the model: 1.0 is the level of a hard steady bout.
+    MarkerDef(
+        "hr_slow", "Post-exercise heart-rate drive", "activity", System.CARDIOVASCULAR, 0.0,
+        "internal", 0, 2, "#be123c", "HeartPulse",
+    ),
 ]
 
 STATE_DIM = len(MARKERS)
@@ -533,6 +540,7 @@ NORM_SCALE = [
     2.0,    # circ_phase_offset: a couple of hours is the shift a few nights make
     4.0,    # sleep_debt: one restricted night (Donga 2010) is 4 h
     15.0,   # gip: ±15 pmol/L, the same meal scale as GLP-1
+    0.25,   # hr_slow: a bout at activity 0.5 for a tau leaves about 0.3
 ]
 
 # Diagnostic envelopes (lab display, sanity tests). NOT applied by the

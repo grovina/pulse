@@ -80,7 +80,7 @@ class TestSetpointsAreOrdered(unittest.TestCase):
         m = ModularPhysiologyNetwork(metabolic_hidden=16, cardiovascular_hidden=16)
         cvs = m.cardiovascular
         emb = torch.zeros(1, cvs.setpoint_net[0].in_features)
-        state = torch.zeros(1, 4)
+        state = torch.zeros(1, 5)
         state[0, 1] = 0.4 / 15.0   # HRV = 40.4 ms (setpoint 40)
         with torch.no_grad():
             rate = cvs(state, torch.zeros(1, C._N_COUPLING), torch.zeros(1, 2), emb, torch.tensor([[0.0, 1.0, 0.0, 1.0]]))
@@ -134,7 +134,7 @@ class TestMealAppearanceDrivesHeartRate(unittest.TestCase):
         m = ModularPhysiologyNetwork(metabolic_hidden=16, cardiovascular_hidden=16)
         cvs = m.cardiovascular
         emb = torch.zeros(1, cvs.setpoint_net[0].in_features)
-        state = torch.zeros(1, 4)
+        state = torch.zeros(1, 5)
         tf = torch.tensor([[0.0, 1.0, 0.0, 1.0]])
         ext = torch.zeros(1, 2)
         c0 = torch.zeros(1, C._N_COUPLING)
@@ -153,7 +153,7 @@ class TestMealAppearanceDrivesHeartRate(unittest.TestCase):
         emb = torch.zeros(1, cvs.setpoint_net[0].in_features)
         with torch.no_grad():
             r = cvs(
-                torch.zeros(1, 4), torch.zeros(1, C._N_COUPLING),
+                torch.zeros(1, 5), torch.zeros(1, C._N_COUPLING),
                 torch.zeros(1, 2), emb, torch.tensor([[0.0, 1.0, 0.0, 1.0]]),
             )
         self.assertAlmostEqual(float(r[0, 0]), 0.0, places=5)

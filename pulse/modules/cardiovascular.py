@@ -114,8 +114,10 @@ from ..types import MARKER_INDEX, MODULE_COUPLING_CHANNELS, MODULE_MARKER_INDICE
 
 # Per-vital NORM_CENTER / NORM_SCALE for [hr, hrv, sbp, dbp] (iter 90: k is a true
 # per-minute constant, so the normalized deviation is converted back to raw units).
-_CVS_NORM_CENTER = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["cardiovascular"]]
-_CVS_NORM_SCALE = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["cardiovascular"]]
+_CVS_NORM_CENTER = [NORM_CENTER[i] for i in MODULE_MARKER_INDICES["cardiovascular"][:4]]
+_CVS_NORM_SCALE = [NORM_SCALE[i] for i in MODULE_MARKER_INDICES["cardiovascular"][:4]]
+_SLOW_CENTER = float(NORM_CENTER[MARKER_INDEX["hr_slow"]])
+_SLOW_SCALE = float(NORM_SCALE[MARKER_INDEX["hr_slow"]])
 
 # Coupling inputs from MODULE_COUPLING_CHANNELS["cardiovascular"].
 _N_COUPLING = len(MODULE_COUPLING_CHANNELS["cardiovascular"])
@@ -123,12 +125,16 @@ _N_COUPLING = len(MODULE_COUPLING_CHANNELS["cardiovascular"])
 # External inputs: activity (1) + sleep_wake (1) = 2
 _N_EXTERNAL = 2
 
-# Module state order = MODULE_MARKER_INDICES["cardiovascular"] = [hr, hrv, sbp, dbp].
+# Module state order = MODULE_MARKER_INDICES["cardiovascular"] = [hr, hrv, sbp, dbp, hr_slow].
+# The four vitals are what the MLP reads and writes; ``hr_slow`` is a fifth state with its own
+# law below, kept out of the MLP so a checkpoint without it loads every trained weight.
 _N_STATE = 4
+_N_OWN = 5
 _HR = 0
 _HRV = 1
 _SBP = 2
 _DBP = 3
+_SLOW = 4
 
 # Log-space setpoint bounds. All four head outputs decode as ``center·exp(L·tanh(head))``:
 # strictly positive, a zero head is exactly the center, and a zero-mean embedding population
@@ -164,6 +170,23 @@ _CVS_LOG_K_INIT = math.log(
     ((_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE) / (1.0 - (_CVS_K_INIT - _CVS_K_MIN) / _CVS_K_RANGE)
 )
 
+# The slow post-exercise state ``hr_slow``: a leaky integral of the activity above rest,
+#   d s / dt = (max(activity - _SLOW_REST, 0) - s) / tau,
+# in the model's activity scale. Heart rate stays above its resting level for tens of minutes
+# after a bout (sugimoto-2020, gahreman-2016) and the fast driver is back at rest within
+# minutes, so this is the state the tail lives in. tau is a learned population number in
+# [5, 240] min, initialised at 30. It reaches the heart rate through ``hr_slow_gain`` (bpm
+# per unit of the state), which starts at ZERO: until a run trains it, heart rate is what it
+# was. ``_SLOW_REST`` is the activity of ordinary waking (the default head's floor is 0.02).
+_SLOW_REST = 0.1
+_SLOW_TAU_MIN = 5.0
+_SLOW_TAU_RANGE = 235.0
+_SLOW_TAU_INIT = 30.0
+_SLOW_LOG_TAU_INIT = math.log(
+    ((_SLOW_TAU_INIT - _SLOW_TAU_MIN) / _SLOW_TAU_RANGE)
+    / (1.0 - (_SLOW_TAU_INIT - _SLOW_TAU_MIN) / _SLOW_TAU_RANGE)
+)
+
 # Teacher PatientParams.meal_hr_gain / K_ra_norm. Appearance is mg/dL/min
 # in the 70 kg reference space (same units as the gut glucose channel).
 _MEAL_HR_GAIN = 3.0
@@ -182,6 +205,16 @@ class CardiovascularModule(LearnedDynamicsModule):
             embedding_dim=embedding_dim,
             hidden_dim=hidden_dim,
         )
+        # The MLP was built for the four vitals; the module integrates five states.
+        self.n_state = _N_OWN
+        # What fitness and the slow state add to heart rate, in bpm. Both start at zero, so
+        # the module is exactly the one a checkpoint without them was trained as.
+        #   hr_fit_gain  bpm per unit of activity per fitness SD BELOW the median (a lower
+        #                VO2max needs a higher heart rate at the same absolute work);
+        #   hr_slow_gain bpm per unit of the slow state.
+        self.hr_fit_gain = nn.Parameter(torch.zeros(()))
+        self.hr_slow_gain = nn.Parameter(torch.zeros(()))
+        self.slow_tau_raw = nn.Parameter(torch.tensor(_SLOW_LOG_TAU_INIT))
         # Per-patient setpoint head: one shared hidden layer, four outputs read as
         #   [log HR offset, log HRV offset, log pulse-pressure offset, log DBP offset].
         # Final layer zero-init ⇒ every offset is 0 at cold start ⇒ resting HR 70,
@@ -201,6 +234,15 @@ class CardiovascularModule(LearnedDynamicsModule):
         self.register_buffer(
             "cvs_norm_scale", torch.tensor(_CVS_NORM_SCALE, dtype=torch.float32)
         )
+
+    def head_state_columns(self) -> list[int]:
+        return list(range(_N_STATE))
+
+    def bind_body(self, const, body):
+        """The person's fitness code (a coordinate of the code, in SD), held once for the body."""
+        if body is not None and "fitness_z" in body:
+            return {**const, "fitness_z": body["fitness_z"]}
+        return const
 
     # ---- setpoints ------------------------------------------------------------
 
@@ -234,6 +276,8 @@ class CardiovascularModule(LearnedDynamicsModule):
             "k_hr": k[_HR], "k_hrv": k[_HRV], "k_pp": k[_SBP], "k_dbp": k[_DBP],
             "hr_sp": hr_sp, "hrv_sp": hrv_sp, "dbp_sp": dbp_sp,
             "log_pp_sp": torch.log(pp_sp),
+            "slow_tau": _SLOW_TAU_MIN + _SLOW_TAU_RANGE * torch.sigmoid(self.slow_tau_raw),
+            "hr_fit_gain": self.hr_fit_gain, "hr_slow_gain": self.hr_slow_gain,
         }
 
     def drives(
@@ -244,7 +288,7 @@ class CardiovascularModule(LearnedDynamicsModule):
         const: dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
         ra = coupling[..., _APPEARANCE_COUPLING_IDX].clamp(min=0.0)
-        return {"meal_hr": _MEAL_HR_GAIN * ra / (ra + _K_RA_NORM)}
+        return {"meal_hr": _MEAL_HR_GAIN * ra / (ra + _K_RA_NORM), "activity": external[..., 0]}
 
     def step(
         self,
@@ -259,12 +303,21 @@ class CardiovascularModule(LearnedDynamicsModule):
         # iter-36 frame-consistency fix). Outputs are read as
         # [d_hr (bpm/min), d_loghrv·HRV_c, d_logpp·PP_c, d_dbp (mmHg/min)].
         driver = raw["driver"]
-        raw_s = self.cvs_norm_center + self.cvs_norm_scale * state
+        raw_s = self.cvs_norm_center + self.cvs_norm_scale * state[..., :_N_STATE]
         hr, hrv, sbp, dbp = raw_s[..., _HR], raw_s[..., _HRV], raw_s[..., _SBP], raw_s[..., _DBP]
         pp = sbp - dbp
         hr_sp = const["hr_sp"]
+        act = drv["activity"]
+        slow = _SLOW_CENTER + _SLOW_SCALE * state[..., _SLOW]
 
-        rate_hr = driver[..., _HR] - const["k_hr"] * (hr - hr_sp) + drv["meal_hr"]
+        # Where the heart rate settles moves by what fitness and the slow state add (exactly
+        # zero while both gains are zero). A lower fitness code needs more beats at the same
+        # work; the slow state holds the tail after a bout.
+        shift = const["hr_slow_gain"] * slow
+        if "fitness_z" in const:
+            shift = shift - const["hr_fit_gain"] * const["fitness_z"] * act
+        rate_hr = driver[..., _HR] - const["k_hr"] * ((hr - hr_sp) - shift) + drv["meal_hr"]
+        rate_slow = (torch.relu(act - _SLOW_REST) - slow) / const["slow_tau"]
         rate_dbp = driver[..., _DBP] - const["k_dbp"] * (dbp - const["dbp_sp"])
         # Log-space relaxations, returned as RAW rates (x · d log x / dt).
         hrv_target = const["hrv_sp"] * hr_sp / hr.clamp(min=40.0)
@@ -275,4 +328,4 @@ class CardiovascularModule(LearnedDynamicsModule):
         rate_hrv = hrv * dlog_hrv
         rate_pp = pp * dlog_pp
         rate_sbp = rate_dbp + rate_pp
-        return torch.stack([rate_hr, rate_hrv, rate_sbp, rate_dbp], dim=-1)
+        return torch.stack([rate_hr, rate_hrv, rate_sbp, rate_dbp, rate_slow], dim=-1)

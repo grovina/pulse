@@ -457,6 +457,7 @@ class _Who:
     age: tuple[float, float] | None
     bmi: tuple[float, float] | None
     healthy: bool
+    vo2max: tuple[float, float] | None = None
 
 
 def _summary(r: _Reader, data: Any, where: str) -> _Summary | None:
@@ -479,6 +480,7 @@ def _summary(r: _Reader, data: Any, where: str) -> _Summary | None:
 def _population(r: _Reader, data: Any) -> _Who | None:
     d = r.obj(
         data, "population", {"n", "sex", "age_years", "bmi", "status", "description"},
+        {"vo2max"}, check="parse",
     )
     if d is None:
         return None
@@ -488,30 +490,38 @@ def _population(r: _Reader, data: Any) -> _Who | None:
     r.string(d, "description", "population")
     age = _summary(r, d.get("age_years"), "population age_years") if "age_years" in d else None
     bmi = _summary(r, d.get("bmi"), "population bmi") if "bmi" in d else None
-    if None in (n, sex, status) or age is None and "age_years" in d or bmi is None and "bmi" in d:
+    vo2 = _summary(r, d.get("vo2max"), "population vo2max") if "vo2max" in d else None
+    if vo2 is not None and vo2.mean is not None and not 10.0 <= vo2.mean <= 90.0:
+        r.add("parse", f"population vo2max mean {vo2.mean:g} is not mL/kg/min (10 to 90)")
+    if (None in (n, sex, status) or age is None and "age_years" in d or bmi is None and "bmi" in d
+            or vo2 is None and "vo2max" in d):
         return None
     assert n is not None
     return _Who(
         n, None if sex == "mixed" else sex,
         age.span() if age else None, bmi.span() if bmi else None, status == "healthy",
+        vo2.span() if vo2 else None,
     )
 
 
 def _arm_population(who: _Who, override: dict | None) -> Population | None:
-    sex, age, bmi, healthy = who.sex, who.age, who.bmi, who.healthy
+    sex, age, bmi, healthy, vo2 = who.sex, who.age, who.bmi, who.healthy, who.vo2max
     if override:
         sex = override["sex"] if "sex" in override else sex
         age = override["age"] if "age" in override else age
         bmi = override["bmi"] if "bmi" in override else bmi
+        vo2 = override["vo2max"] if "vo2max" in override else vo2
         healthy = override["healthy"] if "healthy" in override else healthy
-    if sex is None and age is None and bmi is None and not healthy:
+    if sex is None and age is None and bmi is None and vo2 is None and not healthy:
         return None
 
     def span(s: tuple[float, float] | None) -> str:
         return "any" if s is None else f"{s[0]:g}-{s[1]:g}"
 
     name = f"{sex or 'mixed'}_age{span(age)}_bmi{span(bmi)}_{'healthy' if healthy else 'unselected'}"
-    return Population(name=name, sex=sex, age=age, bmi=bmi, healthy=healthy)
+    if vo2 is not None:
+        name += f"_vo2{span(vo2)}"
+    return Population(name=name, sex=sex, age=age, bmi=bmi, healthy=healthy, vo2max=vo2)
 
 
 # --------------------------------------------------------------------------------
@@ -754,7 +764,7 @@ def _protocol(
     if "population" in d:
         pd = r.obj(
             d["population"], f"{where} population", set(),
-            {"sex", "age_years", "bmi", "status"}, check="protocol",
+            {"sex", "age_years", "bmi", "status", "vo2max"}, check="protocol",
         )
         override = {}
         if pd is not None:
@@ -762,7 +772,7 @@ def _protocol(
                 s = r.choice(pd, "sex", f"{where} population", ("female", "male", "mixed"), "protocol")
                 if s:
                     override["sex"] = None if s == "mixed" else s
-            for key, field_name in (("age_years", "age"), ("bmi", "bmi")):
+            for key, field_name in (("age_years", "age"), ("bmi", "bmi"), ("vo2max", "vo2max")):
                 if key in pd:
                     if pd[key] is None:
                         override[field_name] = None

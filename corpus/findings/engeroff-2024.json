@@ -24,8 +24,14 @@
       "min": null,
       "max": null
     },
+    "vo2max": {
+      "mean": 47.2,
+      "sd": 7.6,
+      "min": null,
+      "max": null
+    },
     "status": "healthy",
-    "description": "Thirteen healthy adults (6 female, 7 male; abstract and Results: 'Healthy adults'). Eligibility 18 to 50 years; excluded cardiovascular, pulmonary or advanced musculoskeletal disease; no medication except oral contraceptives. Age and BMI as printed in Table 1 (mean and SD)."
+    "description": "Thirteen healthy adults (6 female, 7 male; abstract and Results: 'Healthy adults'). Eligibility 18 to 50 years; excluded cardiovascular, pulmonary or advanced musculoskeletal disease; no medication except oral contraceptives. Age and BMI as printed in Table 1 (mean and SD). VO2max as printed in Table 1 (maximal values during the incremental exercise test, oxygen uptake ml/min/kg, whole group): 'Oxygen uptake ml/min/kg 47.2 7.6' (mean and SD)."
   },
   "protocols": [
     {

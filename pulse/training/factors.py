@@ -24,6 +24,16 @@ BMI_SCALE = 5.0
 BMI_MIN = 16.0
 BMI_MAX = 45.0
 
+# Fitness from a printed VO2max (mL/kg/min): the fitness code is (VO2max - centre) / scale, so
+# the median adult (38) is 0 and an athlete (56) is +2, the teacher's top of the axis.
+# Off until a run learns the fitness gain on the heart-rate path (``CardiovascularModule``):
+# a checkpoint trained without it never saw a fitness code set from a paper, and a corpus
+# arm that carries ``vo2max`` would move its scores. Turned on, the draw is uniform over the
+# arm's VO2max range, taken after every other draw so no other coordinate shifts.
+FITNESS_FROM_VO2MAX = False
+VO2MAX_CENTER = 38.0
+VO2MAX_SCALE = 9.0
+
 # A standard fed day the student spins through before a cohort arm.
 FED_DAY_MINUTES = 24 * 60
 # (clock hour, carbohydrate g, fat g, protein g). An ordinary three-meal day.
@@ -155,6 +165,10 @@ def draw_factor_codes(
     codes[:, factor_index("age")] = (_years(rng, n, population) - AGE_CENTER_YEARS) / AGE_SCALE_YEARS
     codes[:, factor_index("adiposity")] = (_bmi(rng, n, population) - BMI_CENTER) / BMI_SCALE
     codes[:, factor_index("sex")] = _sex_code(rng, n, population)
+    if FITNESS_FROM_VO2MAX and population is not None and population.vo2max is not None:
+        lo, hi = population.vo2max
+        vo2 = np.full(n, float(lo)) if lo == hi else rng.uniform(lo, hi, size=n)
+        codes[:, factor_index("fitness")] = (vo2 - VO2MAX_CENTER) / VO2MAX_SCALE
     return torch.tensor(codes, dtype=torch.float32, device=device)
 
 
@@ -171,6 +185,9 @@ __all__ = [
     "AGE_SCALE_YEARS",
     "BMI_CENTER",
     "BMI_SCALE",
+    "FITNESS_FROM_VO2MAX",
+    "VO2MAX_CENTER",
+    "VO2MAX_SCALE",
     "FED_DAY_MEALS",
     "FED_DAY_MINUTES",
     "bmi_of",

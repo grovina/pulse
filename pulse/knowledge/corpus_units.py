@@ -196,6 +196,7 @@ CONVERSIONS: dict[str, dict[str, tuple[float, float]]] = {
     "gastric_fat": dict(_GRAMS),
     "circ_phase_offset": dict(_HOURS),
     "sleep_debt": dict(_HOURS),
+    "hr_slow": {"activity": (1.0, 0.0)},
     "gip": {  # GIP(1-42) (_GIP_MW); pg/mL = ng/L, ng/mL = ug/L
         "pmol/l": (1.0, 0.0),
         "pg/ml": (_pmol_l_per_ng_l(_GIP_MW), 0.0), "ng/l": (_pmol_l_per_ng_l(_GIP_MW), 0.0),

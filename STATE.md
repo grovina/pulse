@@ -10,10 +10,10 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 
 | Metric | Now |
 |---|---|
-| Modules | 9 (metabolic 13 states, appetite 5, stress 5, cardiovascular 4, hepatobiliary 4, gastric 3, respiratory 2, circadian 2, thermoreg 1) |
-| States | 39 |
+| Modules | 9 (metabolic 13 states, appetite 5, stress 5, cardiovascular 5, hepatobiliary 4, gastric 3, respiratory 2, circadian 2, thermoreg 1) |
+| States | 40 |
 | Observables | 10 |
-| Parameters | 37,290 at the default widths |
+| Parameters | 37,293 at the default widths |
 | Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
 | Cohort specs | 1185 authored, 140 of them curves; 1241 training points and 348 held-out points |
@@ -26,7 +26,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 
 ## The model
 
-One network of nine modules over 39 states, stepped by explicit Euler at one
+One network of nine modules over 40 states, stepped by explicit Euler at one
 minute for every state. A person is a 32-number embedding; the median person
 is the zero embedding. The checkpoints of iters 113–115 have 35,551
 parameters (`--hidden-dim=48`).
@@ -867,11 +867,26 @@ oral-glucose tail (glucose at 90 to 360 min 10 to 25 mg/dL high, 25 items): none
 
 Retrain-level candidates (changes the checkpoint layout or needs learned parameters;
 not fixable frozen):
-- A slow post-exercise heart-rate state (tens of minutes; sugimoto-2020, gahreman-2016,
-  cesaremarincola-2025) with its coupling channel.
-- A fitness-dependent heart-rate gain: a VO2max field in the corpus `Population`, and
-  `fitness` set from it, in the teacher's `act_hr_gain` (behrendt-2024 and ali-2026 against
-  sugimoto-2020, tsukamoto-2023, schubert-2024 at the same relative intensity).
+- BUILT, awaiting a run (2026-11-26): a slow post-exercise heart-rate state (tens of minutes;
+  sugimoto-2020, gahreman-2016, cesaremarincola-2025). New marker `hr_slow` (cardiovascular,
+  the 40th state, kept out of the MLP so no weight changes shape): a leaky integral of activity
+  above 0.1, tau a learned `slow_tau_raw` (30 min at init, band 5 to 240), read by heart rate
+  through `hr_slow_gain` (bpm per unit, init 0). Teacher mirror in `full_body.py`: 30 bpm, tau 30.
+- BUILT, awaiting a run (2026-11-26): a fitness-dependent heart-rate gain. Corpus `Population`
+  has an optional `vo2max` (mL/kg/min as printed, same fields as age; `corpus/README.md`),
+  filled in engeroff-2024 (47.2), hoshi-2022 (39.8) and rappelt-2023 (53.4, sealed; its scores
+  not looked at): the only exercise papers with cached full text that print a group VO2max.
+  `training.factors.FITNESS_FROM_VO2MAX` (False) sets the fitness code from it
+  ((VO2max - 38) / 9); turn it on for the run. `body_quantities["fitness_z"]` reaches the
+  cardiovascular module, which adds `hr_fit_gain` (init 0) bpm per unit activity per SD below
+  median to where heart rate settles. Teacher: 12 bpm per SD per unit activity, on the patient's
+  fitness latent. Both gains are zero in the student, so iter 120 and every rollout are as
+  before: golden rollouts unchanged, and the frozen board of iter 120 is identical item by item
+  (1,651 items, predictions equal to the last bit) against a fresh main. A checkpoint without
+  the three new keys loads (`ADDED_STATE_KEYS`; the shorter `norm_center` and `norm_scale` are
+  replaced by the current table in `adjusted_state`). Not yet filled: papers without cached text
+  (sugimoto-2020, tsukamoto-2023, behrendt-2024, ali-2026, schubert-2024, gahreman-2016 and the
+  rest of the 147 files); the field is for a reader to add as papers are read.
 - Exercise lactate runs low (trained signed z -1.3, yamaguchi-2020 1 to 5 mmol/L against
   10 to 17 at high intensity; gahreman-2016 2 against 4 to 5): the learned lactate production head.
 - Protein-only insulin is too high after the nutrient gain was doubled at load (37 µU/mL

@@ -353,6 +353,18 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
     only shapes who the virtual people are; no finding is scored against it.)
   * If the paper gives age or BMI for a larger or pooled group and not for the
     group the findings are about, use it and say so in `description`.
+* `vo2max` (optional; leave the key out if the paper does not print it): the group's
+  maximal or peak oxygen uptake in **mL/kg/min as printed**, written like `age_years`
+  (`mean`, `sd`, `min`, `max`; the same rules, the same SE conversion, a median with an IQR
+  is `null`). Take the maximal test's value for the group the findings are about, from the
+  paper's own table or text. Do not convert: L/min or mL/min is not this field (do not divide by
+  a body mass the paper printed for another group), `% predicted` is not, and neither is
+  a value estimated from a field test or a formula, nor `VO2 at a stage` (that is the activity,
+  not the person). It is an input about who the people are, never a score, and puts no
+  finding in or out of the corpus. Say in `description` which test it is from, with a quote
+  (`Methods, Participants: 'VO2peak of 39.8 +/- 4.1 ml/kg/min'`). A frozen model ignores it
+  (`training.factors.FITNESS_FROM_VO2MAX`); a run that learns the heart-rate fitness gain
+  sets the fitness code from it.
 * `status` is `healthy` or `unselected` (no screening was reported). **Nothing
   else.** `healthy` is what the paper calls healthy, or has screened as such:
   a group classed as normal glucose tolerance by an oral glucose test is
@@ -365,12 +377,12 @@ errors together. Do not add keys; do not state `sigma`, `n_arm`, `weight`,
   (`healthy` would tell the model that the group's insulin sensitivity is better
   than the median whatever its BMI), unless its glucose tolerance was screened
   by a test.
-* A protocol can override `sex`, `age_years`, `bmi` or `status` for one arm, when
-  the paper compares groups (lean against obese, young against old). `age_years`
-  and `bmi` are written as at the top level, with that group's printed numbers
+* A protocol can override `sex`, `age_years`, `bmi`, `vo2max` or `status` for one arm, when
+  the paper compares groups (lean against obese, young against old). `age_years`,
+  `bmi` and `vo2max` are written as at the top level, with that group's printed numbers
   (`{"mean": 57.0, "sd": 7.0, "min": null, "max": null}`), and must give a
   range: `min` and `max`, or `mean` and `sd`.
-* Sex, age and BMI are all the model can be told about a group. Groups the paper
+* Sex, age, BMI and VO2max are all the model can be told about a group. Groups the paper
   separates by anything else (insulin-sensitive against insulin-resistant, high
   against low responders, trained against untrained) cannot be entered as two
   arms: the model would be asked for two different numbers from the same
@@ -793,6 +805,7 @@ Insulin uses 6.0 pmol/L per uU/mL (SI).
 | `gastric_fat` | Gastric fat | g | 0 to 150 | g (x1) |
 | `circ_phase_offset` | Circadian phase | h | -6 to 6 | h (x1), min (x0.0166667) |
 | `sleep_debt` | Sleep debt | h | -16 to 16 | h (x1), min (x0.0166667) |
+| `hr_slow` | Post-exercise heart-rate drive | activity | 0 to 2 | activity (x1) |
 | `gip` | GIP | pmol/L | 0 to 150 | pmol/l (x1), pg/ml (x0.200662), ng/l (x0.200662), ng/ml (x200.662), ug/l (x200.662), nmol/l (x1000) |
 | `glucose_infusion_rate` | Glucose infusion rate | mg/kg/min | 0 to 20 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
 | `glucose_disposal` | Glucose disposal | mg/kg/min | 0 to 30 | mg/kg/min (x1), umol/kg/min (x0.18016), mmol/kg/min (x180.16) |
