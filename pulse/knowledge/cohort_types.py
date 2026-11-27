@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from ..types import FAT_TYPES, MEAL_FORMS, PROTEIN_SOURCES, SERIES_INDEX
+from ..types import EMBEDDING_DIM, FAT_TYPES, MEAL_FORMS, PROTEIN_SOURCES, SERIES_INDEX
 
 
 class StatisticKind(str, Enum):
@@ -108,6 +108,14 @@ FACTORS: tuple[str, ...] = (
 )
 
 
+# The last coordinate of the person code is not a factor the heads see: it carries the
+# fitness (in SD) that only the heart-rate path reads (``body_quantities["fitness_z"]``).
+# The model drops it from every embedding projection, so a code that sets it is the same
+# person to every head, and a fitness set from a printed VO2max cannot move glucose, insulin
+# or any other marker except through ``hr_fit_gain``.
+HR_FITNESS_COL = EMBEDDING_DIM - 1
+
+
 def factor_index(name: str) -> int:
     """Coordinate of a named factor in the person code."""
     try:
@@ -171,8 +179,9 @@ class Population:
     standard normal in its code slot, sex is a fair coin, age is centred at
     40 years and adiposity at BMI 25. ``sex`` is ``"female"`` or ``"male"``.
     ``age`` and ``bmi`` are inclusive ranges (years, kg/m²) drawn uniformly.
-    ``vo2max`` (mL/kg/min) is the group's aerobic fitness, optional; it sets the fitness
-    code only when ``training.factors.FITNESS_FROM_VO2MAX`` is on (a run that learns it).
+    ``vo2max`` (mL/kg/min) is the group's aerobic fitness, optional; it sets the heart-rate
+    fitness coordinate (``HR_FITNESS_COL``, read by the heart-rate path only) when
+    ``training.factors.FITNESS_FROM_VO2MAX`` is on; the fitness factor in the code stays the draw.
     ``healthy`` puts insulin resistance on the sensitive side of the median
     and beta-cell function on the competent side.
     """

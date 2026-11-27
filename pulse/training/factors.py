@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from ..knowledge.cohort_types import FACTORS, Population, factor_index
+from ..knowledge.cohort_types import FACTORS, HR_FITNESS_COL, Population, factor_index
 from ..types import EMBEDDING_DIM
 
 # Code units. Zero is the reference median.
@@ -24,9 +24,10 @@ BMI_SCALE = 5.0
 BMI_MIN = 16.0
 BMI_MAX = 45.0
 
-# Fitness from a printed VO2max (mL/kg/min): the fitness code is (VO2max - centre) / scale, so
+# Fitness from a printed VO2max (mL/kg/min): the heart-rate fitness coordinate is (VO2max - centre) / scale, so
 # the median adult (38) is 0 and an athlete (56) is +2, the teacher's top of the axis.
-# Off until a run learns the fitness gain on the heart-rate path (``CardiovascularModule``):
+# The coordinate reaches only the heart-rate path (no head sees it), so a checkpoint's other
+# outputs do not move. Off until a run learns the fitness gain on the heart-rate path (``CardiovascularModule``):
 # a checkpoint trained without it never saw a fitness code set from a paper, and a corpus
 # arm that carries ``vo2max`` would move its scores. Turned on, the draw is uniform over the
 # arm's VO2max range, taken after every other draw so no other coordinate shifts.
@@ -165,10 +166,14 @@ def draw_factor_codes(
     codes[:, factor_index("age")] = (_years(rng, n, population) - AGE_CENTER_YEARS) / AGE_SCALE_YEARS
     codes[:, factor_index("adiposity")] = (_bmi(rng, n, population) - BMI_CENTER) / BMI_SCALE
     codes[:, factor_index("sex")] = _sex_code(rng, n, population)
-    if FITNESS_FROM_VO2MAX and population is not None and population.vo2max is not None:
-        lo, hi = population.vo2max
-        vo2 = np.full(n, float(lo)) if lo == hi else rng.uniform(lo, hi, size=n)
-        codes[:, factor_index("fitness")] = (vo2 - VO2MAX_CENTER) / VO2MAX_SCALE
+    if FITNESS_FROM_VO2MAX:
+        # The heart-rate path's own fitness coordinate: the fitness draw, replaced by the
+        # printed VO2max where the arm has one. The fitness factor itself stays the draw.
+        codes[:, HR_FITNESS_COL] = codes[:, factor_index("fitness")]
+        if population is not None and population.vo2max is not None:
+            lo, hi = population.vo2max
+            vo2 = np.full(n, float(lo)) if lo == hi else rng.uniform(lo, hi, size=n)
+            codes[:, HR_FITNESS_COL] = (vo2 - VO2MAX_CENTER) / VO2MAX_SCALE
     return torch.tensor(codes, dtype=torch.float32, device=device)
 
 

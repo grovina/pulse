@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import torch
 
-from pulse.knowledge.cohort_types import Population, factor_index
+from pulse.knowledge.cohort_types import HR_FITNESS_COL, Population, factor_index
 from pulse.knowledge.corpus import CorpusError, parse_finding
 from pulse.knowledge.full_body import PatientParams, simulate_full_body
 from pulse.model import ModularPhysiologyNetwork, integrate
@@ -23,9 +23,11 @@ FIXTURE = Path(__file__).parent / "fixtures" / "corpus" / "findings" / "syntheti
 
 # Recorded from the code before the fitness gain and the slow state existed (origin/main at
 # 5cd1fb0): the model below, seed 7, hr every 15 min and sbp every 30 min of a 180 min roll
-# with activity 0.9 in minutes 20 to 69.
-GOLDEN_HR = [70.0, 76.409, 75.683, 75.369, 75.977, 76.92, 78.044, 78.435, 78.306, 78.023, 77.731, 77.432]
-GOLDEN_SBP = [120.0, 97.436, 96.168, 94.009, 93.868, 94.564]
+# with activity 0.9 in minutes 20 to 69. The person's last coordinate is zero (the model now
+# drops that coordinate, `HR_FITNESS_COL`, and the numbers were re-recorded on the code before
+# that change with it zeroed).
+GOLDEN_HR = [70.0, 76.985, 76.276, 75.952, 76.564, 77.505, 78.621, 79.025, 78.914, 78.64, 78.355, 78.062]
+GOLDEN_SBP = [120.0, 96.598, 95.434, 93.317, 93.038, 93.689]
 
 
 def _model() -> ModularPhysiologyNetwork:
@@ -42,7 +44,9 @@ def _golden_person() -> torch.Tensor:
     """The person the golden was recorded on: drawn right after the model's own draws."""
     torch.manual_seed(7)
     _model()
-    return torch.randn(32) * 0.6
+    emb = torch.randn(32) * 0.6
+    emb[HR_FITNESS_COL] = 0.0
+    return emb
 
 
 def _roll(m, emb, act, steps=180):
@@ -60,7 +64,7 @@ def _bout(level=0.9, start=20, end=70, steps=180):
 def _person(fitness_z=0.0) -> torch.Tensor:
     torch.manual_seed(7)
     emb = torch.randn(32) * 0.6
-    emb[factor_index("fitness")] = fitness_z
+    emb[HR_FITNESS_COL] = fitness_z     # the coordinate only the heart-rate path reads
     return emb
 
 
@@ -224,19 +228,72 @@ def test_the_fitness_code_ignores_vo2max_while_the_switch_is_off():
     assert torch.equal(_draw(plain), _draw(fit))
 
 
-def test_the_fitness_code_follows_vo2max_when_on_and_moves_no_other_coordinate(monkeypatch):
-    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", True)
+def test_vo2max_sets_the_heart_rate_coordinate_when_on_and_moves_no_other_coordinate(monkeypatch):
     plain = Population(name="a", sex="male", age=(20.0, 30.0))
     fit = Population(name="b", sex="male", age=(20.0, 30.0), vo2max=(47.0, 56.0))
+    off = _draw(fit)
+    assert float(off[:, HR_FITNESS_COL].abs().max()) == 0.0
+    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", True)
     a, b = _draw(plain), _draw(fit)
-    col = factor_index("fitness")
+    col = HR_FITNESS_COL
     others = [i for i in range(a.shape[1]) if i != col]
-    assert torch.equal(a[:, others], b[:, others])
+    assert torch.equal(a[:, others], b[:, others])          # the factors, fitness included, stay the draw
+    assert torch.equal(b[:, others], off[:, others])
+    assert torch.equal(a[:, col], a[:, factor_index("fitness")])   # no VO2max: the fitness draw
     z = b[:, col]
     assert float(z.min()) >= (47.0 - factors.VO2MAX_CENTER) / factors.VO2MAX_SCALE - 1e-6
     assert float(z.max()) <= (56.0 - factors.VO2MAX_CENTER) / factors.VO2MAX_SCALE + 1e-6
     point = Population(name="c", vo2max=(38.0, 38.0))
     assert torch.allclose(_draw(point)[:, col], torch.zeros(6))
+
+
+def _people(monkeypatch, on):
+    monkeypatch.setattr(factors, "FITNESS_FROM_VO2MAX", on)
+    fit = Population(name="b", sex="male", age=(20.0, 30.0), vo2max=(50.0, 58.0))
+    return _draw(fit, n=4)
+
+
+def _roll_many(m, codes):
+    return torch.stack([_roll(m, c, _bout()) for c in codes])
+
+
+def test_switch_on_with_zero_gain_leaves_every_rollout_identical(monkeypatch):
+    m = _model()
+    off = _roll_many(m, _people(monkeypatch, False))
+    on = _roll_many(m, _people(monkeypatch, True))
+    assert torch.equal(on, off)
+
+
+def test_a_nonzero_gain_moves_heart_rate_and_nothing_else(monkeypatch):
+    m = _model()
+    people = _people(monkeypatch, True)
+    base = _roll_many(m, people)
+    with torch.no_grad():
+        m.cardiovascular.hr_fit_gain.fill_(8.0)
+    moved = _roll_many(m, people)
+    d = (moved - base).abs().amax(dim=(0, 1))
+    assert float(d[HR]) > 5.0
+    for name in ("glucose", "insulin", "glucagon", "ffa", "bhb", "lactate", "liver_glycogen",
+                 "muscle_glycogen", "cortisol", "rr", "spo2", "temp", "hr_slow"):
+        i = MARKER_INDEX[name]
+        assert float(d[i]) < 1e-3 * float(NORM_SCALE[i]), name
+
+
+def test_the_heart_rate_coordinate_is_invisible_to_every_other_layer():
+    m = _model()
+    x = torch.randn(3, 32)
+    y = x.clone()
+    y[:, HR_FITNESS_COL] += 5.0
+    for proj in m.embedding_projections.values():
+        assert torch.equal(proj(x), proj(y))
+    t = torch.randn(3, 4)
+    assert torch.equal(m.default_inputs_net(torch.cat([x, t], -1)), m.default_inputs_net(torch.cat([y, t], -1)))
+
+
+def test_teacher_patients_do_not_read_the_person_code():
+    """The teacher's fitness (12 bpm per SD) is its own latent, not the code's: a median
+    ``PatientParams`` has fitness 0, so switching the code's fitness on changes no teacher output."""
+    assert PatientParams().fitness_z == 0.0
 
 
 # -- the teacher ----------------------------------------------------------------------------
@@ -316,7 +373,7 @@ def test_a_trained_checkpoint_records_the_flag_and_the_board_people_follow_it(mo
     finally:
         torch.set_num_threads(prev)
     fit = Population(name="b", sex="male", age=(20.0, 30.0), vo2max=(47.0, 56.0))
-    col = factor_index("fitness")
+    col = HR_FITNESS_COL
     people = {}
     for on, path in outs.items():
         ckpt = torch.load(path, map_location="cpu", weights_only=False)

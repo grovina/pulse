@@ -41,9 +41,7 @@ from .modules import (
 from .modules.base import PhysiologyModule, compute_time_features
 from .modules.food import MealReader, meal_feature_table
 from .modules.gut import MealEvent
-from .knowledge.cohort_types import factor_index
 
-_FITNESS_COL = factor_index("fitness")
 
 # Iter 97: markers the integrator steps MULTIPLICATIVELY, `x·exp(rate·dt/x)`, so they
 # stay strictly positive along every trajectory (review 2026-09-04, items 3.5/3.7). The
@@ -262,6 +260,21 @@ def euler_step(
     return new_state
 
 
+class _CodeLinear(nn.Linear):
+    """A linear layer on the person code that never sees its last coordinate (the heart-rate
+    fitness, ``HR_FITNESS_COL``). Same parameters and state-dict keys as ``nn.Linear``; the
+    column is multiplied by a zero inside ``forward``, every other value passes bit for bit."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        mask = torch.ones(self.in_features, dtype=x.dtype, device=x.device)
+        mask[self.code_dim - 1] = 0.0
+        return super().forward(x * mask)
+
+    def __init__(self, in_features: int, out_features: int, code_dim: int) -> None:
+        super().__init__(in_features, out_features)
+        self.code_dim = code_dim
+
+
 class ModularPhysiologyNetwork(nn.Module):
     norm_center: torch.Tensor
     norm_scale: torch.Tensor
@@ -297,7 +310,7 @@ class ModularPhysiologyNetwork(nn.Module):
             "respiratory": 8,
         }
         self.embedding_projections = nn.ModuleDict({
-            name: nn.Linear(embedding_dim, dim)
+            name: _CodeLinear(embedding_dim, dim, embedding_dim)
             for name, dim in self._emb_dims.items()
         })
 
@@ -365,7 +378,7 @@ class ModularPhysiologyNetwork(nn.Module):
         # (σ(b) → 0). Zero-init output weights; biases give sleep_wake 0.5 and an awake
         # NEAT floor of 0.02 at cold start (so activity 0.01 — not 0.1).
         self.default_inputs_net = nn.Sequential(
-            nn.Linear(embedding_dim + TIME_FEATURES_DIM, 16), nn.Tanh(), nn.Linear(16, 2),
+            _CodeLinear(embedding_dim + TIME_FEATURES_DIM, 16, embedding_dim), nn.Tanh(), nn.Linear(16, 2),
         )
         with torch.no_grad():
             self.default_inputs_net[-1].weight.zero_()
@@ -659,7 +672,7 @@ class ModularPhysiologyNetwork(nn.Module):
             **{k: v.expand(batch) for k, v in self.metabolic.body_numbers().items()},
             # The person's fitness coordinate, in SD (a VO2max of 38 is 0, 47 is +1:
             # ``training.factors``). The heart-rate path reads it for its fitness gain.
-            "fitness_z": embedding[:, _FITNESS_COL],
+            "fitness_z": embedding[:, self.embedding_dim - 1],
         }
 
     @staticmethod

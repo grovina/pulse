@@ -23,7 +23,7 @@ from pulse.coupling_prior_loss import (
     normalized_sensitivity,
 )
 from pulse.knowledge.base import CouplingPrior
-from pulse.knowledge.cohort_types import CohortArmSpec
+from pulse.knowledge.cohort_types import CohortArmSpec, HR_FITNESS_COL
 from pulse.model import (
     ModularPhysiologyNetwork,
     _HeadBank,
@@ -416,6 +416,9 @@ def test_integrate_steps_whole_minutes_only() -> None:
 # the insulin setpoint and the doubled nutrient gain (glucose, insulin, observables).
 # Re-recorded on 2026-11-24 for the basal insulin at 0.65 of the centre and the stomach
 # that empties faster when full.
+# 2026-11-27: the person code's last coordinate is dropped by every layer (heart-rate fitness);
+# the test person has it zero and the goldens were re-recorded on the code before that change
+# with it zeroed (glucose of the fasted rows moved <=0.02 z, because the old code read it; the embedding gradient norms lose the dropped coordinate).
 _GOLDEN_MARKERS = (
     "glucose", "insulin", "cortisol", "hr", "temp", "gastric_carb", "intestinal_bile", "bile_acids")
 # 2026-11-25: glucose and insulin of the two fasting-ish rows moved by <=7e-5 z and the
@@ -427,22 +430,24 @@ _GOLDEN_MARKERS = (
 # 2026-11-26 (absorbed protein releases glucose): the two rows with meals moved in glucose
 # (+0.12 and +0.05 z) and insulin (+0.3 and +0.06 z); the fasting row did not.
 _GOLDEN_FINAL = [
-    [0.2586, 1.742048, 0.5355, 0.367344, -5.264549, 1.140749, 1.415008, 2.413065],
-    [-0.113105, -0.467253, -0.523336, -0.220051, -6.267051, 0, 0.545249, 0.997911],
-    [0.036729, 0.430885, -0.751938, 0.451104, -5.779737, 0.691236, 1.365832, 2.317763],
+    [0.273706, 1.730343, 0.53401, 0.378844, -5.326818, 1.140749, 1.415008, 2.413065],
+    [-0.114612, -0.467112, -0.523334, -0.220809, -6.265246, 0, 0.545249, 0.997911],
+    [0.023223, 0.435602, -0.751929, 0.441556, -5.744514, 0.691236, 1.365832, 2.317763],
 ]
-_GOLDEN_EMBEDDING_GRAD = [370.988, 371.781, 361.526]
+_GOLDEN_EMBEDDING_GRAD = [370.721, 371.65, 360.581]
 _GOLDEN_OBSERVABLES_T89 = [
-    [0, 3.667467, 0, 288.062439, 252.959106, 0.87814, 1.415027, 0.033011, 0.06344, 1],
-    [0, 1.85081, 0, 253.467453, 206.832016, 0.81601, 1.227671, 0.109386, 0.494446, 1],
-    [0, 2.545756, 92.266449, 281.087738, 241.129364, 0.857844, 1.374456, 0.044892, 0.100347, 1],
+    [0, 3.686572, 0, 287.874695, 252.72641, 0.877904, 1.41403, 0.033116, 0.062979, 1],
+    [0, 1.849867, 0, 253.481827, 206.84285, 0.816007, 1.22774, 0.1094, 0.494719, 1],
+    [0, 2.536469, 91.648621, 281.230316, 241.292572, 0.857989, 1.375198, 0.044746, 0.100964, 1],
 ]
 
 
 def test_a_rollout_keeps_the_trajectories_and_gradients_it_always_had() -> None:
     model = _live_model(21)
     steps = 240
-    emb = (0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(2))).requires_grad_(True)
+    emb = 0.3 * torch.randn(3, EMBEDDING_DIM, generator=torch.Generator().manual_seed(2))
+    emb[:, HR_FITNESS_COL] = 0.0      # the coordinate the model drops (2026-11-27; goldens re-recorded)
+    emb.requires_grad_(True)
     state = _states(3, 4)
     meals = [
         [MealEvent(time=10.0, carbs=50.0, fats=15.0, proteins=20.0),

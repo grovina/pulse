@@ -345,10 +345,9 @@ against iter 120 frozen on the same code with fitness off,
   0.63; insulin, rr and bhb level.
 - Validation 0.722, 0.734, 0.743 over the three epochs, so the guard kept
   epoch 0. A low lr does not stop the drift; it only slows it.
-- Fitness through the person embedding moves every head on a checkpoint
-  that saw fitness as noise (frozen, trained 0.588 to 0.599), and one
-  low-lr epoch does not recover it. If fitness is to enter, it should reach
-  only the HR path (`hr_fit_gain`), not the embedding coordinate.
+- Fitness through the person embedding moved every head on a checkpoint
+  that saw fitness as noise (frozen, trained 0.588 to 0.599). Fixed 2026-11-27: the
+  VO2max-set fitness now reaches only the HR path (see the fitness bullet above).
 - Iter 120 on current code, fitness off, stays the reference model. Two
   warm-started retrains and this probe say: spend on retraining waits
   until there is a reason to expect it to gain; frozen fixes continue.
@@ -917,8 +916,18 @@ not fixable frozen):
   `tests/test_corpus_gate_sweep.py` records it in `KNOWN_DEAD` (a strict test: it fails when the
   finding moves again), gates three small files by default, and sweeps every file with
   `PULSE_GATE_SWEEP=1` (about 25 CPU-minutes; run after a change to a module that moves a marker).
-  `training.factors.FITNESS_FROM_VO2MAX` (False) sets the fitness code from it
-  ((VO2max - 38) / 9); turn it on for the run with `train --fitness-from-vo2max` (default off;
+  `training.factors.FITNESS_FROM_VO2MAX` (False) sets the heart-rate fitness coordinate from it
+  ((VO2max - 38) / 9; since 2026-11-27 this is the person code's LAST coordinate,
+  `cohort_types.HR_FITNESS_COL`, which every layer that takes the code drops (`_CodeLinear`, same
+  state-dict keys), so only `body_quantities["fitness_z"]` -> `hr_fit_gain` reads it; the fitness
+  factor stays the population draw. Switch on with `hr_fit_gain` 0 is bit-identical in every
+  rollout; frozen iter 120 trained items equal the reference to 1e-5 relative (thread-count
+  rounding), where the embedding route moved 127. The teacher does not use the code: its
+  12 bpm/SD acts on its own latent (`PatientParams.fitness_z`, 0 for the median patient), so
+  teacher-based tests and tape are unchanged by the switch. Frozen iter 120, switch on, trained
+  items (1,294 common, glp1 out): gain 0 median 0.587 mean 0.965 unchanged, hr (105) 1.031 / 1.592;
+  gain 6 (half the teacher's) 0.591 / 0.971, hr 1.048 / 1.656; gain 12 (the teacher's) 0.592 / 0.977, hr 1.239 / 1.729. A fitness gain
+  makes the trained side worse, so the default stays 0 and sealed was not looked at); turn it on for the run with `train --fitness-from-vo2max` (default off;
   `train(fitness_from_vo2max=)` sets the module switch, the flag is in `train_config` and the
   checkpoint's top-level `fitness_from_vo2max`). Every loader that builds people reads it back:
   `diagnostics.probe.load_model_from_checkpoint` (so `scoreboard_for_checkpoint`, compare,
