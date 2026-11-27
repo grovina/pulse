@@ -181,7 +181,7 @@ includes these papers. A sealed number still never chooses.
 | `trainer-zw876` | 120, no teacher, meal-gated muscle share and epinephrine gate on basal insulin | 2026-11-22 | stopped by its 24 h deadline (2026-11-23 22:46 UTC) on image `e3ace61`, warm start from `iter119-insulin` (nutrient gain 1.79 doubled to 3.59 on load); output `training/jobs/iter120-mealsplit/`, whose final board equals its phase-2 board; approved by Gabriel, about $9 |
 | `trainer-2qvnr` | 121 (run D), no teacher, basal setpoint scale 0.65 and load-dependent gastric emptying | 2026-11-24 | stopped by its 24 h deadline (2026-11-25 13:06 UTC) on image `6496abe`, warm start from `iter120-mealsplit`; output `training/jobs/iter121-basal-gastric/`; approved by Gabriel, about $9 |
 | `trainer-qqb4f` | 122 (run E), no teacher, ketone glycogen threshold, breathing-rate papers, `--val-fraction 0.1` keeps the best validation epoch | 2026-11-25 | completed after 28 epochs in 20 h 57 min (2026-11-26 13:24 UTC) on image `d1ef4f2`; `model.pt` is epoch 1 (best validation), `model_last.pt` epoch 27; warm start from `iter120-mealsplit`; output `training/jobs/iter122-ketone-breath/`; approved by Gabriel, about $9 |
-| `trainer-69h6t` | 123 (probe), no teacher, low constant lr 0.0003, 3 phase-2 epochs, `--fitness-from-vo2max`, `--val-fraction 0.1`, frozen fixes 2e5ee62/21e6cf4/74f809b/0e1959f, slow HR state | 2026-11-26 | running on image `b66d400`, 4 h deadline, warm start from `iter120-mealsplit`; output `training/jobs/iter123-probe-lowlr/`; approved by Gabriel, about $1 |
+| `trainer-69h6t` | 123 (probe), no teacher, low constant lr 0.0003, 3 phase-2 epochs, `--fitness-from-vo2max`, `--val-fraction 0.1`, frozen fixes 2e5ee62/21e6cf4/74f809b/0e1959f, slow HR state | 2026-11-26 | completed 3 epochs in 4 h 12 min (2026-11-27) on image `b66d400`; `model.pt` is epoch 0 (best validation); warm start from `iter120-mealsplit`; output `training/jobs/iter123-probe-lowlr/`; approved by Gabriel at about $1; ran about $1.6 (longer than estimated) |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -327,6 +327,25 @@ cesaremarincola-2025 and gahreman-2016 hold 10 to 20 bpm above for 10 to 30
 minutes (the model's temperature, sympathetic tone and epinephrine all snap
 back inside 5 minutes of the last bout); that needs a slow post-exercise state
 in the heart-rate module.
+
+Iter 123 (probe), warm start from iter 120 on `b66d400` at a constant lr
+of 0.0003 for three epochs with `--fitness-from-vo2max` (2026-11-27;
+against iter 120 frozen on the same code with fitness off,
+`$S/fz/i120_b66d400.json`, sealed 0.713):
+
+- No gain. Sealed 0.713 to 0.743 on the whole board; on the 339 common
+  non-GLP-1 sealed items median 0.707 to 0.739, mean 1.012 to 1.058;
+  trained 0.587 to 0.593. Sealed glucose 0.66 to 0.79 and hr 0.52 to
+  0.63; insulin, rr and bhb level.
+- Validation 0.722, 0.734, 0.743 over the three epochs, so the guard kept
+  epoch 0. A low lr does not stop the drift; it only slows it.
+- Fitness through the person embedding moves every head on a checkpoint
+  that saw fitness as noise (frozen, trained 0.588 to 0.599), and one
+  low-lr epoch does not recover it. If fitness is to enter, it should reach
+  only the HR path (`hr_fit_gain`), not the embedding coordinate.
+- Iter 120 on current code, fitness off, stays the reference model. Two
+  warm-started retrains and this probe say: spend on retraining waits
+  until there is a reason to expect it to gain; frozen fixes continue.
 
 Iter 122 (run E), warm start from iter 120 on main with the ketone
 threshold, the breathing-rate papers and `--val-fraction 0.1` (2026-11-26;
