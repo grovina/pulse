@@ -91,8 +91,14 @@ retries (8 vCPU and 32 GiB until 2026-11-11).
 
 A step now spins up all of its people in one rollout and rolls its items in
 groups of similar horizon (`pulse/training/evidence_step.py`). A run writes a
-board at the end of each phase, and `--deadline-hours` stops it cleanly
-before the job's timeout. Iter 116 is the first run on this loop; it
+board at the end of each phase. `--deadline-hours` is a ceiling on the whole
+job, from process start: training stops before any step that would leave less than
+`--final-reserve-min` (45, or 1.25 times a measured phase board plus a validation,
+if longer) for the final validation, board and uploads, and launches go through
+`deploy/launch.sh --max-hours H`, which also sets the Cloud Run task timeout to H
+plus 10 minutes. Trainer-69h6t ran 4 h 12 min under `--deadline-hours=4` because
+the old check covered training only: its three epochs ended at 3 h 38 min, the
+board then took 34 minutes, and the task timeout was 26 h. Iter 116 is the first run on this loop; it
 finished in 23 h (Runs, below). It was launched without the open-direction pass and
 without the CGMacros ruler, whose memory on the smaller job has not been
 measured; both are owed on its checkpoint.

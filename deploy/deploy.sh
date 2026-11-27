@@ -63,9 +63,9 @@ gcloud builds submit "$ROOT" \
   --substitutions "_REGION=${REGION},_REPO=${REPO},_TAG=${TAG}"
 
 echo "==> Creating/updating trainer job (pinned to ${AR}/trainer:${TAG})"
-# Per-run hyperparameters are passed at execute time:
-#   gcloud run jobs execute trainer --region "$REGION" \
-#     --args=--gcs-bucket="$BUCKET",--gcs-object=training/jobs/<id>/model.pt
+# Launch runs with deploy/launch.sh --max-hours H -- <trainer args>: it sets the
+# per-execution task timeout to H hours + 10 min, so TASK_TIMEOUT below is only the
+# job's default and is not a cost bound.
 if gcloud run jobs describe trainer --project "$PROJECT" --region "$REGION" >/dev/null 2>&1; then
   verb=update
 else

@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .training.deadline import DEFAULT_FINAL_RESERVE_MIN, PROCESS_START, RunDeadline
+
 # Iter 67 follow-up: epoch-scoped watchdog. cxtcj (iter 67 first run)
 # went silent at phase 1 epoch 5 and stayed silent until Cloud Run
 # eventually killed the container ~90 min later — pure hang, no stderr,
@@ -539,6 +541,7 @@ def train(
     scoreboard: bool = True,
     scoreboard_identifiability: bool = True,
     deadline_hours: float = 0.0,
+    final_reserve_min: float = DEFAULT_FINAL_RESERVE_MIN,
     val_fraction: float = 0.0,
     val_every: int = 1,
     deterministic: bool = False,
@@ -785,8 +788,11 @@ def train(
     )
 
     last_good_path = output_path + ".last-good.pt"
-    train_start = time.time()
+    run_deadline = RunDeadline(
+        deadline_hours, reserve_min=final_reserve_min, started_at=_RUN_START, clock=_clock,
+    )
     stopped_for_deadline = False
+    step_s = 0.0  # seconds per step, from the last epoch and then the running one
     recent_metrics: list[dict[str, float]] = []
 
     cur_phase = 1
@@ -811,6 +817,11 @@ def train(
     evidence_p = evidence_probabilities(evidence_pool, evidence_paper_weighting)
     try:
         for epoch in range(start_epoch, total_epochs):
+            if epoch > start_epoch and run_deadline.must_stop(step_s):
+                _announce_deadline(run_deadline, epoch - 1, "before an epoch began")
+                stopped_for_deadline = True
+                epoch -= 1
+                break
             entering = epoch != start_epoch and (
                 (phased and epoch == phase_boundary)
                 or (phased and p3_epochs > 0 and epoch == p3_start)
@@ -832,6 +843,7 @@ def train(
                     )
 
             epoch_start = time.time()
+            epoch_start_c = _clock()
             if _WATCHDOG_TIMEOUT_S > 0:
                 faulthandler.dump_traceback_later(_WATCHDOG_TIMEOUT_S, repeat=False)
             model.train()
@@ -872,7 +884,16 @@ def train(
                 "dose_response": 0.0, "carb_mass_balance": 0.0,
             }
 
+            epoch_deadline_hit = False
+            steps_done = 0
             for _step in range(n_steps_default):
+                if _step > 0 and run_deadline.must_stop(
+                    (_clock() - epoch_start_c) / _step,
+                ):
+                    _announce_deadline(run_deadline, epoch, f"after {_step}/{n_steps_default} steps")
+                    epoch_deadline_hit = True
+                    break
+                steps_done += 1
                 # One rollout group's graph at a time: the evidence step backwards
                 # each group before rolling the next. Summing a batch of day-long
                 # arms before backward is what hit the memory limit.
@@ -941,6 +962,8 @@ def train(
 
             scheduler.step()
             elapsed = time.time() - epoch_start
+            if steps_done:
+                step_s = (_clock() - epoch_start_c) / steps_done
             mem = _memory_stats()
             evidence_mean = evidence_sum / n_items if n_items else 0.0
             rules_mean = rules_sum / n_rules if n_rules else 0.0
@@ -1024,6 +1047,7 @@ def train(
             if keeper is not None and ((epoch + 1) % val_every == 0 or epoch + 1 == total_epochs):
                 t_val = time.time()
                 score = validation_median_abs_z(model, val_specs)
+                run_deadline.note_validation(time.time() - t_val)
                 last_scored = epoch
                 kept = keeper.consider(epoch, score, model)
                 print(
@@ -1033,22 +1057,23 @@ def train(
                     flush=True,
                 )
 
-            if scoreboard and phased and epoch + 1 in phase_ends and epoch + 1 < total_epochs:
+            if epoch_deadline_hit:
+                stopped_for_deadline = True
+                break
+
+            if (
+                scoreboard and phased and epoch + 1 in phase_ends and epoch + 1 < total_epochs
+                and not run_deadline.must_stop(step_s)
+            ):
+                t_board = _clock()
                 _write_phase_board(
                     model, cur_phase, output_path, gcs_bucket, gcs_object,
                     previous=_previous_board(init_from or resume_from),
                 )
+                run_deadline.note_board(_clock() - t_board)
 
-            if (
-                deadline_hours > 0.0
-                and epoch + 1 < total_epochs
-                and time.time() + elapsed - train_start > deadline_hours * 3600.0
-            ):
-                print(
-                    f"[DEADLINE] stopping after epoch {epoch}: another epoch ({elapsed:.0f}s) "
-                    f"would end past {deadline_hours:g} h",
-                    flush=True,
-                )
+            if epoch + 1 < total_epochs and run_deadline.must_stop(step_s * n_steps_default):
+                _announce_deadline(run_deadline, epoch, "at the end of the epoch")
                 stopped_for_deadline = True
                 break
 
@@ -1296,6 +1321,15 @@ def train(
         board["validation"] = validation
         _write_board(board, output_path, gcs_bucket, gcs_object)
     return exit_code
+
+
+def _announce_deadline(deadline: RunDeadline, epoch: int, where: str) -> None:
+    print(
+        f"[DEADLINE] stopping {where} (epoch {epoch}): {deadline.remaining_s():.0f}s to the "
+        f"{deadline.hours:g} h ceiling, {deadline.reserve_s:.0f}s kept for the final "
+        f"validation, board, checkpoint and uploads",
+        flush=True,
+    )
 
 
 def score_on_board(
@@ -1725,6 +1759,7 @@ _RUN_PLUMBING_KEYS = frozenset({
     "benchmark_thresholds_uri", "benchmark_report_path", "benchmark_only",
     "frozen_ruler", "deterministic", "allow_spec_override", "torch_threads", "compile_steps",
     "init_from", "resume_from", "scoreboard", "scoreboard_identifiability", "deadline_hours",
+    "final_reserve_min",
 })
 
 
@@ -2378,10 +2413,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--deadline-hours", type=float, default=0.0,
-        help="Stop training cleanly, and go on to the end-of-run board, checkpoint and upload, "
-             "when the projected end of the next epoch (at the last epoch's duration) passes "
-             "this many hours after training began. 0 = no deadline. Set it below the task "
-             "timeout by the time the end-of-run scoring takes.",
+        help="Ceiling on the whole job, in hours from process start: training stops (checked "
+             "before every step) while --final-reserve-min remains for the final validation, "
+             "board, checkpoint and uploads, and the best checkpoint so far is saved and "
+             "uploaded. 0 = no deadline. deploy/launch.sh sets this with a Cloud Run task "
+             "timeout just past it.",
+    )
+    parser.add_argument(
+        "--final-reserve-min", type=float, default=DEFAULT_FINAL_RESERVE_MIN,
+        help="Minutes kept after training stops for the end-of-run board (34 min measured "
+             "on 4 vCPU), saves and uploads. A phase board's measured time, when longer, wins.",
     )
     parser.add_argument(
         "--frozen-ruler", type=str, default=None,
@@ -2444,6 +2485,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
 
     return parser
+
+
+_clock = time.time  # the deadline's clock; tests replace it
+_RUN_START = PROCESS_START  # when this process began, for the same reason
 
 
 def main():
@@ -2597,6 +2642,7 @@ def main():
         scoreboard=args.scoreboard,
         scoreboard_identifiability=args.scoreboard_identifiability,
         deadline_hours=args.deadline_hours,
+        final_reserve_min=args.final_reserve_min,
         val_fraction=args.val_fraction,
         val_every=args.val_every,
         deterministic=args.deterministic,

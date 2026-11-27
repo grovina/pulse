@@ -67,3 +67,54 @@ def test_no_deadline_runs_every_epoch(monkeypatch, tmp_path) -> None:
         monkeypatch, tmp_path, "--phase1-epochs=1", "--phase2-epochs=1", "--n-epochs=2",
     )
     assert torch.load(out, weights_only=False)["stopped_for_deadline"] is False
+
+
+class _Clock:
+    """A clock that moves only when the fake work says so."""
+
+    def __init__(self) -> None:
+        self.now = 1_000_000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_the_ceiling_covers_the_final_scoring_with_a_reserve(monkeypatch, tmp_path) -> None:
+    from pulse.training import deadline as dl
+
+    clock = _Clock()
+    monkeypatch.setattr(train, "_clock", clock)
+    monkeypatch.setattr(train, "_RUN_START", clock.now)
+
+    hours = 1.0
+    ceiling = 1_000_000.0 + hours * 3600.0 - dl.STARTUP_ALLOWANCE_S
+    finished = {}
+
+    # Every step costs 100 s; the final board costs 34 min.
+    real_accumulate = train.accumulate_grad
+
+    def slow_step(*a, **k):
+        clock.now += 100.0
+        return real_accumulate(*a, **k)
+
+    def board(model, *, previous, identifiability):
+        clock.now += 34 * 60.0
+        finished["at"] = clock.now
+        return {}
+
+    monkeypatch.setattr(train, "accumulate_grad", slow_step)
+    monkeypatch.setattr(train, "score_on_board", board)
+    monkeypatch.setattr(train, "_upload_to_gcs", lambda *a: None)
+    out = tmp_path / "m.pt"
+    monkeypatch.setattr(sys, "argv", [
+        "train", *[f for f in _TINY if not f.startswith("--steps-per-epoch")],
+        "--steps-per-epoch=10", "--phase1-epochs=0", "--phase2-epochs=50", "--n-epochs=50",
+        "--teacher-tape-weight=0", f"--output-path={out}", "--gcs-bucket=b",
+        "--gcs-object=run/m.pt", f"--deadline-hours={hours}", "--final-reserve-min=40",
+    ])
+    train.main()
+    ckpt = torch.load(out, weights_only=False)
+    assert ckpt["stopped_for_deadline"] is True
+    # Stopped inside an epoch's steps, with the reserve still in hand, and the board that
+    # then took 34 minutes ended before the ceiling.
+    assert finished["at"] <= ceiling

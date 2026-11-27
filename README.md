@@ -56,6 +56,7 @@ uv sync --no-default-groups --group gpu
   a FastAPI `server.py`.
 - `scripts/` — standalone analysis + ingestion tools (run with `uv run`).
 - `deploy/` — Cloud Run deploy (`engine` service + `trainer` job): `setup-gcp.sh`,
+  `launch.sh` (starts a run under a required `--max-hours` ceiling),
   `cloudbuild.yaml`, `deploy.sh`. Hardware/cloud-agnostic, parameterized via env.
 - `docs/` — design and history (below).
 

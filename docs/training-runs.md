@@ -24,13 +24,18 @@ local.
    (`TRAINER_CPU`, `TRAINER_MEMORY`, `TASK_TIMEOUT`). An epoch is as fast at
    4 vCPU as at 8 and 1.7 times slower at 2, and a run peaks near 5.3 GB
    (iter 116's recipe, 2026-11-11), so this is the smallest size at full
-   speed. Cap a run's cost at launch with `--task-timeout` on the execution
-   and `--deadline-hours` in its arguments.
-2. **Run** — execute with per-run flag overrides:
+   speed.
+2. **Run** — launch with `deploy/launch.sh`, which requires `--max-hours H` as the
+   ceiling on billed time (`--dry-run` prints the command and the cost bound):
    ```bash
-   gcloud run jobs execute trainer --region europe-west1 \
-     --args=--spec=train/spec.json,--gcs-bucket=<bucket>,--gcs-object=training/jobs/<id>/model.pt
+   bash deploy/launch.sh --max-hours 4 -- \
+     --spec=train/spec.json --gcs-bucket=<bucket> --gcs-object=training/jobs/<id>/model.pt
    ```
+   It passes `--deadline-hours=H` to the trainer (the whole job, final board and
+   uploads included, ends by H hours after process start; training stops before
+   every step that would eat the `--final-reserve-min` kept for them) and sets
+   the Cloud Run task timeout to H hours plus 10 minutes, so the platform kills
+   the task at the ceiling even if the code misbehaves.
    Results land in `gs://<bucket>/training/jobs/<id>/`. List/inspect executions
    with `gcloud run jobs executions list --job=trainer --region=europe-west1`;
    logs stream to Cloud Logging. After a run, compare against a prior job with
