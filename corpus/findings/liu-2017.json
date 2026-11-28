@@ -1,0 +1,346 @@
+{
+  "paper": "liu-2017",
+  "citation": {
+    "authors": "Liu X, Hill AM, West SG, et al.",
+    "title": "Acute Peanut Consumption Alters Postprandial Lipids and Vascular Responses in Healthy Overweight or Obese Men",
+    "journal": "The Journal of Nutrition",
+    "year": 2017,
+    "doi": "10.3945/jn.116.246785",
+    "pmid": "28356431",
+    "pmcid": "PMC5404215"
+  },
+  "population": {
+    "n": 15,
+    "sex": "male",
+    "age_years": {
+      "mean": 26.7,
+      "sd": 6.197,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 31.4,
+      "sd": 3.098,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "15 generally healthy overweight or obese men (Methods, Participants: enrolled at BMI 28 to 39 and aged 20 to 65 y, free of diabetes, CVD and other metabolic disease; Results: 40% overweight, 60% obese). Screening was by fasting glucose below 99 mg/dL, fasting TG, LDL, blood pressure and history, not by an oral glucose test, so the group is unselected. Age 26.7 +/- 1.6 and BMI 31.4 +/- 0.8 are printed as means +/- SEM (Table 2, n = 15); sd is SEM x sqrt(15) = 6.197 and 3.098, computed here. Min and max are not printed."
+  },
+  "protocols": [
+    {
+      "name": "control_shake",
+      "description": "Control shake of 1229 kcal (Table 1: 24.8% carbohydrate, 64.7% fat, 8.4% protein, 8.2 g fiber; shake of 34.8 g glucose, 150 g heavy whipping cream, 39 g chocolate syrup, 20 g sunflower oil, 17 g safflower oil, 27 g powdered egg white, 9.6 g fiber supplement), consumed within 15 min after the fasting (10-12 h) baseline sample at minute 0; liquid (a shake). Grams from the printed energy and percentages: carbohydrate 1229 x 0.248 / 4 = 76.2 g, less the printed 8.2 g fiber = 68.0 g (the paper names no diet software and does not say whether its carbohydrate % includes fiber; taken as total carbohydrate, as on US labels, so the README's subtraction applies); fat 1229 x 0.647 / 9 = 88.4 g; protein 1229 x 0.084 / 4 = 25.8 g. Start hour 8.0 is not printed. Prefast 11 h is the midpoint of the printed 10-12 h fast (the README has no rule for a printed range). Samples at 0, 30, 60, 120 and 240 min. Serum glucose and insulin (Quest Diagnostics Chem 24 panel on serum), n = 15.",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 68.0,
+          "fat_g": 88.4,
+          "protein_g": 25.8,
+          "fibre_g": 8.2,
+          "form": "liquid",
+          "food": "shake: glucose, whipping cream, chocolate syrup, oils, egg white"
+        }
+      ],
+      "prefast_hours": 11,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "peanut_shake",
+      "description": "Peanut shake of 1198 kcal (Table 1 and Methods: 25.9% carbohydrate, 66.2% fat, 8.5% protein, 8.2 g fiber; 34.8 g glucose, 137 g heavy whipping cream, 39 g chocolate syrup and 85 g (3.0 ounces) ground peanuts with skins), consumed within 15 min after the fasting (10-12 h) baseline sample at minute 0; liquid (a shake). The abstract prints 40.0% carbohydrate, 47.7% fat, 13.2% protein for this shake; Table 1, the Methods sentence on the shake and the paper's statement that the shakes were matched for carbohydrate and saturated fat with the control (control 24.8% of 1229 kcal) agree with each other and not with the abstract, so Table 1 is used. Grams: carbohydrate 1198 x 0.259 / 4 = 77.6 g, less the printed 8.2 g fiber = 69.4 g (same fiber assumption as the control arm); fat 1198 x 0.662 / 9 = 88.1 g; protein 1198 x 0.085 / 4 = 25.5 g. Start hour 8.0 is not printed. Prefast 11 h is the midpoint of the printed 10-12 h fast. Samples at 0, 30, 60, 120 and 240 min. Serum glucose and insulin, n = 15.",
+      "duration_min": 241,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 69.4,
+          "fat_g": 88.1,
+          "protein_g": 25.5,
+          "fibre_g": 8.2,
+          "form": "liquid",
+          "food": "shake: glucose, cream, chocolate syrup, 85 g ground peanuts"
+        }
+      ],
+      "prefast_hours": 11,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "control_glucose_curve",
+      "description": "Serum glucose after the control shake, mean and SEM, at 0, 120 and 240 min (Table 3, control meal block; the 30 and 60 min values are left out, see left_out)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "control_shake"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 88.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.2,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 88.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.9,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 93.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.14,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, control test meal block, row 'Glucose, mg/dL' (columns 0, 120, 240 min); footnote: 'Values are means +/- SEMs. n = 15.'",
+        "quote": "Glucose, mg/dL | 88.7 ± 1.2 103.2 ± 2.3 99.8 ± 4.1 88.2 ± 3.9 93.4 ± 3.14"
+      }
+    },
+    {
+      "id": "control_insulin_curve",
+      "description": "Serum insulin after the control shake, mean and SEM, at 0, 30, 60, 120 and 240 min (Table 3, control meal block)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "control_shake"
+      ],
+      "unit": "μU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 6.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.82,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 30.78,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.24,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 36.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 6.9,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 24.8,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.2,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 13.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.1,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, control test meal block, row 'Insulin, μU/mL' (columns 0, 30, 60, 120, 240 min); footnote: 'Values are means +/- SEMs. n = 15.'",
+        "quote": "Insulin, μU/mL | 6.3 ± 0.82 30.78 ± 6.24 36.7 ± 6.9 24.8 ± 4.2 13.2 ± 1.1"
+      }
+    },
+    {
+      "id": "peanut_glucose_curve",
+      "description": "Serum glucose after the peanut shake, mean and SEM, at 0, 120 and 240 min (Table 3, peanut meal block; the 30 and 60 min values are left out, see left_out)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "peanut_shake"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 86.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.73,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 99.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.61,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 88.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.9,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, peanut test meal block, row 'Glucose, mg/dL' (columns 0, 120, 240 min); footnote: 'Values are means +/- SEMs. n = 15.'",
+        "quote": "Glucose, mg/dL | 88.7 ± 1.2 103.2 ± 2.3 99.8 ± 4.1 88.2 ± 3.9 93.4 ± 3.14 86.3 ± 1.73 103.2 ± 2.3 99.8 ± 4.1 99.9 ± 3.61 88.9 ± 1.9"
+      }
+    },
+    {
+      "id": "peanut_insulin_curve",
+      "description": "Serum insulin after the peanut shake, mean and SEM, at 0, 30, 60, 120 and 240 min (Table 3, peanut meal block)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "peanut_shake"
+      ],
+      "unit": "μU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 5.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.82,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 46.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 8.7,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 35.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 5.9,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 29.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.5,
+            "n": 15
+          }
+        },
+        {
+          "t_min": 240,
+          "value": 12.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.7,
+            "n": 15
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 3, peanut test meal block, row 'Insulin, μU/mL' (columns 0-240 min); footnote: 'Values are means +/- SEMs. n = 15.'",
+        "quote": "Insulin, μU/mL | 6.3 ± 0.82 30.78 ± 6.24 36.7 ± 6.9 24.8 ± 4.2 13.2 ± 1.1 5.2 ± 0.82 46.3 ± 8.7 35.2 ± 5.9 29.4 ± 4.5 12.9 ± 1.7"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "serum glucose at 30 and 60 min, both arms (Table 3): the control and peanut cells are identical to the digit, 103.2 +/- 2.3 and 99.8 +/- 4.1, in a crossover with different glucose and insulin elsewhere in the row; one arm's cells look copied from the other, the text does not say which (it says only that responses were similar) and the figures are not in the text, so neither arm's values are entered",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "serum triacylglycerol, both meals, 0-240 min (Table 3; labelled mmol/L, values are mg/dL per the Results text), and the 4-h TG iAUC and its 31.9% reduction against control (Results); screening TG (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "HDL-C, LDL-C, total and non-HDL cholesterol, both meals, 0-240 min (Table 3); screening values (Table 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "TG-to-HDL-C ratio, both meals, 0-240 min (Table 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "C-reactive protein, both meals, 0-240 min (Table 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "c_reactive_protein"
+      }
+    },
+    {
+      "what": "flow-mediated dilatation at 0 and 240 min after each meal (Results: control -1.2% +/- 0.5%, peanut -0.6% +/- 0.5%; Figures 2 and 3)",
+      "missing": {
+        "kind": "marker",
+        "name": "flow_mediated_dilation"
+      }
+    },
+    {
+      "what": "screening plasma glucose 92.5 +/- 0.7 mg/dL (Table 2): the food state before the screening visit is not printed",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "screening systolic 125 +/- 2 and diastolic 83 +/- 1 mm Hg (Table 2): posture and time of measurement not printed",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    }
+  ]
+}
