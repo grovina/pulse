@@ -132,3 +132,51 @@ def test_checkpoint_round_trip(monkeypatch, tmp_path):
     torch.save(old, tmp_path / "old.pt")
     load_model_from_checkpoint(tmp_path / "old.pt")
     assert incretin.INCRETIN_AT_GLUCOSE is False
+
+
+def test_gain_nonneg_clamps_after_every_step_and_zero_init_is_reachable():
+    gain = torch.nn.Parameter(torch.zeros(()))
+    other = torch.nn.Parameter(torch.ones(()))
+    opt = torch.optim.Adam([gain, other], lr=0.1)
+    incretin.hold_incretin_gain_nonneg(opt, gain)
+    assert float(gain) == 0.0
+    for _ in range(3):                                   # loss pushes the gain down
+        opt.zero_grad()
+        (gain * 5.0 + other).backward()
+        opt.step()
+        assert float(gain) == 0.0
+    assert float(other) < 1.0                            # the hook leaves other parameters alone
+    for _ in range(3):                                   # pushing up leaves 0 at once
+        opt.zero_grad()
+        (-gain * 5.0).backward()
+        opt.step()
+    assert float(gain) > 0.0
+    with torch.no_grad():
+        gain.fill_(-0.5)
+    opt.zero_grad(); (gain * 0.0).backward(); opt.step()
+    assert float(gain) >= 0.0
+
+
+def test_gain_nonneg_flag_and_checkpoint(monkeypatch, tmp_path):
+    import pulse.train as train_mod
+    parser = train_mod.build_arg_parser()
+    assert parser.parse_args([]).incretin_gain_nonneg is False
+    assert parser.parse_args(["--incretin-gain-nonneg"]).incretin_gain_nonneg is True
+    monkeypatch.setattr(train_mod, "_WATCHDOG_TIMEOUT_S", 0)
+    prev = torch.get_num_threads()
+    out = tmp_path / "m.pt"
+    try:
+        code = train_mod.train(
+            n_patients=2, n_epochs=1, hidden_dim=8, windows_per_patient=1, n_days=1, seed=42,
+            coupling_prior_weight=0.0, verifier_loss_weight=0.0, cohort_statistic_weight=0.0,
+            setpoint_supervision_weight=0.5, embedding_prior_weight=0.001,
+            contribution_weights={"full_body": 1.0}, output_path=str(out), scoreboard=False,
+            incretin_at_glucose=True, incretin_gain_nonneg=True,
+            train_only="metabolic.*incretin_glu_*",
+        )
+    finally:
+        torch.set_num_threads(prev)
+    assert code == 0
+    ckpt = torch.load(out, map_location="cpu", weights_only=False)
+    assert ckpt["incretin_gain_nonneg"] is True
+    assert float(ckpt["model_state"]["metabolic.incretin_glu_gain"]) >= 0.0

@@ -570,6 +570,13 @@ frozen at b66d400 (GLP-1 excluded):
   and validation's median did not move. A rerun with the gain held at or above 0 is the
   clean test of the soma term.
 
+`--incretin-gain-nonneg` (2026-11-28, off by default, recorded in the checkpoint as
+`incretin_gain_nonneg`) holds `metabolic.incretin_glu_gain` at or above 0: a post-step hook on
+every Adam optimizer clamps it, so the zero start is reachable with a gradient (a softplus of a
+raw number cannot sit at 0). A step toward negative lands on 0. Rerun of iter 125 = the same
+islet run plus `--incretin-gain-nonneg` (with `--incretin-at-glucose`,
+`--train-only 'metabolic.*incretin_glu_*'` and the other islet scalars).
+
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
 

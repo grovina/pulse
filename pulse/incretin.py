@@ -206,6 +206,17 @@ def set_incretin_at_glucose(on: bool) -> None:
     INCRETIN_AT_GLUCOSE = bool(on)
 
 
+def hold_incretin_gain_nonneg(optimizer: torch.optim.Optimizer, gain: torch.nn.Parameter) -> None:
+    """After every step of ``optimizer``, clamp ``gain`` to at least 0 (``--incretin-gain-nonneg``).
+    A clamp, not a softplus: the gain starts at exactly 0 and a softplus of a raw number cannot sit
+    there with a gradient. A step that would go negative lands on 0 and the next one can leave."""
+    def _clamp(*_args, **_kwargs) -> None:
+        with torch.no_grad():
+            gain.clamp_(min=0.0)
+    optimizer.register_step_post_hook(_clamp)
+    _clamp()
+
+
 def incretin_at_glucose_t(
     incretin: torch.Tensor, fasted_incretin: torch.Tensor, glucose: torch.Tensor,
     gain: torch.Tensor, threshold: torch.Tensor, width: torch.Tensor,

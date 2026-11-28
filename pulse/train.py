@@ -132,7 +132,7 @@ from .correction import shrinkage_of
 from .training.evidence_step import (
     PAPER_WEIGHTINGS, EvidenceTerm, accumulate_evidence_step, evidence_probabilities, sample_evidence,
 )
-from .incretin import set_incretin_at_glucose
+from .incretin import hold_incretin_gain_nonneg, set_incretin_at_glucose
 from .training.factors import reference_prior_stats, set_fitness_from_vo2max, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
@@ -651,6 +651,7 @@ def train(
     train_only: str | None = None,
     train_only_lr: str | None = None,
     incretin_at_glucose: bool = False,
+    incretin_gain_nonneg: bool = False,
 ):
     _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
     set_fitness_from_vo2max(fitness_from_vo2max)
@@ -839,6 +840,8 @@ def train(
 
     scheduler_T = phase_boundary if phased else total_epochs
     optimizer = _make_adam(params, lr, lr_mults)
+    if incretin_gain_nonneg:
+        hold_incretin_gain_nonneg(optimizer, model.metabolic.incretin_glu_gain)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=scheduler_T, eta_min=lr * 0.05,
     )
@@ -864,6 +867,8 @@ def train(
             done = epoch_now
         cur_phase = phase
         optimizer = _make_adam(params, lr_now, lr_mults)
+        if incretin_gain_nonneg:
+            hold_incretin_gain_nonneg(optimizer, model.metabolic.incretin_glu_gain)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=max(t_max, 1), eta_min=eta,
         )
@@ -1394,6 +1399,7 @@ def train(
         "fitness_from_vo2max": bool(fitness_from_vo2max),
         # Read back by every loader (it sets the incretin module's switch the same way).
         "incretin_at_glucose": bool(incretin_at_glucose),
+        "incretin_gain_nonneg": bool(incretin_gain_nonneg),
         # None = every parameter trained; else the fnmatch patterns that chose the trained ones.
         "train_only": list(train_only_patterns) if train_only_patterns else None,
         "train_only_lr": train_only_lr or None,
@@ -2287,6 +2293,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--incretin-gain-nonneg",
+        dest="incretin_gain_nonneg",
+        action="store_true",
+        help=(
+            "Clamp metabolic.incretin_glu_gain to at least 0 after every optimizer step, so the "
+            "soma-shaped term can only add insulin (iter 125's free gain went to -0.47). Needs the "
+            "gain trained (--train-only 'metabolic.*incretin_glu_*'); off by default. Recorded in "
+            "the checkpoint."
+        ),
+    )
+    parser.add_argument(
         "--train-only",
         dest="train_only",
         type=str,
@@ -2810,6 +2827,7 @@ def main():
         train_only=args.train_only,
         train_only_lr=args.train_only_lr,
         incretin_at_glucose=args.incretin_at_glucose,
+        incretin_gain_nonneg=args.incretin_gain_nonneg,
     )
 
     if exit_code != 0:
