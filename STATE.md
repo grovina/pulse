@@ -16,7 +16,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Parameters | 37,296 at the default widths |
 | Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
-| Cohort specs | 1255 authored, 150 of them curves; 1341 training points and 352 held-out points |
+| Cohort specs | 1258 authored, 150 of them curves; 1344 training points and 352 held-out points |
 | Rules | 62 training, 0 held out |
 | Coupling priors | 32 |
 | Papers | 209, of which 34 are sealed |

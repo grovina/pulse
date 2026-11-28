@@ -149,6 +149,84 @@
         "where": "Table 2, column 'WE (n=23)', row 'Fasting GIP'; GIP assayed as total (Methods, Biochemical analyses)",
         "quote": "Fasting GIP (ng/L) | 202.5 (69.7)"
       }
+    },
+    {
+      "id": "mmtt_fasting_insulin_gm",
+      "description": "Fasting serum insulin, WE men, geometric mean and 95% CI (log-transformed): the two MMTT fasting samples, read as the arm's run-in",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "mmtt_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 11
+      },
+      "value": 54.5,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 42.3,
+        "high": 70.1,
+        "level": 95,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 2, column 'WE (n=23)', row 'Fasting insulin'; footnote 'geometric mean (95% CI) ... for log-transformed data', mark 'Log-transformed'",
+        "quote": "Fasting insulin (pmol/L)‡ | 54.5 (42.3, 70.1)"
+      }
+    },
+    {
+      "id": "mmtt_fasting_glucagon_gm",
+      "description": "Fasting glucagon, WE men, geometric mean and 95% CI (log-transformed): the two MMTT fasting samples, read as the arm's run-in",
+      "marker": "glucagon",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "mmtt_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 11
+      },
+      "value": 70.2,
+      "unit": "ng/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 57.3,
+        "high": 86.1,
+        "level": 95,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 2, column 'WE (n=23)', row 'Fasting glucagon'; footnote 'geometric mean (95% CI) ... for log-transformed data', mark 'Log-transformed'",
+        "quote": "Fasting glucagon (ng/L)‡ | 70.2 (57.3, 86.1)"
+      }
+    },
+    {
+      "id": "mmtt_fasting_nefa_gm",
+      "description": "Fasting NEFAs, WE men, geometric mean and 95% CI (log-transformed): the two MMTT fasting samples, read as the arm's run-in",
+      "marker": "ffa",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "mmtt_fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 11
+      },
+      "value": 0.42,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 0.33,
+        "high": 0.54,
+        "level": 95,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 2, column 'WE (n=23)', row 'Fasting NEFAs'; footnote 'geometric mean (95% CI) ... for log-transformed data', mark 'Log-transformed'",
+        "quote": "Fasting NEFAs (mmol/L)‡ | 0.42 (0.33, 0.54)"
+      }
     }
   ],
   "left_out": [
@@ -167,21 +245,21 @@
       }
     },
     {
-      "what": "fasting insulin and insulin iAUC 0-180 min, WE (Table 2, log-transformed: geometric mean with 95% CI)",
+      "what": "insulin iAUC 0-180 min, WE 40.9 (31.2, 53.4) x10^3 pmol/L x 180 min (Table 2, log-transformed): an incremental area (baseline-subtracted per person) is not a geometric area of the marker",
       "missing": {
         "kind": "operator",
         "name": "geometric_mean"
       }
     },
     {
-      "what": "fasting C-peptide, fasting NEFAs, and iAUC glucose 0-180 min, WE (Table 2, log-transformed: geometric mean with 95% CI)",
+      "what": "fasting C-peptide, WE 1.82 (1.48, 2.23) nmol/L (Table 2, log-transformed geometric mean with 95% CI): C-peptide is not a marker the model has; and iAUC glucose 0-180 min, WE 96.8 (63.1, 148.4) (incremental area, not a geometric area of the marker)",
       "missing": {
-        "kind": "operator",
-        "name": "geometric_mean"
+        "kind": "marker",
+        "name": "c_peptide"
       }
     },
     {
-      "what": "fasting glucagon, iAUC glucagon 30 and 180 min, iAUC GIP 0-180 min, WE (Table 2, log-transformed: geometric mean with 95% CI)",
+      "what": "iAUC glucagon 30 and 180 min and iAUC GIP 0-180 min, WE (Table 2, log-transformed geometric means with 95% CI): incremental areas (baseline-subtracted per person) are not geometric areas of the marker",
       "missing": {
         "kind": "operator",
         "name": "geometric_mean"
@@ -195,7 +273,7 @@
       }
     },
     {
-      "what": "fasting GLP-1 16.8 (SD 8.5) pmol/L and iAUC GLP-1 0-180 min, WE (Table 2): a lone fasting level and an absolute area, both assay-dependent; the model reads GLP-1 only as a ratio to its own baseline, and no change from baseline is printed",
+      "what": "fasting GLP-1 16.8 (SD 8.5) pmol/L and iAUC GLP-1 0-180 min, WE (Table 2): a lone fasting level and an absolute area, both assay-dependent; the model reads GLP-1 only as a ratio to its own baseline, and no change from baseline is printed; iAUC GLP-1 is also an incremental area, WE 1580.9 (1232.3, 2028.6), log-transformed",
       "missing": {
         "kind": "source",
         "name": "assay_dependent_level"
