@@ -1,0 +1,30 @@
+{
+ "paper": "gravesteijn-2021",
+ "citation": "Gravesteijn E, et al. Dietary Macronutrients Do Not Differently Influence Postprandial Serum and Plasma Brain-Derived Neurotrophic Factor Concentrations. Front Neurosci 2021.",
+ "doi": "10.3389/fnins.2021.774915",
+ "pmid": "34992516",
+ "pmcid": "PMC8724042",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Overnight fast; three 953 kcal meals (high fat 52.3/39.2/8.0, high carbohydrate 9.6/81.5/8.6, high protein 10.6/51.5/36.9 energy % fat/carbohydrate/protein); samples 0, 15, 30, 45, 60, 90, 120, 240 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=18 healthy overweight/obese men",
+ "population_class": "mixed",
+ "reports": [
+  {
+   "marker": "glucose",
+   "where": "Table 5 (iAUC and maximum rise over 240 min)",
+   "form": "table"
+  },
+  {
+   "marker": "insulin",
+   "where": "Table 5 (iAUC and maximum rise over 240 min)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "range",
+ "figure_only": false,
+ "note": "Three equicaloric meals with a printed composition, 240 min. Table 5 appears to print medians with ranges for iAUC and maximum rise, not means; check, and note that no concentration at 240 min may be tabulated."
+}

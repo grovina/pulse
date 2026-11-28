@@ -1,0 +1,30 @@
+{
+ "paper": "liu-2017",
+ "citation": "Liu X, et al. Acute Peanut Consumption Alters Postprandial Lipids and Vascular Responses in Healthy Overweight or Obese Men. J Nutr 2017.",
+ "doi": "10.3945/jn.116.246785",
+ "pmid": "28356431",
+ "pmcid": "PMC5404215",
+ "licence": "Free access (J Nutr licence)",
+ "licence_url": null,
+ "protocol": "Overnight fast (10-12 h); shake meal of 1198 kcal (40.0% carbohydrate, 47.7% fat, 13.2% protein; peanut vs energy- and macronutrient-matched control), crossover; samples 0, 30, 60, 120, 240 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=15 healthy overweight/obese men, mean age 26.7 y, mean BMI 31.4",
+ "population_class": "mixed",
+ "reports": [
+  {
+   "marker": "glucose",
+   "where": "Table 3 (0-240 min, both meals)",
+   "form": "table"
+  },
+  {
+   "marker": "insulin",
+   "where": "Table 3 (0-240 min, both meals)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sem",
+ "figure_only": false,
+ "note": "Both curves to 240 min in a table with SEM and a printed large mixed meal; the control shake is the macronutrient-matched arm. BMI is above 30, so a reader should enter it as the paper's population, not as lean."
+}

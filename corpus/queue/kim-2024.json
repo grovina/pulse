@@ -1,0 +1,30 @@
+{
+ "paper": "kim-2024",
+ "citation": "Kim M, et al. Effect of Barley on Postprandial Blood Glucose Response and Appetite in Healthy Individuals: A Randomized, Double-Blind, Placebo-Controlled Trial. Nutrients 2024.",
+ "doi": "10.3390/nu16223899",
+ "pmid": "39599684",
+ "pmcid": "PMC11597105",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Fasted; barley dietary fiber product (about 577 kcal per serving, 106 g carbohydrate, 26 g protein) or rice-flour placebo; samples 0, 30, 60, 120, 180 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=67 healthy Korean adults, fasting glucose below 126 mg/dL",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "glucose",
+   "where": "Table 2 (0-180 min)",
+   "form": "table"
+  },
+  {
+   "marker": "insulin",
+   "where": "Table 2 (0-180 min)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sem",
+ "figure_only": false,
+ "note": "Glucose and insulin by minute in one table, n=67, to 180 min. The placebo arm's energy and macronutrients need checking in the methods; the barley arm is a fibre product, not an ordinary mixed meal."
+}

@@ -1,0 +1,25 @@
+{
+ "paper": "ladwa-2021",
+ "citation": "Ladwa M, et al. Ethnic differences in beta cell function occur independently of insulin sensitivity and pancreatic fat in black and white men. BMJ Open Diabetes Res Care 2021.",
+ "doi": "10.1136/bmjdrc-2020-002034",
+ "pmid": "33762314",
+ "pmcid": "PMC7993168",
+ "licence": "CC BY-NC 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+ "protocol": "Mixed meal tolerance test after an overnight fast, samples 0 to 180 min (10, 20, 30, 40, 50, 60, 75, 90, 120, 150, 180) for glucose, C-peptide, insulin, glucagon, NEFA",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=23 white European and n=23 black West African men, normal glucose tolerance, BMI about 26.6",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "glucose, insulin, C-peptide",
+   "where": "Table 2 (fasting values and 180 min areas)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sd",
+ "figure_only": false,
+ "note": "C-peptide and insulin with secretion modelling, two ethnic groups; meal composition needs checking in the methods and the table is mostly areas."
+}

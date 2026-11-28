@@ -1,0 +1,30 @@
+{
+ "paper": "dale-2018",
+ "citation": "Dale HF, et al. Effect of a cod protein hydrolysate on postprandial glucose metabolism in healthy subjects: a double-blind cross-over trial. J Nutr Sci 2018.",
+ "doi": "10.1017/jns.2018.23",
+ "pmid": "30524707",
+ "pmcid": "PMC6277920",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Fasted; breakfast of 80 g bread, 10 g margarine, 20 g jam, 20 g cheese (355 kcal, 41 g carbohydrate, 12.5 g protein, 15 g fat) plus a casein control drink (about 145 kcal, 36 g carbohydrate) or cod hydrolysate drink; samples every 20 min to 180 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=41 healthy middle-aged to elderly men and women",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "glucose",
+   "where": "Table 4 (0-180 min, both arms)",
+   "form": "table"
+  },
+  {
+   "marker": "insulin",
+   "where": "Table 4 (0-180 min, both arms)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sd",
+ "figure_only": false,
+ "note": "Printed breakfast composition, SD in a table at every 20 min to 180 min; use the casein control arm. Insulin is skewed: the table also gives log means, so say which is entered."
+}

@@ -1,0 +1,25 @@
+{
+ "paper": "stewart-2018",
+ "citation": "Stewart ML, et al. Type-4 Resistant Starch in Substitution for Available Carbohydrate Reduces Postprandial Glycemic Response and Hunger in Acute, Randomized, Double-Blind, Controlled Study. Nutrients 2018.",
+ "doi": "10.3390/nu10020129",
+ "pmid": "29373530",
+ "pmcid": "PMC5852705",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Fasted; control scone (328 kcal, 16 g fat, 7.1 g protein) or fibre scone (270 kcal) with 240 mL water; venous and capillary samples to 180 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=35 healthy adults (12 M, 23 F), age 46.2 y, n=32 analysed",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "glucose, insulin",
+   "where": "Table 3 (iAUC 0-180 min, Cmax)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sem",
+ "figure_only": false,
+ "note": "Solid mixed breakfast with a printed composition and areas to 180 min; the control scone is the ordinary arm."
+}

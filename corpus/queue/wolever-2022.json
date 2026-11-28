@@ -1,0 +1,25 @@
+{
+ "paper": "wolever-2022",
+ "citation": "Wolever TMS, et al. Decreasing the RAG:SAG ratio of granola cereal predictably reduces postprandial glucose and insulin responses: a report of four randomised trials in healthy adults. J Nutr Sci 2022.",
+ "doi": "10.1017/jns.2022.22",
+ "pmid": "35399553",
+ "pmcid": "PMC8943571",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Fasted; granola cereal test meals matched for fat, protein and available carbohydrate (composition in Table 1); capillary glucose and serum insulin at 15, 30, 45, 60, 75, 90, 105, 120, 150, 180 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "n=40 in each of four crossover studies (n=160 total), healthy adults",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "glucose, insulin",
+   "where": "Tables 3 and 4 (iAUC 0-2 h, 2-3 h, 0-3 h)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "unlabelled",
+ "figure_only": false,
+ "note": "Large n and a printed composition at three hours; areas over 2-3 h are the late part. Values are given as mean plus-minus a spread the paper may not label (SEM expected): do not enter without finding the label."
+}

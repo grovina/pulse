@@ -1,0 +1,30 @@
+{
+ "paper": "parvareshrizi-2016",
+ "citation": "Parvaresh Rizi E, et al. Meal rich in carbohydrate, but not protein or fat, reveals adverse immunometabolic responses associated with obesity. Nutr J 2016.",
+ "doi": "10.1186/s12937-016-0219-0",
+ "pmid": "27903298",
+ "pmcid": "PMC5131405",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "10 h fast; 600 kcal liquid mixed meal (high carbohydrate, high fat or high protein, random order); samples 0, 30, 60, 90, 120, 180, 240, 300, 360 min",
+ "protocol_kinds": [
+  "mixed meal"
+ ],
+ "population": "9 lean insulin-sensitive and 9 obese insulin-resistant men",
+ "population_class": "mixed",
+ "reports": [
+  {
+   "marker": "glucose",
+   "where": "figures and text (0-360 min)",
+   "form": "figure"
+  },
+  {
+   "marker": "insulin",
+   "where": "figures and text (0-360 min)",
+   "form": "figure"
+  }
+ ],
+ "uncertainty": "sem",
+ "figure_only": false,
+ "note": "Six-hour sampling after three printed meals, lean men printed separately; the curves look figure-only, so the reader may refuse for lack of printed numbers."
+}

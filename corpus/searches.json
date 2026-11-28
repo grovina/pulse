@@ -133,6 +133,18 @@
         "2026-11-25"
       ],
       "hits": 100
+    },
+    {
+      "name": "insulin and glucose 3-5 h after a mixed meal",
+      "status": "active",
+      "why": "STATE's known-wrong item: the model's insulin 2.5 h after a large breakfast is far under measured (mok-2016: 19 vs 74), and frozen fixes ran out of levers (b3dde44). Needs healthy-adult plasma insulin and glucose printed to at least 180 min (ideally 240-300) after a mixed meal of stated composition.",
+      "query": "((\"mixed meal\"[Title/Abstract] OR breakfast[Title/Abstract] OR postprandial[Title/Abstract] OR \"meal test\"[Title/Abstract] OR \"meal tolerance\"[Title/Abstract]) AND insulin[Title/Abstract] AND glucose[Title/Abstract] AND (healthy[Title/Abstract] OR \"healthy volunteers\"[Title/Abstract] OR lean[Title/Abstract]) AND (\"4 h\"[Title/Abstract] OR \"240 min\"[Title/Abstract] OR \"5 h\"[Title/Abstract] OR \"300 min\"[Title/Abstract] OR \"180 min\"[Title/Abstract] OR \"3 h\"[Title/Abstract] OR \"four hours\"[Title/Abstract] OR \"6 h\"[Title/Abstract]) AND \"open access\"[filter])",
+      "screened": 159,
+      "queued": 15,
+      "batches": [
+        "2026-11-28"
+      ],
+      "hits": 159
     }
   ]
 }
