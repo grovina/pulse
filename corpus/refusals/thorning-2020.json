@@ -1,0 +1,47 @@
+{
+  "paper": "thorning-2020",
+  "citation": {
+    "authors": "Thorning TK, Bertolt CJ, Nielsen MS, Ritz C, Astrup A, Raben A",
+    "title": "Potato Fibers Have Positive Effects on Subjective Appetite Sensations in Healthy Men, but Not on Fecal Fat Excretion: A Randomized Controlled Single-Blind Crossover Trial",
+    "journal": "Nutrients",
+    "year": 2020,
+    "doi": "10.3390/nu12113496",
+    "pmid": "33203008",
+    "pmcid": "PMC7697495"
+  },
+  "reported": [
+    {
+      "what": "fasting glucose on Day 1 of each intervention period (RG-I, FiberBind, control; mean +/- SEM), a fasted value of healthy men before the test buns",
+      "location": {
+        "where": "Table 5, Glucose (mmol/L), Day 1 row",
+        "quote": "Day 1 | 5.60 ± 0.08 | 5.61 ± 0.07 | 5.45 ± 0.06"
+      }
+    },
+    {
+      "what": "fasting insulin on Day 1 of each intervention period (RG-I, FiberBind, control; mean +/- SEM)",
+      "location": {
+        "where": "Table 5, Insulin (pmol/L), Day 1 row",
+        "quote": "Day 1 | 37.6 ± 6.3 | 44.4 ± 6.2 | 35.3 ± 5.9"
+      }
+    },
+    {
+      "what": "postprandial glucose and insulin after the 2 MJ test meal, 15 to 180 min, control arm (the curves exist only in the figure)",
+      "location": {
+        "where": "Figure 4 caption",
+        "quote": "Mean ± SEM three-hour repeated measurements in a random subsample (n = 9) of (A) glucose concentrations and (B) insulin concentrations."
+      }
+    },
+    {
+      "what": "insulin at 180 min and peak insulin after RG-I and FiberBind compared with control (differences only, the control values are not printed)",
+      "location": {
+        "where": "Results 3.6, paragraph 2",
+        "quote": "insulin concentration was 55% ± 17% higher at 180 min after RG-I compared to the control"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "n_not_printed"
+  },
+  "detail": "The fasting Day 1 means and SEMs of glucose and insulin (Table 5) are the entry the batch asks for, and they are printed only as 'Raw means ± SEMs' over the analysed sample of 18 with no n for any column, while the Methods analyse 'all available data from participants completing 2 or 3 periods', so the n behind each cell is not given anywhere in the paper; the post-meal curves are figure-only and the fibre-arm differences need a fibre type the model lacks, so n is the one piece that would let a finding file be written."
+}
