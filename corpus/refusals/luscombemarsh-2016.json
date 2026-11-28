@@ -1,0 +1,40 @@
+{
+  "paper": "luscombemarsh-2016",
+  "citation": {
+    "authors": "Luscombe-Marsh ND, et al.",
+    "title": "Plasma Free Amino Acid Responses to Intraduodenal Whey Protein, and Relationships with Insulin, Glucagon-Like Peptide-1 and Energy Intake in Lean Healthy Men",
+    "journal": "Nutrients",
+    "year": 2016,
+    "doi": "10.3390/nu8010004",
+    "pmid": "26742062",
+    "pmcid": "PMC4728618"
+  },
+  "reported": [
+    {
+      "what": "Serum insulin, AUC 0-60 min, mean ± SEM, n = 16 healthy lean men, for saline (C) and hydrolysed whey infused intraduodenally at 2.1, 6.3 and 12.5 kJ/min over 60 min (the four arms; the saline arm is a sham infusion through the duodenal catheter, not a meal)",
+      "location": {
+        "where": "Table 4, row 'Insulin (mU.60min/L)', columns C, P2.1, P6.3, P12.5",
+        "quote": "Insulin (mU.60min/L) | 150 ± 19 | 354 ± 94 | 721 ± 99 | 1087 ± 145"
+      }
+    },
+    {
+      "what": "Plasma GLP-1, AUC 0-60 min, mean ± SEM, n = 16, same four intraduodenal arms (the table prints the unit as mmol.60min/L while the Methods give plasma GLP-1 in pmol/L; left unresolved)",
+      "location": {
+        "where": "Table 4, row 'GLP-1 ( mmol.60min/L)', columns C, P2.1, P6.3, P12.5",
+        "quote": "GLP-1 ( mmol.60min/L) | 1489±113"
+      }
+    },
+    {
+      "what": "Plasma leucine, AUC 0-60 min, mean, n = 16, for the same four intraduodenal arms (no uncertainty printed in Table 3)",
+      "location": {
+        "where": "Table 3, row 'Leucine', columns C, P2.1, P6.3, P12.5",
+        "quote": "Leucine | 6100 | 11,700 | 15,900 | 21,900"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "input",
+    "name": "intraduodenal_infusion"
+  },
+  "detail": "Every arm is a 60-min infusion of hydrolysed whey (or saline) straight into the duodenum through a catheter, bypassing the stomach (Methods 2.3 and 2.2). The model has no such input: its duodenal delivery comes only from meals passing through the stomach (pulse/knowledge/full_body.py, duodenal_delivery via _stomach_at), so writing the infusion as a meal would be the approximation the guide forbids. The fasting baseline amino acids (Table 2) are printed as bare means with no SD or SEM, so they cannot be entered either, and the buffet energy intake follows a meal."
+}
