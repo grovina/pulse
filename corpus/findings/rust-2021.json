@@ -1,0 +1,284 @@
+{
+  "paper": "rust-2021",
+  "citation": {
+    "authors": "Rust BM, et al.",
+    "title": "Dietary Fat Chain Length, Saturation, and PUFA Source Acutely Affect Diet-Induced Thermogenesis but Not Satiety in Adults in a Randomized, Crossover Trial",
+    "journal": "Nutrients",
+    "year": 2021,
+    "doi": "10.3390/nu13082615",
+    "pmid": "34444773",
+    "pmcid": "PMC8402189"
+  },
+  "population": {
+    "n": 23,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 25.7,
+      "sd": 6.6,
+      "min": 18.0,
+      "max": 42.0
+    },
+    "bmi": {
+      "mean": 27.7,
+      "sd": 3.8,
+      "min": 19.9,
+      "max": 34.0
+    },
+    "status": "unselected",
+    "description": "Eleven women and 12 men completing all five visits (Methods 2.2). Age 25.7 +/- 6.6 y and BMI 27.7 +/- 3.8 kg/m2 (Table 2 and Abstract; mean +/- SD per Methods 2.8). Age range 18 to 42 y (Results 3.1); BMI range 19.9 to 34.0 kg/m2 (Discussion). Called 'healthy' in the Abstract, but screening excluded diabetes, cardiovascular, pulmonary and metabolic disease and smoking, and the only glucose check was a fingerstick at screening with no threshold printed, so status is unselected and the BMI range is given. Body fat 33.5 +/- 8.2 %, body mass 85.0 +/- 13.3 kg at admission (Results 3.1). Enrolment criteria (BMI 18 to 34.9 after revision) are not the observed range."
+  },
+  "protocols": [
+    {
+      "name": "hc_meal",
+      "description": "Liquid test meal with 30 g fat as heavy cream (Table 1 Total row: 47.9 g carbohydrate, 30.2 g fat, 6.7 g protein, 484 kcal; carbohydrate as printed, Table 1 has no fibre column). Minute 0 is the fasting blood draw at 'approximately 7:30 a.m.' (Methods 2.3.3), so start_hour 7.5 is assumed; the meal 'was consumed by the participant within 15 min of the fasting blood draw', entered at minute 0 because no exact minute is printed. Samples at 30, 60, 120, 180 and 240 min after the fasting draw. Overnight stay in the metabolic unit: last dinner of the lead-in diet before 7 p.m., lights out 11 p.m., awake 6 a.m. (Methods 2.3.2-2.3.3), so the fast before minute 0 is at least 12.5 h (7 p.m. to 7:30 a.m.); prefast_hours 12.5 is the shortest fast the paper allows, not a printed value. Seated or reclining at rest throughout the arm (activity 0).",
+      "duration_min": 241,
+      "start_hour": 7.5,
+      "prefast_hours": 12.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 47.9,
+          "fat_g": 30.2,
+          "protein_g": 6.7,
+          "form": "liquid",
+          "fat_source": "heavy cream",
+          "food": "shake: heavy cream, frozen strawberries, orange sherbet, skim milk"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "oo_meal",
+      "description": "Liquid test meal with 30 g fat as olive oil (Table 1 Total row: 45.5 g carbohydrate, 30.2 g fat, 4.9 g protein, 462 kcal; carbohydrate as printed, Table 1 has no fibre column). Minute 0 is the fasting blood draw at 'approximately 7:30 a.m.' (Methods 2.3.3), so start_hour 7.5 is assumed; the meal 'was consumed by the participant within 15 min of the fasting blood draw', entered at minute 0 because no exact minute is printed. Samples at 30, 60, 120, 180 and 240 min after the fasting draw. Overnight stay in the metabolic unit: last dinner of the lead-in diet before 7 p.m., lights out 11 p.m., awake 6 a.m. (Methods 2.3.2-2.3.3), so the fast before minute 0 is at least 12.5 h (7 p.m. to 7:30 a.m.); prefast_hours 12.5 is the shortest fast the paper allows, not a printed value. Seated or reclining at rest throughout the arm (activity 0).",
+      "duration_min": 241,
+      "start_hour": 7.5,
+      "prefast_hours": 12.5,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 45.5,
+          "fat_g": 30.2,
+          "protein_g": 4.9,
+          "form": "liquid",
+          "fat_source": "olive oil",
+          "food": "shake: olive oil, frozen strawberries, orange sherbet, skim milk"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "hc_glucose_iauc_0_240",
+      "description": "Incremental area under the plasma glucose curve, 0-240 min, after the heavy cream meal, trapezoid over the draws at 0, 30, 60, 120, 180 and 240 min, the fasting draw being the baseline (Results 3.4: postprandial values 'relative to fasting levels'). Below baseline: subtracted, because Table 4's footnote says 'Values are baseline subtracted' and the table prints negative means (glucose -3 for HC, ghrelin for all five), which only a net area can have. n from Table 4's footnote ('n = 23 except for HC, n = 21, HC for insulin n = 19, FO for insulin n = 22'); the same counts are in the Figure 4 legend.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "hc_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "value": -3.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 26.0,
+        "n": 21
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose (mg/dL × h)', column HC; Methods 2.8 ('raw means ± standard deviations (SD)')",
+        "quote": "Glucose (mg/dL × h) | −3 ± 26"
+      }
+    },
+    {
+      "id": "oo_glucose_iauc_0_240",
+      "description": "Incremental area under the plasma glucose curve, 0-240 min, after the olive oil meal, trapezoid over the draws at 0, 30, 60, 120, 180 and 240 min, the fasting draw being the baseline (Results 3.4: postprandial values 'relative to fasting levels'). Below baseline: subtracted, because Table 4's footnote says 'Values are baseline subtracted' and the table prints negative means (glucose -3 for HC, ghrelin for all five), which only a net area can have. n from Table 4's footnote ('n = 23 except for HC, n = 21, HC for insulin n = 19, FO for insulin n = 22'); the same counts are in the Figure 4 legend.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "oo_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "value": 1.0,
+      "unit": "mg/dL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 36.0,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 4, row 'Glucose (mg/dL × h)', column OO; Methods 2.8 ('raw means ± standard deviations (SD)')",
+        "quote": "Glucose (mg/dL × h) | 1 ± 36"
+      }
+    },
+    {
+      "id": "hc_insulin_iauc_0_240",
+      "description": "Incremental area under the serum insulin curve, 0-240 min, after the heavy cream meal, trapezoid over the draws at 0, 30, 60, 120, 180 and 240 min, the fasting draw as baseline (as for glucose). Below baseline: subtracted: Table 4's one footnote, 'Values are baseline subtracted', covers every row, one trapezoidal iAUC method is described (Methods 2.8), and the table's negative means (glucose, ghrelin) show a net area. n from Table 4's footnote ('n = 23 except for HC, n = 21, HC for insulin n = 19, FO for insulin n = 22').",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "hc_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "value": 78.0,
+      "unit": "μIU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 31.0,
+        "n": 19
+      },
+      "location": {
+        "where": "Table 4, row 'Insulin (μIU/mL × h)', column HC; Methods 2.8 ('raw means ± standard deviations (SD)')",
+        "quote": "Insulin (μIU/mL × h) | 78 ± 31"
+      }
+    },
+    {
+      "id": "oo_insulin_iauc_0_240",
+      "description": "Incremental area under the serum insulin curve, 0-240 min, after the olive oil meal, trapezoid over the draws at 0, 30, 60, 120, 180 and 240 min, the fasting draw as baseline (as for glucose). Below baseline: subtracted: Table 4's one footnote, 'Values are baseline subtracted', covers every row, one trapezoidal iAUC method is described (Methods 2.8), and the table's negative means (glucose, ghrelin) show a net area. n from Table 4's footnote ('n = 23 except for HC, n = 21, HC for insulin n = 19, FO for insulin n = 22').",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "oo_meal"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180,
+        240
+      ],
+      "below_baseline": "subtracted",
+      "value": 67.0,
+      "unit": "μIU/mL",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 31.0,
+        "n": 23
+      },
+      "location": {
+        "where": "Table 4, row 'Insulin (μIU/mL × h)', column OO; Methods 2.8 ('raw means ± standard deviations (SD)')",
+        "quote": "Insulin (μIU/mL × h) | 67 ± 31"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Glucose and insulin incremental areas 0-240 min after the sunflower oil, flaxseed oil and fish oil meals (Table 4: SFO, FSO, FO columns; glucose 16, 14, 1 mg/dL x h, insulin 70, 79, 64 uIU/mL x h). All five meals hold 30 g of fat and differ in the oil: FSO has exactly the grams of the olive oil meal (45.5 g carbohydrate, 30.2 g fat, 4.9 g protein), SFO and FO differ from it by 0.4 g and 0.2 g of fat; the model reads only the three grams, and the fatty acid composition of each meal is in Supplementary Table S3, not in the text. The same 23 people ate all five meals, so these would be near-duplicate targets for one input. The heavy cream and olive oil meals, whose printed grams differ, are entered",
+      "missing": {
+        "kind": "input",
+        "name": "meal_details_not_read"
+      }
+    },
+    {
+      "what": "Glucose and insulin time courses at 0, 30, 60, 120, 180 and 240 min for the five meals (Figure 4C and 4D only; no table prints them)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Ghrelin incremental areas, five meals (Table 4, pg/mL × h): total ghrelin by ELISA (Methods 2.7), an assay the model's ghrelin does not state",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "Triacylglycerol incremental areas, five meals (Table 4, mg/dL × h)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "Hunger, fullness, satisfaction and desire to eat over time, five meals (Figure 3 only; the text gives no values)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "Energy intake of the ad libitum meal five hours after each test meal (Results 3.3 and Supplementary Figure S1; no values in the text)",
+      "missing": {
+        "kind": "marker",
+        "name": "energy_intake"
+      }
+    },
+    {
+      "what": "Energy expenditure over 240 min, five meals (Table 3, EE kcal): an area built from four 15-min blocks (45-60, 90-105, 150-165, 210-225 min) with an unprinted trapezoid and fasting adjustment (Methods 2.3.3, 2.8)",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "Fat oxidation over 240 min, five meals (Table 3, OXFAT g, the same block method)",
+      "missing": {
+        "kind": "marker",
+        "name": "fat_oxidation_rate"
+      }
+    },
+    {
+      "what": "Carbohydrate oxidation over 240 min, five meals (Table 3, OXCHO g, the same block method)",
+      "missing": {
+        "kind": "marker",
+        "name": "carbohydrate_oxidation_rate"
+      }
+    },
+    {
+      "what": "Diet-induced thermogenesis by meal (Figure 2B; the text gives only 'approximately 5%')",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Metabolic rate and respiratory exchange ratio time courses (Figures 2A and 2C; figures only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Body fat (%) and fat-free mass at screening (Table 2; the model's fat mass is in kg and no fat-free mass series exists)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
