@@ -569,6 +569,20 @@ frozen at b66d400 (GLP-1 excluded):
 - Not adopted as the reference: the gain is mostly glucose through a sign soma rules out,
   and validation's median did not move. A rerun with the gain held at or above 0 is the
   clean test of the soma term.
+- Free check (2c2b038): iter 125 with only the gain set to 0 scores like iter 120 (trained
+  0.584 to 0.583, validation 0.657 to 0.653; late insulin median z -0.53 to -0.54), so its
+  gain came from the negative term.
+
+Iter 126, the same run with `--incretin-gain-nonneg` (2026-11-28, trainer-mcc7m, 3 h 16 min,
+about $1.26, `gs://grovina-pulse-data/training/jobs/iter126-islet-nonneg/`). The gain stayed
+at 0 (clamped every step), the guard kept epoch 0 (validation 0.659, 0.668, 0.669, 0.672,
+0.671, 0.671). Trained 0.584 to 0.578, validation 0.657 to 0.654; trained insulin median
+0.604 to 0.612 and late insulin (from 150 min) median z -0.53 to -0.65; sealed, reported
+only, 0.707 to 0.683. Not adopted. Islet-only training does not raise late insulin: the
+trained evidence pushes the glucose-gated incretin term below zero, and with it held at 0
+the other islet scalars lower late insulin further. The lever is upstream (glucose
+appearance, 2026-11-22: mixed-meal glucose sits under baseline from 1 to 2.5 h, so more
+secretion pulls it lower), not the islet constants.
 
 `--incretin-gain-nonneg` (2026-11-28, off by default, recorded in the checkpoint as
 `incretin_gain_nonneg`) holds `metabolic.incretin_glu_gain` at or above 0: a post-step hook on
