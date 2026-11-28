@@ -365,6 +365,26 @@ Iter 124, `--train-only` on the three heart-rate scalars (`hr_fit_gain`,
   a train-only run on scalars needs its own lr, sized from the gradient
   first (free, locally) before another run is spent on it.
 
+Local direct search on the three heart-rate scalars, frozen iter 120, fitness on
+(2026-11-28; no cloud run; trained-side only, sealed not looked at). Small sets of
+scalars are fitted this way locally, by direct search on a frozen checkpoint scoring only
+the papers that carry the items, rather than by a cloud `--train-only` run.
+
+- Scored the 29 trained non-validation papers with heart-rate items (83 hr items,
+  `score_cohorts` on that subset, 4 draws, ~45 s a setting). Sign: positive `hr_fit_gain`
+  lowers HR for a fitter person (higher VO2max, positive `fitness_z`), as in the teacher.
+- Train hr mean |z| 1.835 at zero. `hr_fit_gain` alone is flat (-15 to 15: 1.83 to 1.88, best -2
+  at 1.830). The slow state carries the gain: `hr_slow_gain` 55, tau 27 min gives 1.42 (30: 1.58
+  at tau 30; the plateau is 50 to 60 bpm, tau 20 to 30), with `hr_fit_gain` 6 on top 1.40.
+  Only 4 non-hr items on those papers move (sbp/dbp of hedrington-2015 and taboni-2024, up to 0.2 sigma,
+  through the heart-rate coupling), so the "nothing else moves" check holds only approximately.
+- Validation fails the gate: the 14 validation papers' 22 hr items go from 0.674 at zero to 1.061
+  (slow 55, tau 27), 0.912 (30, tau 20), 0.736 (20, tau 30), 0.652 only at slow 10 (train 1.750,
+  a trivial gain); `hr_fit_gain` 6 alone 0.921. The whole trained board at 55/27/6: mean |z|
+  1.006 to 0.980, median 0.614 to 0.615, hr 1.592 to 1.282. So the train-side hr gain is
+  paper-specific (long post-exercise tails in a few papers) and does not transfer; nothing was
+  adopted, defaults stay 0, sealed was not looked at.
+
 Iter 123 (probe), warm start from iter 120 on `b66d400` at a constant lr
 of 0.0003 for three epochs with `--fitness-from-vo2max` (2026-11-27;
 against iter 120 frozen on the same code with fitness off,
