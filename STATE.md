@@ -584,6 +584,37 @@ the other islet scalars lower late insulin further. The lever is upstream (gluco
 appearance, 2026-11-22: mixed-meal glucose sits under baseline from 1 to 2.5 h, so more
 secretion pulls it lower), not the islet constants.
 
+Glucose appearance on iter 120, and two frozen levers that do not fix it (2026-11-28, free,
+main at 2689f4e; `fz/appear.py`, 4 people per arm, median over arms). Share of the meal's
+carbohydrate, 57 trained-side mixed-meal arms (training + validation papers, not sealed), at
+30/60/120/180/240 min after the meal: left the stomach about 0.15/0.30/0.56/0.74/0.80, absorbed
+(bioavailable, learned) 0.14/0.28/0.52/0.69/0.74, in plasma 0.10/0.19/0.36/0.48/0.51, put in
+liver glycogen by the direct pathway 0.03/0.07/0.12/0.17/0.19, in muscle glycogen directly
+0.00/0.00/0.02/0.04/0.05 (muscle also takes plasma glucose into glycogen, 0.13 by 240). Whole
+arm: 0.92 absorbed, 0.63 in plasma. The 40 glucose drinks: plasma 0.16/0.31/0.60/0.62/0.62 at the
+same minutes. Tracers: polidori-2013's 600 kcal meal (placebo RaO 381/723/1018 mg/kg at 1/2/6 h,
+about 30/56/79 g) against the model's 15/27/51 g in plasma (0.18/0.33/0.62 of 82.5 g; it absorbs
+0.89 by 240 min); whelehan-2024 drink, 53 g of 74.5 g oral glucose by 6 h (0.71) against 0.64 at
+240 min. No paper prints appearance in a form the board scores (both in `left_out`). What holds
+the rest at 2 h: the stomach (about 0.44 of a mixed meal), then the direct liver pathway
+(`_LIVER_DIRECT_FRAC` 0.30 x (0.5 + 0.5 ins_drive), a constant, 0.19-0.24 of carbohydrate by
+4 h, about 25% of what is absorbed), then the unabsorbed share (learned `f_bio`, about 0.08);
+muscle's oral share is small (learned store logit, gated by `_MEAL_GATE_NUT`).
+Frozen variants on iter 120 (`fz/var.py`, all 1253 trained-side items, 164 validation), trained /
+validation median |z|, mixed-meal glucose signed z (non-curve items), late insulin (from 150
+min) median z, against 0.588 / 0.663, -0.41, -0.32: liver 0.20 0.600 / 0.693, -0.11, -0.27;
+liver 0.10 0.698 / 0.725, +0.17, -0.20; gastric `LOAD_EXPONENT` 0.5 0.584 / 0.657, -0.39,
+-0.15; exponent 0.8 0.616 / 0.674, -0.33, -0.09; exponent 0.8 and liver 0.25 0.618 / 0.689,
+-0.18, -0.09. The liver cut fixes mixed-meal glucose and moves late insulin little, and it
+costs every other family (fasting glucose signed 0.01 to -0.27 at 0.20, exercise -1.02 to -1.63,
+drinks +0.41 to +0.62): it empties the glycogen the fast and the session spend, so it is a
+level shift, not an appearance fix. Faster emptying of big meals is nearly free (exponent 0.5
+changes trained and validation by under 0.01) and raises late insulin, but barely moves
+glucose and validation insulin rises (0.337 to 0.387, to 0.452 at 0.8). Nothing is adopted;
+sealed not scored. The tracer rows say both emptying and first pass are short in the first 2 h,
+but the only constant that moves glucose is the one the other families pin. A meal that
+separates meal from drink in the liver share, or a person-level first-pass fraction, would need a run.
+
 `--incretin-gain-nonneg` (2026-11-28, off by default, recorded in the checkpoint as
 `incretin_gain_nonneg`) holds `metabolic.incretin_glu_gain` at or above 0: a post-step hook on
 every Adam optimizer clamps it, so the zero start is reachable with a gradient (a softplus of a
