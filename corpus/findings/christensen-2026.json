@@ -83,6 +83,78 @@
         "start_hour",
         "prefast_hours"
       ]
+    },
+    {
+      "name": "ogtt_men",
+      "description": "OGTT of the 29 Maasai men: the 0 min sample was drawn after an overnight fast and the 75 g glucose in 300 mL water was taken within 5 min after it (Methods); samples at 0, 10, 30, 60, 90 and 120 min after it. The paper gives no clock time and no hours fasted, so a 30-minute fasted run-in, 10 h fast and 08:00 are assumed: the glucose is at arm minute 30, so paper minute T is arm minute 30 + T (samples at arm minutes 30, 40, 60, 90, 120, 150; arm 151 min). Participants sat; they could walk slowly to a restroom on request. Mean age and BMI are Table 1's for this sex.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in 300 mL water"
+        }
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 31.7,
+          "sd": 7.1,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.5,
+          "sd": 2.9,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "ogtt_women",
+      "description": "OGTT of the 29 Maasai women: the 0 min sample was drawn after an overnight fast and the 75 g glucose in 300 mL water was taken within 5 min after it (Methods); samples at 0, 10, 30, 60, 90 and 120 min after it. The paper gives no clock time and no hours fasted, so a 30-minute fasted run-in, 10 h fast and 08:00 are assumed: the glucose is at arm minute 30, so paper minute T is arm minute 30 + T (samples at arm minutes 30, 40, 60, 90, 120, 150; arm 151 min). Participants sat; they could walk slowly to a restroom on request. Mean age and BMI are Table 1's for this sex.",
+      "duration_min": 151,
+      "start_hour": 8.0,
+      "prefast_hours": 10,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 75.0,
+          "fat_g": 0.0,
+          "protein_g": 0.0,
+          "form": "liquid",
+          "food": "75 g glucose in 300 mL water"
+        }
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 37.8,
+          "sd": 14.8,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 20.1,
+          "sd": 3.8,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
     }
   ],
   "findings": [
@@ -112,7 +184,7 @@
     },
     {
       "id": "fasting_glucose_women",
-      "description": "Fasting plasma glucose, woMaasai men without diabetes, mean (SD)",
+      "description": "Fasting plasma glucose, Maasai women without diabetes, mean (SD)",
       "marker": "glucose",
       "statistic": "mean_in_window",
       "protocols": [
@@ -133,28 +205,585 @@
         "where": "Results, OGTT-derived plasma concentrations (also Table 2, row 'Fasting glucose (mmol/L)')",
         "quote": "Fasting plasma glucose concentrations in men and women were significantly different at 5.2 (SD 0.6) vs. 4.9 (SD 0.5) mmol/L, respectively (p = 0.031)."
       }
+    },
+    {
+      "id": "fasting_insulin_gm_men",
+      "description": "Fasting plasma insulin, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 51.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 42.0,
+        "high": 60.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting insulin (pmol/L)', men",
+        "quote": "Fasting insulin (pmol/L) | 51 | 42; 60 | 47 | 38; 57"
+      }
+    },
+    {
+      "id": "fasting_insulin_gm_women",
+      "description": "Fasting plasma insulin, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 47.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 38.0,
+        "high": 57.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting insulin (pmol/L)', women",
+        "quote": "Fasting insulin (pmol/L) | 51 | 42; 60 | 47 | 38; 57"
+      }
+    },
+    {
+      "id": "fasting_glucagon_gm_men",
+      "description": "Fasting plasma glucagon, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 2.4,
+        "high": 7.4,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucagon (pmol/L)', men",
+        "quote": "Fasting glucagon (pmol/L) | 4.2 | 2.4; 7.4 | 4.1 | 3.0; 5.7"
+      }
+    },
+    {
+      "id": "fasting_glucagon_gm_women",
+      "description": "Fasting plasma glucagon, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 3.0,
+        "high": 5.7,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting glucagon (pmol/L)', women",
+        "quote": "Fasting glucagon (pmol/L) | 4.2 | 2.4; 7.4 | 4.1 | 3.0; 5.7"
+      }
+    },
+    {
+      "id": "fasting_gip_gm_men",
+      "description": "Fasting plasma gip, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_men"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 9.2,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 6.6,
+        "high": 12.8,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting GIP (pmol/L)', men",
+        "quote": "Fasting GIP (pmol/L)1,2 | 9.2 | 6.6; 12.8 | 11.1 | 8.0; 15.2"
+      }
+    },
+    {
+      "id": "fasting_gip_gm_women",
+      "description": "Fasting plasma gip, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting_women"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 11.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 8.0,
+        "high": 15.2,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Fasting GIP (pmol/L)', women",
+        "quote": "Fasting GIP (pmol/L)1,2 | 9.2 | 6.6; 12.8 | 11.1 | 8.0; 15.2"
+      }
+    },
+    {
+      "id": "h2_glucose_gm_men",
+      "description": "2-h (120 min of the OGTT) plasma glucose, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "glucose",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.1,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 4.6,
+        "high": 5.7,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucose', men",
+        "quote": "2-h glucose | 5.1 | 4.6; 5.7 | 5.5 | 5.1; 6.1"
+      }
+    },
+    {
+      "id": "h2_glucose_gm_women",
+      "description": "2-h (120 min of the OGTT) plasma glucose, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "glucose",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.5,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 5.1,
+        "high": 6.1,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucose', women",
+        "quote": "2-h glucose | 5.1 | 4.6; 5.7 | 5.5 | 5.1; 6.1"
+      }
+    },
+    {
+      "id": "h2_insulin_gm_men",
+      "description": "2-h (120 min of the OGTT) plasma insulin, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 179.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 137.0,
+        "high": 234.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h insulin (pmol/L)', men",
+        "quote": "2-h insulin (pmol/L) | 179 | 137; 234 | 255 | 197; 330"
+      }
+    },
+    {
+      "id": "h2_insulin_gm_women",
+      "description": "2-h (120 min of the OGTT) plasma insulin, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 255.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 197.0,
+        "high": 330.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h insulin (pmol/L)', women",
+        "quote": "2-h insulin (pmol/L) | 179 | 137; 234 | 255 | 197; 330"
+      }
+    },
+    {
+      "id": "h2_glucagon_gm_men",
+      "description": "2-h (120 min of the OGTT) plasma glucagon, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 2.6,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.7,
+        "high": 4.1,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucagon (pmol/L)', men",
+        "quote": "2-h glucagon (pmol/L) | 2.6 | 1.7; 4.1 | 2 | 1.2; 3.3"
+      }
+    },
+    {
+      "id": "h2_glucagon_gm_women",
+      "description": "2-h (120 min of the OGTT) plasma glucagon, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 2.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 1.2,
+        "high": 3.3,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h glucagon (pmol/L)', women",
+        "quote": "2-h glucagon (pmol/L) | 2.6 | 1.7; 4.1 | 2 | 1.2; 3.3"
+      }
+    },
+    {
+      "id": "h2_gip_gm_men",
+      "description": "2-h (120 min of the OGTT) plasma gip, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 35.5,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 29.5,
+        "high": 42.7,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h GIP (pmol/L)', men",
+        "quote": "2-h GIP (pmol/L)1,2 | 35.5 | 29.5; 42.7 | 42.7 | 34.4; 53.0"
+      }
+    },
+    {
+      "id": "h2_gip_gm_women",
+      "description": "2-h (120 min of the OGTT) plasma gip, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 42.7,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 34.4,
+        "high": 53.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row '2-h GIP (pmol/L)', women",
+        "quote": "2-h GIP (pmol/L)1,2 | 35.5 | 29.5; 42.7 | 42.7 | 34.4; 53.0"
+      }
+    },
+    {
+      "id": "auc_glucose_gm_men",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma glucose, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "glucose",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 763.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 712.0,
+        "high": 817.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose AUC, total (mmol/L × min)', men",
+        "quote": "Glucose AUC, total (mmol/L × min) | 763 | 712; 817 | 744 | 698; 792"
+      }
+    },
+    {
+      "id": "auc_glucose_gm_women",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma glucose, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed",
+      "marker": "glucose",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 744.0,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 698.0,
+        "high": 792.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Glucose AUC, total (mmol/L × min)', women",
+        "quote": "Glucose AUC, total (mmol/L × min) | 763 | 712; 817 | 744 | 698; 792"
+      }
+    },
+    {
+      "id": "auc_glucagon_gm_men",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma glucagon, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 466.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 348.0,
+        "high": 622.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon AUC, total (pmol/L × min)', men",
+        "quote": "Glucagon AUC, total (pmol/L × min) | 466 | 348; 622 | 402 | 291; 553"
+      }
+    },
+    {
+      "id": "auc_glucagon_gm_women",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma glucagon, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "glucagon",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 402.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 291.0,
+        "high": 553.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'Glucagon AUC, total (pmol/L × min)', women",
+        "quote": "Glucagon AUC, total (pmol/L × min) | 466 | 348; 622 | 402 | 291; 553"
+      }
+    },
+    {
+      "id": "auc_gip_gm_men",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma gip, Maasai men without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_men"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 4469.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 3795.0,
+        "high": 5263.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'GIP AUC, total (pmol/L × min)', men",
+        "quote": "GIP AUC, total (pmol/L × min) | 4469 | 3795; 5263 | 5121 | 4166; 6294"
+      }
+    },
+    {
+      "id": "auc_gip_gm_women",
+      "description": "Total area over 0-120 min of the OGTT (trapezoid on the six samples) plasma gip, Maasai women without diabetes, geometric mean (95% CI); Table 2 footnote 1 marks it a geometric mean and Methods say skewed data were log-transformed (total GIP and total glucagon by ELISA)",
+      "marker": "gip",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt_women"
+      ],
+      "times": [
+        30,
+        40,
+        60,
+        90,
+        120,
+        150
+      ],
+      "time_unit": "min",
+      "value": 5121.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 4166.0,
+        "high": 6294.0,
+        "level": 95,
+        "n": 29
+      },
+      "location": {
+        "where": "Table 2, row 'GIP AUC, total (pmol/L × min)', women",
+        "quote": "GIP AUC, total (pmol/L × min) | 4469 | 3795; 5263 | 5121 | 4166; 6294"
+      }
     }
   ],
   "left_out": [
     {
-      "what": "2-h glucose, fasting and 2-h insulin, C-peptide, glucagon, GIP and GLP-1 by sex (Table 2), printed as geometric means with 95% CI",
+      "what": "2-h and total-area values of GLP-1 by sex (Table 2), geometric means with 95% CI; a total GLP-1 level or area is an assay-dependent absolute (README), and fasting GLP-1 likewise; the paper prints no ratio to baseline",
       "missing": {
-        "kind": "operator",
-        "name": "geometric_mean"
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     },
     {
-      "what": "total AUCs of glucose, insulin, C-peptide, glucagon, GIP and GLP-1 by sex (Table 2, Figure 1), geometric means with 95% CI; sampling times (0, 10, 30, 60, 90, 120 min) are printed but the insulin and C-peptide AUC units (nmol/L x min) sit beside pmol/L concentrations",
+      "what": "fasting GLP-1 by sex (Table 2), geometric mean with 95% CI, a lone fasting level of total GLP-1 with no change from it printed",
       "missing": {
-        "kind": "operator",
-        "name": "geometric_mean"
+        "kind": "source",
+        "name": "assay_dependent_level"
       }
     },
     {
-      "what": "early phase insulin, C-peptide, GIP and GLP-1 secretion (iAUC of first 30 min), geometric means (Table 2)",
+      "what": "insulin total AUC by sex (Table 2, Figure 1), geometric mean with 95% CI: printed 'nmol/L x min' (37,739 and 39,968) beside insulin in pmol/L (fasting 51, 2 h 179); over 120 min the printed unit gives a mean insulin of about 314 nmol/L, which fails the range check, so the unit is a misprint the paper does not correct",
+      "missing": {
+        "kind": "source",
+        "name": "unit_implausible"
+      }
+    },
+    {
+      "what": "early phase insulin, C-peptide, GIP and GLP-1 secretion (iAUC of first 30 min, baseline-subtracted per person), geometric means with 95% CI (Table 2); an incremental area can be negative per person and is not a geometric area of the marker",
       "missing": {
         "kind": "operator",
-        "name": "geometric_mean"
+        "name": "geometric_incremental_area"
       }
     },
     {
@@ -172,7 +801,7 @@
       }
     },
     {
-      "what": "glucose, insulin, C-peptide, glucagon, GIP, GLP-1 at 10, 30, 60 and 90 min (sampled per Methods, not tabulated; AUCs in Figure 1 only)",
+      "what": "glucose, insulin, glucagon and GIP at 10, 30, 60 and 90 min (sampled per Methods, not tabulated; AUCs in Figure 1 only), and the same for C-peptide and GLP-1",
       "missing": {
         "kind": "source",
         "name": "figure_only"
