@@ -58,7 +58,8 @@ one fifth of its between-person SD. It lives here, in one place.
 A geometric mean (``geometric_mean``, ``geometric_area``) is scored on the log scale, so
 its ``ci`` is carried as ``low = 0, high = ln(upper / lower)``: the log-scale width. The
 standard error of ln GM follows as for any ci (t quantile, ``n - 1`` degrees of freedom),
-and ``sigma`` is the between-person SD of the log value, ``se_log * sqrt(n)``.
+and ``sigma`` is the between-person SD of the log value, ``se_log * sqrt(n)``. A paper that
+prints the SD of ln x instead gives ``sd_log``: that is sigma itself, no unit applies.
 
 A one-sided or banded claim (a ceiling, a diagnostic threshold) is not a
 reported number with an uncertainty and has no place in this format; it is a
@@ -87,7 +88,7 @@ __all__ = [
 N_CAP = 25
 CORRELATION_SIGMA_FLOOR = 0.05
 
-UNCERTAINTY_KINDS = ("sd", "sem", "ci", "range", "n_only")
+UNCERTAINTY_KINDS = ("sd", "sem", "ci", "range", "n_only", "sd_log")
 
 _SCALAR = frozenset({"sd", "sem", "ci", "range"})
 ALLOWED_KINDS: dict[StatisticKind, frozenset[str]] = {
@@ -100,9 +101,10 @@ ALLOWED_KINDS: dict[StatisticKind, frozenset[str]] = {
     StatisticKind.CHANGE_FROM_BASELINE: _SCALAR,
     StatisticKind.AREA_UNDER_CURVE: _SCALAR,
     StatisticKind.INCREMENTAL_AREA: _SCALAR,
-    # The paper's 95% CI on a geometric mean; its width is carried on the log scale.
-    StatisticKind.GEOMETRIC_MEAN: frozenset({"ci"}),
-    StatisticKind.GEOMETRIC_AREA: frozenset({"ci"}),
+    # The paper's CI on a geometric mean (its width is carried on the log scale), or the
+    # SD of ln x across people (a log-scale number already).
+    StatisticKind.GEOMETRIC_MEAN: frozenset({"ci", "sd_log"}),
+    StatisticKind.GEOMETRIC_AREA: frozenset({"ci", "sd_log"}),
     StatisticKind.RATIO_MEANS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_INCREMENTS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_TO_BASELINE: frozenset({"sem", "ci"}),
@@ -165,10 +167,10 @@ class Uncertainty:
             return [f"uncertainty kind {self.kind!r} is not one of {', '.join(UNCERTAINTY_KINDS)}"]
         if self.n < 1:
             out.append("uncertainty n must be at least 1")
-        if self.kind in ("sd", "sem"):
+        if self.kind in ("sd", "sem", "sd_log"):
             if self.value is None or not self.value > 0:
                 out.append(f"uncertainty {self.kind} needs a positive value")
-            if self.kind == "sd" and self.n < 2:
+            if self.kind in ("sd", "sd_log") and self.n < 2:
                 out.append("a between-person sd needs n of at least 2")
         elif self.kind in ("ci", "range"):
             if self.low is None or self.high is None or not self.high > self.low:
@@ -209,7 +211,7 @@ def standard_error(u: Uncertainty) -> float:
     if u.kind == "sem":
         assert u.value is not None
         return u.value
-    if u.kind == "sd":
+    if u.kind in ("sd", "sd_log"):
         assert u.value is not None
         return u.value / math.sqrt(u.n)
     assert u.low is not None and u.high is not None
@@ -223,7 +225,7 @@ def standard_error(u: Uncertainty) -> float:
 
 def between_person_sd(u: Uncertainty) -> float:
     """The between-person SD implied by ``u``: what the n-th-root rule divides."""
-    if u.kind == "sd":
+    if u.kind in ("sd", "sd_log"):
         assert u.value is not None
         return u.value
     if u.kind == "range":

@@ -884,6 +884,7 @@ _UNCERTAINTY_KEYS = {
     "ci": ({"kind", "n", "low", "high", "level"}, {"observations"}),
     "range": ({"kind", "n", "low", "high"}, set()),
     "n_only": ({"kind", "n"}, set()),
+    "sd_log": ({"kind", "n", "value"}, set()),
 }
 
 
@@ -913,7 +914,7 @@ def _uncertainty(
     n = r.integer(d, "n", w, "uncertainty", minimum=1)
     value = low = high = None
     level = None
-    if k in ("sd", "sem"):
+    if k in ("sd", "sem", "sd_log"):
         value = r.number(d, "value", w, "uncertainty", positive=True)
     elif k in ("ci", "range"):
         low = r.number(d, "low", w, "uncertainty")
@@ -925,7 +926,7 @@ def _uncertainty(
         observations = r.integer(d, "observations", w, "uncertainty", minimum=1)
         if observations is None:
             return None
-    if n is None or (k in ("sd", "sem") and value is None) or (
+    if n is None or (k in ("sd", "sem", "sd_log") and value is None) or (
         k in ("ci", "range") and (low is None or high is None)
     ):
         return None
@@ -943,7 +944,7 @@ def _uncertainty(
     try:
         u = Uncertainty(
             k, n,
-            None if value is None else units.width(value),
+            None if value is None else (value if k == "sd_log" else units.width(value)),
             None if low is None or high is None else 0.0,
             None if low is None or high is None
             else (math.log(high / low) if geometric else units.width(high - low)),

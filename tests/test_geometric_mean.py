@@ -114,6 +114,38 @@ def test_the_ci_becomes_a_log_scale_sigma():
         to_sigma(K.GEOMETRIC_MEAN, 40.0, Uncertainty("sd", 12, value=5.0))
 
 
+def test_an_sd_of_the_logs_is_sigma_itself():
+    for kind in (K.GEOMETRIC_MEAN, K.GEOMETRIC_AREA):
+        sigma, n_arm = to_sigma(kind, 40.0, Uncertainty("sd_log", 12, value=0.6))
+        assert sigma == 0.6 and n_arm == 12
+    with pytest.raises(UncertaintyError):
+        to_sigma(K.GEOMETRIC_MEAN, 40.0, Uncertainty("sd_log", 12, value=0.0))
+
+
+def test_z_with_an_sd_log_is_on_the_log_scale():
+    spec = _spec(target=100.0, sigma=0.6, n_arm=10)
+    _, pred, z = score_geometric(torch.full((10,), 150.0, dtype=torch.float64), spec)
+    assert pred == pytest.approx(150.0)
+    assert z == pytest.approx((math.log(150.0) - math.log(100.0)) / 0.6)
+
+
+def test_the_loader_takes_an_sd_log_as_sigma():
+    data = _data()
+    _item(data, "ogtt_insulin_geometric_mean")["uncertainty"] = {"kind": "sd_log", "value": 0.7, "n": 12}
+    f = parse_finding(data)
+    spec = next(s for s in f.specs if s.name.endswith("ogtt_insulin_geometric_mean"))
+    assert spec.sigma == pytest.approx(0.7) and spec.n_arm == 12
+
+
+def test_the_gate_rejects_sd_log_on_an_arithmetic_mean_and_a_non_positive_one():
+    data = _data()
+    _item(data, "ogtt_insulin_geometric_mean")["uncertainty"] = {"kind": "sd_log", "value": 0.0, "n": 12}
+    assert any("positive" in p for p in _problems(data))
+    data = _data()
+    _item(data, "fasting_glucose_mean")["uncertainty"] = {"kind": "sd_log", "value": 0.5, "n": 12}
+    assert any("takes an uncertainty of kind" in p for p in _problems(data))
+
+
 def test_the_loader_reads_a_geometric_mean_and_its_ci_on_the_log_scale():
     f = read_finding(FINDING)
     spec = next(s for s in f.specs if s.name.endswith("ogtt_insulin_geometric_mean"))

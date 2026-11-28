@@ -644,8 +644,8 @@ what the model and this format should learn next.
 | `incremental_area` | the trapezoidal area of the marker above (or net of) the person's own baseline, over `times` | 1 | an area, as above | `sd`, `sem`, `ci`, `range` |
 | `spread` | the between-person standard deviation of the person's window mean | 1 | an SD, in the marker's unit | `n_only`, `sem`, `ci` |
 | `correlation` | Pearson r, across people, of the window mean with `partner` | 1 | unit `r` | `n_only`, `sem`, `ci` |
-| `geometric_mean` | the geometric mean of the marker over the window: exp(mean over people of ln of each person's window mean) | 1 | a level | `ci` only |
-| `geometric_area` | the geometric mean of each person's trapezoidal area over `times` | 1 | an area, as `area_under_curve` | `ci` only |
+| `geometric_mean` | the geometric mean of the marker over the window: exp(mean over people of ln of each person's window mean) | 1 | a level | `ci`, `sd_log` |
+| `geometric_area` | the geometric mean of each person's trapezoidal area over `times` | 1 | an area, as `area_under_curve` | `ci`, `sd_log` |
 | `curve` | the marker at several timepoints | 1 | per point | per point: `sd`, `sem`, `ci`, `range` |
 
 * Every statistic is taken **per person and then averaged over people**. So
@@ -724,9 +724,14 @@ what the model and this format should learn next.
   `ci` **on the geometric mean**, `low` and `high` positive with the value inside them:
   the loader takes the log-scale width `ln(high) - ln(low)`, a standard error of ln GM from
   it as for any `ci`, and scores the model's prediction `exp(mean of ln x)` against
-  `ln(value)`, so a residual is a ratio, not a difference. A geometric mean printed
-  without an interval, or with an SD of the logs or a range, is not entered (left out:
-  `source`, `uncertainty_not_printed`). An area is a geometric mean of per-person areas
+  `ln(value)`, so a residual is a ratio, not a difference. Where the paper prints
+  instead the mean and SD of the **natural log** ("log mean", "SD of ln x"; the geometric mean
+  is exp(log mean), which is the value you enter), give `sd_log` with that SD: it is the
+  between-person SD of ln x, taken as sigma directly. Only a natural-log SD is accepted: a
+  log10 SD is not entered as printed (convert it x ln 10 yourself only when the paper says
+  log10, and say so in the note). A geometric mean printed with neither an interval nor an
+  SD of the logs, or with a range, is not entered (left out:
+  `source`, `uncertainty_not_printed`). A plain `sd` (of the raw values) is rejected. An area is a geometric mean of per-person areas
   only when the paper says the areas were log-transformed.
 * `correlation` takes `partner`: another marker's name, or one of the person factors
   `insulin_resistance`, `beta_cell`, `adiposity`, `fitness`, `chronotype`,
@@ -851,6 +856,7 @@ Do not compute a standard error yourself and do not choose a sigma.
 | `sem` | `value`, `n` | "mean +/- SEM", error bars labelled standard error |
 | `ci` | `low`, `high`, `level` (90, 95 or 99), `n` | a confidence interval **of the reported statistic** (for a geometric mean, the interval of the geometric mean: it is symmetric on the log scale, and only `ci` is accepted) |
 | `range` | `low`, `high`, `n` | the smallest and largest individual |
+| `sd_log` | `value`, `n` | only for `geometric_mean` and `geometric_area`: the SD of the natural log across people (paper's "SD of the log values", with GM = exp(log mean)) |
 | `n_only` | `n` | only for `spread` and `correlation`, when the paper gives the statistic and its n and nothing else |
 
 `n` is the number of **people** behind the number, not of tests or samples: twelve

@@ -797,14 +797,18 @@ Not rescored, from the board of 2026-10-29:
   an area print geometric means with a 95% CI, which left them out
   (`operator`/`geometric_mean`: `christensen-2026`, `dale-2018`,
   `revheim-2024`). The file's `ci` is the interval of the geometric mean and
-  is the only uncertainty accepted; the loader takes `ln(high / low)`, a
+  is accepted, as is `sd_log` (the SD of the natural log across people,
+  for a paper that prints log mean and SD; the value stays the GM,
+  exp(log mean); sigma is `sd_log` itself, n capped at 25); a plain `sd` is
+  rejected. For a `ci` the loader takes `ln(high / low)`, a
   standard error of ln GM through the t quantile, and `sigma` is the
   between-person SD of the log value (n capped at 25 as elsewhere). The loss
   scores `exp(mean ln x)` against `ln(value)` on that scale
   (`cohort_loss.score_geometric`); `z` is `(ln pred - ln GM) / sigma` and the
   board reports the prediction back in the marker's unit. The gate rejects a
   value at or under zero and a `ci` that is not positive or does not contain
-  it. Nothing in the corpus uses it yet; every existing statistic scores
+  it. Nothing in the corpus uses it yet (`dale-2018` Table 4 is the first
+  candidate for `sd_log`); every existing statistic scores
   bit for bit as before (iter 120 scored on the old and the new code: equal).
 - Insulin converts from U/L (x1000) and, like GIP and GLP-1, from a mass
   concentration (pg/mL, ng/L, ng/mL, µg/L) through the hormone's molar mass
