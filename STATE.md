@@ -614,6 +614,16 @@ glucose and validation insulin rises (0.337 to 0.387, to 0.452 at 0.8). Nothing 
 sealed not scored. The tracer rows say both emptying and first pass are short in the first 2 h,
 but the only constant that moves glucose is the one the other families pin. A meal that
 separates meal from drink in the liver share, or a person-level first-pass fraction, would need a run.
+Exponent 0.5, per family (2026-11-28, median |z|, trained / validation, base to variant): trained
+clamp 0.417 to 0.442, exercise 1.253 to 1.282, sbp +0.035, glucagon +0.038; validation resting
+0.477 to 0.501, insulin 0.337 to 0.387; mixed meal, fasting, oral glucose, ffa, bhb, glp1 (1.99 to
+1.85) within 0.02 or better; gip unchanged (trained 1.126) but vollmer-2008 gip ratio z 6.39 to
+7.82 (3.95 to 4.19 against 2.86), the item d1ef4f2 blamed on this stomach. Four families or
+markers worsen by more than 0.02, so not adopted. The exponent: emptying rate is multiplied by
+(held kcal / 300)^e, so a meal of twice the calories takes 2^(1-e) times as long to empty:
+1.59 at 0.33, 1.41 at 0.5, 2.0 at 0 (Brener's constant kcal/min). The repo holds no source for
+0.33 or 0.5 (6496abe chose 0.33; Brener's drinks are all at the 300 kcal reference), so 0.5 is
+no better supported.
 
 `--incretin-gain-nonneg` (2026-11-28, off by default, recorded in the checkpoint as
 `incretin_gain_nonneg`) holds `metabolic.incretin_glu_gain` at or above 0: a post-step hook on
