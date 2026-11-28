@@ -338,6 +338,66 @@ def _parse_train_only(raw: str | None) -> tuple[str, ...]:
     return tuple(p.strip() for p in (raw or "").split(",") if p.strip())
 
 
+def _parse_train_only_lr(raw: str | None) -> tuple[tuple[str, float], ...]:
+    """``'pattern=mult,pattern=mult'`` to ((pattern, mult), ...); mult is relative to the phase lr."""
+    out: list[tuple[str, float]] = []
+    for item in (raw or "").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        pat, sep, mult = item.rpartition("=")
+        try:
+            m = float(mult)
+        except ValueError:
+            m = float("nan")
+        if not sep or not pat.strip() or not (m > 0.0) or m == float("inf"):
+            raise ValueError(f"--train-only-lr: '{item}' is not PATTERN=MULTIPLIER with a multiplier above 0")
+        out.append((pat.strip(), m))
+    return tuple(out)
+
+
+def _lr_multipliers(
+    model: nn.Module, params: list[nn.Parameter], rules: tuple[tuple[str, float], ...],
+) -> list[float]:
+    """The lr multiplier of each trained parameter (the last matching rule wins; 1.0 if none).
+
+    A rule that matches no trained parameter raises, and so does a run in which no trained
+    parameter keeps the plain phase lr (the cosine schedule runs on that group).
+    """
+    names = {id(p): n for n, p in model.named_parameters()}
+    got: list[float] = []
+    for p in params:
+        m = 1.0
+        for pat, mult in rules:
+            if fnmatch.fnmatchcase(names[id(p)], pat):
+                m = mult
+        got.append(m)
+    dead = [pat for pat, _ in rules
+            if not any(fnmatch.fnmatchcase(names[id(p)], pat) for p in params)]
+    if dead:
+        raise ValueError(f"--train-only-lr: pattern(s) {dead} match no trained parameter")
+    if rules and 1.0 not in got:
+        raise ValueError("--train-only-lr: at least one trained parameter must keep the phase lr")
+    return got
+
+
+def _make_adam(params: list[nn.Parameter], lr: float, mults: list[float] | None) -> torch.optim.Adam:
+    """Adam over ``params``; with ``mults``, one group per distinct multiplier (plain-lr group first)."""
+    if not mults or all(m == 1.0 for m in mults):
+        return torch.optim.Adam(params, lr=lr)
+    levels = [1.0] + sorted({m for m in mults if m != 1.0})
+    groups = [{"params": [p for p, m in zip(params, mults) if m == lv], "lr": lr * lv, "lr_mult": lv}
+              for lv in levels]
+    return torch.optim.Adam(groups, lr=lr)
+
+
+def _apply_lr_mults(optimizer: torch.optim.Optimizer) -> None:
+    """Set every group's lr to its multiplier times group 0's (the scheduled one)."""
+    base = optimizer.param_groups[0]["lr"]
+    for g in optimizer.param_groups[1:]:
+        g["lr"] = base * g.get("lr_mult", 1.0)
+
+
 def _freeze_all_but(model: nn.Module, patterns: tuple[str, ...]) -> list[nn.Parameter]:
     """The parameters to optimise. With no patterns, all of them (today's behaviour).
 
@@ -589,6 +649,7 @@ def train(
     compile_steps: bool = False,
     fitness_from_vo2max: bool = False,
     train_only: str | None = None,
+    train_only_lr: str | None = None,
     incretin_at_glucose: bool = False,
 ):
     _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
@@ -768,13 +829,20 @@ def train(
 
     train_only_patterns = _parse_train_only(train_only)
     params = _freeze_all_but(model, train_only_patterns)
+    lr_rules = _parse_train_only_lr(train_only_lr)
+    if lr_rules and not train_only_patterns:
+        raise ValueError("--train-only-lr needs --train-only")
+    lr_mults = _lr_multipliers(model, params, lr_rules) if lr_rules else None
+    if lr_rules:
+        print(f"[TRAIN-ONLY] lr multipliers on the phase lr: {dict(lr_rules)}", flush=True)
     rng = np.random.default_rng(seed)
 
     scheduler_T = phase_boundary if phased else total_epochs
-    optimizer = torch.optim.Adam(params, lr=lr)
+    optimizer = _make_adam(params, lr, lr_mults)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=scheduler_T, eta_min=lr * 0.05,
     )
+    _apply_lr_mults(optimizer)
 
     def _arm_phase(epoch_now: int, *, announce: bool) -> None:
         """Point the optimizer and cosine at the phase ``epoch_now`` is in.
@@ -795,12 +863,13 @@ def train(
             phase, lr_now, t_max, eta = 1, lr, scheduler_T, lr * 0.05
             done = epoch_now
         cur_phase = phase
-        optimizer = torch.optim.Adam(params, lr=lr_now)
+        optimizer = _make_adam(params, lr_now, lr_mults)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=max(t_max, 1), eta_min=eta,
         )
         for _ in range(done):
             scheduler.step()
+        _apply_lr_mults(optimizer)
         if phase == 3 and trajectory_signal is not None:
             if phase3_input_dropout is not None:
                 trajectory_signal.input_dropout = float(phase3_input_dropout)
@@ -1005,6 +1074,7 @@ def train(
                     optimizer.zero_grad()
 
             scheduler.step()
+            _apply_lr_mults(optimizer)
             elapsed = time.time() - epoch_start
             if steps_done:
                 step_s = (_clock() - epoch_start_c) / steps_done
@@ -1326,6 +1396,7 @@ def train(
         "incretin_at_glucose": bool(incretin_at_glucose),
         # None = every parameter trained; else the fnmatch patterns that chose the trained ones.
         "train_only": list(train_only_patterns) if train_only_patterns else None,
+        "train_only_lr": train_only_lr or None,
         "spec_path": spec_path,
         "trained_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -2229,6 +2300,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--train-only-lr",
+        dest="train_only_lr",
+        type=str,
+        default=None,
+        help=(
+            "With --train-only: comma-separated PATTERN=MULTIPLIER, fnmatch on parameter names. "
+            "A matching parameter's lr is the multiplier times the phase lr, on the same cosine "
+            "(floor included), e.g. 'metabolic.incretin_glu_gain=3'. Adam moves a scalar about "
+            "one lr a step whatever its gradient, so a scalar that must travel further than the "
+            "others wants a larger multiplier. A pattern that matches no trained parameter is an "
+            "error; at least one trained parameter must keep the plain lr. Recorded in the checkpoint."
+        ),
+    )
+    parser.add_argument(
         "--cold-distill-anchor-window",
         type=int,
         default=60,
@@ -2723,6 +2808,7 @@ def main():
         compile_steps=args.compile_steps,
         fitness_from_vo2max=args.fitness_from_vo2max,
         train_only=args.train_only,
+        train_only_lr=args.train_only_lr,
         incretin_at_glucose=args.incretin_at_glucose,
     )
 

@@ -537,6 +537,20 @@ a single value): `metabolic.islet.log_k_incretin`, `metabolic.islet.log_incretin
 Per-person gamma is a head, not in these; the glucagon ones (`glp1_gn_pg`, `gn_nut_gain`,
 `protein_gn_gain`) can be dropped for an insulin-only run.
 
+`--train-only-lr PATTERN=MULT,...` (2026-11-28, default off) gives matching trained parameters
+a multiple of the phase lr, on the same cosine (floor included); at least one trained
+parameter keeps the plain lr, and a pattern that matches no trained parameter stops the run.
+Sized for the islet run on iter 120's weights, 12 steps (4 threads, 35 s a step locally;
+trained-side items only, `--val-fraction 0.1`, sealed not looked at), Adam moves a scalar
+about one lr a step when its gradient keeps a sign and far less when it flips (|grad| 0.01
+to 4, `--grad-clip` 10 never binds). At lr 0.003 six steps moved the logs 0.002 to 0.01
+(0.0017 a step at best), so 120 steps would move them under 0.2; at 0.01, 12 steps moved
+them 0.003 to 0.07 (`incretin_glu_gain` x3: -0.22, all 12 steps down, so the trained
+evidence asks for a gain below 0 on these draws; the validation guard decides). The islet
+run: `--phase2-lr 0.01 --phase2-lr-floor 0.002 --steps-per-epoch 20 --phase2-epochs 6`
+(120 steps; iter 124 ran about 95 s a step in the cloud) with
+`--train-only-lr 'metabolic.incretin_glu_gain=3,metabolic.log_incretin_glu_thr=0.5,metabolic.log_incretin_glu_width=0.5'`.
+
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
 
