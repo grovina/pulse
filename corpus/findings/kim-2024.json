@@ -1,0 +1,362 @@
+{
+  "paper": "kim-2024",
+  "citation": {
+    "authors": "Kim In-Sook, Park Soo-yeon, Park Min Ju, Kim Kyeong Jin, Kim Ji Yeon",
+    "title": "Effect of Barley on Postprandial Blood Glucose Response and Appetite in Healthy Individuals: A Randomized, Double-Blind, Placebo-Controlled Trial",
+    "journal": "Nutrients",
+    "year": 2024,
+    "doi": "10.3390/nu16223899",
+    "pmid": "39599684",
+    "pmcid": "PMC11597105"
+  },
+  "population": {
+    "n": 70,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 35.3,
+      "sd": 9.2,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.4,
+      "sd": 3.35,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Healthy adults aged 20 to 65 with fasting glucose below 126 mg/dL, with active disease and other exclusions screened out (Methods 2.3); 70 participants at baseline (Table 1), 67 completed both visits. Age and BMI are Table 1 means with SE, converted to SD as SE x sqrt(70): 1.1 x 8.37 = 9.2 and 0.4 x 8.37 = 3.35; min and max are not printed. Sex from Table 1: 55 male, 15 female."
+  },
+  "protocols": [
+    {
+      "name": "placebo_drink",
+      "description": "Rice-flour placebo product (150 g in 500 mL water, Methods 2.1 and 2.5) with a 30 g glucose load (Methods 2.5 and 2.6: 'after consuming either the BDF or placebo product with 30 g of glucose loading'), drunk at minute 0 after a fast of at least 12 h. Printed (Methods 2.1): placebo 'provided a total of 539.36 kcal per 150 g serving ... 90.2% energy from carbohydrates (121.6 g), 7.5% from protein (10.1 g), and 2.3% from fat (1.4 g)'; 'The carbohydrates in the placebo product included 0.4 g of fiber'. Derived: carbs_g of the product = 121.6 - 0.4 = 121.2 (total carbohydrate less printed fibre), plus the 30 g glucose = 151.2. fibre_g 0.4, fat_g 1.4, protein_g 10.1 as printed. Samples: 0 min (fasting, before the drink), then 30, 60, 120, 180 min after consumption (Methods 2.5). Clock hour not stated (start_hour 8.0 assumed). Whether the glucose was dissolved in the drink is not stated; it is entered as one meal at minute 0. The barley-fibre arm is not entered (see left_out).",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 151.2,
+          "fat_g": 1.4,
+          "protein_g": 10.1,
+          "fibre_g": 0.4,
+          "protein_source": "plant",
+          "form": "liquid",
+          "food": "rice flour drink with 30 g glucose"
+        }
+      ],
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_curve_placebo",
+      "description": "Plasma glucose after the placebo drink with 30 g glucose, mean and SE at 0 to 180 min (placebo column of Table 2; Methods: 'The results are presented as the means ± standard errors'). Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "unit": "mg/dL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 93.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.9,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 148.6,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.3,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 137.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.3,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 121.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.5,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 108.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.8,
+            "n": 67
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, 'Blood glucose (mg/dL)', Placebo column, rows 0 to 180 min",
+        "quote": "0 min | 93.4 ± 0.9 ; 30 min | 148.6 ± 2.3 ; 60 min | 137.9 ± 3.3 ; 120 min | 121.7 ± 2.5 ; 180 min | 108.2 ± 1.8"
+      }
+    },
+    {
+      "id": "insulin_curve_placebo",
+      "description": "Plasma insulin after the placebo drink with 30 g glucose, mean and SE at 0 to 180 min (placebo column of Table 2). The 0 min cell prints '7.4 0.7' with the ± missing; Table 2 footnote 1 says 'Mean ± SE (all such values)', so 0.7 is read as the SE (the BDF cell beside it prints '7.3 ± 0.8'). Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "unit": "µU/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 7.4,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 0.7,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 30,
+          "value": 70.9,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.3,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 60,
+          "value": 59.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 3.9,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 52.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 4.7,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 180,
+          "value": 35.7,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.7,
+            "n": 67
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 2, 'Insulin ( µU/mL)', Placebo column, rows 0 to 180 min; footnote 1",
+        "quote": "0 min | 7.4 0.7 ; 30 min | 70.9 ± 4.3 ; 60 min | 59.3 ± 3.9 ; 120 min | 52.7 ± 4.7 ; 180 min | 35.7 ± 2.7"
+      }
+    },
+    {
+      "id": "glucose_cmax_placebo",
+      "description": "Cmax of plasma glucose after the placebo drink, the mean of each person's highest value in 0 to 180 min (Table 2; Methods 2.8) Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 152.3,
+      "unit": "mg/dL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2.4,
+        "n": 67
+      },
+      "location": {
+        "where": "Table 2, row 'Cmax (mg/dL)', Placebo column",
+        "quote": "Cmax (mg/dL) | 152.3 ± 2.4"
+      }
+    },
+    {
+      "id": "insulin_cmax_placebo",
+      "description": "Cmax of plasma insulin after the placebo drink, the mean of each person's highest value in 0 to 180 min (Table 2; Methods 2.8) Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 79.8,
+      "unit": "µU/mL",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4.9,
+        "n": 67
+      },
+      "location": {
+        "where": "Table 2, row 'Cmax ( µU/mL)', Placebo column",
+        "quote": "Cmax ( µU/mL) | 79.8 ± 4.9"
+      }
+    },
+    {
+      "id": "glucose_auc_0_180",
+      "description": "Trapezoidal area of the placebo arm over the sampling minutes 0, 30, 60, 120, 180 (Methods 2.8: 'The area under the curve (AUC) was calculated using the trapezoidal rule'); total area including the fasting level; mean and SE. Kept as the one area of this marker: its mean follows from the curve points, its SE does not. The paper's interval areas (0-30, 30-60, 60-120, 120-180) and cumulative areas (0-60, 0-120) are not entered; the cumulative ones are sums of the interval ones (glucose 3629+4297 = 7926; +7785 = 15,711 vs 15,712; +6896 = 22,607). Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "glucose",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180
+      ],
+      "value": 22607,
+      "unit": "mg/dL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 357,
+        "n": 67
+      },
+      "location": {
+        "where": "Table 2, 'AUC (mg/dL × min)', Placebo column, row '0–180'",
+        "quote": "0–180 | 22,607 ± 357"
+      }
+    },
+    {
+      "id": "insulin_auc_0_180",
+      "description": "Trapezoidal area of the placebo arm over the sampling minutes 0, 30, 60, 120, 180 (Methods 2.8: 'The area under the curve (AUC) was calculated using the trapezoidal rule'); total area including the fasting level; mean and SE. Kept as the one area of this marker: its mean follows from the curve points, its SE does not. The paper's interval areas (0-30, 30-60, 60-120, 120-180) and cumulative areas (0-60, 0-120) are not entered; the cumulative ones are sums of the interval ones (glucose 3629+4297 = 7926; +7785 = 15,711 vs 15,712; +6896 = 22,607). Table 2 prints no n; 67 is the number who completed both visits (33 + 34 after 3 withdrawals, Results 3.1; Abstract 'n = 67'), used for every Table 2 and Results-text value.",
+      "marker": "insulin",
+      "statistic": "area_under_curve",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        120,
+        180
+      ],
+      "value": 9140,
+      "unit": "µU/mL",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 572,
+        "n": 67
+      },
+      "location": {
+        "where": "Table 2, 'AUC ( µU/mL × min)', Placebo column, row '0–180'",
+        "quote": "0–180 | 9140 ± 572"
+      }
+    },
+    {
+      "id": "glucagon_curve_placebo",
+      "description": "Plasma glucagon before and 120 min after the placebo drink, mean and SE, from the Results text (the other time points are in Figure 3 only). The text prints no n for glucagon; 67 as for Table 2.",
+      "marker": "glucagon",
+      "statistic": "curve",
+      "protocols": [
+        "placebo_drink"
+      ],
+      "unit": "pg/mL",
+      "points": [
+        {
+          "t_min": 0,
+          "value": 38.2,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 2.3,
+            "n": 67
+          }
+        },
+        {
+          "t_min": 120,
+          "value": 44.3,
+          "uncertainty": {
+            "kind": "sem",
+            "value": 1.5,
+            "n": 67
+          }
+        }
+      ],
+      "location": {
+        "where": "Results 3.3, paragraph 1",
+        "quote": "measuring 38.2 ± 2.3 pg/mL in the placebo group ; after 120 min, glucagon levels increased to 44.3 ± 1.5 pg/mL in the placebo group"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Barley dietary fibre (BDF) arm, all values: glucose and insulin curves, Cmax, AUCs and glucagon (Table 2 BDF column; Results 3.3, BDF glucagon 36.8 ± 2.1 and 52.6 ± 2.2 pg/mL). The arm has barley fibre added beyond its grams, so it is not the control meal; the placebo arm is entered instead",
+      "missing": {
+        "kind": "input",
+        "name": "fibre_type"
+      }
+    },
+    {
+      "what": "Triacylglycerol, placebo arm: 138.0 ± 18.5 mg/dL 'immediately after consumption' falling to 108.3 ± 12.2 mg/dL at 180 min (Results 3.3); the timing of the first value is not clear",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "PYY, placebo arm: the time course is in Figure 5b only and the text gives no numbers (Results 3.4)",
+      "missing": {
+        "kind": "marker",
+        "name": "pyy"
+      }
+    },
+    {
+      "what": "Ghrelin, placebo arm: 713.8 ± 40.4 pg/mL at 60 min (Results 3.4) and the Figure 5a time course; absolute ghrelin is an assay-dependent level",
+      "missing": {
+        "kind": "source",
+        "name": "assay_dependent_level"
+      }
+    },
+    {
+      "what": "Glucagon at 30, 60 and 180 min, placebo arm (Figure 3 only)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Tmax of glucose (41.0 ± 2.3 min) and insulin (53.8 ± 4.2 min), placebo arm (Table 2): the paper does not say how the time of the maximum was located, and the means are not sampling times",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    }
+  ]
+}
