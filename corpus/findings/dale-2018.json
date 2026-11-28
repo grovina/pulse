@@ -336,13 +336,6 @@
       }
     },
     {
-      "what": "insulin log means, log SDs and geometric means, control arm (Table 4): the arithmetic mean is entered instead",
-      "missing": {
-        "kind": "operator",
-        "name": "geometric_mean"
-      }
-    },
-    {
       "what": "HbA1c, Table 3 (baseline characteristics)",
       "missing": {
         "kind": "marker",
@@ -354,6 +347,13 @@
       "missing": {
         "kind": "source",
         "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "control-arm insulin geometric means (Table 4: log mean, SD of the natural logs, GM = exp(log mean), at baseline and 0 to 180 min; GM 4.6 at baseline, 27.5 to 8.7 mIU/l over the curve): the same samples of the same 41 people are already entered as the arithmetic mean curve and fasting value, so entering the geometric means too would count them twice",
+      "missing": {
+        "kind": "source",
+        "name": "restates_entered_finding"
       }
     }
   ]
