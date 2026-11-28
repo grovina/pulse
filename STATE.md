@@ -457,6 +457,23 @@ as ratios on both):
   item the new stomach is slightly better (trained mean |z| 1.69 to 1.61,
   sealed 2.96 to 2.93; iter 121 1.54 to 1.43, 2.92 to 2.88).
 
+Late mixed-meal insulin, two more frozen tests (2026-11-28, free, iter 120 on
+main at d4989c4, trained-side items only; none kept). (a) Soma's shape, the
+incretin excess (factor minus 1.7, the fasting level) times a sigmoid of G at
+90 mg/dL, 10 wide, floor 20 (and 10) mg/dL of stimulus, in place of relu(G - Gb):
+late insulin 0.745 to 0.80 of target, but fasting insulin 0.92 to 1.09 (the
+model's incretin factor is above 1.7 in some fasted arms), mixed-meal glucose z
+-0.51 to -0.84 and trained median |z| 0.613 to 0.687 on the 635 glucose and insulin
+items; at 10 mg/dL still 0.625. Secretion at ordinary glucose pulls the dip
+deeper, as the 2026-11-22 finding said. (b) The uptake gate ^4 and meal gate
+0.01 alone: mixed-meal glucose z -0.51 to -0.32, late insulin 0.745 to 0.77,
+all trained items median 0.587 to 0.591, mean 0.965 to 0.964, insulin |z| 0.843
+to 0.847, urinary glucose worse (7.7 to 8.6); sealed median 0.707 to 0.718. The
+clearance x0.8 adds late insulin (0.835) but costs early iAUC and fasting
+(chwander-2014 z 1.7 to 2.5); with (a) 0.93 late and median 0.665. mok-2016 at
+150 min: 18 to 22 against 74. None of it moves late insulin more than 0.1;
+secretion has no lever left that pulse's glucose can carry.
+
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
 
