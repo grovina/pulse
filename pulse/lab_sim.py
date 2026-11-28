@@ -51,6 +51,8 @@ def load_lab_model(path: str | None = None) -> tuple[ModularPhysiologyNetwork, d
             try:
                 ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
                 model = ModularPhysiologyNetwork.from_checkpoint(ckpt, strict=True)
+                from .incretin import set_incretin_at_glucose
+                set_incretin_at_glucose(bool(ckpt.get("incretin_at_glucose", False)))
                 model.eval()
                 for p in model.parameters():
                     p.requires_grad_(False)

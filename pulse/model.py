@@ -29,6 +29,7 @@ from .types import (
     GUT_CHANNEL_INDEX, DUODENAL_CHANNEL_INDEX,
     NORM_CENTER, NORM_SCALE, OBSERVABLE_IDS,
 )
+from . import incretin
 from .gastric import (
     EMPTY_KCAL_PER_MIN, simulate, simulate_by_meal, swallow_by_meal, swallow_from_meals,
     swallow_from_member_meals,
@@ -432,6 +433,8 @@ class ModularPhysiologyNetwork(nn.Module):
         "state_rev",
         "cardiovascular.hr_fit_gain", "cardiovascular.hr_slow_gain",
         "cardiovascular.slow_tau_raw",
+        "metabolic.incretin_glu_gain", "metabolic.log_incretin_glu_thr",
+        "metabolic.log_incretin_glu_width",
     })
     RETIRED_STATE_KEYS = frozenset({"metabolic.islet.log_amino_ins_gain"})
     # A checkpoint written before the meal-gated muscle share and the epinephrine
@@ -666,7 +669,14 @@ class ModularPhysiologyNetwork(nn.Module):
             )
         met = self.embedding_projections["metabolic"](embedding)
         batch = embedding.shape[0]
+        fasted: dict[str, torch.Tensor] = {}
+        if incretin.INCRETIN_AT_GLUCOSE:
+            # The person's own fasted GLP-1 and GIP, which the incretin-at-glucose term
+            # measures its excess against (``pulse.incretin``). Only read when it is on.
+            fasted["glp1_fasted"], fasted["gip_fasted"] = self.appetite.fasted_incretin_levels(
+                self.embedding_projections["appetite"](embedding))
         return {
+            **fasted,
             "ib": self.metabolic.insulin_setpoint_raw(met).clamp(min=1e-3),
             "body_mass_kg": self.metabolic.body_mass_kg(met),
             **{k: v.expand(batch) for k, v in self.metabolic.body_numbers().items()},

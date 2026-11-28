@@ -737,7 +737,7 @@ class TestNothingIsStructurallyDead(unittest.TestCase):
                 sum(p.numel() for p in getattr(m.metabolic, name).parameters()), 265,
                 msg=name)
         self.assertEqual(m.metabolic.log_act_ins_sens.numel(), 1)
-        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 22002)
+        self.assertEqual(sum(p.numel() for p in m.metabolic.parameters()), 22005)
         self.assertFalse(hasattr(m.metabolic, "log_alpha_gn"))
 
 

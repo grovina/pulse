@@ -212,6 +212,8 @@ def get_model() -> ModularPhysiologyNetwork:
     model_version = str(checkpoint.get("model_version", checkpoint.get("trained_at", "unknown")))
 
     model = ModularPhysiologyNetwork.from_checkpoint(checkpoint)
+    from .incretin import set_incretin_at_glucose
+    set_incretin_at_glucose(bool(checkpoint.get("incretin_at_glucose", False)))
     for param in model.parameters():
         param.requires_grad_(False)
     model.eval()

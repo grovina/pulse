@@ -180,6 +180,42 @@ def incretin_factor_t(
     return 1.0 + islet["incretin_half"] * (_sat_t(glp1_excess, k) + _sat_t(gip_excess, k))
 
 
+# --- Incretin at ordinary glucose (soma's GLP-1 result; see ../soma/STATE.md) -----------
+# Soma's beta-cell secretes to GLP-1 at ordinary glucose, not only above the fasting
+# setpoint. This term is that: gain x gamma x (the incretin factor above the person's own
+# fasted factor) x a sigmoid of G x a stimulus floor. Off by default (the switch); with it
+# on the gain still starts at zero (``metabolic.incretin_glu_gain``), so nothing changes
+# until a run trains it.
+INCRETIN_AT_GLUCOSE = False
+INC_GLU_THRESHOLD = 90.0      # mg/dL: where the sigmoid of G is one half (initial value)
+INC_GLU_WIDTH = 10.0          # mg/dL: its width (initial value)
+# Incretin-factor units kept out of the excess: the person's fasted level is read off their
+# GLP-1 head at rest, and GLP-1 drifts up over a long fast, so a margin (0.5 of a factor
+# that runs 1.4 to 4.6 on iter 120) keeps a fasted arm at a few percent of its insulin
+# with the gain at 1 and leaves a meal's excess standing.
+INC_GLU_DEADBAND = 0.5
+INC_GLU_STIM_FLOOR = 20.0     # mg/dL of stimulus the term stands for at full gate
+# Hours of day the person's fasted GLP-1 is averaged over (the head reads the clock).
+FASTED_HOURS = (2.0, 8.0, 14.0, 20.0)
+
+
+def set_incretin_at_glucose(on: bool) -> None:
+    """Set the module switch for this process. A run that trains the term turns it on, and
+    whatever loads that run's checkpoint sets it the same way."""
+    global INCRETIN_AT_GLUCOSE
+    INCRETIN_AT_GLUCOSE = bool(on)
+
+
+def incretin_at_glucose_t(
+    incretin: torch.Tensor, fasted_incretin: torch.Tensor, glucose: torch.Tensor,
+    gain: torch.Tensor, threshold: torch.Tensor, width: torch.Tensor,
+) -> torch.Tensor:
+    """The dimensionless drive (a stimulus in mg/dL): zero when the incretin factor is at or
+    below the person's fasted one, so a fasted person gets none of it."""
+    excess = torch.relu(incretin - fasted_incretin - INC_GLU_DEADBAND)
+    return gain * INC_GLU_STIM_FLOOR * excess * torch.sigmoid((glucose - threshold) / width)
+
+
 def gip_rate_t(
     gip: torch.Tensor, carb_g: torch.Tensor, fat_g: torch.Tensor,
     kinetics: Mapping[str, torch.Tensor],

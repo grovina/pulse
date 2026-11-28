@@ -823,7 +823,10 @@ class TestNoDeadHeads(unittest.TestCase):
         emb = emb.detach().requires_grad_(True)
         rates, published = met.forward_published(state, coupling, external, emb, tf)
         (rates.abs().sum() + sum(v.abs().sum() for v in published.values())).backward()
-        dead = [n for n, p in met.named_parameters() if p.grad is None or float(p.grad.abs().max()) == 0.0]
+        # The incretin-at-glucose numbers are read only with its switch on
+        # (tests/test_incretin_at_glucose.py), and the switch is off by default.
+        dead = [n for n, p in met.named_parameters()
+                if "incretin_glu" not in n and (p.grad is None or float(p.grad.abs().max()) == 0.0)]
         self.assertEqual(dead, [])
 
 

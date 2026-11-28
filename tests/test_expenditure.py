@@ -153,7 +153,7 @@ class TestTheLedgerPublishesTheRise(unittest.TestCase):
             name for name, mod in model._modules_by_name.items()
             if type(mod).bind_body is not PhysiologyModule.bind_body
         )
-        self.assertEqual(overrides, ["appetite", "cardiovascular", "thermoreg"])  # cardiovascular binds the fitness code, not kilograms
+        self.assertEqual(overrides, ["appetite", "cardiovascular", "metabolic", "thermoreg"])  # cardiovascular binds the fitness code and metabolic the fasted incretins, not kilograms
         body = model.body_quantities(torch.zeros(2, EMBEDDING_DIM))
         for name, mod in model._modules_by_name.items():
             if name == "metabolic":

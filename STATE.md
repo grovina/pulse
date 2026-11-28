@@ -13,7 +13,7 @@ to be re-read by hand. Where pulse is going is [`PLAN.md`](PLAN.md).
 | Modules | 9 (metabolic 13 states, appetite 5, stress 5, cardiovascular 5, hepatobiliary 4, gastric 3, respiratory 2, circadian 2, thermoreg 1) |
 | States | 40 |
 | Observables | 10 |
-| Parameters | 37,293 at the default widths |
+| Parameters | 37,296 at the default widths |
 | Published numbers | 46 in 10 tables, each learned from its published value |
 | Corrections | 3 |
 | Cohort specs | 1185 authored, 140 of them curves; 1241 training points and 348 held-out points |
@@ -473,6 +473,36 @@ clearance x0.8 adds late insulin (0.835) but costs early iAUC and fasting
 (chwander-2014 z 1.7 to 2.5); with (a) 0.93 late and median 0.665. mok-2016 at
 150 min: 18 to 22 against 74. None of it moves late insulin more than 0.1;
 secretion has no lever left that pulse's glucose can carry.
+
+The soma-shaped incretin term is now in the code, off (2026-11-28; `--incretin-at-glucose`,
+`pulse.incretin`). Soma's beta-cell secretes to GLP-1 at ordinary glucose (../soma/STATE.md);
+pulse's did not, and test (a) above showed the shape helps late insulin. The term added to
+the insulin rate is `gain x gamma x gsir_mod x 20 mg/dL x relu(incretin factor - the
+person's fasted factor - 0.5) x sigmoid((G - thr) / width)`, over the epinephrine divisor.
+The person's fasted factor comes from their own fasted GLP-1 (the appetite head's basal
+production over its clearance at the centre state, mean of four hours of day) and GIP at
+`gip_b`, run through the same learned `k_incretin` and `incretin_half`; it replaces the
+constant 1.7 that gave fasted arms an excess (iter 120's fasted factor runs 1.4 to 2.8 across
+people). The 0.5 dead band is because GLP-1 drifts up over a long fast. Off: nothing changes
+(no body quantity, no term). On with gain 0 (its start): rollouts bit-identical. On iter 120
+with gain 1 and a 60/30/25 g meal: late (150 to 480 min) insulin about +0.5 to +5 percent
+across eight people, a fasted 8 h +0 to +3 (one person 4 in the first two hours); trained gain, threshold (90 mg/dL) and
+width (10 mg/dL) are the only new parameters (`metabolic.incretin_glu_gain`,
+`metabolic.log_incretin_glu_thr`, `metabolic.log_incretin_glu_width`; added keys, an older
+checkpoint loads them at those values). The flag is recorded in the checkpoint and set by
+`probe.load_model_from_checkpoint`, `lab_sim` and `server`, like `--fitness-from-vo2max`.
+Not tried trained: a gain of 1 is test (a)'s strength, so expect the trained one to want more.
+
+`--train-only` for an islet run (names and value counts from iter 120's checkpoint, every one
+a single value): `metabolic.islet.log_k_incretin`, `metabolic.islet.log_incretin_half`,
+`metabolic.islet.log_glp1_gn_pg`, `metabolic.islet.log_ins_nut_gain`,
+`metabolic.islet.log_ins_nut_w_p`, `metabolic.islet.log_ins_nut_w_f`,
+`metabolic.islet.log_gn_nut_gain`, `metabolic.islet.log_protein_gn_gain`,
+`metabolic.log_gamma`, and the new `metabolic.incretin_glu_gain`,
+`metabolic.log_incretin_glu_thr`, `metabolic.log_incretin_glu_width`. As patterns:
+`--train-only 'metabolic.islet.*,metabolic.log_gamma,metabolic.incretin_glu_*'` (12 values).
+Per-person gamma is a head, not in these; the glucagon ones (`glp1_gn_pg`, `gn_nut_gain`,
+`protein_gn_gain`) can be dropped for an insulin-only run.
 
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):

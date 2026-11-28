@@ -112,6 +112,8 @@ def load_model_from_checkpoint(path: str | Path) -> tuple[ModularPhysiologyNetwo
     # way the run built them. A checkpoint that predates the flag was trained with it off.
     from ..training.factors import set_fitness_from_vo2max
     set_fitness_from_vo2max(bool(ckpt.get("fitness_from_vo2max", False)))
+    from ..incretin import set_incretin_at_glucose
+    set_incretin_at_glucose(bool(ckpt.get("incretin_at_glucose", False)))
     return model, ckpt
 
 

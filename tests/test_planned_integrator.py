@@ -59,7 +59,10 @@ MEALS = [
 ]
 
 
-_AT_ZERO = ("cardiovascular.hr_fit_gain", "cardiovascular.hr_slow_gain", "cardiovascular.slow_tau_raw")
+_AT_ZERO = ("cardiovascular.hr_fit_gain", "cardiovascular.hr_slow_gain", "cardiovascular.slow_tau_raw",
+            # The incretin-at-glucose numbers (off by default) draw nothing either.
+            "metabolic.incretin_glu_gain", "metabolic.log_incretin_glu_thr",
+            "metabolic.log_incretin_glu_width")
 
 
 def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
@@ -74,7 +77,7 @@ def _live_model(seed: int = 0) -> ModularPhysiologyNetwork:
     with torch.no_grad():
         for name, p in model.named_parameters():
             if name in _AT_ZERO:
-                continue   # the heart-rate gains stay at their zero init, and draw nothing
+                continue   # the numbers in _AT_ZERO stay at their init, and draw nothing
             p.add_(0.05 * torch.randn(p.shape, generator=g))
     return model
 
@@ -490,8 +493,9 @@ def test_the_checkpoint_layout_is_untouched() -> None:
     # +3 since 7c781a5: four nutrient-insulin gains added, the amino one retired.
     # +1 for the `state_rev` buffer that marks a state saved after the meal split.
     # +3 parameters (and 3 keys) for the heart-rate fitness gain, slow gain and slow tau.
-    assert sum(p.numel() for p in model.parameters()) == 11085
-    assert len(model.state_dict()) == 259
+    # +3 for the incretin-at-glucose gain, threshold and width.
+    assert sum(p.numel() for p in model.parameters()) == 11088
+    assert len(model.state_dict()) == 262
 
 
 def test_member_steps_hold_a_finished_member() -> None:

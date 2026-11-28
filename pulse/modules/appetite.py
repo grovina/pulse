@@ -16,7 +16,7 @@ import math
 
 import torch
 
-from .base import BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule
+from .base import BasalPlusGatedPeakHead, ConstantFluxHead, MassActionModule, compute_time_features
 from ..incretin import GIP_KINETICS, gip_rate_t
 from ..published import PublishedNumbers
 from ..types import (
@@ -133,6 +133,37 @@ class AppetiteModule(MassActionModule):
             "glp1_cons_scale": self.cons_scale[_GLP1_IDX],
             **self.gip_kinetics(),
         }
+
+    def fasted_incretin_levels(self, embedding: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """``(GLP-1, GIP)`` of a person fasted, each ``[B]`` in the marker's unit, from the
+        person's own code (``embedding`` is this module's projection, ``[B, E]``).
+
+        GIP rests at its published basal. GLP-1 rests where its basal production meets its
+        clearance, read off the head at the centre state with no meal; the head also reads the
+        clock, so the level is the mean over ``FASTED_HOURS``. Detached: it is a reference."""
+        from ..incretin import FASTED_HOURS
+        batch = embedding.shape[0]
+        head = self.heads[_GLP1_IDX]
+        scale = NORM_SCALE[MARKER_INDEX["glp1"]]
+        levels = []
+        with torch.no_grad():
+            ext = embedding.new_ones(batch, len(self.external_inputs))
+            coupling = embedding.new_zeros(batch, self.n_coupling)
+            for hour in FASTED_HOURS:
+                tf = compute_time_features(
+                    embedding.new_tensor(hour * 60.0)).unsqueeze(0).expand(batch, -1)
+                state = embedding.new_zeros(batch, self.n_state)
+                for _ in range(2):
+                    raw = self.head_outputs(state, coupling, ext, embedding, tf)
+                    prod, cons = head.post(raw[_GLP1_IDX], self.head_stimulus(head, state, coupling))
+                    level = (prod * self.prod_scale[_GLP1_IDX]
+                             / (cons * self.cons_scale[_GLP1_IDX]))
+                    state = state.clone()
+                    state[:, _GLP1_IDX] = (level - _GLP1_CENTER) / scale
+                levels.append(level)
+            glp1 = torch.stack(levels).mean(0)
+            gip = self.gip_kinetics()["gip_b"].expand(batch)
+        return glp1, gip
 
     def bind_body(self, const, body):
         """Basal insulin is the metabolic module's decode. This module has no second one."""

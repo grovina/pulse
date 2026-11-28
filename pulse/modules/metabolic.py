@@ -264,10 +264,11 @@ from ..circadian import (
     lipolysis_scale_t, peripheral_factor_t, retain_basal_t,
 )
 from ..correction import Correction, apply_correction, corrected_mass_action
+from .. import incretin as _incretin_switch
 from ..incretin import (
     INSULIN_SETPOINT_SCALE, ISLET, glp1_glucagon_rate_t, glucagon_from_protein_t,
     nutrient_glucagon_rate_t, nutrient_insulin_rate_t,
-    incretin_factor_t,
+    INC_GLU_THRESHOLD, INC_GLU_WIDTH, incretin_at_glucose_t, incretin_factor_t,
 )
 from ..published import PublishedNumbers
 from ..sympathoadrenal import (
@@ -940,6 +941,12 @@ class MetabolicModule(MassActionModule):
         # the published laws.
         self.hill_correction = Correction()
         self.uptake_correction = Correction()
+        # Secretion to the incretins at ordinary glucose (``pulse.incretin``), read only with
+        # ``--incretin-at-glucose``. The gain starts at zero, so switching it on changes
+        # nothing until it is trained; the threshold and width (mg/dL) are learned in log.
+        self.incretin_glu_gain = nn.Parameter(torch.zeros(()))
+        self.log_incretin_glu_thr = nn.Parameter(torch.tensor(math.log(INC_GLU_THRESHOLD)))
+        self.log_incretin_glu_width = nn.Parameter(torch.tensor(math.log(INC_GLU_WIDTH)))
 
     # ---- per-patient setpoints -------------------------------------------------------
 
@@ -1047,6 +1054,12 @@ class MetabolicModule(MassActionModule):
         return [i for i in range(_N_SPECIES) if i != _MITO_IDX]
 
     # ---- the rate, split by what it depends on (see base.PhysiologyModule) ------------
+
+    def bind_body(self, const, body):
+        """The person's fasted GLP-1 and GIP, which only the incretin-at-glucose term reads."""
+        if body is not None and "glp1_fasted" in body:
+            return {**const, "glp1_fasted": body["glp1_fasted"], "gip_fasted": body["gip_fasted"]}
+        return const
 
     def constants(self, embedding: torch.Tensor) -> dict[str, torch.Tensor]:
         """Per-patient setpoints and the population scalars of the balance."""
@@ -1277,6 +1290,18 @@ class MetabolicModule(MassActionModule):
             d["insulin_clamp"], effective_ib, c["k_ins"], d["insulin_clamp_on"])
         ins_nutrient = nutrient_insulin_rate_t(d["amino_g"], d["lipid_g"], incretin, c)
         ins_rate = ins_restoring + ins_gsir + ins_nutrient + ins_clamp
+        if _incretin_switch.INCRETIN_AT_GLUCOSE:
+            if "glp1_fasted" not in c:
+                raise RuntimeError(
+                    "incretin-at-glucose is on but the person's fasted incretins were not bound "
+                    "(model.body_quantities)")
+            fasted = incretin_factor_t(
+                relu(c["glp1_fasted"] - _GLP1_CENTER), relu(c["gip_fasted"] - _GIP_CENTER), c)
+            drive = incretin_at_glucose_t(
+                incretin, fasted, g, self.incretin_glu_gain,
+                self.log_incretin_glu_thr.exp(), self.log_incretin_glu_width.exp())
+            ins_rate = ins_rate + (c["gamma"] * gsir_mod * drive
+                                   / (1.0 + c["ins_epi_gain"] * epi_drive))
         # B1: remote insulin relaxes toward the ACTIVITY-SENSITISED insulin deviation,
         # which is the teacher's `dX = −p2·X + p3·(I − Ib)` with `p3 = Si_eff·p2`
         # exactly (divide both by Si: the student's `xa` is Si-free by construction).

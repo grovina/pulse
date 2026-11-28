@@ -282,8 +282,10 @@ class TestGbIsStillAnExactFixedPoint(unittest.TestCase):
                 # at the reference, adding hepatic output the basal split
                 # (egp_b = k_ii Gb) does not carry. The kidney: a renal
                 # threshold perturbed below Gb spills glucose (glucosuria,
-                # landed after this test). Neither is a broken fixed point.
-                if name != "epinephrine_action.log_epi_threshold" and not name.startswith("kidney."):
+                # landed after this test). Neither is a broken fixed point. Nor is the
+                # incretin-at-glucose term's own three numbers, which a fasted balance
+                # does not read.
+                if name != "epinephrine_action.log_epi_threshold" and not name.startswith("kidney.") and "incretin_glu" not in name:
                     p.add_(torch.randn_like(p))
         for gb in (60.6, 70.0, 95.0, 130.0, 148.9):
             _set_gb(m, gb)

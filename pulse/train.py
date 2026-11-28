@@ -132,6 +132,7 @@ from .correction import shrinkage_of
 from .training.evidence_step import (
     PAPER_WEIGHTINGS, EvidenceTerm, accumulate_evidence_step, evidence_probabilities, sample_evidence,
 )
+from .incretin import set_incretin_at_glucose
 from .training.factors import reference_prior_stats, set_fitness_from_vo2max, teacher_tape_weight as tape_weight_at
 from .training.population_prior_signal import PopulationPriorSignal, population_prior_nll
 from .training.safe_step import accumulate_grad
@@ -588,9 +589,11 @@ def train(
     compile_steps: bool = False,
     fitness_from_vo2max: bool = False,
     train_only: str | None = None,
+    incretin_at_glucose: bool = False,
 ):
     _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
     set_fitness_from_vo2max(fitness_from_vo2max)
+    set_incretin_at_glucose(incretin_at_glucose)
     device = torch.device("cpu")
 
     cnames, cprobs = normalize_contribution_weights(contribution_weights)
@@ -1319,6 +1322,8 @@ def train(
         "train_config": dict(train_config) if train_config else None,
         # Read back by every loader that builds people (probe.load_model_from_checkpoint).
         "fitness_from_vo2max": bool(fitness_from_vo2max),
+        # Read back by every loader (it sets the incretin module's switch the same way).
+        "incretin_at_glucose": bool(incretin_at_glucose),
         # None = every parameter trained; else the fnmatch patterns that chose the trained ones.
         "train_only": list(train_only_patterns) if train_only_patterns else None,
         "spec_path": spec_path,
@@ -2199,6 +2204,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--incretin-at-glucose",
+        dest="incretin_at_glucose",
+        action="store_true",
+        help=(
+            "Add the soma-shaped incretin term to insulin secretion: gain x gamma x (the incretin "
+            "factor above the person's own fasted factor) x a sigmoid of glucose (threshold and "
+            "width learned, 90 and 10 mg/dL at the start). The gain starts at 0, so switching it "
+            "on changes nothing until it is trained (--train-only 'metabolic.incretin_glu_*'). "
+            "Off by default. Recorded in the checkpoint; every loader applies it."
+        ),
+    )
+    parser.add_argument(
         "--train-only",
         dest="train_only",
         type=str,
@@ -2706,6 +2723,7 @@ def main():
         compile_steps=args.compile_steps,
         fitness_from_vo2max=args.fitness_from_vo2max,
         train_only=args.train_only,
+        incretin_at_glucose=args.incretin_at_glucose,
     )
 
     if exit_code != 0:
