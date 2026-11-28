@@ -1,0 +1,26 @@
+{
+  "paper": "parvareshrizi-2016",
+  "citation": {
+    "authors": "Parvaresh Rizi E, et al.",
+    "title": "Meal rich in carbohydrate, but not protein or fat, reveals adverse immunometabolic responses associated with obesity",
+    "journal": "Nutrition Journal",
+    "year": 2016,
+    "doi": "10.1186/s12937-016-0219-0",
+    "pmid": "27903298",
+    "pmcid": "PMC5131405"
+  },
+  "reported": [
+    {
+      "what": "fasting NEFA of the 9 lean insulin-sensitive men, mean ± SEM (Table 1)",
+      "location": {
+        "where": "Table 1, row 'Fasting NEFA (mmol/l)', column LIS subjects",
+        "quote": "Fasting NEFA (mmol/l) | 0.41 ± 0.04"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "group_split_by_measurement"
+  },
+  "detail": "Both groups are selected by HOMA-IR as well as BMI (lean HOMA-IR < 1.2; obese insulin-resistant), so their fasting values carry the selection, and NEFA as much as glucose and insulin; no unselected group is reported. The mixed-meal glucose and insulin curves are only in figures, and the meal grams only in a supplement outside the XML."
+}
