@@ -1,0 +1,552 @@
+{
+  "paper": "simonisbik-2011",
+  "citation": {
+    "authors": "Simonis-Bik AM, Boomsma DI, Dekker JM, Diamant M, et al.",
+    "title": "The heritability of beta cell function parameters in a mixed meal test design",
+    "journal": "Diabetologia",
+    "year": 2011,
+    "doi": "10.1007/s00125-011-2060-5",
+    "pmid": "21311857",
+    "pmcid": "PMC3071945"
+  },
+  "population": {
+    "n": 183,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 31.0,
+      "sd": 5.1,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 23.75,
+      "sd": 3.41,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "183 healthy Dutch twins and same-sex siblings of European origin (77 men, 106 women), recruited from the Netherlands Twin Register; diabetes excluded by a 75 g OGTT in the weeks before the test. Age and BMI are the total-column means and SDs of Table 1 (text gives the age range 20 to 49 y, not taken as observed min/max). Pooled arms are not entered: the men's and women's meals differ, so the sexes are two arms with their own n."
+  },
+  "protocols": [
+    {
+      "name": "men_meal",
+      "description": "Men (n = 77): 3024 kJ meal (110 g brown bread, 20 g margarine, 25 g cheese, 30 g jam, 19 g honey cake, 200 ml semi-skimmed milk; printed 89 g carbohydrate, 30 g fat, 24.4 g protein). Mixed meal after a 12 h fast; procedure started at 08:00; meal eaten between paper t = 0 and 10 min; water only during the test; subjects confined to bed. Arm minute 30 = paper t = 0 (meal). The 30 min run-in before it is assumed (the paper says only that baseline samples were taken twice before the meal); pre-meal baseline = arm minutes 0 to 30. Samples at paper t = 10 to 240 min = arm minutes 40 to 270.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 89.0,
+          "fat_g": 30.0,
+          "protein_g": 24.4,
+          "food": "brown bread, margarine, cheese, jam, honey cake and semi-skimmed milk"
+        }
+      ],
+      "assumed": [
+        "duration_min",
+        "meals"
+      ],
+      "population": {
+        "sex": "male",
+        "age_years": {
+          "mean": 30.7,
+          "sd": 4.8,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.96,
+          "sd": 2.94,
+          "min": null,
+          "max": null
+        }
+      }
+    },
+    {
+      "name": "women_meal",
+      "description": "Women (n = 106): the same meal at 79% of the men's, printed as 2,392 kJ, 71 g carbohydrate, 23 g fat, 19.4 g protein. Mixed meal after a 12 h fast; procedure started at 08:00; meal eaten between paper t = 0 and 10 min; water only during the test; subjects confined to bed. Arm minute 30 = paper t = 0 (meal). The 30 min run-in before it is assumed (the paper says only that baseline samples were taken twice before the meal); pre-meal baseline = arm minutes 0 to 30. Samples at paper t = 10 to 240 min = arm minutes 40 to 270.",
+      "duration_min": 271,
+      "start_hour": 8.0,
+      "prefast_hours": 12,
+      "meals": [
+        {
+          "t_min": 30,
+          "carbs_g": 71.0,
+          "fat_g": 23.0,
+          "protein_g": 19.4,
+          "food": "brown bread, margarine, cheese, jam, honey cake and semi-skimmed milk"
+        }
+      ],
+      "assumed": [
+        "duration_min",
+        "meals"
+      ],
+      "population": {
+        "sex": "female",
+        "age_years": {
+          "mean": 31.3,
+          "sd": 5.3,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 23.6,
+          "sd": 3.73,
+          "min": null,
+          "max": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "men_fasting_insulin",
+      "description": "Men (n = 77): fasting serum insulin, mean of the pre-meal baseline samples (run-in, arm minutes 0 to 30)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 33.9,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 16.7,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting serum insulin (pmol/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Fasting serum insulin (pmol/l) | 33.9 ± 16.7"
+      }
+    },
+    {
+      "id": "women_fasting_insulin",
+      "description": "Women (n = 106): fasting serum insulin, mean of the pre-meal baseline samples (run-in, arm minutes 0 to 30)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 35.4,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.7,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting serum insulin (pmol/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Fasting serum insulin (pmol/l) | 35.4 ± 13.7"
+      }
+    },
+    {
+      "id": "men_insulin_iauc",
+      "description": "Men (n = 77): insulin incremental AUC over the whole 4 h test (paper's 'AUC by the trapezium rule minus the fasting level'), samples from the meal (arm 30) to 240 min (arm 270), baseline = pre-meal mean",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "men_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 588,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 269,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Serum insulin IAUC (0–240) (pmol × h/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Serum insulin IAUC (0–240) (pmol × h/l) | 588 ± 269"
+      }
+    },
+    {
+      "id": "women_insulin_iauc",
+      "description": "Women (n = 106): insulin incremental AUC over the whole 4 h test (paper's 'AUC by the trapezium rule minus the fasting level'), samples from the meal (arm 30) to 240 min (arm 270), baseline = pre-meal mean",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "women_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 630,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 271,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Serum insulin IAUC (0–240) (pmol × h/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Serum insulin IAUC (0–240) (pmol × h/l) | 630 ± 271"
+      }
+    },
+    {
+      "id": "men_glucose_120",
+      "description": "Men (n = 77): glucose at paper t = 120 min (arm minute 150), single minute (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.29,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.55,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose at t120 (mmol/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose at t120 (mmol/l) | 5.29 ± 0.55"
+      }
+    },
+    {
+      "id": "women_glucose_120",
+      "description": "Women (n = 106): glucose at paper t = 120 min (arm minute 150), single minute (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 150,
+        "end_min": 151
+      },
+      "value": 5.46,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.71,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose at t120 (mmol/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose at t120 (mmol/l) | 5.46 ± 0.71"
+      }
+    },
+    {
+      "id": "men_glucose_30",
+      "description": "Men (n = 77): glucose at paper t = 30 min minus the pre-meal (t0) baseline, change from baseline (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "men_meal"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 2.11,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.59,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose t30 minus t0 (mmol/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose t30 minus t0 (mmol/l) | 2.11 ± 0.59"
+      }
+    },
+    {
+      "id": "women_glucose_30",
+      "description": "Women (n = 106): glucose at paper t = 30 min minus the pre-meal (t0) baseline, change from baseline (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "women_meal"
+      ],
+      "window": {
+        "start_min": 60,
+        "end_min": 61
+      },
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "value": 2.05,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.72,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose t30 minus t0 (mmol/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose t30 minus t0 (mmol/l) | 2.05 ± 0.72"
+      }
+    },
+    {
+      "id": "men_glucose_iauc120",
+      "description": "Men (n = 77): glucose incremental AUC 0 to 120 min (paper), samples from the meal (arm 30) to 120 min (arm 150), baseline = pre-meal mean (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "men_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 2.31,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.96,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose IAUC (0–120) (mmol × h/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose IAUC (0–120) (mmol × h/l) | 2.31 ± 0.96*"
+      }
+    },
+    {
+      "id": "women_glucose_iauc120",
+      "description": "Women (n = 106): glucose incremental AUC 0 to 120 min (paper), samples from the meal (arm 30) to 120 min (arm 150), baseline = pre-meal mean (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "women_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 2.8,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.07,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose IAUC (0–120) (mmol × h/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose IAUC (0–120) (mmol × h/l) | 2.80 ± 1.07"
+      }
+    },
+    {
+      "id": "men_glucose_iauc240",
+      "description": "Men (n = 77): glucose incremental AUC over the whole 4 h test (paper), samples from the meal (arm 30) to 240 min (arm 270), baseline = pre-meal mean (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "men_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 2.98,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.3,
+        "n": 77
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose IAUC (0–240) (mmol × h/l)', column 'Men' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose IAUC (0–240) (mmol × h/l) | 2.98 ± 1.30**"
+      }
+    },
+    {
+      "id": "women_glucose_iauc240",
+      "description": "Women (n = 106): glucose incremental AUC over the whole 4 h test (paper), samples from the meal (arm 30) to 240 min (arm 270), baseline = pre-meal mean (arterialised blood from a heated hand vein, YSI glucose oxidase at the bedside; the paper says \"blood glucose\", not plasma)",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "women_meal"
+      ],
+      "times": [
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        120,
+        150,
+        180,
+        210,
+        240,
+        270
+      ],
+      "baseline_window": {
+        "start_min": 0,
+        "end_min": 30
+      },
+      "below_baseline": "unstated",
+      "value": 4.23,
+      "unit": "mmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.71,
+        "n": 106
+      },
+      "location": {
+        "where": "Table 1, row 'Glucose IAUC (0–240) (mmol × h/l)', column 'Women' (means ± SD; footnote: data are means ± SD)",
+        "quote": "Glucose IAUC (0–240) (mmol × h/l) | 4.23 ± 1.71"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "all Table 1 'Total' (both sexes, n = 183) values of the entered families: fasting insulin, insulin at t120, insulin IAUC, glucose at t120, glucose t30 minus t0, glucose IAUC 0-120 and 0-240; the two sexes had different meals (men 3024 kJ, women 79% of it), so no one arm holds the pooled group",
+      "missing": {
+        "kind": "input",
+        "name": "meal_differs_by_sex"
+      }
+    },
+    {
+      "what": "serum insulin at t120 (Table 1: men 19.9 +/- 13.0, women 21.2 +/- 11.8 pmol/l; total 20.7), printed below the fasting values (33.9, 35.4) although glucose at t120 (5.29, 5.46 mmol/l) is above the paper's own approximate fasting glucose of 4.5 mmol/l and the incremental ISR over 30-120 min is positive; the row cannot be reconciled with the rest of the table, so it is not entered",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "glucose and insulin at each sampling time (paper t = 10 to 240 min; the time course between t120 and t240 in particular): not printed in text or tables; Table 1 gives only t0, t30, t120 and the areas",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "C-peptide levels (the basis of the deconvolved insulin secretion rate): no values printed",
+      "missing": {
+        "kind": "source",
+        "name": "value_not_printed"
+      }
+    },
+    {
+      "what": "insulin secretion rate (ISR) integrals 0-30, 30-120 and 0-240 min, fasting ISR and ISR at 4.5 mmol/L glucose, by sex (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "insulin_secretion_rate"
+      }
+    },
+    {
+      "what": "insulinogenic index (insulin t30 minus t0 over glucose t30 minus t0, pmol/mmol), by sex (Table 1)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "oral glucose insulin sensitivity (OGIS, ml min-1 m-2), by sex (Table 1): a model-based index of the paper's meal and first-2 h data",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "waist circumference by sex (Table 1, cm)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    }
+  ]
+}
