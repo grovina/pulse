@@ -1,0 +1,360 @@
+{
+  "paper": "dale-2018",
+  "citation": {
+    "authors": "Dale HF, Jensen C, Hausken T, Lied E, Hatlebakk JG, Brønstad I, Lihaug Hoff DA, Lied GA",
+    "title": "Effect of a cod protein hydrolysate on postprandial glucose metabolism in healthy subjects: a double-blind cross-over trial",
+    "journal": "Journal of Nutritional Science",
+    "year": 2018,
+    "doi": "10.1017/jns.2018.23",
+    "pmid": "30524707",
+    "pmcid": "PMC6277920"
+  },
+  "population": {
+    "n": 41,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 51.0,
+      "sd": 6.0,
+      "min": 40.0,
+      "max": 64.0
+    },
+    "bmi": {
+      "mean": 25.2,
+      "sd": 3.0,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Forty-one healthy, active men (15) and women (26) aged 40-64 (Results: 'range 40-64 years'; Table 3 age 51.0 (sd 6.0); BMI 25.2 (sd 3.0), Table 3; no BMI range printed). Healthy as the paper calls them ('healthy and active individuals'), screened by a physician's examination and baseline biochemistry, with pharmacologically treated diabetes and elevated blood pressure excluded (Methods, Participants). Crossover: the same 41 people had both study days."
+  },
+  "protocols": [
+    {
+      "name": "casein_breakfast",
+      "description": "Control (casein drink) study day, the only meal arm entered: drink and breakfast served at arm minute 0 (the paper gives arrival 08.00 to 09.00; 08:00 assumed); meal = 77 g carbohydrate (printed: 'including the drink, the breakfast provided in total 500 kcal and 77 g carbohydrate'; 41 g breakfast + 35.9 g drink = 76.9), 15 g fat (breakfast; the drink powder is 4 % protein and 96 % maltodextrin, so no fat), 14.1 g protein (derived: 12.5 g breakfast + 1.6 g in the drink, 'on average 1.6 g'). Energy check: 355 kcal breakfast + 145 kcal drink = 500 kcal. Sampling clock: Methods say 'The first post-meal sample (0 min sample) was taken 15 min after the breakfast was served', so table time T is arm minute 15 + T (minutes 15 to 195). The Fig. 3 legend ('0 min shows values measured right after the intake of breakfast and test material') and the Results ('peak ... 20 min after the meal', which is the table's 20 min row) are less exact and not in conflict if eating took about 15 min; the paper does not say how long the meal took, so Methods' 15 min is kept and a shift of the whole table clock by up to 15 min cannot be excluded. Subjects ate a standardised evening meal before 20.30 (contents not printed, not entered) and fasted until the morning; prefast_hours 11.5 = 20.30 to 08.00 (the paper's 'before 20.30' and arrival from 08.00 make this a lower bound, taken as the value).",
+      "duration_min": 196,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 77.0,
+          "fat_g": 15.0,
+          "protein_g": 14.1,
+          "form": "mixed",
+          "food": "semi-coarse bread, margarine, strawberry jam, white cheese, casein drink"
+        }
+      ],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "start_hour",
+        "prefast_hours",
+        "meals"
+      ]
+    },
+    {
+      "name": "casein_day_fasted_arrival",
+      "description": "Baseline sample of the control (casein) study day: drawn on arrival, after the fast and before the drink and breakfast were served ('After blood samples, they were served a drink'). The paper prints no time between the sample and the serving, so a 30 min fasted run-in stands for the single sample (README convention), the value read at minutes 29 to 30. No meal. Arrival 08.00 to 09.00 (08:00 assumed); prefast_hours 11.5 as for the meal arm (evening meal before 20.30, then fasting).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 11.5,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_curve_casein",
+      "description": "Plasma (serum) glucose after the casein-control breakfast, mean curve of 41 people (Table 4, control columns, Mean and sd; not the MPH columns); sample minutes are 15 + the printed time (Methods: 0 min sample taken 15 min after the breakfast was served; sd labelled in Table 4)",
+      "marker": "glucose",
+      "statistic": "curve",
+      "protocols": [
+        "casein_breakfast"
+      ],
+      "unit": "mmol/l",
+      "points": [
+        {
+          "t_min": 15,
+          "value": 6.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.8,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 35,
+          "value": 7.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.5,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 55,
+          "value": 6.2,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.9,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 5.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.6,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 95,
+          "value": 5.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.4,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 115,
+          "value": 4.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.2,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 4.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 1.0,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 4.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 0.6,
+            "n": 41
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Glucose rows, control (casein) Mean and sd columns, 0 to 180 min",
+        "quote": "Glucose (mmol/l) | 0 min | 6·7 | 0·8 ; 20 min | 7·4 | 1·5 ; 40 min | 6·2 | 1·9 ; 60 min | 5·4 | 1·6 ; 80 min | 5·1 | 1·4 ; 100 min | 4·7 | 1·2 ; 120 min | 4·4 | 1·0 ; 180 min | 4·3 | 0·6"
+      }
+    },
+    {
+      "id": "insulin_curve_casein_0_to_60",
+      "description": "Serum insulin after the casein-control breakfast, arithmetic mean curve of 41 people with its SD (Table 4, control Mean and sd columns, labelled 'Mean values and standard deviations'; the paper's log means and geometric means are not used); sample minutes are 15 + the printed time (Methods: 0 min sample taken 15 min after the breakfast was served); first half of the curve (0 to 60 min after the 0 min sample), split only because one quote cannot span the table window (checked: a single quote over 0 to 180 min is refused by the gate)",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "casein_breakfast"
+      ],
+      "unit": "mIU/l",
+      "points": [
+        {
+          "t_min": 15,
+          "value": 34.9,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 30.4,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 35,
+          "value": 68.0,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 47.7,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 55,
+          "value": 70.3,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 53.6,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 75,
+          "value": 61.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 49.0,
+            "n": 41
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Insulin rows 0 to 60 min, control (casein) Mean and sd columns",
+        "quote": "Insulin (mIU/l) | 0 min | 34·9 | 30·4 ; 20 min | 68·0 | 47·7 ; 40 min | 70·3 | 53·6 ; 60 min | 61·4 | 49·0"
+      }
+    },
+    {
+      "id": "insulin_curve_casein_80_to_180",
+      "description": "Serum insulin after the casein-control breakfast, arithmetic mean curve of 41 people with its SD (Table 4, control Mean and sd columns, labelled 'Mean values and standard deviations'; the paper's log means and geometric means are not used); sample minutes are 15 + the printed time (Methods: 0 min sample taken 15 min after the breakfast was served); second half of the curve (80 to 180 min after the 0 min sample), split for the same reason",
+      "marker": "insulin",
+      "statistic": "curve",
+      "protocols": [
+        "casein_breakfast"
+      ],
+      "unit": "mIU/l",
+      "points": [
+        {
+          "t_min": 95,
+          "value": 51.7,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 47.3,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 115,
+          "value": 40.8,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 42.0,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 135,
+          "value": 30.1,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 37.9,
+            "n": 41
+          }
+        },
+        {
+          "t_min": 195,
+          "value": 12.4,
+          "uncertainty": {
+            "kind": "sd",
+            "value": 15.1,
+            "n": 41
+          }
+        }
+      ],
+      "location": {
+        "where": "Table 4, Insulin rows 80 to 180 min, control (casein) Mean and sd columns",
+        "quote": "80 min | 51·7 | 47·3 ; 100 min | 40·8 | 42·0 ; 120 min | 30·1 | 37·9 ; 180 min | 12·4 | 15·1"
+      }
+    },
+    {
+      "id": "fasting_glucose_casein_day",
+      "description": "Fasting serum glucose, baseline sample of the control (casein) study day, mean of 41 people with SD (Table 4, Baseline row, control columns; arithmetic mean, not the log mean or GM); drawn on arrival before the drink, read at the end of a 30 min fasted run-in",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "casein_day_fasted_arrival"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 5.1,
+      "unit": "mmol/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.4,
+        "n": 41
+      },
+      "location": {
+        "where": "Table 4, Glucose Baseline row, control (casein) Mean and sd columns",
+        "quote": "Glucose (mmol/l) | Baseline | 5·1 | 0·4"
+      }
+    },
+    {
+      "id": "fasting_insulin_casein_day",
+      "description": "Fasting serum insulin, baseline sample of the control (casein) study day, mean of 41 people with SD (Table 4, Baseline row, control columns; arithmetic mean, not the log mean or GM); drawn on arrival before the drink, read at the end of a 30 min fasted run-in",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "casein_day_fasted_arrival"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 6.1,
+      "unit": "mIU/l",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 5.6,
+        "n": 41
+      },
+      "location": {
+        "where": "Table 4, Insulin Baseline row, control (casein) Mean and sd columns",
+        "quote": "Insulin (mIU/l)† | Baseline | 6·4 | 5·8 | 1·6 | 0·7 | 4·9 | 6·1 | 5·6"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "MPH drink arm (Table 4 MPH columns, glucose, insulin, GLP-1) and its differences from control: glucose mean difference, insulin ratio of geometric means, GLP-1, Results and Abstract",
+      "missing": {
+        "kind": "input",
+        "name": "drug"
+      }
+    },
+    {
+      "what": "fasting (baseline) GLP-1 of the control day (Table 4 Baseline row): active-form ELISA, and a lone fasting level",
+      "missing": {
+        "kind": "marker",
+        "name": "active_glp1"
+      }
+    },
+    {
+      "what": "glucose AUC over the nine glucose measurements, control (Results, Postprandial measurements: 1068 (95 % CI 944.8, 1190.0) mmol/l x min): the baseline sample's minute relative to the 0 min sample is not printed, so the sampled minutes of the area are not known",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    },
+    {
+      "what": "GLP-1 by the paper's assay (GLP-1 (7-36) active ELISA), control arm, Table 4: an active-form assay",
+      "missing": {
+        "kind": "marker",
+        "name": "active_glp1"
+      }
+    },
+    {
+      "what": "insulin log means, log SDs and geometric means, control arm (Table 4): the arithmetic mean is entered instead",
+      "missing": {
+        "kind": "operator",
+        "name": "geometric_mean"
+      }
+    },
+    {
+      "what": "HbA1c, Table 3 (baseline characteristics)",
+      "missing": {
+        "kind": "marker",
+        "name": "hba1c"
+      }
+    },
+    {
+      "what": "systolic and diastolic blood pressure at the screening examination, Table 3 (125 (sd 18), 78 (sd 11) mmHg): no clock time, fed state or posture printed for the measurement",
+      "missing": {
+        "kind": "source",
+        "name": "time_not_printed"
+      }
+    }
+  ]
+}
