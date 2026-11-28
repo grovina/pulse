@@ -205,7 +205,7 @@ the comparison with training everything is not measured; the unloaded step is
 | `trainer-2qvnr` | 121 (run D), no teacher, basal setpoint scale 0.65 and load-dependent gastric emptying | 2026-11-24 | stopped by its 24 h deadline (2026-11-25 13:06 UTC) on image `6496abe`, warm start from `iter120-mealsplit`; output `training/jobs/iter121-basal-gastric/`; approved by Gabriel, about $9 |
 | `trainer-qqb4f` | 122 (run E), no teacher, ketone glycogen threshold, breathing-rate papers, `--val-fraction 0.1` keeps the best validation epoch | 2026-11-25 | completed after 28 epochs in 20 h 57 min (2026-11-26 13:24 UTC) on image `d1ef4f2`; `model.pt` is epoch 1 (best validation), `model_last.pt` epoch 27; warm start from `iter120-mealsplit`; output `training/jobs/iter122-ketone-breath/`; approved by Gabriel, about $9 |
 | `trainer-69h6t` | 123 (probe), no teacher, low constant lr 0.0003, 3 phase-2 epochs, `--fitness-from-vo2max`, `--val-fraction 0.1`, frozen fixes 2e5ee62/21e6cf4/74f809b/0e1959f, slow HR state | 2026-11-26 | completed 3 epochs in 4 h 12 min (2026-11-27) on image `b66d400`; `model.pt` is epoch 0 (best validation); warm start from `iter120-mealsplit`; output `training/jobs/iter123-probe-lowlr/`; approved by Gabriel at about $1; ran about $1.6 (longer than estimated) |
-| `trainer-jjrl9` | 124, train only `hr_fit_gain`, `hr_slow_gain`, `slow_tau_raw` (`--train-only`), everything else held at iter 120; `--fitness-from-vo2max`, lr 0.003 to 0.001, 4 phase-2 epochs, `--val-fraction 0.1` | 2026-11-28 | running on image `0713f4f` through `deploy/launch.sh --max-hours 4` (task timeout 15,000 s); warm start from `iter120-mealsplit`; output `training/jobs/iter124-hr-only/`; within Gabriel's $40 budget to 2026-11-28, ceiling $1.56 |
+| `trainer-jjrl9` | 124, train only `hr_fit_gain`, `hr_slow_gain`, `slow_tau_raw` (`--train-only`), everything else held at iter 120; `--fitness-from-vo2max`, lr 0.003 to 0.001, 4 phase-2 epochs, `--val-fraction 0.1` | 2026-11-28 | completed 3 epochs in 3 h 16 min (stopped by the deadline with 73 min left, 45 min reserved) on image `0713f4f` through `deploy/launch.sh --max-hours 4` (task timeout 15,000 s); warm start from `iter120-mealsplit`; output `training/jobs/iter124-hr-only/`; within Gabriel's $40 budget to 2026-11-28, ceiling $1.56, cost $1.22 |
 | `trainer-gxk99` | 117, no teacher, gut reads meal details | 2026-11-15 | stopped by its 24 h deadline after epoch 25 of 28, from `87cd5b3`: `--meal-details`, warm start from iter 113; output `training/jobs/iter117-meals/` |
 | `trainer-kn8wz` | 117, no teacher | 2026-11-15 | finished in 19 h 30 min from `87cd5b3`, the same run without `--meal-details`; output `training/jobs/iter117-base/` |
 | `trainer-lxsdb` | 116, no teacher, papers by square root | 2026-11-13 | stopped by its 24 h deadline after epoch 21, the end of phase 2, from `758cc2f`: `--teacher-tape-weight=0 --phase1-epochs=0 --evidence-paper-weighting=sqrt`; output `training/jobs/iter116-sqrt/` |
@@ -351,6 +351,19 @@ cesaremarincola-2025 and gahreman-2016 hold 10 to 20 bpm above for 10 to 30
 minutes (the model's temperature, sympathetic tone and epinephrine all snap
 back inside 5 minutes of the last bout); that needs a slow post-exercise state
 in the heart-rate module.
+
+Iter 124, `--train-only` on the three heart-rate scalars (`hr_fit_gain`,
+`hr_slow_gain`, `slow_tau_raw`), everything else held at iter 120, fitness on
+(2026-11-28):
+
+- Inconclusive: the three barely moved (`hr_fit_gain` 0 to -0.048,
+  `hr_slow_gain` 0 to 0.083, `slow_tau_raw` -2.20), validation 0.6575 at
+  every epoch, and the board equals iter 120's on the same code to three
+  decimals (sealed 0.707, trained 0.587, hr 1.031). The guard is working
+  as meant (nothing else could move), but lr 0.003 with Adam moves a raw
+  scalar about 0.003 a step, and these gains need tens of bpm per unit:
+  a train-only run on scalars needs its own lr, sized from the gradient
+  first (free, locally) before another run is spent on it.
 
 Iter 123 (probe), warm start from iter 120 on `b66d400` at a constant lr
 of 0.0003 for three epochs with `--fitness-from-vo2max` (2026-11-27;
