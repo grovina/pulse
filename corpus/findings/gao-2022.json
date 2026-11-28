@@ -1,0 +1,290 @@
+{
+  "paper": "gao-2022",
+  "citation": {
+    "authors": "Gao Y, Tsintzas K, Macdonald IA, Cordon SM, Taylor MA",
+    "title": "Effects of intermittent (5:2) or continuous energy restriction on basal and postprandial metabolism: a randomised study in normal-weight, young participants",
+    "journal": "European Journal of Clinical Nutrition",
+    "year": 2022,
+    "doi": "10.1038/s41430-021-00909-2",
+    "pmid": "34040199",
+    "pmcid": "PMC8766278"
+  },
+  "population": {
+    "n": 16,
+    "sex": "mixed",
+    "age_years": {
+      "mean": null,
+      "sd": null,
+      "min": 20.0,
+      "max": 35.0
+    },
+    "bmi": {
+      "mean": null,
+      "sd": null,
+      "min": 20.0,
+      "max": 25.0
+    },
+    "status": "healthy",
+    "description": "Sixteen healthy men and women, 8 per group (5:2 IER and CER), randomised; the paper calls them healthy and metabolically healthy, screened by examination, blood sample, questionnaires and exclusion criteria (Supplementary Information 1, not in the XML). Age 20-35 and BMI 20-25 are the enrolment criteria (Methods); they are the only age and BMI figures in the text (Supplementary Table 3 is not in the XML), so the README allows them as min and max only when the paper gives nothing else about age or BMI, which is the case here (mean and SD null). Sex is not split by group. Pre body weight 63.4 kg (5:2 IER) and 66.1 kg (CER), Table 1."
+  },
+  "protocols": [
+    {
+      "name": "pre_fasted_ier",
+      "description": "Fasted morning before the intervention, 5:2 IER group (Table 1, Pre columns; n = 8). Methods: fasting measurements at ~8:30 a.m. after an overnight fast; the dinner the evening before was not controlled (Discussion), so no meal is entered. Short fasted arm: 30 min from 08:00, so the draw at minute 29-30 is 08:30 (start_hour derived from the printed ~8:30); the hours fasted are not printed, so the README's 10 h for an overnight fast is assumed. The two baseline samples' minutes are not printed; the value is read at minute 29-30. Body weight pre: 63.4 kg (Table 1).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "pre_fasted_cer",
+      "description": "Fasted morning before the intervention, CER group (Table 1, Pre columns; n = 8). Methods: fasting measurements at ~8:30 a.m. after an overnight fast; the dinner the evening before was not controlled (Discussion), so no meal is entered. Short fasted arm: 30 min from 08:00, so the draw at minute 29-30 is 08:30 (start_hour derived from the printed ~8:30); the hours fasted are not printed, so the README's 10 h for an overnight fast is assumed. The two baseline samples' minutes are not printed; the value is read at minute 29-30. Body weight pre: 66.1 kg (Table 1).",
+      "duration_min": 30,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_fasting_pre_ier",
+      "description": "Fasting glucose before the 2-week 5:2 IER, mean and SD, n = 8. Whole-blood glucose (YSI analyser, Methods) as printed; the paper does not say plasma, so entered as glucose with that caveat.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_ier"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.39,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.28,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose, mmol/L', column Pre (5:2 IER)",
+        "quote": "Fasting glucose, mmol/L | 4.39 ± 0.28"
+      }
+    },
+    {
+      "id": "glucose_fasting_pre_cer",
+      "description": "Fasting glucose before the 2-week CER, mean and SD, n = 8. Whole-blood glucose (YSI analyser, Methods) as printed; the paper does not say plasma, so entered as glucose with that caveat.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_cer"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 4.42,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.16,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting glucose, mmol/L', column Pre (CER)",
+        "quote": "Fasting glucose, mmol/L | 4.42 ± 0.16"
+      }
+    },
+    {
+      "id": "insulin_fasting_pre_ier",
+      "description": "Fasting serum insulin (RIA, Methods) before the 2-week 5:2 IER, mean and SD, n = 8.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_ier"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 9.4,
+      "unit": "mIU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 3.06,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin, mIU/L', column Pre (5:2 IER)",
+        "quote": "Fasting insulin, mIU/L | 9.40 ± 3.06"
+      }
+    },
+    {
+      "id": "insulin_fasting_pre_cer",
+      "description": "Fasting serum insulin (RIA, Methods) before the 2-week CER, mean and SD, n = 8.",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_cer"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 7.98,
+      "unit": "mIU/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 1.54,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting insulin, mIU/L', column Pre (CER)",
+        "quote": "Fasting insulin, mIU/L | 7.98 ± 1.54"
+      }
+    },
+    {
+      "id": "ffa_fasting_pre_ier",
+      "description": "Fasting plasma free fatty acids before the 2-week 5:2 IER, mean and SD, n = 8.",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_ier"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.46,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.2,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting FFA, mmol/L', column Pre (5:2 IER)",
+        "quote": "Fasting FFA, mmol/L | 0.46 ± 0.20"
+      }
+    },
+    {
+      "id": "ffa_fasting_pre_cer",
+      "description": "Fasting plasma free fatty acids before the 2-week CER, mean and SD, n = 8.",
+      "marker": "ffa",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "pre_fasted_cer"
+      ],
+      "window": {
+        "start_min": 29,
+        "end_min": 30
+      },
+      "value": 0.43,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.16,
+        "n": 8
+      },
+      "location": {
+        "where": "Table 1, row 'Fasting FFA, mmol/L', column Pre (CER)",
+        "quote": "Fasting FFA, mmol/L | 0.43 ± 0.16"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "fasting heart rate, systolic and diastolic blood pressure, pre columns of Table 1 (both groups): the paper does not say the posture at measurement, so they cannot be given as supine or seated",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "fasting triacylglycerol, pre, both groups (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "triacylglycerol"
+      }
+    },
+    {
+      "what": "fasting total, LDL and HDL cholesterol, pre, both groups (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "cholesterol"
+      }
+    },
+    {
+      "what": "glucose, insulin and TAG iAUC (0-180 min) and FFA dAUC after the liquid breakfast, pre and post, Table 1; and the time courses of Fig. 1a, 1b and Supplementary Fig. 3: the breakfast is Ensure Compact at 42 kJ/kg body weight (Methods) with no grams of carbohydrate, fat or protein printed, so it cannot be written",
+      "missing": {
+        "kind": "source",
+        "name": "input_not_printed"
+      }
+    },
+    {
+      "what": "fasting and post-breakfast values after two weeks of 5:2 IER or CER (post columns of Table 1, and the change in fasting glucose and insulin): the restriction is 70% and 20% energy on the days of the diet, over days, which the model cannot be told",
+      "missing": {
+        "kind": "input",
+        "name": "prior_day_condition"
+      }
+    },
+    {
+      "what": "interstitial glucose from continuous monitoring, Days 8-13, Table 2 and Fig. 3 (not plasma)",
+      "missing": {
+        "kind": "marker",
+        "name": "interstitial_glucose"
+      }
+    },
+    {
+      "what": "energy intake at the ad libitum test meal (pre and post, kJ; the outcome is the intake itself, and the meal is given only as percentages of its energy)",
+      "missing": {
+        "kind": "marker",
+        "name": "energy_intake"
+      }
+    },
+    {
+      "what": "fasting and postprandial resting energy expenditure, RER and diet-induced thermogenesis (Supplementary Fig. 4; the text gives only changes of about 0.26 and 0.08 kJ/min with no SD)",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "HOMA-IR and Matsuda index (Fig. 1c, 1d; figure only, derived indices)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "fasting composite appetite score and its dAUCs (Table 1, Fig. 2)",
+      "missing": {
+        "kind": "marker",
+        "name": "satiety_rating"
+      }
+    },
+    {
+      "what": "body weight, waist and hip circumference, pre and post (Table 1)",
+      "missing": {
+        "kind": "marker",
+        "name": "body_composition"
+      }
+    },
+    {
+      "what": "free-living daily step count (pedometer, Table 1)",
+      "missing": {
+        "kind": "input",
+        "name": "free_living_activity"
+      }
+    }
+  ]
+}
