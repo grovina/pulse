@@ -1,0 +1,1019 @@
+{
+  "paper": "wolever-2022",
+  "citation": {
+    "authors": "Wolever TMS, Jenkins AL, Campbell JE, Ezatagha A, Dhillon S, Johnson J, Schuette J, Chen Y, Chu Y",
+    "title": "Decreasing the RAG:SAG ratio of granola cereal predictably reduces postprandial glucose and insulin responses: a report of four randomised trials in healthy adults",
+    "journal": "Journal of Nutritional Science",
+    "year": 2022,
+    "doi": "10.1017/jns.2022.22",
+    "pmid": "35399553",
+    "pmcid": "PMC8943571"
+  },
+  "population": {
+    "n": 120,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 35.2,
+      "sd": 13.9,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 24.8,
+      "sd": 2.8,
+      "min": null,
+      "max": null
+    },
+    "status": "unselected",
+    "description": "Granola studies 1-3, 120 completers (n 40 each; Table 2 'Total (n 120)': 67 male, 53 female; age 35.2 +/- 13.9 and BMI 24.8 +/- 2.8, means with SD as printed, min and max not printed). Males and non-pregnant females aged 18-65 with BMI 21.0 to <32.0 kg/m2 and fasting serum glucose <7.0 mmol/l (no glucose tolerance test); the paper's title calls them healthy adults, but only fasting glucose was screened (no glucose tolerance test) and 41% had BMI >= 25 (Table 2) with enrolment up to BMI <32, so the status is unselected (README). Each study's age and BMI are a protocol override. The pilot (n 40) is also an override; its fasting insulin is the only pilot value entered."
+  },
+  "protocols": [
+    {
+      "name": "cg1_meal",
+      "description": "Control granola 1 (CG1, study 1, n 40) with 122.5 g skim milk, eaten within 10 min from the first bite; first bite at arm minute 10 (the paper's 0 min). Fasted: a 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end of the printed range, assumed). Meal entered as two items at minute 10, each as printed in Table 1 (not summed): granola 54.3 g (Table 1, CG1 row: protein 4.9 g, fat 5.2 g, avail carbohydrate 32.9 g, fibre 4.7 g) and skim milk 122.5 g (Table 1: protein 4.1 g, fat 0.1 g, avail carbohydrate 6.1 g, fibre 0.0 g). Two fasting samples 5 min apart (-5 and 0 min) are arm minutes 5 and 10, so the fasting baseline is the mean over minutes 5-10 (baseline_window 5-11, end exclusive). Blood glucose (finger-prick, fluoro-oxalate tube) and serum insulin at 15, 30, 45, 60, 75, 90, 105, 120, 150 and 180 min after the first bite are arm minutes 25, 40, 55, 70, 85, 100, 115, 130, 160 and 190. Duration 191 min.",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 32.9,
+          "fat_g": 5.2,
+          "protein_g": 4.9,
+          "fibre_g": 4.7,
+          "form": "solid",
+          "food": "control granola 1, 54.3 g"
+        },
+        {
+          "t_min": 10,
+          "carbs_g": 6.1,
+          "fat_g": 0.1,
+          "protein_g": 4.1,
+          "fibre_g": 0.0,
+          "form": "liquid",
+          "protein_source": "dairy",
+          "food": "skim milk, 122.5 g"
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 37.1,
+          "sd": 14.5,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.3,
+          "sd": 3.1,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "cg2_meal",
+      "description": "Control granola 2 (CG2, study 2, n 40) with 122.5 g skim milk, eaten within 10 min from the first bite; first bite at arm minute 10 (the paper's 0 min). Fasted: a 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end of the printed range, assumed). Meal entered as two items at minute 10, each as printed in Table 1 (not summed): granola 54.3 g (Table 1, CG2 row: protein 4.9 g, fat 5.2 g, avail carbohydrate 32.9 g, fibre 4.7 g) and skim milk 122.5 g (Table 1: protein 4.1 g, fat 0.1 g, avail carbohydrate 6.1 g, fibre 0.0 g). Two fasting samples 5 min apart (-5 and 0 min) are arm minutes 5 and 10, so the fasting baseline is the mean over minutes 5-10 (baseline_window 5-11, end exclusive). Blood glucose (finger-prick, fluoro-oxalate tube) and serum insulin at 15, 30, 45, 60, 75, 90, 105, 120, 150 and 180 min after the first bite are arm minutes 25, 40, 55, 70, 85, 100, 115, 130, 160 and 190. Duration 191 min.",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 32.9,
+          "fat_g": 5.2,
+          "protein_g": 4.9,
+          "fibre_g": 4.7,
+          "form": "solid",
+          "food": "control granola 2, 54.3 g"
+        },
+        {
+          "t_min": 10,
+          "carbs_g": 6.1,
+          "fat_g": 0.1,
+          "protein_g": 4.1,
+          "fibre_g": 0.0,
+          "form": "liquid",
+          "protein_source": "dairy",
+          "food": "skim milk, 122.5 g"
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 35.7,
+          "sd": 13.8,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.2,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "cg3_meal",
+      "description": "Control granola 3 (CG3, study 3, n 40) with 122.5 g skim milk, eaten within 10 min from the first bite; first bite at arm minute 10 (the paper's 0 min). Fasted: a 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end of the printed range, assumed). Meal entered as two items at minute 10, each as printed in Table 1 (not summed): granola 54.1 g (Table 1, CG3 row: protein 4.6 g, fat 5.2 g, avail carbohydrate 33.3 g, fibre 4.4 g) and skim milk 122.5 g (Table 1: protein 4.1 g, fat 0.1 g, avail carbohydrate 6.1 g, fibre 0.0 g). Two fasting samples 5 min apart (-5 and 0 min) are arm minutes 5 and 10, so the fasting baseline is the mean over minutes 5-10 (baseline_window 5-11, end exclusive). Blood glucose (finger-prick, fluoro-oxalate tube) and serum insulin at 15, 30, 45, 60, 75, 90, 105, 120, 150 and 180 min after the first bite are arm minutes 25, 40, 55, 70, 85, 100, 115, 130, 160 and 190. Duration 191 min.",
+      "duration_min": 191,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 10,
+          "carbs_g": 33.3,
+          "fat_g": 5.2,
+          "protein_g": 4.6,
+          "fibre_g": 4.4,
+          "form": "solid",
+          "food": "control granola 3, 54.1 g"
+        },
+        {
+          "t_min": 10,
+          "carbs_g": 6.1,
+          "fat_g": 0.1,
+          "protein_g": 4.1,
+          "fibre_g": 0.0,
+          "form": "liquid",
+          "protein_source": "dairy",
+          "food": "skim milk, 122.5 g"
+        }
+      ],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 32.7,
+          "sd": 13.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 24.0,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_pilot",
+      "description": "Fasted morning of the pilot (chew) study test day, no food: 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end, assumed). The paper's fasting value is the mean of two samples 5 min apart (-5 and 0 min), placed at arm minutes 5 and 10; duration 11 min (minutes 0-10) is our run-in, not stated by the paper. Table 2 does not say which visit(s) its fasting values come from; the paper's HOMA uses four fasting measures across two test meals, so the printed value may be a mean over two mornings.",
+      "duration_min": 11,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 38.8,
+          "sd": 12.0,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 26.0,
+          "sd": 3.0,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_s1",
+      "description": "Fasted morning of the granola study 1 test day, no food: 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end, assumed). The paper's fasting value is the mean of two samples 5 min apart (-5 and 0 min), placed at arm minutes 5 and 10; duration 11 min (minutes 0-10) is our run-in, not stated by the paper. Table 2 does not say which visit(s) its fasting values come from; the paper's HOMA uses four fasting measures across two test meals, so the printed value may be a mean over two mornings.",
+      "duration_min": 11,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 37.1,
+          "sd": 14.5,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.3,
+          "sd": 3.1,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_s2",
+      "description": "Fasted morning of the granola study 2 test day, no food: 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end, assumed). The paper's fasting value is the mean of two samples 5 min apart (-5 and 0 min), placed at arm minutes 5 and 10; duration 11 min (minutes 0-10) is our run-in, not stated by the paper. Table 2 does not say which visit(s) its fasting values come from; the paper's HOMA uses four fasting measures across two test meals, so the printed value may be a mean over two mornings.",
+      "duration_min": 11,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 35.7,
+          "sd": 13.8,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 25.2,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    },
+    {
+      "name": "fasting_s3",
+      "description": "Fasted morning of the granola study 3 test day, no food: 10-12 h overnight fast with water allowed (prefast_hours 10 is the lower end, assumed). The paper's fasting value is the mean of two samples 5 min apart (-5 and 0 min), placed at arm minutes 5 and 10; duration 11 min (minutes 0-10) is our run-in, not stated by the paper. Table 2 does not say which visit(s) its fasting values come from; the paper's HOMA uses four fasting measures across two test meals, so the printed value may be a mean over two mornings.",
+      "duration_min": 11,
+      "start_hour": 8.0,
+      "meals": [],
+      "prefast_hours": 10,
+      "population": {
+        "age_years": {
+          "mean": 32.7,
+          "sd": 13.2,
+          "min": null,
+          "max": null
+        },
+        "bmi": {
+          "mean": 24.0,
+          "sd": 2.6,
+          "min": null,
+          "max": null
+        }
+      },
+      "assumed": [
+        "duration_min",
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "cg1_glucose_iauc_0_2h",
+      "description": "Glucose incremental area over the first 2 h after the meal (0-120 min from first bite, samples at 0-120 min), CG1, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg1_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 118,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 8,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 1 (n 40), column CG1, Glucose (mmol/l) row 'iAUC 0–2 h' (footnote a: incremental area, mmol × min/l)",
+        "quote": "iAUC 0–2 h | 118 ± 8"
+      }
+    },
+    {
+      "id": "cg1_glucose_iauc_2_3h",
+      "description": "Glucose incremental area from 2 to 3 h after the meal, CG1, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg1_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 10,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 1 (n 40), column CG1, Glucose (mmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 10 ± 2"
+      }
+    },
+    {
+      "id": "cg1_glucose_increment_2h",
+      "description": "Blood glucose at 2 h after the meal (120 min from first bite) minus the mean fasting value, CG1. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "cg1_meal"
+      ],
+      "window": {
+        "start_min": 130,
+        "end_min": 131
+      },
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 0.11,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.07,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 1 (n 40), column CG1, Glucose (mmol/l) row '2 h increment' (difference from fasting)",
+        "quote": "2 h increment | 0·11 ± 0·07"
+      }
+    },
+    {
+      "id": "cg1_insulin_iauc_0_2h",
+      "description": "Serum insulin incremental area over the first 2 h after the meal, CG1, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg1_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 147,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 18,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 1 (n 40), column CG1, Insulin (pmol/l) row 'iAUC 0–2 h' (footnote b: incremental area, pmol × h/l)",
+        "quote": "iAUC 0–2 h | 147 ± 18"
+      }
+    },
+    {
+      "id": "cg1_insulin_iauc_2_3h",
+      "description": "Serum insulin incremental area from 2 to 3 h after the meal (the late part of the curve), CG1, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg1_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 12,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 4,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 1 (n 40), column CG1, Insulin (pmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 12 ± 4"
+      }
+    },
+    {
+      "id": "cg2_glucose_iauc_0_2h",
+      "description": "Glucose incremental area over the first 2 h after the meal (0-120 min from first bite, samples at 0-120 min), CG2, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg2_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 118,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 7,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 2 (n 40), column CG2, Glucose (mmol/l) row 'iAUC 0–2 h' (footnote a: incremental area, mmol × min/l)",
+        "quote": "iAUC 0–2 h | 118 ± 7"
+      }
+    },
+    {
+      "id": "cg2_glucose_iauc_2_3h",
+      "description": "Glucose incremental area from 2 to 3 h after the meal, CG2, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg2_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 10,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 2 (n 40), column CG2, Glucose (mmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 10 ± 2"
+      }
+    },
+    {
+      "id": "cg2_glucose_increment_2h",
+      "description": "Blood glucose at 2 h after the meal (120 min from first bite) minus the mean fasting value, CG2. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "cg2_meal"
+      ],
+      "window": {
+        "start_min": 130,
+        "end_min": 131
+      },
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 0.24,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.07,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 2 (n 40), column CG2, Glucose (mmol/l) row '2 h increment' (difference from fasting)",
+        "quote": "2 h increment | 0·24 ± 0·07"
+      }
+    },
+    {
+      "id": "cg2_insulin_iauc_0_2h",
+      "description": "Serum insulin incremental area over the first 2 h after the meal, CG2, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg2_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 201,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 23,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 2 (n 40), column CG2, Insulin (pmol/l) row 'iAUC 0–2 h' (footnote b: incremental area, pmol × h/l)",
+        "quote": "iAUC 0–2 h | 201 ± 23"
+      }
+    },
+    {
+      "id": "cg2_insulin_iauc_2_3h",
+      "description": "Serum insulin incremental area from 2 to 3 h after the meal (the late part of the curve), CG2, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg2_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 12,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 2 (n 40), column CG2, Insulin (pmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 12 ± 3"
+      }
+    },
+    {
+      "id": "cg3_glucose_iauc_0_2h",
+      "description": "Glucose incremental area over the first 2 h after the meal (0-120 min from first bite, samples at 0-120 min), CG3, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg3_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 119,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 3 (n 40), column CG3, Glucose (mmol/l) row 'iAUC 0–2 h' (footnote a: incremental area, mmol × min/l)",
+        "quote": "iAUC 0–2 h | 119 ± 9"
+      }
+    },
+    {
+      "id": "cg3_glucose_iauc_2_3h",
+      "description": "Glucose incremental area from 2 to 3 h after the meal, CG3, above the fasting mean. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg3_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 6,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 3 (n 40), column CG3, Glucose (mmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 6 ± 2"
+      }
+    },
+    {
+      "id": "cg3_glucose_increment_2h",
+      "description": "Blood glucose at 2 h after the meal (120 min from first bite) minus the mean fasting value, CG3. Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "change_from_baseline",
+      "protocols": [
+        "cg3_meal"
+      ],
+      "window": {
+        "start_min": 130,
+        "end_min": 131
+      },
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 0.05,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.07,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 3 (n 40), column CG3, Glucose (mmol/l) row '2 h increment' (difference from fasting)",
+        "quote": "2 h increment | 0·05 ± 0·07"
+      }
+    },
+    {
+      "id": "cg3_insulin_iauc_0_2h",
+      "description": "Serum insulin incremental area over the first 2 h after the meal, CG3, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg3_meal"
+      ],
+      "times": [
+        10,
+        25,
+        40,
+        55,
+        70,
+        85,
+        100,
+        115,
+        130
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 205,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 17,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 3 (n 40), column CG3, Insulin (pmol/l) row 'iAUC 0–2 h' (footnote b: incremental area, pmol × h/l)",
+        "quote": "iAUC 0–2 h | 205 ± 17"
+      }
+    },
+    {
+      "id": "cg3_insulin_iauc_2_3h",
+      "description": "Serum insulin incremental area from 2 to 3 h after the meal (the late part of the curve), CG3, above the fasting mean; pmol x h/L",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "cg3_meal"
+      ],
+      "times": [
+        130,
+        160,
+        190
+      ],
+      "baseline_window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "below_baseline": "ignored",
+      "value": 13,
+      "unit": "pmol/L",
+      "time_unit": "h",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 3,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 4, Study 3 (n 40), column CG3, Insulin (pmol/l) row 'iAUC 2–3 h'",
+        "quote": "iAUC 2–3 h | 13 ± 3"
+      }
+    },
+    {
+      "id": "fasting_s1_glucose",
+      "description": "Fasting blood glucose, study 1 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart). Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s1"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 4.4,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.33,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 1 (n 40) column, row 'Fasting glucose'",
+        "quote": "Fasting glucose (mmol/l) | 4·40 ± 0·33"
+      }
+    },
+    {
+      "id": "fasting_s1_insulin",
+      "description": "Fasting serum insulin, study 1 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s1"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 22.1,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 7.8,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 1 (n 40) column, row 'Fasting insulin'",
+        "quote": "Fasting insulin (pmol/l) | 22·1 ± 7·8"
+      }
+    },
+    {
+      "id": "fasting_s2_glucose",
+      "description": "Fasting blood glucose, study 2 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart). Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s2"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 4.43,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.34,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 2 (n 40) column, row 'Fasting glucose'",
+        "quote": "Fasting glucose (mmol/l) | 4·43 ± 0·34"
+      }
+    },
+    {
+      "id": "fasting_s2_insulin",
+      "description": "Fasting serum insulin, study 2 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s2"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 27.6,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 23.0,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 2 (n 40) column, row 'Fasting insulin'",
+        "quote": "Fasting insulin (pmol/l) | 27·6 ± 23·0"
+      }
+    },
+    {
+      "id": "fasting_s3_glucose",
+      "description": "Fasting blood glucose, study 3 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart). Capillary whole blood from a finger prick (fluoro-oxalate tube, YSI analyser), not plasma.",
+      "marker": "glucose",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s3"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 4.33,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 0.32,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 3 (n 40) column, row 'Fasting glucose'",
+        "quote": "Fasting glucose (mmol/l) | 4·33 ± 0·32"
+      }
+    },
+    {
+      "id": "fasting_s3_insulin",
+      "description": "Fasting serum insulin, study 3 participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_s3"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 39.6,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 18.1,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Study 3 (n 40) column, row 'Fasting insulin'",
+        "quote": "Fasting insulin (pmol/l) | 39·6 ± 18·1"
+      }
+    },
+    {
+      "id": "fasting_pilot_insulin",
+      "description": "Fasting serum insulin, pilot (chew) study participants (Table 2; the visit(s) it comes from are not stated, the Methods define a visit's fasting value as the mean of two samples 5 min apart)",
+      "marker": "insulin",
+      "statistic": "mean_in_window",
+      "protocols": [
+        "fasting_pilot"
+      ],
+      "window": {
+        "start_min": 5,
+        "end_min": 11
+      },
+      "value": 25.5,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sd",
+        "value": 13.3,
+        "n": 40
+      },
+      "location": {
+        "where": "Table 2, Pilot (n 40) column, row 'Fasting insulin'",
+        "quote": "Fasting insulin (pmol/l) | 25·5 ± 13·3"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "Test granolas TG1-TG3 (Table 4, test columns): glucose and insulin iAUC 0-2, 2-3 and 0-3 h and the 2 h glucose increments; they differ from the control granolas in RAG:SAG at equal available carbohydrate, fat and protein",
+      "missing": {
+        "kind": "input",
+        "name": "starch_structure"
+      }
+    },
+    {
+      "what": "Pilot chews C1-C6 (Table 3): glucose and insulin iAUC 0-2, 2-3 and 0-3 h and the 2 h glucose increments; six starch variants at 35 g available carbohydrate, with a drink of the subject's choice whose grams are not printed",
+      "missing": {
+        "kind": "input",
+        "name": "starch_structure"
+      }
+    },
+    {
+      "what": "Pilot fasting glucose (Table 2: 4·48 ± 0·39 mmol/l; Results text, cited to Table 2: 4·36 ± 0·49 mmol/l) and the six chew-day fasting means (4.45 to 4.53 mmol/l, sem): the printed values disagree",
+      "missing": {
+        "kind": "source",
+        "name": "table_ambiguous"
+      }
+    },
+    {
+      "what": "Table 4 iAUC 0-3 h, glucose and insulin, CG1, CG2 and CG3 (and the pilot chews): each is the 0-2 h area plus the 2-3 h area, both entered, from the same samples of the same people (glucose 118+10=128, 118+10=128, 119+6=125; insulin 147+12=159, 201+12=213, 205+13=218, all as printed)",
+      "missing": {
+        "kind": "source",
+        "name": "restates_entered_finding"
+      }
+    },
+    {
+      "what": "Table 4 'Mean of three studies' control column: glucose and insulin iAUC and 2 h increment pooled over the three control meals, whose grams differ; n for its sem not printed",
+      "missing": {
+        "kind": "operator",
+        "name": "pooled_over_arms"
+      }
+    },
+    {
+      "what": "Table 2 'Total (n 120)' fasting glucose and insulin: pooled over the three granola studies",
+      "missing": {
+        "kind": "operator",
+        "name": "pooled_over_arms"
+      }
+    },
+    {
+      "what": "Glucose and insulin increments at each sampling time, pooled and by study (Figure 2 A-F, means +/- sem): figure only, so the curve to 180 min is not printed as numbers",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "Relative glycaemic and insulinaemic responses (test as a percentage of control, per person, outliers more than 2 sd removed, and their means and 99% or 95% CIs; Results, Fig 2 insets, Fig 3)",
+      "missing": {
+        "kind": "operator",
+        "name": "mean_of_individual_ratios"
+      }
+    },
+    {
+      "what": "HOMA-IR, HOMA-B and the share with HOMA-IR >= 1 (Table 2)",
+      "missing": {
+        "kind": "operator",
+        "name": "derived_index"
+      }
+    },
+    {
+      "what": "Systolic and diastolic blood pressure of the participants (Table 2): the posture and the time of measurement are not printed",
+      "missing": {
+        "kind": "input",
+        "name": "posture"
+      }
+    },
+    {
+      "what": "Regression slopes and intercepts of the responses on RAG, SAG and log2(RAG:SAG) across the test foods (Results, Fig 3, Supplementary Tables S3-S4)",
+      "missing": {
+        "kind": "operator",
+        "name": "slope"
+      }
+    }
+  ]
+}
