@@ -122,6 +122,8 @@ def safe_step(
             loss_value=float(loss.detach().item()),
             extra=extra,
         )
+    if not loss.requires_grad:  # --train-only: nothing this loss reaches is trained
+        return float(loss.detach().item())
     loss.backward()
     all_finite, gstats = _grad_stats(ctx.params)
     if not all_finite:
@@ -243,6 +245,8 @@ def accumulate_grad(
     lv = float(loss.detach().item())
     if not math.isfinite(lv):
         _log_skip(signal, ctx, "loss", f"loss={lv!r}")
+        return lv
+    if not loss.requires_grad:  # --train-only: nothing this loss reaches is trained
         return lv
     snapshot = grad_snapshot(ctx)
     loss.backward()

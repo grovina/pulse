@@ -7,6 +7,7 @@ extra term, and its weight decays to zero across the run.
 """
 
 import argparse
+import fnmatch
 import faulthandler
 import gc
 import json
@@ -332,6 +333,44 @@ def _last_good_checkpoint(
     }
 
 
+def _parse_train_only(raw: str | None) -> tuple[str, ...]:
+    return tuple(p.strip() for p in (raw or "").split(",") if p.strip())
+
+
+def _freeze_all_but(model: nn.Module, patterns: tuple[str, ...]) -> list[nn.Parameter]:
+    """The parameters to optimise. With no patterns, all of them (today's behaviour).
+
+    With patterns, only the parameters whose name matches one (fnmatch) keep
+    ``requires_grad``; every other parameter is frozen, so autograd computes nothing
+    for it and the optimizer cannot move it. A pattern that matches nothing raises.
+    """
+    named = list(model.named_parameters())
+    if not patterns:
+        return [p for _, p in named]
+    dead = [pat for pat in patterns if not any(fnmatch.fnmatchcase(n, pat) for n, _ in named)]
+    if dead:
+        raise ValueError(
+            f"--train-only: pattern(s) {dead} match no parameter; names look like "
+            f"{[n for n, _ in named[:3]]}",
+        )
+    chosen: list[tuple[str, nn.Parameter]] = []
+    for n, p in named:
+        keep = any(fnmatch.fnmatchcase(n, pat) for pat in patterns)
+        p.requires_grad_(keep)
+        if keep:
+            chosen.append((n, p))
+    total = sum(p.numel() for _, p in named)
+    n_train = sum(p.numel() for _, p in chosen)
+    print(
+        f"[TRAIN-ONLY] {len(chosen)} of {len(named)} parameter tensors trained "
+        f"({n_train:,} of {total:,} values); the rest are frozen at their starting values:",
+        flush=True,
+    )
+    for n, p in chosen:
+        print(f"[TRAIN-ONLY]   {n} {tuple(p.shape)}", flush=True)
+    return [p for _, p in chosen]
+
+
 def split_validation(specs, rules, fraction: float):
     """(training specs, validation specs, training rules). The validation papers are
     drawn from the papers that train (``sealing.paper_is_validation``); their cohort
@@ -548,6 +587,7 @@ def train(
     torch_threads: int = 1,
     compile_steps: bool = False,
     fitness_from_vo2max: bool = False,
+    train_only: str | None = None,
 ):
     _set_runtime(seed, deterministic=deterministic, torch_threads=torch_threads)
     set_fitness_from_vo2max(fitness_from_vo2max)
@@ -723,7 +763,8 @@ def train(
                 flush=True,
             )
 
-    params = list(model.parameters())
+    train_only_patterns = _parse_train_only(train_only)
+    params = _freeze_all_but(model, train_only_patterns)
     rng = np.random.default_rng(seed)
 
     scheduler_T = phase_boundary if phased else total_epochs
@@ -1278,6 +1319,8 @@ def train(
         "train_config": dict(train_config) if train_config else None,
         # Read back by every loader that builds people (probe.load_model_from_checkpoint).
         "fitness_from_vo2max": bool(fitness_from_vo2max),
+        # None = every parameter trained; else the fnmatch patterns that chose the trained ones.
+        "train_only": list(train_only_patterns) if train_only_patterns else None,
         "spec_path": spec_path,
         "trained_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -2156,6 +2199,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--train-only",
+        dest="train_only",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated fnmatch patterns on parameter names (e.g. "
+            "'cardiovascular.hr_*,cardiovascular.slow_tau_raw'). Only the matching parameters "
+            "are trained; every other one keeps its warm-start value bit for bit (requires_grad "
+            "off, not in the optimizer), so drift cannot reach the frozen networks. A pattern "
+            "that matches nothing is an error. Default: all parameters. Recorded in the checkpoint."
+        ),
+    )
+    parser.add_argument(
         "--cold-distill-anchor-window",
         type=int,
         default=60,
@@ -2649,6 +2705,7 @@ def main():
         torch_threads=args.torch_threads,
         compile_steps=args.compile_steps,
         fitness_from_vo2max=args.fitness_from_vo2max,
+        train_only=args.train_only,
     )
 
     if exit_code != 0:

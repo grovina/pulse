@@ -176,6 +176,23 @@ on iter 121's checkpoint (one core); an epoch with the literature is 3 h, so
 every epoch adds under 1% to a 24 h run. The board's training line still
 includes these papers. A sealed number still never chooses.
 
+`--train-only PATTERNS` (2026-11-27, default off) trains only the parameters whose
+names match one of the comma-separated fnmatch patterns and freezes every other
+one (`requires_grad` off, not in the optimizer), so a warm-started retrain cannot
+drift the frozen networks (iter 122 and 123 drifted on held-out papers across the
+networks). A pattern that matches nothing stops the run; the trained names and their
+count are logged as `[TRAIN-ONLY]` and the patterns are in the checkpoint
+(`train_only`). A loss that reaches no trained parameter is skipped, not an error.
+Checked on iter 120's weights: with the three heart-rate parameters
+(`cardiovascular.hr_fit_gain`, `hr_slow_gain`, `slow_tau_raw`), 20 steps of the
+recipe's phase 2 changed those three and no other parameter. The teacher tape does not reach
+the heart-rate gains, so they move only on the evidence and rules steps. Timing
+on the lab box (4 threads, load 20 to 28 from other jobs, so only an upper bound):
+20 steps with the literature took 2,243 s (112 s a step) with the three trained. The
+all-parameters probe was stopped before it finished (the box was out of swap), so
+the comparison with training everything is not measured; the unloaded step is
+62 to 73 s (11 Nov, above).
+
 ## Runs
 
 | Execution | Iter | Started | Ended |

@@ -516,7 +516,7 @@ class RolloutEvidenceSignal(TrainingSignal):
                     continue
                 step_loss = contrib if step_loss is None else step_loss + contrib
                 raw_weighted_sum += loss_by_spec[spec.name] * sw
-        if step_loss is not None:
+        if step_loss is not None and step_loss.requires_grad:  # none without trained params
             step_loss.backward()
         del results, step_loss  # release graph leaves promptly
 
@@ -679,7 +679,7 @@ class RolloutEvidenceSignal(TrainingSignal):
                 v_sum[rule.name] += float(vs_d.sum().item())
                 sat_count[rule.name] += float((vs_d <= 0).float().sum().item())
                 visited[rule.name] += B
-        if step_loss is not None:
+        if step_loss is not None and step_loss.requires_grad:  # none without trained params
             step_loss.backward()
         del trajs, arm_rows, step_loss
 
