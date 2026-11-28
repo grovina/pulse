@@ -551,6 +551,25 @@ run: `--phase2-lr 0.01 --phase2-lr-floor 0.002 --steps-per-epoch 20 --phase2-epo
 (120 steps; iter 124 ran about 95 s a step in the cloud) with
 `--train-only-lr 'metabolic.incretin_glu_gain=3,metabolic.log_incretin_glu_thr=0.5,metabolic.log_incretin_glu_width=0.5'`.
 
+Iter 125, that islet run (2026-11-28, trainer-pnphx, 3 h 56 min, about $1.53; warm from iter
+120, 12 islet scalars only, `--incretin-at-glucose`, `gs://grovina-pulse-data/training/jobs/iter125-islet/`).
+The guard (15 validation papers, 164 items) kept epoch 2: validation median |z| 0.663,
+0.655, 0.655, 0.665, 0.666, 0.665 by epoch. On items both boards hold, against iter 120
+frozen at b66d400 (GLP-1 excluded):
+
+- Trained 0.584 to 0.573 median, mean 0.956 to 0.955; insulin 0.604 to 0.593, glucose 0.589
+  to 0.584. Validation 0.657 to 0.659 median, mean 1.029 to 0.993 (glucose 1.26 to 0.86,
+  insulin 0.35 to 0.46 on 15 points). Sealed, reported only: 0.707 to 0.658 median, mean
+  1.012 to 1.000; insulin 0.745 to 0.738, glucose 0.663 to 0.609.
+- It is not the late-insulin fix. The soma-shaped term went negative (`incretin_glu_gain`
+  -0.47, threshold e^4.44 = 85 mg/dL), so it takes insulin away above ordinary glucose, the
+  opposite of soma's GLP-1 result. Trained insulin from 150 min: median z -0.53 to -0.61
+  (lower); trained insulin points under target 140 to 149 of 257. The protein weight rose
+  (`log_ins_nut_w_p` 0.53 to 0.63) and fat's fell; the gains went to glucose.
+- Not adopted as the reference: the gain is mostly glucose through a sign soma rules out,
+  and validation's median did not move. A rerun with the gain held at or above 0 is the
+  clean test of the soma term.
+
 Iter 120, meal-gated muscle share, an epinephrine gate on basal insulin
 and the nutrient gain doubled (2026-11-22; its board against iter 119's):
 
