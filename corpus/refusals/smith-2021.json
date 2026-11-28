@@ -1,0 +1,47 @@
+{
+  "paper": "smith-2021",
+  "citation": {
+    "authors": "Smith K, Taylor GS, Allerton DM, Brunsgaard LH, Bowden Davies KA, Stevenson EJ, West DJ",
+    "title": "The Postprandial Glycaemic and Hormonal Responses Following the Ingestion of a Novel, Ready-to-Drink Shot Containing a Low Dose of Whey Protein in Centrally Obese and Lean Adult Males: A Randomised Controlled Trial",
+    "journal": "Frontiers in Endocrinology",
+    "year": 2021,
+    "doi": "10.3389/fendo.2021.696977",
+    "pmid": "34220720",
+    "pmcid": "PMC8253223"
+  },
+  "reported": [
+    {
+      "what": "Fasting plasma glucose, lean men, mean +/- SD (fasting sample at t = -15 min, Table 1)",
+      "location": {
+        "where": "Table 1, row 'Fasting glucose (mmol/L)', Lean column",
+        "quote": "Fasting glucose (mmol/L) | 4.40 ± 0.26"
+      }
+    },
+    {
+      "what": "Fasting GIP, lean men, mean +/- SD (Table 1)",
+      "location": {
+        "where": "Table 1, row 'GIP (pmol/L)', Lean column",
+        "quote": "GIP (pmol/L) | 11.01 ± 5.60"
+      }
+    },
+    {
+      "what": "Resting systolic blood pressure, lean men, mean +/- SD (Table 1)",
+      "location": {
+        "where": "Table 1, row 'SBP (mmHg)', Lean column",
+        "quote": "SBP (mmHg) | 118 ± 9.3"
+      }
+    },
+    {
+      "what": "Glucose AUC 0-60 min, lean men, placebo (time-averaged, Table 2)",
+      "location": {
+        "where": "Table 2, Glucose AUC, row '0-60 min', Lean PLA column",
+        "quote": "0–60 min | 3.8 ± 0.5 | 4.7 ± 0.7"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "source",
+    "name": "time_not_printed"
+  },
+  "detail": "The meal outcomes are time-averaged areas with no printed sampling minutes, and their printed unit (mmol/L/min-1) contradicts the table footnote; the breakfast in both arms carries a 1,500 mg acetaminophen tracer; the lean group was trimmed by HOMA-IR; and the only fasting values are pooled across both visits (the obese group's GIP differs between them)."
+}
