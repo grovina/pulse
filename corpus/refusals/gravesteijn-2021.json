@@ -1,0 +1,40 @@
+{
+  "paper": "gravesteijn-2021",
+  "citation": {
+    "authors": "Gravesteijn E, Mensink RP, Smeets ETHC, Plat J",
+    "title": "Dietary Macronutrients Do Not Differently Influence Postprandial Serum and Plasma Brain-Derived Neurotrophic Factor Concentrations: A Randomized, Double-Blind, Controlled Cross-Over Trial",
+    "journal": "Frontiers in Neuroscience",
+    "year": 2021,
+    "doi": "10.3389/fnins.2021.774915",
+    "pmid": "34992516",
+    "pmcid": "PMC8724042"
+  },
+  "reported": [
+    {
+      "what": "serum BDNF, pg/mL, mean +/- SD (n = 18) after the high-fat meal at T0, T60 and T240 min (the high-carbohydrate and high-protein rows of the same table are the same kind of value)",
+      "location": {
+        "where": "Table 2, Serum rows",
+        "quote": "Fat* | 24,290 ± 8,842 | 19,120 ± 7,723 | 16,366 ± 6,793"
+      }
+    },
+    {
+      "what": "EDTA plasma BDNF, pg/mL, mean +/- SD (n = 18) after the same three meals at T0, T60 and T240 min",
+      "location": {
+        "where": "Table 2, EDTA rows",
+        "quote": "Fat | 5,154 ± 2,002 | 5,444 ± 2,440 | 5,977 ± 1,948"
+      }
+    },
+    {
+      "what": "plasma glucose, mmol/L, median with 25th to 75th percentiles, fasting and after each meal (the glucose and insulin curves of the abstract are in Supplementary Figure 2 only)",
+      "location": {
+        "where": "Table 5, Glucose rows",
+        "quote": "Glucose (mmol/L) | Fat | 5.35 (5.11–5.73) | 1,343 (1,231–1,422) | 67 (43–108) | 1.33 (1.14–1.89)"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "median_with_iqr"
+  },
+  "detail": "The meal-test glucose and insulin (Table 5, 0 to 240 min after three high-fat meals) are medians with 25th to 75th percentiles, which the model's statistics cannot hold; the curves themselves are only in a supplementary figure outside the XML. The paper's main outcome, brain-derived neurotrophic factor, has no model state either (marker/bdnf)."
+}
