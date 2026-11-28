@@ -29,7 +29,7 @@ assert pulse.__file__.startswith(str(_ROOT)), pulse.__file__
 
 import pulse.knowledge.full_body as fb
 from pulse.knowledge.cohort_statistics import ALL_COHORT_STATISTICS
-from pulse.knowledge.cohort_types import MEAN_KINDS, PER_PERSON_KINDS, StatisticKind, TargetShape, combine_arms, is_on
+from pulse.knowledge.cohort_types import MEAN_KINDS, PER_PERSON_KINDS, log_gap, StatisticKind, TargetShape, combine_arms, is_on
 from pulse.training.arm_init import teacher_arm_trajectory
 from pulse.types import MARKER_INDEX
 
@@ -48,7 +48,7 @@ def shaped_z(mean: float, spec) -> float:
     """z of the batch mean after the spec's target shape (review 4.3), over the
     individual sigma — the same number ``cohort_loss.score_batch_statistic``
     reports as ``z``."""
-    d = mean - spec.target
+    d = log_gap(mean, spec)
     if spec.shape is TargetShape.BAND:
         d = np.sign(d) * max(abs(d) - spec.band_halfwidth, 0.0)
     elif spec.shape is TargetShape.AT_MOST:

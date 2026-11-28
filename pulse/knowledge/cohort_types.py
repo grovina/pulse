@@ -15,6 +15,7 @@ matching, so the model learns *how much*, not just *which way*.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -71,6 +72,16 @@ class StatisticKind(str, Enum):
     # level whose assay scale differs between papers (GLP-1): the scale cancels,
     # and shape and relative size remain. Single arm.
     RATIO_TO_BASELINE = "ratio_to_baseline"
+    # exp(mean over people of ln x), x each person's mean of the marker over the
+    # window, for a paper that log-transformed the marker and printed geometric
+    # means. ``target`` is the geometric mean in the marker's unit; ``sigma`` is
+    # the between-person SD of ln x (a log-scale number: see GEOMETRIC_KINDS).
+    # The marker must stay strictly positive. Single arm.
+    GEOMETRIC_MEAN = "geometric_mean"
+    # The same over the trapezoidal area of ``sample_times`` (the time-weighted
+    # mean, as AREA_UNDER_CURVE carries it): the geometric mean of per-person
+    # total areas. Single arm.
+    GEOMETRIC_AREA = "geometric_area"
 
 
 class BelowBaseline(str, Enum):
@@ -132,11 +143,17 @@ TWO_ARM_KINDS = frozenset({
 })
 _RATIO_KINDS = frozenset({StatisticKind.RATIO_MEANS, StatisticKind.RATIO_INCREMENTS})
 # Kinds read at the paper's own sampling minutes (``sample_times``), not over a window.
-SAMPLED_KINDS = frozenset({StatisticKind.AREA_UNDER_CURVE, StatisticKind.INCREMENTAL_AREA})
+SAMPLED_KINDS = frozenset({
+    StatisticKind.AREA_UNDER_CURVE, StatisticKind.INCREMENTAL_AREA, StatisticKind.GEOMETRIC_AREA,
+})
+# Kinds scored on the log scale: the prediction is exp(mean of ln per-person value),
+# ``target`` is the paper's geometric mean (marker unit) and ``sigma`` the between-person
+# SD of the LOG value, so the residual is ``ln(pred) - ln(target)`` over ``sigma``.
+GEOMETRIC_KINDS = frozenset({StatisticKind.GEOMETRIC_MEAN, StatisticKind.GEOMETRIC_AREA})
 # Single-arm kinds that are a per-person quantity averaged over people, scored as a
 # mean (sigma is the between-person SD, divided by sqrt(n_arm)); they have no entry in
 # MEAN_KINDS because that reads a plain window mean.
-PER_PERSON_KINDS = frozenset({StatisticKind.CHANGE_FROM_BASELINE}) | SAMPLED_KINDS
+PER_PERSON_KINDS = frozenset({StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.GEOMETRIC_MEAN}) | SAMPLED_KINDS
 _SINGLE_ARM_ONLY = PER_PERSON_KINDS | {
     StatisticKind.SPREAD, StatisticKind.CORRELATION, StatisticKind.RATIO_TO_BASELINE,
 }
@@ -152,6 +169,15 @@ def combine_arms(kind: StatisticKind, per_arm):
     if kind in TWO_ARM_KINDS:
         return per_arm[1] - per_arm[0]
     return per_arm[0]
+
+
+def log_gap(pred: float, spec: "CohortStatisticSpec") -> float:
+    """``ln(pred) - ln(target)`` for a geometric spec, ``pred - target`` otherwise:
+    the residual to divide by ``spec.sigma`` (a prediction that is not positive is
+    infinitely far from a geometric mean, reported as a very large gap)."""
+    if spec.kind in GEOMETRIC_KINDS:
+        return math.log(pred) - math.log(spec.target) if pred > 0 else -1e9
+    return pred - spec.target
 
 
 def statistic_cuts(spec: "CohortStatisticSpec", arm_idx: int = 0) -> tuple[int, ...]:
@@ -553,6 +579,11 @@ class CohortStatisticSpec:
                 raise ValueError(f"{self.name}: window must be [first sample time, last sample time + 1)")
         elif self.sample_times is not None:
             raise ValueError(f"{self.name}: sample_times is only for kinds area_under_curve and incremental_area")
+        if self.kind in GEOMETRIC_KINDS:
+            if not self.target > 0:
+                raise ValueError(f"{self.name}: a geometric mean must be positive (got {self.target})")
+            if self.shape is not TargetShape.POINT:
+                raise ValueError(f"{self.name}: a geometric mean is a point target")
         if self.kind is StatisticKind.INCREMENTAL_AREA:
             if self.below_baseline is None:
                 raise ValueError(f"{self.name}: kind=incremental_area needs below_baseline")

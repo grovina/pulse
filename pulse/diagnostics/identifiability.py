@@ -35,6 +35,7 @@ satisfied rule truly holds nothing locally.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
@@ -46,7 +47,7 @@ from ..cohort_loss import (
 )
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
-    PER_PERSON_KINDS, CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, combine_arms,
+    GEOMETRIC_KINDS, PER_PERSON_KINDS, CohortArmSpec, CohortStatisticSpec, InitMode, StatisticKind, combine_arms,
 )
 from ..knowledge.physiology_rules import PHYSIOLOGY_RULES, PhysiologyRule
 from ..model import ModularPhysiologyNetwork
@@ -158,6 +159,10 @@ def _cohort_residual(
                 traj, series, _arm_window(spec, arm_idx), spec.kind, spec.softargmax_beta,
             ))
         pred = combine_arms(spec.kind, per_arm)
+    if spec.kind in GEOMETRIC_KINDS:
+        # One person is its own geometric mean; the residual is on the log scale.
+        raw = ((pred[0].clamp_min(1e-12).log() - math.log(spec.target)) / float(spec.sigma)).reshape(1)
+        return raw, raw.detach()
     raw = ((pred[0] - float(spec.target)) / float(spec.sigma)).reshape(1)
     shaped = (shaped_residual(pred[0].detach(), spec) / float(spec.sigma)).reshape(1)
     return raw, shaped

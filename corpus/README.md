@@ -644,6 +644,8 @@ what the model and this format should learn next.
 | `incremental_area` | the trapezoidal area of the marker above (or net of) the person's own baseline, over `times` | 1 | an area, as above | `sd`, `sem`, `ci`, `range` |
 | `spread` | the between-person standard deviation of the person's window mean | 1 | an SD, in the marker's unit | `n_only`, `sem`, `ci` |
 | `correlation` | Pearson r, across people, of the window mean with `partner` | 1 | unit `r` | `n_only`, `sem`, `ci` |
+| `geometric_mean` | the geometric mean of the marker over the window: exp(mean over people of ln of each person's window mean) | 1 | a level | `ci` only |
+| `geometric_area` | the geometric mean of each person's trapezoidal area over `times` | 1 | an area, as `area_under_curve` | `ci` only |
 | `curve` | the marker at several timepoints | 1 | per point | per point: `sd`, `sem`, `ci`, `range` |
 
 * Every statistic is taken **per person and then averaged over people**. So
@@ -709,6 +711,23 @@ what the model and this format should learn next.
   value, unit and uncertainty are the paper's, and the SD and n it carries are those of the
   per-person areas. If the paper does not print the sampling minutes, leave the number out
   (`source`, `time_not_printed`).
+* `geometric_mean` and `geometric_area` are for a paper that **log-transformed** the marker
+  (or area) and prints geometric means with a 95% CI ("geometric mean (95% CI)", "back-transformed
+  means", "analysed after log transformation", insulin, C-peptide, NEFA, GLP-1 and areas of
+  them are the usual cases). Use them **only when the paper says so**, and **never turn a
+  geometric mean into an arithmetic one**: it is smaller than the arithmetic mean, by
+  about exp(s^2 / 2) for a log-SD s, and entering it as a `mean_in_window` pulls the model
+  low. The paper's own arithmetic mean, where it prints one, is a different finding. They
+  take the same fields as `mean_in_window` (`window`) and `area_under_curve` (`times`, and
+  `time_unit` or `per_span`). The value must be positive and the marker strictly positive
+  (a marker that can reach zero or go negative has no log). The uncertainty is the paper's
+  `ci` **on the geometric mean**, `low` and `high` positive with the value inside them:
+  the loader takes the log-scale width `ln(high) - ln(low)`, a standard error of ln GM from
+  it as for any `ci`, and scores the model's prediction `exp(mean of ln x)` against
+  `ln(value)`, so a residual is a ratio, not a difference. A geometric mean printed
+  without an interval, or with an SD of the logs or a range, is not entered (left out:
+  `source`, `uncertainty_not_printed`). An area is a geometric mean of per-person areas
+  only when the paper says the areas were log-transformed.
 * `correlation` takes `partner`: another marker's name, or one of the person factors
   `insulin_resistance`, `beta_cell`, `adiposity`, `fitness`, `chronotype`,
   `hpa_reactivity`, `gastric_emptying`, `sex`, `age`.
@@ -830,7 +849,7 @@ Do not compute a standard error yourself and do not choose a sigma.
 |---|---|---|
 | `sd` | `value`, `n` | "mean (SD)" or "mean +/- SD": the spread between people |
 | `sem` | `value`, `n` | "mean +/- SEM", error bars labelled standard error |
-| `ci` | `low`, `high`, `level` (90, 95 or 99), `n` | a confidence interval **of the reported statistic** |
+| `ci` | `low`, `high`, `level` (90, 95 or 99), `n` | a confidence interval **of the reported statistic** (for a geometric mean, the interval of the geometric mean: it is symmetric on the log scale, and only `ci` is accepted) |
 | `range` | `low`, `high`, `n` | the smallest and largest individual |
 | `n_only` | `n` | only for `spread` and `correlation`, when the paper gives the statistic and its n and nothing else |
 

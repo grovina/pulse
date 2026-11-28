@@ -790,6 +790,22 @@ Not rescored, from the board of 2026-10-29:
   paper itself. An area the paper prints already divided by its span is
   entered as printed with `per_span: true` in place of a time unit
   (`oberoi-2022`'s net areas over 0-180 min).
+- Geometric means, since 2026-11-28: `geometric_mean` (the exponential of the
+  mean over people of ln of each person's window mean) and `geometric_area`
+  (the same over the trapezoid of the paper's sampling minutes) are
+  statistics. Meal-test papers that log-transform insulin, C-peptide, NEFA or
+  an area print geometric means with a 95% CI, which left them out
+  (`operator`/`geometric_mean`: `christensen-2026`, `dale-2018`,
+  `revheim-2024`). The file's `ci` is the interval of the geometric mean and
+  is the only uncertainty accepted; the loader takes `ln(high / low)`, a
+  standard error of ln GM through the t quantile, and `sigma` is the
+  between-person SD of the log value (n capped at 25 as elsewhere). The loss
+  scores `exp(mean ln x)` against `ln(value)` on that scale
+  (`cohort_loss.score_geometric`); `z` is `(ln pred - ln GM) / sigma` and the
+  board reports the prediction back in the marker's unit. The gate rejects a
+  value at or under zero and a `ci` that is not positive or does not contain
+  it. Nothing in the corpus uses it yet; every existing statistic scores
+  bit for bit as before (iter 120 scored on the old and the new code: equal).
 - Insulin converts from U/L (x1000) and, like GIP and GLP-1, from a mass
   concentration (pg/mL, ng/L, ng/mL, µg/L) through the hormone's molar mass
   (`pulse/knowledge/corpus_units.py`). The four files that had left values

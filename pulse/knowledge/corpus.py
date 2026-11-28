@@ -25,6 +25,7 @@ tuple; only a model built with ``meal_details=True`` reads it.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from collections import Counter
@@ -40,6 +41,7 @@ from .cohort_types import (
     FAT_TYPES,
     MEAL_FORMS,
     PROTEIN_SOURCES,
+    GEOMETRIC_KINDS,
     SAMPLED_KINDS,
     TWO_ARM_KINDS,
     BelowBaseline,
@@ -816,6 +818,7 @@ def _protocol(
 # incremental area (a mean of a difference) is a difference.
 _LEVEL_KINDS = frozenset({
     StatisticKind.MEAN_IN_WINDOW, StatisticKind.PEAK_VALUE, StatisticKind.AREA_UNDER_CURVE,
+    StatisticKind.GEOMETRIC_MEAN, StatisticKind.GEOMETRIC_AREA,
 })
 _DIFF_KINDS = frozenset({
     StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.SPREAD,
@@ -930,12 +933,20 @@ def _uncertainty(
         if not min(low, high) <= reported <= max(low, high):
             r.add("uncertainty", f"{where}: the value {reported:g} is outside its {k} [{low:g}, {high:g}]")
             return None
+    geometric = kind in GEOMETRIC_KINDS
+    if geometric and k == "ci":
+        # A geometric mean's interval is symmetric on the log scale: its width is the
+        # log of the ratio of its ends, which a unit factor cancels from.
+        if not (low is not None and high is not None and low > 0):
+            r.add("uncertainty", f"{where}: the ends of a geometric mean's ci must be positive (got [{low}, {high}])")
+            return None
     try:
         u = Uncertainty(
             k, n,
             None if value is None else units.width(value),
             None if low is None or high is None else 0.0,
-            None if low is None or high is None else units.width(high - low),
+            None if low is None or high is None
+            else (math.log(high / low) if geometric else units.width(high - low)),
             level,
             observations,
         )
@@ -1258,6 +1269,9 @@ def _finding_item(
                         f"{where}: an incremental area with below_baseline 'ignored' counts only "
                         f"what is above baseline, so it cannot be negative",
                     )
+                    complete = False
+                if kind in GEOMETRIC_KINDS and not target > 0:
+                    r.add("parse", f"{where}: a geometric mean must be positive")
                     complete = False
                 if kind in _RATIO_KINDS and not target > 0:
                     r.add("parse", f"{where}: a ratio must be positive")

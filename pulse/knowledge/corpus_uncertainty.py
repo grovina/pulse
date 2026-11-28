@@ -55,6 +55,11 @@ than that: 200 people measured once do not pin a population mean to 7% of its
 spread. 25 is a judgement, not a measurement; it holds the sharpest finding to
 one fifth of its between-person SD. It lives here, in one place.
 
+A geometric mean (``geometric_mean``, ``geometric_area``) is scored on the log scale, so
+its ``ci`` is carried as ``low = 0, high = ln(upper / lower)``: the log-scale width. The
+standard error of ln GM follows as for any ci (t quantile, ``n - 1`` degrees of freedom),
+and ``sigma`` is the between-person SD of the log value, ``se_log * sqrt(n)``.
+
 A one-sided or banded claim (a ceiling, a diagnostic threshold) is not a
 reported number with an uncertainty and has no place in this format; it is a
 ``PhysiologyRule``.
@@ -95,6 +100,9 @@ ALLOWED_KINDS: dict[StatisticKind, frozenset[str]] = {
     StatisticKind.CHANGE_FROM_BASELINE: _SCALAR,
     StatisticKind.AREA_UNDER_CURVE: _SCALAR,
     StatisticKind.INCREMENTAL_AREA: _SCALAR,
+    # The paper's 95% CI on a geometric mean; its width is carried on the log scale.
+    StatisticKind.GEOMETRIC_MEAN: frozenset({"ci"}),
+    StatisticKind.GEOMETRIC_AREA: frozenset({"ci"}),
     StatisticKind.RATIO_MEANS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_INCREMENTS: frozenset({"sem", "ci"}),
     StatisticKind.RATIO_TO_BASELINE: frozenset({"sem", "ci"}),
@@ -257,7 +265,7 @@ def to_sigma(kind: StatisticKind, target: float, u: Uncertainty) -> tuple[float,
         StatisticKind.MEAN_IN_WINDOW, StatisticKind.PEAK_VALUE, StatisticKind.TIME_TO_PEAK,
         StatisticKind.DELTA_MEANS, StatisticKind.DELTA_PEAKS, StatisticKind.RATIO_MEANS,
         StatisticKind.CHANGE_FROM_BASELINE, StatisticKind.AREA_UNDER_CURVE,
-        StatisticKind.INCREMENTAL_AREA,
+        StatisticKind.INCREMENTAL_AREA, StatisticKind.GEOMETRIC_MEAN, StatisticKind.GEOMETRIC_AREA,
     ):
         sigma = between_person_sd(u)
         return _positive(sigma), n_eff

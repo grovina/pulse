@@ -16,6 +16,7 @@ because they need a differentiable soft-peak and a focused weight.
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 from typing import Callable, Sequence
 
 import numpy as np
@@ -25,6 +26,7 @@ import torch.nn.functional as F
 
 from .knowledge.cohort_types import (
     FACTORS,
+    GEOMETRIC_KINDS,
     MEAN_KINDS,
     PER_PERSON_KINDS,
     BelowBaseline,
@@ -59,6 +61,7 @@ __all__ = [
     "per_person_statistic",
     "population_spread",
     "score_batch_statistic",
+    "score_geometric",
     "score_correlation",
     "score_spread",
     "shaped_residual",
@@ -379,6 +382,8 @@ def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> tor
     marker's unit, which is how the spec carries it:
 
     * ``change_from_baseline``: mean over ``window`` minus mean over ``baseline``.
+    * ``geometric_mean``: the mean over ``window`` (the log is taken by the scorer);
+      ``geometric_area``: the area-under-curve number below.
     * ``area_under_curve``: the trapezoid over ``spec.sample_times`` (the minutes
       the paper drew its samples), divided by the span of those times. The model is
       read at those minutes and no others; a dense integral is a different number.
@@ -400,6 +405,9 @@ def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> tor
         _validate_window(spec.name, spec.baseline, T)
         w, b = spec.window, spec.baseline
         return series[:, w.start_min:w.end_min].mean(dim=1) - series[:, b.start_min:b.end_min].mean(dim=1)
+    if spec.kind is StatisticKind.GEOMETRIC_MEAN:
+        _validate_window(spec.name, spec.window, T)
+        return series[:, spec.window.start_min:spec.window.end_min].mean(dim=1)
     times = spec.sample_times
     assert times is not None
     if times[-1] >= T:
@@ -408,7 +416,7 @@ def per_person_statistic(series: torch.Tensor, spec: CohortStatisticSpec) -> tor
     y = series[:, idx]  # [B, K]
     dt = (idx[1:] - idx[:-1]).to(series.dtype)
     span = float(times[-1] - times[0])
-    if spec.kind is StatisticKind.AREA_UNDER_CURVE:
+    if spec.kind in (StatisticKind.AREA_UNDER_CURVE, StatisticKind.GEOMETRIC_AREA):
         return (0.5 * (y[:, :-1] + y[:, 1:]) * dt).sum(dim=1) / span
     assert spec.kind is StatisticKind.INCREMENTAL_AREA
     if spec.baseline is not None:
@@ -656,6 +664,30 @@ def score_batch_statistic(
     return loss, pred_mean, z
 
 
+def score_geometric(
+    values: torch.Tensor, spec: CohortStatisticSpec, n_population: int | None = None,
+) -> tuple[torch.Tensor, float, float]:
+    """``(loss, geometric mean, z)`` for a geometric-mean statistic of ``values[B]``.
+
+    The paper log-transformed the marker, so its mean is the mean of ``ln x`` over
+    people and its geometric mean is the exponential of that. The batch is scored
+    exactly as a window mean is, on the log scale: ``ln x`` against ``ln target`` at
+    ``sigma`` (the between-person SD of ``ln x``, divided by sqrt(n_arm)). The
+    returned prediction is back in the marker's unit, ``exp(mean ln x)``, and ``z`` is
+    ``(ln pred - ln GM) / sigma``. A value at or under zero has no logarithm: it is
+    held at a tiny positive floor, where the log term is large and the loss follows it.
+    """
+    logs = values.clamp_min(1e-12).log()
+    # Only target, sigma, n_arm and shape are read: a stand-in, because the log of a
+    # target under one is not a valid geometric-mean target.
+    log_spec = SimpleNamespace(
+        target=math.log(spec.target), sigma=spec.sigma, n_arm=spec.n_arm,
+        shape=spec.shape, band_halfwidth=spec.band_halfwidth,
+    )
+    loss, pred_log, z = score_batch_statistic(logs, log_spec, n_population)
+    return loss, math.exp(pred_log), z
+
+
 def _score_arm_trajs(
     spec: CohortStatisticSpec,
     arm_trajs: Sequence[torch.Tensor],
@@ -695,6 +727,8 @@ def _score_arm_trajs(
     if spec.kind in PER_PERSON_KINDS:
         # A mean over people of a per-person number: scored like a window mean.
         series = arm_trajs[0][:, :, SERIES_INDEX[spec.marker_id]]
+        if spec.kind in GEOMETRIC_KINDS:
+            return score_geometric(per_person_statistic(series, spec), spec, n_population)
         return score_batch_statistic(per_person_statistic(series, spec), spec, n_population)
     if spec.kind in (StatisticKind.SPREAD, StatisticKind.CORRELATION):
         n = _check_n_population(n_population, int(arm_trajs[0].shape[0]))

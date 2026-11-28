@@ -451,6 +451,62 @@
         "where": "Table 3, row 'iAUC'",
         "quote": "Glucose iAUC (mmol/L x min) | 210 (SEM 25)"
       }
+    },
+    {
+      "id": "ogtt_insulin_geometric_mean",
+      "description": "Fasting plasma insulin over the first hour, printed as a geometric mean with 95% CI after log-transformation",
+      "marker": "insulin",
+      "statistic": "geometric_mean",
+      "protocols": [
+        "fasting"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 60
+      },
+      "value": 40.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 32.0,
+        "high": 50.0,
+        "level": 95,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 2",
+        "quote": "Fasting insulin 40 (32-50) pmol/L (geometric mean, 95% CI, n = 12)."
+      }
+    },
+    {
+      "id": "ogtt_insulin_geometric_auc",
+      "description": "Insulin area over the five samples, trapezoid, geometric mean of the per-person areas",
+      "marker": "insulin",
+      "statistic": "geometric_area",
+      "protocols": [
+        "ogtt"
+      ],
+      "times": [
+        0,
+        30,
+        60,
+        90,
+        119
+      ],
+      "value": 30.0,
+      "unit": "nmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "ci",
+        "low": 22.0,
+        "high": 41.0,
+        "level": 95,
+        "n": 12
+      },
+      "location": {
+        "where": "Table 3, row 'Insulin AUC'",
+        "quote": "Insulin AUC (nmol/L x min) | 30 (22-41), geometric mean (95% CI)"
+      }
     }
   ],
   "left_out": []

@@ -51,7 +51,7 @@ from .diagnostics.identifiability import (
 )
 from .knowledge.cohort_statistics import ALL_COHORT_STATISTICS, SEALED_COHORT_STATISTICS
 from .knowledge.cohort_types import (
-    CohortArmSpec, CohortStatisticSpec, InitMode, TargetShape, arms_differ_in_meal_details,
+    GEOMETRIC_KINDS, CohortArmSpec, CohortStatisticSpec, InitMode, TargetShape, arms_differ_in_meal_details,
 )
 from .knowledge.evidence import OPERATOR_OF_STATISTIC, OperatorKind
 from .knowledge.physiology_rules import PHYSIOLOGY_RULES, SEALED_PHYSIOLOGY_RULES, PhysiologyRule
@@ -368,6 +368,8 @@ def _allowed(spec: CohortStatisticSpec) -> tuple[float, float]:
         return -math.inf, t + s
     if spec.shape is TargetShape.AT_LEAST:
         return t - s, math.inf
+    if spec.kind in GEOMETRIC_KINDS:
+        return t * math.exp(-s), t * math.exp(s)  # sigma is on the log scale
     half = float(spec.band_halfwidth) if spec.shape is TargetShape.BAND else 0.0
     return t - half - s, t + half + s
 

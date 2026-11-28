@@ -44,6 +44,7 @@ import numpy as np
 from ..knowledge import ALL_COHORT_STATISTICS
 from ..knowledge.cohort_types import (
     MEAN_KINDS,
+    log_gap,
     PER_PERSON_KINDS,
     CohortArmSpec,
     CohortStatisticSpec,
@@ -183,7 +184,7 @@ def cold_calibration(
             else:
                 per_arm.append(_extract_statistic(traj, marker_idx, win, spec.kind))
         pred = combine_arms(spec.kind, per_arm)
-        z = (pred - float(spec.target)) / float(spec.sigma)
+        z = log_gap(pred, spec) / float(spec.sigma)
         rows.append(ColdCalibrationRow(
             name=spec.name,
             source=spec.source,
