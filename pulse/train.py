@@ -2211,7 +2211,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "Add the soma-shaped incretin term to insulin secretion: gain x gamma x (the incretin "
             "factor above the person's own fasted factor) x a sigmoid of glucose (threshold and "
             "width learned, 90 and 10 mg/dL at the start). The gain starts at 0, so switching it "
-            "on changes nothing until it is trained (--train-only 'metabolic.incretin_glu_*'). "
+            "on changes nothing until it is trained (--train-only 'metabolic.*incretin_glu_*'). "
             "Off by default. Recorded in the checkpoint; every loader applies it."
         ),
     )

@@ -500,7 +500,7 @@ a single value): `metabolic.islet.log_k_incretin`, `metabolic.islet.log_incretin
 `metabolic.islet.log_gn_nut_gain`, `metabolic.islet.log_protein_gn_gain`,
 `metabolic.log_gamma`, and the new `metabolic.incretin_glu_gain`,
 `metabolic.log_incretin_glu_thr`, `metabolic.log_incretin_glu_width`. As patterns:
-`--train-only 'metabolic.islet.*,metabolic.log_gamma,metabolic.incretin_glu_*'` (12 values).
+`--train-only 'metabolic.islet.*,metabolic.log_gamma,metabolic.*incretin_glu_*'` (12 values).
 Per-person gamma is a head, not in these; the glucagon ones (`glp1_gn_pg`, `gn_nut_gain`,
 `protein_gn_gain`) can be dropped for an insulin-only run.
 
