@@ -1,0 +1,40 @@
+{
+  "paper": "meek-2021",
+  "citation": {
+    "authors": "Meek CL, Lewis HB, Burling K, Reimann F, Gribble F",
+    "title": "Expected values for gastrointestinal and pancreatic hormone concentrations in healthy volunteers in the fasting and postprandial state",
+    "journal": "Annals of Clinical Biochemistry",
+    "year": 2021,
+    "doi": "10.1177/0004563220975658",
+    "pmid": "33175577",
+    "pmcid": "PMC7961662"
+  },
+  "reported": [
+    {
+      "what": "expected ranges of glucose and insulin, fasting and to 240 min after a standardized liquid mixed meal (Ensure Plus) and after a 75 g OGTT, n = 28; the values are only in Figures 1 and 2 and supplementary Tables S1 and S2, not in the XML",
+      "location": {
+        "where": "Results, paragraph 1; Figures 1 and 2; Tables S1 and S2",
+        "quote": "Data from these 28 participants were used to create ranges of expected values for glucose, insulin, glucagon, total GLP-1, PYY, GIP and FFA before and after an OGTT and SMT (see Figures 1 and 2; Tables S1 and S2)."
+      }
+    },
+    {
+      "what": "the spread of every reported range is the 2.5th and 97.5th percentile of the sample; no mean and no SD or SEM is printed",
+      "location": {
+        "where": "Participants and methods, Statistical analysis",
+        "quote": "The 2.5th and 97.5th percentiles were calculated to give an interval which included 95% of values from this sample."
+      }
+    },
+    {
+      "what": "C-peptide and intact proinsulin after the OGTT, n = 20, only in Figure 2 (the Figure 1 legend places them in the OGTT figure)",
+      "location": {
+        "where": "Results, paragraph 2",
+        "quote": "C-peptide and intact proinsulin were measured following an OGTT only (n = 20 participants; Figure 2)."
+      }
+    }
+  ],
+  "missing": {
+    "kind": "operator",
+    "name": "percentile_limits"
+  },
+  "detail": "The paper's only expected values for glucose and insulin are 2.5th to 97.5th percentile limits of one sample, which the model's uncertainty kinds (sd, sem, ci, range, n_only) cannot hold, and the numbers themselves are in figures and a supplement that are not in the paper's XML."
+}
