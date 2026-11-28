@@ -1,0 +1,47 @@
+{
+  "paper": "liu-2026",
+  "citation": {
+    "authors": "Liu Z, van Bruinessen M, Heuven LAJ, Lasschuijt MP, Stieger M, et al.",
+    "title": "Influence of natural variations in eating rate and bolus properties on postprandial glucose and insulin responses in healthy adults",
+    "journal": "European Journal of Nutrition",
+    "year": 2026,
+    "doi": "10.1007/s00394-026-04051-2",
+    "pmid": "42397469",
+    "pmcid": "PMC13331850"
+  },
+  "reported": [
+    {
+      "what": "fasting glucose, insulin, glucagon and C-peptide of the Faster-eater (n=16) and Slower-eater (n=17) groups, geometric means with 95% CI, three test occasions per person",
+      "location": {
+        "where": "Table 2, fasting parameters, Faster-eaters and Slower-eaters columns",
+        "quote": "Glucose (mmol/L) | 4.42 (4.19, 4.65) | 4.33 (4.12, 4.54) ; Insulin (µU/mL) | 12.31 (10.70, 14.17) | 11.43 (10.04, 13.02)"
+      }
+    },
+    {
+      "what": "postprandial insulin difference between Slower- and Faster-eater groups at 10, 15, 120 and 180 min",
+      "location": {
+        "where": "Results, Postprandial insulin response",
+        "quote": "mean differences: 5.67 µU/mL at 10 min and 9.35 µU/mL at 15 min"
+      }
+    },
+    {
+      "what": "postprandial C-peptide difference between Slower- and Faster-eater groups at 120 and 180 min",
+      "location": {
+        "where": "Results, Postprandial C-peptide response",
+        "quote": "mean differences: 0.56 ng/mL at 120 min and 0.61 ng/mL at 180 min"
+      }
+    },
+    {
+      "what": "postprandial glucose, insulin, C-peptide and glucagon concentrations by minute, by eater group, after the 402 g mixed meal (77 g carbohydrate, 15 g fat, 25 g protein), mean or geometric mean with 95% CI",
+      "location": {
+        "where": "Results, Postprandial glucose response (Figure 1); Figures 1a, 2a, 3a and 4a are time courses by group",
+        "quote": "Slower-eaters exhibited 20.21% and 55.27% higher early (0–30 min) and total (0–180 min) iAUC glucose values, respectively"
+      }
+    }
+  ],
+  "missing": {
+    "kind": "population",
+    "name": "group_split_by_measurement"
+  },
+  "detail": "Every number the paper prints for glucose, insulin, C-peptide and glucagon is reported for the two groups formed by a median split of the eating rate measured during the test meal, with no pooled cohort value printed (the time courses are in figures only), and neither group is a healthy reference, so no arm can be written without asking the model for two different numbers from the same 33 people."
+}
