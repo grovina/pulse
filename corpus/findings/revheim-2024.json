@@ -331,7 +331,7 @@
       }
     },
     {
-      "what": "Glucose iAUC2h (38.9 vs 87.1 mmol/L*min) and GLP-1 iAUC2h (139 vs 50 pM*min): printed as geometric means with 95% CI after log-transformation, not arithmetic means",
+      "what": "Glucose iAUC2h (38.9 (22.9, 66.1) vs 87.1 (65.4, 115.9) mmol/L*min) and GLP-1 iAUC2h (139 (72, 268) vs 50 (17, 151) pM*min): printed as geometric means with 95% CI after log-transformation, but both are incremental areas (baseline-subtracted per person), not a geometric area of the marker (geometric_area is for the marker's own trapezoid area); the glucose values are also capillary whole-blood",
       "missing": {
         "kind": "operator",
         "name": "geometric_mean"
