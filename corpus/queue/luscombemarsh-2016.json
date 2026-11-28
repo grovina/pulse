@@ -1,0 +1,35 @@
+{
+ "paper": "luscombemarsh-2016",
+ "citation": "Luscombe-Marsh ND, Hutchison AT, et al. Plasma Free Amino Acid Responses to Intraduodenal Whey Protein, and Relationships with Insulin, Glucagon-Like Peptide-1 and Energy Intake in Lean Healthy Men. Nutrients 2016.",
+ "doi": "10.3390/nu8010004",
+ "pmid": "26742062",
+ "pmcid": "PMC4728618",
+ "licence": "CC BY 4.0",
+ "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+ "protocol": "Fasted; 60-min intraduodenal infusions of hydrolysed whey protein at 2.1, 6.3 or 12.5 kJ/min (8, 24 or 48 g total protein, printed in the infusion table) or saline, double-blind crossover; serum insulin and plasma GLP-1 summarised as AUC 0-60 min, amino acids printed as AUCs; buffet meal after the infusion",
+ "protocol_kinds": [
+  "other"
+ ],
+ "population": "n=16 healthy lean men, age 27 +/- 3 y (range 19-54), BMI 22.1 +/- 0.6",
+ "population_class": "healthy",
+ "reports": [
+  {
+   "marker": "insulin",
+   "where": "Table 4 (AUC 0-60 min, all four arms)",
+   "form": "table"
+  },
+  {
+   "marker": "GLP-1",
+   "where": "Table 4 (AUC 0-60 min)",
+   "form": "table"
+  },
+  {
+   "marker": "plasma amino acids",
+   "where": "Table 3 (AUC 0-60 min per amino acid)",
+   "form": "table"
+  }
+ ],
+ "uncertainty": "sem",
+ "figure_only": false,
+ "note": "Protein with no carbohydrate, graded in three doses, but by intraduodenal infusion (bypasses the stomach), so a reader should say plainly that it is not a drink. Insulin and GLP-1 are areas only; time courses are in figures. Glucose and glucagon are not printed."
+}

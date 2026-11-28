@@ -145,6 +145,18 @@
         "2026-11-28"
       ],
       "hits": 159
+    },
+    {
+      "name": "insulin, glucagon and glucose after protein or amino acids alone",
+      "status": "active",
+      "why": "STATE's known-wrong item: the model's insulin after a protein-only or protein-dominant drink or meal is too high, and glucagon and glucose after protein are thinly covered. Needs healthy-adult plasma insulin (and glucagon, glucose, GIP/GLP-1) after whey, casein, other protein or an amino-acid mixture with little or no carbohydrate, with protein grams printed.",
+      "query": "(protein[Title] OR whey[Title] OR casein[Title] OR \"amino acid\"[Title] OR \"amino acids\"[Title]) AND (insulin[Title] OR glucagon[Title] OR insulinotropic[Title] OR \"glycemic\"[Title] OR \"glycaemic\"[Title]) AND healthy[All Fields] AND (ingestion[All Fields] OR drink[All Fields] OR beverage[All Fields] OR meal[All Fields]) AND \"open access\"[filter]",
+      "screened": 336,
+      "queued": 1,
+      "batches": [
+        "2026-11-28"
+      ],
+      "hits": 336
     }
   ]
 }
