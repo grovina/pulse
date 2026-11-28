@@ -1,0 +1,257 @@
+{
+  "paper": "stewart-2018",
+  "citation": {
+    "authors": "Stewart ML, Wilcox ML, Bell M, Buggia MA, Maki KC",
+    "title": "Type-4 Resistant Starch in Substitution for Available Carbohydrate Reduces Postprandial Glycemic Response and Hunger in Acute, Randomized, Double-Blind, Controlled Study",
+    "journal": "Nutrients",
+    "year": 2018,
+    "doi": "10.3390/nu10020129",
+    "pmid": "29373530",
+    "pmcid": "PMC5852705"
+  },
+  "population": {
+    "n": 35,
+    "sex": "mixed",
+    "age_years": {
+      "mean": 46.2,
+      "sd": 13.015,
+      "min": null,
+      "max": null
+    },
+    "bmi": {
+      "mean": 26.1,
+      "sd": 2.958,
+      "min": null,
+      "max": null
+    },
+    "status": "healthy",
+    "description": "Thirty-five adults analysed for satiety, GI and palatability (Table 2, 'All Participants (n = 35)'; 12 men, 23 women; 36 randomised, 32 in the glucose and insulin analyses). Age '46.2 +/- 2.2' and BMI '26.1 +/- 0.5' are means with SEM (Table 2 footnote), so sd = SEM x sqrt(35): 2.2 x 5.916 = 13.015 for age and 0.5 x 5.916 = 2.958 for BMI, computed. No min or max printed; inclusion ages 18-74 and BMI 18.5-29.99 (Methods 2.2, Study Subjects) are enrolment criteria, not the observed range. Status healthy: the aim is stated for 'healthy adults' (Introduction, 'to characterize the postprandial blood glucose response in healthy adults'), and the cohort excluded fasting capillary glucose >= 5.55 mmol/L (Methods 2.2)."
+  },
+  "protocols": [
+    {
+      "name": "control_scone",
+      "description": "Control scone (refined wheat flour, Table 1 control column: 328 kcal, 38.8 g available carbohydrate as printed, 16.0 g fat, 7.1 g protein, 4.0 g fibre, 14.8 g sugars, 5.0 g saturated fat) eaten within 10 min with 240 mL water. Fasted on the morning of the visit (Methods 2.1). Timing (Methods 2.1, 2.4): the baseline venous sample was drawn 15 min before the scone (t = -15 +/- 2 min), eating began at t = 0 and took up to 10 min, and the other samples are at t = 15, 30, 45, 60, 90, 120, 180 min from the onset. For the iAUC the paper counts the t = -15 sample as t = 0 ('the pre-consumption measurement at t = -15 min was counted as t = 0'; trapezoidal rule), so the first interval is 15 min wide. The arm copies that: minute 0 is both the fasting baseline and the scone (a meal at t_min 0, taken as instant), samples at minutes 15 to 180, so the model's trapezoid is the paper's own; the 15 fasting minutes between the baseline draw and the scone are not run. Fasting length and clock hour are not printed: a 10 h fast and an 08:00 start are assumed; the 24 h diet record is not printed, so the arm starts from the default fed day. Control arm only; the fibre scone (RS4) is left out.",
+      "duration_min": 181,
+      "start_hour": 8.0,
+      "meals": [
+        {
+          "t_min": 0,
+          "carbs_g": 38.8,
+          "fat_g": 16.0,
+          "protein_g": 7.1,
+          "fibre_g": 4.0,
+          "sugars_g": 14.8,
+          "fat_g_by_type": {
+            "saturated": 5.0
+          },
+          "form": "solid",
+          "food": "control scone"
+        }
+      ],
+      "prefast_hours": 10,
+      "assumed": [
+        "start_hour",
+        "prefast_hours"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "glucose_iauc_0_120_control",
+      "description": "Venous plasma glucose, incremental area over 0 to 120 min after the control scone (baseline sample drawn 15 min before the scone, counted as t = 0 by the paper; trapezoid over its samples as the paper defines it; what happens under baseline is not stated), mean and SEM over 32 subjects",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_scone"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 69.65,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 9.05,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous blood glucose' section, Control Scone column, row iAUC0–120 min (min × mmol/L), mean ± SEM; the quote joins the label and the control cell",
+        "quote": "iAUC0–120 min (min × mmol/L) | 69.65 ± 9.05"
+      }
+    },
+    {
+      "id": "glucose_iauc_0_180_control",
+      "description": "Venous plasma glucose, incremental area over 0 to 180 min after the control scone (baseline sample drawn 15 min before the scone, counted as t = 0 by the paper; what happens under baseline is not stated), mean and SEM over 32 subjects",
+      "marker": "glucose",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_scone"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 84.75,
+      "unit": "mmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 11.43,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous blood glucose' section, Control Scone column, row iAUC0–180 min (min × mmol/L), mean ± SEM, control column (the leading superscript 4 is a table footnote)",
+        "quote": "iAUC0–180 min (min × mmol/L) | 84.75 ± 11.43"
+      }
+    },
+    {
+      "id": "glucose_cmax_control",
+      "description": "Venous plasma glucose, maximum concentration (Cmax) after the control scone, mean and SEM over 32 subjects; the paper gives no window, so the window is the whole sampled span, arm minutes 0 (baseline sample) to 180 (window 0 to 181 so the 180 min sample is inside)",
+      "marker": "glucose",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_scone"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 6.44,
+      "unit": "mmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 0.18,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous blood glucose' section, Control Scone column, row Cmax (mmol/L), mean ± SEM, control column (leading superscript 4 is a footnote)",
+        "quote": "Cmax (mmol/L) | 6.44 ± 0.18"
+      }
+    },
+    {
+      "id": "insulin_iauc_0_120_control",
+      "description": "Venous plasma insulin, incremental area over 0 to 120 min after the control scone (baseline sample drawn 15 min before the scone, counted as t = 0 by the paper; what happens under baseline is not stated), mean and SEM over 32 subjects",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_scone"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120
+      ],
+      "below_baseline": "unstated",
+      "value": 19229.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 1865.0,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous insulin' section, Control Scone column, row iAUC0–120 min (min × pmol/L), mean ± SEM, control column",
+        "quote": "iAUC0–120 min (min × pmol/L) | 19,229 ± 1865"
+      }
+    },
+    {
+      "id": "insulin_iauc_0_180_control",
+      "description": "Venous plasma insulin, incremental area over 0 to 180 min after the control scone (baseline sample drawn 15 min before the scone, counted as t = 0 by the paper; what happens under baseline is not stated), mean and SEM over 32 subjects",
+      "marker": "insulin",
+      "statistic": "incremental_area",
+      "protocols": [
+        "control_scone"
+      ],
+      "times": [
+        0,
+        15,
+        30,
+        45,
+        60,
+        90,
+        120,
+        180
+      ],
+      "below_baseline": "unstated",
+      "value": 23850.0,
+      "unit": "pmol/L",
+      "time_unit": "min",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 2138.0,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous insulin' section, Control Scone column, row iAUC0–180 min (min × pmol/L), mean ± SEM, control column",
+        "quote": "iAUC0–180 min (min × pmol/L) | 23,850 ± 2138"
+      }
+    },
+    {
+      "id": "insulin_cmax_control",
+      "description": "Venous plasma insulin, maximum concentration (Cmax) after the control scone, mean and SEM over 32 subjects; the paper gives no window, so the window is the whole sampled span, arm minutes 0 (baseline sample) to 180 (window 0 to 181 so the 180 min sample is inside)",
+      "marker": "insulin",
+      "statistic": "peak_value",
+      "protocols": [
+        "control_scone"
+      ],
+      "window": {
+        "start_min": 0,
+        "end_min": 181
+      },
+      "value": 392.0,
+      "unit": "pmol/L",
+      "uncertainty": {
+        "kind": "sem",
+        "value": 28.0,
+        "n": 32
+      },
+      "location": {
+        "where": "Table 3, 'Venous insulin' section, Control Scone column, row Cmax (pmol/L), mean ± SEM, control column (leading superscript 4 is a footnote)",
+        "quote": "Cmax (pmol/L) | 392 ± 28"
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "what": "venous plasma glucose and insulin time courses at 15 to 180 min after the control scone: the paper prints them only as Figure 2, no table or text gives the values",
+      "missing": {
+        "kind": "source",
+        "name": "figure_only"
+      }
+    },
+    {
+      "what": "capillary blood glucose (meter readings): iAUC0–120, iAUC0–180 and Cmax (Table 3, capillary section; 139.14 ± 14.60, 171.88 ± 19.65, 7.49 ± 0.19) and the fasting capillary glucose at screening and at the visits (Table 2): the same people and minutes as the venous glucose entered, at a different level (about twice the venous iAUC), so two targets for one glucose in one arm would contradict each other; only the venous one is entered (as stewart-2017)",
+      "missing": {
+        "kind": "source",
+        "name": "assay_not_comparable"
+      }
+    },
+    {
+      "what": "fibre scone (control scone with VERSAFIBE 2470 resistant starch added, 17.5 g dietary fibre, 28.9 g available carbohydrate): its Table 3 values and the between-scone differences in Results 3.2 and Table 3 p-values; an added fibre is a different input from the control meal",
+      "missing": {
+        "kind": "input",
+        "name": "fibre_type"
+      }
+    }
+  ]
+}
