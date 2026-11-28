@@ -625,6 +625,27 @@ markers worsen by more than 0.02, so not adopted. The exponent: emptying rate is
 0.33 or 0.5 (6496abe chose 0.33; Brener's drinks are all at the 300 kcal reference), so 0.5 is
 no better supported.
 
+Fat, protein, fibre and solid form in the stomach (2026-11-28, iter 120, frozen, 1262 trained-side
+items, 164 validation, no sealed). The model has no constant that slows emptying for fat, protein,
+fibre or solid form. Everything leaves at one calorie rate shared in proportion to calories held,
+so fat slows a meal only through `KCAL_PER_G` (4, 4, 9 in `pulse/gastric.py`, Atwater values, 483efb1;
+nothing else in the repo sets them). Fibre and form exist only in the
+`MealReader` (speed in [1/3, 3], learned, behind `--meal-details`), which iter 120 does not have;
+`split_correction` is 0. Learned: `log_empty_kcal` (2.27 kcal/min, from 2.13). Constants:
+`LOAD_REF_KCAL`, `LOAD_EXPONENT`, `LOAD_CAP` (6496abe). Variants, trained / validation median |z|
+against 0.589 / 0.663 (`fz/gv.py`, `fz/gcmp.py`): fat 6 kcal/g 0.586 / 0.639, late insulin
+(from 150 min) signed -0.32 to -0.23, mixed glucose -0.38 to -0.28; fat 4.5 kcal/g 0.586 / 0.617,
+-0.19, -0.22; but clamp +0.05 / +0.08, exercise +0.05 / +0.09, glucagon +0.05 / +0.07, sbp
++0.06 / +0.09, hepatic output +0.25 / +0.16, validation resting +0.02 / +0.04, vollmer-2008 gip
+z 6.39 to 8.86 / 10.52; 4.5 also validation energy expenditure +0.04. Slowing drinks and speeding
+meals (rate x0.85, exponent 0.6) is worse on both: 0.597 / 0.677, oral-glucose glucose signed 0.30
+to 0.03 and insulin 0.22 to -0.06, but late insulin -0.32 to -0.45, mixed glucose -0.38 to -0.48,
+and bhb, gip, glucagon, lactate, validation fasting worsen over 0.02. The direction of the first
+two matches the hypothesis, but they cut the fat's calorie weight with no source (9 kcal/g is the
+accepted energy density and Brener's law is in calories), and they break the families that
+the glycogen and incretin constants were fitted against. Not adopted; sealed not scored. A real
+fat or form effect needs the meal reader trained.
+
 `--incretin-gain-nonneg` (2026-11-28, off by default, recorded in the checkpoint as
 `incretin_gain_nonneg`) holds `metabolic.incretin_glu_gain` at or above 0: a post-step hook on
 every Adam optimizer clamps it, so the zero start is reachable with a gradient (a softplus of a
